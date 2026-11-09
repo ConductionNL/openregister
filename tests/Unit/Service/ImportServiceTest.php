@@ -55,6 +55,22 @@ class ImportServiceTest extends TestCase {
 	/** @var IGroupManager&MockObject */
 	private IGroupManager $groupManager;
 
+	/**
+	 * A constraint that accepts any objects batch and keeps it in $saved.
+	 *
+	 * @param array|null $saved Receives the objects handed to saveObjects().
+	 *
+	 * @return \PHPUnit\Framework\Constraint\Callback The constraint.
+	 */
+	private function captureObjects(?array &$saved): \PHPUnit\Framework\Constraint\Callback {
+		return $this->callback(
+			function (array $objects) use (&$saved): bool {
+				$saved = $objects;
+				return true;
+			}
+		);
+	}
+
 	/** @var ImportService */
 	private ImportService $service;
 
@@ -193,9 +209,12 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testClearCaches(): void {
+		$cache = new \ReflectionProperty($this->service, 'schemaPropertiesCache');
+		$cache->setValue($this->service, ['2' => ['name' => ['type' => 'string']]]);
+
 		$this->service->clearCaches();
-		// Should not throw
-		$this->assertTrue(true);
+
+		$this->assertSame([], $cache->getValue($this->service));
 	}
 
 	// =========================================================================
@@ -265,7 +284,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -280,6 +302,7 @@ class ImportServiceTest extends TestCase {
 				publish: true
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'Test', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -319,7 +342,10 @@ class ImportServiceTest extends TestCase {
 			'tags' => ['type' => 'array'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -329,6 +355,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', 'age' => 30, 'active' => true, 'tags' => ['a', 'b', 'c'], '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -372,7 +399,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -382,6 +412,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -406,7 +437,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -421,6 +455,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -445,7 +480,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -460,6 +498,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'organisation' => '12345678-1234-1234-1234-123456789abc']]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -591,7 +630,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -607,6 +649,7 @@ class ImportServiceTest extends TestCase {
 				publish: false
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'Test', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -621,7 +664,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [],
 				'updated' => [['@self' => ['id' => 'uuid-existing']]],
@@ -631,6 +677,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['id' => 'uuid-existing', 'name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'id' => 'uuid-existing']]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -656,7 +703,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -671,6 +721,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -695,7 +746,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -710,6 +764,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'published' => '2025-01-01 00:00:00']]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -755,7 +810,10 @@ class ImportServiceTest extends TestCase {
 			'price' => ['type' => 'number'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -765,6 +823,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'Item', 'price' => 9.99, '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -780,7 +839,10 @@ class ImportServiceTest extends TestCase {
 			'metadata' => ['type' => 'object'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -790,6 +852,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'Item', 'metadata' => ['key' => 'value'], '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -808,7 +871,10 @@ class ImportServiceTest extends TestCase {
 			],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -818,6 +884,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'Child', 'parent' => 'parent-uuid', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1001,7 +1068,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -1016,6 +1086,7 @@ class ImportServiceTest extends TestCase {
 				publish: true
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'Test', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1107,7 +1178,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -1117,6 +1191,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1142,7 +1217,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -1157,6 +1235,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['organisation' => '12345678-1234-1234-1234-123456789abc', 'register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1182,7 +1261,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -1197,6 +1279,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1213,7 +1296,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [],
 				'updated' => [['@self' => ['id' => 'uuid-existing']]],
@@ -1223,6 +1309,7 @@ class ImportServiceTest extends TestCase {
 		try {
 			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
 			$this->assertIsArray($result);
+			$this->assertSame([['id' => 'uuid-existing', 'name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'id' => 'uuid-existing']]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1331,7 +1418,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -1346,6 +1436,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1362,7 +1453,10 @@ class ImportServiceTest extends TestCase {
 		// Pass register but no schema to single-sheet path.
 		// This should still process but data won't be type-transformed.
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -1375,6 +1469,7 @@ class ImportServiceTest extends TestCase {
 			// Test the case where schema is explicitly null but register is set.
 			$result = $this->service->importFromExcel($tmpFile, $register, null);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', 'count' => '42', '@self' => ['register' => 1, 'schema' => null]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1636,30 +1731,6 @@ class ImportServiceTest extends TestCase {
 	// Private method testing via Reflection: validateObjectProperties
 	// =========================================================================
 
-	public function testValidateObjectProperties(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('validateObjectProperties');
-		$method->setAccessible(true);
-
-		// Should not throw for normal properties.
-		$method->invoke($this->service, ['name' => 'Test', '@self' => []], '1');
-		$this->assertTrue(true);
-
-		// Should not throw for invalid properties either (method currently just logs).
-		$method->invoke($this->service, ['data' => 'test', 'content' => 'test'], '1');
-		$this->assertTrue(true);
-	}
-
-	public function testValidateObjectPropertiesWithBodyAndPayload(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('validateObjectProperties');
-		$method->setAccessible(true);
-
-		// Test with body and payload invalid properties.
-		$method->invoke($this->service, ['body' => 'test', 'payload' => 'test'], '1');
-		$this->assertTrue(true);
-	}
-
 	// =========================================================================
 	// Private method testing via Reflection: transformObjectBySchema
 	// =========================================================================
@@ -1875,7 +1946,7 @@ class ImportServiceTest extends TestCase {
 			->willReturn($schema);
 
 		$result = $method->invoke($this->service, 'test-schema');
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($schema, $result);
 	}
 
 	public function testGetSchemaBySlugThrowsOnNotFound(): void {
@@ -2307,7 +2378,10 @@ class ImportServiceTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -2327,6 +2401,7 @@ class ImportServiceTest extends TestCase {
 				enrich: false
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -2390,7 +2465,10 @@ class ImportServiceTest extends TestCase {
 			->with('admin')
 			->willReturn($adminGroup);
 
-		$this->objectService->method('saveObjects')
+		$saved = null;
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->with($this->captureObjects($saved))
 			->willReturn([
 				'saved' => [['@self' => ['id' => 'uuid-1']]],
 				'updated' => [],
@@ -2405,6 +2483,7 @@ class ImportServiceTest extends TestCase {
 				currentUser: $user
 			);
 			$this->assertIsArray($result);
+			$this->assertSame([['name' => 'John', '@self' => ['created' => '2025-01-01 00:00:00', 'register' => 1, 'schema' => 2]]], $saved);
 		} finally {
 			@unlink($tmpFile);
 		}
