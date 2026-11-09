@@ -43,6 +43,8 @@ use OCA\OpenRegister\Listener\NotifyPushBatch;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
+use OCA\OpenRegister\Service\Import\ImportServiceCodecs;
+use OCA\OpenRegister\Service\Import\ImportServiceStores;
 use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\Import\JsonImportRows;
 use OCA\OpenRegister\Service\Import\MappingErrorRow;
@@ -168,35 +170,56 @@ class ImportService implements ObjectImporterInterface {
 	private readonly ImportValueCaster $valueCaster;
 
 	/**
+	 * Audit trail mapper: tags and finds the rows of one import job.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Migration-pack mapping engine.
+	 *
+	 * @var MappingEngine
+	 */
+	private readonly MappingEngine $mappingEngine;
+
+	/**
+	 * Schema validator, used for genuinely side-effect-free dry-run imports.
+	 *
+	 * @var ValidateObjectInterface
+	 */
+	private readonly ValidateObjectInterface $validateObjectHandler;
+
+	/**
+	 * DI container for lazy IQueue and import-handler resolution.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
 	 * Constructor for the ImportService
 	 *
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param ObjectOperationsInterface $objectService The object service
-	 * @param LoggerInterface $logger The logger interface
-	 * @param IGroupManager $groupManager The group manager
-	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
-	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
-	 * @param MappingEngine $mappingEngine Migration-pack mapping engine
-	 * @param ValidateObjectInterface $validateObjectHandler Schema validator, used for genuinely
-	 *                                              side-effect-free dry-run imports
-	 * @param ContainerInterface $container DI container for lazy IQueue resolution
+	 * @param ImportServiceStores $stores       The schema lookup, object writer, audit trail and validator.
+	 * @param ImportServiceCodecs $codecs       The translation codec, mapping engine and container.
+	 * @param IGroupManager       $groupManager The group manager (the admin check).
+	 * @param LoggerInterface     $logger       The logger interface
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		ObjectOperationsInterface $objectService,
-		LoggerInterface $logger,
+		ImportServiceStores $stores,
+		ImportServiceCodecs $codecs,
 		IGroupManager $groupManager,
-		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly MappingEngine $mappingEngine,
-		private readonly ValidateObjectInterface $validateObjectHandler,
-		private readonly ContainerInterface $container,
+		LoggerInterface $logger,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->objectService = $objectService;
-		$this->logger = $logger;
+		$this->schemaMapper          = $stores->schemaMapper;
+		$this->objectService         = $stores->objectService;
+		$this->auditTrailMapper      = $stores->auditTrailMapper;
+		$this->validateObjectHandler = $stores->validateObjectHandler;
+		$this->translationCsvCodec   = $codecs->translationCsvCodec;
+		$this->mappingEngine         = $codecs->mappingEngine;
+		$this->container             = $codecs->container;
+		$this->logger       = $logger;
 		$this->groupManager = $groupManager;
-		$this->translationCsvCodec = $translationCsvCodec;
 
 		$this->valueCaster = new ImportValueCaster();
 

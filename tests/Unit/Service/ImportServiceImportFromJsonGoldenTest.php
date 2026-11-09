@@ -276,15 +276,10 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		$container->method('get')->willReturnCallback(static fn (string $id) => $id === ImportHandler::class ? $importHandler : null);
 
 		return new ImportService(
-			$schemaMapper,
-			$objectService,
-			$logger,
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($schemaMapper, $objectService, $audit, $validator),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), $mapping, $container),
 			$this->createMock(IGroupManager::class),
-			$this->createMock(TranslationCsvCodec::class),
-			$audit,
-			$mapping,
-			$validator,
-			$container
+			$logger
 		);
 	}//end buildService()
 
