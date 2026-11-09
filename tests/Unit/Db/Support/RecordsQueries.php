@@ -118,7 +118,7 @@ trait RecordsQueries {
 			'values', 'having', 'andHaving', 'orHaving', 'orderBy', 'addOrderBy', 'resetQueryParts', 'resetQueryPart',
 			'runAcrossAllShards',
 		];
-		foreach ($fluent as $method) {
+		foreach (array_filter($fluent, static fn (string $method): bool => method_exists(IQueryBuilder::class, $method)) as $method) {
 			$qb->method($method)->willReturnCallback(
 				function (...$args) use ($method, $qb, $index) {
 					$this->queries[$index][] = $method . '(' . $this->renderArgs(args: $args) . ')';
@@ -166,31 +166,32 @@ trait RecordsQueries {
 				return (array_shift($rows) ?? false);
 			}
 		);
-		$result->method('fetchAll')->willReturnCallback(
-			static function () use (&$rows): array {
+		$readers = [
+			'fetchAll' => static function () use (&$rows): array {
 				$all = $rows;
 				$rows = [];
 				return $all;
-			}
-		);
-		$result->method('fetchOne')->willReturnCallback(
-			static function () use (&$rows) {
+			},
+			'fetchOne' => static function () use (&$rows) {
 				$row = array_shift($rows);
 				return ($row === null ? false : reset($row));
-			}
-		);
-		$result->method('fetchAssociative')->willReturnCallback(
-			static function () use (&$rows) {
+			},
+			'fetchAssociative' => static function () use (&$rows) {
 				return (array_shift($rows) ?? false);
-			}
-		);
-		$result->method('fetchFirstColumn')->willReturnCallback(
-			static function () use (&$rows): array {
+			},
+			'fetchFirstColumn' => static function () use (&$rows): array {
 				$all = array_map(static fn (array $row) => reset($row), $rows);
 				$rows = [];
 				return $all;
+			},
+		];
+		// Nextcloud versions differ in which readers IResult declares: stub only those it has.
+		foreach ($readers as $method => $reader) {
+			if (method_exists(IResult::class, $method) === true) {
+				$result->method($method)->willReturnCallback($reader);
 			}
-		);
+		}
+
 		$result->method('closeCursor')->willReturn(true);
 
 		return $result;
