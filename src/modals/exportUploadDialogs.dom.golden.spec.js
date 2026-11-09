@@ -26,6 +26,18 @@ jest.mock('@nextcloud/l10n', () => ({
 jest.mock('@nextcloud/axios', () => jest.fn(() => Promise.resolve({})))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
+// The real CnDialogActions, drawn with the stand-ins above, so the golden
+// shows the buttons the shared footer really renders.
+jest.mock('@conduction/nextcloud-vue', () => ({
+	__esModule: true,
+	CnDialogActions: jest.requireActual(
+		'@conduction/nextcloud-vue/dist/esm/components/CnDialogActions/CnDialogActions.vue.js',
+	).default,
+}))
+jest.mock(
+	'@conduction/nextcloud-vue/dist/esm/components/CnIcon/CnIcon.vue.js',
+	() => mockModule('CnIcon'),
+)
 jest.mock('vue-codemirror6', () => mockModule('CodeMirror'))
 jest.mock('@codemirror/lang-json', () => ({
 	json: () => 'json',
