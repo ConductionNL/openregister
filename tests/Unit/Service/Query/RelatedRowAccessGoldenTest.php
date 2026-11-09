@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\Query\RelatedRowSource;
 use OCA\OpenRegister\Service\Query\RelatedRowSqlTarget;
+use OCA\OpenRegister\Service\Query\RelatedRowSubquery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -64,6 +65,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
  */
 class RelatedRowAccessGoldenTest extends TestCase {
 
@@ -146,7 +150,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 	): array {
 		return (new RelatedRowExistsClause())->render(
 			filter: $filter,
-			target: new RelatedRowSqlTarget(
+			subquery: new RelatedRowSubquery(target: new RelatedRowSqlTarget(
 				engine: $engine,
 				table: 'oc_t',
 				outerAlias: 'o',
@@ -156,7 +160,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 				alias: 'r0',
 				accessPredicate: $accessPredicate,
 				parameterPrefix: 'rel0'
-			)
+			))
 		);
 	}//end renderOne()
 
@@ -191,8 +195,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 	private function predicateFor(IQueryBuilder $qb, array $scope): string {
 		return $this->access()->predicate(
 			qb: $qb,
-			source: new RelatedRowSource(schema: $this->schema(), tableName: 'openregister_table_1_2', alias: 'rel0'),
-			scope: $scope
+			source: new RelatedRowSource(schema: $this->schema(), tableName: 'openregister_table_1_2', alias: 'rel0', scope: $scope)
 		);
 	}//end predicateFor()
 

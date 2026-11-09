@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Query\RelatedRowInnerRow;
 use OCA\OpenRegister\Service\Query\RelatedRowSource;
 use OCA\OpenRegister\Service\Query\RelatedRowSqlTarget;
+use OCA\OpenRegister\Service\Query\RelatedRowSubquery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -53,6 +54,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowInnerRow
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
  */
 class RelatedRowParameterBandGoldenTest extends TestCase {
 
@@ -73,8 +77,8 @@ class RelatedRowParameterBandGoldenTest extends TestCase {
 	private function renderClause(RelatedRowFilter $filter, RelatedRowSqlTarget $target, string $predicate): array {
 		return (new RelatedRowExistsClause())->render(
 			filter: $filter,
-			target: $target,
-			inner: new RelatedRowInnerRow(alias: 'r1', accessPredicate: $predicate, parameterPrefix: 'q1')
+			subquery: new RelatedRowSubquery(target: $target,
+			inner: new RelatedRowInnerRow(alias: 'r1', accessPredicate: $predicate, parameterPrefix: 'q1'))
 		);
 	}//end renderClause()
 
@@ -92,8 +96,7 @@ class RelatedRowParameterBandGoldenTest extends TestCase {
 
 		return (new RelatedRowAccess(rbac: $rbac, logger: new NullLogger()))->predicate(
 			qb: $qb,
-			source: new RelatedRowSource(schema: new Schema(), tableName: 'openregister_table_3_4', alias: 'r1'),
-			scope: $scope
+			source: new RelatedRowSource(schema: new Schema(), tableName: 'openregister_table_3_4', alias: 'r1', scope: $scope)
 		);
 	}//end predicateFor()
 
