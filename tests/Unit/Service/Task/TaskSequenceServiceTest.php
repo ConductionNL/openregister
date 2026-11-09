@@ -27,6 +27,9 @@ use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
+use OCA\OpenRegister\Service\Task\ApprovalChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
+use OCA\OpenRegister\Service\Task\SequenceProvenance;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCA\OpenRegister\Service\Task\TaskSequenceServices;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -147,11 +150,7 @@ class TaskSequenceServiceTest extends TestCase {
 	}//end runningSequence()
 
 	public function testProvisioningCreatesEveryPositionAndEnablesOnlyTheFirst(): void {
-		$sequence = $this->service->provision(
-			template: $this->template(),
-			anchorObjectUuid: 'obj-1',
-			requesterId: 'alice'
-		);
+		$sequence = $this->service->provision(chain: new ApprovalChain(template: $this->template()), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(TaskSequence::STATUS_RUNNING, $sequence->getStatus());
 		self::assertNotNull($sequence->getOpenedAt());
@@ -173,12 +172,7 @@ class TaskSequenceServiceTest extends TestCase {
 
 	public function testAResolvedTierIsFrozenOntoTheSequence(): void {
 		$tier = [['order' => 1, 'role' => 'directors', 'minAmount' => 100000]];
-		$sequence = $this->service->provision(
-			template: $this->template(),
-			anchorObjectUuid: 'obj-1',
-			requesterId: 'alice',
-			tierPositions: $tier
-		);
+		$sequence = $this->service->provision(chain: new ApprovalChain(template: $this->template(), tierPositions: $tier), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(['positions' => $tier], $sequence->getResolvedTier());
 		self::assertCount(1, $this->imported, 'the tier replaces the declared positions');
@@ -189,7 +183,7 @@ class TaskSequenceServiceTest extends TestCase {
 		$template = $this->template();
 		$template['approvingOutcomes'] = ['approved'];
 
-		$this->service->provision(template: $template, anchorObjectUuid: 'obj-1', requesterId: 'alice');
+		$this->service->provision(chain: new ApprovalChain(template: $template), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertCount(3, $this->imported);
 		foreach ($this->imported as $payload) {
@@ -199,7 +193,7 @@ class TaskSequenceServiceTest extends TestCase {
 	}//end testADeclaredApprovingSetIsCopiedOntoEveryPositionTask()
 
 	public function testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged(): void {
-		$this->service->provision(template: $this->template(), anchorObjectUuid: 'obj-1', requesterId: 'alice');
+		$this->service->provision(chain: new ApprovalChain(template: $this->template()), anchor: new SequenceAnchor(objectUuid: 'obj-1', requesterId: 'alice'));
 
 		self::assertSame(['order' => 1, 'role' => 'clerks'], $this->imported[0]['templateSnapshot']);
 	}//end testAPositionTaskWithoutADeclaredSetCarriesThePositionUnchanged()
