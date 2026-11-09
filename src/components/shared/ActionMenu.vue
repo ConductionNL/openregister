@@ -24,9 +24,9 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcActionButton, NcActions } from '@nextcloud/vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import l10nMethods from '../../composables/l10nMethods.js'
 
 /**
  * The three-dots menu of a card or a table row.
@@ -40,6 +40,8 @@ export default {
 		NcActionButton,
 		DotsHorizontal,
 	},
+
+	mixins: [l10nMethods],
 
 	props: {
 		/**
@@ -67,10 +69,6 @@ export default {
 		shownActions() {
 			return this.actions.filter((action) => !action.hidden)
 		},
-	},
-
-	methods: {
-		t,
 	},
 }
 </script>
