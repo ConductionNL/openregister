@@ -60,6 +60,8 @@ final class ConsentPropertyWrite {
 	 * The submitted entries, re-indexed; none when the value is not an array.
 	 *
 	 * @return array<int, mixed>
+	 *
+	 * @spec openspec/specs/consent-evidence-envelope/spec.md
 	 */
 	public function incomingEntries(): array {
 		return self::entries(value: $this->incoming);
@@ -69,6 +71,8 @@ final class ConsentPropertyWrite {
 	 * The stored entries, re-indexed; none when the value is not an array.
 	 *
 	 * @return array<int, mixed>
+	 *
+	 * @spec openspec/specs/consent-evidence-envelope/spec.md
 	 */
 	public function persistedEntries(): array {
 		return self::entries(value: $this->persisted);
