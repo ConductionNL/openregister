@@ -22,7 +22,7 @@ use OCA\OpenRegister\Service\ObjectAction;
 
 return [
 	'classes' => [
-		Audit\AuditAggregationService::class => Audit\AuditAggregationServiceInterface::class,
+		Audit\AuditAggregationService::class => \OCA\OpenRegister\Kernel\Contracts\AuditAggregationServiceInterface::class,
 		Audit\OrganisationContextAttribution::class => Audit\OrganisationContextAttributionInterface::class,
 		Audit\PurposeAttribution::class => Audit\PurposeAttributionInterface::class,
 		Audit\TokenAttribution::class => Audit\TokenAttributionInterface::class,
@@ -30,8 +30,8 @@ return [
 		ObjectAction\ObjectActionElevationScope::class => null,
 		Service\AuditRetentionResolver::class => Service\AuditRetentionResolverInterface::class,
 		Service\FieldEncryptionHandler::class => Service\FieldEncryptionHandlerInterface::class,
-		Service\SharedMasterDataService::class => Service\SharedMasterDataServiceInterface::class,
-		Service\TenantLogRedactor::class => Service\TenantLogRedactorInterface::class,
+		Service\SharedMasterDataService::class => \OCA\OpenRegister\Kernel\Contracts\SharedMasterDataServiceInterface::class,
+		Service\TenantLogRedactor::class => \OCA\OpenRegister\Kernel\Contracts\TenantLogRedactorInterface::class,
 	],
 	'kept' => [],
 ];

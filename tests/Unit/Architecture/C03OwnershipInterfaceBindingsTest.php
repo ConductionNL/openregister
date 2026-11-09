@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
-use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\AuditAggregationServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipServiceInterface;

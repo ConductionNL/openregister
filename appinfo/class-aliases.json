@@ -86,6 +86,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Service\\Audit\\AuditAggregationServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuditAggregationServiceInterface",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Service\\DashboardService": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\DashboardService",
 			"eager": false,
@@ -258,6 +263,16 @@
 		},
 		"OCA\\OpenRegister\\Service\\Search\\SearchIndexMaintenance": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\Search\\SearchIndexMaintenance",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\SharedMasterDataServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SharedMasterDataServiceInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TenantLogRedactorInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\TenantLogRedactorInterface",
 			"eager": false,
 			"service": true
 		},
