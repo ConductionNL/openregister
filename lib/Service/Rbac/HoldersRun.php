@@ -23,7 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 /**
- * The level being read and the role definitions roles are expanded with. Built and consumed by ObjectPermissionsResolver only; it never leaves that class.
+ * The level being read and the role definitions roles are expanded with.
+ * Built and consumed by ObjectPermissionsResolver only; it never leaves that class.
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
