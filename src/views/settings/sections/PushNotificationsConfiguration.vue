@@ -7,18 +7,10 @@
 		">
 		<div class="push-status-section">
 			<!-- not_installed status -->
-			<div
+			<PushStatus
 				v-if="pushStatus === 'not_installed'"
-				class="push-status push-status--error">
-				<div class="push-status__badge">
-					<AlertCircle :size="20" />
-					<span>{{
-						t(
-							'openregister',
-							'Realtime push not available — the notify_push app is not installed',
-						)
-					}}</span>
-				</div>
+				tone="error"
+				:label="t('openregister', 'Realtime push not available — the notify_push app is not installed')">
 				<p class="push-status__hint">
 					{{
 						t(
@@ -34,21 +26,13 @@
 						{{ t('openregister', 'Open Nextcloud App Store') }}
 					</a>
 				</p>
-			</div>
+			</PushStatus>
 
 			<!-- unreachable status -->
-			<div
+			<PushStatus
 				v-else-if="pushStatus === 'unreachable'"
-				class="push-status push-status--warning">
-				<div class="push-status__badge">
-					<AlertOutline :size="20" />
-					<span>{{
-						t(
-							'openregister',
-							'notify_push is installed but not yet active',
-						)
-					}}</span>
-				</div>
+				tone="warning"
+				:label="t('openregister', 'notify_push is installed but not yet active')">
 				<p class="push-status__hint">
 					{{
 						t(
@@ -64,16 +48,13 @@
 						{{ t('openregister', 'notify_push configuration guide') }}
 					</a>
 				</p>
-			</div>
+			</PushStatus>
 
 			<!-- active status -->
-			<div
+			<PushStatus
 				v-else-if="pushStatus === 'active'"
-				class="push-status push-status--success">
-				<div class="push-status__badge">
-					<CheckCircle :size="20" />
-					<span>{{ t('openregister', 'Realtime push active') }}</span>
-				</div>
+				tone="success"
+				:label="t('openregister', 'Realtime push active')">
 				<p class="push-status__hint">
 					{{
 						t(
@@ -82,7 +63,7 @@
 						)
 					}}
 				</p>
-			</div>
+			</PushStatus>
 
 			<!-- Browser Web Push (VAPID) status -->
 			<div class="push-vapid-section">
@@ -91,15 +72,10 @@
 				</h4>
 
 				<!-- configured -->
-				<div
+				<PushStatus
 					v-if="vapidConfigured === true"
-					class="push-status push-status--success">
-					<div class="push-status__badge">
-						<CheckCircle :size="20" />
-						<span>{{
-							t('openregister', 'Browser web push is configured')
-						}}</span>
-					</div>
+					tone="success"
+					:label="t('openregister', 'Browser web push is configured')">
 					<p class="push-status__hint">
 						{{
 							t(
@@ -118,18 +94,13 @@
 							vapidPublicKey
 						}}</code>
 					</p>
-				</div>
+				</PushStatus>
 
 				<!-- not configured -->
-				<div
+				<PushStatus
 					v-else-if="vapidConfigured === false"
-					class="push-status push-status--warning">
-					<div class="push-status__badge">
-						<AlertOutline :size="20" />
-						<span>{{
-							t('openregister', 'Browser web push is not configured')
-						}}</span>
-					</div>
+					tone="warning"
+					:label="t('openregister', 'Browser web push is not configured')">
 					<p class="push-status__hint">
 						{{
 							t(
@@ -143,7 +114,7 @@
 							>occ openregister:web-push:generate-vapid</code
 						>
 					</p>
-				</div>
+				</PushStatus>
 
 				<!-- loading -->
 				<div v-else class="push-status__hint">
@@ -162,10 +133,8 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import PushStatus from './PushStatus.vue'
 
 /**
  * Push Notifications Configuration Component
@@ -192,9 +161,7 @@ export default {
 
 	components: {
 		SettingsSection,
-		AlertCircle,
-		AlertOutline,
-		CheckCircle,
+		PushStatus,
 	},
 
 	props: {
@@ -253,52 +220,11 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use './sectionStyles.scss' as *;
+
 .push-status-section {
 	margin-top: 8px;
-}
-
-.push-status {
-	padding: 16px;
-	border-radius: var(--border-radius-large);
-	border-left: 4px solid;
-	margin-bottom: 16px;
-}
-
-.push-status--error {
-	background: var(--color-error-light, rgba(var(--color-error-rgb), 0.1));
-	border-color: var(--color-error);
-}
-
-.push-status--warning {
-	background: var(--color-warning-light, rgba(var(--color-warning-rgb), 0.1));
-	border-color: var(--color-warning);
-}
-
-.push-status--success {
-	background: var(--color-success-light, rgba(var(--color-success-rgb), 0.1));
-	border-color: var(--color-success);
-}
-
-.push-status__badge {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	font-weight: 600;
-	font-size: 15px;
-	margin-bottom: 8px;
-}
-
-.push-status--error .push-status__badge {
-	color: var(--color-error);
-}
-
-.push-status--warning .push-status__badge {
-	color: var(--color-warning);
-}
-
-.push-status--success .push-status__badge {
-	color: var(--color-success);
 }
 
 .push-status__hint {
@@ -342,11 +268,6 @@ export default {
 
 .push-vapid-section__key-value,
 .push-vapid-section__command {
-	display: inline-block;
-	font-family: var(--font-face-monospace, monospace);
-	background: var(--color-background-dark);
-	border-radius: var(--border-radius);
-	padding: 4px 8px;
-	word-break: break-all;
+	@include code-chip;
 }
 </style>

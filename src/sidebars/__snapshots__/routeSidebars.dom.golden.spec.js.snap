@@ -151,6 +151,58 @@ exports[`route sidebar auditTrail renders the filters without and with a registe
 </div>"
 `;
 
+exports[`route sidebar auditTrail renders the whole filters tab: fields, clear button and hint 1`] = `
+"<x-ncappsidebartab id="filters-tab" name="t:Filters" order="1">
+  <slot-default>
+    <div class="filterSection">
+      <h3>t:Filter Audit Trails</h3>
+      <div class="filterGroup"><label for="registerSelect">t:Register</label>
+        <x-ncselect id="registerSelect" options="[{&quot;value&quot;:1,&quot;label&quot;:&quot;R&quot;,&quot;title&quot;:&quot;R&quot;,&quot;register&quot;:{&quot;id&quot;:1,&quot;title&quot;:&quot;R&quot;,&quot;schemas&quot;:[{&quot;id&quot;:2,&quot;title&quot;:&quot;S&quot;}]}}]" label="title" modelvalue="null" placeholder="t:All registers" inputlabel="t:Register" clearable="true"></x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
+        <x-ncselect id="schemaSelect" options="[]" modelvalue="null" placeholder="t:All schemas" inputlabel="t:Schema" disabled="true" clearable="true"></x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="actionSelect">t:Actions</label>
+        <x-ncselect id="actionSelect" modelvalue="[]" options="[{&quot;label&quot;:&quot;t:Create&quot;,&quot;value&quot;:&quot;create&quot;},{&quot;label&quot;:&quot;t:Read&quot;,&quot;value&quot;:&quot;read&quot;},{&quot;label&quot;:&quot;t:Update&quot;,&quot;value&quot;:&quot;update&quot;},{&quot;label&quot;:&quot;t:Delete&quot;,&quot;value&quot;:&quot;delete&quot;}]" placeholder="t:All actions" inputlabel="t:Actions" multiple="true" clearable="true">
+          <slot-option></slot-option>
+        </x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="userSelect">t:Users</label>
+        <x-ncselect id="userSelect" modelvalue="[]" options="[]" placeholder="t:All users" inputlabel="t:Users" multiple="true" clearable="true">
+          <slot-option></slot-option>
+        </x-ncselect>
+      </div>
+      <div class="filterGroup"><label>t:Date Range</label>
+        <x-ncdatetimepickernative modelvalue="null" label="t:From date" type="datetime-local"></x-ncdatetimepickernative>
+        <x-ncdatetimepickernative modelvalue="null" label="t:To date" type="datetime-local"></x-ncdatetimepickernative>
+      </div>
+      <div class="filterGroup"><label for="objectFilter">t:Object ID</label>
+        <x-nctextfield id="objectFilter" modelvalue="" label="t:Filter by object ID" placeholder="t:Enter object ID"></x-nctextfield>
+      </div>
+      <div class="filterGroup">
+        <x-nccheckboxradioswitch modelvalue="false">
+          <slot-default>t:Show only entries with changes</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+    </div>
+    <div class="actionGroup">
+      <x-ncbutton>
+        <slot-default> t:Clear filters</slot-default>
+        <slot-icon>
+          <x-filteroffoutline size="20"></x-filteroffoutline>
+        </slot-icon>
+      </x-ncbutton>
+    </div>
+    <x-ncnotecard type="info" class="filter-hint">
+      <slot-default>t:Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.</slot-default>
+    </x-ncnotecard>
+  </slot-default>
+  <slot-icon>
+    <x-filteroutline size="20"></x-filteroutline>
+  </slot-icon>
+</x-ncappsidebartab>"
+`;
+
 exports[`route sidebar auditTrail writes the query only when it differs, on its own path 1`] = `
 [
   [
@@ -288,6 +340,37 @@ exports[`route sidebar deleted renders the filters without and with a register 2
     <x-ncdatetimepickernative modelvalue="null" label="t:To date" type="date"></x-ncdatetimepickernative>
   </div>
 </div>"
+`;
+
+exports[`route sidebar deleted renders the whole filters tab: fields, clear button and hint 1`] = `
+"<x-ncappsidebartab id="filters-tab" name="t:Filters" order="1">
+  <slot-default>
+    <div class="filterSection">
+      <h3>t:Filter Deleted Items</h3>
+      <div class="filterGroup"><label for="registerSelect">t:Register</label>
+        <x-ncselect id="registerSelect" options="[{&quot;value&quot;:1,&quot;label&quot;:&quot;R&quot;,&quot;title&quot;:&quot;R&quot;,&quot;register&quot;:{&quot;id&quot;:1,&quot;title&quot;:&quot;R&quot;,&quot;schemas&quot;:[{&quot;id&quot;:2,&quot;title&quot;:&quot;S&quot;}]}}]" label="title" modelvalue="null" placeholder="t:All registers" inputlabel="t:Register" clearable="true"></x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
+        <x-ncselect id="schemaSelect" options="[]" modelvalue="null" placeholder="t:All schemas" inputlabel="t:Schema" disabled="true" clearable="true"></x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="deletedBySelect">t:Deleted By</label>
+        <x-ncselect id="deletedBySelect" modelvalue="null" options="[{&quot;label&quot;:&quot;t:Admin&quot;,&quot;value&quot;:&quot;admin&quot;}]" placeholder="t:Any user" inputlabel="t:Deleted By" clearable="true">
+          <slot-option></slot-option>
+        </x-ncselect>
+      </div>
+      <div class="filterGroup"><label>t:Deletion Date Range</label>
+        <x-ncdatetimepickernative modelvalue="null" label="t:From date" type="date"></x-ncdatetimepickernative>
+        <x-ncdatetimepickernative modelvalue="null" label="t:To date" type="date"></x-ncdatetimepickernative>
+      </div>
+    </div>
+    <x-ncnotecard type="info" class="filter-hint">
+      <slot-default>t:Use filters to narrow down deleted items by register, schema, deletion date, or user who deleted them.</slot-default>
+    </x-ncnotecard>
+  </slot-default>
+  <slot-icon>
+    <x-filteroutline size="20"></x-filteroutline>
+  </slot-icon>
+</x-ncappsidebartab>"
 `;
 
 exports[`route sidebar deleted writes the query only when it differs, on its own path 1`] = `
@@ -471,6 +554,67 @@ exports[`route sidebar searchTrail renders the filters without and with a regist
     </div>
   </div>
 </div>"
+`;
+
+exports[`route sidebar searchTrail renders the whole filters tab: fields, clear button and hint 1`] = `
+"<x-ncappsidebartab id="filters-tab" name="t:Filters" order="1">
+  <slot-default>
+    <div class="filterSection">
+      <h3>t:Filter Search Trails</h3>
+      <div class="filterGroup"><label for="registerSelect">t:Register</label>
+        <x-ncselect id="registerSelect" options="[{&quot;value&quot;:1,&quot;label&quot;:&quot;R&quot;,&quot;title&quot;:&quot;R&quot;,&quot;register&quot;:{&quot;id&quot;:1,&quot;title&quot;:&quot;R&quot;,&quot;schemas&quot;:[{&quot;id&quot;:2,&quot;title&quot;:&quot;S&quot;}]}}]" label="title" modelvalue="null" placeholder="t:All registers" inputlabel="t:Register" clearable="true"></x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
+        <x-ncselect id="schemaSelect" options="[]" modelvalue="null" placeholder="t:All schemas" inputlabel="t:Schema" disabled="true" clearable="true"></x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="successSelect">t:Success Status</label>
+        <x-ncselect id="successSelect" modelvalue="null" options="[{&quot;label&quot;:&quot;t:Successful&quot;,&quot;value&quot;:&quot;true&quot;},{&quot;label&quot;:&quot;t:Failed&quot;,&quot;value&quot;:&quot;false&quot;}]" placeholder="t:All searches" inputlabel="t:Success Status" clearable="true">
+          <slot-option>
+            <div class="statusOption"></div>
+          </slot-option>
+        </x-ncselect>
+      </div>
+      <div class="filterGroup"><label for="userSelect">t:Users</label>
+        <x-ncselect id="userSelect" modelvalue="[]" options="[]" placeholder="t:All users" inputlabel="t:Users" multiple="true" clearable="true">
+          <slot-option></slot-option>
+        </x-ncselect>
+      </div>
+      <div class="filterGroup"><label>t:Date Range</label>
+        <x-ncdatetimepickernative modelvalue="null" label="t:From date" type="datetime-local"></x-ncdatetimepickernative>
+        <x-ncdatetimepickernative modelvalue="null" label="t:To date" type="datetime-local"></x-ncdatetimepickernative>
+      </div>
+      <div class="filterGroup"><label for="searchTermFilter">t:Search Term</label>
+        <x-nctextfield id="searchTermFilter" modelvalue="" label="t:Filter by search term" placeholder="t:Enter search term"></x-nctextfield>
+      </div>
+      <div class="filterGroup"><label for="executionTimeFilter">t:Execution Time Range</label>
+        <div class="rangeFilter">
+          <x-nctextfield id="executionTimeFrom" modelvalue="" label="t:Min execution time (ms)" placeholder="t:Min ms" type="number"></x-nctextfield>
+          <x-nctextfield id="executionTimeTo" modelvalue="" label="t:Max execution time (ms)" placeholder="t:Max ms" type="number"></x-nctextfield>
+        </div>
+      </div>
+      <div class="filterGroup"><label for="resultCountFilter">t:Result Count Range</label>
+        <div class="rangeFilter">
+          <x-nctextfield id="resultCountFrom" modelvalue="" label="t:Min result count" placeholder="t:Min results" type="number"></x-nctextfield>
+          <x-nctextfield id="resultCountTo" modelvalue="" label="t:Max result count" placeholder="t:Max results" type="number"></x-nctextfield>
+        </div>
+      </div>
+    </div>
+    <div class="actionGroup">
+      <x-ncbutton>
+        <slot-default> t:Clear filters</slot-default>
+        <slot-icon>
+          <x-filteroffoutline size="20"></x-filteroffoutline>
+        </slot-icon>
+      </x-ncbutton>
+    </div>
+    <x-ncnotecard type="info" class="filter-hint">
+      <slot-default>t:Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.</slot-default>
+    </x-ncnotecard>
+  </slot-default>
+  <slot-icon>
+    <x-filteroutline size="20"></x-filteroutline>
+  </slot-icon>
+</x-ncappsidebartab>"
 `;
 
 exports[`route sidebar searchTrail writes the query only when it differs, on its own path 1`] = `

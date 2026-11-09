@@ -471,7 +471,7 @@ exports[`dialog clearCacheModal shows the busy state 1`] = `
 `;
 
 exports[`dialog clearTableDialog asks 1`] = `
-"<x-ncdialog open="true" name="N">
+"<x-ncdialog name="N" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ H</h3>
@@ -507,7 +507,7 @@ exports[`dialog clearTableDialog cancels 1`] = `
 `;
 
 exports[`dialog clearTableDialog confirms 1`] = `
-"<x-ncdialog open="true" name="N">
+"<x-ncdialog name="N" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ H</h3>
@@ -555,7 +555,7 @@ exports[`dialog clearTableDialog dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog clearTableDialog shows the busy state 1`] = `
-"<x-ncdialog open="true" name="N">
+"<x-ncdialog name="N" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ H</h3>
@@ -1588,12 +1588,12 @@ exports[`dialog schemaProperty shows the busy state 1`] = `
 `;
 
 exports[`dialog view asks 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
       <slot-icon>
-        <x-close size="20"></x-close>
+        <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="false" variant="error">
@@ -1630,12 +1630,12 @@ exports[`dialog view cancels 1`] = `
 `;
 
 exports[`dialog view confirms 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Close</slot-default>
       <slot-icon>
-        <x-close size="20"></x-close>
+        <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
   </slot-actions>
@@ -1674,12 +1674,12 @@ exports[`dialog view dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog view reports a refusal 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
       <slot-icon>
-        <x-close size="20"></x-close>
+        <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="false" variant="error">
@@ -1710,12 +1710,12 @@ exports[`dialog view reports a refusal 1`] = `
 `;
 
 exports[`dialog view shows the busy state 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
       <slot-icon>
-        <x-close size="20"></x-close>
+        <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="true" variant="error">
