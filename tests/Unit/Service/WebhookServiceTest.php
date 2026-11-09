@@ -2632,4 +2632,52 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod('blockedIpv6Reason', ['ip' => 'not-an-ip']);
 		$this->assertNull($result);
 	}//end testBlockedIpv6ReasonNullForInvalidInput()
+
+	/**
+	 * obj-f7: the connection is pinned to the addresses the SSRF guard checked.
+	 *
+	 * @return void
+	 */
+	public function testSendRequestPinsTheCheckedAddress(): void {
+		$guard = $this->createMock(\OCA\OpenRegister\Service\Security\OutboundAddressGuard::class);
+		$guard->method('addressesOf')->willReturn(['93.184.216.34']);
+		$guardProp = $this->reflection->getProperty('addressGuard');
+		$guardProp->setAccessible(true);
+		$guardProp->setValue($this->service, $guard);
+
+		$captured = null;
+		$mockClient = $this->createMock(GuzzleClient::class);
+		$mockClient->method('request')->willReturnCallback(
+			static function (string $method, string $uri, array $options) use (&$captured): GuzzleResponse {
+				$captured = $options;
+				return new GuzzleResponse(200, [], 'ok');
+			}
+		);
+		$this->injectMockClient($mockClient);
+
+		$webhook = $this->createTestWebhook(url: 'https://hooks.example.org/x');
+		$webhook->setMethod('POST');
+		$this->invokePrivateMethod('sendRequest', ['webhook' => $webhook, 'payload' => []]);
+
+		$this->assertSame(['hooks.example.org:443:93.184.216.34'], $captured['curl'][CURLOPT_RESOLVE] ?? null);
+	}//end testSendRequestPinsTheCheckedAddress()
+
+	/**
+	 * obj-f7: IPv6 addresses are bracketed, an explicit port is kept, an IP literal is not pinned.
+	 *
+	 * @return void
+	 */
+	public function testPinnedResolveEntries(): void {
+		$this->assertSame(
+			['hooks.example.org:8443:93.184.216.34,[2606:2800:220:1::1]'],
+			$this->invokePrivateMethod('pinnedResolve', [
+				'uri' => 'https://hooks.example.org:8443/x',
+				'addresses' => ['93.184.216.34', '2606:2800:220:1::1'],
+			])
+		);
+		$this->assertSame(
+			[],
+			$this->invokePrivateMethod('pinnedResolve', ['uri' => 'http://93.184.216.34/x', 'addresses' => ['93.184.216.34']])
+		);
+	}//end testPinnedResolveEntries()
 }//end class

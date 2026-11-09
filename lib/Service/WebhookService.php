@@ -289,7 +289,7 @@ class WebhookService {
 	 * @param string $uri Full request URI to validate.
 	 * @param boolean $allowPrivate When true, skip the private/loopback IP-range checks.
 	 *
-	 * @return void
+	 * @return list<string> The checked addresses the host resolved to; empty when $allowPrivate skipped the check.
 	 *
 	 * @throws \RuntimeException When the URI is blocked.
 	 *
@@ -299,7 +299,7 @@ class WebhookService {
 	 * allowPrivateTargets opt-in; a boolean toggle is the clearest API for a
 	 * binary "bypass the IP-range checks" decision threaded from the caller.
 	 */
-	private function assertSafeWebhookUri(string $uri, bool $allowPrivate = false): void {
+	private function assertSafeWebhookUri(string $uri, bool $allowPrivate = false): array {
 		$parsed = parse_url($uri);
 		if ($parsed === false) {
 			throw new RuntimeException('Webhook target URL is not parseable');
@@ -321,7 +321,7 @@ class WebhookService {
 		// targets for this webhook. Scheme + host/parse checks above stay
 		// enforced; only the IP-range checks below are bypassed.
 		if ($allowPrivate === true) {
-			return;
+			return [];
 		}
 
 		// Every A and AAAA record is checked, and a host that does not resolve is
@@ -339,7 +339,52 @@ class WebhookService {
 				);
 			}
 		}
+
+		return array_values($addresses);
 	}//end assertSafeWebhookUri()
+
+	/**
+	 * CURLOPT_RESOLVE entries that pin a URL's host to the addresses just checked.
+	 *
+	 * Guzzle resolves the host again when it connects, so a short-TTL name
+	 * could pass assertSafeWebhookUri() and then connect to an internal
+	 * address (DNS rebinding). Pinning makes curl use the checked addresses.
+	 * An IP-literal host needs no pin.
+	 *
+	 * @param string       $uri       The request URI.
+	 * @param list<string> $addresses The checked addresses.
+	 *
+	 * @return list<string> `host:port:addr[,addr]` entries, or none.
+	 */
+	private function pinnedResolve(string $uri, array $addresses): array {
+		$parsed = parse_url($uri);
+		$host = strtolower((string)($parsed['host'] ?? ''));
+		if ($host === '' || $addresses === []
+			|| filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) !== false
+		) {
+			return [];
+		}
+
+		$port = (int)($parsed['port'] ?? 0);
+		if ($port === 0) {
+			$port = 80;
+			if (strtolower((string)($parsed['scheme'] ?? '')) === 'https') {
+				$port = 443;
+			}
+		}
+
+		$pinned = [];
+		foreach ($addresses as $address) {
+			// An IPv6 address goes in brackets, as curl expects.
+			if (str_contains($address, ':') === true) {
+				$address = '[' . $address . ']';
+			}
+
+			$pinned[] = $address;
+		}
+
+		return [$host . ':' . $port . ':' . implode(',', $pinned)];
+	}//end pinnedResolve()
 
 	/**
 	 * Return the block-list reason for a given IPv6 address, or null if safe.
@@ -1195,7 +1240,7 @@ class WebhookService {
 		// SSRF guard: validate the webhook target before issuing the request.
 		// Redirects are re-validated by the per-request on_redirect callback set
 		// in $options below, which honours the same per-hook flag.
-		$this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
+		$checkedAddresses = $this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
 
 		$headers = array_merge(
 			[
@@ -1249,6 +1294,14 @@ class WebhookService {
 				$this->assertSafeWebhookUri(uri: (string)$uri, allowPrivate: $allowPrivate);
 			},
 		];
+
+		// Connect to the addresses the guard checked, not a second DNS answer.
+		// A redirect to another host is re-checked by on_redirect but resolved
+		// again by curl: the pin covers the first host only.
+		$resolve = $this->pinnedResolve(uri: $webhook->getUrl(), addresses: $checkedAddresses);
+		if ($resolve !== [] && defined('CURLOPT_RESOLVE') === true) {
+			$options['curl'] = [CURLOPT_RESOLVE => $resolve];
+		}
 
 		// For GET requests, use query parameters; for others, send JSON body.
 		$payloadKey = 'json';
