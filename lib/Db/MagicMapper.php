@@ -10148,13 +10148,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$searchTerm = $searchQuery['_search'] ?? null;
 		if ($unscoped === true && is_string($searchTerm) === true && trim($searchTerm) !== '') {
-			return $this->searchObjectsGloballyBySearch(
-				searchQuery: $searchQuery,
-				countQuery: $request['count'],
-				activeOrgUuid: $request['activeOrgUuid'],
-				_rbac: $request['rbac'],
-				_multitenancy: $request['multitenancy']
-			);
+			return $this->searchObjectsGloballyBySearch(request: $request);
 		}
 
 		$this->logger->warning(
@@ -10551,94 +10545,99 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Search for objects across ALL magic tables using a text search term.
 	 *
-	 * @param array $searchQuery The search query parameters (must contain _search).
-	 * @param array $countQuery The count query parameters.
-	 * @param string|null $activeOrgUuid The active organisation UUID for multitenancy.
-	 * @param bool $_rbac Whether to apply RBAC filtering.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
+	 * Reads the search query (with `_search`), the count query and the RBAC and
+	 * multitenancy flags from the search request; both queries carry the flags.
+	 *
+	 * @param array $request The search request: `search`, `count`, `rbac`, `multitenancy`.
 	 *
 	 * @return array Search results with pagination info.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
 	 */
-	private function searchObjectsGloballyBySearch(
-		array $searchQuery,
-		array $countQuery,
-		?string $activeOrgUuid = null,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-	): array {
-		$registersCache = [];
-		$schemasCache = [];
-		$registerSchemaPairs = [];
-
-		$idPairs = $this->getAllRegisterSchemaPairs();
-		$tables  = $this->purposeBoundTables();
-
-		foreach ($idPairs as $idPair) {
-			try {
-				$regId = $idPair['registerId'];
-				$schId = $idPair['schemaId'];
-
-				$register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find($schId, _multitenancy: false, _rbac: false);
-				if ($tables->readable(pairs: [['register' => $register, 'schema' => $schema]]) === []) {
-					continue;
-				}
-
-				if (isset($registersCache[$regId]) === false) {
-					$registersCache[$regId] = $register->jsonSerialize();
-				}
-
-				if (isset($schemasCache[$schId]) === false) {
-					$schemasCache[$schId] = $schema->jsonSerialize();
-				}
-
-				$registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];
-			} catch (\Exception $e) {
-				continue;
-			}
-		}//end foreach
-
-		if (empty($registerSchemaPairs) === true) {
+	private function searchObjectsGloballyBySearch(array $request): array {
+		$tables = $this->globallyReadableTables();
+		if (empty($tables['pairs']) === true) {
 			return [
 				'results' => [],
 				'total' => 0,
-				'registers' => $registersCache,
-				'schemas' => $schemasCache,
+				'registers' => $tables['registers'],
+				'schemas' => $tables['schemas'],
 				'@self' => ['source' => 'magic_mapper'],
 			];
 		}
 
-		$unionQuery = $searchQuery;
-		$unionQuery['_rbac'] = $_rbac;
-		$unionQuery['_multitenancy'] = $_multitenancy;
-
-		$results = $this->searchAcrossMultipleTables(
-			query: $unionQuery,
-			registerSchemaPairs: $registerSchemaPairs
-		);
-
-		$countQuery['_rbac'] = $_rbac;
-		$countQuery['_multitenancy'] = $_multitenancy;
-		$totalCount = 0;
-		foreach ($registerSchemaPairs as $pair) {
-			$totalCount += $this->countObjectsInRegisterSchemaTable(
-				query: $countQuery,
-				register: $pair['register'],
-				schema: $pair['schema']
-			);
-		}
-
+		$flags = ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']];
 		return [
-			'results' => $results,
-			'total' => $totalCount,
-			'registers' => $registersCache,
-			'schemas' => $schemasCache,
+			'results' => $this->searchAcrossMultipleTables(query: array_replace($request['search'], $flags), registerSchemaPairs: $tables['pairs']),
+			'total' => $this->countInTables(pairs: $tables['pairs'], countQuery: array_replace($request['count'], $flags)),
+			'registers' => $tables['registers'],
+			'schemas' => $tables['schemas'],
 			'ignoredFilters' => [],
 			'@self' => ['source' => 'magic_mapper'],
 		];
 	}//end searchObjectsGloballyBySearch()
+
+	/**
+	 * Every register+schema table the purpose gate lets this request read, with its serialised register and schema.
+	 *
+	 * A pair whose register or schema cannot be loaded is skipped.
+	 *
+	 * @return array{pairs: list<array{register: Register, schema: Schema}>, registers: array, schemas: array}
+	 */
+	private function globallyReadableTables(): array {
+		$idPairs = $this->getAllRegisterSchemaPairs();
+		$gate    = $this->purposeBoundTables();
+		$found   = ['pairs' => [], 'registers' => [], 'schemas' => []];
+		foreach ($idPairs as $idPair) {
+			$table = $this->readableTableOf(idPair: $idPair, gate: $gate);
+			if ($table === null) {
+				continue;
+			}
+
+			$found['registers'][$idPair['registerId']] ??= $table['registerJson'];
+			$found['schemas'][$idPair['schemaId']]     ??= $table['schemaJson'];
+			$found['pairs'][] = ['register' => $table['register'], 'schema' => $table['schema']];
+		}
+
+		return $found;
+	}//end globallyReadableTables()
+
+	/**
+	 * Load one register+schema pair, or null when it cannot be loaded or the purpose gate refuses it.
+	 *
+	 * @param array{registerId: int, schemaId: int} $idPair The register and schema ids
+	 * @param PurposeBoundTables                    $gate   The purpose gate of this request
+	 *
+	 * @return array{register: Register, schema: Schema, registerJson: array, schemaJson: array}|null
+	 */
+	private function readableTableOf(array $idPair, PurposeBoundTables $gate): ?array {
+		try {
+			$register = $this->registerMapper->find($idPair['registerId'], _multitenancy: false, _rbac: false);
+			$schema   = $this->schemaMapper->find($idPair['schemaId'], _multitenancy: false, _rbac: false);
+			if ($gate->readable(pairs: [['register' => $register, 'schema' => $schema]]) === []) {
+				return null;
+			}
+
+			return ['register' => $register, 'schema' => $schema, 'registerJson' => $register->jsonSerialize(), 'schemaJson' => $schema->jsonSerialize()];
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end readableTableOf()
+
+	/**
+	 * Sum the count query over the given register+schema tables.
+	 *
+	 * @param list<array{register: Register, schema: Schema}> $pairs      The tables
+	 * @param array                                           $countQuery The count query, flags included
+	 *
+	 * @return int
+	 */
+	private function countInTables(array $pairs, array $countQuery): int {
+		$total = 0;
+		foreach ($pairs as $pair) {
+			$total += $this->countObjectsInRegisterSchemaTable(query: $countQuery, register: $pair['register'], schema: $pair['schema']);
+		}
+
+		return $total;
+	}//end countInTables()
 
 	/**
 	 * Get size distribution chart data for objects.

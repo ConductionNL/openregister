@@ -331,8 +331,8 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$object = $this->recordUnderNomination();
 		$this->recordWrites();
 
-		$this->nominations->expects($this->once())->method('nominate')
-			->with($object, $this->anything(), 'recompute', 'archivaris', 'New selectielijst')
+		$this->nominations->expects($this->once())->method('recompute')
+			->with($object, $this->anything(), 'archivaris', 'New selectielijst')
 			->willReturn(['status' => ArchivalNominationService::STATUS_NOMINATED, 'rule' => 'r-1']);
 		$this->objectMapper->expects($this->once())->method('update')
 			->willReturnCallback(
@@ -363,7 +363,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->withParams(['reason' => 'Trying']);
 		$this->recordUnderNomination();
 		$this->audit->expects($this->never())->method('createAuditTrailEntry');
-		$this->nominations->method('nominate')->willReturn(
+		$this->nominations->method('recompute')->willReturn(
 			['status' => ArchivalNominationService::STATUS_NOT_APPLICABLE, 'unnominatableReason' => 'no archive block']
 		);
 

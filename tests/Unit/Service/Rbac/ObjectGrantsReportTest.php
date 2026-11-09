@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Rbac\GrantRuleFit;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantsReport;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -127,9 +128,7 @@ class ObjectGrantsReportTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($denyMode);
 
 		$accessReport = new ObjectAccessReport(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+			sources: new ObjectAccessReportSources(registerMapper: $registerMapper, schemaMapper: $schemaMapper, auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
