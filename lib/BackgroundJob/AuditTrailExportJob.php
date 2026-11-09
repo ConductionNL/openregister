@@ -26,8 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\Folder;
 use RuntimeException;
 
@@ -70,18 +68,16 @@ class AuditTrailExportJob extends RecordedQueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory         $time          The clock.
-	 * @param JobRunRecorderInterface $recorder   Records the run.
+	 * @param RecordedJobRuntime $runtime The scheduler clock and the recorder that writes the run row.
 	 * @param AuditExportSource    $source        Selects the rows and renders them.
 	 * @param AuditExportDelivery  $delivery      The requester's Files, and who tells the requester.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		JobRunRecorderInterface $recorder,
+		RecordedJobRuntime $runtime,
 		private readonly AuditExportSource $source,
 		private readonly AuditExportDelivery $delivery,
 	) {
-		parent::__construct(time: $time, recorder: $recorder);
+		parent::__construct(time: $runtime->time, recorder: $runtime->recorder);
 	}//end __construct()
 
 	/**
