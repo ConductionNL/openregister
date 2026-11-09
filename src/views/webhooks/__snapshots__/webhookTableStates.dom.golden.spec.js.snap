@@ -1,0 +1,39 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`webhook table states webhook logs: loading, empty and table 1`] = `
+"<div class="tableContainer is-loading">
+  <div class="loadingWrapper">
+    <div data-stub="NcLoadingIcon" size="64"></div>
+  </div><!-- Pagination -->
+  <!---->
+</div>
+----
+<div class="tableContainer">
+  <div data-stub="empty">t:No log entries found | t:There are no webhook log entries matching your filters.</div><!-- Pagination -->
+  <!---->
+</div>
+----
+<div class="tableContainer">
+  <table class="cn-data-table" data-rows="1"></table><!-- Pagination -->
+  <!---->
+</div>"
+`;
+
+exports[`webhook table states webhooks: loading, empty and table 1`] = `
+"<div class="tableContainer is-loading">
+  <div class="loadingWrapper">
+    <div data-stub="NcLoadingIcon" size="64"></div>
+  </div><!-- Pagination -->
+  <!---->
+</div>
+----
+<div class="tableContainer">
+  <div data-stub="empty">t:No webhooks found | t:No webhooks have been configured yet</div><!-- Pagination -->
+  <!---->
+</div>
+----
+<div class="tableContainer">
+  <table class="cn-data-table" data-rows="1"></table><!-- Pagination -->
+  <!---->
+</div>"
+`;
