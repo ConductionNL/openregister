@@ -20,6 +20,7 @@ use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Form\FormDependentsSignals;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
+use OCA\OpenRegister\Service\Form\PublishedForm;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -81,9 +82,7 @@ class FormDependentsCheckTest extends TestCase {
 				$this->assertSame('ticket', $event->getSchema()->getSlug());
 				$event->addForm(
 					new FormDependent(
-						id: 'form-a',
-						app: 'pipelinq',
-						title: 'Contact opnemen',
+						form: new PublishedForm(id: 'form-a', app: 'pipelinq', title: 'Contact opnemen'),
 						author: 'alice',
 						mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]],
 						unpublish: function (): void {
@@ -93,9 +92,7 @@ class FormDependentsCheckTest extends TestCase {
 				);
 				$event->addForm(
 					new FormDependent(
-						id: 'form-b',
-						app: 'portaliq',
-						title: 'Melding',
+						form: new PublishedForm(id: 'form-b', app: 'portaliq', title: 'Melding'),
 						author: null,
 						mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title'], ['field' => 'prio', 'property' => 'priority', 'type' => 'choice', 'options' => ['low', 'high']]]],
 						unpublish: function (): void {
@@ -106,9 +103,7 @@ class FormDependentsCheckTest extends TestCase {
 				if ($this->withClosureless === true) {
 					$event->addForm(
 						new FormDependent(
-							id: 'form-c',
-							app: 'pipelinq',
-							title: 'Zonder sluiter',
+							form: new PublishedForm(id: 'form-c', app: 'pipelinq', title: 'Zonder sluiter'),
 							author: 'carol',
 							mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]]
 						)
