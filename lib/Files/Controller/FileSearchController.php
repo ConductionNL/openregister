@@ -78,19 +78,17 @@ class FileSearchController extends Controller {
 	 * Constructor
 	 *
 	 * @param IRequest                     $request  Request object
-	 * @param FileSearchControllerServices $services Vectorization service, chunk mapper and the read scope
-	 * @param LoggerInterface              $logger   Logger
+	 * @param FileSearchControllerServices $services Vectorization service, chunk mapper, the read scope and the logger
 	 */
 	public function __construct(
 		IRequest $request,
 		FileSearchControllerServices $services,
-		LoggerInterface $logger,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->vectorService = $services->vectorService;
 		$this->chunkMapper = $services->chunkMapper;
 		$this->readScope = $services->readScope;
-		$this->logger = $logger;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
