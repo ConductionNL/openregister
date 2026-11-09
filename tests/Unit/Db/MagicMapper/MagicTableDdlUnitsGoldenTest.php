@@ -65,18 +65,18 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 
 	public function testNumberColumnRefusalEdges(): void {
 		$column = new MagicNumberColumn();
-		$this->assertSame('has more than 2 decimals', $column->refusal('12.345', 16, 2));
-		$this->assertNull($column->refusal('12.340', 16, 2));
-		$this->assertSame('has more than 14 digits before the point', $column->refusal(10 ** 15, 20, 6));
-		$this->assertSame('has more than 14 digits before the point', $column->refusal('1e14', 20, 6));
-		$this->assertNull($column->refusal('1e13', 20, 6));
-		$this->assertNull($column->refusal('abc', 20, 6));
-		$this->assertNull($column->refusal(true, 20, 6));
-		$this->assertNull($column->refusal([1], 20, 6));
-		$this->assertSame('is not a finite number', $column->refusal(INF, 20, 6));
-		$this->assertSame('has more than 2 decimals', $column->refusal(1.005, 16, 2));
-		$this->assertSame('has more than 14 digits before the point', $column->refusal(1.0e15, 16, 2));
-		$this->assertNull($column->refusal(0.1 + 0.2, 16, 2));
+		$this->assertSame('has more than 2 decimals', $column->refusal('12.345', ['precision' => 16, 'scale' => 2]));
+		$this->assertNull($column->refusal('12.340', ['precision' => 16, 'scale' => 2]));
+		$this->assertSame('has more than 14 digits before the point', $column->refusal(10 ** 15, ['precision' => 20, 'scale' => 6]));
+		$this->assertSame('has more than 14 digits before the point', $column->refusal('1e14', ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal('1e13', ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal('abc', ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal(true, ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal([1], ['precision' => 20, 'scale' => 6]));
+		$this->assertSame('is not a finite number', $column->refusal(INF, ['precision' => 20, 'scale' => 6]));
+		$this->assertSame('has more than 2 decimals', $column->refusal(1.005, ['precision' => 16, 'scale' => 2]));
+		$this->assertSame('has more than 14 digits before the point', $column->refusal(1.0e15, ['precision' => 16, 'scale' => 2]));
+		$this->assertNull($column->refusal(0.1 + 0.2, ['precision' => 16, 'scale' => 2]));
 	}//end testNumberColumnRefusalEdges()
 
 	public function testNumberColumnWideningEdges(): void {
