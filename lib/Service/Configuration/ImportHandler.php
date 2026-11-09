@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -321,6 +322,16 @@ class ImportHandler {
 	 * @var FlowVersionService|null
 	 */
 	private ?FlowVersionService $flowVersionService = null;
+
+	/**
+	 * Runs each imported trigger node's own config check and the delegation
+	 * check on `runAs`, as the authoring API does on save. Null refuses every
+	 * imported flow: writing one without this check would let a bundle
+	 * schedule runs as any user.
+	 *
+	 * @var FlowTriggerValidator|null
+	 */
+	private ?FlowTriggerValidator $flowTriggerValidator = null;
 
 	/**
 	 * The shipped version of each seed object, built on first use from the app config.
@@ -605,6 +616,22 @@ class ImportHandler {
 	public function setFlowVersionService(?FlowVersionService $flowVersionService): void {
 		$this->flowVersionService = $flowVersionService;
 	}//end setFlowVersionService()
+
+	/**
+	 * Inject the validator that checks imported trigger nodes and their delegation.
+	 *
+	 * Optional to wire, but not to have: when null, `components.flows` entries
+	 * are refused and counted in `skipped['flows']`.
+	 *
+	 * @param FlowTriggerValidator|null $flowTriggerValidator The trigger validator.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function setFlowTriggerValidator(?FlowTriggerValidator $flowTriggerValidator): void {
+		$this->flowTriggerValidator = $flowTriggerValidator;
+	}//end setFlowTriggerValidator()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -1349,6 +1376,10 @@ class ImportHandler {
 	 *
 	 * @return Flow|null The imported flow entity, or null if skipped.
 	 *
+	 * @throws Exception When the uuid belongs to a flow of another organisation, a trigger
+	 *                   node or its delegation is refused, a new flow would have no owner
+	 *                   or no organisation, or a draft cannot be opened on a published flow.
+	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override the unchanged-graph skip
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -1373,11 +1404,35 @@ class ImportHandler {
 		}
 
 		$existingFlow = $this->findFlowByUuid(uuid: $uuid);
+
+		// FlowMapper::findByUuid() is deliberately NOT organisation-scoped; its
+		// callers scope with belongsTo(). A uuid that already belongs to another
+		// organisation is refused rather than overwritten, and rather than given
+		// a fresh uuid (that would break re-import idempotency). The caller's
+		// loop counts the refusal in `skipped['flows']`.
+		if ($existingFlow !== null
+			&& $existingFlow->belongsTo($configuration?->getOrganisation()) === false
+		) {
+			throw new Exception(
+				'Flow "' . $uuid . '" exists in another organisation than this configuration; not overwritten'
+			);
+		}
+
 		if ($existingFlow !== null
 			&& $force === false
 			&& $this->flowGraphUnchanged(existing: $existingFlow, data: $data) === true
 		) {
 			return $existingFlow;
+		}
+
+		// Validated before anything is written, so a refused flow leaves no draft behind.
+		if (array_key_exists('nodes', $data) === true) {
+			$data['nodes'] = $this->validatedImportNodes(
+				uuid: $uuid,
+				nodes: (array)($data['nodes'] ?? []),
+				existingFlow: $existingFlow,
+				configuration: $configuration
+			);
 		}
 
 		$flow = $this->flowToMutate(existingFlow: $existingFlow, uuid: $uuid, owner: $owner, configuration: $configuration);
@@ -1388,11 +1443,144 @@ class ImportHandler {
 	}//end importFlow()
 
 	/**
+	 * The imported node list, checked the way FlowService::save() checks it.
+	 *
+	 * Any incoming `runAsDeclaredBy` is stripped first: it names a uid on the
+	 * source instance, or is forged, and the fire-time delegation re-check
+	 * trusts it. {@see FlowTriggerValidator::validate()} then lets each
+	 * trigger node reject its config and stamps the delegation against the
+	 * importing session, or refuses a `runAs` that session holds no grant for.
+	 *
+	 * Without a session (a cron sync or auto-update) the validator checks no
+	 * grant at all, so {@see self::sessionlessDelegation()} decides instead.
+	 *
+	 * @param string             $uuid          The flow uuid, for the probe entity and messages.
+	 * @param array              $nodes         The imported nodes.
+	 * @param Flow|null          $existingFlow  The flow already stored under this uuid, or null.
+	 * @param Configuration|null $configuration The configuration being imported into.
+	 *
+	 * @return array The nodes, with the delegation stamp the validator wrote.
+	 *
+	 * @throws Exception When no validator is wired, or a sessionless import names a new `runAs`.
+	 * @throws \InvalidArgumentException When a trigger node or its delegation is refused.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function validatedImportNodes(
+		string $uuid,
+		array $nodes,
+		?Flow $existingFlow,
+		?Configuration $configuration
+	): array {
+		if ($this->flowTriggerValidator === null) {
+			throw new Exception('Flow "' . $uuid . '" not imported: no trigger validator is available to check it');
+		}
+
+		foreach ($nodes as $index => $node) {
+			if (is_array($node) === true && is_array($node['config'] ?? null) === true) {
+				unset($nodes[$index]['config'][FlowTriggerValidator::CONFIG_DECLARED_BY]);
+			}
+		}
+
+		$probe = new Flow();
+		$probe->setUuid($uuid);
+		$probe->setNodes($nodes);
+		$this->flowTriggerValidator->validate(flow: $probe);
+
+		if ($this->userSession?->getUser() !== null) {
+			return ($probe->getNodes() ?? []);
+		}
+
+		return $this->sessionlessDelegation(
+			uuid: $uuid,
+			nodes: ($probe->getNodes() ?? []),
+			stored: ($existingFlow?->getNodes() ?? []),
+			configuration: $configuration
+		);
+	}//end validatedImportNodes()
+
+	/**
+	 * Decide the delegation of imported nodes when no user is present to check a grant against.
+	 *
+	 * A cron sync (SyncConfigurationsJob) or auto-update (ConfigurationCheckJob)
+	 * has no session, so the validator accepted every `runAs` and removed every
+	 * stamp. Left at that, a remote bundle could schedule unattended runs as
+	 * anyone, and a forced re-sync would strip the stamp a user's save wrote,
+	 * switching off the fire-time revocation check for that flow. So, per node
+	 * with a non-empty `runAs`:
+	 * - the stored node (matched by node `id`, else by position) names the same
+	 *   `runAs`: its stored `runAsDeclaredBy` is kept as it was;
+	 * - otherwise the flow is refused, unless the configuration is a trusted
+	 *   local bundle (not a github/gitlab/url source, and local), which keeps
+	 *   the code-initiated behaviour: no stamp, accepted.
+	 *
+	 * @param string             $uuid          The flow uuid, for messages.
+	 * @param array              $nodes         The validated imported nodes.
+	 * @param array              $stored        The nodes of the stored flow, or [] for a new flow.
+	 * @param Configuration|null $configuration The configuration being imported into.
+	 *
+	 * @return array The nodes, with stored stamps restored.
+	 *
+	 * @throws Exception When a node names a new `runAs` and the source is not trusted.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function sessionlessDelegation(string $uuid, array $nodes, array $stored, ?Configuration $configuration): array {
+		$trusted = ($configuration !== null
+			&& $configuration->isRemoteSource() === false
+			&& $configuration->getIsLocal() === true);
+
+		$storedById = [];
+		foreach ($stored as $index => $storedNode) {
+			if (is_array($storedNode) === true) {
+				$storedById[(string)($storedNode['id'] ?? '#' . $index)] = $storedNode;
+			}
+		}
+
+		foreach ($nodes as $index => $node) {
+			if (is_array($node) === false) {
+				continue;
+			}
+
+			$runAs = trim((string)($node['config']['runAs'] ?? ''));
+			if ($runAs === '') {
+				continue;
+			}
+
+			$storedNode   = ($storedById[(string)($node['id'] ?? '#' . $index)] ?? null);
+			$storedConfig = (array)($storedNode['config'] ?? []);
+			if ($storedNode !== null && trim((string)($storedConfig['runAs'] ?? '')) === $runAs) {
+				if (array_key_exists(FlowTriggerValidator::CONFIG_DECLARED_BY, $storedConfig) === true) {
+					$nodes[$index]['config'][FlowTriggerValidator::CONFIG_DECLARED_BY] = $storedConfig[FlowTriggerValidator::CONFIG_DECLARED_BY];
+				}
+
+				continue;
+			}
+
+			if ($trusted === false) {
+				throw new Exception(
+					'Flow "' . $uuid . '" not imported: it schedules runs as "' . $runAs . '" and no signed-in user '
+					. 'is present to hold that delegation; import it while signed in'
+				);
+			}
+		}//end foreach
+
+		return $nodes;
+	}//end sessionlessDelegation()
+
+	/**
 	 * The flow an import writes fields onto: a fresh one, or the caller's existing one opened for editing.
 	 *
 	 * Extracted so the create/update branch is two returns rather than an
 	 * if/else, the same shape {@see \OCA\OpenRegister\Service\Flow\FlowService::persistFlow()}
 	 * uses and for the same reason: the `ElseExpression` rule is on in phpmd.xml.
+	 *
+	 * A new flow takes the caller's owner, falling back to the signed-in user
+	 * (the same fallback the configuration created alongside it gets). It is
+	 * REFUSED, not stamped with nulls, when either owner or organisation is
+	 * still missing, as {@see \OCA\OpenRegister\Service\Flow\FlowService}
+	 * `flowToSave()` does: `Flow::belongsTo()` is fail-closed, so such a flow
+	 * could never be listed, edited or run again.
 	 *
 	 * @param Flow|null $existingFlow The flow already stored under this uuid, or null to create.
 	 * @param string $uuid The uuid a new flow is stamped with; ignored for an existing flow.
@@ -1401,14 +1589,24 @@ class ImportHandler {
 	 *
 	 * @return Flow The flow to apply imported fields to.
 	 *
+	 * @throws Exception When a new flow would have no owner or no organisation.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function flowToMutate(?Flow $existingFlow, string $uuid, ?string $owner, ?Configuration $configuration): Flow {
 		if ($existingFlow === null) {
+			$owner        = ($owner ?? $this->userSession?->getUser()?->getUID());
+			$organisation = $configuration?->getOrganisation();
+			if ($owner === null || $owner === '' || $organisation === null || $organisation === '') {
+				throw new Exception(
+					'Flow "' . $uuid . '" needs an owner and an organisation; refusing to create one that belongs to nobody'
+				);
+			}
+
 			$flow = new Flow();
 			$flow->setUuid($uuid);
 			$flow->setOwner($owner);
-			$flow->setOrganisation($configuration?->getOrganisation());
+			$flow->setOrganisation($organisation);
 			$flow->setCreated(new DateTime());
 			return $flow;
 		}
@@ -1509,6 +1707,8 @@ class ImportHandler {
 	 *
 	 * @return Flow The flow, with a draft head.
 	 *
+	 * @throws Exception When a draft cannot be opened on a published head.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function ensureFlowIsDraft(Flow $flow): Flow {
@@ -1521,13 +1721,19 @@ class ImportHandler {
 			return $flow;
 		}
 
+		// A failure here must stop the import of this flow: carrying on would
+		// write the imported graph onto the still-published head in place,
+		// which FlowService::save() refuses (refuseEditUnlessDraft). Rethrown
+		// as an Exception so the components.flows loop counts it as skipped.
 		try {
 			$this->flowVersionService->createDraft(flow: $flow);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				message: '[ImportHandler] Could not open a draft for flow "' . $flow->getUuid() . '": ' . $e->getMessage(),
+				message: '[ImportHandler] Could not open a draft for flow "' . $flow->getUuid() . '": ' . $e->getMessage()
+					. '; the flow is skipped',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
+			throw new Exception('Could not open a draft for flow "' . $flow->getUuid() . '": ' . $e->getMessage(), 0, $e);
 		}
 
 		return $flow;
@@ -1667,6 +1873,43 @@ class ImportHandler {
 
 		return $flow;
 	}//end publishImportedFlow()
+
+	/**
+	 * Record the imported flows' uuids on the configuration that manages them.
+	 *
+	 * `Configuration.flows` is the list {@see ExportHandler::exportFlows()}
+	 * exports, so without this an import followed by an export of the same
+	 * configuration loses every flow. Merged with the uuids already tracked,
+	 * the way registers and schemas are merged in updateAppConfiguration().
+	 * Written here, not by each caller, because callers persist only the
+	 * registers/schemas/objects they know about (and app imports only when
+	 * one of those is non-empty).
+	 *
+	 * @param Configuration     $configuration The configuration being imported into.
+	 * @param array<int, mixed> $flows         The imported flows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function recordImportedFlows(Configuration $configuration, array $flows): void {
+		$tracked = ($configuration->getFlows() ?? []);
+		$uuids   = $tracked;
+		foreach ($flows as $flow) {
+			if ($flow instanceof Flow && $flow->getUuid() !== null && in_array($flow->getUuid(), $uuids, true) === false) {
+				$uuids[] = $flow->getUuid();
+			}
+		}
+
+		if ($uuids === $tracked) {
+			return;
+		}
+
+		$configuration->setFlows($uuids);
+		if ($configuration->getId() !== null) {
+			$this->configurationMapper->update($configuration);
+		}
+	}//end recordImportedFlows()
 
 	/**
 	 * Handle duplicate register error during import.
@@ -4013,6 +4256,8 @@ class ImportHandler {
 				message: '[ImportHandler] Flow import completed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'importedCount' => count($result['flows'])]
 			);
+
+			$this->recordImportedFlows(configuration: $configuration, flows: $result['flows']);
 		}//end if
 
 		// Create or update configuration entity to track imported data.

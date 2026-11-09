@@ -330,10 +330,12 @@ class ExportHandlerTest extends TestCase {
 		$config->setVersion('1.0.0');
 		$config->setRegisters([]);
 		$config->setFlows(['flow-uuid-1']);
+		$config->setOrganisation('org-1');
 
 		$flow = new \OCA\OpenRegister\Db\Flow();
 		$flow->setUuid('flow-uuid-1');
 		$flow->setName('My Flow');
+		$flow->setNodes([['id' => 'n1', 'type' => 'trigger.manual']]);
 		$flow->setOwner('alice');
 		$flow->setOrganisation('org-1');
 
@@ -348,9 +350,37 @@ class ExportHandlerTest extends TestCase {
 		// The one deliberate divergence from exportMappings(): uuid is KEPT,
 		// because a flow has no slug to match on at import time.
 		$this->assertSame('flow-uuid-1', $exported['uuid']);
+		// The definition itself survives the export, not just the key.
+		$this->assertSame('My Flow', $exported['name']);
+		$this->assertSame([['id' => 'n1', 'type' => 'trigger.manual']], $exported['nodes']);
+		// `id` in Flow::jsonSerialize() is a copy of the uuid, not a database id;
+		// it is stripped all the same.
 		$this->assertArrayNotHasKey('id', $exported);
 		$this->assertArrayNotHasKey('owner', $exported);
 		$this->assertArrayNotHasKey('organisation', $exported);
+	}
+
+	#[Test]
+	public function testExportConfigLeavesOutAFlowOfAnotherOrganisation(): void {
+		$config = new Configuration();
+		$config->setTitle('Config');
+		$config->setDescription('Desc');
+		$config->setVersion('1.0.0');
+		$config->setRegisters([]);
+		$config->setFlows(['flow-uuid-1']);
+		$config->setOrganisation('org-B');
+
+		$flow = new \OCA\OpenRegister\Db\Flow();
+		$flow->setUuid('flow-uuid-1');
+		$flow->setName('Not yours');
+		$flow->setOrganisation('org-A');
+
+		$this->flowMapper->method('findByUuid')->with('flow-uuid-1')->willReturn($flow);
+		$this->logger->expects($this->once())->method('warning');
+
+		$result = $this->handler->exportConfig($config);
+
+		$this->assertEmpty($result['components']['flows']);
 	}
 
 	#[Test]
