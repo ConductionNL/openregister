@@ -20,7 +20,7 @@
  * @link https://www.OpenRegister.nl
  */
 
-namespace OCA\OpenRegister\Search\Service\Vectorization\Strategies;
+namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 
 /**
  * VectorizationStrategyInterface
