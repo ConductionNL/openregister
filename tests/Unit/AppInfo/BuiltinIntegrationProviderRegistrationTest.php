@@ -193,8 +193,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		],
 		'OCA\OpenRegister\Service\ActivityFilterService' => [
 			'OCP\IDBConnection',
-			'OCP\App\IAppManager',
-			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Service\LinkServiceRuntime',
 		],
 		'OCA\OpenRegister\Service\FlowLinkService' => [
 			'OCA\OpenRegister\Db\FlowLinkMapperInterface',

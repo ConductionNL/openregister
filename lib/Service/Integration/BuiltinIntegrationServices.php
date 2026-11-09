@@ -264,9 +264,8 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-activity/spec.md
 		\OCA\OpenRegister\Service\ActivityFilterService::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'db'      => \OCP\IDBConnection::class,
+			'runtime' => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\FlowLinkService::class => [
