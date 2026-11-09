@@ -110,3 +110,4 @@
 2026-11-09T12:43:43Z integrator-20261109T122825-5a44491a RED tree 90faeb7970 prs 50 front=red: Tests: 52004, Assertions: 169543, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: FAIL src/components/shared/refreshButton.spec.js;FAIL src/modals/settings/EditWorkingCalendarModal.dom.golden.spec.js;FAIL src/views/migrationPack/migrationPackTables.dom.golden.spec.js
 2026-11-09T13:15:43Z precheck-20261109T131415-e6514cf8 CONFLICT-DEV #7701 aadd9d43
 2026-11-09T13:17:24Z precheck-20261109T131547-9bb87028 CONFLICT-DEV #7721 06e07913
+2026-11-09T13:23:19Z integrator-20261109T130654-5892e14f RED tree 7dd3d861a1 prs 10 front=red: Tests: 51967, Assertions: 169441, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: FAIL src/views/migrationPack/migrationPackTables.dom.golden.spec.js
