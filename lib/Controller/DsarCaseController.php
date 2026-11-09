@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
+use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -317,9 +318,7 @@ class DsarCaseController extends Controller {
 		try {
 			$result = $this->redactionService->applyRedaction(
 				caseUuid: $id,
-				field: $field,
-				after: $after,
-				ground: $ground
+				redaction: new FieldRedaction(field: $field, after: $after, ground: $ground)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(
