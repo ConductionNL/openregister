@@ -162,8 +162,9 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 				$entity = new ObjectEntity();
 				$entity->setName('N');
 				$entity->setSlug('s-1');
-				$object = ['title' => 't'];
-				$self   = $this->call($h, 'applyHydratedMetadata', [['id' => 'i', 'name' => 'old'], &$object, $entity]);
+				$object = ['title' => 't', '@self' => ['id' => 'i', 'name' => 'old']];
+				$self   = $this->call($h, 'applyHydratedMetadata', [&$object, $entity]);
+				unset($object['@self']);
 				return ['self' => $self, 'object' => $object];
 			},
 			'decision tables off'      => fn (SaveObjects $h) => $this->refuseDecisionTables($h, null),
