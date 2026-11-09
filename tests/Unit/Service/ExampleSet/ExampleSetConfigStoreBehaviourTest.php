@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue;
 use OCP\IAppConfig;
@@ -65,41 +66,41 @@ class ExampleSetConfigStoreBehaviourTest extends TestCase {
 		$this->appConfig->method('getValueString')->with('alpha', 'theme', '')->willReturn('dark');
 		$this->appConfig->expects($this->never())->method('getValueInt');
 
-		$this->assertSame('dark', $this->store()->read(new ExampleSetConfigValue('alpha', 'theme')));
+		$this->assertSame('dark', $this->store()->read(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'theme'))));
 	}
 
 	public function testReadsAnExistingIntAsText(): void {
 		$this->appConfig->method('hasKey')->willReturn(true);
 		$this->appConfig->method('getValueInt')->with('alpha', 'max')->willReturn(42);
 
-		$this->assertSame('42', $this->store()->read(new ExampleSetConfigValue('alpha', 'max', '', 'int')));
+		$this->assertSame('42', $this->store()->read(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'max'), '', 'int')));
 	}
 
 	public function testAnAbsentIntReadsAsEmptyNotZero(): void {
 		$this->appConfig->method('hasKey')->willReturn(false);
 		$this->appConfig->expects($this->never())->method('getValueInt');
 
-		$this->assertSame('', $this->store()->read(new ExampleSetConfigValue('alpha', 'max', '', 'int')));
+		$this->assertSame('', $this->store()->read(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'max'), '', 'int')));
 	}
 
 	public function testAFailedReadIsEmpty(): void {
 		$this->appConfig->method('getValueString')->willThrowException(new \RuntimeException('type conflict'));
 
-		$this->assertSame('', $this->store()->read(new ExampleSetConfigValue('alpha', 'theme')));
+		$this->assertSame('', $this->store()->read(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'theme'))));
 	}
 
 	public function testWritesAnIntAsAnInt(): void {
 		$this->appConfig->expects($this->once())->method('setValueInt')->with('alpha', 'max', 7);
 		$this->appConfig->expects($this->never())->method('setValueString');
 
-		$this->store()->write(new ExampleSetConfigValue('alpha', 'max', '7', 'int'));
+		$this->store()->write(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'max'), '7', 'int'));
 	}
 
 	public function testWritesAStringAsAString(): void {
 		$this->appConfig->expects($this->once())->method('setValueString')->with('alpha', 'theme', 'dark');
 		$this->appConfig->expects($this->never())->method('setValueInt');
 
-		$this->store()->write(new ExampleSetConfigValue('alpha', 'theme', 'dark'));
+		$this->store()->write(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'theme'), 'dark'));
 	}
 
 	public function testTryWriteReportsSuccessAndFailure(): void {
@@ -113,7 +114,7 @@ class ExampleSetConfigStoreBehaviourTest extends TestCase {
 			}
 		);
 
-		$this->assertTrue($this->store()->tryWrite(new ExampleSetConfigValue('alpha', 'theme', 'dark')));
-		$this->assertFalse($this->store()->tryWrite(new ExampleSetConfigValue('alpha', 'locked', 'x')));
+		$this->assertTrue($this->store()->tryWrite(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'theme'), 'dark')));
+		$this->assertFalse($this->store()->tryWrite(new ExampleSetConfigValue(new ExampleSetConfigKey('alpha', 'locked'), 'x')));
 	}
 }//end class
