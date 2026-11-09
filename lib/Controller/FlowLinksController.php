@@ -86,24 +86,7 @@ class FlowLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->flowLinkService->isFlowAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
-		}
-
-		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$results = $this->flowLinkService->getLinkedOperations($object->getUuid());
-
-				return new JSONResponse(
-					[
-						'results' => $results,
-						'total' => count($results),
-						'isAdmin' => $this->flowLinkService->isCurrentUserAdmin(),
-					]
-				);
-			}
-		);
+		return $this->linkedOperations(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -123,28 +106,7 @@ class FlowLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->flowLinkService->isFlowAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$operationId = (int)$this->request->getParam('operationId', 0);
-				if ($operationId === 0) {
-					return new JSONResponse(['error' => 'operationId is required'], 400);
-				}
-
-				$link = $this->flowLinkService->linkOperation(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$operationId
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->operationLinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end link()
 
 	/**
@@ -163,18 +125,7 @@ class FlowLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $operationId): JSONResponse {
-		if ($this->flowLinkService->isFlowAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($operationId): JSONResponse {
-				$this->flowLinkService->unlinkOperation($object->getUuid(), (int)$operationId);
-
-				return new JSONResponse(['success' => true]);
-			}
-		);
+		return $this->operationUnlinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), operationId: $operationId);
 	}//end destroy()
 
 	/**
@@ -218,6 +169,116 @@ class FlowLinksController extends Controller {
 		$operations = $this->flowLinkService->getAvailableOperations($search);
 		return new JSONResponse(['results' => $operations, 'total' => count($operations)]);
 	}//end available()
+
+	/**
+	 * The Flow operations linked to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function linkedOperations(ObjectLinkRoute $route): JSONResponse {
+		if ($this->flowLinkService->isFlowAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
+		}
+
+		return $this->listLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->operationsOf(object: $object));
+	}//end linkedOperations()
+
+	/**
+	 * The Flow operations linked to a resolved object, with the caller's admin flag.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function operationsOf(ObjectEntity $object): JSONResponse {
+		$results = $this->flowLinkService->getLinkedOperations($object->getUuid());
+
+		return new JSONResponse(
+			[
+				'results' => $results,
+				'total' => count($results),
+				'isAdmin' => $this->flowLinkService->isCurrentUserAdmin(),
+			]
+		);
+	}//end operationsOf()
+
+	/**
+	 * Link the operation the request names to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function operationLinked(ObjectLinkRoute $route): JSONResponse {
+		if ($this->flowLinkService->isFlowAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
+		}
+
+		return $this->onLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->linkOperationTo(object: $object));
+	}//end operationLinked()
+
+	/**
+	 * Link the operation the request names to a resolved object.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function linkOperationTo(ObjectEntity $object): JSONResponse {
+		$operationId = (int)$this->request->getParam('operationId', 0);
+		if ($operationId === 0) {
+			return new JSONResponse(['error' => 'operationId is required'], 400);
+		}
+
+		$link = $this->flowLinkService->linkOperation(
+			$object->getUuid(),
+			(int)$object->getRegister(),
+			(int)$object->getSchema(),
+			$operationId
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkOperationTo()
+
+	/**
+	 * Unlink an operation from the routed object.
+	 *
+	 * @param ObjectLinkRoute $route       The object the route names.
+	 * @param string          $operationId Operation id (numeric).
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function operationUnlinked(ObjectLinkRoute $route, string $operationId): JSONResponse {
+		if ($this->flowLinkService->isFlowAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
+		}
+
+		return $this->onLinkedObject(
+			route: $route,
+			action: function (ObjectEntity $object) use ($operationId): JSONResponse {
+				$this->flowLinkService->unlinkOperation($object->getUuid(), (int)$operationId);
+
+				return new JSONResponse(['success' => true]);
+			}
+		);
+	}//end operationUnlinked()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.

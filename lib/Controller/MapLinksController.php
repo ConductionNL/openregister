@@ -86,14 +86,7 @@ class MapLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->mapLinkService->isMapsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Maps');
-		}
-
-		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->mapLinkService->getLinkedPois($object->getUuid()))
-		);
+		return $this->linkedPois(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -113,26 +106,7 @@ class MapLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->mapLinkService->isMapsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Maps');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$favoriteId = (int)$this->request->getParam('favoriteId', 0);
-				if ($favoriteId === 0) {
-					return new JSONResponse(['error' => 'favoriteId is required'], 400);
-				}
-
-				$link = $this->mapLinkService->linkPoi(
-					$this->linkTargetOf(object: $object),
-					$favoriteId
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->poiLinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end link()
 
 	/**
@@ -152,30 +126,7 @@ class MapLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		if ($this->mapLinkService->isMapsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Maps');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$params = $this->parsePoiRequestParams();
-				if ($params instanceof JSONResponse) {
-					return $params;
-				}
-
-				[$name, $lat, $lng, $category, $comment] = $params;
-
-				$link = $this->mapLinkService->createAndLinkPoi(
-					target: $this->linkTargetOf(object: $object),
-					poi: (new PoiDraft(name: $name))
-						->locatedAt(lat: $lat, lng: $lng)
-						->withNotes(category: $category, comment: $comment)
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->poiCreated(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end createAndLink()
 
 	/**
@@ -227,18 +178,7 @@ class MapLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $favoriteId): JSONResponse {
-		if ($this->mapLinkService->isMapsAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Maps');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($favoriteId): JSONResponse {
-				$this->mapLinkService->unlinkPoi($object->getUuid(), (int)$favoriteId);
-
-				return new JSONResponse(['success' => true]);
-			}
-		);
+		return $this->poiUnlinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), favoriteId: $favoriteId);
 	}//end destroy()
 
 	/**
@@ -267,6 +207,141 @@ class MapLinksController extends Controller {
 		$pois = $this->mapLinkService->getAvailablePois($search);
 		return new JSONResponse(['results' => $pois, 'total' => count($pois)]);
 	}//end available()
+
+	/**
+	 * The Maps favorites linked to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function linkedPois(ObjectLinkRoute $route): JSONResponse {
+		if ($this->mapLinkService->isMapsAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Maps');
+		}
+
+		return $this->listLinkedObject(
+			route: $route,
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->mapLinkService->getLinkedPois($object->getUuid()))
+		);
+	}//end linkedPois()
+
+	/**
+	 * Link the favorite the request names to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function poiLinked(ObjectLinkRoute $route): JSONResponse {
+		if ($this->mapLinkService->isMapsAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Maps');
+		}
+
+		return $this->onLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->linkPoiTo(object: $object));
+	}//end poiLinked()
+
+	/**
+	 * Link the favorite the request names to a resolved object.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function linkPoiTo(ObjectEntity $object): JSONResponse {
+		$favoriteId = (int)$this->request->getParam('favoriteId', 0);
+		if ($favoriteId === 0) {
+			return new JSONResponse(['error' => 'favoriteId is required'], 400);
+		}
+
+		$link = $this->mapLinkService->linkPoi(
+			$this->linkTargetOf(object: $object),
+			$favoriteId
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkPoiTo()
+
+	/**
+	 * Create the favorite the request describes and link it to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function poiCreated(ObjectLinkRoute $route): JSONResponse {
+		if ($this->mapLinkService->isMapsAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Maps');
+		}
+
+		return $this->onLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->createPoiFor(object: $object));
+	}//end poiCreated()
+
+	/**
+	 * Create the favorite the request describes and link it to a resolved object.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function createPoiFor(ObjectEntity $object): JSONResponse {
+		$params = $this->parsePoiRequestParams();
+		if ($params instanceof JSONResponse) {
+			return $params;
+		}
+
+		[$name, $lat, $lng, $category, $comment] = $params;
+
+		$link = $this->mapLinkService->createAndLinkPoi(
+			target: $this->linkTargetOf(object: $object),
+			poi: (new PoiDraft(name: $name))
+				->locatedAt(lat: $lat, lng: $lng)
+				->withNotes(category: $category, comment: $comment)
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end createPoiFor()
+
+	/**
+	 * Unlink a favorite from the routed object.
+	 *
+	 * @param ObjectLinkRoute $route      The object the route names.
+	 * @param string          $favoriteId Favorite id (numeric).
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function poiUnlinked(ObjectLinkRoute $route, string $favoriteId): JSONResponse {
+		if ($this->mapLinkService->isMapsAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Maps');
+		}
+
+		return $this->onLinkedObject(
+			route: $route,
+			action: function (ObjectEntity $object) use ($favoriteId): JSONResponse {
+				$this->mapLinkService->unlinkPoi($object->getUuid(), (int)$favoriteId);
+
+				return new JSONResponse(['success' => true]);
+			}
+		);
+	}//end poiUnlinked()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
