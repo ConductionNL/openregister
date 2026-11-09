@@ -1080,12 +1080,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 			$type = (string) ($entry['type'] ?? 'string');
 			$made  = $this->appConfig->apply(
-				app: $fragment['app'],
-				key: $entry['key'],
-				value: $value,
-				generate: $entry['generate'],
-				type: $type,
-				atLeast: (($entry['atLeast'] ?? false) === true)
+				target: new ExampleSetConfigValue(
+					at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']),
+					value: $value,
+					type: $type,
+					kind: ExampleSetConfigValue::kindOf(entry: $entry)
+				)
 			);
 			if ($made['error'] !== '') {
 				$report['dropped'][]        = $fragment['file'].': app config "'.$entry['key'].'": '.$made['error'];

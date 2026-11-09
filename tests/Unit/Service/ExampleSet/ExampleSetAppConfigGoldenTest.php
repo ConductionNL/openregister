@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue;
 use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
@@ -132,7 +134,14 @@ class ExampleSetAppConfigGoldenTest extends TestCase {
 			'apply throws' => ['a', 'boom', 'x', false],
 			'apply generate throws' => ['a', 'boom', '', true],
 		] as $name => $args) {
-			$cases[$name] = static fn (ExampleSetAppConfig $s) => $s->apply(...$args);
+			// The declared entry's app, key, value, generate, type and atLeast, as the installer reads them.
+			$target       = new ExampleSetConfigValue(
+				at: new ExampleSetConfigKey(app: $args[0], key: $args[1]),
+				value: $args[2],
+				type: ($args[4] ?? 'string'),
+				kind: ExampleSetConfigValue::kindOf(entry: ['generate' => $args[3], 'atLeast' => ($args[5] ?? false)])
+			);
+			$cases[$name] = static fn (ExampleSetAppConfig $s) => $s->apply($target);
 		}
 
 		foreach ([

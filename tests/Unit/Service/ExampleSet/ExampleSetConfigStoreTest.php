@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -41,8 +42,8 @@ class ExampleSetConfigStoreTest extends TestCase {
 		$config->method('getValueInt')->willReturn(7);
 		$store = new ExampleSetConfigStore(appConfig: $config);
 
-		$this->assertSame('7', $store->read(target: new ExampleSetConfigValue(app: 'a', key: 'n', type: 'int')));
-		$this->assertSame('', $store->read(target: new ExampleSetConfigValue(app: 'a', key: 'gone', type: 'int')));
+		$this->assertSame('7', $store->read(target: new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'n'), type: 'int')));
+		$this->assertSame('', $store->read(target: new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'gone'), type: 'int')));
 	}
 
 	public function testAFailingReadIsEmptyAndAFailingHasIsFalse(): void {
@@ -52,7 +53,7 @@ class ExampleSetConfigStoreTest extends TestCase {
 		$store = new ExampleSetConfigStore(appConfig: $config);
 
 		$this->assertFalse($store->has(app: 'a', key: 'k'));
-		$this->assertSame('', $store->read(target: new ExampleSetConfigValue(app: 'a', key: 'k')));
+		$this->assertSame('', $store->read(target: new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'k'))));
 	}
 
 	public function testAValueIsWrittenWithItsType(): void {
@@ -61,8 +62,8 @@ class ExampleSetConfigStoreTest extends TestCase {
 		$config->expects($this->once())->method('setValueString')->with('a', 'k', 'v');
 		$store = new ExampleSetConfigStore(appConfig: $config);
 
-		$store->write(target: new ExampleSetConfigValue(app: 'a', key: 'n', value: '8', type: 'int'));
-		$store->write(target: new ExampleSetConfigValue(app: 'a', key: 'k', value: 'v'));
+		$store->write(target: new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'n'), value: '8', type: 'int'));
+		$store->write(target: new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'k'), value: 'v'));
 	}
 
 	public function testTryWriteReportsAFailure(): void {
@@ -70,6 +71,6 @@ class ExampleSetConfigStoreTest extends TestCase {
 		$config->method('setValueString')->willThrowException(new RuntimeException('down'));
 		$store = new ExampleSetConfigStore(appConfig: $config);
 
-		$this->assertFalse($store->tryWrite(target: new ExampleSetConfigValue(app: 'a', key: 'k', value: 'v')));
+		$this->assertFalse($store->tryWrite(target: new ExampleSetConfigValue(at: new ExampleSetConfigKey(app: 'a', key: 'k'), value: 'v')));
 	}
 }//end class
