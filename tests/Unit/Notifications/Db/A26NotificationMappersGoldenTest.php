@@ -25,6 +25,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
+use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
+use OCA\OpenRegister\Notifications\Db\HistoryNotice;
+use OCA\OpenRegister\Notifications\Db\HistorySubject;
+use OCA\OpenRegister\Notifications\Db\HistoryTarget;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
@@ -185,9 +190,18 @@ class A26NotificationMappersGoldenTest extends TestCase {
 		];
 		$snoozed = ['schemaId' => 3, 'includeSnoozed' => 'yes'];
 		return [
-			'history record'                 => [$history, 'record', ['r', 'email', 'alice', 'sent'], [], false],
+			'history record'                 => [
+				$history, 'record', [new HistoryEntry(delivery: new HistoryDelivery('r', 'email', 'alice', 'sent'), target: new HistoryTarget(), notice: new HistoryNotice())], [], false,
+			],
 			'history record subject'         => [
-				$history, 'record', ['r', 'email', 'alice', 'sent', '1', '2', 'o-1', 'subj', null, 'nl', 'task', 't-1', 'e-1'], [], false,
+				$history, 'record', [
+					new HistoryEntry(
+						delivery: new HistoryDelivery('r', 'email', 'alice', 'sent'),
+						target: new HistoryTarget('1', '2', 'o-1', 'e-1'),
+						notice: new HistoryNotice('subj', null, 'nl'),
+						about: new HistorySubject('task', 't-1')
+					),
+				], [], false,
 			],
 			'history findFiltered'           => [$history, 'findFiltered', [$filters, 10, 5, $at], [[self::ROW]], false],
 			'history findFiltered snoozed'   => [$history, 'findFiltered', [$snoozed], [[]], false],
