@@ -10,9 +10,9 @@
 # rating without a deliberate change to this file.
 model: "2026"
 
-# Every directory under lib/ is a component, and so is every other top-level
-# directory. A new directory under lib/ becomes a component without a change here.
-component_base_dirs: ["lib", ""]
+# Every top-level directory is a component (lib/, src/, appinfo/, templates/ ...),
+# as SIG's guidance (section 2.2) defines top-level components. See ADR-014.
+component_base_dirs: [""]
 
 # Test-code patterns can only be set per language, and listing languages switches
 # off automatic technology detection. The list therefore names every technology
