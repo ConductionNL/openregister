@@ -49,12 +49,17 @@ class DelegationGrantMapperBehaviourTest extends TestCase {
 	}
 
 	private static function row(int $id, ?array $scope = null, string $status = 'requested'): array {
+		$encoded = null;
+		if ($scope !== null) {
+			$encoded = json_encode($scope);
+		}
+
 		return [
 			'id' => $id,
 			'uuid' => 'g' . $id,
 			'principal' => 'alice',
 			'acting_as' => 'bob',
-			'scope' => $scope === null ? null : json_encode($scope),
+			'scope' => $encoded,
 			'status' => $status,
 		];
 	}

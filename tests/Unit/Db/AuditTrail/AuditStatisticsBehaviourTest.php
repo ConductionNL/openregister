@@ -75,7 +75,6 @@ class AuditStatisticsBehaviourTest extends TestCase {
 		return false;
 	}
 
-	// --- scope -------------------------------------------------------------
 
 	public function testScopeNarrowsOnlyOnTheIdsItHas(): void {
 		$this->trails($this->db([[]]))->totals(new AuditStatisticsScope(registerId: 3));
@@ -121,7 +120,6 @@ class AuditStatisticsBehaviourTest extends TestCase {
 		$this->assertLessThan(new DateTime('-1 hour'), new DateTime($m[1]));
 	}
 
-	// --- AuditTrailStatistics ---------------------------------------------
 
 	public function testTotalsCastsTheCountAndSize(): void {
 		$result = $this->trails($this->db([[['total' => '12', 'size' => '3400']]]))->totals(new AuditStatisticsScope());
@@ -194,7 +192,6 @@ class AuditStatisticsBehaviourTest extends TestCase {
 		);
 	}
 
-	// --- AuditActionStatistics --------------------------------------------
 
 	public function testActionChartBuildsSortedDaysWithZeroGaps(): void {
 		$rows = [
