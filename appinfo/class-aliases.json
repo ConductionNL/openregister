@@ -1815,6 +1815,16 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Object\\RenderObjectInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RenderObjectInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hinge\\ListPresentationResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ListPresentationResolverInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

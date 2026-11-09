@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Hinge
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Hinge;
-
-use OCA\OpenRegister\Db\Schema;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The part of ListPresentationResolver that code outside lib/Service uses.
@@ -36,12 +34,12 @@ interface ListPresentationResolverInterface {
 	 * default: a surface that already has its own idea of the default columns
 	 * can keep it, and only defer to this when the schema actually spoke.
 	 *
-	 * @param Schema $schema The schema whose list surface is being rendered.
+	 * @param SchemaInterface $schema The schema whose list surface is being rendered.
 	 *
 	 * @return array{declared: bool, columns: array<int, array>, searchFields: array<int, string>}
 	 *                                                                                            The list surface.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function resolve(Schema $schema): array;
+	public function resolve(SchemaInterface $schema): array;
 }//end interface

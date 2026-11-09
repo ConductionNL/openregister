@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Object
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
-
-use OCA\OpenRegister\Db\ObjectEntity;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The list-rendering calls the objects and trash controllers make. What each
@@ -89,9 +87,9 @@ interface RenderObjectInterface {
 	 * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
 	 * @param bool              $_multitenancy Whether to apply multitenancy filtering (default: true).
 	 *
-	 * @return ObjectEntity[]
+	 * @return \OCA\OpenRegister\Db\ObjectEntity[]
 	 *
-	 * @psalm-return list<ObjectEntity>
+	 * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */

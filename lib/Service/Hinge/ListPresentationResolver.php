@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 
 /**
  * Resolves a schema's declared list surface, or the defaults it keeps without one.
@@ -57,14 +57,14 @@ class ListPresentationResolver implements ListPresentationResolverInterface {
 	 * default: a surface that already has its own idea of the default columns
 	 * can keep it, and only defer to this when the schema actually spoke.
 	 *
-	 * @param Schema $schema The schema whose list surface is being rendered.
+	 * @param SchemaInterface $schema The schema whose list surface is being rendered.
 	 *
 	 * @return array{declared: bool, columns: array<int, array>, searchFields: array<int, string>}
 	 *                                                                                            The list surface.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function resolve(Schema $schema): array {
+	public function resolve(SchemaInterface $schema): array {
 		$declaration = $schema->getListPresentation();
 		$properties = ($schema->getProperties() ?? []);
 
