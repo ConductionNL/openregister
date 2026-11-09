@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 
 /**
  * One health check against an extraction service: which service, where, and with which headers.
+ *
+ * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
  */
 final class ServiceHealthProbe {
 	/**

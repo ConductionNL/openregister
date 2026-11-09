@@ -173,9 +173,11 @@ class FileSettingsControllerTest extends TestCase {
 
 		$this->testableController = new TestableFileSettingsController(
 			$this->request,
-			$this->container,
-			$this->settingsService,
-			$this->logger
+			new FileSettingsControllerServices(
+				$this->container,
+				$this->settingsService,
+				$this->logger
+			)
 		);
 	}
 
