@@ -66,7 +66,7 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 			}
 		);
 
-		return new ConceptRepository($objects, $registers, $schemas);
+		return new ConceptRepository(new \OCA\OpenRegister\Db\SchemaCatalog($registers, $schemas, $objects));
 	}//end repository()
 
 	/**
@@ -138,7 +138,7 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 		$registers->method('find')->willThrowException(new RuntimeException('missing'));
 		$objects = $this->createMock(MagicMapperInterface::class);
 		$objects->expects($this->never())->method('searchObjects');
-		$repository = new ConceptRepository($objects, $registers, $this->createMock(SchemaMapperInterface::class));
+		$repository = new ConceptRepository(new \OCA\OpenRegister\Db\SchemaCatalog($registers, $this->createMock(SchemaMapperInterface::class), $objects));
 
 		$this->assertNull($repository->scheme('https://x/s'));
 		$this->assertNull($repository->schemeByReference('u-1'));

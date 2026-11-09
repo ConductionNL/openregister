@@ -141,7 +141,7 @@ final class ConceptRepositoryConceptsGoldenTest extends TestCase {
 			}
 		);
 
-		return new ConceptRepository($objects, $registers, $schemas);
+		return new ConceptRepository(new \OCA\OpenRegister\Db\SchemaCatalog($registers, $schemas, $objects));
 	}//end repository()
 
 	/**
