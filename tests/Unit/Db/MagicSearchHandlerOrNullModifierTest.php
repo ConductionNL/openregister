@@ -42,6 +42,8 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 
 /**
  * Locks `orNull` on every list-search builder, and that `ne` keeps its meaning.
@@ -200,7 +202,7 @@ class MagicSearchHandlerOrNullModifierTest extends TestCase {
 	 */
 	private function unionObject(array $query, ?IDBConnection $connection = null, bool $isPostgres = true): array {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
-		return $method->invoke($this->handler, $query, $this->makeSchema(), $connection ?? $this->makeConnection(), $isPostgres);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $this->makeSchema()), connection: $connection ?? $this->makeConnection(), isPostgres: $isPostgres));
 	}//end unionObject()
 
 	/**
@@ -212,7 +214,7 @@ class MagicSearchHandlerOrNullModifierTest extends TestCase {
 	 */
 	private function unionMetadata(array $filters): array {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildMetadataFilterConditionsSql');
-		return $method->invoke($this->handler, ['@self' => $filters], $this->makeConnection(), true);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: ['@self' => $filters], table: new MagicReadTable(schema: new Schema()), connection: $this->makeConnection(), isPostgres: true));
 	}//end unionMetadata()
 
 	public function testQueryBuilderPathAdmitsNullBesideNe(): void {

@@ -42,6 +42,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 
 /**
  * Nested-path filters on the QueryBuilder path, the raw UNION path and in the helper.
@@ -169,7 +171,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$connection->method('quote')->willReturnCallback(static fn ($v) => "'{$v}'");
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
-		return $method->invoke($this->handler(), $query, $schema, $connection, true);
+		return $method->invoke($this->handler(), new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $connection, isPostgres: true));
 	}//end rawObject()
 
 	/**
@@ -194,7 +196,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$raw = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$this->assertSame(
 			['1=0'],
-			$raw->invoke($this->handler(mayReadProperties: false), ['dunning' => ['currentStage' => 2]], $schema, $connection, true)
+			$raw->invoke($this->handler(mayReadProperties: false), new ConditionSqlRun(query: ['dunning' => ['currentStage' => 2]], table: new MagicReadTable(schema: $schema), connection: $connection, isPostgres: true))
 		);
 	}//end testAPathIntoAnUnreadablePropertyMatchesNothing()
 
