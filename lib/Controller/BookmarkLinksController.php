@@ -28,7 +28,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\BookmarkLinksControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\BookmarkDraft;
@@ -48,20 +50,32 @@ class BookmarkLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var BookmarkLinkServiceInterface
+	 */
+	private readonly BookmarkLinkServiceInterface $bookmarkLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param BookmarkLinkServiceInterface $bookmarkLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param BookmarkLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly BookmarkLinkServiceInterface $bookmarkLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		BookmarkLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->bookmarkLinkService = $services->bookmarkLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
