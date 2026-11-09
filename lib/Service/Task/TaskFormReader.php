@@ -214,11 +214,9 @@ class TaskFormReader {
 		$fields = $this->fieldsOf(value: ($record['fields'] ?? null));
 		$this->refuseActionAndFieldsMix(action: $action, fields: $fields);
 
-		return new TaskForm(
-			kind: TaskForm::KIND_FIELDS,
-			native: new TaskFormFields(schema: trim((string)($record['schema'] ?? '')), action: $action, fields: $fields),
-			requireChecklist: self::requireChecklistOf(record: $record)
-		);
+		$checklist = new TaskForm(kind: null, requireChecklist: self::requireChecklistOf(record: $record));
+
+		return $checklist->withNativeFields(schema: trim((string)($record['schema'] ?? '')), action: $action, fields: $fields);
 	}//end nativeForm()
 
 	/**

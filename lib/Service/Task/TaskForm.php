@@ -108,6 +108,26 @@ final class TaskForm {
 	}//end __construct()
 
 	/**
+	 * This declaration's checklist rule on a native form: fields of the subject
+	 * schema, named through a lifecycle action or listed inline.
+	 *
+	 * @param string $schema The subject schema reference (id, uuid or slug).
+	 * @param string|null $action The lifecycle action whose inputs are the field list, or null.
+	 * @param array<int, array{field: string, required: bool}> $fields The inline field list, in declared order.
+	 *
+	 * @return self The native declaration.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+	 */
+	public function withNativeFields(string $schema, ?string $action, array $fields): self {
+		return new self(
+			kind: self::KIND_FIELDS,
+			native: new TaskFormFields(schema: $schema, action: $action, fields: $fields),
+			requireChecklist: $this->requireChecklist
+		);
+	}//end withNativeFields()
+
+	/**
 	 * Whether the step declares a form at all.
 	 *
 	 * @return bool True for either kind; false for outcome-and-comment completion.
