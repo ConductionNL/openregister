@@ -39,7 +39,8 @@ use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunSignals;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -147,9 +148,9 @@ class FlowRunController extends Controller {
 	/**
 	 * The guarded signal seam the
 	 *
-	 * @var ?FlowRunSignalService
+	 * @var ?FlowRunSignalInterface
 	 */
-	private readonly ?FlowRunSignalService $signalService;
+	private readonly ?FlowRunSignalInterface $signalService;
 
 	/**
 	 * Constructor.
@@ -1095,16 +1096,16 @@ class FlowRunController extends Controller {
 	 * cannot log still reaches the caller as the 403 above, so nothing is
 	 * silent; the container-built instance audits too.
 	 *
-	 * @return FlowRunSignalService The seam.
+	 * @return FlowRunSignalInterface The seam.
 	 *
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function signals(): FlowRunSignalService {
-		return ($this->signalService ?? new FlowRunSignalService(
+	private function signals(): FlowRunSignalInterface {
+		return ($this->signalService ?? (new FlowRunSignals(
 			mapper: $this->mapper,
 			runner: $this->runner,
 			groupManager: $this->groupManager
-		));
+		))->seam());
 	}//end signals()
 
 	/**

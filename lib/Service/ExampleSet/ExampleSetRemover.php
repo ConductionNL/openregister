@@ -62,23 +62,37 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	];
 
 	/**
+	 * Accounts and groups.
+	 *
+	 * @var ExampleSetAccounts
+	 */
+	private readonly ExampleSetAccounts $accounts;
+
+	/**
+	 * Deletes the tasks and saved views the set wrote; null names them as failed.
+	 *
+	 * @var ExampleSetEngineKinds|null
+	 */
+	private readonly ?ExampleSetEngineKinds $engineRows;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetRemoverObjects   $objects    Register access, the record, files and changes.
-	 * @param ExampleSetRemoverSettings  $settings   App config, user preferences, register imports and organisations.
-	 * @param ExampleSetAccounts         $accounts   Accounts and groups.
-	 * @param ExampleSetEngineKinds|null $engineRows Deletes the tasks and saved views the set wrote; null names them as failed.
-	 * @param ExampleSetLock|null        $lock       One install or removal of a set at a time; null holds nothing.
+	 * @param ExampleSetRemoverObjects  $objects  Register access, the record, files and changes.
+	 * @param ExampleSetRemoverSettings $settings App config, user preferences, register imports and organisations.
+	 * @param ExampleSetRemoverRows     $rows     The accounts and the engine rows.
+	 * @param ExampleSetLock|null       $lock     One install or removal of a set at a time; null holds nothing.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetRemoverObjects $objects,
 		private readonly ExampleSetRemoverSettings $settings,
-		private readonly ExampleSetAccounts $accounts,
-		private readonly ?ExampleSetEngineKinds $engineRows=null,
+		ExampleSetRemoverRows $rows,
 		private readonly ?ExampleSetLock $lock=null,
 	) {
+		$this->accounts   = $rows->accounts;
+		$this->engineRows = $rows->engineRows;
 	}//end __construct()
 
 	/**

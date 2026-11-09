@@ -72,23 +72,22 @@ class HardeningAuditWriter {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md
 	 */
 	public function accepted(string $fact, int|string|array $before, int|string|array $after): void {
-		try {
-			$this->auditTrailMapper->createHardeningChangeEntry(
+		$this->write(
+			fact: $fact,
+			entry: fn () => $this->auditTrailMapper->createHardeningChangeEntry(
 				control: $fact,
 				before: $before,
 				after: $after,
 				accepted: true,
-			);
-		} catch (Throwable $failure) {
-			$this->logFailure(fact: $fact, failure: $failure);
-		}
-
+				refusal: '',
+			)
+		);
 	}//end accepted()
 
 	/**
 	 * Record a hardening fact that was refused.
 	 *
-	 * @param string           $fact    What was attempted, as `area.event`.
+	 * @param string           $fact    What was asked, as `area.event`.
 	 * @param int|string|array $before  The state before.
 	 * @param int|string|array $after   The state asked for.
 	 * @param string           $refusal The refusal.
@@ -98,32 +97,33 @@ class HardeningAuditWriter {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md
 	 */
 	public function refused(string $fact, int|string|array $before, int|string|array $after, string $refusal): void {
-		try {
-			$this->auditTrailMapper->createHardeningChangeEntry(
+		$this->write(
+			fact: $fact,
+			entry: fn () => $this->auditTrailMapper->createHardeningChangeEntry(
 				control: $fact,
 				before: $before,
 				after: $after,
 				accepted: false,
 				refusal: $refusal,
-			);
-		} catch (Throwable $failure) {
-			$this->logFailure(fact: $fact, failure: $failure);
-		}
-
+			)
+		);
 	}//end refused()
 
 	/**
-	 * Log an audit entry that could not be written; the fact itself stands.
+	 * Write one entry; a failure is logged and never undoes what happened.
 	 *
-	 * @param string    $fact    The fact whose entry was lost.
-	 * @param Throwable $failure Why it was lost.
+	 * @param string   $fact  The fact, for the log line.
+	 * @param callable $entry Writes the entry.
 	 *
 	 * @return void
 	 */
-	private function logFailure(string $fact, Throwable $failure): void {
-		$this->logger->error(
-			'HardeningAuditWriter: the audit entry for ' . $fact . ' could not be written: ' . $failure->getMessage()
-		);
-
-	}//end logFailure()
+	private function write(string $fact, callable $entry): void {
+		try {
+			$entry();
+		} catch (Throwable $failure) {
+			$this->logger->error(
+				'HardeningAuditWriter: the audit entry for ' . $fact . ' could not be written: ' . $failure->getMessage()
+			);
+		}
+	}//end write()
 }//end class

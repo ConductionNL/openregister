@@ -64,7 +64,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/delegated-identity/spec.md
  */
-class FlowUnattributed extends RuntimeException {
+class FlowUnattributed extends RuntimeException implements FlowUnattributedInterface {
 
 	/**
 	 * Constructor.

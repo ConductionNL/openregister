@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\GrantReportSources;
@@ -72,7 +73,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses   \OCA\OpenRegister\Service\Rbac\ShareGrantAttributes
- * @uses   \OCA\OpenRegister\Support\PermissionBit
+ * @uses   \OCA\OpenRegister\Service\Rbac\PermissionBit
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  */
 class ObjectGrantsReportTest extends TestCase {
@@ -147,7 +148,7 @@ class ObjectGrantsReportTest extends TestCase {
 		);
 
 		$matcher = new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
 			new NullLogger()

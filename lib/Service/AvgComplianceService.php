@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -80,7 +80,7 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 *                                       fallback).
 	 * @param LoggerInterface $logger Logger.
 	 * @param ProcessingLogMapperInterface|null $logMapper Read-log mapper (fallback-gap count).
-	 * @param VerwerkingsactiviteitMapper|null $vrwMapper Activity resolver (fallback uuid).
+	 * @param VerwerkingsactiviteitMapperInterface|null $vrwMapper Activity resolver (fallback uuid).
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -88,7 +88,7 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?ProcessingLogMapperInterface $logMapper = null,
-		private readonly ?VerwerkingsactiviteitMapper $vrwMapper = null,
+		private readonly ?VerwerkingsactiviteitMapperInterface $vrwMapper = null,
 	) {
 
 	}//end __construct()

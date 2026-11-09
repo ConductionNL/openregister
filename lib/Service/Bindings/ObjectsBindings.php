@@ -20,6 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Service\Object\CorrectionTargets;
+use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
+use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
+
 /**
  * Contract => service map for the objects core.
  *
@@ -37,5 +44,9 @@ final class ObjectsBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		CorrectionTargetsInterface::class    => CorrectionTargets::class,
+		DraftRemovalFrameInterface::class    => DraftRemovalFrame::class,
+		RetentionDestructionInterface::class => RetentionDestruction::class,
+	];
 }//end class

@@ -33,7 +33,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
+use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
+use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -74,14 +76,9 @@ class MergeServiceTest extends TestCase {
 
 		$this->service = new MergeService(
 			$this->objectService,
-			$this->schemaMapper,
-			new SurvivorshipResolver(),
-			new TrustTierResolver(),
-			new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->logger),
-			$this->eventDispatcher,
-			$this->logger,
 			$this->propertyRbac,
-			$this->createMock(AuditTrailMapper::class)
+			new MergeSurvivorshipServices($this->schemaMapper, new SurvivorshipResolver(), new TrustTierResolver(), new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->logger)),
+			new MergeReportingServices($this->eventDispatcher, $this->createMock(AuditTrailMapper::class), $this->logger)
 		);
 	}//end setUp()
 

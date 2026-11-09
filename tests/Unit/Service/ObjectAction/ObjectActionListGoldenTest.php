@@ -22,6 +22,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
@@ -75,9 +76,8 @@ class ObjectActionListGoldenTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		return new ObjectActionList(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
 			$this->transitions,
 			$l10n
 		);

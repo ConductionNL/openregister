@@ -56,7 +56,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class FlowDeadEnd extends RuntimeException {
+class FlowDeadEnd extends RuntimeException implements FlowDeadEndInterface {
 	/**
 	 * Constructor.
 	 *
