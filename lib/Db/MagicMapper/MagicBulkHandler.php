@@ -454,13 +454,7 @@ class MagicBulkHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function bulkUpsert(
-		array $objects,
-		Register $register,
-		Schema $schema,
-		string $tableName,
-		bool $needsPreUpdateState = true,
-	): array {
+	public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array {
 		$table = new RegisterSchema(register: $register, schema: $schema);
 		$command = new BulkUpsertCommand(objects: $objects, table: $table, tableName: $tableName, needsPreUpdateState: $needsPreUpdateState);
 		return $this->upsert(command: $command);
