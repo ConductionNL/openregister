@@ -11,7 +11,7 @@ const mockRegistry = { name: 'shared' }
 const mockCalls = []
 jest.mock('@conduction/nextcloud-vue', () => ({
 	getSharedRegistry: (win) => {
-		mockCalls.push(['shared', win === window])
+		mockCalls.push(['shared', win === globalThis.window])
 		return mockRegistry
 	},
 	registerBuiltinIntegrations: (r) => mockCalls.push(['builtin', r]),
