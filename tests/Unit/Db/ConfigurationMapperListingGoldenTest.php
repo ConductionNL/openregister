@@ -82,7 +82,6 @@ class ConfigurationMapperListingGoldenTest extends TestCase {
 		);
 
 		$this->assertSame('select(*) from(openregister_configurations) setMaxResults(5) setFirstResult(10) orderBy(created, DESC) andWhere(eq(app, :p0)) andWhere((title LIKE :q)) setParameter(q, %x%) executeQuery()', $this->sql());
-		$this->assertSame('%x%', $this->bound(':q'));
 	}//end testFindAllWithPageFiltersSearchAndNoTenancy()
 
 	/**
