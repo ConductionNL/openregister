@@ -20,10 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Rbac;
-
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of ScopeAudit that callers outside its component use.
@@ -39,8 +36,8 @@ interface ScopeAuditInterface {
 	 * every register would report rules that do not apply, which is worse than
 	 * reporting none.
 	 *
-	 * @param array<int, Register> $registers The registers to report on.
-	 * @param array<int, Schema>   $schemas   The schemas to consider.
+	 * @param array<int, RegisterInterface> $registers The registers to report on.
+	 * @param array<int, SchemaInterface>   $schemas   The schemas to consider.
 	 *
 	 * @return array<int, array<string, mixed>> The rows.
 	 *

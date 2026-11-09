@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Hinge;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 
 /**
  * The part of ReferencedByService that code outside lib/Service uses.
@@ -32,9 +32,9 @@ interface ReferencedByServiceInterface {
 	/**
 	 * Read the records that reference one object, grouped by schema.
 	 *
-	 * @param ObjectEntity $object The object being read as the hinge.
-	 * @param array        $query  Paging: `_limit`, `_offset`, and `_schema` to page one group.
-	 * @param bool         $_rbac  Apply the caller's access inside the query.
+	 * @param ObjectEntityInterface $object The object being read as the hinge.
+	 * @param array                 $query  Paging: `_limit`, `_offset`, and `_schema` to page one group.
+	 * @param bool                  $_rbac  Apply the caller's access inside the query.
 	 *
 	 * @return array{object: array, groups: array<int, array>, total: int}
 	 *                                                                    The grouped reverse view.
@@ -46,5 +46,5 @@ interface ReferencedByServiceInterface {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function getReferencingGroups(ObjectEntity $object, array $query = [], bool $_rbac = true): array;
+	public function getReferencingGroups(ObjectEntityInterface $object, array $query = [], bool $_rbac = true): array;
 }//end interface

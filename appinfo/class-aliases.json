@@ -1885,6 +1885,16 @@
 			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AuthenticationTokenFetcherInterface",
 			"eager": false,
 			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\ScopeAuditInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ScopeAuditInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Hinge\\ReferencedByServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ReferencedByServiceInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

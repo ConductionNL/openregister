@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -82,9 +83,9 @@ class ReferencedByService implements ReferencedByServiceInterface {
 	/**
 	 * Read the records that reference one object, grouped by schema.
 	 *
-	 * @param ObjectEntity $object The object being read as the hinge.
-	 * @param array        $query  Paging: `_limit`, `_offset`, and `_schema` to page one group.
-	 * @param bool         $_rbac  Apply the caller's access inside the query.
+	 * @param ObjectEntityInterface $object The object being read as the hinge.
+	 * @param array                 $query  Paging: `_limit`, `_offset`, and `_schema` to page one group.
+	 * @param bool                  $_rbac  Apply the caller's access inside the query.
 	 *
 	 * @return array{object: array, groups: array<int, array>, total: int}
 	 *                                                                    The grouped reverse view.
@@ -96,7 +97,7 @@ class ReferencedByService implements ReferencedByServiceInterface {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function getReferencingGroups(ObjectEntity $object, array $query = [], bool $_rbac = true): array {
+	public function getReferencingGroups(ObjectEntityInterface $object, array $query = [], bool $_rbac = true): array {
 		$targetUuid = (string)$object->getUuid();
 		$limit = $this->resolveLimit(value: ($query['_limit'] ?? null));
 		$offset = max(0, (int)($query['_offset'] ?? 0));
