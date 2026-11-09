@@ -27,6 +27,7 @@ namespace Unit\Service\Calculation;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
@@ -116,9 +117,9 @@ class CalculationPayloadBuilderGoldenTest extends TestCase {
 			}
 		);
 		$this->aggregates->expects($this->once())->method('resolveAll')->willReturnCallback(
-			function (array $payload, array $aggregates, mixed $registerRef) use ($aggs): array {
-				$this->assertSame(['owner' => ['n' => 1]], $payload['@ref']);
-				$this->assertSame([$aggs, '7'], [$aggregates, $registerRef]);
+			function (ReferringObject $referrer, array $aggregates) use ($aggs): array {
+				$this->assertSame(['owner' => ['n' => 1]], $referrer->payload['@ref']);
+				$this->assertSame([$aggs, '7', null], [$aggregates, $referrer->register, $referrer->organisation]);
 				return ['total' => 3];
 			}
 		);

@@ -132,11 +132,8 @@ class CalculationPayloadBuilder implements CalculationPayloadBuilderInterface {
 	private function withAggregates(array $data, PayloadBuildRun $run): array {
 		$aggregateRefs = $this->configBlock(schema: $run->schema, key: 'x-openregister-aggregate-refs');
 		if ($aggregateRefs !== null) {
-			$data['@aggregate'] = $this->aggregates->resolveAll(
-				payload: $data,
-				aggregates: $aggregateRefs,
-				registerRef: $run->object->getRegister()
-			);
+			$referrer = new ReferringObject(payload: $data, register: $run->object->getRegister());
+			$data['@aggregate'] = $this->aggregates->resolveAll(referrer: $referrer, aggregates: $aggregateRefs);
 		}
 
 		return $data;
