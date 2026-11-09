@@ -1783,12 +1783,7 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 			$cap = $this->evaluateNode(object: $object, expression: $args[2]);
 		}
 
-		return $this->rates->evaluate(
-			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
-			bands: $this->evaluateNode(object: $object, expression: $args[1]),
-			cap: $cap,
-			cumulative: true
-		);
+		return $this->rates->graduated(operands: $this->rateOperands(object: $object, args: $args), cap: $cap);
 	}//end graduated()
 
 	/**
@@ -1806,13 +1801,25 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 	private function bandRate(array $object, mixed $args): int|float|null {
 		$this->requireRateOperands(args: $args);
 
-		return $this->rates->evaluate(
-			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
-			bands: $this->evaluateNode(object: $object, expression: $args[1]),
-			cap: null,
-			cumulative: false
-		);
+		return $this->rates->bandRate(operands: $this->rateOperands(object: $object, args: $args));
 	}//end bandRate()
+
+	/**
+	 * Resolve the quantity and the schedule of a rate-schedule operator.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param array<int, mixed>    $args   The operator's arguments, at least two.
+	 *
+	 * @return RateOperands The resolved quantity (or unit) and schedule.
+	 *
+	 * @throws EvaluationException When an operand cannot be evaluated.
+	 */
+	private function rateOperands(array $object, array $args): RateOperands {
+		return new RateOperands(
+			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
+			bands: $this->evaluateNode(object: $object, expression: $args[1])
+		);
+	}//end rateOperands()
 
 	/**
 	 * Refuse rate-schedule arguments that are not a list of at least two operands.
