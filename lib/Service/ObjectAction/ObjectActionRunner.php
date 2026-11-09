@@ -188,13 +188,24 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function run(ObjectActionTarget $target, string $key, array $given): array {
-		$checked = $this->check(object: $target->object, schema: $target->schema, key: $key, given: $given);
+		$checked = $this->rehearse(call: new ObjectActionCall(object: $target->object, schema: $target->schema, key: $key), given: $given);
 		if ($checked['refusal'] !== null) {
 			return $checked['refusal'];
 		}
 
-		$definition = $checked['definition'];
-		$invocation = new ObjectActionInvocation(definition: $definition, inputs: $checked['inputs']);
+		return $this->runChecked(target: $target, invocation: new ObjectActionInvocation(definition: $checked['definition'], inputs: $checked['inputs']));
+	}//end run()
+
+	/**
+	 * Step 5 of a run whose checks passed: the body, inside the action's elevation when it declares one.
+	 *
+	 * @param ObjectActionTarget     $target     The subject, its schema and its address as the caller named it.
+	 * @param ObjectActionInvocation $invocation The checked action and its inputs, defaults resolved.
+	 *
+	 * @return array{status: int, body: array<string, mixed>} The HTTP status and body.
+	 */
+	private function runChecked(ObjectActionTarget $target, ObjectActionInvocation $invocation): array {
+		$definition = $invocation->definition;
 		$execute    = fn (): array => $this->execute(target: $target, invocation: $invocation);
 		if ($definition->elevate === []) {
 			return $execute();
@@ -203,7 +214,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 		// Opened only now: the person's right on the subject and `when` have
 		// passed, so the elevation covers the body and nothing before it.
 		return $this->gate->elevated(definition: $definition, operation: $execute);
-	}//end run()
+	}//end runChecked()
 
 	/**
 	 * Steps 1 to 4 of a run, without running: resolve, right, `when`, inputs.
@@ -222,23 +233,53 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function check(ObjectEntity $object, Schema $schema, string $key, array $given): array {
-		$call       = new ObjectActionCall(object: $object, schema: $schema, key: $key);
+		return $this->rehearse(call: new ObjectActionCall(object: $object, schema: $schema, key: $key), given: $given);
+	}//end check()
+
+	/**
+	 * Steps 1 to 4 of a run, without running, for one call: resolve, right, `when`, inputs.
+	 *
+	 * @param ObjectActionCall     $call  The subject, its schema and the action key.
+	 * @param array<string, mixed> $given The inputs the caller sent.
+	 *
+	 * @return array{refusal: array{status: int, body: array<string, mixed>}|null, definition: ObjectActionDefinition|null, inputs: array<string, mixed>}
+	 *         The refusal, or the action and its inputs with defaults resolved.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
+	 */
+	public function rehearse(ObjectActionCall $call, array $given): array {
 		$definition = $this->resolve(call: $call);
 		if ($definition === null) {
-			return $this->refused(answer: $this->answer(status: Http::STATUS_NOT_FOUND, body: ['error' => sprintf(self::NOT_FOUND, $key)]));
+			return $this->refused(answer: $this->answer(status: Http::STATUS_NOT_FOUND, body: ['error' => sprintf(self::NOT_FOUND, $call->key)]));
 		}
 
 		$refusal = $this->rightRefusal(call: $call, definition: $definition);
-		if ($refusal === null) {
-			$inputs  = $this->inputs->withDefaults(schema: $definition->inputs, given: $given, object: $object, userId: $this->gate->userId());
-			$refusal = $this->inputRefusal(call: $call, invocation: new ObjectActionInvocation(definition: $definition, inputs: $inputs));
-			if ($refusal === null) {
-				return ['refusal' => null, 'definition' => $definition, 'inputs' => $inputs];
-			}
+		if ($refusal !== null) {
+			return $this->refused(answer: $refusal);
 		}
 
-		return $this->refused(answer: $refusal);
-	}//end check()
+		$invocation = $this->withDefaults(call: $call, asked: new ObjectActionInvocation(definition: $definition, inputs: $given));
+		$refusal    = $this->inputRefusal(call: $call, invocation: $invocation);
+		if ($refusal !== null) {
+			return $this->refused(answer: $refusal);
+		}
+
+		return ['refusal' => null, 'definition' => $definition, 'inputs' => $invocation->inputs];
+	}//end rehearse()
+
+	/**
+	 * The invocation with every declared default the caller left out filled in.
+	 *
+	 * @param ObjectActionCall       $call  The subject the `@object.*` defaults read.
+	 * @param ObjectActionInvocation $asked The resolved action and the inputs the caller sent.
+	 *
+	 * @return ObjectActionInvocation The action and its inputs, defaults resolved.
+	 */
+	private function withDefaults(ObjectActionCall $call, ObjectActionInvocation $asked): ObjectActionInvocation {
+		$scope = new DefaultScope(object: $call->object, userId: $this->gate->userId());
+
+		return new ObjectActionInvocation(definition: $asked->definition, inputs: $this->inputs->withDefaults(invocation: $asked, scope: $scope));
+	}//end withDefaults()
 
 	/**
 	 * Step 2: the refusal when the caller lacks the right, or a self-assign is already taken.
@@ -257,7 +298,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 			$right = 'update';
 		}
 
-		if ($this->gate->mayRun(schema: $call->schema, right: $right, definition: $definition, object: $call->object) === false) {
+		if ($this->gate->mayRun(check: new RightCheck(schema: $call->schema, right: $right, object: $call->object), definition: $definition) === false) {
 			return $this->answer(status: Http::STATUS_FORBIDDEN, body: ['error' => sprintf('You may not perform "%s" on this object.', $call->key)]);
 		}
 
@@ -278,7 +319,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 */
 	private function inputRefusal(ObjectActionCall $call, ObjectActionInvocation $invocation): ?array {
 		$definition = $invocation->definition;
-		if ($this->gate->whenHolds(definition: $definition, object: $call->object, inputs: $invocation->inputs) === false) {
+		if ($this->gate->whenHolds(invocation: $invocation, object: $call->object) === false) {
 			return $this->unmet(message: $this->gate->reason(definition: $definition), key: $call->key);
 		}
 
@@ -341,7 +382,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 			return $this->runSelfAssign(object: $target->object, definition: $definition);
 		}
 
-		return $this->flowRun->run(target: $target, definition: $definition, inputs: $invocation->inputs);
+		return $this->flowRun->run(target: $target, invocation: $invocation);
 	}//end execute()
 
 	/**
