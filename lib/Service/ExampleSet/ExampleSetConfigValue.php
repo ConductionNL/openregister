@@ -84,6 +84,8 @@ final class ExampleSetConfigValue {
 	 * @param array<string, mixed> $entry The declared entry.
 	 *
 	 * @return string One of the KIND_ constants.
+	 *
+	 * @spec openspec/changes/example-set-app-config-at-least/specs/example-sets/spec.md#requirement-an-integer-app-config-entry-may-be-a-floor
 	 */
 	public static function kindOf(array $entry): string {
 		if (($entry['generate'] ?? false) === true) {

@@ -55,6 +55,8 @@ final class ExampleSetFragmentWrite {
 	 * @param array<string, mixed> $record The record, holding the tasks written.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function withTasksOf(array $record): self {
 		$context          = $this->context;
