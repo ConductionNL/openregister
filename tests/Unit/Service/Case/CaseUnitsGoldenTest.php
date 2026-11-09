@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Case\CaseAnchor;
+use OCA\OpenRegister\Service\Case\CaseItemsEnsureRequest;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
@@ -503,22 +504,22 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$out = [];
 		$out['fresh'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: $history,
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$grown = CasePlanEnsurerTest::migrated();
 		$grown['items'][] = ['key' => 'archief', 'type' => CaseItem::TYPE_MILESTONE, 'state' => CaseItem::STATE_COMPLETED];
 		$out['resumed'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: null, schemaId: 2),
 				definition: $grown,
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 
 		$refusals = [
@@ -558,30 +559,30 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		foreach ($refusals as $label => [$definition, $entries]) {
 			$out['refusals'][$label] = self::attempt(
-				fn (): array => $this->ensurer()->ensure(
+				fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 					anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2),
 					definition: $definition,
 					history: $entries,
 					actor: 'system:dossiq'
-				)
+				))
 			);
 		}
 
 		$out['anchor register'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 5, schemaId: 2),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$out['anchor schema'] = self::attempt(
-			fn (): array => $this->ensurer()->ensure(
+			fn (): array => $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 7),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 
 		$armed = [];
@@ -610,12 +611,12 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$timers = new CasePlanItemTimers(timers: $core, logger: new NullLogger(), markers: $markers);
 		$out['timed'] = self::attempt(
-			fn (): array => $this->ensurer($timers)->ensure(
+			fn (): array => $this->ensurer($timers)->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
 				definition: $timed,
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$timed['items'][] = [
 			'key' => 'oud',
@@ -624,12 +625,12 @@ class CaseUnitsGoldenTest extends TestCase {
 			'expiresAt' => '2999-03-01T00:00:00+00:00'
 		];
 		$out['timed again'] = self::attempt(
-			fn (): array => $this->ensurer($timers)->ensure(
+			fn (): array => $this->ensurer($timers)->ensure(request: new CaseItemsEnsureRequest(
 				anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
 				definition: $timed,
 				history: [],
 				actor: 'system:dossiq'
-			)
+			))
 		);
 		$out['armed'] = $armed;
 		$out['marked'] = array_keys($markers->all());
