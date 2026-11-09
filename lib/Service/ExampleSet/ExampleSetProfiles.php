@@ -58,11 +58,15 @@ class ExampleSetProfiles {
 
 	/**
 	 * The accounts.
+	 *
+	 * @var IUserManager
 	 */
 	private readonly IUserManager $users;
 
 	/**
 	 * Hands out the other app's services.
+	 *
+	 * @var ContainerInterface
 	 */
 	private readonly ContainerInterface $container;
 

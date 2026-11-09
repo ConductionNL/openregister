@@ -70,11 +70,15 @@ class ExampleSetCollectivesStore {
 
 	/**
 	 * Hands out the other app's services.
+	 *
+	 * @var ContainerInterface
 	 */
 	private readonly ContainerInterface $container;
 
 	/**
 	 * Tells whether the app is installed.
+	 *
+	 * @var IAppManager
 	 */
 	private readonly IAppManager $appManager;
 
