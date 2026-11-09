@@ -1,3 +1,4 @@
+import axios from '@nextcloud/axios'
 /**
  * Golden record of the push notifications section: each notify_push status
  * and each browser web push (VAPID) state.
@@ -7,7 +8,6 @@
  * @copyright 2026 Conduction B.V.
  */
 import { flushPromises, mount } from '@vue/test-utils'
-import axios from '@nextcloud/axios'
 import PushNotificationsConfiguration from './PushNotificationsConfiguration.vue'
 
 jest.mock('@nextcloud/axios', () => ({ get: jest.fn() }))
@@ -47,8 +47,9 @@ async function section(pushStatus, vapid) {
 	return wrapper
 }
 
-const CONFIGURED = () =>
-	Promise.resolve({ data: { configured: true, publicKey: 'BPubKey' } })
+function CONFIGURED () {
+  return Promise.resolve({ data: { configured: true, publicKey: 'BPubKey' } })
+}
 const CONFIGURED_NO_KEY = () => Promise.resolve({ data: { configured: true } })
 const NOT_CONFIGURED = () => Promise.resolve({ data: { configured: false } })
 const PENDING = () => new Promise(() => {})
