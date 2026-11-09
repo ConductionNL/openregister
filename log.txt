@@ -30,3 +30,4 @@
 2026-11-09T09:45:22Z reviewer-20261109T083856-db31edfb 7691 143ca125c372 not reviewed: Newman-only collections (298 + MCP excluded) need a live Nextcloud; no docker daemon in this cloud sandbox, so they could not be run. Static check: valid JSON, all requests disable cookies
 2026-11-09T09:48:31Z integrator-20261109T092732-73c42b8a GREEN tree f7ffe03f4a on dev 869b97c27d prs 20 front=skip: Tests: 49488, Assertions: 162633, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Risky: 7, Skipped: 23.
 2026-11-09T09:52:00Z reviewer-20261109T083848-41ffc10a 7716 e59e151eaf not reviewed: Newman-only collection (11107 lines) cannot run in a cloud reviewer; needs a CI Newman result or a reviewer with a booted Nextcloud
+2026-11-09T09:53:48Z integrator-20261109T092732-73c42b8a MERGED-TREE f7ffe03f4a: 20 PRs, main now e601776780 = tested tree
