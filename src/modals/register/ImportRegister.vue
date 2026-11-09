@@ -80,42 +80,21 @@ import {
 										>
 									</div>
 									<div
-										v-if="
-											sheetSummary.errors
-											&& sheetSummary.errors.some(
-												(error) =>
-													error.type
-													=== 'MissingIdColumnException',
-											)
-										"
+										v-if="hasErrorType(sheetSummary, 'MissingIdColumnException')"
 										class="errorInfo">
 										<small class="errorText"
 											>Missing required "id" column</small
 										>
 									</div>
 									<div
-										v-else-if="
-											sheetSummary.errors
-											&& sheetSummary.errors.some(
-												(error) =>
-													error.type
-													=== 'InvalidUuidException',
-											)
-										"
+										v-else-if="hasErrorType(sheetSummary, 'InvalidUuidException')"
 										class="errorInfo">
 										<small class="errorText"
 											>Invalid UUID format in ID column</small
 										>
 									</div>
 									<div
-										v-else-if="
-											sheetSummary.errors
-											&& sheetSummary.errors.some(
-												(error) =>
-													error.type
-													=== 'ValidationException',
-											)
-										"
+										v-else-if="hasErrorType(sheetSummary, 'ValidationException')"
 										class="errorInfo">
 										<small class="errorText"
 											>{{
@@ -189,36 +168,20 @@ import {
 									{{ sheetSummary.found || 0 }}
 								</td>
 								<td class="statCell created">
-									{{
-										(sheetSummary.created
-											&& sheetSummary.created.length)
-										|| 0
-									}}
+									{{ countOf(sheetSummary, 'created') }}
 								</td>
 								<td class="statCell updated">
-									{{
-										(sheetSummary.updated
-											&& sheetSummary.updated.length)
-										|| 0
-									}}
+									{{ countOf(sheetSummary, 'updated') }}
 								</td>
 								<td class="statCell unchanged">
-									{{
-										(sheetSummary.unchanged
-											&& sheetSummary.unchanged.length)
-										|| 0
-									}}
+									{{ countOf(sheetSummary, 'unchanged') }}
 								</td>
 								<td class="statCell invalid">
 									{{ getInvalidCount(sheetSummary) }}
 								</td>
 								<td class="statCell errors">
 									<div class="errorCell">
-										<span>{{
-											(sheetSummary.errors
-												&& sheetSummary.errors.length)
-											|| 0
-										}}</span>
+										<span>{{ countOf(sheetSummary, 'errors') }}</span>
 										<button
 											v-if="
 												sheetSummary.errors
@@ -242,19 +205,11 @@ import {
 								</td>
 								<td class="statCell total">
 									{{
-										((sheetSummary.created
-											&& sheetSummary.created.length)
-											|| 0)
-										+ ((sheetSummary.updated
-											&& sheetSummary.updated.length)
-											|| 0)
-										+ ((sheetSummary.unchanged
-											&& sheetSummary.unchanged.length)
-											|| 0)
+										countOf(sheetSummary, 'created')
+										+ countOf(sheetSummary, 'updated')
+										+ countOf(sheetSummary, 'unchanged')
 										+ getInvalidCount(sheetSummary)
-										+ ((sheetSummary.errors
-											&& sheetSummary.errors.length)
-											|| 0)
+										+ countOf(sheetSummary, 'errors')
 									}}
 								</td>
 							</tr>
@@ -784,6 +739,28 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Whether a sheet's import reported an error of the given type.
+		 *
+		 * @param {object} sheetSummary The sheet's import summary
+		 * @param {string} type The error type
+		 * @return {boolean} Whether such an error was reported
+		 */
+		hasErrorType(sheetSummary, type) {
+			return !!sheetSummary.errors && sheetSummary.errors.some((error) => error.type === type)
+		},
+
+		/**
+		 * How many entries a sheet's import summary lists under a key.
+		 *
+		 * @param {object} sheetSummary The sheet's import summary
+		 * @param {string} key The list, such as created or errors
+		 * @return {number} The number of entries, 0 when absent
+		 */
+		countOf(sheetSummary, key) {
+			return (sheetSummary[key] && sheetSummary[key].length) || 0
+		},
+
 		/**
 		 * Get the file extension from a filename
 		 *
