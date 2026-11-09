@@ -714,13 +714,7 @@ export default {
 		 * @spec exclude Form-field binding — sets the selected event property.
 		 */
 		updateEventProperty(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.webhookItem.configuration.eventProperty = value ? value.value : null
+			this.ensureConfiguration().eventProperty = value ? value.value : null
 			this.selectedEventProperty = value
 		},
 
@@ -754,14 +748,24 @@ export default {
 		 * @spec exclude Form-field binding — sets one flag on both copies of the configuration.
 		 */
 		setConfigurationFlag(key, value) {
+			this.configuration[key] = value
+			this.ensureConfiguration()[key] = value
+		},
+
+		/**
+		 * The stored webhook's configuration, created when the form has none yet.
+		 *
+		 * @return {object} The webhook item's configuration.
+		 * @spec exclude Form-field binding — makes sure the webhook item has a configuration.
+		 */
+		ensureConfiguration() {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			if (!this.webhookItem.configuration) {
 				this.webhookItem.configuration = {}
 			}
-			this.configuration[key] = value
-			this.webhookItem.configuration[key] = value
+			return this.webhookItem.configuration
 		},
 
 		/**
