@@ -40,12 +40,7 @@ abstract class UnresolvedValueException extends ResolverConfigException {
 	 * @param string            $message       The message.
 	 * @param Exception|null    $previous      Previous exception in the chain.
 	 */
-	protected function __construct(
-		ResolverConfigKey $config,
-		private readonly string $resolvedValue,
-		string $message,
-		?Exception $previous,
-	) {
+	protected function __construct(ResolverConfigKey $config, private readonly string $resolvedValue, string $message, ?Exception $previous) {
 		parent::__construct(config: $config, message: $message, code: 404, previous: $previous);
 	}//end __construct()
 
