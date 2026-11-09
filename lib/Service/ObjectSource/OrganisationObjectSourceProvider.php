@@ -275,7 +275,9 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
 	 */
 	public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
-		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), organisation: $this->createdOrganisation(data: $data));
+		$organisation = $this->createdOrganisation(data: $data);
+
+		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), organisation: $organisation);
 	}//end insert()
 
 	/**
@@ -331,7 +333,9 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-only-an-organisations-administrator-may-write-it-req-orp-105
 	 */
 	public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
-		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), organisation: $this->applyProjectedFields(organisation: $this->writableOrganisation(id: $id), data: $data));
+		$organisation = $this->applyProjectedFields(organisation: $this->writableOrganisation(id: $id), data: $data);
+
+		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), organisation: $organisation);
 	}//end update()
 
 	/**
