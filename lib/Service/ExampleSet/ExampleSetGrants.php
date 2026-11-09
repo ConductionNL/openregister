@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\Share\IManager;
@@ -259,12 +260,14 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	private function grant(ObjectEntity $object, array $data): array {
 		return $this->sharing()->grantWithTerms(
 			object: $object,
-			type: (string) $data['type'],
-			shareWith: (string) $data['shareWith'],
-			terms: (new GrantTerms(
-				permissions: (int) ($data['permissions'] ?? 1),
-				verbs: array_values((array) ($data['verbs'] ?? []))
-			))->dated(expiresAt: ($data['expiresAt'] ?? null), sharedAt: ($data['sharedAt'] ?? null))
+			request: new GrantRequest(
+				type: (string) $data['type'],
+				shareWith: (string) $data['shareWith'],
+				terms: (new GrantTerms(
+					permissions: (int) ($data['permissions'] ?? 1),
+					verbs: array_values((array) ($data['verbs'] ?? []))
+				))->dated(expiresAt: ($data['expiresAt'] ?? null), sharedAt: ($data['sharedAt'] ?? null))
+			)
 		);
 	}//end grant()
 
