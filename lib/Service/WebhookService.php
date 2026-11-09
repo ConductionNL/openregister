@@ -146,35 +146,25 @@ class WebhookService {
 	/**
 	 * Constructor
 	 *
-	 * @param WebhookMapperInterface $webhookMapper Webhook mapper
-	 * @param LoggerInterface $logger Logger
-	 * @param WebhookLogMapperInterface $webhookLogMapper Webhook log mapper
-	 * @param MappingService $mappingService Mapping service
-	 * @param MappingMapperInterface $mappingMapper Mapping mapper
-	 * @param IJobList $jobList Background job list for async delivery
-	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
-	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache (optional)
+	 * @param WebhookStores           $stores   Webhook, log and mapping stores
+	 * @param WebhookDispatchServices $dispatch Job list, CloudEvent formatter and interception cache
+	 * @param LoggerInterface         $logger   Logger
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		WebhookMapperInterface $webhookMapper,
+		WebhookStores $stores,
+		WebhookDispatchServices $dispatch,
 		LoggerInterface $logger,
-		WebhookLogMapperInterface $webhookLogMapper,
-		MappingService $mappingService,
-		MappingMapperInterface $mappingMapper,
-		IJobList $jobList,
-		?CloudEventFormatterInterface $cloudEventFormatter = null,
-		?WebhookInterceptionCacheInterface $interceptionCache = null,
 	) {
-		$this->webhookMapper = $webhookMapper;
+		$this->webhookMapper = $stores->webhookMapper;
 		$this->logger = $logger;
-		$this->webhookLogMapper = $webhookLogMapper;
-		$this->mappingService = $mappingService;
-		$this->mappingMapper = $mappingMapper;
-		$this->jobList = $jobList;
-		$this->cloudEventFormatter = $cloudEventFormatter;
-		$this->interceptionCache = $interceptionCache;
+		$this->webhookLogMapper = $stores->webhookLogMapper;
+		$this->mappingService = $stores->mappingService;
+		$this->mappingMapper = $stores->mappingMapper;
+		$this->jobList = $dispatch->jobList;
+		$this->cloudEventFormatter = $dispatch->cloudEventFormatter;
+		$this->interceptionCache = $dispatch->interceptionCache;
 		$this->initializeHttpClient();
 	}//end __construct()
 
