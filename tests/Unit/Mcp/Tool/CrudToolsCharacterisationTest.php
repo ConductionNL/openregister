@@ -345,12 +345,12 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateSchemaWithBreakingChangeBumpsAndRecords(): void
     {
         $log    = [];
-        $result = $this->schemaTool($log, true, true)->updateSchema('7', 'New', null, null, ['a', 'b']);
+        $result = $this->schemaTool($log, true, true)->updateSchema('7', 'New', null, ['b' => []]);
 
         $this->assertSame(
             [
-                'classify:Old:{"properties":{"a":{"type":"string"}},"required":["a","b"]}',
-                'update:New|Old description|{"a":{"type":"string"}}|["a","b"]|2.0.0',
+                'classify:Old:{"properties":{"b":[]},"required":["a"]}',
+                'update:New|Old description|{"b":[]}|["a"]|2.0.0',
                 'changelog:7:2.0.0:false:agent tool',
             ],
             $log
@@ -378,12 +378,12 @@ class CrudToolsCharacterisationTest extends TestCase
     {
         $log = [];
         $this->schemaTool($log, true, true)->updateSchema('7', 'T', 'D');
-        $this->schemaTool($log, false, true)->updateSchema('7', null, null, ['c' => []], ['c']);
+        $this->schemaTool($log, false, true)->updateSchema('7', null, null, ['c' => []]);
 
         $this->assertSame(
             [
                 'update:T|D|{"a":{"type":"string"}}|["a"]|1.0.0',
-                'update:Old|Old description|{"c":[]}|["c"]|1.0.0',
+                'update:Old|Old description|{"c":[]}|["a"]|1.0.0',
             ],
             $log
         );
