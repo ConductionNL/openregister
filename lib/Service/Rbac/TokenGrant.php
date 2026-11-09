@@ -78,25 +78,75 @@ class TokenGrant {
 	public const UNGRANTABLE = 'manage';
 
 	/**
+	 * The verbs this token may use.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $verbs;
+
+	/**
+	 * Register slugs, or null for every one the holder may reach.
+	 *
+	 * @var array<int, string>|null
+	 */
+	public readonly ?array $registers;
+
+	/**
+	 * Schema slugs, or null for every one.
+	 *
+	 * @var array<int, string>|null
+	 */
+	public readonly ?array $schemas;
+
+	/**
+	 * A row condition, in the conditional-scope grammar.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public readonly ?array $match;
+
+	/**
+	 * When it lapses; required at issue.
+	 *
+	 * @var DateTimeInterface|null
+	 */
+	public readonly ?DateTimeInterface $expiresAt;
+
+	/**
+	 * Calls per minute, or null for none.
+	 *
+	 * @var int|null
+	 */
+	public readonly ?int $rateLimit;
+
+	/**
+	 * Which token this is, for `actorVia`.
+	 *
+	 * @var string
+	 */
+	public readonly string $tokenId;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array<int, string>        $verbs     The verbs this token may use.
-	 * @param array<int, string>|null   $registers Register slugs, or null for every one the holder may reach.
-	 * @param array<int, string>|null   $schemas   Schema slugs, or null for every one.
-	 * @param array<string, mixed>|null $match     A row condition, in the conditional-scope grammar.
-	 * @param DateTimeInterface|null    $expiresAt When it lapses; required at issue.
-	 * @param int|null                  $rateLimit Calls per minute, or null for none.
-	 * @param string                    $tokenId   Which token this is, for `actorVia`.
+	 * @param array<int, string>    $verbs   The verbs this token may use.
+	 * @param TokenGrantReach|null  $reach   Which registers, schemas and rows it reaches, or null for all the holder may.
+	 * @param TokenGrantTerms|null  $terms   When it lapses and how often it may call, or null for neither.
+	 * @param string                $tokenId Which token this is, for `actorVia`.
 	 */
 	public function __construct(
-		public readonly array $verbs,
-		public readonly ?array $registers = null,
-		public readonly ?array $schemas = null,
-		public readonly ?array $match = null,
-		public readonly ?DateTimeInterface $expiresAt = null,
-		public readonly ?int $rateLimit = null,
-		public readonly string $tokenId = '',
+		array $verbs,
+		?TokenGrantReach $reach = null,
+		?TokenGrantTerms $terms = null,
+		string $tokenId = '',
 	) {
+		$this->verbs = $verbs;
+		$this->registers = $reach?->registers;
+		$this->schemas = $reach?->schemas;
+		$this->match = $reach?->match;
+		$this->expiresAt = $terms?->expiresAt;
+		$this->rateLimit = $terms?->rateLimit;
+		$this->tokenId = $tokenId;
 	}//end __construct()
 
 	/**
@@ -143,11 +193,12 @@ class TokenGrant {
 
 		return new self(
 			verbs: array_values(array_map(static fn (mixed $v): string => (string)$v, $verbs)),
-			registers: self::listOrNull(value: ($stored['registers'] ?? null)),
-			schemas: self::listOrNull(value: ($stored['schemas'] ?? null)),
-			match: $match,
-			expiresAt: self::dateOrNull(value: ($stored['expiresAt'] ?? null)),
-			rateLimit: $rateLimit,
+			reach: new TokenGrantReach(
+				registers: self::listOrNull(value: ($stored['registers'] ?? null)),
+				schemas: self::listOrNull(value: ($stored['schemas'] ?? null)),
+				match: $match
+			),
+			terms: new TokenGrantTerms(expiresAt: self::dateOrNull(value: ($stored['expiresAt'] ?? null)), rateLimit: $rateLimit),
 			tokenId: $tokenId
 		);
 	}//end fromStored()

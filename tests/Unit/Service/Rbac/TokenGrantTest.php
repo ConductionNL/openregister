@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
@@ -208,8 +210,8 @@ class TokenGrantTest extends TestCase {
 	 * @return void
 	 */
 	public function testAHolderIsWarnedBeforeTheTokenLapses(): void {
-		$soon = new TokenGrant(verbs: ['read'], expiresAt: new DateTimeImmutable('2026-09-25T12:00:00+00:00'));
-		$later = new TokenGrant(verbs: ['read'], expiresAt: new DateTimeImmutable('2027-09-25T12:00:00+00:00'));
+		$soon = new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-09-25T12:00:00+00:00')));
+		$later = new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2027-09-25T12:00:00+00:00')));
 
 		$this->assertTrue($this->validator()->lapsesSoon(grant: $soon, now: $this->now()));
 		$this->assertFalse($this->validator()->lapsesSoon(grant: $later, now: $this->now()));
@@ -234,13 +236,13 @@ class TokenGrantTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAbsentAxisDoesNotNarrowAndAPresentOneIsClosed(): void {
-		$unscoped = new TokenGrant(verbs: ['read'], expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00'));
+		$unscoped = new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00')));
 		$this->assertTrue($unscoped->covers(schemaSlug: 'anything', registerSlug: 'anywhere'));
 
 		$scoped = new TokenGrant(
 			verbs: ['read'],
-			schemas: ['zaak'],
-			expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00')
+			reach: new TokenGrantReach(schemas: ['zaak']),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2027-01-01T00:00:00+00:00'))
 		);
 		$this->assertTrue($scoped->covers(schemaSlug: 'zaak', registerSlug: 'anywhere'));
 		$this->assertFalse($scoped->covers(schemaSlug: 'persoon', registerSlug: 'anywhere'));
@@ -269,7 +271,7 @@ class TokenGrantTest extends TestCase {
 		$narrower = new TokenGrantNarrower();
 		$expired = new TokenGrant(
 			verbs: ['read'],
-			expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00'),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00')),
 			tokenId: 'leverancier'
 		);
 
@@ -298,8 +300,8 @@ class TokenGrantTest extends TestCase {
 		$narrower = new TokenGrantNarrower();
 		$grant = new TokenGrant(
 			verbs: ['read', 'list'],
-			schemas: ['zaak'],
-			expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'),
+			reach: new TokenGrantReach(schemas: ['zaak']),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00')),
 			tokenId: 'leverancier'
 		);
 
@@ -332,8 +334,8 @@ class TokenGrantTest extends TestCase {
 		$narrower = new TokenGrantNarrower();
 		$grant = new TokenGrant(
 			verbs: ['read'],
-			schemas: ['zaak'],
-			expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00')
+			reach: new TokenGrantReach(schemas: ['zaak']),
+			terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'))
 		);
 
 		$block = $narrower->narrow(
@@ -403,7 +405,7 @@ class TokenGrantTest extends TestCase {
 			authorization: $forged,
 			grant: new TokenGrant(
 				verbs: ['read'],
-				expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00')
+				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-11-01T00:00:00+00:00'))
 			),
 			schemaSlug: 'zaak',
 			registerSlug: 'zaken',
