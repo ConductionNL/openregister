@@ -26,9 +26,7 @@ use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -58,20 +56,6 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 	public const ACTION_RELEASED = 'organisation.halt.released';
 
 	/**
-	 * Where the active halts are kept.
-	 *
-	 * @var IAppConfig
-	 */
-	private readonly IAppConfig $appConfig;
-
-	/**
-	 * Where their history goes.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $audit;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param OrganisationHaltRecords     $records       The app config holding the active halts and the audit trail holding their history.
@@ -80,13 +64,11 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 	 * @param LoggerInterface             $logger        The logger.
 	 */
 	public function __construct(
-		OrganisationHaltRecords $records,
+		private readonly OrganisationHaltRecords $records,
 		private readonly IUserSession $session,
 		private readonly OrganisationMapperInterface $organisations,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->appConfig = $records->appConfig;
-		$this->audit = $records->audit;
 	}//end __construct()
 
 	/**
@@ -188,7 +170,7 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
 	public function list(?string $organisation=null): array {
-		$raw = $this->appConfig->getValueString('openregister', self::CONFIG_KEY, '[]');
+		$raw = $this->records->appConfig->getValueString('openregister', self::CONFIG_KEY, '[]');
 		$decoded = json_decode($raw, true);
 		if (is_array($decoded) === false) {
 			return [];
@@ -297,7 +279,7 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 	 * @return void
 	 */
 	private function store(array $halts): void {
-		$this->appConfig->setValueString('openregister', self::CONFIG_KEY, (string) json_encode(array_values($halts)));
+		$this->records->appConfig->setValueString('openregister', self::CONFIG_KEY, (string) json_encode(array_values($halts)));
 	}//end store()
 
 	/**
@@ -320,7 +302,7 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 			$row->setChanged($changed);
 			$row->setCreated(new DateTime());
 
-			$this->audit->insertAuditTrails(entries: [$row]);
+			$this->records->audit->insertAuditTrails(entries: [$row]);
 		} catch (Throwable $e) {
 			$this->logger->error('[OrganisationHalt] the act happened but was not recorded: ' . $e->getMessage());
 		}
