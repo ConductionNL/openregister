@@ -288,4 +288,47 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		$this->assertSame([], $method->getAttributes(\OCP\AppFramework\Http\Attribute\NoCSRFRequired::class));
 		$this->assertStringNotContainsString('@NoCSRFRequired', (string)$method->getDocComment());
 	}
+
+	/**
+	 * aud-f1: a trust change goes on the audit trail and in the log, with its actor.
+	 */
+	public function testATrustChangeIsAuditedAndLogged(): void {
+		$this->groupManager->method('isAdmin')->willReturn(true);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('beheer');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->service->method('getTrustConfig')->willReturnOnConsecutiveCalls(
+			['allowUnverifiedBundles' => '', 'trustedKeys' => ''],
+			['allowUnverifiedBundles' => 'true', 'trustedKeys' => '']
+		);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $name, mixed $default = null) => ['field' => 'allowUnverifiedBundles', 'value' => 'true'][$name] ?? $default
+		);
+
+		$auditor = $this->createMock(\OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor::class);
+		$auditor->expects($this->once())->method('recordUpdate')->with(
+			'openregister.federated-config',
+			['allowUnverifiedBundles' => '', 'trustedKeys' => ''],
+			['allowUnverifiedBundles' => 'true', 'trustedKeys' => '']
+		);
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('info')->with(
+			$this->stringContains('Trust configuration changed'),
+			['actor' => 'beheer', 'fields' => ['allowUnverifiedBundles']]
+		);
+
+		$controller = new FederatedConfigController(
+			'openregister',
+			$this->request,
+			$this->service,
+			$this->createMock(FederatedConfigAccess::class),
+			$this->userSession,
+			$this->createMock(IConfig::class),
+			$this->groupManager,
+			$auditor,
+			$logger
+		);
+
+		$this->assertSame(200, $controller->setTrust()->getStatus());
+	}
 }//end class

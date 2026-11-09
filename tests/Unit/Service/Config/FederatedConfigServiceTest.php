@@ -352,4 +352,55 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$service->setTrustValue('nope', 'x');
 	}
+
+	/**
+	 * aud-f1: an install and a refused install are logged with actor, type and source.
+	 */
+	public function testInstallsAndRefusalsAreLogged(): void {
+		$lines = [];
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		foreach (['info', 'warning'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				static function (string|\Stringable $message, array $context = []) use (&$lines, $level): void {
+					$lines[] = [$level, $context];
+				}
+			);
+		}
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('installer');
+		$session = $this->createMock(\OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
+		$signer->method('verify')->willReturn(['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null]);
+		$this->allowlist = ['ConductionNL'];
+		$this->registry->method('get')->willReturn($this->type());
+		$service = new FederatedConfigService(
+			$this->registry,
+			$this->createMock(CredentialBrokerService::class),
+			$signer,
+			$this->createMock(\OCP\Http\Client\IClientService::class),
+			$this->config,
+			$logger,
+			$session
+		);
+
+		try {
+			$service->install('demo.type', ['flows' => []], 'evil/repo');
+			$this->fail('refused');
+		} catch (RuntimeException $e) {
+			// Expected: not on the allowlist.
+		}
+
+		$this->allowlist = [''];
+		$service->install('demo.type', ['flows' => []], 'anyone/repo');
+
+		$this->assertSame(
+			[
+				['warning', ['actor' => 'installer', 'type' => 'demo.type', 'source' => 'evil/repo']],
+				['info', ['actor' => 'installer', 'type' => 'demo.type', 'source' => 'anyone/repo']],
+			],
+			$lines
+		);
+	}
 }

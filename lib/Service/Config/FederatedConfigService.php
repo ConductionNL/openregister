@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCP\IUserSession;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -94,6 +95,7 @@ class FederatedConfigService {
 	 * @param IClientService $clientService NC HTTP client factory (anonymous discovery).
 	 * @param IAppConfig $appConfig Reads the org source allowlist.
 	 * @param LoggerInterface $logger The logger.
+	 * @param IUserSession|null $userSession Names who installed a bundle in the log.
 	 */
 	public function __construct(
 		private readonly ShareableConfigTypeRegistry $registry,
@@ -102,6 +104,7 @@ class FederatedConfigService {
 		private readonly IClientService $clientService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		private readonly ?IUserSession $userSession = null,
 	) {
 
 	}//end __construct()
@@ -157,6 +160,40 @@ class FederatedConfigService {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function install(string $typeId, array $bundle, string $source = ''): array {
+		// An install writes registers, schemas, objects or flows as the system,
+		// so who installed what, from where, is logged whether it lands or not.
+		$context = [
+			'actor' => ($this->userSession?->getUser()?->getUID() ?? '(no user)'),
+			'type' => $typeId,
+			'source' => $source,
+		];
+		try {
+			$result = $this->verifiedInstall(typeId: $typeId, bundle: $bundle, source: $source);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FederatedConfig] Refused a bundle install: ' . $e->getMessage(),
+				context: $context
+			);
+			throw $e;
+		}
+
+		$this->logger->info(message: '[FederatedConfig] Installed a shared bundle', context: $context);
+
+		return $result;
+	}//end install()
+
+	/**
+	 * The install itself, once the caller may install at all.
+	 *
+	 * @param string $typeId The shareable type id.
+	 * @param array  $bundle The bundle.
+	 * @param string $source Where the bundle came from.
+	 *
+	 * @return array The type's install result.
+	 *
+	 * @throws RuntimeException When the source, signature or trust refuses the bundle.
+	 */
+	private function verifiedInstall(string $typeId, array $bundle, string $source): array {
 		if ($this->isSourceAllowed(source: $source) === false) {
 			throw new RuntimeException(sprintf('Source "%s" is not on this organisation\'s allowlist.', $source));
 		}
@@ -184,7 +221,7 @@ class FederatedConfigService {
 		}
 
 		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
-	}//end install()
+	}//end verifiedInstall()
 
 	/**
 	 * Publish a bundle to a GitHub repository, with the token supplied by the

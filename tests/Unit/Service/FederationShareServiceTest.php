@@ -390,4 +390,83 @@ class FederationShareServiceTest extends TestCase {
 		$this->assertSame('urn:uuid:9', $captured['objectUri']);
 		$this->assertSame('partner@remote.example', $captured['sharedWith']);
 	}//end testEnsureObjectShareCreatesWhenMissing()
+
+	/**
+	 * A service whose log lines are collected.
+	 *
+	 * @param array<int, array{0: string, 1: string, 2: array}> $lines Collected [level, message, context].
+	 *
+	 * @return FederationShareService
+	 */
+	private function loggingService(array &$lines): FederationShareService {
+		$logger = $this->createMock(LoggerInterface::class);
+		foreach (['info', 'warning'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				static function (string|\Stringable $message, array $context = []) use (&$lines, $level): void {
+					$lines[] = [$level, (string)$message, $context];
+				}
+			);
+		}
+
+		return new FederationShareService($this->shareMapper, $this->grantor, $this->secureRandom, $logger);
+	}//end loggingService()
+
+	/**
+	 * aud-f1: a created share is logged with its actor and scope, never its token.
+	 *
+	 * @return void
+	 */
+	public function testACreatedShareIsLoggedWithoutItsToken(): void {
+		$lines = [];
+		$this->shareMapper->method('createFromArray')->willReturn(new FederatedShare());
+
+		$this->loggingService($lines)->createOutgoingShare(['scope' => 'schema', 'schema' => 'zaak', 'permissions' => 'read-write']);
+
+		$this->assertSame('info', $lines[0][0] ?? null);
+		$this->assertSame('alice', $lines[0][2]['actor'] ?? null);
+		$this->assertSame('read-write', $lines[0][2]['permissions'] ?? null);
+		$this->assertStringNotContainsString(str_repeat('a', 48), json_encode($lines));
+	}//end testACreatedShareIsLoggedWithoutItsToken()
+
+	/**
+	 * aud-f1: a refused share and a refused revoke are logged as warnings.
+	 *
+	 * @return void
+	 */
+	public function testRefusalsAreLogged(): void {
+		$lines = [];
+		$this->refusal = static fn (FederatedShare $share): ?string => 'needs manage rights';
+		$this->shareMapper->method('find')->willReturn(new FederatedShare());
+		$service = $this->loggingService($lines);
+
+		foreach ([
+			fn () => $service->createOutgoingShare(['scope' => 'schema', 'schema' => 'zaak', 'permissions' => 'read']),
+			fn () => $service->setStatus(id: 7, status: 'revoked'),
+		] as $call) {
+			try {
+				$call();
+				$this->fail('refused');
+			} catch (NotAuthorizedException $e) {
+				// Expected.
+			}
+		}
+
+		$this->assertSame(['warning', 'warning'], array_column($lines, 0));
+		$this->assertSame(7, $lines[1][2]['share'] ?? null);
+	}//end testRefusalsAreLogged()
+
+	/**
+	 * aud-f1: a revoke is logged with its actor.
+	 *
+	 * @return void
+	 */
+	public function testARevokeIsLogged(): void {
+		$lines = [];
+		$this->shareMapper->method('find')->willReturn(new FederatedShare());
+		$this->shareMapper->method('updateFromArray')->willReturn(new FederatedShare());
+
+		$this->loggingService($lines)->setStatus(id: 7, status: 'revoked');
+
+		$this->assertSame([['info', '[Federation] Changed a share status', ['actor' => 'alice', 'share' => 7, 'status' => 'revoked']]], $lines);
+	}//end testARevokeIsLogged()
 }//end class

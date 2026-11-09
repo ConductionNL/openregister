@@ -123,12 +123,27 @@ class FederationShareService {
 			'status' => 'accepted',
 		];
 
+		// Who minted which grant is logged; the token itself never is.
+		$context = [
+			'actor' => $this->actor(),
+			'scope' => $scope,
+			'register' => $data['register'],
+			'schema' => $data['schema'],
+			'permissions' => $permissions,
+			'organisation' => $data['organisation'],
+			'sharedWith' => $data['sharedWith'],
+		];
+
 		$refusal = $this->grantor->refusal(share: (new FederatedShare())->hydrate(object: $data));
 		if ($refusal !== null) {
+			$this->logger->warning('[Federation] Refused to create a share: ' . $refusal, $context);
 			throw new NotAuthorizedException(message: $refusal);
 		}
 
-		return $this->shareMapper->createFromArray(data: $data);
+		$share = $this->shareMapper->createFromArray(data: $data);
+		$this->logger->info('[Federation] Created an outgoing share', $context + ['share' => $share->getId()]);
+
+		return $share;
 	}//end createOutgoingShare()
 
 	/**
@@ -267,13 +282,31 @@ class FederationShareService {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 */
 	public function setStatus(int $id, string $status): FederatedShare {
+		$context = ['actor' => $this->actor(), 'share' => $id, 'status' => $status];
 		$refusal = $this->grantor->changeRefusal(share: $this->shareMapper->find(id: $id));
 		if ($refusal !== null) {
+			$this->logger->warning('[Federation] Refused to change a share: ' . $refusal, $context);
 			throw new NotAuthorizedException(message: $refusal);
 		}
 
-		return $this->shareMapper->updateFromArray(id: $id, data: ['status' => $status]);
+		$share = $this->shareMapper->updateFromArray(id: $id, data: ['status' => $status]);
+		$this->logger->info('[Federation] Changed a share status', $context);
+
+		return $share;
 	}//end setStatus()
+
+	/**
+	 * The signed-in user's id for a log line.
+	 *
+	 * @return string The uid, or "(no user)".
+	 */
+	private function actor(): string {
+		try {
+			return ($this->grantor->userId() ?? '(no user)');
+		} catch (\Throwable $e) {
+			return '(unknown)';
+		}
+	}//end actor()
 
 	/**
 	 * Resolve the active organisation UUID (null when none).
