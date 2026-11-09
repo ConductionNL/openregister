@@ -139,12 +139,7 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			return [];
 		}
 
-		$askable = [];
-		foreach ($entries as $entry) {
-			if ($entry['address'] !== null) {
-				$askable[] = $entry['address'];
-			}
-		}
+		$askable = array_values(array_filter(array_column($entries, 'address'), static fn (?string $address): bool => $address !== null));
 
 		$decisions = $this->delivery->optOut->ask(
 			channel: 'email',
