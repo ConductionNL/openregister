@@ -519,12 +519,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 				];
 			}
 
-			return $this->modelReport(
-				currentModel: $currentModel,
-				totalVectors: $totalVectors,
-				existingModels: $this->distinctEmbeddingModels(),
-				nullModelCount: $this->countVectorsWithoutModel()
-			);
+			return $this->modelReport(currentModel: $currentModel, totalVectors: $totalVectors);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[VectorEmbeddings] Failed to check embedding model mismatch',
@@ -610,16 +605,17 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	}//end distinctEmbeddingModels()
 
 	/**
-	 * The mismatch report over existing vectors.
+	 * The mismatch report over existing vectors: reads the distinct stored
+	 * models, then how many vectors carry no model.
 	 *
-	 * @param mixed             $currentModel   The configured model.
-	 * @param int               $totalVectors   How many vectors exist.
-	 * @param array<int, mixed> $existingModels The distinct stored models.
-	 * @param int               $nullModelCount How many vectors carry no model.
+	 * @param mixed $currentModel The configured model.
+	 * @param int   $totalVectors How many vectors exist.
 	 *
 	 * @return array<string, mixed> The report.
 	 */
-	private function modelReport(mixed $currentModel, int $totalVectors, array $existingModels, int $nullModelCount): array {
+	private function modelReport(mixed $currentModel, int $totalVectors): array {
+		$existingModels = $this->distinctEmbeddingModels();
+		$nullModelCount = $this->countVectorsWithoutModel();
 		$mismatchDetails = array_values(array_filter($existingModels, static fn ($model): bool => $model !== $currentModel));
 		$hasMismatch     = $mismatchDetails !== [];
 
