@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\ValidationSettingsController;
+use OCA\OpenRegister\Controller\Support\ValidationSettingsControllerServices;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,10 +26,8 @@ class ValidationSettingsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new ValidationSettingsController(
-			'openregister',
 			$this->request,
-			$this->settingsService,
-			$this->logger
+			new ValidationSettingsControllerServices($this->settingsService, $this->logger)
 		);
 	}
 
