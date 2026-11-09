@@ -408,24 +408,9 @@ import {
 			<div class="fileTypes">
 				<p class="fileTypesTitle">Supported file types:</p>
 				<ul class="fileTypesList">
-					<li>
-						<strong>JSON</strong> - Register configuration and
-						objects.<br />
-						<em
-							>You can create or update objects for multiple schemas at
-							once.</em
-						>
-					</li>
-					<li>
-						<strong>Excel</strong> (.xlsx, .xls) - Objects data.<br />
-						<em
-							>You can create or update objects for multiple schemas at
-							once.</em
-						>
-					</li>
-					<li>
-						<strong>CSV</strong> - Objects data.<br />
-						<em>You can only update one schema within a register.</em>
+					<li v-for="fileType in fileTypesHelp" :key="fileType.name">
+						<strong>{{ fileType.name }}</strong>{{ fileType.text }}<br />
+						<em>{{ fileType.note }}</em>
 					</li>
 				</ul>
 				<div class="importRequirements">
@@ -561,6 +546,17 @@ const FILE_TYPE_LABELS = {
 	csv: 'CSV Data',
 }
 
+const MANY_SCHEMAS = 'You can create or update objects for multiple schemas at once.'
+
+/**
+ * The supported file types the import form lists, with what each can do.
+ */
+const FILE_TYPES_HELP = [
+	{ name: 'JSON', text: ' - Register configuration and objects.', note: MANY_SCHEMAS },
+	{ name: 'Excel', text: ' (.xlsx, .xls) - Objects data.', note: MANY_SCHEMAS },
+	{ name: 'CSV', text: ' - Objects data.', note: 'You can only update one schema within a register.' },
+]
+
 const LARGE_FILE = 500 * 1024
 
 /**
@@ -653,6 +649,17 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The supported file types the form lists.
+		 *
+		 * @return {Array<object>} Name, text and note of each type
+		 *
+		 * @spec exclude computed display helper for the supported file types list
+		 */
+		fileTypesHelp() {
+			return FILE_TYPES_HELP
+		},
+
 		/**
 		 * Check if the selected file type is valid
 		 *
