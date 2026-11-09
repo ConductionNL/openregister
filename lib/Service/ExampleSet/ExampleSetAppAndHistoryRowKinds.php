@@ -51,6 +51,8 @@ final readonly class ExampleSetAppAndHistoryRowKinds {
 	 * The writers by part, null where a writer is left out.
 	 *
 	 * @return array<string, ExampleSetEngineRows|null>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function writers(): array {
 		return ($this->apps->writers() + $this->history->writers());
