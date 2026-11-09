@@ -46,7 +46,6 @@ class FilesControllerTest extends TestCase {
 		$this->userManager = $this->createMock(IUserManager::class);
 
 		$this->controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
