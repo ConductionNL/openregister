@@ -156,6 +156,27 @@ class AuthorizationService {
 	}//end actAs()
 
 	/**
+	 * Bind the consumer's stored grant as the ceiling on this request.
+	 *
+	 * Call before acting as the consumer's user, so the request never runs as
+	 * that user without the ceiling. A consumer without a grant binds null,
+	 * which narrows nothing.
+	 *
+	 * @param ResolvedConsumer $consumer   The consumer whose credential was accepted.
+	 * @param string           $fallbackId Grant id when the consumer has no uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	private function bindConsumerGrant(ResolvedConsumer $consumer, string $fallbackId): void {
+		$this->tokenGrantSource?->bindFromConsumer(
+			storedAuthorization: $consumer->configuration,
+			tokenId: (string)($consumer->uuid ?? $fallbackId)
+		);
+	}//end bindConsumerGrant()
+
+	/**
 	 * Tell the audit writer which consumer's token opened this request.
 	 *
 	 * The authorisation layer is the ONLY place that knows this. A JWT presents
@@ -276,10 +297,7 @@ class AuthorizationService {
 		//
 		// Bound BEFORE the user is set, so there is no window in which the
 		// request is the user with no ceiling on it.
-		$this->tokenGrantSource?->bindFromConsumer(
-			storedAuthorization: $authConf,
-			tokenId: (string)($issuer->uuid ?? $payload['iss'])
-		);
+		$this->bindConsumerGrant(consumer: $issuer, fallbackId: (string)$payload['iss']);
 
 		$this->resolvedConsumer = $issuer;
 		$this->actAs(user: $this->userManager->get((string)$issuer->userId));
@@ -505,6 +523,8 @@ class AuthorizationService {
 		if ($consumer === null) {
 			throw new AuthenticationException(message: 'Invalid API key', details: []);
 		}
+
+		$this->bindConsumerGrant(consumer: $consumer, fallbackId: $consumer->name);
 
 		$this->resolvedConsumer = $consumer;
 		if ((string)$consumer->userId !== '') {
