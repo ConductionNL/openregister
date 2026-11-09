@@ -68,11 +68,13 @@ class FlowExpression {
 	/**
 	 * Build the document an expression is evaluated against.
 	 *
+	 * `subject` is always present and empty here; a caller whose expressions
+	 * read the object a run is about (a case sentry) fills it in.
+	 *
 	 * @param array $item The current item.
 	 * @param integer $itemIndex Its position in the list.
 	 * @param integer $itemCount How many items the step received.
 	 * @param array $context Run-level metadata.
-	 * @param array $subject The object the run is about.
 	 *
 	 * @return array<string, mixed> The data document.
 	 *
@@ -83,7 +85,6 @@ class FlowExpression {
 		int $itemIndex = 0,
 		int $itemCount = 1,
 		array $context = [],
-		array $subject = [],
 	): array {
 		return [
 			'json' => (array)($item[FlowItems::JSON] ?? []),
@@ -91,7 +92,7 @@ class FlowExpression {
 			'itemIndex' => $itemIndex,
 			'itemCount' => $itemCount,
 			'context' => $context,
-			'subject' => $subject,
+			'subject' => [],
 		];
 
 	}//end dataFor()

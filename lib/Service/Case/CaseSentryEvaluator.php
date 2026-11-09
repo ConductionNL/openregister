@@ -236,9 +236,9 @@ class CaseSentryEvaluator {
 	public function dataFor(CasePlanTree $tree, array $object, ?string $event, array $payload): array {
 		$data = FlowExpression::dataFor(
 			item: [FlowItems::JSON => $object],
-			context: ['event' => $event, 'payload' => $payload],
-			subject: $object
+			context: ['event' => $event, 'payload' => $payload]
 		);
+		$data['subject'] = $object;
 		$data['case'] = ['items' => $tree->stateMap(), 'object' => $object, 'event' => $event, 'payload' => $payload];
 
 		return $data;
