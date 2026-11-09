@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -123,11 +124,11 @@ class ExampleSetRecordGoldenTest extends TestCase {
 			],
 		];
 		$report   = [];
-		$this->assertTrue(ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: 'notes', noun: 'note', report: $report, record: $record));
+		$this->assertTrue(ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: 'notes', noun: 'note'), fragment: $fragment, report: $report, record: $record));
 		$this->assertSame(['demo/kept', 'demo/', 'other/gone', 'demo/o#references'], array_keys(array: $record['notes']));
 		$this->assertSame(['left' => ['note demo/gone: the set no longer declares it', 'note demo/also-gone: the set no longer declares it']], $report);
-		$this->assertFalse(ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: 'notes', noun: 'note', report: $report, record: $record));
+		$this->assertFalse(ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: 'notes', noun: 'note'), fragment: $fragment, report: $report, record: $record));
 		$empty = [];
-		$this->assertFalse(ExampleSetRecord::letGoUndeclared(fragment: ['app' => 'demo'], part: 'tasks', noun: 'task', report: $report, record: $empty));
+		$this->assertFalse(ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: 'tasks', noun: 'task'), fragment: ['app' => 'demo'], report: $report, record: $empty));
 	}//end testLetGoUndeclared()
 }//end class
