@@ -58,8 +58,7 @@ final class ImportPreviewControllerFactory {
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\ImportPreviewPlatform(
 					jobList: $jobList,
-					userSession: $userSession,
-					groupManager: $groupManager,
+					principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 				),
 			),
 		];
