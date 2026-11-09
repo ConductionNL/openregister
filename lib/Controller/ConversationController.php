@@ -165,15 +165,16 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 			$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
 			$params = $this->request->getParams();
 			$page   = $this->paging(params: $params);
-			$list   = $this->listConversations(
-				organisationUuid: $organisationUuid,
-				showDeleted: filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN),
-				page: $page
-			);
+			if (filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+				$list = $this->listDeletedConversations(organisationUuid: $organisationUuid, page: $page);
+				return new JSONResponse(data: $list + $page, statusCode: 200);
+			}
 
+			$list = $this->listActiveConversations(organisationUuid: $organisationUuid, page: $page);
 			return new JSONResponse(data: $list + $page, statusCode: 200);
 		} catch (\Exception $e) {
-			return $this->failure(log: 'Failed to list conversations', error: 'Failed to fetch conversations', e: $e);
+			$this->logFailure(log: 'Failed to list conversations', e: $e);
+			return $this->failure(error: 'Failed to fetch conversations', e: $e);
 		}
 	}//end index()
 
@@ -193,29 +194,23 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	}//end paging()
 
 	/**
-	 * One page of the current user's conversations in an organisation:
-	 * the archived (soft-deleted) ones or the active ones.
+	 * One page of the current user's archived (soft-deleted) conversations in an organisation.
 	 *
 	 * @param string|null                   $organisationUuid The active organisation
-	 * @param bool                          $showDeleted      Whether to list archived conversations
 	 * @param array{limit: int, offset: int} $page             The page
 	 *
 	 * @return array{results: array, total: int}
 	 */
-	private function listConversations(?string $organisationUuid, bool $showDeleted, array $page): array {
-		if ($showDeleted === true) {
-			$conversations = $this->conversationMapper->findDeletedByUser(
-				userId: $this->userId,
-				organisation: $organisationUuid,
-				limit: $page['limit'],
-				offset: $page['offset']
-			);
-			$total         = $this->conversationMapper->countDeletedByUser(userId: $this->userId, organisation: $organisationUuid);
-			return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
-		}
-
-		return $this->listActiveConversations(organisationUuid: $organisationUuid, page: $page);
-	}//end listConversations()
+	private function listDeletedConversations(?string $organisationUuid, array $page): array {
+		$conversations = $this->conversationMapper->findDeletedByUser(
+			userId: $this->userId,
+			organisation: $organisationUuid,
+			limit: $page['limit'],
+			offset: $page['offset']
+		);
+		$total         = $this->conversationMapper->countDeletedByUser(userId: $this->userId, organisation: $organisationUuid);
+		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
+	}//end listDeletedConversations()
 
 	/**
 	 * One page of the current user's active conversations in an organisation.
@@ -432,7 +427,8 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 
 			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 201);
 		} catch (\Exception $e) {
-			return $this->failure(log: 'Failed to create conversation', error: 'Failed to create conversation', e: $e);
+			$this->logFailure(log: 'Failed to create conversation', e: $e);
+			return $this->failure(error: 'Failed to create conversation', e: $e);
 		}
 	}//end create()
 
@@ -835,18 +831,27 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	}//end failed()
 
 	/**
-	 * Log a failed action that has no conversation and return a 500.
+	 * Log a failed action that has no conversation.
 	 *
-	 * @param string     $log   The log message, without the controller prefix
+	 * @param string     $log The log message, without the controller prefix
+	 * @param \Exception $e   The failure
+	 *
+	 * @return void
+	 */
+	private function logFailure(string $log, \Exception $e): void {
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+		$this->logger->error(message: '[ConversationController] ' . $log, context: $context);
+	}//end logFailure()
+
+	/**
+	 * The 500 for a failed action that has no conversation; the caller logged it.
+	 *
 	 * @param string     $error The error of the response
 	 * @param \Exception $e     The failure
 	 *
 	 * @return JSONResponse The error response
 	 */
-	private function failure(string $log, string $error, \Exception $e): JSONResponse {
-		$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
-		$this->logger->error(message: '[ConversationController] ' . $log, context: $context);
-
+	private function failure(string $error, \Exception $e): JSONResponse {
 		return new JSONResponse(data: ['error' => $error, 'message' => $e->getMessage()], statusCode: 500);
 	}//end failure()
 }//end class
