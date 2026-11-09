@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Twig;
 
 use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\MappingTwigInstallerInterface;
 use OCA\OpenRegister\Service\MappingServiceInterface;
 use Twig\Environment;
 

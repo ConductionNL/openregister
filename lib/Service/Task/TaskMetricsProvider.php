@@ -33,8 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Kernel\Contracts\Dto\MetricSample;
 
 /**
  * Publishes `openregister_tasks_overdue_total`.

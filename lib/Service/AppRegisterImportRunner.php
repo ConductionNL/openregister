@@ -42,8 +42,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterDocumentLoaderInterface;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use ReflectionMethod;

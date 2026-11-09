@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterDocumentLoaderInterface;
 use OCP\App\IAppManager;
 use Throwable;
 

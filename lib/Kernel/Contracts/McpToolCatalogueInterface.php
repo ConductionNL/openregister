@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Mcp\Service\Mcp;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The aggregated tool descriptors of every registered MCP tool provider.

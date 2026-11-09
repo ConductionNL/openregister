@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\AppHost\Observability;
+namespace OCA\OpenRegister\Kernel\Contracts\Dto;
 
 /**
  * One metric family: a name + type + HELP plus its labelled samples.

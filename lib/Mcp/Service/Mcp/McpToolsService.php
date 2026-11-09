@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Mcp\Service\Mcp;
 
 use Generator;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\McpToolCatalogueInterface;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use Psr\Log\LoggerInterface;
 use stdClass;

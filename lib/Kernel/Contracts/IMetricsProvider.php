@@ -27,9 +27,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\AppHost;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\AppHost\Observability\MetricSample;
+use OCA\OpenRegister\Kernel\Contracts\Dto\MetricSample;
 
 /**
  * Imperative metrics provider for the AppHost observability engine.

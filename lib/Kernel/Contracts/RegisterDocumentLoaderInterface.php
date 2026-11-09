@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\AppHost\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * What the app register import runner needs of RegisterDocumentLoader.

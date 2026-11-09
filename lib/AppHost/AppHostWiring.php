@@ -29,10 +29,10 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
-use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\MappingTwigInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterDocumentLoaderInterface;
 use OCA\OpenRegister\Twig\MappingTwigInstaller;
-use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**

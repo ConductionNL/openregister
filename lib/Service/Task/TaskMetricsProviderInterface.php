@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\AppHost\IMetricsProvider;
+use OCA\OpenRegister\Kernel\Contracts\IMetricsProvider;
 
 /**
  * OpenRegister's own task metrics provider.
