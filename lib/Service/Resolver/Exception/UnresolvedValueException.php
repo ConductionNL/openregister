@@ -42,22 +42,15 @@ abstract class UnresolvedValueException extends ResolverConfigException {
 	/**
 	 * Construct the not-found refusal with diagnostic context.
 	 *
-	 * @param string         $appId         Consumer app id.
-	 * @param string         $configKey     Config key that resolved.
-	 * @param string         $resolvedValue Slug/UUID the lookup attempted.
-	 * @param string         $message       The message.
-	 * @param Exception|null $previous      Previous exception in the chain.
+	 * @param ResolverConfigKey $config        The app and config key that resolved.
+	 * @param string            $resolvedValue Slug/UUID the lookup attempted.
+	 * @param string            $message       The message.
+	 * @param Exception|null    $previous      Previous exception in the chain.
 	 */
-	protected function __construct(
-		string $appId,
-		string $configKey,
-		string $resolvedValue,
-		string $message,
-		?Exception $previous,
-	) {
+	protected function __construct(ResolverConfigKey $config, string $resolvedValue, string $message, ?Exception $previous) {
 		$this->resolvedValue = $resolvedValue;
 
-		parent::__construct(appId: $appId, configKey: $configKey, message: $message, code: 404, previous: $previous);
+		parent::__construct(config: $config, message: $message, code: 404, previous: $previous);
 	}//end __construct()
 
 	/**
