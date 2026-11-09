@@ -99,6 +99,17 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	private const TRUST_CONFIGURATION_SCHEMA = 'trustConfiguration';
 
 	/**
+	 * The field used for each field-naming annotation key when the annotation names none.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FIELD_DEFAULTS = [
+		'goldenRecordField' => self::DEFAULT_GOLDEN_FIELD,
+		'provenanceField'   => self::DEFAULT_PROVENANCE_FIELD,
+		'overridesField'    => self::DEFAULT_OVERRIDES_FIELD,
+	];
+
+	/**
 	 * Pure golden-record resolver.
 	 *
 	 * @var SurvivorshipResolverInterface
@@ -234,14 +245,19 @@ class SurvivorshipRecomputeListener implements IEventListener {
 			return;
 		}
 
-		$data = ($object->getObject() ?? []);
-		$sourceRecords = $this->sourcesOf(object: $object, data: $data, config: $config);
-		if ($this->shouldPreserveGoldenRecord(sourceRecords: $sourceRecords, config: $config, data: $data) === true) {
+		$run         = new SurvivorshipRecomputeRun();
+		$run->object = $object;
+		$run->schema = $schema;
+		$run->config = $config;
+		$run->data   = ($object->getObject() ?? []);
+
+		$sourceRecords = $this->sourcesOf(run: $run);
+		if ($this->shouldPreserveGoldenRecord(run: $run, sourceRecords: $sourceRecords) === true) {
 			return;
 		}
 
-		$resolution = $this->resolve(schema: $schema, config: $config, sourceRecords: $sourceRecords, data: $data);
-		$this->materialise(object: $object, data: $data, config: $config, resolution: $resolution);
+		$resolution = $this->resolve(run: $run, sourceRecords: $sourceRecords);
+		$this->materialise(run: $run, resolution: $resolution);
 	}//end recompute()
 
 	/**
@@ -265,51 +281,47 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	/**
 	 * The source records linked to a master object, embedded or by reverse FK.
 	 *
-	 * @param ObjectEntity         $object The master object.
-	 * @param array<string, mixed> $data   The master's current data.
-	 * @param array<string, mixed> $config Survivorship annotation.
+	 * @param SurvivorshipRecomputeRun $run The recompute: master object, its data and the annotation.
 	 *
 	 * @return array<int, array<string, mixed>> The source records.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.2
 	 */
-	private function sourcesOf(ObjectEntity $object, array $data, array $config): array {
+	private function sourcesOf(SurvivorshipRecomputeRun $run): array {
 		return $this->sourceRecordResolver->resolveSources(
-			masterData: $data,
-			masterUuid: (string)$object->getUuid(),
-			config: $config,
-			masterRegister: (string)$object->getRegister()
+			masterData: $run->data,
+			masterUuid: (string)$run->object->getUuid(),
+			config: $run->config,
+			masterRegister: (string)$run->object->getRegister()
 		);
 	}//end sourcesOf()
 
 	/**
 	 * Resolve the golden record from the sources, the entity type's trust rows and the steward overrides.
 	 *
-	 * @param Schema                           $schema        The master's schema (its slug is the default entity type).
-	 * @param array<string, mixed>             $config        Survivorship annotation.
+	 * @param SurvivorshipRecomputeRun         $run           The recompute (schema slug is the default entity type, data carries the overrides).
 	 * @param array<int, array<string, mixed>> $sourceRecords The linked source records.
-	 * @param array<string, mixed>             $data          The master's current data (carries the overrides).
 	 *
 	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>} Resolver output.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.3
 	 */
-	private function resolve(Schema $schema, array $config, array $sourceRecords, array $data): array {
-		$entityType = (string)($config['entityType'] ?? ($schema->getSlug() ?? ''));
+	private function resolve(SurvivorshipRecomputeRun $run, array $sourceRecords): array {
+		$entityType = (string)($run->config['entityType'] ?? ($run->schema->getSlug() ?? ''));
 		$trustRows = $this->loadTrustRows(entityType: $entityType);
-		$overridesField = self::fieldName(config: $config, key: 'overridesField', default: self::DEFAULT_OVERRIDES_FIELD);
+		$overridesField = self::fieldName(config: $run->config, key: 'overridesField');
 
 		return $this->resolver->resolveGoldenRecord(
 			sourceRecords: $sourceRecords,
-			config: $config,
+			config: $run->config,
 			trust: new SurvivorshipTrustLookup(
 				entityType: $entityType,
 				trustRows: $trustRows,
 				trustResolver: $this->trustResolver,
 				asOf: new DateTimeImmutable()
 			),
-			overrides: ($data[$overridesField] ?? null)
+			overrides: ($run->data[$overridesField] ?? null)
 		);
 	}//end resolve()
 
@@ -317,18 +329,17 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * Write the resolved golden record + provenance into the object payload,
 	 * only when the computed values differ from what is already stored.
 	 *
-	 * @param ObjectEntity $object Object being saved.
-	 * @param array<string, mixed> $data Object's current data.
-	 * @param array<string, mixed> $config Survivorship annotation.
+	 * @param SurvivorshipRecomputeRun $run The recompute: object being saved, its data and the annotation.
 	 * @param array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>} $resolution Resolver output.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
 	 */
-	private function materialise(ObjectEntity $object, array $data, array $config, array $resolution): void {
+	private function materialise(SurvivorshipRecomputeRun $run, array $resolution): void {
+		$data    = $run->data;
 		$changed = false;
-		foreach (self::fieldWrites(config: $config, resolution: $resolution) as $write) {
+		foreach (self::fieldWrites(config: $run->config, resolution: $resolution) as $write) {
 			if (($data[$write['field']] ?? null) !== $write['value']) {
 				$data[$write['field']] = $write['value'];
 				$changed = true;
@@ -336,7 +347,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 		}
 
 		if ($changed === true) {
-			$object->setObject($data);
+			$run->object->setObject($data);
 		}
 	}//end materialise()
 
@@ -353,29 +364,29 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	private static function fieldWrites(array $config, array $resolution): array {
 		return [
 			[
-				'field' => self::fieldName(config: $config, key: 'goldenRecordField', default: self::DEFAULT_GOLDEN_FIELD),
+				'field' => self::fieldName(config: $config, key: 'goldenRecordField'),
 				'value' => $resolution['goldenRecord'],
 			],
 			[
-				'field' => self::fieldName(config: $config, key: 'provenanceField', default: self::DEFAULT_PROVENANCE_FIELD),
+				'field' => self::fieldName(config: $config, key: 'provenanceField'),
 				'value' => $resolution['attributeProvenance'],
 			],
 		];
 	}//end fieldWrites()
 
 	/**
-	 * A field name the annotation configures, the default when it is absent or empty.
+	 * A field name the annotation configures, the key's default when it is absent or empty.
 	 *
-	 * @param array<string, mixed> $config  Survivorship annotation.
-	 * @param string               $key     The annotation key naming the field.
-	 * @param string               $default The field used when the annotation names none.
+	 * @param array<string, mixed> $config Survivorship annotation.
+	 * @param string               $key    The annotation key naming the field (a FIELD_DEFAULTS key).
 	 *
 	 * @return string The field name.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
 	 */
-	private static function fieldName(array $config, string $key, string $default): string {
-		$field = (string)($config[$key] ?? $default);
+	private static function fieldName(array $config, string $key): string {
+		$default = self::FIELD_DEFAULTS[$key];
+		$field   = (string)($config[$key] ?? $default);
 		if ($field === '') {
 			return $default;
 		}
@@ -452,25 +463,24 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * the default only when the key is absent (an empty name is not defaulted
 	 * here, unlike on the write).
 	 *
+	 * @param SurvivorshipRecomputeRun         $run           The recompute: annotation and object payload.
 	 * @param array<int, array<string, mixed>> $sourceRecords Resolved sources.
-	 * @param array<string, mixed> $config Survivorship config.
-	 * @param array<string, mixed> $data Object payload.
 	 *
 	 * @return bool True when the existing golden record must be preserved as-is.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.2
 	 */
-	private function shouldPreserveGoldenRecord(array $sourceRecords, array $config, array $data): bool {
+	private function shouldPreserveGoldenRecord(SurvivorshipRecomputeRun $run, array $sourceRecords): bool {
 		if (empty($sourceRecords) === false) {
 			return false;
 		}
 
-		if ($this->sourceRecordResolver->isReverseFk(config: $config) === false) {
+		if ($this->sourceRecordResolver->isReverseFk(config: $run->config) === false) {
 			return false;
 		}
 
-		$goldenField = (string)($config['goldenRecordField'] ?? self::DEFAULT_GOLDEN_FIELD);
-		return empty(($data[$goldenField] ?? null)) === false;
+		$goldenField = (string)($run->config['goldenRecordField'] ?? self::DEFAULT_GOLDEN_FIELD);
+		return empty(($run->data[$goldenField] ?? null)) === false;
 	}//end shouldPreserveGoldenRecord()
 
 	/**
