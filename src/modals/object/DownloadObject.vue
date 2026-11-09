@@ -8,11 +8,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'downloadObject'"
 		:name="
 			'Download '
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
+			+ (objectName(objectStore.objectItem) || 'Object')
 		"
 		size="normal"
 		noClose>
@@ -51,6 +47,7 @@ import { NcDialog, NcNoteCard } from '@nextcloud/vue'
 import CodeMirror from 'vue-codemirror6'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { getTheme } from '../../services/getTheme.js'
+import { objectName as nameOf } from './objectName.js'
 
 export default {
 	name: 'DownloadObject',
@@ -89,6 +86,7 @@ export default {
 		json,
 		jsonParseLinter,
 		getTheme,
+		objectName: nameOf,
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
