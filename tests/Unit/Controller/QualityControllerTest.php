@@ -55,7 +55,6 @@ class QualityControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->statistics = $this->createMock(QualityStatisticsService::class);
 		$this->controller = new QualityController(
-			'openregister',
 			$this->request,
 			$this->statistics
 		);
