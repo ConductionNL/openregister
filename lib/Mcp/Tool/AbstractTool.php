@@ -180,6 +180,11 @@ abstract class AbstractTool implements ToolInterface {
 	 * @return mixed The method's result
 	 */
 	protected function callMethod(string $methodName, array $arguments): mixed {
+		if (method_exists($this, $methodName) === false) {
+			// Reaches __call(), which refuses an unknown function.
+			return $this->$methodName(...$arguments);
+		}
+
 		$operation = $this->operationClass(method: new ReflectionMethod($this, $methodName));
 		if ($operation === null) {
 			return $this->$methodName(...$arguments);
