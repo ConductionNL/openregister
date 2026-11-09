@@ -24,13 +24,13 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
-use OCP\ISession;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -124,9 +124,9 @@ final class ConfigurationWebhookMapperTenancyGoldenTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('');
 
 		if ($mapper === 'webhook') {
-			$instance = new WebhookMapper($db, $organisations, $userSession, $groupManager, $appConfig);
+			$instance = new WebhookMapper($db, new TenancyServices($organisations, $userSession, $groupManager), $appConfig);
 		} else {
-			$instance = new ConfigurationMapper($db, $organisations, $userSession, $groupManager, $this->createMock(ISession::class), $this->createMock(IEventDispatcher::class));
+			$instance = new ConfigurationMapper($db, new TenancyServices($organisations, $userSession, $groupManager), $this->createMock(IEventDispatcher::class));
 		}
 
 		$outcome = [];
