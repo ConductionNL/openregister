@@ -133,15 +133,26 @@ class ExampleSetAccounts {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-accounts-and-groups-come-from-the-cast-and-are-never-taken-over-req-exs-003
 	 */
 	public function createUser(string $uid, string $displayName, string $email, string $password): string {
-		$user = $this->newUser(uid: $uid, password: $password);
+		return $this->createAccount(account: new ExampleSetNewAccount(uid: $uid, displayName: $displayName, email: $email, password: $password));
+	}//end createUser()
+
+	/**
+	 * Create an account and describe it.
+	 *
+	 * @param ExampleSetNewAccount $account The id, names and first password.
+	 *
+	 * @return string '' when created, ALREADY_EXISTS, or why it failed.
+	 */
+	private function createAccount(ExampleSetNewAccount $account): string {
+		$user = $this->newUser(uid: $account->uid, password: $account->password);
 		if (is_string($user) === true) {
 			return $user;
 		}
 
-		$this->describe(user: $user, names: ['displayName' => $displayName, 'email' => $email]);
+		$this->describe(user: $user, names: ['displayName' => $account->displayName, 'email' => $account->email]);
 
 		return '';
-	}//end createUser()
+	}//end createAccount()
 
 	/**
 	 * Make the account in Nextcloud; the account, or why it was not made.
