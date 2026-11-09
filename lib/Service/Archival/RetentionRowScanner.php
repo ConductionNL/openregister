@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use Closure;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -366,7 +367,8 @@ class RetentionRowScanner {
 		}
 
 		try {
-			$truncated = $this->pageThrough(source: $source, accept: $accept, remaining: $remaining, outcome: $outcome);
+			$criteria = new RetentionScanCriteria(accept: Closure::fromCallable($accept), remaining: $remaining);
+			$truncated = $this->pageThrough(source: $source, criteria: $criteria, outcome: $outcome);
 			$outcome['truncated'] = $truncated;
 		} catch (Exception $e) {
 			// One unreadable table must not silence every other one. The blob
@@ -383,20 +385,19 @@ class RetentionRowScanner {
 	/**
 	 * Read one source a page at a time into the outcome, until it runs out or the cap is reached.
 	 *
-	 * @param array<string, mixed> $source    The source descriptor.
-	 * @param callable             $accept    Predicate answering whether one object is a match.
-	 * @param int                  $remaining How many more matches this run may still collect.
-	 * @param array<string, mixed> $outcome   The outcome so far, added to in place.
+	 * @param array<string, mixed>  $source   The source descriptor.
+	 * @param RetentionScanCriteria $criteria Which objects match, and how many more this run may still collect.
+	 * @param array<string, mixed>  $outcome  The outcome so far, added to in place.
 	 *
 	 * @return bool True when the cap was reached.
 	 *
 	 * @throws Exception When the source cannot be read.
 	 */
-	private function pageThrough(array $source, callable $accept, int $remaining, array &$outcome): bool {
+	private function pageThrough(array $source, RetentionScanCriteria $criteria, array &$outcome): bool {
 		$offset = 0;
 		do {
 			$rows = $this->page(source: $source, offset: $offset);
-			if ($this->collect(source: $source, rows: $rows, accept: $accept, remaining: $remaining, outcome: $outcome) === true) {
+			if ($this->collect(source: $source, rows: $rows, criteria: $criteria, outcome: $outcome) === true) {
 				return true;
 			}
 
@@ -434,25 +435,24 @@ class RetentionRowScanner {
 	/**
 	 * Count every row of a page as inspected and keep its matches, stopping at the cap.
 	 *
-	 * @param array<string, mixed>             $source    The source descriptor.
-	 * @param array<int, array<string, mixed>> $rows      The page.
-	 * @param callable                         $accept    Predicate answering whether one object is a match.
-	 * @param int                              $remaining How many more matches this run may still collect.
-	 * @param array<string, mixed>             $outcome   The outcome so far, added to in place.
+	 * @param array<string, mixed>             $source   The source descriptor.
+	 * @param array<int, array<string, mixed>> $rows     The page.
+	 * @param RetentionScanCriteria            $criteria Which objects match, and how many more this run may still collect.
+	 * @param array<string, mixed>             $outcome  The outcome so far, added to in place.
 	 *
 	 * @return bool True when the cap was reached.
 	 */
-	private function collect(array $source, array $rows, callable $accept, int $remaining, array &$outcome): bool {
+	private function collect(array $source, array $rows, RetentionScanCriteria $criteria, array &$outcome): bool {
 		foreach ($rows as $row) {
 			$outcome['scanned']++;
 
 			$object = $this->hydrateRetentionRow(source: $source, row: $row);
-			if ($object === null || $accept($object) === false) {
+			if ($object === null || $criteria->accepts(object: $object) === false) {
 				continue;
 			}
 
 			$outcome['objects'][] = $object;
-			if (count($outcome['objects']) >= $remaining) {
+			if (count($outcome['objects']) >= $criteria->remaining) {
 				return true;
 			}
 		}
