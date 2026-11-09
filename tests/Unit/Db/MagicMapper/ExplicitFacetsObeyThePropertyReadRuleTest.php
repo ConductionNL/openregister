@@ -80,7 +80,7 @@ class ExplicitFacetsObeyThePropertyReadRuleTest extends TestCase {
 		$db->expects($this->never())->method('getQueryBuilder');
 		$db->expects($this->never())->method('executeQuery');
 
-		return new MagicFacetHandler($db, new NullLogger(), null, null, null, $container, null);
+		return new MagicFacetHandler($db, new NullLogger(), null, $container);
 	}
 
 	public function testAnExplicitFacetOnAWithheldPropertyIsOmitted(): void {

@@ -224,7 +224,7 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 			$search = $this->searchHandler(world: $world);
 		}
 
-		return new MagicFacetHandler($db, new NullLogger(), null, null, $search, $container, null);
+		return new MagicFacetHandler($db, new NullLogger(), $search, $container);
 	}//end handler()
 
 	/**
