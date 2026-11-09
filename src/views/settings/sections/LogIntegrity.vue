@@ -374,7 +374,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@use './statusCallout' as *;
+@use './statusCallout.scss' as *;
 
 @include status-callout('.integrity__state', '.integrity__state-badge');
 

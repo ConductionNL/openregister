@@ -51,7 +51,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@use './statusCallout' as *;
+@use './statusCallout.scss' as *;
 
 @include status-callout('.push-status', '.push-status__badge');
 </style>
