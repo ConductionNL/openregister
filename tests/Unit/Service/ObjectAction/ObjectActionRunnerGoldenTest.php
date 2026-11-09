@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerChecks;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -212,7 +213,7 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 	 * @return array The answer.
 	 */
 	private function invoke(string $key, array $inputs = [], ?ObjectEntity $object = null): array {
-		return $this->runner()->run($object ?? $this->object(), $this->schema(), $key, $inputs, ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'besluit']);
+		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), $key, $inputs);
 	}//end invoke()
 
 	public function testRefusalsInOrderWithTheirExactAnswers(): void {

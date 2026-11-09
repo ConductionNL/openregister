@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
@@ -309,11 +310,9 @@ class ObjectActionSelfAssignTest extends TestCase {
 	 */
 	private function take(Schema $schema, ObjectEntity $object, array $given = []): array {
 		return $this->runner(schema: $schema)->run(
-			object: $object,
-			schema: $schema,
+			target: new ObjectActionTarget(object: $object, schema: $schema, register: '3', schemaRef: '7'),
 			key: self::ACTION,
-			given: $given,
-			subject: ['uuid' => (string)$object->getUuid(), 'register' => '3', 'schema' => '7']
+			given: $given
 		);
 	}//end take()
 
