@@ -119,8 +119,7 @@ class NotificationsAnnotationInstaller implements IEventListener, NotificationsA
 			}
 
 			$this->upsertWebhook(
-				schemaSlug: $schemaSlug,
-				notificationName: (string)$name,
+				webhookName: sprintf('or-notif-%s-%s', $schemaSlug, (string)$name),
 				hookSpec: $hook
 			);
 		}//end foreach
@@ -129,45 +128,17 @@ class NotificationsAnnotationInstaller implements IEventListener, NotificationsA
 	/**
 	 * Upsert a single Webhook row from one notification's `webhook` spec.
 	 *
-	 * @param string $schemaSlug Slug of the owning schema.
-	 * @param string $notificationName Name of the declared notification.
+	 * @param string $webhookName The row's unique name, `or-notif-<schema slug>-<notification name>`.
 	 * @param array<string, mixed> $hookSpec The `webhook` sub-document of the annotation.
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
-	private function upsertWebhook(string $schemaSlug, string $notificationName, array $hookSpec): void {
-		$webhookName = sprintf('or-notif-%s-%s', $schemaSlug, $notificationName);
-
+	private function upsertWebhook(string $webhookName, array $hookSpec): void {
 		try {
 			$existing = $this->findByName(name: $webhookName);
-			$events = (array)($hookSpec['events'] ?? ['ObjectUpdatedEvent', 'ObjectTransitionedEvent']);
-			$headers = (array)($hookSpec['headers'] ?? []);
-			$secret = ($hookSpec['secret'] ?? null);
-
-			$headersEncoded = null;
-			if (count($headers) > 0) {
-				$headersEncoded = json_encode($headers);
-			}
-
-			$secretValue = null;
-			if (is_string($secret) === true && $secret !== '') {
-				$secretValue = $secret;
-			}
-
-			$payload = [
-				'name' => $webhookName,
-				'url' => (string)$hookSpec['url'],
-				'method' => strtoupper((string)($hookSpec['method'] ?? 'POST')),
-				'events' => json_encode($events),
-				'headers' => $headersEncoded,
-				'secret' => $secretValue,
-				'enabled' => true,
-				'retryPolicy' => 'exponential',
-				'maxRetries' => 5,
-				'timeout' => 5,
-			];
+			$payload = $this->webhookPayload(webhookName: $webhookName, hookSpec: $hookSpec);
 
 			if ($existing === null) {
 				$payload['uuid'] = (string)\Symfony\Component\Uid\Uuid::v4();
@@ -188,6 +159,43 @@ class NotificationsAnnotationInstaller implements IEventListener, NotificationsA
 			);
 		}//end try
 	}//end upsertWebhook()
+
+	/**
+	 * The Webhook row's fields for one notification's `webhook` spec.
+	 *
+	 * @param string $webhookName The row's unique name.
+	 * @param array<string, mixed> $hookSpec The `webhook` sub-document of the annotation.
+	 *
+	 * @return array<string, mixed> The fields to create or update the row with.
+	 */
+	private function webhookPayload(string $webhookName, array $hookSpec): array {
+		$events = (array)($hookSpec['events'] ?? ['ObjectUpdatedEvent', 'ObjectTransitionedEvent']);
+		$headers = (array)($hookSpec['headers'] ?? []);
+		$secret = ($hookSpec['secret'] ?? null);
+
+		$headersEncoded = null;
+		if (count($headers) > 0) {
+			$headersEncoded = json_encode($headers);
+		}
+
+		$secretValue = null;
+		if (is_string($secret) === true && $secret !== '') {
+			$secretValue = $secret;
+		}
+
+		return [
+			'name' => $webhookName,
+			'url' => (string)$hookSpec['url'],
+			'method' => strtoupper((string)($hookSpec['method'] ?? 'POST')),
+			'events' => json_encode($events),
+			'headers' => $headersEncoded,
+			'secret' => $secretValue,
+			'enabled' => true,
+			'retryPolicy' => 'exponential',
+			'maxRetries' => 5,
+			'timeout' => 5,
+		];
+	}//end webhookPayload()
 
 	/**
 	 * Look up an existing Webhook row by its unique name.
