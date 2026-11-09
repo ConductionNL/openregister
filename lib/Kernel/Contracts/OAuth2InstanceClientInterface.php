@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Credential;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The claim key the OAuth2 endpoints read from a minted instance client.

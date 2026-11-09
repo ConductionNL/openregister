@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Credential;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The OAuth2 state the OAuth2 endpoints issue, read, consume and withdraw.

@@ -44,7 +44,7 @@ use OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface;
 use OCA\OpenRegister\Service\AvgRetentionPassInterface;
 use OCA\OpenRegister\Service\AvgRetentionService;
 use OCA\OpenRegister\Service\ContractBindings;
-use OCA\OpenRegister\Service\Credential\OAuth2CredentialSweepInterface;
+use OCA\OpenRegister\Kernel\Contracts\OAuth2CredentialSweepInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;

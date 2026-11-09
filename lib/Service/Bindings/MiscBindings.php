@@ -42,5 +42,18 @@ final class MiscBindings {
 	 */
 	public const BINDINGS = [
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
+		\OCA\OpenRegister\Kernel\Contracts\CredentialAppTokenServiceInterface::class => \OCA\OpenRegister\Service\Credential\CredentialAppTokenService::class,
+		\OCA\OpenRegister\Kernel\Contracts\DoriathApplicationRegistrarInterface::class => \OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar::class,
+		\OCA\OpenRegister\Kernel\Contracts\OAuth2ConnectionRepositoryInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository::class,
+		\OCA\OpenRegister\Kernel\Contracts\OAuth2CredentialSweepInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RefreshService::class,
+		\OCA\OpenRegister\Kernel\Contracts\OAuth2EndpointsInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2Endpoints::class,
+		\OCA\OpenRegister\Kernel\Contracts\OAuth2InstanceClientInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2InstanceClient::class,
+		\OCA\OpenRegister\Kernel\Contracts\OAuth2RelayGuardInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RelayGuard::class,
+		\OCA\OpenRegister\Kernel\Contracts\OAuth2StateServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2StateService::class,
+		\OCA\OpenRegister\Kernel\Contracts\ProviderCatalogueInterface::class => \OCA\OpenRegister\Service\Credential\ProviderCatalogue::class,
+		\OCA\OpenRegister\Kernel\Contracts\ConnectionReporterInterface::class => \OCA\OpenRegister\Service\Connection\ConnectionReporter::class,
+		\OCA\OpenRegister\Kernel\Contracts\ProxySettingsInterface::class => \OCA\OpenRegister\Service\Outbound\ProxySettings::class,
+		\OCA\OpenRegister\Kernel\Contracts\SecurityTxtBuilderInterface::class => \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder::class,
+		\OCA\OpenRegister\Kernel\Contracts\AnalyticsSeriesServiceInterface::class => \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
 	];
 }//end class

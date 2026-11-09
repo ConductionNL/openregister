@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Connection;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of ConnectionReporter that callers outside its component use.

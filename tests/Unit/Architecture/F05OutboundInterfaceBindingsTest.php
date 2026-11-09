@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Outbound\ProxySettings;
-use OCA\OpenRegister\Service\Outbound\ProxySettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ProxySettingsInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

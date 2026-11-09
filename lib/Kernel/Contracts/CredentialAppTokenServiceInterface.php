@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Credential;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The part of CredentialAppTokenService that code outside lib/Service uses.
@@ -74,7 +74,7 @@ interface CredentialAppTokenServiceInterface {
 	 *
 	 * @return array{appId: string, credentialId: string} The authenticated claims.
 	 *
-	 * @throws CredentialAccessDeniedException On any malformed / forged / expired token.
+	 * @throws \OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException On any malformed / forged / expired token.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */

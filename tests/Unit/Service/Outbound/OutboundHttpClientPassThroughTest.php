@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Outbound;
 
 use OCA\OpenRegister\Service\Outbound\OutboundHttpClient;
-use OCA\OpenRegister\Service\Outbound\ProxySettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ProxySettingsInterface;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;

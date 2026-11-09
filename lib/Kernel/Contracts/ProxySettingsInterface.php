@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Outbound;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The methods of ProxySettings that callers outside the Service component use.

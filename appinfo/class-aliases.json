@@ -1815,6 +1815,71 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\CredentialAppTokenServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrarInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DoriathApplicationRegistrarInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\OAuth2ConnectionRepositoryInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OAuth2ConnectionRepositoryInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\OAuth2CredentialSweepInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OAuth2CredentialSweepInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\OAuth2EndpointsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OAuth2EndpointsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\OAuth2InstanceClientInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OAuth2InstanceClientInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\OAuth2RelayGuardInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OAuth2RelayGuardInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\OAuth2StateServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\OAuth2StateServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Credential\\ProviderCatalogueInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ProviderCatalogueInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Connection\\ConnectionReporterInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ConnectionReporterInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Outbound\\ProxySettingsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ProxySettingsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\WellKnown\\SecurityTxtBuilderInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SecurityTxtBuilderInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\AnalyticsSeriesServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AnalyticsSeriesServiceInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }

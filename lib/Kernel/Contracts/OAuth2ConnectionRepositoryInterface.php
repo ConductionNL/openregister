@@ -20,10 +20,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Credential;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use Throwable;
 
 /**
@@ -78,11 +78,11 @@ interface OAuth2ConnectionRepositoryInterface {
 	 * @param string $credentialId The credential UUID.
 	 * @param string $uid The caller.
 	 *
-	 * @return ObjectEntity|null The credential, or null when absent or not manageable.
+	 * @return ObjectEntityInterface|null The credential, or null when absent or not manageable.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
 	 */
-	public function findManageable(string $credentialId, string $uid): ?ObjectEntity;
+	public function findManageable(string $credentialId, string $uid): ?ObjectEntityInterface;
 
 	/**
 	 * Resolve and gate the organisation an organisation-scoped connect belongs to.
@@ -93,7 +93,7 @@ interface OAuth2ConnectionRepositoryInterface {
 	 * @return string|null The organisation UUID, or null for a personal connect.
 	 *
 	 * @throws InvalidArgumentException When there is no active organisation.
-	 * @throws CredentialAccessDeniedException When the caller does not administer the organisation.
+	 * @throws \OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException When the caller does not administer the organisation.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */

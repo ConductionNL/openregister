@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Credential;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Registers a consuming app as its own identity-only Doriath application.

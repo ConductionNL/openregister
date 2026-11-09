@@ -27,7 +27,7 @@ use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
-use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
+use OCA\OpenRegister\Kernel\Contracts\DoriathApplicationRegistrarInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface;
 use OCA\OpenRegister\Service\Task\TaskMetricsProvider;

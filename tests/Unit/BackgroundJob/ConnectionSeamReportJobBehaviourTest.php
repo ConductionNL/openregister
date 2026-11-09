@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob;
-use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;

@@ -25,12 +25,12 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
-use OCA\OpenRegister\Service\Credential\CredentialAppTokenServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\CredentialAppTokenServiceInterface;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequestInterface;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequests;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
-use OCA\OpenRegister\Service\Credential\ProviderCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\ProviderCatalogueInterface;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

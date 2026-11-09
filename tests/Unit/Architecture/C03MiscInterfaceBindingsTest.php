@@ -44,7 +44,7 @@ use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilderInterface;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
 use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder;
-use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface;
+use OCA\OpenRegister\Kernel\Contracts\SecurityTxtBuilderInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

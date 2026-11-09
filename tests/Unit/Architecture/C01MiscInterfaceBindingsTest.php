@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
-use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\Object\CorrectionServiceInterface;
