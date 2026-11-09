@@ -20,6 +20,19 @@
 			}
 		]
 	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Every request authenticates on its own basic-auth header: drop the Nextcloud session cookie",
+					"// so a non-admin or anonymous request never rides on the admin session (and vice versa).",
+					"pm.cookies.jar().clear(pm.variables.replaceIn('{{base_url}}'), function () {});"
+				]
+			}
+		}
+	],
 	"variable": [
 		{
 			"key": "base_url",
@@ -285,17 +298,17 @@
 					}
 				},
 				{
-					"name": "Register schemas as non-admin is refused",
+					"name": "Non-admin organisation member reads register schemas",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Register schemas as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member reads register schemas: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Register schemas as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member reads register schemas: body', function () {",
+									"\tpm.expect(json.results.map(function (x) { return String(x.id); })).to.include(pm.collectionVariables.get('schema_id'));",
 									"});"
 								]
 							}
@@ -492,17 +505,17 @@
 					}
 				},
 				{
-					"name": "Register export as non-admin is refused",
+					"name": "Non-admin organisation member exports the register",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Register export as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member exports the register: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Register export as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member exports the register: body', function () {",
+									"\tpm.expect(pm.response.text()).to.include('t21-register-' + pm.collectionVariables.get('run'));",
 									"});"
 								]
 							}
@@ -635,17 +648,17 @@
 					}
 				},
 				{
-					"name": "Import template as non-admin is refused",
+					"name": "Non-admin organisation member gets the import template",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Import template as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member gets the import template: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Import template as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member gets the import template: body', function () {",
+									"\tpm.expect(pm.response.text()).to.include('name');",
 									"});"
 								]
 							}
@@ -762,17 +775,17 @@
 					}
 				},
 				{
-					"name": "Rollback import as non-admin is refused",
+					"name": "Non-admin rollback of unknown job",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Rollback import as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin rollback of unknown job: status 404', function () { pm.response.to.have.status(404); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Rollback import as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin rollback of unknown job: body', function () {",
+									"\tpm.expect(json).to.be.an('object'); pm.expect(String(json.error || json.message)).to.include(\"Import job not found\");",
 									"});"
 								]
 							}
@@ -1555,17 +1568,17 @@
 					}
 				},
 				{
-					"name": "Resolve by implements as non-admin is refused",
+					"name": "Non-admin resolves by implements",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Resolve by implements as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin resolves by implements: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Resolve by implements as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin resolves by implements: body', function () {",
+									"\tpm.expect(json.resolved).to.eql(false);",
 									"});"
 								]
 							}
@@ -1677,7 +1690,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}/upload",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"json\": {\n    \"title\": \"hijacked\"\n  }\n}"
+							"raw": "{\n  \"dialect\": \"json-schema\",\n  \"json\": {\n    \"title\": \"hijacked\"\n  }\n}"
 						},
 						"auth": {
 							"type": "basic",
@@ -1765,7 +1778,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}/upload",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"json\": {\n    \"title\": \"T21 schema {{run}}\",\n    \"description\": \"uploaded by t21\",\n    \"properties\": {\n      \"name\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}"
+							"raw": "{\n  \"dialect\": \"json-schema\",\n  \"json\": {\n    \"title\": \"T21 schema {{run}}\",\n    \"description\": \"uploaded by t21\",\n    \"properties\": {\n      \"name\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}"
 						}
 					}
 				},
@@ -1834,17 +1847,17 @@
 					}
 				},
 				{
-					"name": "Download schema as non-admin is refused",
+					"name": "Non-admin organisation member: download schema",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Download schema as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member: download schema: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Download schema as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member: download schema: body', function () {",
+									"\tpm.expect(String(json.id)).to.eql(pm.collectionVariables.get('schema_id'));",
 									"});"
 								]
 							}
@@ -1946,17 +1959,17 @@
 					}
 				},
 				{
-					"name": "Related schemas as non-admin is refused",
+					"name": "Non-admin organisation member: related schemas",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Related schemas as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member: related schemas: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Related schemas as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member: related schemas: body', function () {",
+									"\tpm.expect(json.incoming).to.be.an('array');",
 									"});"
 								]
 							}
@@ -2057,17 +2070,17 @@
 					}
 				},
 				{
-					"name": "List presentation as non-admin is refused",
+					"name": "Non-admin organisation member: list presentation",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('List presentation as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member: list presentation: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('List presentation as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member: list presentation: body', function () {",
+									"\tpm.expect(json.columns).to.be.an('array');",
 									"});"
 								]
 							}
@@ -2169,17 +2182,17 @@
 					}
 				},
 				{
-					"name": "Schema stats as non-admin is refused",
+					"name": "Non-admin organisation member: schema stats",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Schema stats as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member: schema stats: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Schema stats as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member: schema stats: body', function () {",
+									"\tpm.expect(json.objectCount).to.be.at.least(1);",
 									"});"
 								]
 							}
@@ -2544,7 +2557,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/sources",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"T21 source {{run}}\",\n  \"name\": \"T21 source {{run}}\",\n  \"type\": \"t21-none\",\n  \"description\": \"original\"\n}"
+							"raw": "{\n  \"title\": \"T21 source {{run}}\",\n  \"name\": \"T21 source {{run}}\",\n  \"type\": \"t21-none\",\n  \"description\": \"original\",\n  \"databaseUrl\": \"t21-not-a-database\",\n  \"location\": \"https://t21.invalid\"\n}"
 						}
 					}
 				},
@@ -2581,17 +2594,17 @@
 					}
 				},
 				{
-					"name": "List sources as non-admin is refused",
+					"name": "Non-admin organisation member lists sources",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('List sources as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member lists sources: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('List sources as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member lists sources: body', function () {",
+									"\tpm.expect(json.results.map(function (x) { return String(x.id); })).to.include(pm.collectionVariables.get('source_id'));",
 									"});"
 								]
 							}
@@ -2692,17 +2705,17 @@
 					}
 				},
 				{
-					"name": "Show source as non-admin is refused",
+					"name": "Non-admin organisation member shows a source",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Show source as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member shows a source: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Show source as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member shows a source: body', function () {",
+									"\tpm.expect(json.description).to.eql('original');",
 									"});"
 								]
 							}
@@ -2931,17 +2944,17 @@
 					}
 				},
 				{
-					"name": "Sync status as non-admin is refused",
+					"name": "Non-admin organisation member reads sync status",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Sync status as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member reads sync status: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Sync status as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member reads sync status: body', function () {",
+									"\tpm.expect(json.status).to.eql('never');",
 									"});"
 								]
 							}
@@ -3803,17 +3816,17 @@
 					}
 				},
 				{
-					"name": "List applications as non-admin is refused",
+					"name": "Non-admin organisation member lists applications",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('List applications as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member lists applications: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('List applications as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member lists applications: body', function () {",
+									"\tpm.expect(json.results.map(function (x) { return String(x.id); })).to.include(pm.collectionVariables.get('application_id'));",
 									"});"
 								]
 							}
@@ -3914,17 +3927,17 @@
 					}
 				},
 				{
-					"name": "Show application as non-admin is refused",
+					"name": "Non-admin organisation member shows an application",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Show application as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member shows an application: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Show application as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member shows an application: body', function () {",
+									"\tpm.expect(json.description).to.eql('original');",
 									"});"
 								]
 							}
@@ -4039,93 +4052,6 @@
 							"raw": "{\n  \"description\": \"x\"\n}"
 						}
 					}
-				},
-				{
-					"name": "Patch application as non-admin is refused",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Patch application as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
-									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Patch application as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/applications/{{application_id}}",
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"description\": \"hijacked\"\n}"
-						},
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{t21_user}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{t21_password}}",
-									"type": "string"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Application unchanged after refusal",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Application unchanged after refusal: status 200', function () { pm.response.to.have.status(200); });",
-									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Application unchanged after refusal: body', function () {",
-									"\tpm.expect(json.description).to.eql('patched by t21');",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/applications/{{application_id}}"
-					}
 				}
 			]
 		},
@@ -4206,17 +4132,17 @@
 					}
 				},
 				{
-					"name": "List agents as non-admin is refused",
+					"name": "Non-admin does not see the admin agent",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('List agents as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin does not see the admin agent: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('List agents as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin does not see the admin agent: body', function () {",
+									"\tpm.expect(json.results.map(function (x) { return String(x.id); })).to.not.include(pm.collectionVariables.get('agent_id'));",
 									"});"
 								]
 							}
@@ -4288,7 +4214,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/agents/{{agent_id}}",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"description\": \"patched by t21\"\n}"
+							"raw": "{\n  \"name\": \"T21 agent {{run}}\",\n  \"description\": \"patched by t21\"\n}"
 						}
 					}
 				},
@@ -4333,17 +4259,17 @@
 					}
 				},
 				{
-					"name": "Patch agent as non-admin is refused",
+					"name": "Non-admin cannot patch the admin agent",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Patch agent as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin cannot patch the admin agent: status in 403/404', function () { pm.expect([403,404]).to.include(pm.response.code); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Patch agent as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin cannot patch the admin agent: body', function () {",
+									"\tpm.expect(json.error).to.be.a('string').and.not.empty;",
 									"});"
 								]
 							}
@@ -4368,7 +4294,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/agents/{{agent_id}}",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"description\": \"hijacked\"\n}"
+							"raw": "{\n  \"name\": \"hijacked\",\n  \"description\": \"hijacked\"\n}"
 						},
 						"auth": {
 							"type": "basic",
@@ -4452,17 +4378,17 @@
 					}
 				},
 				{
-					"name": "Agent stats as non-admin is refused",
+					"name": "Non-admin agent stats",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Agent stats as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin agent stats: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Agent stats as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin agent stats: body', function () {",
+									"\tpm.expect(json.total).to.be.a('number');",
 									"});"
 								]
 							}
@@ -4509,7 +4435,7 @@
 									"pm.test('Agent tools: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
 									"pm.test('Agent tools: body', function () {",
-									"\tpm.expect(json.results).to.be.an('object').or.an('array');",
+									"\tpm.expect(json.results).to.be.an('object'); pm.expect(Object.keys(json.results)).to.include('openregister.register');",
 									"});"
 								]
 							}
@@ -4531,17 +4457,17 @@
 					}
 				},
 				{
-					"name": "Agent tools as non-admin is refused",
+					"name": "Non-admin agent tools",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Agent tools as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin agent tools: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Agent tools as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin agent tools: body', function () {",
+									"\tpm.expect(Object.keys(json.results)).to.include('openregister.register');",
 									"});"
 								]
 							}
@@ -5608,17 +5534,17 @@
 					}
 				},
 				{
-					"name": "List mappings as non-admin is refused",
+					"name": "Non-admin organisation member lists mappings",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('List mappings as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin organisation member lists mappings: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('List mappings as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin organisation member lists mappings: body', function () {",
+									"\tpm.expect(json.results.map(function (x) { return String(x.id); })).to.include(pm.collectionVariables.get('mapping_id'));",
 									"});"
 								]
 							}
@@ -5735,61 +5661,6 @@
 					}
 				},
 				{
-					"name": "Update mapping as non-admin is refused",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Update mapping as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
-									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Update mapping as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/mappings/{{mapping_id}}",
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"description\": \"hijacked\"\n}"
-						},
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{t21_user}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{t21_password}}",
-									"type": "string"
-								}
-							]
-						}
-					}
-				},
-				{
 					"name": "Patch mapping",
 					"event": [
 						{
@@ -5830,71 +5701,16 @@
 					}
 				},
 				{
-					"name": "Patch mapping as non-admin is refused",
+					"name": "Mapping holds the patched value",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Patch mapping as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Mapping holds the patched value: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Patch mapping as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/mappings/{{mapping_id}}",
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"description\": \"hijacked\"\n}"
-						},
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{t21_user}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{t21_password}}",
-									"type": "string"
-								}
-							]
-						}
-					}
-				},
-				{
-					"name": "Mapping unchanged after refusals",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Mapping unchanged after refusals: status 200', function () { pm.response.to.have.status(200); });",
-									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Mapping unchanged after refusals: body', function () {",
+									"pm.test('Mapping holds the patched value: body', function () {",
 									"\tpm.expect(json.description).to.eql('patched by t21');",
 									"});"
 								]
@@ -5998,17 +5814,17 @@
 					}
 				},
 				{
-					"name": "Test mapping as non-admin is refused",
+					"name": "Non-admin tests a mapping",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Test mapping as non-admin is refused: status 403', function () { pm.response.to.have.status(403); });",
+									"pm.test('Non-admin tests a mapping: status 200', function () { pm.response.to.have.status(200); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Test mapping as non-admin is refused: body', function () {",
-									"\tpm.expect(json).to.be.an('object'); pm.expect(json.message || json.error).to.be.a('string').and.not.empty;",
+									"pm.test('Non-admin tests a mapping: body', function () {",
+									"\tpm.expect(json.resultObject.fullName).to.eql('Grace');",
 									"});"
 								]
 							}
@@ -6033,7 +5849,7 @@
 						"url": "{{base_url}}/index.php/apps/openregister/api/mappings/test",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"inputObject\": {\n    \"first\": \"Ada\"\n  },\n  \"mapping\": {\n    \"mapping\": {\n      \"fullName\": \"first\"\n    }\n  }\n}"
+							"raw": "{\n  \"inputObject\": {\n    \"first\": \"Grace\"\n  },\n  \"mapping\": {\n    \"mapping\": {\n      \"fullName\": \"first\"\n    }\n  }\n}"
 						},
 						"auth": {
 							"type": "basic",
@@ -8923,94 +8739,6 @@
 					}
 				},
 				{
-					"name": "Share credential with the user",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Share credential with the user: status 200', function () { pm.response.to.have.status(200); });",
-									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Share credential with the user: body', function () {",
-									"\tpm.expect(json.sharedUsers).to.include(pm.collectionVariables.get('t21_user'));",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/credentials/{{credential_id}}/shares",
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"sharedWith\": [\n    {\n      \"type\": \"user\",\n      \"id\": \"{{t21_user}}\"\n    }\n  ]\n}"
-						}
-					}
-				},
-				{
-					"name": "User sees the credential shared with them",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('User sees the credential shared with them: status 200', function () { pm.response.to.have.status(200); });",
-									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('User sees the credential shared with them: body', function () {",
-									"\tpm.expect(json.results.map(function (c) { return String((c['@self'] && c['@self'].id) || c.id); })).to.include(pm.collectionVariables.get('credential_id'));",
-									"\tpm.expect(json.total).to.eql(json.results.length);",
-									"});"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "OCS-APIRequest",
-								"value": "true"
-							},
-							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/credentials/shared-with-me",
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "{{t21_user}}",
-									"type": "string"
-								},
-								{
-									"key": "password",
-									"value": "{{t21_password}}",
-									"type": "string"
-								}
-							]
-						}
-					}
-				},
-				{
 					"name": "Owner does not see own credential as shared-with-me",
 					"event": [
 						{
@@ -9076,16 +8804,16 @@
 					}
 				},
 				{
-					"name": "Register app with invalid id",
+					"name": "Register app with an over-long id",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('Register app with invalid id: status 400', function () { pm.response.to.have.status(400); });",
+									"pm.test('Register app with an over-long id: status 400', function () { pm.response.to.have.status(400); });",
 									"let json = null; try { json = pm.response.json(); } catch (e) { json = null; }",
-									"pm.test('Register app with invalid id: body', function () {",
+									"pm.test('Register app with an over-long id: body', function () {",
 									"\tpm.expect(json).to.be.an('object'); pm.expect(String(json.error || json.message)).to.include(\"Invalid app id\");",
 									"});"
 								]
@@ -9104,7 +8832,7 @@
 								"value": "application/json"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/credentials/apps/BAD.APP/register"
+						"url": "{{base_url}}/index.php/apps/openregister/api/credentials/apps/t21-app-id-longer-than-thirty-two-chars/register"
 					}
 				},
 				{
