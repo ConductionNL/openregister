@@ -27,6 +27,8 @@ use OCP\IURLGenerator;
 
 /**
  * The collaborators of WellKnownController, wired by DI autowiring.
+ *
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 final class WellKnownControllerServices {
 	/**

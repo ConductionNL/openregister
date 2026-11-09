@@ -27,6 +27,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * The collaborators of ChatHealthController, wired by DI autowiring.
+ *
+ * @spec openspec/specs/chat-ai/spec.md
  */
 final class ChatHealthControllerServices {
 	/**

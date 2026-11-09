@@ -27,6 +27,8 @@ use OCP\IL10N;
 
 /**
  * The collaborators of ConsumersController, wired by DI autowiring.
+ *
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 final class ConsumersControllerServices {
 	/**

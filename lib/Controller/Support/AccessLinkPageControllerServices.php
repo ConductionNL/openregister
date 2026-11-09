@@ -27,6 +27,8 @@ use OCP\IL10N;
 
 /**
  * The collaborators of AccessLinkPageController, wired by DI autowiring.
+ *
+ * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
 final class AccessLinkPageControllerServices {
 	/**

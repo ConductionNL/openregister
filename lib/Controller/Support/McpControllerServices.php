@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
 
 /**
  * The collaborators of McpController, wired by DI autowiring.
+ *
+ * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
  */
 final class McpControllerServices {
 	/**
