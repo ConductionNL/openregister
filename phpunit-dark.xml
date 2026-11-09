@@ -7,7 +7,7 @@
     Same settings as phpunit.xml (bootstrap, strictness, memory cap); only the
     suites differ. Run it inside the booted CI stack:
 
-        php vendor/bin/phpunit -c phpunit-dark.xml --no-coverage --colors=never
+        php vendor/bin/phpunit -c phpunit-dark.xml (no coverage, no colors)
 
     QUARANTINE: every <exclude> below is a red file from the measurement run,
     with a comment naming its failure class. It is a list to burn down, not a
