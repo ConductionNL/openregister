@@ -171,7 +171,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			new SchemaDeletionStores($this->mapper, $this->registers, $this->schemas, $this->audit),
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->mapper), $this->audit),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -244,7 +244,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		$mapper->method('deleteObjectsBySchema')->willThrowException(new RuntimeException('gone away'));
 		$service = new SchemaDeletionService(
 			$this->db,
-			new SchemaDeletionStores($mapper, $this->registers, $this->schemas, $this->audit),
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $mapper), $this->audit),
 			$this->createMock(LoggerInterface::class)
 		);
 

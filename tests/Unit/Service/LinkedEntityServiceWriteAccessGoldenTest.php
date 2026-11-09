@@ -78,9 +78,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 
 		$this->service = new LinkedEntityService(
 			new LinkedEntityMappers(
-				$this->magicMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 				$this->createMock(OrganisationMapperInterface::class)
 			),
 			new LinkedEntityIntegrations(

@@ -148,9 +148,7 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		);
 		$this->service = new RetentionService(
 			new RetentionStores(
-				$this->objectMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 				$this->createMock(AuditTrailMapperInterface::class)
 			),
 			new RetentionRules($this->settings, $this->rowScanner, $calculator, $resolver),

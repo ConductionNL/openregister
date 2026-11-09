@@ -201,7 +201,7 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 			});
 		}
 
-		return new SchemaDeletionService($db, new SchemaDeletionStores($magic, $registers, $schemas, $audit), $logger);
+		return new SchemaDeletionService($db, new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $magic), $audit), $logger);
 	}//end service()
 
 	/**

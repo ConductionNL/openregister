@@ -142,9 +142,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->service = new SchemaDeletionService(
 			$this->db,
 			new SchemaDeletionStores(
-				$this->magicMapper,
-				$this->createMock(RegisterMapper::class),
-				$this->schemaMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->magicMapper),
 				$this->auditTrailMapper
 			),
 			$this->createMock(LoggerInterface::class)
