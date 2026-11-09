@@ -18,3 +18,4 @@
 2026-11-09T09:10:04Z fixerF2-20261109T083856-9ec52c22 FIXED #7435 9dc9d6120464 merged main (FlowBindings: main's LockObjectNode binding kept beside the timer bindings)
 2026-11-09T09:15:10Z fixer-F1-20261109T084925-fdca83bf FIXED #7686 f441bab610b0 collection urls written as strings, OCS-APIRequest header on every request
 2026-11-09T09:15:58Z fixerF2-20261109T083856-9ec52c22 FIXED #6693 520628986942 merged main (ObjectRelationCleanupService: link bundle kept, main's ObjectCalendarTasksInterface type taken)
+2026-11-09T09:16:36Z fixerF2-20261109T083856-9ec52c22 FIX-SKIP #6973 main already carries this refactor (51438f71d2, 5bf139bd1f) in its own shape; with main's side kept the branch only adds an interface nothing implements or calls plus a parallel binding test, so there is nothing left to land: close or rebuild
