@@ -82,3 +82,4 @@
 2026-11-09T11:08:03Z integrator-20261109T092732-73c42b8a GREEN tree f28ba0bc68 on dev 4949ac2580 prs 1 front=skip: Tests: 51021, Assertions: 167062, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-09T11:08:20Z integrator-20261109T092732-73c42b8a MERGED-TREE f28ba0bc68: 1 PRs, main now 2fcf249074 = tested tree
 2026-11-09T11:08:35Z integrator-20261109T092732-73c42b8a BISECT tree 85224de557: parked #7667 (FormDependentsCheckBehaviourTest), #7678 (SchemaImportServiceRegistryTest, TalkGatewayUserScopedLookupTest); 18 PRs merged; ExampleSetCollectivesStoreBehaviourTest (#7679) failed once in a 17-PR tree, green alone: order-dependent
+2026-11-09T11:09:16Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7701 aadd9d43
