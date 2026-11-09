@@ -112,15 +112,11 @@ trait MultiTenancyTrait {
 		string $tableAlias = '',
 		bool $multiTenancyEnabled = true,
 	): void {
-		$this->applyOrganisationScope(
-			qb: $qb,
-			options: new OrganisationFilterOptions(
-				columnName: $columnName,
-				allowNullOrg: $allowNullOrg,
-				tableAlias: $tableAlias,
-				multiTenancyEnabled: $multiTenancyEnabled
-			)
+		$options = new OrganisationFilterOptions(
+			columnName: $columnName, allowNullOrg: $allowNullOrg,
+			tableAlias: $tableAlias, multiTenancyEnabled: $multiTenancyEnabled
 		);
+		$this->applyOrganisationScope(qb: $qb, options: $options);
 	}//end applyOrganisationFilter()
 
 	/**
