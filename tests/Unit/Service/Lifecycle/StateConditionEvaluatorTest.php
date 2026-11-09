@@ -33,7 +33,6 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -57,7 +56,7 @@ class StateConditionEvaluatorTest extends TestCase {
 		$dialect = new ConditionDialect(new CalculationEvaluator(new PlaceholderResolver($userSession)));
 		$resolver = new StateFieldRuleResolver($userSession, $groupManager, $dialect);
 
-		$this->evaluator = new StateConditionEvaluator($resolver, $dialect, new ConditionTracer($dialect));
+		$this->evaluator = new StateConditionEvaluator($resolver, $dialect);
 	}
 
 	/**

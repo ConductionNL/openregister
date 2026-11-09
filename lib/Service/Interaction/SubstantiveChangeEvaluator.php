@@ -77,17 +77,23 @@ class SubstantiveChangeEvaluator implements SubstantiveChangeEvaluatorInterface 
 	private array $annotationMemo = [];
 
 	/**
+	 * Puts values in the form a reader sees.
+	 *
+	 * @var ValueNormaliser
+	 */
+	private readonly ValueNormaliser $normaliser;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ValueNormaliser $normaliser Puts values in the form a reader sees.
+	 * @param LoggerInterface       $logger       Logger.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ValueNormaliser $normaliser=new ValueNormaliser(),
 	) {
+		$this->normaliser = new ValueNormaliser();
 	}//end __construct()
 
 	/**

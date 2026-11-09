@@ -66,19 +66,27 @@ class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 	public const CODE_EXIT = 'lifecycle-state-exit-refused';
 
 	/**
+	 * Names the clause that decided a refusal.
+	 *
+	 * @var ConditionTracer
+	 */
+	private readonly ConditionTracer $tracer;
+
+	/**
 	 * Constructor.
 	 *
+	 * The tracer only reads the dialect, so it is built over the same one.
+	 *
 	 * @param StateFieldRuleResolver $resolver Reads the annotation and builds the evaluation document.
-	 * @param ConditionDialect $dialect Decides whether a condition holds, in either dialect.
-	 * @param ConditionTracer $tracer Names the clause that decided a refusal.
+	 * @param ConditionDialect       $dialect  Decides whether a condition holds, in either dialect.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly StateFieldRuleResolver $resolver,
 		private readonly ConditionDialect $dialect,
-		private readonly ConditionTracer $tracer,
 	) {
+		$this->tracer = new ConditionTracer(dialect: $dialect);
 	}//end __construct()
 
 	/**
