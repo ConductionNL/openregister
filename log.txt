@@ -136,3 +136,4 @@
 2026-11-09T13:47:02Z integrator-20261109T130654-5892e14f RED tree 1e680f136c prs 10 front=red: Tests: 52100, Assertions: 169714, Errors: 6, Failures: 11, Warnings: 1, Deprecations: 4, P; first failures: FAIL src/views/migrationPack/migrationPackTables.dom.golden.spec.js;FAIL src/views/schema/CalendarProviderTab.dom.golden.spec.js
 2026-11-09T13:47:24Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7653 f5eed6aa
 2026-11-09T13:47:37Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7660 d5e9c640
+2026-11-09T13:47:51Z integrator-20261109T130654-5892e14f CONFLICT-DEV #7675 0c3847e7
