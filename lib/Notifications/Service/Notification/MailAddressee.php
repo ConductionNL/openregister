@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 /**
  * Who a transactional email to a bare address goes to: the address and the
  * name to address it to.
+ *
+ * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
  */
 final class MailAddressee {
 
