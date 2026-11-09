@@ -4068,24 +4068,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function findInTable(RegisterSchema $table, MagicIdentifierFind $find, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity {
-		$register       = $table->register;
-		$schema         = $table->schema;
-		$identifier     = $find->identifier;
-		$includeDeleted = $find->includeDeleted;
-
-		$this->ensureTableWhenMagicEnabled(register: $register, schema: $schema);
-
-		$lookup = (new MagicObjectLookup(register: $register, schema: $schema))->lookingFor(
-			identifier: $identifier,
-			tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema)
-		);
+		$register = $table->register;
+		$schema   = $table->schema;
+		$lookup   = $this->lookupIn(table: $table, find: $find);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Finding object in register+schema table',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'identifier' => $identifier,
+				'identifier' => $find->identifier,
 				'tableName' => $lookup->tableName,
 				'rbac' => $_rbac,
 				'multitenancy' => $_multitenancy,
@@ -4093,11 +4085,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		$qb = $this->identifierLookupQuery(lookup: $lookup);
-
-		// Exclude deleted objects by default (unless includeDeleted is true).
-		if ($includeDeleted === false) {
-			$qb->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
-		}
+		$this->excludeDeletedUnlessAsked(qb: $qb, find: $find);
 
 		// SECURITY (cross-org IDOR fix): apply the SAME multitenancy + RBAC
 		// access-control filters the list/search path uses, through the search
@@ -4121,6 +4109,37 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $this->fetchSingleObject(qb: $qb, lookup: $lookup);
 	}//end findInTable()
+
+	/**
+	 * The single-object lookup of an identifier in a register+schema table, creating the table when magic mapping is on.
+	 *
+	 * @param RegisterSchema      $table The register and schema.
+	 * @param MagicIdentifierFind $find  The identifier.
+	 *
+	 * @return MagicObjectLookup The lookup.
+	 */
+	private function lookupIn(RegisterSchema $table, MagicIdentifierFind $find): MagicObjectLookup {
+		$this->ensureTableWhenMagicEnabled(register: $table->register, schema: $table->schema);
+
+		return (new MagicObjectLookup(register: $table->register, schema: $table->schema))->lookingFor(
+			identifier: $find->identifier,
+			tableName: $this->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema)
+		);
+	}//end lookupIn()
+
+	/**
+	 * Exclude soft-deleted objects from a lookup unless the find includes them.
+	 *
+	 * @param IQueryBuilder       $qb   The lookup query.
+	 * @param MagicIdentifierFind $find Whether deleted objects count.
+	 *
+	 * @return void
+	 */
+	private function excludeDeletedUnlessAsked(IQueryBuilder $qb, MagicIdentifierFind $find): void {
+		if ($find->includeDeleted === false) {
+			$qb->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
+		}
+	}//end excludeDeletedUnlessAsked()
 
 	/**
 	 * Create the register+schema table when it is missing and magic mapping is enabled for the schema.
