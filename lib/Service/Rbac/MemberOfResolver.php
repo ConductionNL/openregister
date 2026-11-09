@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\OperatorEvaluator;
@@ -148,24 +149,28 @@ class MemberOfResolver {
 	 */
 	public function resolveOperators(array $operators, ?string $userId, callable $resolveSibling): ?array {
 		$set = $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId);
-		if ($set === null) {
-			return null;
-		}
-
 		unset($operators[self::OPERATOR]);
 
-		return $this->narrowed(set: $set, resolved: array_map($resolveSibling, $operators));
+		return $this->narrowed(set: $set, siblings: static fn (): array => array_map($resolveSibling, $operators));
 	}//end resolveOperators()
 
 	/**
 	 * The resolved sibling operators with `$in` narrowed to the membership set.
 	 *
-	 * @param string[]             $set      The caller's membership set.
-	 * @param array<string, mixed> $resolved The sibling operators, resolved.
+	 * The siblings are resolved only once the set is known, so an unresolvable
+	 * operand denies without resolving anything else.
 	 *
-	 * @return array<string, mixed>|null The operators with `$in`, or null (deny) when a sibling `$in` is not a list.
+	 * @param string[]|null $set      The caller's membership set, or null when the operand is unresolvable.
+	 * @param Closure       $siblings Resolves the sibling operators.
+	 *
+	 * @return array<string, mixed>|null The operators with `$in`, or null (deny) when unresolvable.
 	 */
-	private function narrowed(array $set, array $resolved): ?array {
+	private function narrowed(?array $set, Closure $siblings): ?array {
+		if ($set === null) {
+			return null;
+		}
+
+		$resolved = $siblings();
 		$sibling = ($resolved['$in'] ?? $set);
 		if (is_array($sibling) === false || array_is_list($sibling) === false) {
 			return null;
