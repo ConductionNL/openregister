@@ -248,8 +248,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 				schema: $schema,
 				slug: $slug,
 				verb: $verb,
-				verbConfig: $this->verbConfig(toolsConfig: $toolsConfig, verb: $verb),
-				id: $this->appId . '.' . $slug . '.' . $verb
+				verbConfig: $this->verbConfig(toolsConfig: $toolsConfig, verb: $verb)
 			);
 			if ($this->claimToolId(tool: $tool, emittedIds: $emittedIds) === false) {
 				continue;
@@ -293,6 +292,17 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	}//end verbConfig()
 
 	/**
+	 * The fully-namespaced id of a derived tool: `{appId}.{slug}.{verb}`.
+	 *
+	 * @param DerivedToolDefinition $tool The tool being described.
+	 *
+	 * @return string The tool id.
+	 */
+	private function toolId(DerivedToolDefinition $tool): string {
+		return $this->appId . '.' . $tool->slug . '.' . $tool->verb;
+	}//end toolId()
+
+	/**
 	 * Claim a tool id for a schema, refusing suppressed and already-emitted ids.
 	 *
 	 * @param DerivedToolDefinition $tool       The tool whose id the schema claims.
@@ -301,7 +311,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return bool Whether the id may be emitted for this schema.
 	 */
 	private function claimToolId(DerivedToolDefinition $tool, array &$emittedIds): bool {
-		$id = $tool->id;
+		$id = $this->toolId(tool: $tool);
 		$schema = $tool->schema;
 
 		// Self-suppression (REQ-DERIVED-003): a hand-written per-app
@@ -656,7 +666,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	/**
 	 * Build one tool descriptor for a schema+verb pair.
 	 *
-	 * @param DerivedToolDefinition $tool The schema, slug, verb, verb config and tool id.
+	 * @param DerivedToolDefinition $tool The schema, slug, verb and verb config.
 	 *
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
 	 *         app: string, subject: string, action: string,
@@ -668,7 +678,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$verb = $tool->verb;
 		$verbConfig = $tool->verbConfig;
 		$descriptor = [
-			'id' => $tool->id,
+			'id' => $this->toolId(tool: $tool),
 			'name' => $slug . '_' . $verb,
 			'description' => $this->description(tool: $tool, override: $verbConfig['description'] ?? null),
 			'inputSchema' => $this->buildInputSchema(tool: $tool),

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
+use OCA\OpenRegister\Service\Flow\FlowSubjectClaim;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -140,13 +141,7 @@ final class UserTaskAttachToTest extends TestCase {
 	private function aRunHoldingACase(): FlowRun {
 		$run = new FlowRun();
 		$run->setUuid('run-1');
-		(new FlowRunSubjects())->record(
-			run: $run,
-			role: 'case',
-			uuid: 'obj-case',
-			register: '3',
-			schema: '7'
-		);
+		(new FlowRunSubjects())->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-case', register: '3', schema: '7'));
 
 		return $run;
 	}//end aRunHoldingACase()
