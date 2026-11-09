@@ -387,16 +387,30 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
 	 */
 	public function dispatchWithSchema(ObjectEntity $object, string $trigger, array $context, Schema $schema): void {
+		$this->fireRules(event: new NotificationEvent(object: $object, trigger: $trigger, context: $context), schema: $schema);
+	}//end dispatchWithSchema()
+
+	/**
+	 * Fire every rule a schema declares for one event.
+	 *
+	 * @param NotificationEvent $event  The object, the trigger and its extras.
+	 * @param Schema            $schema The schema carrying the rules.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
+	 */
+	private function fireRules(NotificationEvent $event, Schema $schema): void {
 		$notifications = $this->getAnnotation(schema: $schema);
 		if ($notifications === null) {
 			return;
 		}
 
-		$this->registerLanguages = $this->resolveRegisterLanguages(object: $object);
+		$this->registerLanguages = $this->resolveRegisterLanguages(object: $event->object);
 
 		// The canonical INotification subject comes from the trigger, not the
 		// rule name, so every schema-declared in-app notification renders.
-		$subjectKey = $this->canonicalSubject(trigger: $trigger);
+		$subjectKey = $this->canonicalSubject(trigger: $event->trigger);
 
 		foreach ($notifications as $name => $spec) {
 			if (is_array($spec) === false) {
@@ -406,15 +420,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			$firing = new RuleFiring(
 				ruleId: (string)$name,
 				spec: $spec,
-				object: $object,
+				object: $event->object,
 				schema: $schema,
-				context: $context,
+				context: $event->context,
 				subjectKey: $subjectKey
 			);
-			$this->fireRule(firing: $firing, trigger: $trigger);
+			$this->fireRule(firing: $firing, trigger: $event->trigger);
 		}
 
-	}//end dispatchWithSchema()
+	}//end fireRules()
 
 	/**
 	 * Run one rule through its gates and channels.
