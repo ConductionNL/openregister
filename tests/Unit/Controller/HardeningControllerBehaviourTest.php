@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\HardeningController;
 use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\FloorBreach;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
@@ -79,7 +80,7 @@ class HardeningControllerBehaviourTest extends TestCase {
 	}
 
 	private function floorRefusal(): HardeningFloorException {
-		return new HardeningFloorException('auth.rateLimit.attemptsPerIdentity', 20, 50, 'atMost', 'Below the floor');
+		return new HardeningFloorException(new FloorBreach('auth.rateLimit.attemptsPerIdentity', 20, 50, 'atMost'), 'Below the floor');
 	}
 
 	public function testReportServesWhatTheServiceBuilds(): void {

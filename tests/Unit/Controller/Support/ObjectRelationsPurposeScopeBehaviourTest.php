@@ -114,8 +114,9 @@ class ObjectRelationsPurposeScopeBehaviourTest extends TestCase {
 		$this->guard->method('enforce')->willThrowException(self::refusal());
 
 		$response = $this->scope()->refusalFor($this->object('5'));
-		$this->assertSame(403, $response?->getStatus());
-		$this->assertSame('PURPOSE_REFUSED', $response?->getData()['error']);
+		$this->assertNotNull($response);
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('PURPOSE_REFUSED', $response->getData()['error']);
 	}
 
 	public function testAnAdmittedRootIsNotRefused(): void {
