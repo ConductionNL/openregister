@@ -84,14 +84,16 @@ final class LifecycleAnnotationValidator implements LifecycleAnnotationValidator
 		// naming the real mistake.
 		if (isset($annotation['provider']) === true) {
 			$errors = $this->validateProviderMode(annotation: $annotation, schema: $schema);
-			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null)));
+			$scope  = LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null);
+			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: $scope));
 		}
 
 		// Graph mode: the lifecycle field is a `$ref` with no enum, so the graph
 		// block is shape-checked instead of the static `transitions`/enum contract.
 		if ($this->declaresGraph(annotation: $annotation) === true) {
 			$errors = $this->graph->validate(annotation: $annotation, schema: $schema);
-			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null)));
+			$scope  = LifecycleStateValidator::scopeOf(schema: $schema, enumSet: null);
+			return array_merge($errors, $this->states->validateStates(annotation: $annotation, scope: $scope));
 		}
 
 		return $this->validateStaticMode(annotation: $annotation, schema: $schema);
@@ -183,7 +185,10 @@ final class LifecycleAnnotationValidator implements LifecycleAnnotationValidator
 
 		return array_merge(
 			$this->validateTransitions(transitions: $transitions, enumSet: $scope['enumSet']),
-			$this->states->validateStates(annotation: $annotation, scope: LifecycleStateValidator::scopeOf(schema: $scope['schema'], enumSet: $scope['enumSet'])),
+			$this->states->validateStates(
+				annotation: $annotation,
+				scope: LifecycleStateValidator::scopeOf(schema: $scope['schema'], enumSet: $scope['enumSet'])
+			),
 			$this->states->validateInputsAgainstHiddenFields(annotation: $annotation, transitions: $transitions)
 		);
 	}//end validateTransitionsAndStates()
