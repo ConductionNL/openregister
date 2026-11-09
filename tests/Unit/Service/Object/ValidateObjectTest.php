@@ -2364,6 +2364,8 @@ class ValidateObjectTest extends TestCase {
 		$response = $this->handler->handleValidationException($exception);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['Name is required', 'Invalid email format'], $response->getData()['errors']);
 	}
 
 	// -------------------------------------------------------------------------
