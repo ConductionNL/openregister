@@ -28,18 +28,14 @@ namespace OCA\OpenRegister\Search;
 
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
-use OCP\IL10N;
 use OCP\IUser;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Search\SearchScopes;
 use OCP\Search\FilterDefinition;
 use OCP\Search\IFilteringProvider;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
-use Psr\Log\LoggerInterface;
 
 /**
  * ObjectsProvider class for the objects search.
@@ -118,79 +114,21 @@ class ObjectsProvider implements IFilteringProvider {
 	private ?array $nonSearchableIds = null;
 
 	/**
-	 * The localization service
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
-	 * The object service for advanced search operations
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Logger for debugging search operations
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Schema mapper for resolving the searchable-schema opt-out
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Shared result-formatting service (icon precedence, deep-link URL,
-	 * subline/excerpt building).
-	 *
-	 * @var ObjectSearchResultFormatterInterface
-	 */
-	private readonly ObjectSearchResultFormatterInterface $resultFormatter;
-
-	/**
-	 * Registers, for resolving which one owns a schema a scope names.
-	 *
-	 * @var RegisterMapperInterface|null
-	 */
-	private readonly ?RegisterMapperInterface $registerMapper;
-
-	/**
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for the searchable-schema opt-out
-	 * @param ObjectsProviderOutput $output The localization service, shared result formatter and logger
-	 * @param RegisterMapperInterface|null $registerMapper Resolves a register named in a search scope. Nullable and last
-	 *                                            so no positional caller shifts; absent, a scope naming a
-	 *                                            register narrows nothing, which is the pre-scope behaviour
+	 * @param SchemaCatalogInterface    $catalog       Schemas for the searchable-schema opt-out, registers for resolving a register a search scope names
+	 * @param ObjectsProviderOutput     $output        The localization service, shared result formatter and logger
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		ObjectOperationsInterface $objectService,
-		SchemaMapperInterface $schemaMapper,
-		ObjectsProviderOutput $output,
-		// Appended LAST and nullable, deliberately: a new constructor argument
-		// inserted anywhere else shifts every positional caller, and the
-		// resulting TypeError names the argument AFTER the one that moved.
-		// Null simply means a scope naming a register narrows nothing, which
-		// is the pre-scope behaviour.
-		?RegisterMapperInterface $registerMapper = null,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly ObjectsProviderOutput $output,
 	) {
-		$this->l10n = $output->l10n;
-		$this->objectService = $objectService;
-		$this->logger = $output->logger;
-		$this->schemaMapper = $schemaMapper;
-		$this->resultFormatter = $output->resultFormatter;
-		$this->registerMapper = $registerMapper;
 	}//end __construct()
 
 	/**
@@ -214,7 +152,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function getName(): string {
-		return $this->l10n->t('Open Register Objects');
+		return $this->output->l10n->t('Open Register Objects');
 	}//end getName()
 
 	/**
@@ -340,7 +278,7 @@ class ObjectsProvider implements IFilteringProvider {
 		$searchQuery = $this->withCreatedRange(searchQuery: $searchQuery, query: $query);
 		[$limit, $offset] = $this->pageWindow(query: $query);
 
-		$this->logger->debug(
+		$this->output->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search requested',
 			context: [
 				'file' => __FILE__,
@@ -375,10 +313,10 @@ class ObjectsProvider implements IFilteringProvider {
 
 		$searchResultEntries = [];
 		foreach ($searchResults['results'] as $result) {
-			$searchResultEntries[] = $this->resultFormatter->format(result: $result, term: $search);
+			$searchResultEntries[] = $this->output->resultFormatter->format(result: $result, term: $search);
 		}
 
-		$this->logger->debug(
+		$this->output->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search completed',
 			context: [
 				'file' => __FILE__,
@@ -586,7 +524,8 @@ class ObjectsProvider implements IFilteringProvider {
 	 * A chunk that throws is logged at ERROR level with the schema ids it
 	 * spanned and skipped. The other chunks still answer.
 	 *
-	 * @param ListQuery              $query        The page window (limit, offset) and, as its filters, the pipeline query without limit, offset or schema list.
+	 * @param ListQuery              $query        The page window (limit, offset); its filters are the pipeline
+	 *                                             query without limit, offset or schema list.
 	 * @param array<int, int[]|null> $schemaChunks Schema-id chunks; a null chunk means the query already names its schema.
 	 *
 	 * @return array{results: array<int, mixed>, total: int} The page rows in pipeline order, and the summed total.
@@ -675,7 +614,7 @@ class ObjectsProvider implements IFilteringProvider {
 		try {
 			return $this->objectService->searchObjectsPaginated(query: $chunkQuery, _rbac: true, _multitenancy: true);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->output->logger->error(
 				'[ObjectsProvider] OpenRegister search failed for schema chunk {chunk} of {chunks}; the other chunks still answer: {error}',
 				array_merge($where, ['error' => $e->getMessage(), 'exception' => $e])
 			);
@@ -764,9 +703,9 @@ class ObjectsProvider implements IFilteringProvider {
 	 */
 	private function getSearchableIds(): array {
 		try {
-			return $this->schemaMapper->findSearchableIds();
+			return $this->catalog->schemas()->findSearchableIds();
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->output->logger->error(
 				'[ObjectsProvider] Failed to resolve searchable schemas, returning no results: {error}',
 				['error' => $e->getMessage(), 'exception' => $e]
 			);
@@ -792,16 +731,16 @@ class ObjectsProvider implements IFilteringProvider {
 	 */
 	private function describeSearchableSchemas(): array {
 		try {
-			$searchable = array_flip($this->schemaMapper->findSearchableIds());
+			$searchable = array_flip($this->catalog->schemas()->findSearchableIds());
 			$owner = [];
-			foreach (($this->registerMapper?->findAll() ?? []) as $register) {
+			foreach ($this->catalog->registers()->findAll() as $register) {
 				foreach (($register->getSchemas() ?? []) as $schemaId) {
 					$owner[(int)$schemaId] = (string)$register->getSlug();
 				}
 			}
 
 			$described = [];
-			foreach ($this->schemaMapper->findAll() as $schema) {
+			foreach ($this->catalog->schemas()->findAll() as $schema) {
 				$id = (int)$schema->getId();
 				if (array_key_exists($id, $searchable) === false) {
 					continue;
@@ -816,7 +755,7 @@ class ObjectsProvider implements IFilteringProvider {
 
 			return $described;
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->output->logger->error(
 				'[ObjectsProvider] Failed to describe searchable schemas for scoping: {error}',
 				['error' => $e->getMessage(), 'exception' => $e]
 			);
@@ -833,7 +772,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function getSectionName(): string {
-		return $this->l10n->t('Open Register Objects');
+		return $this->output->l10n->t('Open Register Objects');
 	}//end getSectionName()
 
 	/**
@@ -859,7 +798,7 @@ class ObjectsProvider implements IFilteringProvider {
 		}
 
 		try {
-			return (int)$this->schemaMapper->find($trimmed, _rbac: false, _multitenancy: false)->getId();
+			return (int)$this->catalog->schemas()->find($trimmed, _rbac: false, _multitenancy: false)->getId();
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -883,9 +822,9 @@ class ObjectsProvider implements IFilteringProvider {
 		}
 
 		try {
-			$this->nonSearchableIds = $this->schemaMapper->findNonSearchableIds();
+			$this->nonSearchableIds = $this->catalog->schemas()->findNonSearchableIds();
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->output->logger->warning(
 				'[ObjectsProvider] Failed to resolve non-searchable schemas, treating all as searchable: {error}',
 				['error' => $e->getMessage()]
 			);
