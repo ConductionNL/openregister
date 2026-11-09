@@ -456,3 +456,4 @@
 7469 aaf8e1a5d05e4594a8585a7e46cde77a9bdac3b5 APPROVE seeded
 7470 b845ac7cbcf63253a0f541514cfcec8d9e18f875 APPROVE seeded
 7471 9794e7b76f2dffe9481ebaff9e1e31fc32c6d51a APPROVE seeded
+6727 7f30d9a6c8384e70782c7b7f70992866595d2589 APPROVE fail-closed fix in TaskAuthorizationService::isNamedOrInGroup (typed entries skipped by bare-group loop); test fails on old code; guard suites green merged with development a1fd993f81
