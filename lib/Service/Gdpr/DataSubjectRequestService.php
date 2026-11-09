@@ -191,22 +191,21 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * decided per object rather than per request — does not have to re-run the
 	 * discovery and re-make the decision to reach the same write.
 	 *
-	 * @param ObjectEntity $object The object to scrub.
-	 * @param string $subjectId Subject identifier value.
-	 * @param array<int, array> $matched GdprEntity hits that triggered inclusion.
+	 * @param SubjectMatch $match     The object to scrub and the GdprEntity hits that triggered inclusion.
+	 * @param string       $subjectId Subject identifier value.
 	 *
 	 * @return array<string, mixed>|null The persisted envelope, or null on failure.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function pseudonymiseObject(ObjectEntity $object, string $subjectId, array $matched): ?array {
-		$this->pseudonymise(match: new SubjectMatch(object: $object, matched: $matched), subjectId: $subjectId);
-		$this->records->writer->attribute(object: $object);
+	public function pseudonymiseObject(SubjectMatch $match, string $subjectId): ?array {
+		$this->pseudonymise(match: $match, subjectId: $subjectId);
+		$this->records->writer->attribute(object: $match->object);
 
 		return $this->records->writer->persist(
-			object: $object,
+			object: $match->object,
 			op: 'erase',
-			identifier: (string)($object->getUuid() ?? '')
+			identifier: (string)($match->object->getUuid() ?? '')
 		);
 	}//end pseudonymiseObject()
 
