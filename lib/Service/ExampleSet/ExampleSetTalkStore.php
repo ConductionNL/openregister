@@ -109,16 +109,27 @@ class ExampleSetTalkStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function room(string $owner, string $name, array $participants): array {
-		$found = $this->groupRoom(owner: $owner, name: $name);
+		return $this->openRoom(room: new ExampleSetTalkRoom(owner: $owner, name: $name, participants: $participants));
+	}//end room()
+
+	/**
+	 * Find the owner's group room by name, or make it with the participants.
+	 *
+	 * @param ExampleSetTalkRoom $room The owner, name and participants.
+	 *
+	 * @return array{token: string, id: int, created: bool}
+	 */
+	private function openRoom(ExampleSetTalkRoom $room): array {
+		$found = $this->groupRoom(owner: $room->owner, name: $room->name);
 		if ($found !== null) {
 			return ['token' => (string) $found->getToken(), 'id' => (int) $found->getId(), 'created' => false];
 		}
 
-		$room = $this->container->get(self::ROOMS)->createConversation(self::GROUP_ROOM, $name, $this->userManager->get($owner));
-		$this->container->get(self::PARTICIPANTS)->addUsers($room, $this->people(owner: $owner, participants: $participants));
+		$made = $this->container->get(self::ROOMS)->createConversation(self::GROUP_ROOM, $room->name, $this->userManager->get($room->owner));
+		$this->container->get(self::PARTICIPANTS)->addUsers($made, $this->people(owner: $room->owner, participants: $room->participants));
 
-		return ['token' => (string) $room->getToken(), 'id' => (int) $room->getId(), 'created' => true];
-	}//end room()
+		return ['token' => (string) $made->getToken(), 'id' => (int) $made->getId(), 'created' => true];
+	}//end openRoom()
 
 	/**
 	 * The owner's group conversation with this name, or null.
