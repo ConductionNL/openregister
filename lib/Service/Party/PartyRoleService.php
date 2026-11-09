@@ -253,9 +253,20 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function removeParty(string $objectUuid, string $partyUuid, ?string $role = null): int {
-		$targets = array_values(
-			array_filter($this->links->findPartiesForObject(objectUuid: $objectUuid), self::holding(partyUuid: $partyUuid, role: $role))
-		);
+		$links = $this->links->findPartiesForObject(objectUuid: $objectUuid);
+		return $this->unlinkAll(targets: array_values(array_filter($links, self::holding(partyUuid: $partyUuid, role: $role))));
+	}//end removeParty()
+
+	/**
+	 * Delete each link and announce it.
+	 *
+	 * @param array<int, ContactLink> $targets The party's links to remove.
+	 *
+	 * @return int How many roles went.
+	 *
+	 * @throws Exception 404 when there is no link to remove.
+	 */
+	private function unlinkAll(array $targets): int {
 		if ($targets === []) {
 			throw new Exception('Party link not found', 404);
 		}
@@ -266,7 +277,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 		}
 
 		return count($targets);
-	}//end removeParty()
+	}//end unlinkAll()
 
 	/**
 	 * Whether a link is the party's, in one role or in every role.
