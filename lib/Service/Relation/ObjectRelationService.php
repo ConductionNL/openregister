@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Relation;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Db\Schema;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -369,22 +370,30 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function declarationFor(?int $schemaId, string $property, string $language = 'nl'): ?array {
+		// No schema reads as no declaration: the resolver answers null for it.
+		return $this->stores->relationTypes->descriptorFor(schema: $this->schemaOrNull(schemaId: $schemaId), property: $property, language: $language);
+	}//end declarationFor()
+
+	/**
+	 * The schema behind an id, or null when there is none or it cannot be found.
+	 *
+	 * Metadata only, so the read is not scoped to the caller.
+	 *
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOrNull(?int $schemaId): ?Schema {
 		if ($schemaId === null) {
 			return null;
 		}
 
 		try {
-			$schema = $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+			return $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
-
-		return $this->stores->relationTypes->descriptorFor(
-			schema: $schema,
-			property: $property,
-			language: $language
-		);
-	}//end declarationFor()
+	}//end schemaOrNull()
 
 	/**
 	 * Every stored relation row touching an object, with its labels resolved.
@@ -432,19 +441,27 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function render(ObjectRelation $row, string $direction, string $language = 'nl'): array {
-		$rendered = $row->jsonSerialize();
-		$descriptor = $this->descriptorOf(row: $row, language: $language);
+		$relation = $this->stores->relationTypes->row(descriptor: $this->descriptorOf(row: $row, language: $language), direction: $direction, path: null);
 
-		$rendered['relation'] = $this->stores->relationTypes->row(
-			descriptor: $descriptor,
-			direction: $direction,
-			path: null
-		);
-		$rendered['relation']['origin'] = $row->getOrigin();
-		$rendered['relation']['kind'] = $row->getKind();
+		return $this->withRelation(row: $row, relation: $relation);
+	}//end render()
+
+	/**
+	 * The row as JSON with its relation reading, origin and kind under `relation`.
+	 *
+	 * @param ObjectRelation       $row      The relation row.
+	 * @param array<string, mixed> $relation The reading of the relation in one direction.
+	 *
+	 * @return array<string, mixed> The rendered row.
+	 */
+	private function withRelation(ObjectRelation $row, array $relation): array {
+		$rendered = $row->jsonSerialize();
+		$relation['origin'] = $row->getOrigin();
+		$relation['kind']   = $row->getKind();
+		$rendered['relation'] = $relation;
 
 		return $rendered;
-	}//end render()
+	}//end withRelation()
 
 	/**
 	 * Resolve a row's labels: from the schema when it names a type, from the
