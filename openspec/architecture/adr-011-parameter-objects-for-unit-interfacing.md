@@ -75,6 +75,8 @@ cluster appears:
   build them. `ObjectRef` has `registerSchema(): RegisterSchemaRef`.
 - `OCA\OpenRegister\Db\ListQuery`: `limit`, `offset`, `filters`, `sort` and
   `search` for one listing, with the defaults the controllers apply today.
+  A listing without a page size is `ListQuery::unbounded()`; mappers read
+  `limitOrNull()`.
 
 A method that takes `Register $register, Schema $schema` takes
 `RegisterSchema $table`. A method that takes `string $register, string $schema,
