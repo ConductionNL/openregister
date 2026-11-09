@@ -1,0 +1,3561 @@
+{
+ "Q01": {
+  "id": "Q01",
+  "files": [
+   "lib/Db/DbRegistrar.php",
+   "lib/Db/ListQuery.php",
+   "lib/Db/RegisterSchema.php",
+   "lib/Db/SchemaCatalog.php",
+   "lib/Db/SchemaCatalogInterface.php",
+   "lib/Kernel/Contracts/ObjectRef.php",
+   "lib/Kernel/Contracts/RegisterSchemaRef.php",
+   "tests/Unit/Architecture/Adr011ValueObjectRulesTest.php"
+  ],
+  "p_files": [],
+  "i_targets": [],
+  "moves": [],
+  "before": {},
+  "target": {},
+  "deferred": [],
+  "away": {}
+ },
+ "Q02": {
+  "id": "Q02",
+  "files": [
+   "lib/Db/MagicMapper.php"
+  ],
+  "p_files": [
+   "lib/Db/MagicMapper.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 1692,
+   "gt4": 528,
+   "gt6": 69
+  },
+  "target": {
+   "gt2": 466,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Db/MagicMapper.php": [
+    "#6108"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 1226,
+   "gt4": 528,
+   "gt6": 69
+  },
+  "tsv_gain": {
+   "gt2": 1226,
+   "gt4": 528,
+   "gt6": 69
+  }
+ },
+ "Q03": {
+  "id": "Q03",
+  "files": [
+   "lib/Dav/TaskVtodoWriteBackPlugin.php",
+   "lib/Service/ExampleSet/ExampleSetInstaller.php",
+   "lib/Service/ExampleSet/ExampleSetPeople.php",
+   "lib/Service/ExampleSet/ExampleSetRemover.php"
+  ],
+  "p_files": [
+   "lib/Dav/TaskVtodoWriteBackPlugin.php",
+   "lib/Service/ExampleSet/ExampleSetInstaller.php",
+   "lib/Service/ExampleSet/ExampleSetPeople.php",
+   "lib/Service/ExampleSet/ExampleSetRemover.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 985,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 157,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 828,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 828,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "Q04": {
+  "id": "Q04",
+  "files": [
+   "lib/Controller/AccessLinkController.php",
+   "lib/Controller/ApiCallersController.php",
+   "lib/Controller/ApiSurfaceController.php",
+   "lib/Controller/AuditSinkController.php",
+   "lib/Controller/BulkJobsController.php",
+   "lib/Controller/CalculationsController.php",
+   "lib/Controller/CalendarFeedController.php",
+   "lib/Controller/ChatController.php",
+   "lib/Controller/ConfigurationDeploymentController.php",
+   "lib/Controller/ConfigurationsController.php",
+   "lib/Controller/ContentReportController.php",
+   "lib/Controller/ConversationController.php",
+   "lib/Controller/CredentialOauth2Controller.php",
+   "lib/Controller/DelegationController.php",
+   "lib/Controller/DsarCaseController.php",
+   "lib/Controller/DsarController.php",
+   "lib/Controller/EndpointsController.php",
+   "lib/Controller/EntityRelationsController.php",
+   "lib/Controller/ExportProfilesController.php",
+   "lib/Controller/FederatedConfigController.php",
+   "lib/Controller/FederationController.php",
+   "lib/Controller/FlowRunController.php",
+   "lib/Controller/FlowRunMigrationController.php",
+   "lib/Controller/FormsController.php",
+   "lib/Controller/GdprEntitiesController.php",
+   "lib/Controller/HandoffController.php",
+   "lib/Controller/ImportPreviewController.php",
+   "lib/Controller/LinkedEntityController.php",
+   "lib/Controller/MappingsController.php",
+   "lib/Controller/ObjectDraftController.php",
+   "lib/Controller/ObjectFavouriteController.php",
+   "lib/Controller/ObjectGrantsController.php",
+   "lib/Controller/ObjectShareLinkController.php",
+   "lib/Controller/OpenProjectLinksController.php",
+   "lib/Controller/OperationsConsoleController.php",
+   "lib/Controller/OrganisationController.php",
+   "lib/Controller/PartyController.php",
+   "lib/Controller/PermissionsAuditController.php",
+   "lib/Controller/PhotoLinksController.php",
+   "lib/Controller/PollLinksController.php",
+   "lib/Controller/PortalTaskController.php",
+   "lib/Controller/ProcessingLogController.php",
+   "lib/Controller/ProcessingPurposeController.php",
+   "lib/Controller/RelationsController.php",
+   "lib/Controller/RetentionController.php",
+   "lib/Controller/SchemaImportController.php",
+   "lib/Controller/ScopesController.php",
+   "lib/Controller/SearchTrailController.php",
+   "lib/Controller/SettingsController.php",
+   "lib/Controller/SourcesController.php",
+   "lib/Controller/TablesController.php",
+   "lib/Controller/TagsController.php",
+   "lib/Controller/TaskEventsController.php",
+   "lib/Controller/TransferController.php",
+   "lib/Controller/VerwerkingsactiviteitenController.php",
+   "lib/Controller/WebhooksController.php",
+   "lib/Mcp/Command/ContextChatReindexCommand.php"
+  ],
+  "p_files": [
+   "lib/Controller/AccessLinkController.php",
+   "lib/Controller/ApiCallersController.php",
+   "lib/Controller/ApiSurfaceController.php",
+   "lib/Controller/AuditSinkController.php",
+   "lib/Controller/BulkJobsController.php",
+   "lib/Controller/CalculationsController.php",
+   "lib/Controller/CalendarFeedController.php",
+   "lib/Controller/ChatController.php",
+   "lib/Controller/ConfigurationDeploymentController.php",
+   "lib/Controller/ConfigurationsController.php",
+   "lib/Controller/ContentReportController.php",
+   "lib/Controller/ConversationController.php",
+   "lib/Controller/CredentialOauth2Controller.php",
+   "lib/Controller/DelegationController.php",
+   "lib/Controller/DsarCaseController.php",
+   "lib/Controller/DsarController.php",
+   "lib/Controller/EndpointsController.php",
+   "lib/Controller/EntityRelationsController.php",
+   "lib/Controller/ExportProfilesController.php",
+   "lib/Controller/FederatedConfigController.php",
+   "lib/Controller/FederationController.php",
+   "lib/Controller/FlowRunController.php",
+   "lib/Controller/FlowRunMigrationController.php",
+   "lib/Controller/FormsController.php",
+   "lib/Controller/GdprEntitiesController.php",
+   "lib/Controller/HandoffController.php",
+   "lib/Controller/ImportPreviewController.php",
+   "lib/Controller/LinkedEntityController.php",
+   "lib/Controller/MappingsController.php",
+   "lib/Controller/ObjectDraftController.php",
+   "lib/Controller/ObjectFavouriteController.php",
+   "lib/Controller/ObjectGrantsController.php",
+   "lib/Controller/ObjectShareLinkController.php",
+   "lib/Controller/OpenProjectLinksController.php",
+   "lib/Controller/OperationsConsoleController.php",
+   "lib/Controller/OrganisationController.php",
+   "lib/Controller/PartyController.php",
+   "lib/Controller/PermissionsAuditController.php",
+   "lib/Controller/PhotoLinksController.php",
+   "lib/Controller/PollLinksController.php",
+   "lib/Controller/PortalTaskController.php",
+   "lib/Controller/ProcessingLogController.php",
+   "lib/Controller/ProcessingPurposeController.php",
+   "lib/Controller/RelationsController.php",
+   "lib/Controller/RetentionController.php",
+   "lib/Controller/SchemaImportController.php",
+   "lib/Controller/ScopesController.php",
+   "lib/Controller/SearchTrailController.php",
+   "lib/Controller/SettingsController.php",
+   "lib/Controller/SourcesController.php",
+   "lib/Controller/TablesController.php",
+   "lib/Controller/TagsController.php",
+   "lib/Controller/TaskEventsController.php",
+   "lib/Controller/TransferController.php",
+   "lib/Controller/VerwerkingsactiviteitenController.php",
+   "lib/Controller/WebhooksController.php",
+   "lib/Mcp/Command/ContextChatReindexCommand.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 1216,
+   "gt4": 28,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 431,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/ChatController.php": [
+    "#7874"
+   ],
+   "lib/Controller/ConfigurationDeploymentController.php": [
+    "#3860"
+   ],
+   "lib/Controller/ConversationController.php": [
+    "#7874"
+   ],
+   "lib/Controller/DsarCaseController.php": [
+    "#5046",
+    "#5116"
+   ],
+   "lib/Controller/FormsController.php": [
+    "#7788"
+   ],
+   "lib/Controller/GdprEntitiesController.php": [
+    "#5315"
+   ],
+   "lib/Controller/OrganisationController.php": [
+    "#4641"
+   ],
+   "lib/Controller/RetentionController.php": [
+    "#5046",
+    "#5116"
+   ],
+   "lib/Controller/TablesController.php": [
+    "#5317"
+   ],
+   "lib/Controller/WebhooksController.php": [
+    "#5046"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 785,
+   "gt4": 28,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 785,
+   "gt4": 28,
+   "gt6": 0
+  }
+ },
+ "Q05": {
+  "id": "Q05",
+  "files": [
+   "lib/Service/GraphQL/GraphQLResolver.php",
+   "lib/Service/Rbac/HierarchyDescender.php",
+   "lib/Service/Rbac/HierarchyGrantExpander.php",
+   "lib/Service/Rbac/ObjectGrantsReport.php",
+   "lib/Service/Rbac/ObjectOwnershipService.php",
+   "lib/Service/Rbac/ObjectSharingService.php",
+   "lib/Service/Rbac/OrganisationSpecialRights.php",
+   "lib/Service/Rbac/ProvenanceResolver.php"
+  ],
+  "p_files": [
+   "lib/Service/GraphQL/GraphQLResolver.php",
+   "lib/Service/Rbac/HierarchyDescender.php",
+   "lib/Service/Rbac/HierarchyGrantExpander.php",
+   "lib/Service/Rbac/ObjectGrantsReport.php",
+   "lib/Service/Rbac/ObjectOwnershipService.php",
+   "lib/Service/Rbac/ObjectSharingService.php",
+   "lib/Service/Rbac/OrganisationSpecialRights.php",
+   "lib/Service/Rbac/ProvenanceResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 644,
+   "gt4": 84,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 141,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/GraphQL/GraphQLResolver.php": [
+    "#6108"
+   ],
+   "lib/Service/Rbac/HierarchyDescender.php": [
+    "#7846"
+   ],
+   "lib/Service/Rbac/ObjectGrantsReport.php": [
+    "#7845"
+   ],
+   "lib/Service/Rbac/ObjectSharingService.php": [
+    "#7849",
+    "#7866"
+   ],
+   "lib/Service/Rbac/OrganisationSpecialRights.php": [
+    "#4641"
+   ],
+   "lib/Service/Rbac/ProvenanceResolver.php": [
+    "#7848"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 503,
+   "gt4": 84,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 768,
+   "gt4": 90,
+   "gt6": 0
+  }
+ },
+ "Q06": {
+  "id": "Q06",
+  "files": [
+   "lib/Controller/AccessLinkPageController.php",
+   "lib/Controller/AnonymisationBackendController.php",
+   "lib/Controller/ApplicationsController.php",
+   "lib/Controller/AuditQueryController.php",
+   "lib/Controller/CaseTokenController.php",
+   "lib/Controller/ChatHealthController.php",
+   "lib/Controller/CompanyLookupController.php",
+   "lib/Controller/ConsumersController.php",
+   "lib/Controller/ContextsController.php",
+   "lib/Controller/CredentialController.php",
+   "lib/Controller/DataSubjectRequestController.php",
+   "lib/Controller/DerivedGrantsController.php",
+   "lib/Controller/ErasurePreviewController.php",
+   "lib/Controller/ExportRunsController.php",
+   "lib/Controller/FlowDryRunController.php",
+   "lib/Controller/FlowPrincipalController.php",
+   "lib/Controller/FlowTestRunController.php",
+   "lib/Controller/HardeningController.php",
+   "lib/Controller/HardeningStatementController.php",
+   "lib/Controller/IconController.php",
+   "lib/Controller/IntegrationsController.php",
+   "lib/Controller/ManifestController.php",
+   "lib/Controller/McpController.php",
+   "lib/Controller/MergeController.php",
+   "lib/Controller/MessageDispatchController.php",
+   "lib/Controller/MigrationController.php",
+   "lib/Controller/MigrationPacksController.php",
+   "lib/Controller/NamesController.php",
+   "lib/Controller/OasController.php",
+   "lib/Controller/ObjectStateController.php",
+   "lib/Controller/OperationsConsistencyController.php",
+   "lib/Controller/OperationsMaintenanceController.php",
+   "lib/Controller/OrganisationHaltController.php",
+   "lib/Controller/PermissionsController.php",
+   "lib/Controller/PersonLookupController.php",
+   "lib/Controller/PreferencesController.php",
+   "lib/Controller/PrincipalReachController.php",
+   "lib/Controller/PropertyVocabularyController.php",
+   "lib/Controller/QualityController.php",
+   "lib/Controller/RecordTemplatesController.php",
+   "lib/Controller/RegisterDescriptorController.php",
+   "lib/Controller/RegistryUpdatesController.php",
+   "lib/Controller/RevertController.php",
+   "lib/Controller/SchemaMigrationController.php",
+   "lib/Controller/SelectielijstController.php",
+   "lib/Controller/SelectielijstReferenceController.php",
+   "lib/Controller/SetupController.php",
+   "lib/Controller/ShareLinksController.php",
+   "lib/Controller/ShippedBaselineController.php",
+   "lib/Controller/SubjectExportController.php",
+   "lib/Controller/SurvivorshipController.php",
+   "lib/Controller/TalkLinksController.php",
+   "lib/Controller/TaskNotesController.php",
+   "lib/Controller/TasksController.php",
+   "lib/Controller/TimeTrackerLinksController.php",
+   "lib/Controller/TransitionController.php",
+   "lib/Controller/UrnController.php",
+   "lib/Controller/UserSettingsController.php",
+   "lib/Controller/WellKnownController.php",
+   "lib/Controller/WorkingCalendarController.php",
+   "lib/Controller/XwikiLinksController.php",
+   "lib/Service/Form/FormDependentsCheck.php",
+   "lib/Service/Form/FormDestinationValidator.php",
+   "lib/Service/Form/FormIdempotencyStore.php",
+   "lib/Service/Form/FormSubmission.php",
+   "lib/Service/Form/FormSubmitDestinations.php",
+   "lib/Service/Form/FormSubmitService.php",
+   "lib/Service/Form/FormUploadClaims.php",
+   "lib/Service/Form/FormUploadStore.php",
+   "lib/Service/Form/FormWriteReferences.php"
+  ],
+  "p_files": [
+   "lib/Controller/AccessLinkPageController.php",
+   "lib/Controller/AnonymisationBackendController.php",
+   "lib/Controller/ApplicationsController.php",
+   "lib/Controller/AuditQueryController.php",
+   "lib/Controller/CaseTokenController.php",
+   "lib/Controller/ChatHealthController.php",
+   "lib/Controller/CompanyLookupController.php",
+   "lib/Controller/ConsumersController.php",
+   "lib/Controller/ContextsController.php",
+   "lib/Controller/CredentialController.php",
+   "lib/Controller/DataSubjectRequestController.php",
+   "lib/Controller/DerivedGrantsController.php",
+   "lib/Controller/ErasurePreviewController.php",
+   "lib/Controller/ExportRunsController.php",
+   "lib/Controller/FlowDryRunController.php",
+   "lib/Controller/FlowPrincipalController.php",
+   "lib/Controller/FlowTestRunController.php",
+   "lib/Controller/HardeningController.php",
+   "lib/Controller/HardeningStatementController.php",
+   "lib/Controller/IconController.php",
+   "lib/Controller/IntegrationsController.php",
+   "lib/Controller/ManifestController.php",
+   "lib/Controller/McpController.php",
+   "lib/Controller/MergeController.php",
+   "lib/Controller/MessageDispatchController.php",
+   "lib/Controller/MigrationController.php",
+   "lib/Controller/MigrationPacksController.php",
+   "lib/Controller/NamesController.php",
+   "lib/Controller/OasController.php",
+   "lib/Controller/ObjectStateController.php",
+   "lib/Controller/OperationsConsistencyController.php",
+   "lib/Controller/OperationsMaintenanceController.php",
+   "lib/Controller/OrganisationHaltController.php",
+   "lib/Controller/PermissionsController.php",
+   "lib/Controller/PersonLookupController.php",
+   "lib/Controller/PreferencesController.php",
+   "lib/Controller/PrincipalReachController.php",
+   "lib/Controller/PropertyVocabularyController.php",
+   "lib/Controller/QualityController.php",
+   "lib/Controller/RecordTemplatesController.php",
+   "lib/Controller/RegisterDescriptorController.php",
+   "lib/Controller/RegistryUpdatesController.php",
+   "lib/Controller/RevertController.php",
+   "lib/Controller/SchemaMigrationController.php",
+   "lib/Controller/SelectielijstController.php",
+   "lib/Controller/SelectielijstReferenceController.php",
+   "lib/Controller/SetupController.php",
+   "lib/Controller/ShareLinksController.php",
+   "lib/Controller/ShippedBaselineController.php",
+   "lib/Controller/SubjectExportController.php",
+   "lib/Controller/SurvivorshipController.php",
+   "lib/Controller/TalkLinksController.php",
+   "lib/Controller/TaskNotesController.php",
+   "lib/Controller/TasksController.php",
+   "lib/Controller/TimeTrackerLinksController.php",
+   "lib/Controller/TransitionController.php",
+   "lib/Controller/UrnController.php",
+   "lib/Controller/UserSettingsController.php",
+   "lib/Controller/WellKnownController.php",
+   "lib/Controller/WorkingCalendarController.php",
+   "lib/Controller/XwikiLinksController.php",
+   "lib/Service/Form/FormDependentsCheck.php",
+   "lib/Service/Form/FormDestinationValidator.php",
+   "lib/Service/Form/FormIdempotencyStore.php",
+   "lib/Service/Form/FormSubmission.php",
+   "lib/Service/Form/FormSubmitDestinations.php",
+   "lib/Service/Form/FormSubmitService.php",
+   "lib/Service/Form/FormUploadClaims.php",
+   "lib/Service/Form/FormUploadStore.php",
+   "lib/Service/Form/FormWriteReferences.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 1203,
+   "gt4": 65,
+   "gt6": 47
+  },
+  "target": {
+   "gt2": 436,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/CredentialController.php": [
+    "#4548"
+   ],
+   "lib/Controller/ExportRunsController.php": [
+    "#4535"
+   ],
+   "lib/Controller/NamesController.php": [
+    "#5268"
+   ],
+   "lib/Controller/ObjectStateController.php": [
+    "#7875"
+   ],
+   "lib/Controller/ShippedBaselineController.php": [
+    "#4365"
+   ],
+   "lib/Controller/TasksController.php": [
+    "#7831"
+   ],
+   "lib/Controller/TransitionController.php": [
+    "#5046",
+    "#5116"
+   ],
+   "lib/Service/Form/FormSubmitService.php": [
+    "#7788"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 767,
+   "gt4": 65,
+   "gt6": 47
+  },
+  "tsv_gain": {
+   "gt2": 768,
+   "gt4": 65,
+   "gt6": 47
+  }
+ },
+ "Q07": {
+  "id": "Q07",
+  "files": [
+   "lib/Listener/ApprovalChainGateListener.php",
+   "lib/Listener/ArchivalNominationListener.php",
+   "lib/Listener/AssigneeFollowListener.php",
+   "lib/Listener/CalculationOnSaveListener.php",
+   "lib/Listener/ConsentEnvelopeOnSaveListener.php",
+   "lib/Listener/DecisionTableValidationListener.php",
+   "lib/Listener/GeneratedIdentifierListener.php",
+   "lib/Listener/NotifyPushListener.php",
+   "lib/Listener/ObjectChangeListener.php",
+   "lib/Listener/ObjectEventProxyListener.php",
+   "lib/Listener/PartyMergeListener.php",
+   "lib/Listener/QualityScoreOnSaveListener.php",
+   "lib/Listener/SchemaFlowImportListener.php",
+   "lib/Listener/SourceRecordChangeListener.php",
+   "lib/Listener/StateFieldRuleListener.php",
+   "lib/Listener/SurvivorshipRecomputeListener.php",
+   "lib/Listener/TaskVtodoWriteBackListener.php",
+   "lib/Listener/UniqueConstraintListener.php",
+   "lib/Listener/ViewAlertCrossedListener.php",
+   "lib/Service/Schema/SchemaDiffService.php",
+   "lib/Service/Schema/SchemaMigrationPlanner.php",
+   "lib/Service/Schema/SchemaMigrationService.php",
+   "lib/Service/Schema/SchemaObjectReader.php",
+   "lib/Service/Schema/SchemaRevalidationService.php",
+   "lib/Service/Schema/SchemaVersioningService.php"
+  ],
+  "p_files": [
+   "lib/Listener/ApprovalChainGateListener.php",
+   "lib/Listener/ArchivalNominationListener.php",
+   "lib/Listener/AssigneeFollowListener.php",
+   "lib/Listener/CalculationOnSaveListener.php",
+   "lib/Listener/ConsentEnvelopeOnSaveListener.php",
+   "lib/Listener/DecisionTableValidationListener.php",
+   "lib/Listener/GeneratedIdentifierListener.php",
+   "lib/Listener/NotifyPushListener.php",
+   "lib/Listener/ObjectChangeListener.php",
+   "lib/Listener/ObjectEventProxyListener.php",
+   "lib/Listener/PartyMergeListener.php",
+   "lib/Listener/QualityScoreOnSaveListener.php",
+   "lib/Listener/SchemaFlowImportListener.php",
+   "lib/Listener/SourceRecordChangeListener.php",
+   "lib/Listener/StateFieldRuleListener.php",
+   "lib/Listener/SurvivorshipRecomputeListener.php",
+   "lib/Listener/TaskVtodoWriteBackListener.php",
+   "lib/Listener/UniqueConstraintListener.php",
+   "lib/Listener/ViewAlertCrossedListener.php",
+   "lib/Service/Schema/SchemaDiffService.php",
+   "lib/Service/Schema/SchemaMigrationPlanner.php",
+   "lib/Service/Schema/SchemaMigrationService.php",
+   "lib/Service/Schema/SchemaObjectReader.php",
+   "lib/Service/Schema/SchemaRevalidationService.php",
+   "lib/Service/Schema/SchemaVersioningService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 1086,
+   "gt4": 56,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 342,
+   "gt4": 27,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Listener/ApprovalChainGateListener.php": [
+    "#7867"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 744,
+   "gt4": 29,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 744,
+   "gt4": 29,
+   "gt6": 0
+  }
+ },
+ "Q08": {
+  "id": "Q08",
+  "files": [
+   "lib/Service/Deferral/ListenerDeferralService.php",
+   "lib/Service/Rbac/AccessReviewGate.php",
+   "lib/Service/Rbac/DepartmentMatrixCompiler.php",
+   "lib/Service/Rbac/DepartmentMatrixValidator.php",
+   "lib/Service/Rbac/ExplicitRevealMasker.php",
+   "lib/Service/Rbac/GrantConstraints.php",
+   "lib/Service/Rbac/MatrixRowsFromApps.php",
+   "lib/Service/Rbac/MemberOfResolver.php",
+   "lib/Service/Rbac/ObjectGrantResolver.php",
+   "lib/Service/Rbac/ObjectPermissionsResolver.php",
+   "lib/Service/Rbac/RevealCollector.php",
+   "lib/Service/Rbac/SettingsChangeAuditor.php",
+   "lib/Service/Rbac/ViewShareResolver.php",
+   "lib/Service/Rbac/ViewerReachResolver.php"
+  ],
+  "p_files": [
+   "lib/Service/Deferral/ListenerDeferralService.php",
+   "lib/Service/Rbac/AccessReviewGate.php",
+   "lib/Service/Rbac/DepartmentMatrixCompiler.php",
+   "lib/Service/Rbac/DepartmentMatrixValidator.php",
+   "lib/Service/Rbac/ExplicitRevealMasker.php",
+   "lib/Service/Rbac/GrantConstraints.php",
+   "lib/Service/Rbac/MatrixRowsFromApps.php",
+   "lib/Service/Rbac/MemberOfResolver.php",
+   "lib/Service/Rbac/ObjectGrantResolver.php",
+   "lib/Service/Rbac/ObjectPermissionsResolver.php",
+   "lib/Service/Rbac/RevealCollector.php",
+   "lib/Service/Rbac/SettingsChangeAuditor.php",
+   "lib/Service/Rbac/ViewShareResolver.php",
+   "lib/Service/Rbac/ViewerReachResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 837,
+   "gt4": 27,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 111,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 726,
+   "gt4": 27,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 726,
+   "gt4": 27,
+   "gt6": 0
+  }
+ },
+ "Q09": {
+  "id": "Q09",
+  "files": [
+   "lib/Reference/ObjectReferenceProvider.php",
+   "lib/Service/ExampleSet/ExampleSetAccessLinks.php",
+   "lib/Service/ExampleSet/ExampleSetAuditEntries.php",
+   "lib/Service/ExampleSet/ExampleSetCastOrganisations.php",
+   "lib/Service/ExampleSet/ExampleSetCollectivesStore.php",
+   "lib/Service/ExampleSet/ExampleSetDeckCards.php",
+   "lib/Service/ExampleSet/ExampleSetDeckStore.php",
+   "lib/Service/ExampleSet/ExampleSetEngineKinds.php",
+   "lib/Service/ExampleSet/ExampleSetFiles.php",
+   "lib/Service/ExampleSet/ExampleSetGrants.php",
+   "lib/Service/ExampleSet/ExampleSetRecord.php",
+   "lib/Service/ExampleSet/ExampleSetRewriter.php",
+   "lib/Service/ExampleSet/ExampleSetRowInstall.php",
+   "lib/Service/ExampleSet/ExampleSetStore.php",
+   "lib/Service/ExampleSet/ExampleSetUserPreferences.php"
+  ],
+  "p_files": [
+   "lib/Reference/ObjectReferenceProvider.php",
+   "lib/Service/ExampleSet/ExampleSetAccessLinks.php",
+   "lib/Service/ExampleSet/ExampleSetAuditEntries.php",
+   "lib/Service/ExampleSet/ExampleSetCastOrganisations.php",
+   "lib/Service/ExampleSet/ExampleSetCollectivesStore.php",
+   "lib/Service/ExampleSet/ExampleSetDeckCards.php",
+   "lib/Service/ExampleSet/ExampleSetDeckStore.php",
+   "lib/Service/ExampleSet/ExampleSetEngineKinds.php",
+   "lib/Service/ExampleSet/ExampleSetFiles.php",
+   "lib/Service/ExampleSet/ExampleSetGrants.php",
+   "lib/Service/ExampleSet/ExampleSetRecord.php",
+   "lib/Service/ExampleSet/ExampleSetRewriter.php",
+   "lib/Service/ExampleSet/ExampleSetRowInstall.php",
+   "lib/Service/ExampleSet/ExampleSetStore.php",
+   "lib/Service/ExampleSet/ExampleSetUserPreferences.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 827,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 118,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/ExampleSet/ExampleSetGrants.php": [
+    "#7849"
+   ],
+   "lib/Service/ExampleSet/ExampleSetStore.php": [
+    "#4757"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 709,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 709,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "Q10": {
+  "id": "Q10",
+  "files": [
+   "lib/Service/Archival/AnonymisationPlanner.php",
+   "lib/Service/Archival/AnonymisationRun.php",
+   "lib/Service/Archival/AnonymisationService.php",
+   "lib/Service/Archival/AnonymisationSweep.php",
+   "lib/Service/Archival/ArchivalNominationService.php",
+   "lib/Service/Archival/ArchivalRegisterMappers.php",
+   "lib/Service/Archival/ArchiveActionDateCalculator.php",
+   "lib/Service/Archival/ClassificationOverride.php",
+   "lib/Service/Archival/DestructionReviewService.php",
+   "lib/Service/Archival/DestructionService.php",
+   "lib/Service/Archival/ElementMappingValidator.php",
+   "lib/Service/Archival/LegalHoldLedger.php",
+   "lib/Service/Archival/LegalHoldService.php",
+   "lib/Service/Archival/RetentionEvaluator.php",
+   "lib/Service/Archival/RetentionRowScanner.php",
+   "lib/Service/Archival/RetentionScanStores.php",
+   "lib/Service/Archival/ReviewOutcomeService.php",
+   "lib/Service/Archival/SelectielijstImportService.php",
+   "lib/Service/Archival/SelectielijstReferenceResolver.php",
+   "lib/Service/Archival/SelectielijstResolver.php",
+   "lib/Service/Archival/SelectielijstStores.php",
+   "lib/Service/Archival/SelectionListSeeder.php"
+  ],
+  "p_files": [
+   "lib/Service/Archival/AnonymisationPlanner.php",
+   "lib/Service/Archival/AnonymisationRun.php",
+   "lib/Service/Archival/AnonymisationService.php",
+   "lib/Service/Archival/AnonymisationSweep.php",
+   "lib/Service/Archival/ArchivalNominationService.php",
+   "lib/Service/Archival/ArchivalRegisterMappers.php",
+   "lib/Service/Archival/ArchiveActionDateCalculator.php",
+   "lib/Service/Archival/ClassificationOverride.php",
+   "lib/Service/Archival/DestructionReviewService.php",
+   "lib/Service/Archival/DestructionService.php",
+   "lib/Service/Archival/ElementMappingValidator.php",
+   "lib/Service/Archival/LegalHoldLedger.php",
+   "lib/Service/Archival/LegalHoldService.php",
+   "lib/Service/Archival/RetentionEvaluator.php",
+   "lib/Service/Archival/RetentionRowScanner.php",
+   "lib/Service/Archival/RetentionScanStores.php",
+   "lib/Service/Archival/ReviewOutcomeService.php",
+   "lib/Service/Archival/SelectielijstImportService.php",
+   "lib/Service/Archival/SelectielijstReferenceResolver.php",
+   "lib/Service/Archival/SelectielijstResolver.php",
+   "lib/Service/Archival/SelectielijstStores.php",
+   "lib/Service/Archival/SelectionListSeeder.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 826,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 123,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Archival/ElementMappingValidator.php": [
+    "#6973"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 703,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 703,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "Q11": {
+  "id": "Q11",
+  "files": [
+   "lib/Files/Service/File/ChunkTextMatcher.php",
+   "lib/Files/Service/File/DocumentProcessingHandler.php",
+   "lib/Files/Service/File/FileAuditHandler.php",
+   "lib/Files/Service/File/FileRestrictionService.php",
+   "lib/Files/Service/File/FileSharingHandler.php",
+   "lib/Files/Service/File/OfficeSessionService.php",
+   "lib/Files/Service/File/Pdf/Fallback/PdfOdtFallbackOrchestrator.php",
+   "lib/Files/Service/NoteService.php",
+   "lib/Files/Service/TextExtraction/DocumentContentReader.php",
+   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php",
+   "lib/Files/Service/TextExtractionService.php",
+   "lib/Listener/Support/CalculationOnSaveLookups.php",
+   "lib/Service/ApiCaller/ApiCallRecorder.php"
+  ],
+  "p_files": [
+   "lib/Files/Service/File/ChunkTextMatcher.php",
+   "lib/Files/Service/File/DocumentProcessingHandler.php",
+   "lib/Files/Service/File/FileAuditHandler.php",
+   "lib/Files/Service/File/FileRestrictionService.php",
+   "lib/Files/Service/File/FileSharingHandler.php",
+   "lib/Files/Service/File/OfficeSessionService.php",
+   "lib/Files/Service/File/Pdf/Fallback/PdfOdtFallbackOrchestrator.php",
+   "lib/Files/Service/NoteService.php",
+   "lib/Files/Service/TextExtraction/DocumentContentReader.php",
+   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php",
+   "lib/Files/Service/TextExtractionService.php",
+   "lib/Listener/Support/CalculationOnSaveLookups.php",
+   "lib/Service/ApiCaller/ApiCallRecorder.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 837,
+   "gt4": 95,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 141,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Files/Service/File/DocumentProcessingHandler.php": [
+    "#7879"
+   ],
+   "lib/Files/Service/File/FileAuditHandler.php": [
+    "#7847"
+   ],
+   "lib/Files/Service/TextExtraction/EntityRecognitionHandler.php": [
+    "#7785",
+    "#7873"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 696,
+   "gt4": 95,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 699,
+   "gt4": 98,
+   "gt6": 0
+  }
+ },
+ "Q12": {
+  "id": "Q12",
+  "files": [
+   "lib/Controller/CalendarEventsController.php",
+   "lib/Controller/CaseController.php",
+   "lib/Controller/ConfigurationController.php",
+   "lib/Controller/ContactsController.php",
+   "lib/Controller/DeletedController.php",
+   "lib/Controller/FormLinksController.php",
+   "lib/Controller/Settings/ApiTokenSettingsController.php",
+   "lib/Controller/Settings/AuditSettingsController.php",
+   "lib/Controller/Settings/CacheSettingsController.php",
+   "lib/Controller/Settings/ConfigurationSettingsController.php",
+   "lib/Controller/Settings/EdepotSettingsController.php",
+   "lib/Controller/Settings/LlmSettingsController.php",
+   "lib/Controller/Settings/SecuritySettingsController.php",
+   "lib/Controller/Settings/ValidationSettingsController.php",
+   "lib/Controller/TaskController.php"
+  ],
+  "p_files": [
+   "lib/Controller/CalendarEventsController.php",
+   "lib/Controller/CaseController.php",
+   "lib/Controller/ConfigurationController.php",
+   "lib/Controller/ContactsController.php",
+   "lib/Controller/DeletedController.php",
+   "lib/Controller/FormLinksController.php",
+   "lib/Controller/Settings/ApiTokenSettingsController.php",
+   "lib/Controller/Settings/AuditSettingsController.php",
+   "lib/Controller/Settings/CacheSettingsController.php",
+   "lib/Controller/Settings/ConfigurationSettingsController.php",
+   "lib/Controller/Settings/EdepotSettingsController.php",
+   "lib/Controller/Settings/LlmSettingsController.php",
+   "lib/Controller/Settings/SecuritySettingsController.php",
+   "lib/Controller/Settings/ValidationSettingsController.php",
+   "lib/Controller/TaskController.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 906,
+   "gt4": 168,
+   "gt6": 103
+  },
+  "target": {
+   "gt2": 248,
+   "gt4": 40,
+   "gt6": 16
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/DeletedController.php": [
+    "#5046",
+    "#5116"
+   ],
+   "lib/Controller/TaskController.php": [
+    "#7831"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 658,
+   "gt4": 128,
+   "gt6": 87
+  },
+  "tsv_gain": {
+   "gt2": 699,
+   "gt4": 130,
+   "gt6": 87
+  }
+ },
+ "Q13": {
+  "id": "Q13",
+  "files": [
+   "lib/Mcp/AttributeToolScanner.php",
+   "lib/Mcp/McpProviderDiscovery.php",
+   "lib/Mcp/PerAppMcpProviderProbe.php",
+   "lib/Service/ObjectAction/ObjectActionAudit.php",
+   "lib/Service/ObjectAction/ObjectActionBulk.php",
+   "lib/Service/ObjectAction/ObjectActionDeclarations.php",
+   "lib/Service/ObjectAction/ObjectActionDefinition.php",
+   "lib/Service/ObjectAction/ObjectActionDefinitions.php",
+   "lib/Service/ObjectAction/ObjectActionElevation.php",
+   "lib/Service/ObjectAction/ObjectActionElevationScope.php",
+   "lib/Service/ObjectAction/ObjectActionFlowRun.php",
+   "lib/Service/ObjectAction/ObjectActionGate.php",
+   "lib/Service/ObjectAction/ObjectActionInputs.php",
+   "lib/Service/ObjectAction/ObjectActionList.php",
+   "lib/Service/ObjectAction/ObjectActionRunRecorder.php",
+   "lib/Service/ObjectAction/ObjectActionRunner.php",
+   "lib/Service/ObjectAction/ObjectActionShape.php",
+   "lib/Service/ObjectAction/ObjectActionStepsFlow.php",
+   "lib/Service/ObjectAction/ObjectActionValidator.php"
+  ],
+  "p_files": [
+   "lib/Mcp/AttributeToolScanner.php",
+   "lib/Mcp/McpProviderDiscovery.php",
+   "lib/Mcp/PerAppMcpProviderProbe.php",
+   "lib/Service/ObjectAction/ObjectActionAudit.php",
+   "lib/Service/ObjectAction/ObjectActionBulk.php",
+   "lib/Service/ObjectAction/ObjectActionDeclarations.php",
+   "lib/Service/ObjectAction/ObjectActionDefinition.php",
+   "lib/Service/ObjectAction/ObjectActionDefinitions.php",
+   "lib/Service/ObjectAction/ObjectActionElevation.php",
+   "lib/Service/ObjectAction/ObjectActionElevationScope.php",
+   "lib/Service/ObjectAction/ObjectActionFlowRun.php",
+   "lib/Service/ObjectAction/ObjectActionGate.php",
+   "lib/Service/ObjectAction/ObjectActionInputs.php",
+   "lib/Service/ObjectAction/ObjectActionList.php",
+   "lib/Service/ObjectAction/ObjectActionRunRecorder.php",
+   "lib/Service/ObjectAction/ObjectActionRunner.php",
+   "lib/Service/ObjectAction/ObjectActionShape.php",
+   "lib/Service/ObjectAction/ObjectActionStepsFlow.php",
+   "lib/Service/ObjectAction/ObjectActionValidator.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 482,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 137,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Mcp/McpProviderDiscovery.php": [
+    "#7852"
+   ],
+   "lib/Mcp/PerAppMcpProviderProbe.php": [
+    "#7852"
+   ],
+   "lib/Service/ObjectAction/ObjectActionAudit.php": [
+    "#7721"
+   ],
+   "lib/Service/ObjectAction/ObjectActionRunRecorder.php": [
+    "#7721"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 345,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 682,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "Q14": {
+  "id": "Q14",
+  "files": [
+   "lib/Service/Flow/FlowDelegationCheck.php",
+   "lib/Service/Flow/FlowItemPlacement.php",
+   "lib/Service/Flow/FlowMessagePreview.php",
+   "lib/Service/Flow/FlowMessagingService.php",
+   "lib/Service/Flow/FlowPlaceClaims.php",
+   "lib/Service/Flow/FlowRunSignalService.php",
+   "lib/Service/Flow/FlowStreamWalk.php",
+   "lib/Service/Flow/FlowTriggerService.php",
+   "lib/Service/Flow/Nodes/AwaitSignalNode.php",
+   "lib/Service/Flow/Nodes/DecisionTableNode.php",
+   "lib/Service/Flow/Nodes/IterateNode.php",
+   "lib/Service/Flow/Nodes/ObjectReadNode.php",
+   "lib/Service/Flow/Oversight/OrganisationHaltService.php",
+   "lib/Service/Flow/RegistryStepDispatcher.php",
+   "lib/Service/Flow/Timer/CalendarRecompute.php",
+   "lib/Service/History/StateHistoryProjector.php",
+   "lib/Service/History/StateHistoryRebuild.php"
+  ],
+  "p_files": [
+   "lib/Service/Flow/FlowDelegationCheck.php",
+   "lib/Service/Flow/FlowItemPlacement.php",
+   "lib/Service/Flow/FlowMessagePreview.php",
+   "lib/Service/Flow/FlowMessagingService.php",
+   "lib/Service/Flow/FlowPlaceClaims.php",
+   "lib/Service/Flow/FlowRunSignalService.php",
+   "lib/Service/Flow/FlowStreamWalk.php",
+   "lib/Service/Flow/FlowTriggerService.php",
+   "lib/Service/Flow/Nodes/AwaitSignalNode.php",
+   "lib/Service/Flow/Nodes/DecisionTableNode.php",
+   "lib/Service/Flow/Nodes/IterateNode.php",
+   "lib/Service/Flow/Nodes/ObjectReadNode.php",
+   "lib/Service/Flow/Oversight/OrganisationHaltService.php",
+   "lib/Service/Flow/RegistryStepDispatcher.php",
+   "lib/Service/Flow/Timer/CalendarRecompute.php",
+   "lib/Service/History/StateHistoryProjector.php",
+   "lib/Service/History/StateHistoryRebuild.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 877,
+   "gt4": 30,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 235,
+   "gt4": 9,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Flow/FlowPlaceClaims.php": [
+    "#7853"
+   ],
+   "lib/Service/Flow/FlowTriggerService.php": [
+    "#4771"
+   ],
+   "lib/Service/History/StateHistoryProjector.php": [
+    "#7701"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 642,
+   "gt4": 21,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 665,
+   "gt4": 46,
+   "gt6": 0
+  }
+ },
+ "Q15": {
+  "id": "Q15",
+  "files": [
+   "lib/Files/BackgroundJob/CronFileTextExtractionJob.php",
+   "lib/Service/Flow/FlowConcurrency.php",
+   "lib/Service/Flow/FlowConsentParking.php",
+   "lib/Service/Flow/FlowDryRunService.php",
+   "lib/Service/Flow/FlowExpression.php",
+   "lib/Service/Flow/FlowFieldPath.php",
+   "lib/Service/Flow/FlowRunAdvancer.php",
+   "lib/Service/Flow/FlowRunAttribution.php",
+   "lib/Service/Flow/FlowRunMarkingStore.php",
+   "lib/Service/Flow/FlowRunMigrationValidator.php",
+   "lib/Service/Flow/FlowRunRow.php",
+   "lib/Service/Flow/FlowTaskBridge.php",
+   "lib/Service/Flow/FlowTaskMootness.php",
+   "lib/Service/Flow/FlowTriggerValidator.php",
+   "lib/Service/Flow/FlowVersionService.php",
+   "lib/Service/Flow/Nodes/ExplodeNode.php",
+   "lib/Service/Flow/Nodes/FilterNode.php",
+   "lib/Service/Flow/Nodes/LoopNode.php",
+   "lib/Service/Flow/Nodes/MapNode.php",
+   "lib/Service/Flow/Nodes/MergeNode.php",
+   "lib/Service/Flow/Nodes/ObjectWriteNode.php",
+   "lib/Service/Flow/Nodes/PortalTaskNode.php",
+   "lib/Service/Flow/Nodes/RouterNode.php",
+   "lib/Service/Flow/Nodes/TransitionNode.php",
+   "lib/Service/Flow/Nodes/UnlockObjectNode.php",
+   "lib/Service/Flow/Nodes/UserTaskNode.php",
+   "lib/Service/Flow/PreviewStepDispatcher.php",
+   "lib/Service/Flow/Timer/EscalationLadderService.php",
+   "lib/Service/Flow/Timer/ServiceHoursClock.php"
+  ],
+  "p_files": [
+   "lib/Files/BackgroundJob/CronFileTextExtractionJob.php",
+   "lib/Service/Flow/FlowConcurrency.php",
+   "lib/Service/Flow/FlowConsentParking.php",
+   "lib/Service/Flow/FlowDryRunService.php",
+   "lib/Service/Flow/FlowExpression.php",
+   "lib/Service/Flow/FlowFieldPath.php",
+   "lib/Service/Flow/FlowRunAdvancer.php",
+   "lib/Service/Flow/FlowRunAttribution.php",
+   "lib/Service/Flow/FlowRunMarkingStore.php",
+   "lib/Service/Flow/FlowRunMigrationValidator.php",
+   "lib/Service/Flow/FlowRunRow.php",
+   "lib/Service/Flow/FlowTaskBridge.php",
+   "lib/Service/Flow/FlowTaskMootness.php",
+   "lib/Service/Flow/FlowTriggerValidator.php",
+   "lib/Service/Flow/FlowVersionService.php",
+   "lib/Service/Flow/Nodes/ExplodeNode.php",
+   "lib/Service/Flow/Nodes/FilterNode.php",
+   "lib/Service/Flow/Nodes/LoopNode.php",
+   "lib/Service/Flow/Nodes/MapNode.php",
+   "lib/Service/Flow/Nodes/MergeNode.php",
+   "lib/Service/Flow/Nodes/ObjectWriteNode.php",
+   "lib/Service/Flow/Nodes/PortalTaskNode.php",
+   "lib/Service/Flow/Nodes/RouterNode.php",
+   "lib/Service/Flow/Nodes/TransitionNode.php",
+   "lib/Service/Flow/Nodes/UnlockObjectNode.php",
+   "lib/Service/Flow/Nodes/UserTaskNode.php",
+   "lib/Service/Flow/PreviewStepDispatcher.php",
+   "lib/Service/Flow/Timer/EscalationLadderService.php",
+   "lib/Service/Flow/Timer/ServiceHoursClock.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 816,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 156,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Flow/FlowRunAdvancer.php": [
+    "#4771"
+   ],
+   "lib/Service/Flow/FlowRunAttribution.php": [
+    "#7830"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 660,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 660,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "Q16": {
+  "id": "Q16",
+  "files": [
+   "lib/Controller/Support/AccessLinkPlatform.php",
+   "lib/Controller/Support/ActivityLinksControllerServices.php",
+   "lib/Controller/Support/AnonymisationBackendControllerServices.php",
+   "lib/Controller/Support/ApplicationsControllerServices.php",
+   "lib/Controller/Support/ArchivalNominationSubject.php",
+   "lib/Controller/Support/ArchivalReviewEntry.php",
+   "lib/Controller/Support/AuditObjectRef.php",
+   "lib/Controller/Support/AuditQueryControllerServices.php",
+   "lib/Controller/Support/BulkPlatform.php",
+   "lib/Controller/Support/BulkSaveCounts.php",
+   "lib/Controller/Support/CacheSettingsControllerServices.php",
+   "lib/Controller/Support/ChatControllerServices.php",
+   "lib/Controller/Support/ChatPlatform.php",
+   "lib/Controller/Support/ContextsControllerServices.php",
+   "lib/Controller/Support/ControllerSession.php",
+   "lib/Controller/Support/ConversationControllerServices.php",
+   "lib/Controller/Support/CredentialOauth2ControllerServices.php",
+   "lib/Controller/Support/CredentialTokens.php",
+   "lib/Controller/Support/DeckLinksControllerServices.php",
+   "lib/Controller/Support/DelegationDomain.php",
+   "lib/Controller/Support/DeletedAccess.php",
+   "lib/Controller/Support/EmailLinksControllerServices.php",
+   "lib/Controller/Support/EntityRelationPatch.php",
+   "lib/Controller/Support/EntityRelationsDomain.php",
+   "lib/Controller/Support/EntityRelationsPlatform.php",
+   "lib/Controller/Support/ErasurePreviewControllerServices.php",
+   "lib/Controller/Support/FlowDefinitions.php",
+   "lib/Controller/Support/FlowNodeRunExecution.php",
+   "lib/Controller/Support/FlowRunControllerServices.php",
+   "lib/Controller/Support/FormsControllerServices.php",
+   "lib/Controller/Support/HardeningStatementControllerServices.php",
+   "lib/Controller/Support/HybridSearchDiagnostics.php",
+   "lib/Controller/Support/ImportPreviewControllerServices.php",
+   "lib/Controller/Support/ImportPreviewMappers.php",
+   "lib/Controller/Support/ImportPreviewPlatform.php",
+   "lib/Controller/Support/LlmSettingsDomain.php",
+   "lib/Controller/Support/ManifestControllerServices.php",
+   "lib/Controller/Support/OAuth2StartRequest.php",
+   "lib/Controller/Support/ObjectActionsControllerServices.php",
+   "lib/Controller/Support/ObjectActionsExecution.php",
+   "lib/Controller/Support/ObjectDerivation.php",
+   "lib/Controller/Support/ObjectDraftPlatform.php",
+   "lib/Controller/Support/ObjectGrantsControllerServices.php",
+   "lib/Controller/Support/ObjectIntegrationsControllerServices.php",
+   "lib/Controller/Support/ObjectIntegrationsDomain.php",
+   "lib/Controller/Support/ObjectShareLinkThrottle.php",
+   "lib/Controller/Support/ObjectSharingControllerServices.php",
+   "lib/Controller/Support/ObjectShow.php",
+   "lib/Controller/Support/ObjectStore.php",
+   "lib/Controller/Support/ObjectTransfer.php",
+   "lib/Controller/Support/ObjectVersionGuard.php",
+   "lib/Controller/Support/ObjectsControllerServices.php",
+   "lib/Controller/Support/OrganisationControllerServices.php",
+   "lib/Controller/Support/OrganisationDomain.php",
+   "lib/Controller/Support/PartyDomain.php",
+   "lib/Controller/Support/PermissionsAuditRules.php",
+   "lib/Controller/Support/PortalTaskDomain.php",
+   "lib/Controller/Support/ReferenceOptionsAsk.php",
+   "lib/Controller/Support/RegisterIntegrations.php",
+   "lib/Controller/Support/RegisterMappers.php",
+   "lib/Controller/Support/RegisterServices.php",
+   "lib/Controller/Support/RegistersControllerServices.php",
+   "lib/Controller/Support/RegistrySubscriptionDomain.php",
+   "lib/Controller/Support/RelationsRecords.php",
+   "lib/Controller/Support/ResultWindow.php",
+   "lib/Controller/Support/RetentionDomain.php",
+   "lib/Controller/Support/RulesControllerServices.php",
+   "lib/Controller/Support/RulesDomain.php",
+   "lib/Controller/Support/SchemaImportControllerServices.php",
+   "lib/Controller/Support/SchemaMigrationDomain.php",
+   "lib/Controller/Support/SchemaMigrationMappers.php",
+   "lib/Controller/Support/SchemaPlatform.php",
+   "lib/Controller/Support/SchemaSemantics.php",
+   "lib/Controller/Support/SchemaServices.php",
+   "lib/Controller/Support/SchemasControllerServices.php",
+   "lib/Controller/Support/SearchTrailControllerServices.php",
+   "lib/Controller/Support/SettingsStore.php",
+   "lib/Controller/Support/SourcesControllerServices.php",
+   "lib/Controller/Support/SourcesDomain.php",
+   "lib/Controller/Support/TaskEventsControllerServices.php",
+   "lib/Controller/Support/TaskWork.php",
+   "lib/Controller/Support/TasksDomain.php",
+   "lib/Controller/Support/TmloRecords.php",
+   "lib/Controller/Support/TransferControllerServices.php",
+   "lib/Controller/Support/TranslationControllerServices.php",
+   "lib/Controller/Support/UserDomain.php",
+   "lib/Controller/Support/WebhooksMappers.php",
+   "lib/Service/Schemas/CodedChoiceException.php",
+   "lib/Service/Schemas/ReferenceFilterException.php",
+   "lib/Service/Schemas/ReferenceOptionsReader.php",
+   "lib/Service/Schemas/RepeatingGroupDeclarationValidator.php",
+   "lib/Service/Schemas/SchemaCacheHandler.php",
+   "lib/Service/Schemas/ScopedPropertyGovernance.php"
+  ],
+  "p_files": [
+   "lib/Controller/Support/AccessLinkPlatform.php",
+   "lib/Controller/Support/ActivityLinksControllerServices.php",
+   "lib/Controller/Support/AnonymisationBackendControllerServices.php",
+   "lib/Controller/Support/ApplicationsControllerServices.php",
+   "lib/Controller/Support/ArchivalNominationSubject.php",
+   "lib/Controller/Support/ArchivalReviewEntry.php",
+   "lib/Controller/Support/AuditObjectRef.php",
+   "lib/Controller/Support/AuditQueryControllerServices.php",
+   "lib/Controller/Support/BulkPlatform.php",
+   "lib/Controller/Support/BulkSaveCounts.php",
+   "lib/Controller/Support/CacheSettingsControllerServices.php",
+   "lib/Controller/Support/ChatControllerServices.php",
+   "lib/Controller/Support/ChatPlatform.php",
+   "lib/Controller/Support/ContextsControllerServices.php",
+   "lib/Controller/Support/ControllerSession.php",
+   "lib/Controller/Support/ConversationControllerServices.php",
+   "lib/Controller/Support/CredentialOauth2ControllerServices.php",
+   "lib/Controller/Support/CredentialTokens.php",
+   "lib/Controller/Support/DeckLinksControllerServices.php",
+   "lib/Controller/Support/DelegationDomain.php",
+   "lib/Controller/Support/DeletedAccess.php",
+   "lib/Controller/Support/EmailLinksControllerServices.php",
+   "lib/Controller/Support/EntityRelationPatch.php",
+   "lib/Controller/Support/EntityRelationsDomain.php",
+   "lib/Controller/Support/EntityRelationsPlatform.php",
+   "lib/Controller/Support/ErasurePreviewControllerServices.php",
+   "lib/Controller/Support/FlowDefinitions.php",
+   "lib/Controller/Support/FlowNodeRunExecution.php",
+   "lib/Controller/Support/FlowRunControllerServices.php",
+   "lib/Controller/Support/FormsControllerServices.php",
+   "lib/Controller/Support/HardeningStatementControllerServices.php",
+   "lib/Controller/Support/HybridSearchDiagnostics.php",
+   "lib/Controller/Support/ImportPreviewControllerServices.php",
+   "lib/Controller/Support/ImportPreviewMappers.php",
+   "lib/Controller/Support/ImportPreviewPlatform.php",
+   "lib/Controller/Support/LlmSettingsDomain.php",
+   "lib/Controller/Support/ManifestControllerServices.php",
+   "lib/Controller/Support/OAuth2StartRequest.php",
+   "lib/Controller/Support/ObjectActionsControllerServices.php",
+   "lib/Controller/Support/ObjectActionsExecution.php",
+   "lib/Controller/Support/ObjectDerivation.php",
+   "lib/Controller/Support/ObjectDraftPlatform.php",
+   "lib/Controller/Support/ObjectGrantsControllerServices.php",
+   "lib/Controller/Support/ObjectIntegrationsControllerServices.php",
+   "lib/Controller/Support/ObjectIntegrationsDomain.php",
+   "lib/Controller/Support/ObjectShareLinkThrottle.php",
+   "lib/Controller/Support/ObjectSharingControllerServices.php",
+   "lib/Controller/Support/ObjectShow.php",
+   "lib/Controller/Support/ObjectStore.php",
+   "lib/Controller/Support/ObjectTransfer.php",
+   "lib/Controller/Support/ObjectVersionGuard.php",
+   "lib/Controller/Support/ObjectsControllerServices.php",
+   "lib/Controller/Support/OrganisationControllerServices.php",
+   "lib/Controller/Support/OrganisationDomain.php",
+   "lib/Controller/Support/PartyDomain.php",
+   "lib/Controller/Support/PermissionsAuditRules.php",
+   "lib/Controller/Support/PortalTaskDomain.php",
+   "lib/Controller/Support/ReferenceOptionsAsk.php",
+   "lib/Controller/Support/RegisterIntegrations.php",
+   "lib/Controller/Support/RegisterMappers.php",
+   "lib/Controller/Support/RegisterServices.php",
+   "lib/Controller/Support/RegistersControllerServices.php",
+   "lib/Controller/Support/RegistrySubscriptionDomain.php",
+   "lib/Controller/Support/RelationsRecords.php",
+   "lib/Controller/Support/ResultWindow.php",
+   "lib/Controller/Support/RetentionDomain.php",
+   "lib/Controller/Support/RulesControllerServices.php",
+   "lib/Controller/Support/RulesDomain.php",
+   "lib/Controller/Support/SchemaImportControllerServices.php",
+   "lib/Controller/Support/SchemaMigrationDomain.php",
+   "lib/Controller/Support/SchemaMigrationMappers.php",
+   "lib/Controller/Support/SchemaPlatform.php",
+   "lib/Controller/Support/SchemaSemantics.php",
+   "lib/Controller/Support/SchemaServices.php",
+   "lib/Controller/Support/SchemasControllerServices.php",
+   "lib/Controller/Support/SearchTrailControllerServices.php",
+   "lib/Controller/Support/SettingsStore.php",
+   "lib/Controller/Support/SourcesControllerServices.php",
+   "lib/Controller/Support/SourcesDomain.php",
+   "lib/Controller/Support/TaskEventsControllerServices.php",
+   "lib/Controller/Support/TaskWork.php",
+   "lib/Controller/Support/TasksDomain.php",
+   "lib/Controller/Support/TmloRecords.php",
+   "lib/Controller/Support/TransferControllerServices.php",
+   "lib/Controller/Support/TranslationControllerServices.php",
+   "lib/Controller/Support/UserDomain.php",
+   "lib/Controller/Support/WebhooksMappers.php",
+   "lib/Service/Schemas/CodedChoiceException.php",
+   "lib/Service/Schemas/ReferenceFilterException.php",
+   "lib/Service/Schemas/ReferenceOptionsReader.php",
+   "lib/Service/Schemas/RepeatingGroupDeclarationValidator.php",
+   "lib/Service/Schemas/SchemaCacheHandler.php",
+   "lib/Service/Schemas/ScopedPropertyGovernance.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 717,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 58,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 659,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 659,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "Q17": {
+  "id": "Q17",
+  "files": [
+   "lib/Service/Consent/ConsentEnvelopeEvaluator.php",
+   "lib/Service/Flow/FlowLocator.php",
+   "lib/Service/Flow/FlowRecipientAddresses.php",
+   "lib/Service/Flow/FlowRunCommit.php",
+   "lib/Service/Flow/FlowRunMigrationService.php",
+   "lib/Service/Flow/FlowSemanticVersion.php",
+   "lib/Service/Flow/FlowService.php",
+   "lib/Service/Flow/Nodes/LockObjectNode.php",
+   "lib/Service/Flow/Nodes/SubFlowNode.php",
+   "lib/Service/Flow/Timer/SlaCalculator.php"
+  ],
+  "p_files": [
+   "lib/Service/Consent/ConsentEnvelopeEvaluator.php",
+   "lib/Service/Flow/FlowLocator.php",
+   "lib/Service/Flow/FlowRecipientAddresses.php",
+   "lib/Service/Flow/FlowRunCommit.php",
+   "lib/Service/Flow/FlowRunMigrationService.php",
+   "lib/Service/Flow/FlowSemanticVersion.php",
+   "lib/Service/Flow/FlowService.php",
+   "lib/Service/Flow/Nodes/LockObjectNode.php",
+   "lib/Service/Flow/Nodes/SubFlowNode.php",
+   "lib/Service/Flow/Timer/SlaCalculator.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 796,
+   "gt4": 41,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 141,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 655,
+   "gt4": 41,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 652,
+   "gt4": 41,
+   "gt6": 0
+  }
+ },
+ "Q18": {
+  "id": "Q18",
+  "files": [
+   "lib/Service/Case/CaseAnchorReader.php",
+   "lib/Service/Case/CaseCascadeStep.php",
+   "lib/Service/Case/CasePlanAuthorizationService.php",
+   "lib/Service/Case/CasePlanCascade.php",
+   "lib/Service/Case/CasePlanEnsurer.php",
+   "lib/Service/Case/CasePlanItemTimers.php",
+   "lib/Service/Case/CasePlanService.php",
+   "lib/Service/Case/CasePlanStateMachine.php",
+   "lib/Service/Case/CaseRealisationService.php",
+   "lib/Service/Case/CaseSentryEvaluator.php",
+   "lib/Service/Case/CaseTransitionCause.php",
+   "lib/Service/Case/Nodes/CaseAdvanceNode.php",
+   "lib/Service/Case/Nodes/CaseNodeBase.php",
+   "lib/Service/Case/Nodes/CaseOpenNode.php",
+   "lib/Service/Quality/QualityAnnotationValidator.php",
+   "lib/Service/Quality/QualityScorer.php",
+   "lib/Service/Quality/QualityStatisticsService.php",
+   "lib/Service/Quality/UniqueHintChecker.php"
+  ],
+  "p_files": [
+   "lib/Service/Case/CaseAnchorReader.php",
+   "lib/Service/Case/CaseCascadeStep.php",
+   "lib/Service/Case/CasePlanAuthorizationService.php",
+   "lib/Service/Case/CasePlanCascade.php",
+   "lib/Service/Case/CasePlanEnsurer.php",
+   "lib/Service/Case/CasePlanItemTimers.php",
+   "lib/Service/Case/CasePlanService.php",
+   "lib/Service/Case/CasePlanStateMachine.php",
+   "lib/Service/Case/CaseRealisationService.php",
+   "lib/Service/Case/CaseSentryEvaluator.php",
+   "lib/Service/Case/CaseTransitionCause.php",
+   "lib/Service/Case/Nodes/CaseAdvanceNode.php",
+   "lib/Service/Case/Nodes/CaseNodeBase.php",
+   "lib/Service/Case/Nodes/CaseOpenNode.php",
+   "lib/Service/Quality/QualityAnnotationValidator.php",
+   "lib/Service/Quality/QualityScorer.php",
+   "lib/Service/Quality/QualityStatisticsService.php",
+   "lib/Service/Quality/UniqueHintChecker.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 688,
+   "gt4": 90,
+   "gt6": 30
+  },
+  "target": {
+   "gt2": 129,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Case/CasePlanEnsurer.php": [
+    "#7870",
+    "#7890"
+   ],
+   "lib/Service/Case/CasePlanService.php": [
+    "#7870",
+    "#7890"
+   ],
+   "lib/Service/Case/CasePlanStateMachine.php": [
+    "#7872"
+   ],
+   "lib/Service/Quality/UniqueHintChecker.php": [
+    "#7860"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 559,
+   "gt4": 90,
+   "gt6": 30
+  },
+  "tsv_gain": {
+   "gt2": 651,
+   "gt4": 98,
+   "gt6": 38
+  }
+ },
+ "Q19": {
+  "id": "Q19",
+  "files": [
+   "lib/Controller/Support/AccessLinkDomain.php",
+   "lib/Controller/Support/AgentsControllerServices.php",
+   "lib/Controller/Support/ApiCallersControllerServices.php",
+   "lib/Controller/Support/ApiSurfaceControllerServices.php",
+   "lib/Controller/Support/ApiTokenProbe.php",
+   "lib/Controller/Support/ApiTokenSettingsControllerServices.php",
+   "lib/Controller/Support/ArchivalControllerServices.php",
+   "lib/Controller/Support/ArchivalDecisions.php",
+   "lib/Controller/Support/ArchivalMappers.php",
+   "lib/Controller/Support/ArchivalReviewAnswer.php",
+   "lib/Controller/Support/AuditSinkControllerServices.php",
+   "lib/Controller/Support/AuditTrailControllerServices.php",
+   "lib/Controller/Support/AuditTrailLog.php",
+   "lib/Controller/Support/BulkJobsDomain.php",
+   "lib/Controller/Support/BulkSaveBatch.php",
+   "lib/Controller/Support/BulkSaveSummary.php",
+   "lib/Controller/Support/BulkStore.php",
+   "lib/Controller/Support/CalculationsControllerServices.php",
+   "lib/Controller/Support/CalendarEventsControllerServices.php",
+   "lib/Controller/Support/CalendarFeedDomain.php",
+   "lib/Controller/Support/CaseControllerServices.php",
+   "lib/Controller/Support/ChatMappers.php",
+   "lib/Controller/Support/ChatStreamChat.php",
+   "lib/Controller/Support/ConfigDeploymentControllerServices.php",
+   "lib/Controller/Support/ConfigurationControllerServices.php",
+   "lib/Controller/Support/ConfigurationDomain.php",
+   "lib/Controller/Support/ConfigurationsControllerServices.php",
+   "lib/Controller/Support/ContactsDomain.php",
+   "lib/Controller/Support/ContactsPlatform.php",
+   "lib/Controller/Support/ContentReportControllerServices.php",
+   "lib/Controller/Support/CredentialControllerServices.php",
+   "lib/Controller/Support/CredentialOauth2Domain.php",
+   "lib/Controller/Support/CredentialUpdateTarget.php",
+   "lib/Controller/Support/CredentialVault.php",
+   "lib/Controller/Support/DelegationControllerServices.php",
+   "lib/Controller/Support/DeletedStore.php",
+   "lib/Controller/Support/DsarCaseCases.php",
+   "lib/Controller/Support/DsarCaseControllerServices.php",
+   "lib/Controller/Support/DsarCaseDisclosure.php",
+   "lib/Controller/Support/DsarControllerServices.php",
+   "lib/Controller/Support/EdepotSettingsDomain.php",
+   "lib/Controller/Support/EndpointsControllerServices.php",
+   "lib/Controller/Support/EntityRelationsControllerServices.php",
+   "lib/Controller/Support/EntityRelationsMappers.php",
+   "lib/Controller/Support/ExportProfilesControllerServices.php",
+   "lib/Controller/Support/FederatedConfigControllerServices.php",
+   "lib/Controller/Support/FederationControllerServices.php",
+   "lib/Controller/Support/FlowCatalogue.php",
+   "lib/Controller/Support/FlowNodeRunControllerServices.php",
+   "lib/Controller/Support/FlowNodeRunGraph.php",
+   "lib/Controller/Support/FlowRunAccess.php",
+   "lib/Controller/Support/FlowRunMigrationControllerServices.php",
+   "lib/Controller/Support/FlowRunRuns.php",
+   "lib/Controller/Support/FlowTestRunControllerServices.php",
+   "lib/Controller/Support/FlowTimerDiagnosticControllerServices.php",
+   "lib/Controller/Support/FormLinksControllerServices.php",
+   "lib/Controller/Support/FormsDomain.php",
+   "lib/Controller/Support/FormsPlatform.php",
+   "lib/Controller/Support/GdprEntitiesControllerServices.php",
+   "lib/Controller/Support/GeoServices.php",
+   "lib/Controller/Support/GitHubIssueDraft.php",
+   "lib/Controller/Support/GitHubIssueListing.php",
+   "lib/Controller/Support/GitHubIssuesDomain.php",
+   "lib/Controller/Support/HardeningControllerServices.php",
+   "lib/Controller/Support/IntegrationsControllerServices.php",
+   "lib/Controller/Support/LinkedDataServices.php",
+   "lib/Controller/Support/LinkedEntityControllerServices.php",
+   "lib/Controller/Support/LinkedSourceActions.php",
+   "lib/Controller/Support/MappingsControllerServices.php",
+   "lib/Controller/Support/MigrationPacksControllerServices.php",
+   "lib/Controller/Support/ObjectActionsCatalogue.php",
+   "lib/Controller/Support/ObjectActionsSelection.php",
+   "lib/Controller/Support/ObjectCreate.php",
+   "lib/Controller/Support/ObjectDraftDomain.php",
+   "lib/Controller/Support/ObjectExport.php",
+   "lib/Controller/Support/ObjectGovernanceServices.php",
+   "lib/Controller/Support/ObjectOwnershipControllerServices.php",
+   "lib/Controller/Support/ObjectRelationsGraph.php",
+   "lib/Controller/Support/ObjectRelationsPurposeScope.php",
+   "lib/Controller/Support/ObjectShareLinkControllerServices.php",
+   "lib/Controller/Support/ObjectSharingEndpoint.php",
+   "lib/Controller/Support/PreferencesUserValues.php",
+   "lib/Controller/Support/ProcessingLogAccess.php",
+   "lib/Controller/Support/ReferenceOptionsAnswer.php",
+   "lib/Controller/Support/ShownEntity.php"
+  ],
+  "p_files": [
+   "lib/Controller/Support/AccessLinkDomain.php",
+   "lib/Controller/Support/AgentsControllerServices.php",
+   "lib/Controller/Support/ApiCallersControllerServices.php",
+   "lib/Controller/Support/ApiSurfaceControllerServices.php",
+   "lib/Controller/Support/ApiTokenProbe.php",
+   "lib/Controller/Support/ApiTokenSettingsControllerServices.php",
+   "lib/Controller/Support/ArchivalControllerServices.php",
+   "lib/Controller/Support/ArchivalDecisions.php",
+   "lib/Controller/Support/ArchivalMappers.php",
+   "lib/Controller/Support/ArchivalReviewAnswer.php",
+   "lib/Controller/Support/AuditSinkControllerServices.php",
+   "lib/Controller/Support/AuditTrailControllerServices.php",
+   "lib/Controller/Support/AuditTrailLog.php",
+   "lib/Controller/Support/BulkJobsDomain.php",
+   "lib/Controller/Support/BulkSaveBatch.php",
+   "lib/Controller/Support/BulkSaveSummary.php",
+   "lib/Controller/Support/BulkStore.php",
+   "lib/Controller/Support/CalculationsControllerServices.php",
+   "lib/Controller/Support/CalendarEventsControllerServices.php",
+   "lib/Controller/Support/CalendarFeedDomain.php",
+   "lib/Controller/Support/CaseControllerServices.php",
+   "lib/Controller/Support/ChatMappers.php",
+   "lib/Controller/Support/ChatStreamChat.php",
+   "lib/Controller/Support/ConfigDeploymentControllerServices.php",
+   "lib/Controller/Support/ConfigurationControllerServices.php",
+   "lib/Controller/Support/ConfigurationDomain.php",
+   "lib/Controller/Support/ConfigurationsControllerServices.php",
+   "lib/Controller/Support/ContactsDomain.php",
+   "lib/Controller/Support/ContactsPlatform.php",
+   "lib/Controller/Support/ContentReportControllerServices.php",
+   "lib/Controller/Support/CredentialControllerServices.php",
+   "lib/Controller/Support/CredentialOauth2Domain.php",
+   "lib/Controller/Support/CredentialUpdateTarget.php",
+   "lib/Controller/Support/CredentialVault.php",
+   "lib/Controller/Support/DelegationControllerServices.php",
+   "lib/Controller/Support/DeletedStore.php",
+   "lib/Controller/Support/DsarCaseCases.php",
+   "lib/Controller/Support/DsarCaseControllerServices.php",
+   "lib/Controller/Support/DsarCaseDisclosure.php",
+   "lib/Controller/Support/DsarControllerServices.php",
+   "lib/Controller/Support/EdepotSettingsDomain.php",
+   "lib/Controller/Support/EndpointsControllerServices.php",
+   "lib/Controller/Support/EntityRelationsControllerServices.php",
+   "lib/Controller/Support/EntityRelationsMappers.php",
+   "lib/Controller/Support/ExportProfilesControllerServices.php",
+   "lib/Controller/Support/FederatedConfigControllerServices.php",
+   "lib/Controller/Support/FederationControllerServices.php",
+   "lib/Controller/Support/FlowCatalogue.php",
+   "lib/Controller/Support/FlowNodeRunControllerServices.php",
+   "lib/Controller/Support/FlowNodeRunGraph.php",
+   "lib/Controller/Support/FlowRunAccess.php",
+   "lib/Controller/Support/FlowRunMigrationControllerServices.php",
+   "lib/Controller/Support/FlowRunRuns.php",
+   "lib/Controller/Support/FlowTestRunControllerServices.php",
+   "lib/Controller/Support/FlowTimerDiagnosticControllerServices.php",
+   "lib/Controller/Support/FormLinksControllerServices.php",
+   "lib/Controller/Support/FormsDomain.php",
+   "lib/Controller/Support/FormsPlatform.php",
+   "lib/Controller/Support/GdprEntitiesControllerServices.php",
+   "lib/Controller/Support/GeoServices.php",
+   "lib/Controller/Support/GitHubIssueDraft.php",
+   "lib/Controller/Support/GitHubIssueListing.php",
+   "lib/Controller/Support/GitHubIssuesDomain.php",
+   "lib/Controller/Support/HardeningControllerServices.php",
+   "lib/Controller/Support/IntegrationsControllerServices.php",
+   "lib/Controller/Support/LinkedDataServices.php",
+   "lib/Controller/Support/LinkedEntityControllerServices.php",
+   "lib/Controller/Support/LinkedSourceActions.php",
+   "lib/Controller/Support/MappingsControllerServices.php",
+   "lib/Controller/Support/MigrationPacksControllerServices.php",
+   "lib/Controller/Support/ObjectActionsCatalogue.php",
+   "lib/Controller/Support/ObjectActionsSelection.php",
+   "lib/Controller/Support/ObjectCreate.php",
+   "lib/Controller/Support/ObjectDraftDomain.php",
+   "lib/Controller/Support/ObjectExport.php",
+   "lib/Controller/Support/ObjectGovernanceServices.php",
+   "lib/Controller/Support/ObjectOwnershipControllerServices.php",
+   "lib/Controller/Support/ObjectRelationsGraph.php",
+   "lib/Controller/Support/ObjectRelationsPurposeScope.php",
+   "lib/Controller/Support/ObjectShareLinkControllerServices.php",
+   "lib/Controller/Support/ObjectSharingEndpoint.php",
+   "lib/Controller/Support/PreferencesUserValues.php",
+   "lib/Controller/Support/ProcessingLogAccess.php",
+   "lib/Controller/Support/ReferenceOptionsAnswer.php",
+   "lib/Controller/Support/ShownEntity.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 666,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 17,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/Support/ObjectCreate.php": [
+    "#6179"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 649,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 649,
+   "gt4": 0,
+   "gt6": 0
+  }
+ },
+ "Q20": {
+  "id": "Q20",
+  "files": [
+   "lib/Service/Integration/AbstractIntegrationProvider.php",
+   "lib/Service/Integration/ActivityFeedMerge.php",
+   "lib/Service/Integration/ActivityFeedService.php",
+   "lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php",
+   "lib/Service/Integration/BuiltinProviders/FilesProvider.php",
+   "lib/Service/Integration/BuiltinProviders/NotesProvider.php",
+   "lib/Service/Integration/BuiltinProviders/TagsProvider.php",
+   "lib/Service/Integration/BuiltinProviders/TasksProvider.php",
+   "lib/Service/Integration/BuiltinProviders/TasksProviderServices.php",
+   "lib/Service/Integration/ExternalIntegrationRouter.php",
+   "lib/Service/Integration/Providers/ActivityProvider.php",
+   "lib/Service/Integration/Providers/AnalyticsProvider.php",
+   "lib/Service/Integration/Providers/BrpPersonProvider.php",
+   "lib/Service/Integration/Providers/CalendarProvider.php",
+   "lib/Service/Integration/Providers/CollectivesProvider.php",
+   "lib/Service/Integration/Providers/CompanySearchFactory.php",
+   "lib/Service/Integration/Providers/ConnectorEntityCallsTrait.php",
+   "lib/Service/Integration/Providers/ContactsProvider.php",
+   "lib/Service/Integration/Providers/CospendProvider.php",
+   "lib/Service/Integration/Providers/DeckProvider.php",
+   "lib/Service/Integration/Providers/EmailProvider.php",
+   "lib/Service/Integration/Providers/FormsProvider.php",
+   "lib/Service/Integration/Providers/KvkProvider.php",
+   "lib/Service/Integration/Providers/MapsProvider.php",
+   "lib/Service/Integration/Providers/MessageDispatchProvider.php",
+   "lib/Service/Integration/Providers/NcAppLinkRowsProvider.php",
+   "lib/Service/Integration/Providers/NcAppLinkTableProvider.php",
+   "lib/Service/Integration/Providers/OpenCorporatesProvider.php",
+   "lib/Service/Integration/Providers/OpenProjectProvider.php",
+   "lib/Service/Integration/Providers/PhotosProvider.php",
+   "lib/Service/Integration/Providers/PollsProvider.php",
+   "lib/Service/Integration/Providers/SharesProvider.php",
+   "lib/Service/Integration/Providers/TalkProvider.php",
+   "lib/Service/Integration/Providers/TimeProvider.php",
+   "lib/Service/Integration/Providers/XwikiProvider.php",
+   "lib/Service/Sharing/AccessLinkActs.php",
+   "lib/Service/Sharing/AccessLinkService.php",
+   "lib/Service/Sharing/AccessLinkViewReaders.php",
+   "lib/Service/Sharing/SharePrincipalDeriver.php"
+  ],
+  "p_files": [
+   "lib/Service/Integration/AbstractIntegrationProvider.php",
+   "lib/Service/Integration/ActivityFeedMerge.php",
+   "lib/Service/Integration/ActivityFeedService.php",
+   "lib/Service/Integration/BuiltinProviders/AuditTrailProvider.php",
+   "lib/Service/Integration/BuiltinProviders/FilesProvider.php",
+   "lib/Service/Integration/BuiltinProviders/NotesProvider.php",
+   "lib/Service/Integration/BuiltinProviders/TagsProvider.php",
+   "lib/Service/Integration/BuiltinProviders/TasksProvider.php",
+   "lib/Service/Integration/BuiltinProviders/TasksProviderServices.php",
+   "lib/Service/Integration/ExternalIntegrationRouter.php",
+   "lib/Service/Integration/Providers/ActivityProvider.php",
+   "lib/Service/Integration/Providers/AnalyticsProvider.php",
+   "lib/Service/Integration/Providers/BrpPersonProvider.php",
+   "lib/Service/Integration/Providers/CalendarProvider.php",
+   "lib/Service/Integration/Providers/CollectivesProvider.php",
+   "lib/Service/Integration/Providers/CompanySearchFactory.php",
+   "lib/Service/Integration/Providers/ConnectorEntityCallsTrait.php",
+   "lib/Service/Integration/Providers/ContactsProvider.php",
+   "lib/Service/Integration/Providers/CospendProvider.php",
+   "lib/Service/Integration/Providers/DeckProvider.php",
+   "lib/Service/Integration/Providers/EmailProvider.php",
+   "lib/Service/Integration/Providers/FormsProvider.php",
+   "lib/Service/Integration/Providers/KvkProvider.php",
+   "lib/Service/Integration/Providers/MapsProvider.php",
+   "lib/Service/Integration/Providers/MessageDispatchProvider.php",
+   "lib/Service/Integration/Providers/NcAppLinkRowsProvider.php",
+   "lib/Service/Integration/Providers/NcAppLinkTableProvider.php",
+   "lib/Service/Integration/Providers/OpenCorporatesProvider.php",
+   "lib/Service/Integration/Providers/OpenProjectProvider.php",
+   "lib/Service/Integration/Providers/PhotosProvider.php",
+   "lib/Service/Integration/Providers/PollsProvider.php",
+   "lib/Service/Integration/Providers/SharesProvider.php",
+   "lib/Service/Integration/Providers/TalkProvider.php",
+   "lib/Service/Integration/Providers/TimeProvider.php",
+   "lib/Service/Integration/Providers/XwikiProvider.php",
+   "lib/Service/Sharing/AccessLinkActs.php",
+   "lib/Service/Sharing/AccessLinkService.php",
+   "lib/Service/Sharing/AccessLinkViewReaders.php",
+   "lib/Service/Sharing/SharePrincipalDeriver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 845,
+   "gt4": 42,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 207,
+   "gt4": 8,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 638,
+   "gt4": 34,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 638,
+   "gt4": 34,
+   "gt6": 0
+  }
+ },
+ "Q21": {
+  "id": "Q21",
+  "files": [
+   "lib/AppHost/Observability/BundledManifestFile.php",
+   "lib/AppHost/Observability/HealthCheckDescriptor.php",
+   "lib/AppHost/Observability/ObservabilityManifest.php",
+   "lib/AppHost/Observability/Source/ObjectMetricSource.php",
+   "lib/AppHost/Observability/Source/TableMetricSource.php",
+   "lib/Service/Lifecycle/AutoTransitionDecision.php",
+   "lib/Service/Lifecycle/AutoTransitionPass.php",
+   "lib/Service/Lifecycle/AutoTransitionRunner.php",
+   "lib/Service/Lifecycle/AutoTransitionSelector.php",
+   "lib/Service/Lifecycle/LifecycleActionExecutor.php",
+   "lib/Service/Lifecycle/LifecycleConditionEvaluator.php",
+   "lib/Service/Lifecycle/LifecycleFinalStateResolver.php",
+   "lib/Service/Lifecycle/LifecycleStateValidator.php",
+   "lib/Service/Lifecycle/LifecycleTransitionResolver.php",
+   "lib/Service/Lifecycle/LifecycleTransitionsValidator.php",
+   "lib/Service/Lifecycle/StateConditionEvaluator.php",
+   "lib/Service/Lifecycle/StateFieldRuleResolver.php",
+   "lib/Service/Lifecycle/TransitionEngine.php",
+   "lib/Service/Lifecycle/TransitionSubjects.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Observability/BundledManifestFile.php",
+   "lib/AppHost/Observability/HealthCheckDescriptor.php",
+   "lib/AppHost/Observability/ObservabilityManifest.php",
+   "lib/AppHost/Observability/Source/ObjectMetricSource.php",
+   "lib/AppHost/Observability/Source/TableMetricSource.php",
+   "lib/Service/Lifecycle/AutoTransitionDecision.php",
+   "lib/Service/Lifecycle/AutoTransitionPass.php",
+   "lib/Service/Lifecycle/AutoTransitionRunner.php",
+   "lib/Service/Lifecycle/AutoTransitionSelector.php",
+   "lib/Service/Lifecycle/LifecycleActionExecutor.php",
+   "lib/Service/Lifecycle/LifecycleConditionEvaluator.php",
+   "lib/Service/Lifecycle/LifecycleFinalStateResolver.php",
+   "lib/Service/Lifecycle/LifecycleStateValidator.php",
+   "lib/Service/Lifecycle/LifecycleTransitionResolver.php",
+   "lib/Service/Lifecycle/LifecycleTransitionsValidator.php",
+   "lib/Service/Lifecycle/StateConditionEvaluator.php",
+   "lib/Service/Lifecycle/StateFieldRuleResolver.php",
+   "lib/Service/Lifecycle/TransitionEngine.php",
+   "lib/Service/Lifecycle/TransitionSubjects.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 827,
+   "gt4": 36,
+   "gt6": 21
+  },
+  "target": {
+   "gt2": 235,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Lifecycle/AutoTransitionSelector.php": [
+    "#7881"
+   ],
+   "lib/Service/Lifecycle/LifecycleConditionEvaluator.php": [
+    "#7881"
+   ],
+   "lib/Service/Lifecycle/TransitionEngine.php": [
+    "#5046",
+    "#5116"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 592,
+   "gt4": 36,
+   "gt6": 21
+  },
+  "tsv_gain": {
+   "gt2": 634,
+   "gt4": 36,
+   "gt6": 21
+  }
+ },
+ "Q22": {
+  "id": "Q22",
+  "files": [
+   "lib/Controller/ObjectsController.php"
+  ],
+  "p_files": [
+   "lib/Controller/ObjectsController.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 983,
+   "gt4": 147,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 351,
+   "gt4": 16,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/ObjectsController.php": [
+    "#5046",
+    "#5116",
+    "#6178",
+    "#6179",
+    "#6219"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 632,
+   "gt4": 131,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 632,
+   "gt4": 131,
+   "gt6": 0
+  }
+ },
+ "Q23": {
+  "id": "Q23",
+  "files": [
+   "lib/Contacts/ContactsMenuProvider.php",
+   "lib/Service/Object/CacheHandler.php",
+   "lib/Service/Object/PermissionHandler.php",
+   "lib/Service/Object/QueryHandler.php",
+   "lib/Service/Object/ReferentialIntegrityService.php",
+   "lib/Service/Object/SaveObject/FilePropertyHandler.php"
+  ],
+  "p_files": [
+   "lib/Contacts/ContactsMenuProvider.php",
+   "lib/Service/Object/CacheHandler.php",
+   "lib/Service/Object/PermissionHandler.php",
+   "lib/Service/Object/QueryHandler.php",
+   "lib/Service/Object/ReferentialIntegrityService.php",
+   "lib/Service/Object/SaveObject/FilePropertyHandler.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 847,
+   "gt4": 235,
+   "gt6": 137
+  },
+  "target": {
+   "gt2": 221,
+   "gt4": 13,
+   "gt6": 13
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Object/QueryHandler.php": [
+    "#5497"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 626,
+   "gt4": 222,
+   "gt6": 124
+  },
+  "tsv_gain": {
+   "gt2": 626,
+   "gt4": 222,
+   "gt6": 124
+  }
+ },
+ "Q24": {
+  "id": "Q24",
+  "files": [
+   "lib/ContextChat/Support/ContentProviderSources.php",
+   "lib/Controller/AgentsController.php",
+   "lib/Controller/ArchivalController.php",
+   "lib/Controller/AuditTrailController.php",
+   "lib/Controller/BulkController.php",
+   "lib/Controller/ChatStreamController.php",
+   "lib/Controller/CollectiveLinksController.php",
+   "lib/Controller/CorrectionsController.php",
+   "lib/Controller/FlowLinksController.php",
+   "lib/Controller/FlowTimerDiagnosticController.php",
+   "lib/Controller/MapLinksController.php",
+   "lib/Controller/ObjectActionsController.php",
+   "lib/Controller/ObjectOwnershipController.php",
+   "lib/Controller/ObjectPermissionsController.php",
+   "lib/Controller/ObjectReadStateController.php",
+   "lib/Controller/ObjectSharingController.php",
+   "lib/Controller/RegistersController.php",
+   "lib/Controller/RegistrySubscriptionController.php",
+   "lib/Controller/SchemasController.php",
+   "lib/Controller/TmloController.php",
+   "lib/Controller/UserController.php",
+   "lib/Controller/VocabularyController.php"
+  ],
+  "p_files": [
+   "lib/ContextChat/Support/ContentProviderSources.php",
+   "lib/Controller/AgentsController.php",
+   "lib/Controller/ArchivalController.php",
+   "lib/Controller/AuditTrailController.php",
+   "lib/Controller/BulkController.php",
+   "lib/Controller/ChatStreamController.php",
+   "lib/Controller/CollectiveLinksController.php",
+   "lib/Controller/CorrectionsController.php",
+   "lib/Controller/FlowLinksController.php",
+   "lib/Controller/FlowTimerDiagnosticController.php",
+   "lib/Controller/MapLinksController.php",
+   "lib/Controller/ObjectActionsController.php",
+   "lib/Controller/ObjectOwnershipController.php",
+   "lib/Controller/ObjectPermissionsController.php",
+   "lib/Controller/ObjectReadStateController.php",
+   "lib/Controller/ObjectSharingController.php",
+   "lib/Controller/RegistersController.php",
+   "lib/Controller/RegistrySubscriptionController.php",
+   "lib/Controller/SchemasController.php",
+   "lib/Controller/TmloController.php",
+   "lib/Controller/UserController.php",
+   "lib/Controller/VocabularyController.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 962,
+   "gt4": 10,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 360,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/AgentsController.php": [
+    "#7874"
+   ],
+   "lib/Controller/ChatStreamController.php": [
+    "#4641"
+   ],
+   "lib/Controller/ObjectActionsController.php": [
+    "#7869"
+   ],
+   "lib/Controller/SchemasController.php": [
+    "#6215",
+    "#6217"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 602,
+   "gt4": 10,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 618,
+   "gt4": 10,
+   "gt6": 0
+  }
+ },
+ "Q25": {
+  "id": "Q25",
+  "files": [
+   "lib/Service/Operations/JobRunRecorder.php",
+   "lib/Service/Operations/OperationsJobsService.php",
+   "lib/Service/OrganisationService.php",
+   "lib/Service/PropertyRbacHandler.php",
+   "lib/Service/SchemaDeletionService.php",
+   "lib/Service/TalkLinkService.php",
+   "lib/Service/TimeTrackerLinkService.php",
+   "lib/Service/UserService.php"
+  ],
+  "p_files": [
+   "lib/Service/Operations/JobRunRecorder.php",
+   "lib/Service/Operations/OperationsJobsService.php",
+   "lib/Service/OrganisationService.php",
+   "lib/Service/PropertyRbacHandler.php",
+   "lib/Service/SchemaDeletionService.php",
+   "lib/Service/TalkLinkService.php",
+   "lib/Service/TimeTrackerLinkService.php",
+   "lib/Service/UserService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 841,
+   "gt4": 105,
+   "gt6": 37
+  },
+  "target": {
+   "gt2": 227,
+   "gt4": 42,
+   "gt6": 25
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Operations/OperationsJobsService.php": [
+    "#7837"
+   ],
+   "lib/Service/OrganisationService.php": [
+    "#4548",
+    "#4641"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 614,
+   "gt4": 63,
+   "gt6": 12
+  },
+  "tsv_gain": {
+   "gt2": 614,
+   "gt4": 63,
+   "gt6": 12
+  }
+ },
+ "Q26": {
+  "id": "Q26",
+  "files": [
+   "lib/AppHost/Store/FederatedStoreCatalog.php",
+   "lib/AppHost/Store/Source/GitHubStoreSource.php",
+   "lib/AppHost/Store/StoreActionAuthorizer.php",
+   "lib/AppHost/Store/StoreManifest.php",
+   "lib/Service/Credential/CredentialAppTokenService.php",
+   "lib/Service/Credential/CredentialBrokerService.php",
+   "lib/Service/Credential/CredentialRelinkNotifier.php",
+   "lib/Service/Credential/OAuth2AccountIdentity.php",
+   "lib/Service/Credential/OAuth2ClientResolver.php",
+   "lib/Service/Credential/OAuth2CodeExchange.php",
+   "lib/Service/Credential/OAuth2ConnectService.php",
+   "lib/Service/Credential/OAuth2ConnectionWriter.php",
+   "lib/Service/Credential/OAuth2InstanceClient.php",
+   "lib/Service/Credential/OAuth2RefreshExchange.php",
+   "lib/Service/Credential/OAuth2RefreshService.php",
+   "lib/Service/Credential/OAuth2TokenSet.php",
+   "lib/Service/Credential/OAuth2UpstreamRevoker.php",
+   "lib/Twig/MappingRuntime.php"
+  ],
+  "p_files": [
+   "lib/AppHost/Store/FederatedStoreCatalog.php",
+   "lib/AppHost/Store/Source/GitHubStoreSource.php",
+   "lib/AppHost/Store/StoreActionAuthorizer.php",
+   "lib/AppHost/Store/StoreManifest.php",
+   "lib/Service/Credential/CredentialAppTokenService.php",
+   "lib/Service/Credential/CredentialBrokerService.php",
+   "lib/Service/Credential/CredentialRelinkNotifier.php",
+   "lib/Service/Credential/OAuth2AccountIdentity.php",
+   "lib/Service/Credential/OAuth2ClientResolver.php",
+   "lib/Service/Credential/OAuth2CodeExchange.php",
+   "lib/Service/Credential/OAuth2ConnectService.php",
+   "lib/Service/Credential/OAuth2ConnectionWriter.php",
+   "lib/Service/Credential/OAuth2InstanceClient.php",
+   "lib/Service/Credential/OAuth2RefreshExchange.php",
+   "lib/Service/Credential/OAuth2RefreshService.php",
+   "lib/Service/Credential/OAuth2TokenSet.php",
+   "lib/Service/Credential/OAuth2UpstreamRevoker.php",
+   "lib/Twig/MappingRuntime.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 824,
+   "gt4": 130,
+   "gt6": 116
+  },
+  "target": {
+   "gt2": 215,
+   "gt4": 14,
+   "gt6": 14
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Credential/CredentialBrokerService.php": [
+    "#4548"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 609,
+   "gt4": 116,
+   "gt6": 102
+  },
+  "tsv_gain": {
+   "gt2": 609,
+   "gt4": 116,
+   "gt6": 102
+  }
+ },
+ "Q27": {
+  "id": "Q27",
+  "files": [
+   "lib/Service/LinkedEntityService.php",
+   "lib/Service/MassValidationRun.php",
+   "lib/Service/PersonLinkService.php",
+   "lib/Service/ProcessingLogService.php",
+   "lib/Service/RegisterResolverService.php",
+   "lib/Service/RegisterService.php",
+   "lib/Service/SchemaService.php",
+   "lib/Service/TalkLink/TalkLinkFactory.php",
+   "lib/Service/TalkLink/TalkRoomFields.php",
+   "lib/Service/TaskService.php",
+   "lib/Service/XwikiLinkService.php"
+  ],
+  "p_files": [
+   "lib/Service/LinkedEntityService.php",
+   "lib/Service/MassValidationRun.php",
+   "lib/Service/PersonLinkService.php",
+   "lib/Service/ProcessingLogService.php",
+   "lib/Service/RegisterResolverService.php",
+   "lib/Service/RegisterService.php",
+   "lib/Service/SchemaService.php",
+   "lib/Service/TalkLink/TalkLinkFactory.php",
+   "lib/Service/TalkLink/TalkRoomFields.php",
+   "lib/Service/TaskService.php",
+   "lib/Service/XwikiLinkService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 753,
+   "gt4": 143,
+   "gt6": 38
+  },
+  "target": {
+   "gt2": 225,
+   "gt4": 46,
+   "gt6": 10
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/LinkedEntityService.php": [
+    "#7785"
+   ],
+   "lib/Service/PersonLinkService.php": [
+    "#7854"
+   ],
+   "lib/Service/RegisterService.php": [
+    "#7854"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 528,
+   "gt4": 97,
+   "gt6": 28
+  },
+  "tsv_gain": {
+   "gt2": 606,
+   "gt4": 97,
+   "gt6": 28
+  }
+ },
+ "Q28": {
+  "id": "Q28",
+  "files": [
+   "lib/Service/Configuration/AppImportJobRecorder.php",
+   "lib/Service/Configuration/CacheHandler.php",
+   "lib/Service/Configuration/ExportHandler.php",
+   "lib/Service/Configuration/ImportDuplicates.php",
+   "lib/Service/Configuration/ObjectChangePreview.php",
+   "lib/Service/Configuration/PreviewHandler.php",
+   "lib/Service/Configuration/PreviewMappers.php",
+   "lib/Service/Configuration/RateLimiterService.php",
+   "lib/Service/ExportService.php",
+   "lib/Service/WebhookService.php"
+  ],
+  "p_files": [
+   "lib/Service/Configuration/AppImportJobRecorder.php",
+   "lib/Service/Configuration/CacheHandler.php",
+   "lib/Service/Configuration/ExportHandler.php",
+   "lib/Service/Configuration/ImportDuplicates.php",
+   "lib/Service/Configuration/ObjectChangePreview.php",
+   "lib/Service/Configuration/PreviewHandler.php",
+   "lib/Service/Configuration/PreviewMappers.php",
+   "lib/Service/Configuration/RateLimiterService.php",
+   "lib/Service/ExportService.php",
+   "lib/Service/WebhookService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 774,
+   "gt4": 118,
+   "gt6": 15
+  },
+  "target": {
+   "gt2": 175,
+   "gt4": 39,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Configuration/ExportHandler.php": [
+    "#5968"
+   ],
+   "lib/Service/ExportService.php": [
+    "#5058"
+   ],
+   "lib/Service/WebhookService.php": [
+    "#5046"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 599,
+   "gt4": 79,
+   "gt6": 15
+  },
+  "tsv_gain": {
+   "gt2": 599,
+   "gt4": 79,
+   "gt6": 15
+  }
+ },
+ "Q29": {
+  "id": "Q29",
+  "files": [
+   "lib/Controller/ActivityLinksController.php",
+   "lib/Controller/AnalyticsLinksController.php",
+   "lib/Controller/BookmarkLinksController.php",
+   "lib/Controller/CospendLinksController.php",
+   "lib/Controller/DeckController.php",
+   "lib/Controller/DeckLinksController.php",
+   "lib/Controller/EmailLinksController.php",
+   "lib/Controller/GitHubIssuesController.php",
+   "lib/Controller/ObjectIntegrationsController.php",
+   "lib/Controller/ObjectRelationsController.php",
+   "lib/Controller/RulesController.php",
+   "lib/Controller/TranslationController.php",
+   "lib/Service/CalendarEvent/VeventCodec.php"
+  ],
+  "p_files": [
+   "lib/Controller/ActivityLinksController.php",
+   "lib/Controller/AnalyticsLinksController.php",
+   "lib/Controller/BookmarkLinksController.php",
+   "lib/Controller/CospendLinksController.php",
+   "lib/Controller/DeckController.php",
+   "lib/Controller/DeckLinksController.php",
+   "lib/Controller/EmailLinksController.php",
+   "lib/Controller/GitHubIssuesController.php",
+   "lib/Controller/ObjectIntegrationsController.php",
+   "lib/Controller/ObjectRelationsController.php",
+   "lib/Controller/RulesController.php",
+   "lib/Controller/TranslationController.php",
+   "lib/Service/CalendarEvent/VeventCodec.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 947,
+   "gt4": 67,
+   "gt6": 40
+  },
+  "target": {
+   "gt2": 352,
+   "gt4": 30,
+   "gt6": 8
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Controller/ObjectIntegrationsController.php": [
+    "#7751"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 595,
+   "gt4": 37,
+   "gt6": 32
+  },
+  "tsv_gain": {
+   "gt2": 595,
+   "gt4": 37,
+   "gt6": 32
+  }
+ },
+ "Q30": {
+  "id": "Q30",
+  "files": [
+   "lib/Db/AuditTrailMapper.php",
+   "lib/Service/Audit/AuditSink.php",
+   "lib/Service/Audit/AuditTrailPageService.php",
+   "lib/Service/Audit/ContentReportService.php",
+   "lib/Service/Audit/HistoryEntryRedactor.php",
+   "lib/Service/Audit/ObjectHistoryForReaders.php",
+   "lib/Service/Audit/PurposeGuard.php",
+   "lib/Service/Audit/ReadEventVisibility.php",
+   "lib/Service/Audit/ReadableAuditTrailLister.php",
+   "lib/Service/Audit/SecuritySettingAnnouncer.php"
+  ],
+  "p_files": [
+   "lib/Db/AuditTrailMapper.php",
+   "lib/Service/Audit/AuditSink.php",
+   "lib/Service/Audit/AuditTrailPageService.php",
+   "lib/Service/Audit/ContentReportService.php",
+   "lib/Service/Audit/HistoryEntryRedactor.php",
+   "lib/Service/Audit/ObjectHistoryForReaders.php",
+   "lib/Service/Audit/PurposeGuard.php",
+   "lib/Service/Audit/ReadEventVisibility.php",
+   "lib/Service/Audit/ReadableAuditTrailLister.php",
+   "lib/Service/Audit/SecuritySettingAnnouncer.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 682,
+   "gt4": 113,
+   "gt6": 19
+  },
+  "target": {
+   "gt2": 89,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 593,
+   "gt4": 113,
+   "gt6": 19
+  },
+  "tsv_gain": {
+   "gt2": 593,
+   "gt4": 135,
+   "gt6": 19
+  }
+ },
+ "Q31": {
+  "id": "Q31",
+  "files": [
+   "lib/Command/AdoptLeafOrganisationsCommand.php",
+   "lib/Command/BackfillObjectSlugsCommand.php",
+   "lib/Command/DedupeRegistersCommand.php",
+   "lib/Command/EncryptFieldCommand.php",
+   "lib/Command/ExampleSetInstallCommand.php",
+   "lib/Command/FederationShareRightsCommand.php",
+   "lib/Command/MagicTableSelection.php",
+   "lib/Command/MigrateSchemaApplicationCommand.php",
+   "lib/Command/PruneRetiredSchemasCommand.php",
+   "lib/Command/PurgeObjectCommand.php",
+   "lib/Command/RematerialiseCalculationsCommand.php",
+   "lib/Command/ResetSchemaToShippedCommand.php",
+   "lib/Service/Export/ExportAuditRecorder.php",
+   "lib/Service/Export/ExportGate.php",
+   "lib/Service/Export/ExportProfileService.php",
+   "lib/Service/Export/ExportProfileStores.php",
+   "lib/Service/Export/ExportProfileWriter.php",
+   "lib/Service/Export/ExportRightService.php",
+   "lib/Service/Export/ExportRunRecorder.php",
+   "lib/Service/Export/ExportValueRenderer.php",
+   "lib/Service/Export/RowsPdfSection.php"
+  ],
+  "p_files": [
+   "lib/Command/AdoptLeafOrganisationsCommand.php",
+   "lib/Command/BackfillObjectSlugsCommand.php",
+   "lib/Command/DedupeRegistersCommand.php",
+   "lib/Command/EncryptFieldCommand.php",
+   "lib/Command/ExampleSetInstallCommand.php",
+   "lib/Command/FederationShareRightsCommand.php",
+   "lib/Command/MagicTableSelection.php",
+   "lib/Command/MigrateSchemaApplicationCommand.php",
+   "lib/Command/PruneRetiredSchemasCommand.php",
+   "lib/Command/PurgeObjectCommand.php",
+   "lib/Command/RematerialiseCalculationsCommand.php",
+   "lib/Command/ResetSchemaToShippedCommand.php",
+   "lib/Service/Export/ExportAuditRecorder.php",
+   "lib/Service/Export/ExportGate.php",
+   "lib/Service/Export/ExportProfileService.php",
+   "lib/Service/Export/ExportProfileStores.php",
+   "lib/Service/Export/ExportProfileWriter.php",
+   "lib/Service/Export/ExportRightService.php",
+   "lib/Service/Export/ExportRunRecorder.php",
+   "lib/Service/Export/ExportValueRenderer.php",
+   "lib/Service/Export/RowsPdfSection.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 830,
+   "gt4": 90,
+   "gt6": 22
+  },
+  "target": {
+   "gt2": 239,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Command/ResetSchemaToShippedCommand.php": [
+    "#4365"
+   ],
+   "lib/Service/Export/ExportRunRecorder.php": [
+    "#4535"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 591,
+   "gt4": 90,
+   "gt6": 22
+  },
+  "tsv_gain": {
+   "gt2": 591,
+   "gt4": 90,
+   "gt6": 22
+  }
+ },
+ "Q32": {
+  "id": "Q32",
+  "files": [
+   "lib/Mcp/Controller/McpServerController.php",
+   "lib/Service/Flow/FlowRunService.php",
+   "lib/Service/Flow/FlowTokenRouter.php",
+   "lib/Service/Flow/Timer/FlowTimerService.php"
+  ],
+  "p_files": [
+   "lib/Mcp/Controller/McpServerController.php",
+   "lib/Service/Flow/FlowRunService.php",
+   "lib/Service/Flow/FlowTokenRouter.php",
+   "lib/Service/Flow/Timer/FlowTimerService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 771,
+   "gt4": 237,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 186,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {},
+  "plan_gain": {
+   "gt2": 585,
+   "gt4": 237,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 585,
+   "gt4": 237,
+   "gt6": 0
+  }
+ },
+ "Q33": {
+  "id": "Q33",
+  "files": [
+   "lib/Search/Service/Aggregation/AggregationCache.php",
+   "lib/Search/Service/Aggregation/ThresholdEvaluationService.php",
+   "lib/Search/Service/Geo/GeoFeatureCollectionBuilder.php",
+   "lib/Search/Service/Geo/GeoFilter.php",
+   "lib/Search/Service/MapsOverviewService.php",
+   "lib/Search/Service/Quality/DedupCreatePolicy.php",
+   "lib/Search/Service/Quality/DismissedPairStore.php",
+   "lib/Search/Service/Quality/DuplicateDetectionService.php",
+   "lib/Search/Service/Search/SearchIndexMaintenance.php",
+   "lib/Search/Service/Vectorization/Handlers/ChunkVectorFactory.php",
+   "lib/Search/Service/Vectorization/VectorEmbeddings.php",
+   "lib/Search/Service/VectorizationService.php",
+   "lib/Search/Service/ViewService.php",
+   "lib/Service/Reference/ObjectPreviewFormatter.php",
+   "lib/Service/Reference/ObjectPreviewSources.php"
+  ],
+  "p_files": [
+   "lib/Search/Service/Aggregation/AggregationCache.php",
+   "lib/Search/Service/Aggregation/ThresholdEvaluationService.php",
+   "lib/Search/Service/Geo/GeoFeatureCollectionBuilder.php",
+   "lib/Search/Service/Geo/GeoFilter.php",
+   "lib/Search/Service/MapsOverviewService.php",
+   "lib/Search/Service/Quality/DedupCreatePolicy.php",
+   "lib/Search/Service/Quality/DismissedPairStore.php",
+   "lib/Search/Service/Quality/DuplicateDetectionService.php",
+   "lib/Search/Service/Search/SearchIndexMaintenance.php",
+   "lib/Search/Service/Vectorization/Handlers/ChunkVectorFactory.php",
+   "lib/Search/Service/Vectorization/VectorEmbeddings.php",
+   "lib/Search/Service/VectorizationService.php",
+   "lib/Search/Service/ViewService.php",
+   "lib/Service/Reference/ObjectPreviewFormatter.php",
+   "lib/Service/Reference/ObjectPreviewSources.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 792,
+   "gt4": 61,
+   "gt6": 43
+  },
+  "target": {
+   "gt2": 215,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Search/Service/VectorizationService.php": [
+    "#7865"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 577,
+   "gt4": 61,
+   "gt6": 43
+  },
+  "tsv_gain": {
+   "gt2": 577,
+   "gt4": 61,
+   "gt6": 43
+  }
+ },
+ "Q34": {
+  "id": "Q34",
+  "files": [
+   "lib/Service/ExampleSet/ExampleSetAccountDirectory.php",
+   "lib/Service/ExampleSet/ExampleSetAccounts.php",
+   "lib/Service/ExampleSet/ExampleSetAccountsRemoval.php",
+   "lib/Service/ExampleSet/ExampleSetChanges.php",
+   "lib/Service/ExampleSet/ExampleSetEngineRows.php",
+   "lib/Service/ExampleSet/ExampleSetFlowRuns.php",
+   "lib/Service/ExampleSet/ExampleSetFlows.php",
+   "lib/Service/ExampleSet/ExampleSetTalkStore.php",
+   "lib/Service/ExampleSet/ExampleSetTaskClaim.php",
+   "lib/Service/ExampleSet/ExampleSetTasks.php",
+   "lib/Service/Quota/ObjectQuotaService.php",
+   "lib/Service/Task/TaskAuthorizationService.php",
+   "lib/Service/Task/TaskCalendarProjector.php",
+   "lib/Service/Task/TaskFormCompletion.php",
+   "lib/Service/Task/TaskFormReader.php",
+   "lib/Service/Task/TaskFormSubjectWriter.php",
+   "lib/Service/Task/TaskInboxService.php",
+   "lib/Service/Task/TaskSequenceService.php",
+   "lib/Service/Task/TaskService.php",
+   "lib/Service/Task/TaskSubjectLocator.php",
+   "lib/Service/Task/TaskVtodoWriteBackGate.php",
+   "lib/Service/Task/VtodoReader.php"
+  ],
+  "p_files": [
+   "lib/Service/ExampleSet/ExampleSetAccountDirectory.php",
+   "lib/Service/ExampleSet/ExampleSetAccounts.php",
+   "lib/Service/ExampleSet/ExampleSetAccountsRemoval.php",
+   "lib/Service/ExampleSet/ExampleSetChanges.php",
+   "lib/Service/ExampleSet/ExampleSetEngineRows.php",
+   "lib/Service/ExampleSet/ExampleSetFlowRuns.php",
+   "lib/Service/ExampleSet/ExampleSetFlows.php",
+   "lib/Service/ExampleSet/ExampleSetTalkStore.php",
+   "lib/Service/ExampleSet/ExampleSetTaskClaim.php",
+   "lib/Service/ExampleSet/ExampleSetTasks.php",
+   "lib/Service/Quota/ObjectQuotaService.php",
+   "lib/Service/Task/TaskAuthorizationService.php",
+   "lib/Service/Task/TaskCalendarProjector.php",
+   "lib/Service/Task/TaskFormCompletion.php",
+   "lib/Service/Task/TaskFormReader.php",
+   "lib/Service/Task/TaskFormSubjectWriter.php",
+   "lib/Service/Task/TaskInboxService.php",
+   "lib/Service/Task/TaskSequenceService.php",
+   "lib/Service/Task/TaskService.php",
+   "lib/Service/Task/TaskSubjectLocator.php",
+   "lib/Service/Task/TaskVtodoWriteBackGate.php",
+   "lib/Service/Task/VtodoReader.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 661,
+   "gt4": 51,
+   "gt6": 51
+  },
+  "target": {
+   "gt2": 194,
+   "gt4": 28,
+   "gt6": 28
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Task/TaskAuthorizationService.php": [
+    "#7831"
+   ],
+   "lib/Service/Task/TaskFormCompletion.php": [
+    "#7831"
+   ],
+   "lib/Service/Task/TaskInboxService.php": [
+    "#7831"
+   ],
+   "lib/Service/Task/TaskSequenceService.php": [
+    "#7867"
+   ],
+   "lib/Service/Task/TaskService.php": [
+    "#7831"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 467,
+   "gt4": 23,
+   "gt6": 23
+  },
+  "tsv_gain": {
+   "gt2": 571,
+   "gt4": 50,
+   "gt6": 37
+  }
+ },
+ "Q35": {
+  "id": "Q35",
+  "files": [
+   "lib/Lifecycle/Action/SetFieldsAction.php",
+   "lib/Mcp/Service/Chat/ContextRetrievalHandler.php",
+   "lib/Mcp/Service/Chat/ConversationManagementHandler.php",
+   "lib/Mcp/Service/Chat/MessageHistoryHandler.php",
+   "lib/Mcp/Service/Chat/ResponseGenerationHandler.php",
+   "lib/Mcp/Service/Chat/ToolManagementHandler.php",
+   "lib/Mcp/Service/ChatService.php",
+   "lib/Mcp/Service/Mcp/McpProtocolService.php",
+   "lib/Mcp/Service/Mcp/McpResourcesService.php",
+   "lib/Mcp/Service/ToolRegistry.php",
+   "lib/Notifications/Service/GraphQL/SubscriptionService.php",
+   "lib/Notifications/Service/Notification/ForcedChannelPolicy.php",
+   "lib/Notifications/Service/Notification/NotificationBroadcastService.php",
+   "lib/Notifications/Service/Notification/NotificationClearingService.php",
+   "lib/Notifications/Service/Notification/NotificationRecipientResolver.php",
+   "lib/Notifications/Service/Notification/NotificationTemplating.php",
+   "lib/Notifications/Service/Notification/OptOutAuthority.php",
+   "lib/Notifications/Service/Notification/ScheduledMessagePolicy.php",
+   "lib/Notifications/Service/Notification/TaskObjectAdapter.php",
+   "lib/Notifications/Service/Notification/TaskObjectAdapters.php",
+   "lib/Notifications/Service/Notification/TaskPoolRecipientResolver.php",
+   "lib/Notifications/Service/Party/PartyNotificationService.php",
+   "lib/Notifications/Service/Timeline/MentionPrincipals.php",
+   "lib/Notifications/Service/Timeline/TextBlockService.php",
+   "lib/Notifications/Service/Timeline/TimelineEntrySearchService.php",
+   "lib/Notifications/Service/Timeline/TimelineEntryService.php",
+   "lib/Notifications/Service/Timeline/TimelineWriteService.php",
+   "lib/Notifications/Service/TimelineVisibilityService.php",
+   "lib/Notifications/Service/Webhook/CloudEventFormatter.php"
+  ],
+  "p_files": [
+   "lib/Lifecycle/Action/SetFieldsAction.php",
+   "lib/Mcp/Service/Chat/ContextRetrievalHandler.php",
+   "lib/Mcp/Service/Chat/ConversationManagementHandler.php",
+   "lib/Mcp/Service/Chat/MessageHistoryHandler.php",
+   "lib/Mcp/Service/Chat/ResponseGenerationHandler.php",
+   "lib/Mcp/Service/Chat/ToolManagementHandler.php",
+   "lib/Mcp/Service/ChatService.php",
+   "lib/Mcp/Service/Mcp/McpProtocolService.php",
+   "lib/Mcp/Service/Mcp/McpResourcesService.php",
+   "lib/Mcp/Service/ToolRegistry.php",
+   "lib/Notifications/Service/GraphQL/SubscriptionService.php",
+   "lib/Notifications/Service/Notification/ForcedChannelPolicy.php",
+   "lib/Notifications/Service/Notification/NotificationBroadcastService.php",
+   "lib/Notifications/Service/Notification/NotificationClearingService.php",
+   "lib/Notifications/Service/Notification/NotificationRecipientResolver.php",
+   "lib/Notifications/Service/Notification/NotificationTemplating.php",
+   "lib/Notifications/Service/Notification/OptOutAuthority.php",
+   "lib/Notifications/Service/Notification/ScheduledMessagePolicy.php",
+   "lib/Notifications/Service/Notification/TaskObjectAdapter.php",
+   "lib/Notifications/Service/Notification/TaskObjectAdapters.php",
+   "lib/Notifications/Service/Notification/TaskPoolRecipientResolver.php",
+   "lib/Notifications/Service/Party/PartyNotificationService.php",
+   "lib/Notifications/Service/Timeline/MentionPrincipals.php",
+   "lib/Notifications/Service/Timeline/TextBlockService.php",
+   "lib/Notifications/Service/Timeline/TimelineEntrySearchService.php",
+   "lib/Notifications/Service/Timeline/TimelineEntryService.php",
+   "lib/Notifications/Service/Timeline/TimelineWriteService.php",
+   "lib/Notifications/Service/TimelineVisibilityService.php",
+   "lib/Notifications/Service/Webhook/CloudEventFormatter.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 750,
+   "gt4": 42,
+   "gt6": 18
+  },
+  "target": {
+   "gt2": 183,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Notifications/Service/Notification/NotificationRecipientResolver.php": [
+    "#7882"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 567,
+   "gt4": 42,
+   "gt6": 18
+  },
+  "tsv_gain": {
+   "gt2": 567,
+   "gt4": 42,
+   "gt6": 18
+  }
+ },
+ "Q36": {
+  "id": "Q36",
+  "files": [
+   "lib/Db/MagicMapper/MagicSearchHandler.php",
+   "lib/Service/Handoff/HandoffMappingEvaluator.php",
+   "lib/Service/Handoff/HandoffObjectAccess.php",
+   "lib/Service/Handoff/HandoffRequesters.php",
+   "lib/Service/Handoff/HandoffService.php"
+  ],
+  "p_files": [
+   "lib/Db/MagicMapper/MagicSearchHandler.php",
+   "lib/Service/Handoff/HandoffMappingEvaluator.php",
+   "lib/Service/Handoff/HandoffObjectAccess.php",
+   "lib/Service/Handoff/HandoffRequesters.php",
+   "lib/Service/Handoff/HandoffService.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 1269,
+   "gt4": 171,
+   "gt6": 17
+  },
+  "target": {
+   "gt2": 703,
+   "gt4": 17,
+   "gt6": 17
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Db/MagicMapper/MagicSearchHandler.php": [
+    "#6108"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 566,
+   "gt4": 154,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 566,
+   "gt4": 154,
+   "gt6": 0
+  }
+ },
+ "Q37": {
+  "id": "Q37",
+  "files": [
+   "lib/Service/Geo/PdokGeocoder.php",
+   "lib/Service/Object/ConflictReport.php",
+   "lib/Service/Object/DraftActivation.php",
+   "lib/Service/Object/DraftDiscard.php",
+   "lib/Service/Object/DraftExpiry.php",
+   "lib/Service/Object/DraftFinder.php",
+   "lib/Service/Object/DraftRemovalRecord.php",
+   "lib/Service/Object/MergeHandler.php",
+   "lib/Service/Object/MigrationHandler.php",
+   "lib/Service/Object/SaveObject/FileUploadGuard.php",
+   "lib/Service/Object/SaveObject/ObjectSlugHandler.php",
+   "lib/Service/Object/SaveObject/RelationCascadeHandler.php",
+   "lib/Service/Object/SaveObjects.php",
+   "lib/Service/Object/SearchQueryHandler.php",
+   "lib/Service/Object/ValidateObject.php"
+  ],
+  "p_files": [
+   "lib/Service/Geo/PdokGeocoder.php",
+   "lib/Service/Object/ConflictReport.php",
+   "lib/Service/Object/DraftActivation.php",
+   "lib/Service/Object/DraftDiscard.php",
+   "lib/Service/Object/DraftExpiry.php",
+   "lib/Service/Object/DraftFinder.php",
+   "lib/Service/Object/DraftRemovalRecord.php",
+   "lib/Service/Object/MergeHandler.php",
+   "lib/Service/Object/MigrationHandler.php",
+   "lib/Service/Object/SaveObject/FileUploadGuard.php",
+   "lib/Service/Object/SaveObject/ObjectSlugHandler.php",
+   "lib/Service/Object/SaveObject/RelationCascadeHandler.php",
+   "lib/Service/Object/SaveObjects.php",
+   "lib/Service/Object/SearchQueryHandler.php",
+   "lib/Service/Object/ValidateObject.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 825,
+   "gt4": 79,
+   "gt6": 38
+  },
+  "target": {
+   "gt2": 276,
+   "gt4": 13,
+   "gt6": 13
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Object/SaveObjects.php": [
+    "#7835"
+   ],
+   "lib/Service/Object/SearchQueryHandler.php": [
+    "#6223",
+    "#6224"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 549,
+   "gt4": 66,
+   "gt6": 25
+  },
+  "tsv_gain": {
+   "gt2": 561,
+   "gt4": 66,
+   "gt6": 25
+  }
+ },
+ "Q38": {
+  "id": "Q38",
+  "files": [
+   "lib/Service/FileService.php",
+   "lib/Service/ImportService.php",
+   "lib/Service/RetentionService.php",
+   "lib/Service/Survey/SurveyExportShaper.php",
+   "lib/Service/Survey/SurveyRules.php"
+  ],
+  "p_files": [
+   "lib/Service/FileService.php",
+   "lib/Service/ImportService.php",
+   "lib/Service/RetentionService.php",
+   "lib/Service/Survey/SurveyExportShaper.php",
+   "lib/Service/Survey/SurveyRules.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 714,
+   "gt4": 155,
+   "gt6": 128
+  },
+  "target": {
+   "gt2": 178,
+   "gt4": 30,
+   "gt6": 20
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/FileService.php": [
+    "#7847",
+    "#7879"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 536,
+   "gt4": 125,
+   "gt6": 108
+  },
+  "tsv_gain": {
+   "gt2": 547,
+   "gt4": 125,
+   "gt6": 108
+  }
+ },
+ "Q39": {
+  "id": "Q39",
+  "files": [
+   "lib/Service/Object/SaveObject.php",
+   "lib/Service/Vocabulary/CodedFilterExpander.php",
+   "lib/Service/Vocabulary/CodedOptionsBuilder.php",
+   "lib/Service/Vocabulary/CodedPropertyDeclaration.php",
+   "lib/Service/Vocabulary/CodedValueGuard.php",
+   "lib/Service/Vocabulary/ConceptDeleteGuard.php",
+   "lib/Service/Vocabulary/ConceptHierarchy.php",
+   "lib/Service/Vocabulary/ConceptRepository.php",
+   "lib/Service/Vocabulary/VocabularyDeclarationResolver.php"
+  ],
+  "p_files": [
+   "lib/Service/Object/SaveObject.php",
+   "lib/Service/Vocabulary/CodedFilterExpander.php",
+   "lib/Service/Vocabulary/CodedOptionsBuilder.php",
+   "lib/Service/Vocabulary/CodedPropertyDeclaration.php",
+   "lib/Service/Vocabulary/CodedValueGuard.php",
+   "lib/Service/Vocabulary/ConceptDeleteGuard.php",
+   "lib/Service/Vocabulary/ConceptHierarchy.php",
+   "lib/Service/Vocabulary/ConceptRepository.php",
+   "lib/Service/Vocabulary/VocabularyDeclarationResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 863,
+   "gt4": 77,
+   "gt6": 44
+  },
+  "target": {
+   "gt2": 319,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Object/SaveObject.php": [
+    "#5046",
+    "#5116"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 544,
+   "gt4": 77,
+   "gt6": 44
+  },
+  "tsv_gain": {
+   "gt2": 544,
+   "gt4": 77,
+   "gt6": 44
+  }
+ },
+ "Q40": {
+  "id": "Q40",
+  "files": [
+   "lib/Notifications/Controller/EmailsController.php",
+   "lib/Notifications/Controller/GraphQLSubscriptionController.php",
+   "lib/Notifications/Controller/NotesController.php",
+   "lib/Notifications/Controller/NotificationBroadcastController.php",
+   "lib/Notifications/Controller/NotificationDeliveryWindowController.php",
+   "lib/Notifications/Controller/NotificationGroupPreferencesController.php",
+   "lib/Notifications/Controller/NotificationHistoryController.php",
+   "lib/Notifications/Controller/NotificationPreferencesController.php",
+   "lib/Notifications/Controller/NotificationSubscriptionsController.php",
+   "lib/Notifications/Controller/NotificationTemplatesController.php",
+   "lib/Notifications/Controller/ObjectWatchersController.php",
+   "lib/Notifications/Controller/ScheduledReportsController.php",
+   "lib/Notifications/Controller/Support/NotificationHistoryControllerServices.php",
+   "lib/Notifications/Controller/Support/NotificationSubscriptionsControllerServices.php",
+   "lib/Notifications/Controller/TimelineAdminController.php",
+   "lib/Notifications/Controller/TimelineEntriesController.php",
+   "lib/Service/BulkJob/BulkJobExecutor.php",
+   "lib/Service/BulkJob/BulkJobGuards.php",
+   "lib/Service/BulkJob/BulkJobReversal.php",
+   "lib/Service/BulkJob/BulkJobService.php",
+   "lib/Service/BulkJob/BulkSelectionResolver.php",
+   "lib/Service/Relation/LinkExposure.php",
+   "lib/Service/Relation/ObjectRelationService.php",
+   "lib/Service/Relation/ObjectTreeMappers.php",
+   "lib/Service/Relation/ObjectTreeService.php",
+   "lib/Service/Relation/RelationGraphService.php",
+   "lib/Service/Relation/RelationRowFields.php",
+   "lib/Service/Relation/RelationTypeResolver.php"
+  ],
+  "p_files": [
+   "lib/Notifications/Controller/EmailsController.php",
+   "lib/Notifications/Controller/GraphQLSubscriptionController.php",
+   "lib/Notifications/Controller/NotesController.php",
+   "lib/Notifications/Controller/NotificationBroadcastController.php",
+   "lib/Notifications/Controller/NotificationDeliveryWindowController.php",
+   "lib/Notifications/Controller/NotificationGroupPreferencesController.php",
+   "lib/Notifications/Controller/NotificationHistoryController.php",
+   "lib/Notifications/Controller/NotificationPreferencesController.php",
+   "lib/Notifications/Controller/NotificationSubscriptionsController.php",
+   "lib/Notifications/Controller/NotificationTemplatesController.php",
+   "lib/Notifications/Controller/ObjectWatchersController.php",
+   "lib/Notifications/Controller/ScheduledReportsController.php",
+   "lib/Notifications/Controller/Support/NotificationHistoryControllerServices.php",
+   "lib/Notifications/Controller/Support/NotificationSubscriptionsControllerServices.php",
+   "lib/Notifications/Controller/TimelineAdminController.php",
+   "lib/Notifications/Controller/TimelineEntriesController.php",
+   "lib/Service/BulkJob/BulkJobExecutor.php",
+   "lib/Service/BulkJob/BulkJobGuards.php",
+   "lib/Service/BulkJob/BulkJobReversal.php",
+   "lib/Service/BulkJob/BulkJobService.php",
+   "lib/Service/BulkJob/BulkSelectionResolver.php",
+   "lib/Service/Relation/LinkExposure.php",
+   "lib/Service/Relation/ObjectRelationService.php",
+   "lib/Service/Relation/ObjectTreeMappers.php",
+   "lib/Service/Relation/ObjectTreeService.php",
+   "lib/Service/Relation/RelationGraphService.php",
+   "lib/Service/Relation/RelationRowFields.php",
+   "lib/Service/Relation/RelationTypeResolver.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 876,
+   "gt4": 21,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 336,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Relation/LinkExposure.php": [
+    "#6973"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 540,
+   "gt4": 21,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 540,
+   "gt4": 21,
+   "gt6": 0
+  }
+ },
+ "Q41": {
+  "id": "Q41",
+  "files": [
+   "lib/Service/ApiVersion/ApiVersion.php",
+   "lib/Service/Connection/ConnectionReporter.php",
+   "lib/Service/Object/DeleteObject.php",
+   "lib/Service/Object/RenderObject.php"
+  ],
+  "p_files": [
+   "lib/Service/ApiVersion/ApiVersion.php",
+   "lib/Service/Connection/ConnectionReporter.php",
+   "lib/Service/Object/DeleteObject.php",
+   "lib/Service/Object/RenderObject.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 782,
+   "gt4": 228,
+   "gt6": 203
+  },
+  "target": {
+   "gt2": 253,
+   "gt4": 14,
+   "gt6": 14
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Object/DeleteObject.php": [
+    "#5497"
+   ],
+   "lib/Service/Object/RenderObject.php": [
+    "#5046",
+    "#5116"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 529,
+   "gt4": 214,
+   "gt6": 189
+  },
+  "tsv_gain": {
+   "gt2": 529,
+   "gt4": 214,
+   "gt6": 189
+  }
+ },
+ "Q42": {
+  "id": "Q42",
+  "files": [
+   "lib/Notification/AnnotationNotifier.php",
+   "lib/Service/Gdpr/Case/CaseAccessControl.php",
+   "lib/Service/Gdpr/DataSubjectRequestService.php",
+   "lib/Service/Gdpr/DpiaPatternDetectionService.php",
+   "lib/Service/Gdpr/Erasure/CoSubjectProbe.php",
+   "lib/Service/Gdpr/Erasure/ErasureDestroyer.php",
+   "lib/Service/Gdpr/Erasure/ErasurePreviewService.php",
+   "lib/Service/Gdpr/Erasure/ErasurePreviewStore.php",
+   "lib/Service/Gdpr/Erasure/ErasureRunner.php",
+   "lib/Service/Gdpr/Evidence/EvidenceHarvestService.php",
+   "lib/Service/Gdpr/Export/SubjectExportService.php",
+   "lib/Service/Gdpr/Lifecycle/DenialFinaliseGuard.php",
+   "lib/Service/Gdpr/Redaction/RedactionWriteService.php",
+   "lib/Service/Gdpr/Retention/RetentionSweepService.php",
+   "lib/Service/Gdpr/Seam/ProviderSet.php",
+   "lib/Service/Gdpr/Subject/SubjectEntityIndex.php",
+   "lib/Service/Gdpr/Subject/SubjectObjectLoader.php",
+   "lib/Service/Object/BulkSaveSession.php",
+   "lib/Service/Object/BulkSaveStores.php",
+   "lib/Service/Object/CacheHandlerStores.php",
+   "lib/Service/Object/CacheNameScopeSources.php",
+   "lib/Service/Object/ContentSearchHandler.php",
+   "lib/Service/Object/CorrectionTargets.php",
+   "lib/Service/Object/DraftStatusPolicy.php",
+   "lib/Service/Object/IntegrityRelationIndex.php",
+   "lib/Service/Object/LockAuthorization.php",
+   "lib/Service/Object/ObjectSlugBackfillService.php",
+   "lib/Service/Object/Permission/PermissionCallerServices.php",
+   "lib/Service/Object/Permission/PermissionDataServices.php",
+   "lib/Service/Object/RelationHandlerStores.php",
+   "lib/Service/Object/RelationTables.php",
+   "lib/Service/Object/RenderMappers.php",
+   "lib/Service/Object/SaveObject/ComputedFieldHandler.php",
+   "lib/Service/Object/SaveObject/FilePropertyParts.php",
+   "lib/Service/Object/SaveObject/InverseRelations.php",
+   "lib/Service/Object/SaveObject/SaveObjectMappers.php",
+   "lib/Service/Object/SaveObjects/BulkRowPropertyAuthorization.php",
+   "lib/Service/Object/SearchReferenceResolver.php",
+   "lib/Service/Object/UpsertOnKeyHandler.php",
+   "lib/Service/Object/ValidationMappers.php"
+  ],
+  "p_files": [
+   "lib/Notification/AnnotationNotifier.php",
+   "lib/Service/Gdpr/Case/CaseAccessControl.php",
+   "lib/Service/Gdpr/DataSubjectRequestService.php",
+   "lib/Service/Gdpr/DpiaPatternDetectionService.php",
+   "lib/Service/Gdpr/Erasure/CoSubjectProbe.php",
+   "lib/Service/Gdpr/Erasure/ErasureDestroyer.php",
+   "lib/Service/Gdpr/Erasure/ErasurePreviewService.php",
+   "lib/Service/Gdpr/Erasure/ErasurePreviewStore.php",
+   "lib/Service/Gdpr/Erasure/ErasureRunner.php",
+   "lib/Service/Gdpr/Evidence/EvidenceHarvestService.php",
+   "lib/Service/Gdpr/Export/SubjectExportService.php",
+   "lib/Service/Gdpr/Lifecycle/DenialFinaliseGuard.php",
+   "lib/Service/Gdpr/Redaction/RedactionWriteService.php",
+   "lib/Service/Gdpr/Retention/RetentionSweepService.php",
+   "lib/Service/Gdpr/Seam/ProviderSet.php",
+   "lib/Service/Gdpr/Subject/SubjectEntityIndex.php",
+   "lib/Service/Gdpr/Subject/SubjectObjectLoader.php",
+   "lib/Service/Object/BulkSaveSession.php",
+   "lib/Service/Object/BulkSaveStores.php",
+   "lib/Service/Object/CacheHandlerStores.php",
+   "lib/Service/Object/CacheNameScopeSources.php",
+   "lib/Service/Object/ContentSearchHandler.php",
+   "lib/Service/Object/CorrectionTargets.php",
+   "lib/Service/Object/DraftStatusPolicy.php",
+   "lib/Service/Object/IntegrityRelationIndex.php",
+   "lib/Service/Object/LockAuthorization.php",
+   "lib/Service/Object/ObjectSlugBackfillService.php",
+   "lib/Service/Object/Permission/PermissionCallerServices.php",
+   "lib/Service/Object/Permission/PermissionDataServices.php",
+   "lib/Service/Object/RelationHandlerStores.php",
+   "lib/Service/Object/RelationTables.php",
+   "lib/Service/Object/RenderMappers.php",
+   "lib/Service/Object/SaveObject/ComputedFieldHandler.php",
+   "lib/Service/Object/SaveObject/FilePropertyParts.php",
+   "lib/Service/Object/SaveObject/InverseRelations.php",
+   "lib/Service/Object/SaveObject/SaveObjectMappers.php",
+   "lib/Service/Object/SaveObjects/BulkRowPropertyAuthorization.php",
+   "lib/Service/Object/SearchReferenceResolver.php",
+   "lib/Service/Object/UpsertOnKeyHandler.php",
+   "lib/Service/Object/ValidationMappers.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 916,
+   "gt4": 118,
+   "gt6": 56
+  },
+  "target": {
+   "gt2": 388,
+   "gt4": 45,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/Object/ContentSearchHandler.php": [
+    "#5497"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 528,
+   "gt4": 73,
+   "gt6": 56
+  },
+  "tsv_gain": {
+   "gt2": 528,
+   "gt4": 73,
+   "gt6": 56
+  }
+ },
+ "Q43": {
+  "id": "Q43",
+  "files": [
+   "lib/Service/Edepot/EdepotTransferService.php",
+   "lib/Service/Edepot/MdtoDocumentWriter.php",
+   "lib/Service/Edepot/MdtoSourceReader.php",
+   "lib/Service/Edepot/MdtoValueReader.php",
+   "lib/Service/Edepot/MdtoXmlGenerator.php",
+   "lib/Service/Edepot/SipMetsDocument.php",
+   "lib/Service/Edepot/SipPackageBuilder.php",
+   "lib/Service/Edepot/TransferAttempt.php",
+   "lib/Service/Edepot/TransferAuditLog.php",
+   "lib/Service/Edepot/TransferListService.php",
+   "lib/Service/Edepot/TransferResultProcessor.php",
+   "lib/Service/Resolver/Exception/MissingConfigException.php",
+   "lib/Service/Resolver/Exception/PropertyNotFoundException.php",
+   "lib/Service/Resolver/Exception/RegisterNotFoundException.php",
+   "lib/Service/Resolver/Exception/SchemaNotFoundException.php",
+   "lib/Service/ShippedBaseline/DescriptorParts.php",
+   "lib/Service/ShippedBaseline/DivergenceComparator.php",
+   "lib/Service/ShippedBaseline/GuardedDescriptorMerge.php",
+   "lib/Service/ShippedBaseline/ShippedBaselineResetService.php",
+   "lib/Service/ShippedBaseline/ShippedBaselineStore.php",
+   "lib/Service/ShippedBaseline/ShippedConfigurationGuard.php"
+  ],
+  "p_files": [
+   "lib/Service/Edepot/EdepotTransferService.php",
+   "lib/Service/Edepot/MdtoDocumentWriter.php",
+   "lib/Service/Edepot/MdtoSourceReader.php",
+   "lib/Service/Edepot/MdtoValueReader.php",
+   "lib/Service/Edepot/MdtoXmlGenerator.php",
+   "lib/Service/Edepot/SipMetsDocument.php",
+   "lib/Service/Edepot/SipPackageBuilder.php",
+   "lib/Service/Edepot/TransferAttempt.php",
+   "lib/Service/Edepot/TransferAuditLog.php",
+   "lib/Service/Edepot/TransferListService.php",
+   "lib/Service/Edepot/TransferResultProcessor.php",
+   "lib/Service/Resolver/Exception/MissingConfigException.php",
+   "lib/Service/Resolver/Exception/PropertyNotFoundException.php",
+   "lib/Service/Resolver/Exception/RegisterNotFoundException.php",
+   "lib/Service/Resolver/Exception/SchemaNotFoundException.php",
+   "lib/Service/ShippedBaseline/DescriptorParts.php",
+   "lib/Service/ShippedBaseline/DivergenceComparator.php",
+   "lib/Service/ShippedBaseline/GuardedDescriptorMerge.php",
+   "lib/Service/ShippedBaseline/ShippedBaselineResetService.php",
+   "lib/Service/ShippedBaseline/ShippedBaselineStore.php",
+   "lib/Service/ShippedBaseline/ShippedConfigurationGuard.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 784,
+   "gt4": 145,
+   "gt6": 77
+  },
+  "target": {
+   "gt2": 256,
+   "gt4": 27,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Service/ShippedBaseline/ShippedBaselineResetService.php": [
+    "#4365"
+   ],
+   "lib/Service/ShippedBaseline/ShippedConfigurationGuard.php": [
+    "#4365"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 528,
+   "gt4": 118,
+   "gt6": 77
+  },
+  "tsv_gain": {
+   "gt2": 528,
+   "gt4": 118,
+   "gt6": 77
+  }
+ },
+ "Q44": {
+  "id": "Q44",
+  "files": [
+   "lib/Files/Service/File/FileOwnershipHandler.php",
+   "lib/Files/Service/File/FileReadScope.php",
+   "lib/Files/Service/File/FileRestrictionGuard.php",
+   "lib/Files/Service/File/FileRestrictionStore.php",
+   "lib/Files/Service/File/ManualEntityService.php",
+   "lib/Files/Service/File/ObjectFileAccess.php",
+   "lib/Files/Service/File/ObjectFileMigration.php",
+   "lib/Files/Service/File/ObjectFolderBrowser.php",
+   "lib/Files/Service/File/ObjectFolderUploads.php",
+   "lib/Files/Service/File/OfficeSession.php",
+   "lib/Files/Service/File/SanitizationReport.php",
+   "lib/Files/Service/FileSidebarService.php",
+   "lib/Files/Service/Integration/TalkChatExporter.php",
+   "lib/Files/Service/NoteVersionService.php",
+   "lib/Files/Service/Sharing/AccessLinkReader.php",
+   "lib/Files/Service/TextExtraction/DocumentBodyParser.php",
+   "lib/Files/Service/TextExtraction/ObjectHandler.php",
+   "lib/Files/Service/TextExtraction/TextExtractionObjects.php",
+   "lib/Search/BackgroundJob/AggregationThresholdJob.php",
+   "lib/Search/BackgroundJob/ReportRenderJob.php",
+   "lib/Search/BackgroundJob/SearchIndexRebuildJob.php",
+   "lib/Search/BackgroundJob/Support/ReportRenderSources.php",
+   "lib/Search/Controller/AggregationController.php",
+   "lib/Search/Controller/ContactSearchController.php",
+   "lib/Search/Controller/DashboardController.php",
+   "lib/Search/Controller/DuplicateController.php",
+   "lib/Search/Controller/GraphQLController.php",
+   "lib/Search/Controller/MapsOverviewController.php",
+   "lib/Search/Controller/ReportsController.php",
+   "lib/Search/Controller/SearchController.php",
+   "lib/Search/Controller/Support/DashboardControllerServices.php",
+   "lib/Search/Controller/ViewsController.php"
+  ],
+  "p_files": [
+   "lib/Files/Service/File/FileOwnershipHandler.php",
+   "lib/Files/Service/File/FileReadScope.php",
+   "lib/Files/Service/File/FileRestrictionGuard.php",
+   "lib/Files/Service/File/FileRestrictionStore.php",
+   "lib/Files/Service/File/ManualEntityService.php",
+   "lib/Files/Service/File/ObjectFileAccess.php",
+   "lib/Files/Service/File/ObjectFileMigration.php",
+   "lib/Files/Service/File/ObjectFolderBrowser.php",
+   "lib/Files/Service/File/ObjectFolderUploads.php",
+   "lib/Files/Service/File/OfficeSession.php",
+   "lib/Files/Service/File/SanitizationReport.php",
+   "lib/Files/Service/FileSidebarService.php",
+   "lib/Files/Service/Integration/TalkChatExporter.php",
+   "lib/Files/Service/NoteVersionService.php",
+   "lib/Files/Service/Sharing/AccessLinkReader.php",
+   "lib/Files/Service/TextExtraction/DocumentBodyParser.php",
+   "lib/Files/Service/TextExtraction/ObjectHandler.php",
+   "lib/Files/Service/TextExtraction/TextExtractionObjects.php",
+   "lib/Search/BackgroundJob/AggregationThresholdJob.php",
+   "lib/Search/BackgroundJob/ReportRenderJob.php",
+   "lib/Search/BackgroundJob/SearchIndexRebuildJob.php",
+   "lib/Search/BackgroundJob/Support/ReportRenderSources.php",
+   "lib/Search/Controller/AggregationController.php",
+   "lib/Search/Controller/ContactSearchController.php",
+   "lib/Search/Controller/DashboardController.php",
+   "lib/Search/Controller/DuplicateController.php",
+   "lib/Search/Controller/GraphQLController.php",
+   "lib/Search/Controller/MapsOverviewController.php",
+   "lib/Search/Controller/ReportsController.php",
+   "lib/Search/Controller/SearchController.php",
+   "lib/Search/Controller/Support/DashboardControllerServices.php",
+   "lib/Search/Controller/ViewsController.php"
+  ],
+  "i_targets": [],
+  "moves": [],
+  "before": {
+   "gt2": 827,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "target": {
+   "gt2": 313,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "deferred": [],
+  "away": {},
+  "held": {
+   "lib/Search/Controller/GraphQLController.php": [
+    "#6108"
+   ]
+  },
+  "plan_gain": {
+   "gt2": 514,
+   "gt4": 0,
+   "gt6": 0
+  },
+  "tsv_gain": {
+   "gt2": 514,
+   "gt4": 0,
+   "gt6": 0
+  }
+ }
+}
