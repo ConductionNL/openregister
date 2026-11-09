@@ -53,10 +53,11 @@ class FlowLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new FlowLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new \OCA\OpenRegister\Controller\Support\FlowLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			),
 		);
 	}
 

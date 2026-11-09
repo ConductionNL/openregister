@@ -103,7 +103,6 @@ final class B15SettingsRegistryControllersGoldenTest extends TestCase {
 		$service = $this->createMock(ApplicationServiceInterface::class);
 		$service->expects($this->once())->method('update')->with(9, ['name' => 'n'])->willReturn(new Application());
 		$controller = ApplicationsControllerFactory::create(
-			'openregister',
 			$request,
 			$service,
 			$this->createMock(ApplicationMapperInterface::class),

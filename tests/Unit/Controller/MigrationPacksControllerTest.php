@@ -131,7 +131,6 @@ class MigrationPacksControllerTest extends TestCase {
 	 */
 	private function controllerFor(IRequest $request, ?MigrationPackService $service = null): MigrationPacksController {
 		return MigrationPacksControllerFactory::create(
-			'openregister',
 			$request,
 			$service ?? $this->service,
 			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->logger),
