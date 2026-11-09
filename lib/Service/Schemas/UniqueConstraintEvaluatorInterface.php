@@ -52,6 +52,8 @@ interface UniqueConstraintEvaluatorInterface {
 	 * @param UniqueConflict $conflict The submitted object data and who holds the combination already.
 	 *
 	 * @return string The message.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function describeBreach(array $constraint, UniqueConflict $conflict): string;
 
