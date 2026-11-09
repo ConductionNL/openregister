@@ -16,6 +16,7 @@
  * @param {string} failure The message shown when the error carries none
  * @param {(error: Error) => void} [onError] Called with the error before `error` is set
  * @return {Promise<void>} Settles once the outcome is shown
+ * @spec exclude Client-side dialog state plumbing around a store request.
  */
 export async function runDialogRequest(dialog, request, failure, onError) {
 	dialog.loading = true
