@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
@@ -138,16 +139,14 @@ class ImportPreviewController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param ImportPreviewControllerServices $services The import preview controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ImportPreviewControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->domain->service;
 		$this->previewMapper = $services->mappers->previewMapper;
 		$this->rowMapper = $services->mappers->rowMapper;
