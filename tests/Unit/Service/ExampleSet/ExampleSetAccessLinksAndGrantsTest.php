@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Rbac\ShareTimeWriter;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
@@ -253,7 +254,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			userId: 'esra.demir',
 			subjectType: 'object',
 			subjectId: $this->caseId(),
-			expiresAt: '+10 years'
+			terms: new AccessLinkTerms(
+				expiresAt: '+10 years'
+			)
 		);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -882,17 +885,10 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		});
 
 		return new ObjectSharingService(
-			authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class),
-			userSession: $session,
-			groupManager: $groups,
-			folders: $folders,
-			scopeResolver: new ObjectScopeResolver(),
-			grantResolver: $this->createMock(ObjectGrantResolver::class),
-			shareManager: $this->shareManager(),
-			logger: new NullLogger(),
-			inheritedGrants: $this->createMock(InheritedGrantLister::class),
-			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			shareTimes: $times
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $this->shareManager(), shareTimes: $times),
+			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class), scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
+			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger()),
+			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
 		);
 	}//end sharingService()
 

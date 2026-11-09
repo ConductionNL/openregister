@@ -9,6 +9,7 @@ use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
@@ -53,9 +54,8 @@ class DeletedControllerGapTest extends TestCase {
 		$deletion = new DeletionServiceBundle(
 			$this->createMock(originalClassName: DeletionWindowService::class),
 			$this->createMock(originalClassName: DestroyRightService::class),
-			$this->createMock(originalClassName: DestructionScopeService::class),
-			$this->createMock(originalClassName: DestructionRecorder::class),
 			$this->createMock(originalClassName: RetentionClockService::class),
+			new DestructionServices($this->createMock(originalClassName: DestructionScopeService::class), $this->createMock(originalClassName: DestructionRecorder::class)),
 		);
 
 		$authorizer = new DeletedObjectAuthorizer(

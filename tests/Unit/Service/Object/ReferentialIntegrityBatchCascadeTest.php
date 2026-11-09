@@ -41,6 +41,7 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -163,7 +164,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	 * @return DeletionAnalysis
 	 */
 	private function analysisWithCascade(array $targets): DeletionAnalysis {
-		return new DeletionAnalysis(deletable: true, cascadeTargets: $targets);
+		return new DeletionAnalysis(deletable: true, effects: new DeletionEffects(cascadeTargets: $targets));
 	}//end analysisWithCascade()
 
 	/**
@@ -743,15 +744,17 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [
-				[
-					'objectUuid' => 'dep-uuid',
-					'schema' => '1',
-					'property' => 'parentRef',
-					'isArray' => false,
-					'sourceUuid' => 'root-uuid',
-				],
-			]
+			effects: new DeletionEffects(
+				nullifyTargets: [
+					[
+						'objectUuid' => 'dep-uuid',
+						'schema' => '1',
+						'property' => 'parentRef',
+						'isArray' => false,
+						'sourceUuid' => 'root-uuid',
+					],
+				]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');

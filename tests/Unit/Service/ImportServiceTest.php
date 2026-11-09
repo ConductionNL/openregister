@@ -73,15 +73,10 @@ class ImportServiceTest extends TestCase {
 			->willReturnCallback(static fn (array $row) => $row);
 
 		$this->service = new ImportService(
-			$this->schemaMapper,
-			$this->objectService,
-			$this->logger,
-			$this->groupManager,
-			$translationCsvCodec,
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new \OCA\OpenRegister\Service\MigrationPack\MappingEngine($this->passThroughL10n()),
-			$this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
-			$this->createMock(\Psr\Container\ContainerInterface::class)
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->schemaMapper, $this->objectService, $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class), $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, new \OCA\OpenRegister\Service\MigrationPack\MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($this->createMock(\Psr\Container\ContainerInterface::class), new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->logger),
+			$this->groupManager
 		);
 	}
 

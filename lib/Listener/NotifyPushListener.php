@@ -52,7 +52,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\Support\PushSlugResolver;
-use OCA\OpenRegister\Push\PushEvents;
+use OCA\OpenRegister\Push\PushChannels;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -291,7 +291,7 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	private function dispatchPushes(string $action, ObjectEntity $object, object $queue): void {
 		$payload = $this->lifecyclePayload(action: $action, object: $object);
 		$userIds = $this->permissionHandler->getReadableByUsers(object: $object);
-		$objectChannel = PushEvents::OR_OBJECT . '-' . $payload['uuid'];
+		$objectChannel = PushChannels::OR_OBJECT . '-' . $payload['uuid'];
 		$pushed = $this->pushToUsers(queue: $queue, userIds: $userIds, channel: $objectChannel, payload: $payload);
 
 		$collectionChannel = $this->collectionChannel(payload: $payload);
@@ -339,7 +339,7 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 			return null;
 		}
 
-		return PushEvents::OR_COLLECTION . '-' . $payload['register'] . '-' . $payload['schema'];
+		return PushChannels::OR_COLLECTION . '-' . $payload['register'] . '-' . $payload['schema'];
 	}//end collectionChannel()
 
 	/**
@@ -519,7 +519,7 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 		$queue->push(
 			'notify_custom',
 			[
-				'message' => PushEvents::OR_COLLECTION . '-' . $entry['register'] . '-' . $entry['schema'],
+				'message' => PushChannels::OR_COLLECTION . '-' . $entry['register'] . '-' . $entry['schema'],
 				'body' => [
 					'action' => 'batch',
 					'register' => $entry['register'],
@@ -608,6 +608,6 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 		$payload = ['action' => 'presence', 'uuid' => $uuid, 'present' => array_values($present)];
 		$readers = $this->permissionHandler->getReadableByUsers(object: $object);
 
-		return $this->pushToUsers(queue: $queue, userIds: $readers, channel: PushEvents::OR_OBJECT . '-' . $uuid, payload: $payload);
+		return $this->pushToUsers(queue: $queue, userIds: $readers, channel: PushChannels::OR_OBJECT . '-' . $uuid, payload: $payload);
 	}//end pushPresence()
 }//end class

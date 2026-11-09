@@ -81,7 +81,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -125,7 +125,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper      $flowMapper    Reads and removes rows in the flow table.
+	 * @param FlowMapperInterface      $flowMapper    Reads and removes rows in the flow table.
 	 * @param FlowRunMapperInterface   $flowRunMapper Proves a row has never been dispatched.
 	 * @param MagicMapperInterface     $objectMapper  Resolves a uuid back to the object it was copied from.
 	 * @param SchemaMapperInterface    $schemaMapper  Turns that object's schema reference into a slug.
@@ -134,7 +134,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly FlowMapper $flowMapper,
+		private readonly FlowMapperInterface $flowMapper,
 		private readonly FlowRunMapperInterface $flowRunMapper,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,

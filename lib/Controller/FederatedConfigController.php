@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
+use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCP\AppFramework\Controller;
@@ -264,11 +265,8 @@ class FederatedConfigController extends Controller {
 			$result = $this->service->publish(
 				typeId: $type,
 				selection: (array)$this->request->getParam('selection', []),
-				repo: $repo,
-				path: $path,
-				credentialId: $credentialId,
-				branch: $branch,
-				private: $private
+				target: new ConfigPublishTarget(repo: $repo, path: $path, branch: $branch, private: $private),
+				credentialId: $credentialId
 			);
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);

@@ -66,30 +66,28 @@ class ObjectActionFlowRun {
 	 * A writeOnly input is held aside for the run's duration and never stored
 	 * in the run's context.
 	 *
-	 * @param ObjectEntity           $object     The subject.
-	 * @param Schema                 $schema     Its schema.
+	 * @param ObjectActionTarget     $target     The subject, its schema and its address as the caller named it.
 	 * @param ObjectActionDefinition $definition The checked action.
 	 * @param array<string, mixed>   $inputs     The inputs, defaults resolved.
-	 * @param array<string, mixed>   $subject    `{uuid, register, schema}`.
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The answer.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function run(ObjectEntity $object, Schema $schema, ObjectActionDefinition $definition, array $inputs, array $subject): array {
+	public function run(ObjectActionTarget $target, ObjectActionDefinition $definition, array $inputs): array {
 		[$storable, $secret] = $this->inputs->split(inputs: $inputs, writeOnly: $definition->writeOnlyInputs());
 		$ref     = $this->holdSecrets(secret: $secret);
 		$context = $this->context(definition: $definition, storable: $storable, ref: $ref);
 
 		try {
-			$start = $this->start(schema: $schema, definition: $definition, subject: $subject, context: $context);
+			$start = $this->start(schema: $target->schema, definition: $definition, subject: $target->subject(), context: $context);
 		} catch (Throwable $e) {
 			return $this->failed(definition: $definition, error: $e);
 		} finally {
 			$this->releaseSecrets(ref: $ref);
 		}
 
-		return $this->answerFor(object: $object, definition: $definition, start: $start, inputs: $storable);
+		return $this->answerFor(object: $target->object, definition: $definition, start: $start, inputs: $storable);
 	}//end run()
 
 	/**

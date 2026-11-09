@@ -46,15 +46,13 @@ class PropertyNotFoundException extends UnresolvedValueException {
 	/**
 	 * Construct the not-found exception with diagnostic context.
 	 *
-	 * @param string $appId Consumer app id.
-	 * @param string $configKey Config key that resolved.
-	 * @param string $resolvedValue Slug/UUID/name the lookup attempted.
-	 * @param string $schemaIdentifier Schema slug/UUID the lookup targeted.
-	 * @param Exception|null $previous Previous exception in the chain.
+	 * @param ResolverConfigKey $config           The app and config key that resolved.
+	 * @param string            $resolvedValue    Slug/UUID/name the lookup attempted.
+	 * @param string            $schemaIdentifier Schema slug/UUID the lookup targeted.
+	 * @param Exception|null    $previous         Previous exception in the chain.
 	 */
 	public function __construct(
-		string $appId,
-		string $configKey,
+		ResolverConfigKey $config,
 		string $resolvedValue,
 		string $schemaIdentifier,
 		?Exception $previous = null,
@@ -62,14 +60,13 @@ class PropertyNotFoundException extends UnresolvedValueException {
 		$this->schemaIdentifier = $schemaIdentifier;
 
 		parent::__construct(
-			appId: $appId,
-			configKey: $configKey,
+			config: $config,
 			resolvedValue: $resolvedValue,
 			message: sprintf(
 				'Property "%s" (from config key "%s" on app "%s") not found on schema "%s".',
 				$resolvedValue,
-				$configKey,
-				$appId,
+				$config->configKey,
+				$config->appId,
 				$schemaIdentifier
 			),
 			previous: $previous

@@ -4,7 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "development"
     open-pull-requests-limit: 10
     # HELD BACK DELIBERATELY, not out of caution. Each of these is blocked by a
     # package we do not control, and dependabot cannot see that, so it proposes
@@ -66,7 +65,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "development"
     open-pull-requests-limit: 10
     cooldown:
       default-days: 2

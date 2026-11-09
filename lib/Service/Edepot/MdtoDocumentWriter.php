@@ -189,23 +189,21 @@ class MdtoDocumentWriter {
 	 *
 	 * @param DOMElement $parent The parent element.
 	 * @param string $name The element name, without prefix.
-	 * @param string $label The begripLabel.
-	 * @param string|null $code The begripCode, omitted when null or empty.
-	 * @param string $list The begrippenlijst name.
+	 * @param MdtoBegrip $begrip The term.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	public function begrip(DOMElement $parent, string $name, string $label, ?string $code, string $list): void {
+	public function begrip(DOMElement $parent, string $name, MdtoBegrip $begrip): void {
 		$element = $this->element(parent: $parent, name: $name);
 
-		$this->text(parent: $element, name: 'begripLabel', content: $label);
-		if (($code ?? '') !== '') {
-			$this->text(parent: $element, name: 'begripCode', content: (string)$code);
+		$this->text(parent: $element, name: 'begripLabel', content: $begrip->label);
+		if (($begrip->code ?? '') !== '') {
+			$this->text(parent: $element, name: 'begripCode', content: (string)$begrip->code);
 		}
 
-		$this->verwijzing(parent: $element, name: 'begripBegrippenlijst', verwijzingNaam: $list);
+		$this->verwijzing(parent: $element, name: 'begripBegrippenlijst', verwijzing: new MdtoVerwijzing(naam: $begrip->list));
 	}//end begrip()
 
 	/**
@@ -227,25 +225,17 @@ class MdtoDocumentWriter {
 	 *
 	 * @param DOMElement $parent The parent element.
 	 * @param string $name The element name, without prefix.
-	 * @param string $verwijzingNaam The name of the referenced object.
-	 * @param string|null $kenmerk The reference key, omitted with its bron when null or empty.
-	 * @param string|null $bron The source within which the key is unique.
+	 * @param MdtoVerwijzing $verwijzing The reference.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
-	public function verwijzing(
-		DOMElement $parent,
-		string $name,
-		string $verwijzingNaam,
-		?string $kenmerk = null,
-		?string $bron = null,
-	): void {
+	public function verwijzing(DOMElement $parent, string $name, MdtoVerwijzing $verwijzing): void {
 		$element = $this->element(parent: $parent, name: $name);
-		$this->text(parent: $element, name: 'verwijzingNaam', content: $verwijzingNaam);
-		if (($kenmerk ?? '') !== '' && ($bron ?? '') !== '') {
-			$this->identificatie(parent: $element, name: 'verwijzingIdentificatie', kenmerk: (string)$kenmerk, bron: (string)$bron);
+		$this->text(parent: $element, name: 'verwijzingNaam', content: $verwijzing->naam);
+		if (($verwijzing->kenmerk ?? '') !== '' && ($verwijzing->bron ?? '') !== '') {
+			$this->identificatie(parent: $element, name: 'verwijzingIdentificatie', kenmerk: (string)$verwijzing->kenmerk, bron: (string)$verwijzing->bron);
 		}
 	}//end verwijzing()
 

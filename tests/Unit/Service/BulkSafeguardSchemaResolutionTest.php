@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -129,7 +130,7 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 
 		$passed = $method->invokeArgs(
 			$this->service,
-			[$objects, null, $schema, ['rbac' => true, 'validation' => false], &$result]
+			[$objects, new BulkBatchDefaults(null, $schema), ['rbac' => true, 'validation' => false], &$result]
 		);
 
 		return [$passed, $result];

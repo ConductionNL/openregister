@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
@@ -83,9 +84,8 @@ class DeletedControllerReadScopeTest extends TestCase {
 		$deletion = new DeletionServiceBundle(
 			$this->createMock(DeletionWindowService::class),
 			$this->createMock(DestroyRightService::class),
-			$this->createMock(DestructionScopeService::class),
-			$this->createMock(DestructionRecorder::class),
 			$this->createMock(RetentionClockService::class),
+			new DestructionServices($this->createMock(DestructionScopeService::class), $this->createMock(DestructionRecorder::class)),
 		);
 
 		$authorizer = new DeletedObjectAuthorizer(

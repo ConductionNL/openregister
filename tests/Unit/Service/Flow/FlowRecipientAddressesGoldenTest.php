@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Service\Flow\FlowRecipientAddresses;
 use PHPUnit\Framework\TestCase;
 
@@ -69,11 +68,10 @@ class FlowRecipientAddressesGoldenTest extends TestCase {
 			return in_array($uid, ['alice', 'bob@corp.example', 'carol'], true);
 		});
 		$resolver->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'staff');
-		$resolver->method('resolve')->willReturnCallback(function (array $recipientsSpec, RecipientSource $source): array {
-			$data = $source->data;
+		$resolver->method('resolveWithDiagnostics')->willReturnCallback(function (array $recipientsSpec, array $data): array {
 			$this->resolveCalls[] = ['spec' => $recipientsSpec, 'data' => $data];
 			if ($recipientsSpec[0]['kind'] === 'groups') {
-				return ['g1' => 'dave', 'g2' => 'erin'];
+				return ['uids' => ['dave', 'erin'], 'unresolved' => []];
 			}
 
 			$found = [];
@@ -83,7 +81,7 @@ class FlowRecipientAddressesGoldenTest extends TestCase {
 				}
 			}
 
-			return $found;
+			return ['uids' => $found, 'unresolved' => []];
 		});
 		$resolver->method('extractUidsFromRelation')->willReturnCallback(static function (mixed $value): array {
 			$out = [];

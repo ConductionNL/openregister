@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Listener\Support\StateFieldVersion;
 use OCA\OpenRegister\Listener\Support\StateFieldWrite;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
@@ -225,13 +226,14 @@ class StateFieldRuleListener implements IEventListener {
 	private function writeOf(array $annotation, ObjectEntity $newObject, ?ObjectEntity $oldObject): StateFieldWrite {
 		$newData = ($newObject->getObject() ?? []);
 		$toState = $this->resolver->stateOf(annotation: $annotation, data: $newData);
+		$new = new StateFieldVersion(data: $newData, state: $toState);
 		if ($oldObject === null) {
-			return new StateFieldWrite(annotation: $annotation, newData: $newData, oldData: null, toState: $toState, fromState: null);
+			return new StateFieldWrite(annotation: $annotation, new: $new, old: null);
 		}
 
 		$oldData = ($oldObject->getObject() ?? []);
-		$fromState = $this->resolver->stateOf(annotation: $annotation, data: $oldData);
-		return new StateFieldWrite(annotation: $annotation, newData: $newData, oldData: $oldData, toState: $toState, fromState: $fromState);
+		$old = new StateFieldVersion(data: $oldData, state: $this->resolver->stateOf(annotation: $annotation, data: $oldData));
+		return new StateFieldWrite(annotation: $annotation, new: $new, old: $old);
 	}//end writeOf()
 
 	/**

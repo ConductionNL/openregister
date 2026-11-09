@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
@@ -171,8 +172,16 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 			$user = $this->user();
 		}
 
-		$this->tenant($user, $org, $admin)->beforeController('C', 'm');
-		$this->addToAssertionCount(1);
+		$refusedStatus = null;
+		try {
+			$this->tenant($user, $org, $admin)->beforeController('C', 'm');
+		} catch (TenantStatusException $e) {
+			$refusedStatus = $e->getStatus();
+		}
+
+		// The pair is testTenantRefusesTheseStatuses: the same middleware, the
+		// deciding status (or the admin flag for provisioning) flipped.
+		$this->assertNull($refusedStatus, 'The tenant middleware refused a request it must let through.');
 	}
 
 	public function testTenantLetsARequestThroughWhenTheOrganisationCannotLoad(): void {
@@ -462,7 +471,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$negotiator = $this->createMock(ApiVersionNegotiator::class);
 		$served = null;
 		if ($version !== null) {
-			$served = new ApiVersion($version, ApiVersion::STATUS_SUPPORTED);
+			$served = new ApiVersion(id: $version, lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_SUPPORTED));
 		}
 
 		$negotiator->method('negotiate')->willReturn(new ApiVersionNegotiation(null, $served, ApiVersionNegotiation::SOURCE_DEFAULT));

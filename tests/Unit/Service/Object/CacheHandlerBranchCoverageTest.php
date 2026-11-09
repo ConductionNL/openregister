@@ -8,6 +8,9 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
@@ -74,16 +77,22 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 			});
 
 		$this->handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			$container,
-			null,
-			null,
-			null,
-			null,
-			$appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: null
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: null,
+				appConfig: $appConfig
+			)
 		);
 	}
 
@@ -323,10 +332,16 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 			->willThrowException(new \Exception('Cache init failed'));
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$cacheFactory,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $cacheFactory
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$this->assertInstanceOf(CacheHandler::class, $handler);

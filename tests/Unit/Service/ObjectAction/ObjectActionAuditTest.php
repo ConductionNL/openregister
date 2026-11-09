@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunOutcome;
 use PHPUnit\Framework\TestCase;
@@ -21,6 +22,19 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 class ObjectActionAuditTest extends TestCase {
+
+	/**
+	 * A gate whose acting user is the given id.
+	 *
+	 * @param string|null $userId The acting user, or null for none.
+	 *
+	 * @return ObjectActionGate The gate.
+	 */
+	private function gate(?string $userId): ObjectActionGate {
+		$gate = $this->createMock(ObjectActionGate::class);
+		$gate->method('userId')->willReturn($userId);
+		return $gate;
+	}//end gate()
 
 	public function testTheEntryCarriesTheRunAsContextAndTheActingUser(): void {
 		$object = new ObjectEntity();
@@ -41,12 +55,11 @@ class ObjectActionAuditTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->never())->method('error');
 
-		(new ObjectActionAudit($trail, $logger))->record(
+		(new ObjectActionAudit($trail, $logger, $this->gate('anna')))->record(
 			$object,
 			ObjectActionDefinition::fromDeclaration('sign', ['steps' => []]),
 			new ObjectActionRunOutcome('run-1', [['step' => 's', 'kind' => 'write']], 'completed'),
-			'sha256:abc',
-			'anna'
+			'sha256:abc'
 		);
 	}//end testTheEntryCarriesTheRunAsContextAndTheActingUser()
 
@@ -67,12 +80,11 @@ class ObjectActionAuditTest extends TestCase {
 			null
 		);
 
-		(new ObjectActionAudit($trail, $this->createMock(LoggerInterface::class)))->record(
+		(new ObjectActionAudit($trail, $this->createMock(LoggerInterface::class), $this->gate(null)))->record(
 			$object,
 			ObjectActionDefinition::fromDeclaration('finish', ['transition' => 'finish']),
 			new ObjectActionRunOutcome(null, [], 'completed'),
-			'sha256:def',
-			null
+			'sha256:def'
 		);
 	}//end testATransitionHasNoRunAndMayHaveNoActor()
 
@@ -85,12 +97,11 @@ class ObjectActionAuditTest extends TestCase {
 			['action' => 'sign', 'run' => 'run-1']
 		);
 
-		(new ObjectActionAudit($trail, $logger))->record(
+		(new ObjectActionAudit($trail, $logger, $this->gate('anna')))->record(
 			new ObjectEntity(),
 			ObjectActionDefinition::fromDeclaration('sign', ['steps' => []]),
 			new ObjectActionRunOutcome('run-1', [], 'failed'),
-			'sha256:abc',
-			'anna'
+			'sha256:abc'
 		);
 		$this->addToAssertionCount(1);
 	}//end testAFailedWriteIsLoggedAndNeverThrown()

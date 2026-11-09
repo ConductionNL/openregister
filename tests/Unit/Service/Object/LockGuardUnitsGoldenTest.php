@@ -238,7 +238,7 @@ class LockGuardUnitsGoldenTest extends TestCase {
 
 		$analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
 			deletable: $case['deletable'],
-			cascadeTargets: ($case['dependants'] === true ? ['x'] : []),
+			effects: new \OCA\OpenRegister\Dto\DeletionEffects(cascadeTargets: ($case['dependants'] === true ? ['x'] : []))
 		);
 		$deleter = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleter->method('canDelete')->willReturn($analysis);

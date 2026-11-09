@@ -31,7 +31,6 @@ namespace OCA\OpenRegister\Service\Edepot;
 use DOMElement;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IAppConfig;
 
 /**
  * Generator for MDTO `informatieobject` documents, and the entry point for a file's `bestand` document.
@@ -149,17 +148,13 @@ class MdtoXmlGenerator {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig The app configuration for organisation settings.
-	 * @param MdtoEventMapper $eventMapper Source of the MDTO event history.
-	 * @param MdtoSourceReader $sourceReader Resolver for the declared archival values.
+	 * @param MdtoValueSources $sources The organisation settings, event history and declared archival values.
 	 * @param MdtoDocumentWriter $writer The XML primitives.
 	 * @param MdtoBestandGenerator $bestandGenerator Builder of a file's own document.
 	 * @param MdtoPreconditions $preconditions What must hold before a document is worth writing.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly MdtoEventMapper $eventMapper,
-		private readonly MdtoSourceReader $sourceReader,
+		private readonly MdtoValueSources $sources,
 		private readonly MdtoDocumentWriter $writer,
 		private readonly MdtoBestandGenerator $bestandGenerator,
 		private readonly MdtoPreconditions $preconditions,
@@ -187,7 +182,7 @@ class MdtoXmlGenerator {
 		$this->checkInputs(object: $object, files: $files);
 		[$dom, $root] = $this->writer->createDocument(kind: 'informatieobject');
 
-		$facts = $this->sourceReader->coreFacts(object: $object);
+		$facts = $this->sources->sourceReader->coreFacts(object: $object);
 		$this->addDescription(parent: $root, object: $object, facts: $facts);
 		$this->addTemporalCoverage(parent: $root, object: $object);
 		$this->addEvents(parent: $root, object: $object);
@@ -274,7 +269,7 @@ class MdtoXmlGenerator {
 	 */
 	private function representedObject(ObjectEntity $object): array {
 		return [
-			'naam' => $this->sourceReader->name(object: $object),
+			'naam' => $this->sources->sourceReader->name(object: $object),
 			'kenmerk' => (string)$object->getUuid(),
 			'bron' => $this->organisationIdentifier(),
 		];
@@ -295,14 +290,12 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	private function addAggregationLevel(DOMElement $parent, ObjectEntity $object): void {
-		$level = $this->sourceReader->aggregationLevel(object: $object);
+		$level = $this->sources->sourceReader->aggregationLevel(object: $object);
 
 		$this->addOptionalBegrip(
 			parent: $parent,
 			name: 'aggregatieniveau',
-			label: ($level['label'] ?? null),
-			code: ($level['code'] ?? null),
-			list: self::AGGREGATION_LEVEL_LIST
+			begrip: MdtoBegrip::optional(label: ($level['label'] ?? null), list: self::AGGREGATION_LEVEL_LIST, code: ($level['code'] ?? null))
 		);
 	}//end addAggregationLevel()
 
@@ -320,15 +313,9 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	private function addTemporalCoverage(DOMElement $parent, ObjectEntity $object): void {
-		foreach ($this->sourceReader->temporalCoverage(object: $object) as $entry) {
+		foreach ($this->sources->sourceReader->temporalCoverage(object: $object) as $entry) {
 			$coverage = $this->writer->element(parent: $parent, name: 'dekkingInTijd');
-			$this->writer->begrip(
-				parent: $coverage,
-				name: 'dekkingInTijdType',
-				label: $entry['type'],
-				code: null,
-				list: 'DekkingInTijdType'
-			);
+			$this->writer->begrip(parent: $coverage, name: 'dekkingInTijdType', begrip: new MdtoBegrip(label: $entry['type'], list: 'DekkingInTijdType'));
 			$this->writer->text(parent: $coverage, name: 'dekkingInTijdBegindatum', content: $entry['start']);
 
 			$this->writer->textIfPresent(parent: $coverage, name: 'dekkingInTijdEinddatum', content: $entry['end']);
@@ -349,7 +336,7 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-derive-mdto-event-entries-from-the-audit-trail
 	 */
 	private function addEvents(DOMElement $parent, ObjectEntity $object): void {
-		foreach ($this->eventMapper->forObject(object: $object) as $event) {
+		foreach ($this->sources->eventMapper->forObject(object: $object) as $event) {
 			$this->addEvent(parent: $parent, event: $event);
 		}
 	}//end addEvents()
@@ -397,15 +384,17 @@ class MdtoXmlGenerator {
 	 */
 	private function addEvent(DOMElement $parent, array $event): void {
 		$element = $this->writer->element(parent: $parent, name: 'event');
-		$this->writer->begrip(parent: $element, name: 'eventType', label: $event['type'], code: null, list: MdtoEventMapper::EVENT_TYPE_LIST);
+		$this->writer->begrip(parent: $element, name: 'eventType', begrip: new MdtoBegrip(label: $event['type'], list: MdtoEventMapper::EVENT_TYPE_LIST));
 		$this->writer->textIfPresent(parent: $element, name: 'eventTijd', content: $event['time']);
 		if ($event['actorName'] !== null) {
 			$this->writer->verwijzing(
 				parent: $element,
 				name: 'eventVerantwoordelijkeActor',
-				verwijzingNaam: $event['actorName'],
-				kenmerk: $event['actorId'],
-				bron: $this->organisationIdentifier()
+				verwijzing: new MdtoVerwijzing(
+					naam: $event['actorName'],
+					kenmerk: $event['actorId'],
+					bron: $this->organisationIdentifier()
+				)
 			);
 		}
 	}//end addEvent()
@@ -423,7 +412,7 @@ class MdtoXmlGenerator {
 	private function addRating(DOMElement $parent, array $facts): void {
 		[$code, $label] = self::APPRAISAL_MAP[(string)$facts['appraisal']];
 
-		$this->writer->begrip(parent: $parent, name: 'waardering', label: $label, code: $code, list: self::APPRAISAL_LIST);
+		$this->writer->begrip(parent: $parent, name: 'waardering', begrip: new MdtoBegrip(label: $label, list: self::APPRAISAL_LIST, code: $code));
 	}//end addRating()
 
 	/**
@@ -474,9 +463,7 @@ class MdtoXmlGenerator {
 		$this->addOptionalBegrip(
 			parent: $parent,
 			name: 'informatiecategorie',
-			label: ($category['label'] ?? null),
-			code: null,
-			list: ($category['list'] ?? self::CATEGORY_LIST_FALLBACK)
+			begrip: MdtoBegrip::optional(label: ($category['label'] ?? null), list: ($category['list'] ?? self::CATEGORY_LIST_FALLBACK))
 		);
 	}//end addInformatiecategorie()
 
@@ -497,9 +484,7 @@ class MdtoXmlGenerator {
 		$this->addOptionalBegrip(
 			parent: $parent,
 			name: 'classificatie',
-			label: $facts['classification'],
-			code: null,
-			list: self::CLASSIFICATION_LIST
+			begrip: MdtoBegrip::optional(label: $facts['classification'], list: self::CLASSIFICATION_LIST)
 		);
 	}//end addClassification()
 
@@ -512,26 +497,18 @@ class MdtoXmlGenerator {
 	 *
 	 * @param DOMElement $parent The informatieobject element.
 	 * @param string $name The element name, without prefix.
-	 * @param string|null $label The term, or null to omit the element.
-	 * @param string|null $code The code, omitted when null.
-	 * @param string $list The begrippenlijst name.
+	 * @param MdtoBegrip|null $begrip The term, or null to omit the element ({@see MdtoBegrip::optional()}).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
-	private function addOptionalBegrip(
-		DOMElement $parent,
-		string $name,
-		?string $label,
-		?string $code,
-		string $list,
-	): void {
-		if ($label === null) {
+	private function addOptionalBegrip(DOMElement $parent, string $name, ?MdtoBegrip $begrip): void {
+		if ($begrip === null) {
 			return;
 		}
 
-		$this->writer->begrip(parent: $parent, name: $name, label: $label, code: $code, list: $list);
+		$this->writer->begrip(parent: $parent, name: $name, begrip: $begrip);
 	}//end addOptionalBegrip()
 
 	/**
@@ -553,9 +530,11 @@ class MdtoXmlGenerator {
 			$this->writer->verwijzing(
 				parent: $parent,
 				name: 'heeftRepresentatie',
-				verwijzingNaam: (string)$file['name'],
-				kenmerk: $identification['kenmerk'],
-				bron: $identification['bron']
+				verwijzing: new MdtoVerwijzing(
+					naam: (string)$file['name'],
+					kenmerk: $identification['kenmerk'],
+					bron: $identification['bron']
+				)
 			);
 		}
 	}//end addRepresentations()
@@ -573,9 +552,11 @@ class MdtoXmlGenerator {
 		$this->writer->verwijzing(
 			parent: $parent,
 			name: 'archiefvormer',
-			verwijzingNaam: $this->appConfig->getValueString('openregister', 'organisation_name', 'OpenRegister'),
-			kenmerk: $this->organisationIdentifier(),
-			bron: 'OpenRegister'
+			verwijzing: new MdtoVerwijzing(
+				naam: $this->sources->appConfig->getValueString('openregister', 'organisation_name', 'OpenRegister'),
+				kenmerk: $this->organisationIdentifier(),
+				bron: 'OpenRegister'
+			)
 		);
 	}//end addArchiefvormer()
 
@@ -595,13 +576,17 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	private function addUseRestriction(DOMElement $parent, ObjectEntity $object): void {
-		$restriction = $this->sourceReader->useRestriction(object: $object);
+		$restriction = $this->sources->sourceReader->useRestriction(object: $object);
 		if ($restriction === null) {
 			$restriction = ['type' => self::USE_RESTRICTION_UNRECORDED, 'description' => null, 'startDate' => null];
 		}
 
 		$element = $this->writer->element(parent: $parent, name: 'beperkingGebruik');
-		$this->writer->begrip(parent: $element, name: 'beperkingGebruikType', label: $restriction['type'], code: null, list: self::USE_RESTRICTION_LIST);
+		$this->writer->begrip(
+			parent: $element,
+			name: 'beperkingGebruikType',
+			begrip: new MdtoBegrip(label: $restriction['type'], list: self::USE_RESTRICTION_LIST)
+		);
 		$this->writer->textIfPresent(parent: $element, name: 'beperkingGebruikNadereBeschrijving', content: $restriction['description']);
 		if ($restriction['startDate'] !== null) {
 			$term = $this->writer->element(parent: $element, name: 'beperkingGebruikTermijn');
@@ -618,7 +603,7 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
 	 */
 	private function organisationIdentifier(): string {
-		return $this->appConfig->getValueString('openregister', 'organisation_identifier', 'OpenRegister');
+		return $this->sources->appConfig->getValueString('openregister', 'organisation_identifier', 'OpenRegister');
 	}//end organisationIdentifier()
 
 }//end class
