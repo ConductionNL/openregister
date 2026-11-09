@@ -116,60 +116,103 @@ class FlowRunService implements FlowRunServiceInterface {
 	private readonly FlowStateBinding $flowState;
 
 	/**
+	 * Persists runs.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Walks the graph.
+	 *
+	 * @var FlowEngine
+	 */
+	private readonly FlowEngine $engine;
+
+	/**
+	 * Resolves step types.
+	 *
+	 * @var FlowNodeRegistryInterface
+	 */
+	private readonly FlowNodeRegistryInterface $registry;
+
+	/**
+	 * Records one row per node execution; null records no history, never a faked one.
+	 *
+	 * @var FlowRunStepMapperInterface|null
+	 */
+	private readonly ?FlowRunStepMapperInterface $steps;
+
+	/**
+	 * Reads the instance-wide runtime ceiling; null applies the compiled-in default.
+	 *
+	 * @var IAppConfig|null
+	 */
+	private readonly ?IAppConfig $appConfig;
+
+	/**
+	 * Stream rows; with the claims and the commit, enables the stream walk.
+	 *
+	 * @var FlowStreamMapperInterface|null
+	 */
+	private readonly ?FlowStreamMapperInterface $streamMapper;
+
+	/**
+	 * The claim protocol.
+	 *
+	 * @var FlowPlaceClaims|null
+	 */
+	private readonly ?FlowPlaceClaims $claims;
+
+	/**
+	 * The locked delta commit path.
+	 *
+	 * @var FlowRunCommit|null
+	 */
+	private readonly ?FlowRunCommit $commit;
+
+	/**
+	 * Audits each hop recorded by the step history.
+	 *
+	 * @var FlowHopAudit|null
+	 */
+	private readonly ?FlowHopAudit $hopAudit;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface $mapper Persists runs.
-	 * @param FlowStateMapperInterface $stateMapper Persists state that outlives a run.
-	 * @param FlowEngine $engine Walks the graph.
-	 * @param FlowNodeRegistryInterface $registry Resolves step types.
-	 * @param LoggerInterface $logger The logger.
-	 * @param ContainerInterface $container Lazily resolves OrganisationService.
-	 * @param FlowRunStepMapperInterface|null $steps Records one row per node execution.
-	 *                                      Nullable so the cron worker and the
-	 *                                      unit tests can build this service
-	 *                                      without it; history is then simply
-	 *                                      not recorded, never faked.
-	 * @param IAppConfig|null $appConfig Reads the instance-wide runtime
-	 * @param FlowStreamMapperInterface|null $streamMapper Stream rows; with the two below, enables the stream walk.
-	 * @param FlowPlaceClaims|null $claims The claim protocol.
-	 * @param FlowRunCommit|null $commit The locked delta commit path.
-	 * @param FlowHopAudit|null $hopAudit Audits each hop recorded by the step history.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected collaborators, appended so
-	 * the three test suites that construct this service positionally keep their slots.
-	 *                                   ceiling. Nullable on the same terms
-	 *                                   as $steps; absent, the compiled-in
-	 *                                   default applies.
+	 * @param FlowRunStores       $stores    The run rows, flow state, step history and stream persistence.
+	 *                                       A test-built service leaves the optional ones null; history is
+	 *                                       then simply not recorded and the run walks one in-memory stream.
+	 * @param FlowRunWalkServices $walk      The engine, the step types, the runtime ceiling and the hop audit.
+	 * @param LoggerInterface     $logger    The logger.
+	 * @param ContainerInterface  $container Lazily resolves OrganisationService.
 	 */
 	public function __construct(
-		private readonly FlowRunMapperInterface $mapper,
-		FlowStateMapperInterface $stateMapper,
-		private readonly FlowEngine $engine,
-		private readonly FlowNodeRegistryInterface $registry,
+		FlowRunStores $stores,
+		FlowRunWalkServices $walk,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
-		private readonly ?FlowRunStepMapperInterface $steps = null,
-		private readonly ?IAppConfig $appConfig = null,
-		private readonly ?FlowStreamMapperInterface $streamMapper = null,
-		private readonly ?FlowPlaceClaims $claims = null,
-		private readonly ?FlowRunCommit $commit = null,
-		private readonly ?FlowHopAudit $hopAudit = null,
 	) {
-		// Built here rather than injected, deliberately: this service's
-		// constructor is called explicitly by three test suites, and inserting or
-		// swapping a parameter would silently shift every later slot for them.
-		// The binding needs nothing this service was not already given.
-		$this->flowState = new FlowStateBinding(stateMapper: $stateMapper, logger: $logger);
-
+		$this->mapper       = $stores->mapper;
+		$this->steps        = $stores->steps;
+		$this->streamMapper = $stores->streams->streamMapper;
+		$this->claims       = $stores->streams->claims;
+		$this->commit       = $stores->streams->commit;
+		$this->engine       = $walk->engine;
+		$this->registry     = $walk->registry;
+		$this->appConfig    = $walk->appConfig;
+		$this->hopAudit     = $walk->hopAudit;
+		// Built here rather than injected: the binding needs nothing this
+		// service was not already given.
+		$this->flowState = new FlowStateBinding(stateMapper: $stores->stateMapper, logger: $logger);
 	}//end __construct()
 
 	/**
 	 * The run's step history — its numbering, and its recording.
 	 *
-	 * Made on demand rather than injected: this constructor is called explicitly
-	 * by three test suites, and inserting a parameter would silently shift every
-	 * later slot for them. It holds no state beyond the collaborators this
-	 * service already has.
+	 * Made on demand rather than injected: it holds no state beyond the
+	 * collaborators this service already has.
 	 *
 	 * @return FlowStepHistory The history recorder.
 	 *
@@ -745,9 +788,8 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * the worker reads in a separate process on a cron tick, not inside this
 	 * call.
 	 *
-	 * Resolved through the container, like every other collaborator on this path:
-	 * three test suites build this service by hand, and a new constructor
-	 * parameter would shift every later slot for them. Not a new fail-open —
+	 * Resolved through the container, like every other collaborator on this path.
+	 * Not a new fail-open —
 	 * {@see FlowDelegationCheck} already resolved the same service to get here.
 	 *
 	 * @param FlowRun    $run  The inserted run.
