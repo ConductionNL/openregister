@@ -28,6 +28,7 @@ use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
@@ -1120,9 +1121,11 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// written when a strict run's output cannot be re-read.
 		$redaction = $replacer->replaceInPdf(
 			pdfBytes: $content,
-			substitutions: $job->replacements,
-			strict: $job->isStrict(),
-			preserveStructure: $job->preserveStructure()
+			plan: new RedactionPlan(
+				substitutions: $job->replacements,
+				strict: $job->isStrict(),
+				preserveStructure: $job->preserveStructure()
+			)
 		);
 
 		// Expose the `structurePreservation` result block (REQ-ORTPR-003).
