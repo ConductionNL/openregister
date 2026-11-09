@@ -33,3 +33,4 @@
 2026-11-09T09:53:48Z integrator-20261109T092732-73c42b8a MERGED-TREE f7ffe03f4a: 20 PRs, main now e601776780 = tested tree
 2026-11-09T09:54:32Z integrator-20261109T092732-73c42b8a RESOLVED #7435 9dc9d612 -> d86f8935 use/map lines only
 2026-11-09T09:54:41Z integrator-20261109T092732-73c42b8a CONFLICT-DEV #7531 93673984
+2026-11-09T09:57:46Z integrator-20261109T092732-73c42b8a GREEN tree 43a27afd4d on dev e601776780 prs 20 front=skip: Tests: 49751, Assertions: 163432, Errors: 7, Failures: 11, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Risky: 7, Skipped: 23.
