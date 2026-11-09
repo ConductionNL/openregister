@@ -111,7 +111,7 @@ class AutoTransitionRunnerRefusalCodeTest extends TestCase {
 				}
 			);
 
-			$result = $this->runner($logger, new HookStoppedException('Denied.', $errors))->fire(self::decision(), [], false);
+			$result = $this->runner($logger, new HookStoppedException('Denied.', $errors))->fire(self::decision(), []);
 
 			$this->assertNull($result);
 			$this->assertSame([null], $codes);

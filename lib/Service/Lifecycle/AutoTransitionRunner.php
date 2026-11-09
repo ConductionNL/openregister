@@ -98,16 +98,18 @@ class AutoTransitionRunner {
 	 * write that triggered this has already succeeded and nothing about the
 	 * refusal is the caller's fault, so it is not retried and not surfaced.
 	 *
+	 * For a move decided inside a write boundary; one decided outside any
+	 * boundary goes to {@see queueOutsideBoundary()}.
+	 *
 	 * @param AutoTransitionDecision $decision The decided move.
 	 * @param array<string, mixed> $lineage The pass lineage to carry into a queued move.
-	 * @param bool $queueOnly True for a move decided outside any write boundary.
 	 *
 	 * @return ObjectEntity|null The object after the move, or null when it was queued or refused.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function fire(AutoTransitionDecision $decision, array $lineage, bool $queueOnly): ?ObjectEntity {
-		if ($this->queue->appliesInline(candidate: $decision->candidate, queueOnly: $queueOnly) === false) {
+	public function fire(AutoTransitionDecision $decision, array $lineage): ?ObjectEntity {
+		if ($this->queue->appliesInline(candidate: $decision->candidate, queueOnly: false) === false) {
 			$this->queue->queue(decision: $decision, lineage: $lineage);
 			return null;
 		}
@@ -122,6 +124,23 @@ class AutoTransitionRunner {
 			return null;
 		}
 	}//end fire()
+
+	/**
+	 * Queue a move decided outside any write boundary, whatever its declared mode.
+	 *
+	 * There is no point after such a write and before a response at which a
+	 * sync move could run, so the declared mode does not apply.
+	 *
+	 * @param AutoTransitionDecision $decision The decided move.
+	 * @param array<string, mixed> $lineage The pass lineage to carry into the queued move.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function queueOutsideBoundary(AutoTransitionDecision $decision, array $lineage): void {
+		$this->queue->queue(decision: $decision, lineage: $lineage);
+	}//end queueOutsideBoundary()
 
 	/**
 	 * Log an inline move the engine refused; the triggering write stands.

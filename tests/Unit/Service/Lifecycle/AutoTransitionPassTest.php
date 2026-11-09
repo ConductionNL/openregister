@@ -117,13 +117,21 @@ class AutoTransitionPassTest extends TestCase {
 
 		$this->modeForTest = $mode;
 
-		$this->runner->method('fire')->willReturnCallback(
-			function (AutoTransitionDecision $decision, array $lineage, bool $queueOnly): ?ObjectEntity {
+		$this->runner->method('queueOutsideBoundary')->willReturnCallback(
+			function (AutoTransitionDecision $decision, array $lineage): void {
 				$this->fired[] = $decision->candidate->action;
 				$this->lastLineage = $lineage;
-				$this->lastQueueOnly = $queueOnly;
+				$this->lastQueueOnly = true;
+			}
+		);
 
-				if ($this->modeForTest !== 'sync' || $queueOnly === true) {
+		$this->runner->method('fire')->willReturnCallback(
+			function (AutoTransitionDecision $decision, array $lineage): ?ObjectEntity {
+				$this->fired[] = $decision->candidate->action;
+				$this->lastLineage = $lineage;
+				$this->lastQueueOnly = false;
+
+				if ($this->modeForTest !== 'sync') {
 					return null;
 				}
 
