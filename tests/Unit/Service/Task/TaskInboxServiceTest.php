@@ -171,7 +171,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(0);
 
-		$this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), limit: 99999);
+		$this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 99999));
 	}//end testTheLimitIsClamped()
 
 	/**
@@ -448,7 +448,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), limit: 0, offset: -5);
+		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 0, offset: -5));
 
 		$this->assertSame(1, $result['limit']);
 		$this->assertNull($result['results'][0]['subject']);
