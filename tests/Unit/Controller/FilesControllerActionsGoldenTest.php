@@ -391,7 +391,6 @@ class FilesControllerActionsGoldenTest extends TestCase {
 		}
 
 		return new FilesController(...FilesControllerFactory::args(
-			appName: 'openregister',
 			request: $this->request(),
 			fileService: $this->fileService(),
 			objectService: $this->objectService(),

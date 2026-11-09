@@ -111,20 +111,36 @@ class SchemaVersioningService {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function enforceGate(SchemaChangeSet $changeSet, bool $acknowledged, int $schemaId): void {
-		if ($changeSet->isBreaking() === false) {
+		$this->gateChange(schemaId: $schemaId, record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $acknowledged));
+	}//end enforceGate()
+
+	/**
+	 * Enforce the breaking-change acknowledgement gate on a change record.
+	 *
+	 * @param int                $schemaId The schema id (for invalid-count lookup).
+	 * @param SchemaChangeRecord $record   The change set and whether it was acknowledged.
+	 *
+	 * @return void
+	 *
+	 * @throws BreakingSchemaChangeException When breaking and unacknowledged.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function gateChange(int $schemaId, SchemaChangeRecord $record): void {
+		if ($record->changeSet->isBreaking() === false) {
 			return;
 		}
 
-		if ($acknowledged === true) {
+		if ($record->acknowledged === true) {
 			return;
 		}
 
 		throw new BreakingSchemaChangeException(
-			changes: $changeSet->getChanges(),
+			changes: $record->changeSet->getChanges(),
 			invalidCount: $this->latestInvalidCount(schemaId: $schemaId)
 		);
 
-	}//end enforceGate()
+	}//end gateChange()
 
 	/**
 	 * Compute the next version for a schema given a change set.
@@ -155,41 +171,50 @@ class SchemaVersioningService {
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function recordChangelog(
-		int $schemaId,
-		?string $version,
-		SchemaChangeSet $changeSet,
-		bool $acknowledged,
-		?string $origin = null
-	): ?SchemaChangelog {
-		if ($changeSet->hasChanges() === false) {
+	public function recordChangelog(int $schemaId, ?string $version, SchemaChangeSet $changeSet, bool $acknowledged, ?string $origin = null)
+	: ?SchemaChangelog {
+		$record = new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $acknowledged, version: $version, origin: $origin);
+
+		return $this->recordChange(schemaId: $schemaId, record: $record);
+	}//end recordChangelog()
+
+	/**
+	 * Record a changelog entry for an applied schema change.
+	 *
+	 * No entry is written for a metadata-only (no structural change) update.
+	 *
+	 * @param int                $schemaId The schema id.
+	 * @param SchemaChangeRecord $record   The change set, acknowledgement, resulting version and origin.
+	 *
+	 * @return SchemaChangelog|null The recorded entry, or null for a no-op.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function recordChange(int $schemaId, SchemaChangeRecord $record): ?SchemaChangelog {
+		if ($record->changeSet->hasChanges() === false) {
 			return null;
 		}
 
-		$data = $this->changelogData(schemaId: $schemaId, version: $version, changeSet: $changeSet);
+		$data = $this->changelogData(schemaId: $schemaId, record: $record);
 
-		return $this->persistChangelog(
-			data: $this->withAcknowledgement(data: $data, changeSet: $changeSet, acknowledged: $acknowledged, origin: $origin)
-		);
-	}//end recordChangelog()
+		return $this->persistChangelog(data: $this->withAcknowledgement(data: $data, record: $record));
+	}//end recordChange()
 
 	/**
 	 * A breaking change's changelog fields with who acknowledged it, or warned about when nobody did.
 	 *
-	 * @param array<string, mixed> $data         The changelog fields.
-	 * @param SchemaChangeSet      $changeSet    The classified change set.
-	 * @param bool                 $acknowledged Whether the change was acknowledged.
-	 * @param string|null          $origin       Where the change came from, for the warning.
+	 * @param array<string, mixed> $data   The changelog fields.
+	 * @param SchemaChangeRecord   $record The change set, acknowledgement and origin.
 	 *
 	 * @return array<string, mixed> The fields to record.
 	 */
-	private function withAcknowledgement(array $data, SchemaChangeSet $changeSet, bool $acknowledged, ?string $origin): array {
-		if ($changeSet->isBreaking() === false) {
+	private function withAcknowledgement(array $data, SchemaChangeRecord $record): array {
+		if ($record->changeSet->isBreaking() === false) {
 			return $data;
 		}
 
-		if ($acknowledged === false) {
-			$this->warnUnacknowledged(data: $data, origin: $origin);
+		if ($record->acknowledged === false) {
+			$this->warnUnacknowledged(data: $data, origin: $record->origin);
 			return $data;
 		}
 
@@ -202,18 +227,17 @@ class SchemaVersioningService {
 	/**
 	 * The changelog fields every recorded change carries.
 	 *
-	 * @param int             $schemaId  The schema id.
-	 * @param string|null     $version   The resulting version.
-	 * @param SchemaChangeSet $changeSet The classified change set.
+	 * @param int                $schemaId The schema id.
+	 * @param SchemaChangeRecord $record   The change set and resulting version.
 	 *
 	 * @return array<string, mixed> The fields.
 	 */
-	private function changelogData(int $schemaId, ?string $version, SchemaChangeSet $changeSet): array {
+	private function changelogData(int $schemaId, SchemaChangeRecord $record): array {
 		return [
 			'schemaId' => $schemaId,
-			'version' => $version,
-			'classification' => $changeSet->getClassification(),
-			'changes' => $changeSet->getChanges(),
+			'version' => $record->version,
+			'classification' => $record->changeSet->getClassification(),
+			'changes' => $record->changeSet->getChanges(),
 			'actor' => $this->currentActor(),
 		];
 	}//end changelogData()
