@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Search;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCP\IL10N;
 use OCP\IUser;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -148,9 +148,9 @@ class ObjectsProvider implements IFilteringProvider {
 	 * Shared result-formatting service (icon precedence, deep-link URL,
 	 * subline/excerpt building).
 	 *
-	 * @var ObjectSearchResultFormatter
+	 * @var ObjectSearchResultFormatterInterface
 	 */
-	private readonly ObjectSearchResultFormatter $resultFormatter;
+	private readonly ObjectSearchResultFormatterInterface $resultFormatter;
 
 	/**
 	 * Registers, for resolving which one owns a schema a scope names.

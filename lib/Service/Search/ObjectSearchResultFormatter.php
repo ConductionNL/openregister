@@ -41,7 +41,7 @@ use OCP\Search\SearchResultEntry;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-final class ObjectSearchResultFormatter {
+final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterInterface {
 
 	/**
 	 * Number of characters of context shown on each side of an excerpt match.
