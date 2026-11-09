@@ -489,7 +489,8 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'Both currentPassword and newPassword are required', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->applyPasswordChange(user: $user, change: new PasswordChange(currentPassword: $currentPassword, newPassword: $newPassword)));
+		$change = new PasswordChange(currentPassword: $currentPassword, newPassword: $newPassword);
+		return $this->responses->secured(data: $this->userService->applyPasswordChange(user: $user, change: $change));
 	}//end changePasswordFor()
 
 	/**
@@ -551,7 +552,8 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'No image data provided', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->setAvatar(user: $user, upload: new AvatarUpload(data: $data, mimeType: $mimeType, size: $size)));
+		$upload = new AvatarUpload(data: $data, mimeType: $mimeType, size: $size);
+		return $this->responses->secured(data: $this->userService->setAvatar(user: $user, upload: $upload));
 	}//end uploadAvatarFor()
 
 	/**
