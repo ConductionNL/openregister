@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
@@ -172,9 +173,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
 	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
+	 * @param TenancyServices $tenancy The organisation mapper, user session and group manager the tenancy and RBAC checks read
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger for the resolution diagnostics.
 	 *
@@ -199,9 +198,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		SchemaMapperInterface $schemaMapper,
 		IEventDispatcher $eventDispatcher,
 		\Psr\Container\ContainerInterface $container,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -212,9 +209,9 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$this->schemaMapper = $schemaMapper;
 		$this->eventDispatcher = $eventDispatcher;
 		$this->container = $container;
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
