@@ -1012,9 +1012,7 @@ class DeleteObject {
 
 		if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
 			$this->cascadeDeleteObjects(
-				register: $contextRegister,
-				schema: $contextSchema,
-				object: $object,
+				root: new DeletionTarget(object: $object, register: $contextRegister, schema: $contextSchema),
 				originalObjectId: $uuid
 			);
 		}
@@ -1088,22 +1086,21 @@ class DeleteObject {
 	 * Cascade depth is unchanged: children are sub-deletions (originalObjectId
 	 * set) and never cascade further, exactly like the per-id pipeline.
 	 *
-	 * @param Register $register The register containing the object.
-	 * @param Schema $schema The schema of the object.
-	 * @param ObjectEntity $object The object being deleted.
-	 * @param string $originalObjectId The ID of original object for cascading.
+	 * @param DeletionTarget $root             The object being deleted with its register and schema.
+	 * @param string         $originalObjectId The ID of original object for cascading.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeDeleteObjects(
-		Register $register,
-		Schema $schema,
-		ObjectEntity $object,
-		string $originalObjectId,
-	): void {
-		$cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $object);
+	private function cascadeDeleteObjects(DeletionTarget $root, string $originalObjectId): void {
+		$register = $root->register;
+		$schema = $root->schema;
+		if ($register === null || $schema === null) {
+			return;
+		}
+
+		$cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $root->object);
 		if (empty($cascadeIds) === true) {
 			return;
 		}
