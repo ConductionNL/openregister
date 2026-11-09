@@ -111,6 +111,20 @@ class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 	 * @return EmailLink[] Array of email links.
 	 */
 	public function findByObjectUuid(string $objectUuid, ?int $limit = null, ?int $offset = null): array {
+		return $this->findByObject(objectUuid: $objectUuid, query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset));
+	}//end findByObjectUuid()
+
+	/**
+	 * One page of an object's email links, newest mail first.
+	 *
+	 * @param string    $objectUuid The object UUID.
+	 * @param ListQuery $query      The page; unbounded for every link.
+	 *
+	 * @return EmailLink[] Array of email links.
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByObjectUuid(), no capability of its own
+	 */
+	public function findByObject(string $objectUuid, ListQuery $query): array {
 		// Note: tableExists() short-circuits removed — Doctrine's schema
 		// cache can lag manual CREATE TABLE statements (e.g. sandboxes
 		// that recreated the table outside the migration framework).
@@ -122,10 +136,10 @@ class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->orderBy('mail_date', 'DESC');
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
+	}//end findByObject()
 
 	/**
 	 * Find email links by sender address.
