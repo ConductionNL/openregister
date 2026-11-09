@@ -458,3 +458,4 @@
 7471 9794e7b76f2dffe9481ebaff9e1e31fc32c6d51a APPROVE seeded
 6727 7f30d9a6c8384e70782c7b7f70992866595d2589 APPROVE fail-closed fix in TaskAuthorizationService::isNamedOrInGroup (typed entries skipped by bare-group loop); test fails on old code; guard suites green merged with development a1fd993f81
 7447 67f8f7d5d5bf5d34801915b4eefe481206869bf5 APPROVE behaviour identical: same StoredVector fields, same allowlist string, views writer same object via bound interface; guards green merged with dev a1fd993f
+6733 83c9446eefaf0c406276f804f1f765d3ca768446 APPROVE behaviour identical: submit path split into FormSubmission/WriteContext/PayloadMapper/Refusals/Compensation; flags, order, refusals, logs unchanged; golden green on old lib; guards green merged with dev a1fd993
