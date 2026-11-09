@@ -1815,6 +1815,56 @@
 			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\AdminGateInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\AdminGateInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\DefinitionWriteRightsInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DefinitionWriteRightsInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\DerivedGrantLoginInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DerivedGrantLoginInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\DerivedGrantStoreInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DerivedGrantStoreInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\PrincipalReachListerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\PrincipalReachListerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\ReachRevocationServiceInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ReachRevocationServiceInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\RevealFlusherInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\RevealFlusherInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\Authorization\\GroupReconcilerInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\GroupReconcilerInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\SecurityHeadersInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\SecurityHeadersInterface",
+			"eager": false,
+			"service": false
+		},
+		"OCA\\OpenRegister\\Service\\LoginSecurityInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\LoginSecurityInterface",
+			"eager": false,
+			"service": false
 		}
 	}
 }
