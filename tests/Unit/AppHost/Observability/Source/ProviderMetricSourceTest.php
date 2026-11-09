@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
+use OCA\OpenRegister\AppHost\Observability\MetricFamily;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -59,7 +60,7 @@ class ProviderMetricSourceTest extends TestCase {
 	}
 
 	private function descriptor(): MetricDescriptor {
-		return new MetricDescriptor('bridge', 'gauge', 'provider', []);
+		return new MetricDescriptor(new MetricFamily('bridge', 'gauge'), ['kind' => 'provider']);
 	}
 
 	public function testKindIsProvider(): void {
