@@ -4962,34 +4962,47 @@ class RenderObject implements RenderObjectInterface {
 		$page->rbac = $_rbac;
 		$page->multitenancy = $_multitenancy;
 
+		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
+		$this->preloadPage(extend: $page->extend, entities: $entities);
+
+		return $this->renderPage(page: $page, entities: $entities);
+	}//end renderRows()
+
+	/**
+	 * Load what every row of a page needs before the first row renders, to prevent N+1 queries.
+	 *
+	 * @param array $extend   The page's extend list
+	 * @param array $entities The page of entities
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadPage(array $extend, array $entities): void {
 		// Debug level: this fires on EVERY extended list render (hot path).
 		$this->runtime->logger->debug(
 			message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'extendParam' => $page->extend,
+				'extendParam' => $extend,
 				'entityCount' => count($entities),
 			]
 		);
 
-		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
-
 		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
-		if (empty($page->extend) === false && empty($entities) === false) {
-			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
+		if (empty($extend) === false && empty($entities) === false) {
+			$this->preloadExtendedRelations(entities: $entities, extend: $extend);
 		}
 
-		$this->prefetchPageFileIds(entities: $entities, extend: $page->extend);
+		$this->prefetchPageFileIds(entities: $entities, extend: $extend);
 
 		// PERF-1: batch-prefetch full file objects + tags for every file-typed property
 		// value across the whole page, so renderFileProperties()/getFileObject() do not
 		// issue 1+ queries per file per row. Caches are request-scoped and cleared in
 		// the finally of renderPage().
 		$this->batchPreloadFileObjects(entities: $entities);
-
-		return $this->renderPage(page: $page, entities: $entities);
-	}//end renderRows()
+	}//end preloadPage()
 
 	/**
 	 * An extend option as a list: a comma-separated string split, null as no extends.
