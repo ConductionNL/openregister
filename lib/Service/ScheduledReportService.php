@@ -134,42 +134,123 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	];
 
 	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ScheduledReportMapperInterface
+	 */
+	private readonly ScheduledReportMapperInterface $mapper;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ExportService
+	 */
+	private readonly ExportService $exportService;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IManager
+	 */
+	private readonly IManager $notificationManager;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IMailer
+	 */
+	private readonly IMailer $mailer;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ExportProfileService|null
+	 */
+	private readonly ?ExportProfileService $profileService;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ExportRunRecorder|null
+	 */
+	private readonly ?ExportRunRecorder $exportRuns;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ScheduledReportMapperInterface $mapper Scheduled report mapper.
-	 * @param RegisterMapperInterface $registerMapper Register lookup (create/update validation).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup (create/update validation).
-	 * @param ExportService $exportService The export engine this feature composes.
-	 * @param IRootFolder $rootFolder Files root, for owner-folder delivery.
-	 * @param IUserManager $userManager Resolves the owner IUser for impersonation.
-	 * @param IUserSession $userSession Session, swapped to the owner during a run.
-	 * @param IManager $notificationManager Notification dispatch.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IMailer $mailer Sends the email-delivery leg (deliveryMode email|both).
-	 * @param IConfig $config Resolves the instance's default mail sender.
-	 * @param ExportProfileService|null $profileService Runs a named export profile, when the schedule names one.
-	 * @param ExportRunRecorder|null $exportRuns Records what each run produced. Nullable and last so adding it is not
-	 *                                           a fatal at an existing construction site.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies — IMailer/IConfig are the
-	 *     two email-delivery additions on top of the original 9; each is a distinct, testable collaborator
-	 *     (mail transport vs. system config) rather than an arbitrary parameter split.
+	 * @param ScheduledReportStores    $stores    Report, register and schema stores.
+	 * @param ScheduledReportExporters $exporters Export engine, profile runner and run recorder.
+	 * @param ScheduledReportDelivery  $delivery  Owner-facing services and the mail transport.
+	 * @param LoggerInterface          $logger    Logger.
 	 */
 	public function __construct(
-		private readonly ScheduledReportMapperInterface $mapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ExportService $exportService,
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
-		private readonly IManager $notificationManager,
-		private readonly LoggerInterface $logger,
-		private readonly IMailer $mailer,
-		private readonly IConfig $config,
-		private readonly ?ExportProfileService $profileService = null,
-		private readonly ?ExportRunRecorder $exportRuns = null,
+		ScheduledReportStores $stores,
+		ScheduledReportExporters $exporters,
+		ScheduledReportDelivery $delivery,
+		LoggerInterface $logger,
 	) {
+		$this->mapper = $stores->mapper;
+		$this->registerMapper = $stores->registerMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->exportService = $exporters->exportService;
+		$this->rootFolder = $delivery->owner->rootFolder;
+		$this->userManager = $delivery->owner->userManager;
+		$this->userSession = $delivery->owner->userSession;
+		$this->notificationManager = $delivery->owner->notificationManager;
+		$this->logger = $logger;
+		$this->mailer = $delivery->mailer;
+		$this->config = $delivery->config;
+		$this->profileService = $exporters->profileService;
+		$this->exportRuns = $exporters->exportRuns;
 	}//end __construct()
 
 	/**
