@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -207,13 +208,15 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 		}
 
 		return $this->links()->mint(
-			userId: $createdBy,
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: $object,
-			terms: new AccessLinkTerms(
-				capabilities: array_values((array) ($data['capabilities'] ?? [])),
-				expiresAt: (string) $data['expiresAt'],
-				label: $this->labelOf(data: $data)
+			new LinkMintRequest(
+				minter: $createdBy,
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: $object,
+				terms: new AccessLinkTerms(
+					capabilities: array_values((array) ($data['capabilities'] ?? [])),
+					expiresAt: (string) $data['expiresAt'],
+					label: $this->labelOf(data: $data)
+				)
 			)
 		);
 	}//end mint()
