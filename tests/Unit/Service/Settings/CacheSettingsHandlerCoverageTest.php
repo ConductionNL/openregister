@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SchemaCacheClearers;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -55,8 +56,7 @@ class CacheSettingsHandlerCoverageTest extends TestCase {
 	): CacheSettingsHandler {
 		return new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			$objectCache,
 			$container
 		);
