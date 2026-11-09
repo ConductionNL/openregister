@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
 use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
@@ -125,7 +126,7 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 	 */
 	private function writer(string $part, bool $changes, string $revert): mixed {
 		$writer = $this->createMock(self::PARTS[$part][0]);
-		if ($writer instanceof ExampleSetTimelineRowsInterface) {
+		if ($writer instanceof ExampleSetViewRowsInterface || $writer instanceof ExampleSetTimelineRowsInterface) {
 			$writer->method('rows')->willReturn($writer);
 		}
 
