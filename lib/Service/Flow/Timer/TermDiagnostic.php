@@ -95,11 +95,13 @@ class TermDiagnostic {
 		$collector = new WalkCollector();
 		$start = $query->start();
 
-		$landed = $this->calculator->add(
-			from: $start,
-			value: (float)$normalised['value'],
-			unit: $normalised['unit'],
-			calendar: $calendar,
+		$landed = $this->calculator->addWatched(
+			addition: new SlaAddition(
+				start: $start,
+				value: (float)$normalised['value'],
+				unit: $normalised['unit'],
+				calendar: $calendar
+			),
 			collector: $collector
 		);
 

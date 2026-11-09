@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices;
@@ -123,16 +124,14 @@ class FileTextController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName App name
 	 * @param IRequest $request Request object
 	 * @param FileTextControllerServices $services The file text controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FileTextControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->textExtractor = $services->domain->textExtractor;
 		$this->fileService = $services->domain->fileService;
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
