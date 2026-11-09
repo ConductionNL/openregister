@@ -473,17 +473,18 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 				$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
 				$context = (['objects' => $objects, 'files' => $files] + $base);
-				$objects[$object['key']] = $this->rewriter->keep(
-					plan: $plan,
-					run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
-					resolve: fn (): array => $this->resolve(object: $object, context: $context, planned: []),
-					references: function () use ($run, $object, $kept, $context, &$report, &$record): array {
-						$held = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
-						return $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
-					},
-					report: $report,
-					written: $written
-				);
+				$held    = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
+				if (($plan['refresh'] ?? false) !== true) {
+					$objects[$object['key']] = $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
+				} else {
+					$objects[$object['key']] = $this->rewriter->rewrite(
+						run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
+						resolved: $this->resolve(object: $object, context: $context, planned: []),
+						report: $report,
+						written: $written
+					);
+				}
+
 				$this->rewriter->follow(record: $record, name: $name, written: $written, save: $save);
 
 				continue;
@@ -528,7 +529,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		// Before the changes, so a change can quote a flow or an access link
 		// (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
-		$early = $this->engineRows?->installBeforeChanges(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values);
+		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->values);
+		$early = $this->engineRows?->installBeforeChanges(write: $write, report: $report, record: $record);
 		if ($early === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
@@ -539,7 +541,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$report = $this->installAppConfig(run: $run, context: $context, report: $report, record: $record);
 
-		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->values);
+		if ($this->engineRows?->install(write: $write, report: $report, record: $record) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 
@@ -706,7 +709,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			}
 		}//end foreach
 
-		if (ExampleSetRecord::letGoUndeclared(fragment: $fragment, part: 'changes', noun: 'change', report: $report, record: $record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(part: self::changesPart(), fragment: $fragment, report: $report, record: $record) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 
@@ -1079,12 +1082,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 			$type = (string) ($entry['type'] ?? 'string');
 			$made  = $this->appConfig->apply(
-				app: $fragment['app'],
-				key: $entry['key'],
-				value: $value,
-				generate: $entry['generate'],
-				type: $type,
-				atLeast: (($entry['atLeast'] ?? false) === true)
+				target: new ExampleSetConfigValue(
+					at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']),
+					value: $value,
+					type: $type,
+					kind: ExampleSetConfigValue::kindOf(entry: $entry)
+				)
 			);
 			if ($made['error'] !== '') {
 				$report['dropped'][]        = $fragment['file'].': app config "'.$entry['key'].'": '.$made['error'];
@@ -1270,4 +1273,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return new DateTimeImmutable('now');
 		}
 	}//end today()
+
+	/**
+	 * The record part of the changes a set makes to objects it did not create.
+	 *
+	 * @return ExampleSetRecordPart
+	 */
+	private static function changesPart(): ExampleSetRecordPart {
+		return new ExampleSetRecordPart(part: 'changes', noun: 'change');
+	}//end changesPart()
 }//end class
