@@ -169,6 +169,7 @@ final class DbRegistrar {
 		TaskProjectionStateMapperInterface::class => TaskProjectionStateMapper::class,
 		TaskRelationMapperInterface::class => TaskRelationMapper::class,
 		TaskSequenceMapperInterface::class => TaskSequenceMapper::class,
+		TenantUsageMapperInterface::class => TenantUsageMapper::class,
 		TimeTrackerLinkMapperInterface::class => TimeTrackerLinkMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
 		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,

@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob\Support;
 
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 
 /**
  * The organisations the tenant purge walks and the usage rows it deletes with them.
@@ -35,13 +35,13 @@ final readonly class TenantPurgeStores {
 	 * Bundle the services.
 	 *
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper.
-	 * @param TenantUsageMapper           $tenantUsageMapper  Usage mapper.
+	 * @param TenantUsageMapperInterface  $tenantUsageMapper  Usage mapper.
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function __construct(
 		public OrganisationMapperInterface $organisationMapper,
-		public TenantUsageMapper $tenantUsageMapper,
+		public TenantUsageMapperInterface $tenantUsageMapper,
 	) {
 	}//end __construct()
 }//end class

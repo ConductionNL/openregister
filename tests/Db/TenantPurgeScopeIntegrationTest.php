@@ -14,6 +14,7 @@ use OCA\OpenRegister\BackgroundJob\TenantPurgeJob;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\UsageMeasurement;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -127,16 +128,12 @@ class TenantPurgeScopeIntegrationTest extends TestCase {
 		$this->usage->upsertUsage(
 			organisationUuid: $uuid,
 			period: new DateTime('2026-01-01 10:00:00'),
-			requestCount: 1,
-			bandwidthBytes: 1,
-			storageBytes: 1
+			measurement: new UsageMeasurement(requestCount: 1, bandwidthBytes: 1, storageBytes: 1)
 		);
 		$this->usage->upsertUsage(
 			organisationUuid: $uuid,
 			period: new DateTime('2026-06-01 10:00:00'),
-			requestCount: 1,
-			bandwidthBytes: 1,
-			storageBytes: 1
+			measurement: new UsageMeasurement(requestCount: 1, bandwidthBytes: 1, storageBytes: 1)
 		);
 
 		return $uuid;
