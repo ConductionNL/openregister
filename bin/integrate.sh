@@ -295,6 +295,11 @@ phase_verdict() {
 	line=$(python3 "$BIN/batch_tools.py" aggregate "${logs[@]}") || { say "NORESULT tree $T10 prs $N: $line"; st_log "NORESULT tree $T10 prs $N: $line"; echo NORESULT > "$RUN/verdict"; exit 4; }
 	f=$(grep -oE 'Failures: [0-9]+' <<<"$line" | grep -oE '[0-9]+'); e=$(grep -oE 'Errors: [0-9]+' <<<"$line" | grep -oE '[0-9]+')
 	front=$(cat "$RUN/front" 2>/dev/null || echo red)
+	# Failures that match config/inherited.re also fail on plain main in this sandbox (no DNS, missing extensions),
+	# so they say nothing about the tree: when they are the only PHP failures, the PHP side counts as green.
+	if [ "${f:-0}" != 0 ] || [ "${e:-0}" != 0 ]; then
+		[ -z "$(python3 "$BIN/batch_tools.py" failures "${logs[@]}" | grep -vE "$(cat "$ST/config/inherited.re")" | sort -u)" ] && { f=0; e=0; }
+	fi
 	risky=$(cat "${logs[@]}" | awk '/risky test/{r=1} /^(There w|FAILURES|ERRORS|Tests:)/{if(!/risky/)r=0} r&&/^[0-9]+\) /' | grep -vE "$(cat "$ST/config/inherited.re")" | sed -E 's/^[0-9]+\) //' | sort -u)
 	if [ -n "$risky" ]; then
 		comm -13 <(sort -u "$ST/risky-debt.txt" 2>/dev/null) <(echo "$risky") > "$RUN/risky.new"
@@ -308,7 +313,7 @@ phase_verdict() {
 	fi
 	local fargs=(); [ "$front" = red ] && fargs=(--front-log "$LOGS/front.log")
 	[ "$front" = red ] && [ ! -f "$LOGS/front.log" ] && fargs=()
-	hit=$(python3 "$BIN/batch_tools.py" implicate "$C" "$W/included.txt" "${fargs[@]}" "${logs[@]}")
+	hit=$(python3 "$BIN/batch_tools.py" implicate "${fargs[@]}" "$C" "$W/included.txt" "${logs[@]}")
 	if [ -n "$hit" ]; then
 		read -r pr sha test <<<"$hit"
 		st_append parked.txt "$(echo "$pr $sha auto-park: $test" | cut -c1-300)"
