@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferAuditLog;
+use OCA\OpenRegister\Service\Edepot\TransferFailure;
 use OCA\OpenRegister\Service\Edepot\TransferSettings;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
@@ -82,7 +83,7 @@ class TransferAuditLogTest extends TestCase {
 		$log = $this->failingAuditLog();
 		$log->initiated(transferList: ['uuid' => 'l', 'objectReferences' => [1, 2]], transport: 'sftp');
 		$log->objectTransferred(object: $object, transferUuid: 'l', reference: 'r');
-		$log->failed(transferList: ['uuid' => 'l', 'objectReferences' => [1]], error: 'e', transport: 'sftp');
+		$log->failed(transferList: ['uuid' => 'l', 'objectReferences' => [1]], failure: new TransferFailure(error: 'e', transport: 'sftp'));
 		$log->notifyCompletion(transferList: ['uuid' => 'l', 'status' => 'completed']);
 
 		$this->assertSame(

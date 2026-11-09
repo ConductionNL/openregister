@@ -282,7 +282,10 @@ class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTra
 		);
 		$run->transferList['status']         = TransferListService::STATUS_FAILED;
 		$run->transferList['transferResult'] = ['error' => $message, 'timestamp' => (new DateTime())->format('c')];
-		$this->pipeline->auditLog->failed(transferList: $run->transferList, error: $error->getMessage(), transport: $run->transportName());
+		$this->pipeline->auditLog->failed(
+			transferList: $run->transferList,
+			failure: new TransferFailure(error: $error->getMessage(), transport: $run->transportName())
+		);
 
 		return $run->recordOutcome(outcome: TransferListService::STATUS_FAILED, error: $message);
 	}//end buildFailed()

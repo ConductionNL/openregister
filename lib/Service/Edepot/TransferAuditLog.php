@@ -109,21 +109,20 @@ final class TransferAuditLog {
 	 * Log audit trail: transfer failed.
 	 *
 	 * @param array<string,mixed> $transferList The transfer list.
-	 * @param string              $error        Error details.
-	 * @param string              $transport    Transport protocol.
+	 * @param TransferFailure     $failure      Why it failed, and over which transport.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
 	 */
-	public function failed(array $transferList, string $error, string $transport): void {
+	public function failed(array $transferList, TransferFailure $failure): void {
 		$this->logger->error(
 			message: '[EdepotTransferService] Audit: archival.transfer_failed',
 			context: [
 				'action' => 'archival.transfer_failed',
 				'transferUuid' => $transferList['uuid'],
-				'error' => $error,
-				'transport' => $transport,
+				'error' => $failure->error,
+				'transport' => $failure->transport,
 				'failedCount' => count($transferList['objectReferences']),
 			]
 		);
