@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -432,9 +433,7 @@ class AutoTransitionPass implements AutoTransitionPassInterface {
 	 */
 	private function decide(array $record): ?AutoTransitionDecision {
 		return $this->runner->decide(
-			uuid: $record['uuid'],
-			register: $record['register'],
-			schema: $record['schema'],
+			ref: new ObjectRef(register: $record['register'], schema: $record['schema'], id: $record['uuid']),
 			previous: ($this->previous[$record['uuid']] ?? [])
 		);
 	}//end decide()
@@ -455,11 +454,12 @@ class AutoTransitionPass implements AutoTransitionPassInterface {
 
 		$this->applying = $decision->candidate->action;
 		try {
-			return $this->runner->fire(
-				decision: $decision,
-				lineage: $this->lineage[$uuid],
-				queueOnly: ($record['inside'] === false)
-			);
+			if ($record['inside'] === false) {
+				$this->runner->queueOutsideBoundary(decision: $decision, lineage: $this->lineage[$uuid]);
+				return null;
+			}
+
+			return $this->runner->fire(decision: $decision, lineage: $this->lineage[$uuid]);
 		} finally {
 			$this->applying = null;
 		}
