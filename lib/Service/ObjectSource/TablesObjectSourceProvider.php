@@ -334,12 +334,13 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 		$scope = $target->scope;
 		$columns = $target->columns(load: fn (): array => $this->parts->reader->listColumns(tableId: $scope->tableId, userId: $scope->userId));
 
-		return $this->parts->columnMapper->projectRow(
-			row: $row,
+		$projection = new TablesRowProjection(
 			columns: $columns,
 			columnMap: $this->parts->columnMapper->buildColumnMap(columns: $columns),
 			targetSchemaExists: $this->targetSchemaResolver()
 		);
+
+		return $this->parts->columnMapper->projectRow(row: $row, projection: $projection);
 	}//end projectedData()
 
 	/**
