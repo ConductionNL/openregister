@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
@@ -82,7 +83,7 @@ class MapperPagingGoldenTest extends TestCase {
 			'schema run entry by run' => [SchemaRunEntryMapper::class, 'findByRun', ['runId' => 5, 'outcome' => 'failed']],
 			'schema run by schema' => [SchemaRunMapper::class, 'findBySchema', ['schemaId' => 6]],
 			'search trail all' => [SearchTrailMapper::class, 'findAll', []],
-			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7]],
+			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7, 'page' => null]],
 			'chunk unvectorized' => [ChunkMapper::class, 'findUnvectorized', []],
 			'chunk file source summaries' => [ChunkMapper::class, 'getFileSourceSummaries', ['search' => 'abc']],
 			'webhook all' => [WebhookMapper::class, 'findAll', ['filters' => ['a' => 1]]],
@@ -134,6 +135,10 @@ class MapperPagingGoldenTest extends TestCase {
 	 * The call arguments for a page; outcome lists take the outcome and page as one filter.
 	 */
 	private static function withPage(array $args, array $page): array {
+		if (array_key_exists('page', $args) === true) {
+			return ['page' => new ListQuery(($page['limit'] ?? ListQuery::UNBOUNDED), ($page['offset'] ?? null))] + $args;
+		}
+
 		if (array_key_exists('outcome', $args) === false) {
 			return $args + $page;
 		}
