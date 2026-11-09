@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
-use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExplicitRevealInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;

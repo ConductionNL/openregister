@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
-use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExplicitRevealInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

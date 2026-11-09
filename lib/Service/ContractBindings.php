@@ -474,13 +474,13 @@ use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
-use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
@@ -700,7 +700,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface::class => \OCA\OpenRegister\Service\Rbac\DefinitionWriteRights::class,
 		\OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface::class => \OCA\OpenRegister\Service\Rbac\GrantChangeAuditor::class,
 		\OCA\OpenRegister\Service\Rbac\DerivedGrantLoginInterface::class => \OCA\OpenRegister\Service\Rbac\DerivedGrantStore::class,
-		\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitReveal::class,
+		\OCA\OpenRegister\Kernel\Contracts\ExplicitRevealInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitReveal::class,
 		\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,

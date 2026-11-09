@@ -226,6 +226,31 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Service\\Rbac\\DenyEnforcementModeInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DenyEnforcementModeInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\DenyResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\DenyResolverInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\ExplicitRevealInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ExplicitRevealInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\ObjectGrantResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectGrantResolverInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Rbac\\ObjectScopeResolverInterface": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectScopeResolverInterface",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Service\\Reporting\\HtmlReportWriter": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\Reporting\\HtmlReportWriter",
 			"eager": false,

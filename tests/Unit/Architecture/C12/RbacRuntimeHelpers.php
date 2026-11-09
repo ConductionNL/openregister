@@ -23,7 +23,7 @@ use OCA\OpenRegister\Service\Rbac;
 return [
 	'classes' => [
 		Rbac\McpScope::class => null,
-		Rbac\ObjectGrantResolver::class => Rbac\ObjectGrantResolverInterface::class,
+		Rbac\ObjectGrantResolver::class => \OCA\OpenRegister\Kernel\Contracts\ObjectGrantResolverInterface::class,
 		Rbac\SchemaManageGate::class => Rbac\SchemaManageGateInterface::class,
 	],
 	'kept' => [],

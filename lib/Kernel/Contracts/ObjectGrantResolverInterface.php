@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Rbac;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Declares only what callers outside the component use of ObjectGrantResolver; the rest

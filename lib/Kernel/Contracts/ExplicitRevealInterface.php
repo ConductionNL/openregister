@@ -18,9 +18,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Rbac;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 
 /**
@@ -63,7 +62,7 @@ interface ExplicitRevealInterface {
 	 * Trusted server code may filter: it asked for the value on purpose.
 	 *
 	 * @param array<mixed> $query  The search query.
-	 * @param Schema|null  $schema The schema searched.
+	 * @param SchemaInterface|null $schema The schema searched.
 	 *
 	 * @return void
 	 *
@@ -71,5 +70,5 @@ interface ExplicitRevealInterface {
 	 *
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
-	public function refuseOracleQuery(array $query, ?Schema $schema): void;
+	public function refuseOracleQuery(array $query, ?SchemaInterface $schema): void;
 }//end interface

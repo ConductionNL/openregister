@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Support\OrderParameter;
 
@@ -182,13 +183,13 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	/**
 	 * The explicit-reveal properties of a schema.
 	 *
-	 * @param Schema|null $schema The schema.
+	 * @param SchemaInterface|null $schema The schema.
 	 *
 	 * @return array<int, string> The property names.
 	 *
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
-	public static function explicitProperties(?Schema $schema): array {
+	public static function explicitProperties(?SchemaInterface $schema): array {
 		if ($schema === null) {
 			return [];
 		}
@@ -282,8 +283,8 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	 * a reader learn it without the logged reveal (try values, read the order).
 	 * Trusted server code may filter: it asked for the value on purpose.
 	 *
-	 * @param array<mixed> $query  The search query.
-	 * @param Schema|null  $schema The schema searched.
+	 * @param array<mixed>         $query  The search query.
+	 * @param SchemaInterface|null $schema The schema searched.
 	 *
 	 * @return void
 	 *
@@ -291,7 +292,7 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	 *
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
-	public function refuseOracleQuery(array $query, ?Schema $schema): void {
+	public function refuseOracleQuery(array $query, ?SchemaInterface $schema): void {
 		$names = self::explicitProperties(schema: $schema);
 		if ($names === [] || $this->isTrusted() === true) {
 			return;

@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Rbac;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The narrow contract of ObjectScopeResolver, bound in ContractBindings.
