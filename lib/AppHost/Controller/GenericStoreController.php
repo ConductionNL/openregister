@@ -220,12 +220,8 @@ class GenericStoreController extends Controller {
 			);
 		}
 
-		$query = $this->stringParam(name: 'q');
-		$kind = $this->stringParam(name: 'kind');
-
 		try {
-			$descriptor = $this->descriptor(store: $store);
-			$result = $this->searchFor(store: $store, descriptor: $descriptor, query: $query, kind: $kind);
+			$result = $this->searchFor(store: $store);
 		} catch (Throwable $e) {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
@@ -498,38 +494,30 @@ class GenericStoreController extends Controller {
 	}//end mayInstall()
 
 	/**
-	 * Search whichever catalogue this app declared.
+	 * Search whichever catalogue this app declared, for the request's `q` and `kind`.
 	 *
 	 * An app that declares shareable types exchanges CONFIGURATION, so its
 	 * catalogue is what publishers have published, not one remote instance's
 	 * rows. Selected by declaration, never by probing: an app that declares
 	 * none makes no discovery call at all.
 	 *
-	 * @param StoreManifest   $store      The calling app's declared store block.
-	 * @param StoreDescriptor $descriptor The calling app's store parameters.
-	 * @param string|null     $query      Optional free-text search term.
-	 * @param string|null     $kind       Optional kind filter.
+	 * @param StoreManifest $store The calling app's declared store block.
 	 *
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-an-app-that-declares-no-types-keeps-the-object-store
 	 */
-	private function searchFor(
-		StoreManifest $store,
-		StoreDescriptor $descriptor,
-		?string $query,
-		?string $kind
-	): array {
+	private function searchFor(StoreManifest $store): array {
+		$descriptor = $this->descriptor(store: $store);
+		$query = $this->stringParam(name: 'q');
+		$kind = $this->stringParam(name: 'kind');
+
 		// The declared source is checked FIRST. A github store has no registry
 		// URL at all, so falling through to the OpenRegister path would report
 		// it as `not_configured` — true of a registry it never declared, and
 		// useless to whoever has to act on it.
 		if ($store->source === 'github') {
-			return $this->gitHubSource->search(
-				manifest: $store,
-				query: ($query ?? ''),
-				kind: $kind
-			);
+			return $this->gitHubSource->search(manifest: $store, query: ($query ?? ''), kind: $kind);
 		}
 
 		if ($descriptor->isFederated() === true) {
