@@ -552,17 +552,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		$created = $this->shareManager->createShare($share);
 
 		// A public link is a grant like any other: the trail names it (never its token).
-		$this->auditor?->recordGrant(
-			object: $object,
-			grant: [
-				'id' => $created->getFullId(),
-				'type' => 'link',
-				'sharedWith' => null,
-				'permissions' => $created->getPermissions(),
-				'verbs' => [],
-			],
-			admittedAs: null
-		);
+		$this->auditor?->recordGrant(object: $object, grant: $this->linkGrant(created: $created, sharedWith: null), admittedAs: null);
 
 		return [
 			'id' => $created->getFullId(),
@@ -623,13 +613,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 
 		$this->auditor?->recordGrant(
 			object: $object,
-			grant: [
-				'id' => $created->getFullId(),
-				'type' => 'email',
-				'sharedWith' => $created->getSharedWith(),
-				'permissions' => $created->getPermissions(),
-				'verbs' => [],
-			],
+			grant: array_replace($this->linkGrant(created: $created, sharedWith: $created->getSharedWith()), ['type' => 'email']),
 			admittedAs: null
 		);
 
@@ -642,6 +626,24 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 			'expiration' => $created->getExpirationDate()?->format('c'),
 		];
 	}//end inviteByEmail()
+
+	/**
+	 * A link-style share as the audit trail records it: no verbs, never its token.
+	 *
+	 * @param IShare      $created    The created share.
+	 * @param string|null $sharedWith The address it is shared with, or null for a public link.
+	 *
+	 * @return array{id: string, type: string, sharedWith: string|null, permissions: int, verbs: array} The grant.
+	 */
+	private function linkGrant(IShare $created, ?string $sharedWith): array {
+		return [
+			'id' => $created->getFullId(),
+			'type' => 'link',
+			'sharedWith' => $sharedWith,
+			'permissions' => $created->getPermissions(),
+			'verbs' => [],
+		];
+	}//end linkGrant()
 
 	/**
 	 * Build an owner-checked share on the object's folder.
