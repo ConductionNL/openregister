@@ -205,24 +205,54 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 * The object is mutated and returned; persisting it is the caller's job, so
 	 * a nomination taken during a write joins that write rather than racing it.
 	 *
-	 * @param ObjectEntity $object  The record whose business use has ended.
-	 * @param Schema       $schema  Its schema, holding the archive block.
-	 * @param string       $trigger What caused this: `closure` or `recompute`.
-	 * @param string|null  $actor   Who asked, for a recomputation.
-	 * @param string|null  $reason  Why they asked, for a recomputation.
+	 * The trigger written on the block is `closure`: the record reached the end of its business use.
+	 *
+	 * @param ObjectEntity $object The record whose business use has ended.
+	 * @param Schema       $schema Its schema, holding the archive block.
 	 *
 	 * @return array<string, mixed> The nomination block that was written.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function nominate(ObjectEntity $object, Schema $schema, string $trigger, ?string $actor = null, ?string $reason = null): array {
+	public function nominate(ObjectEntity $object, Schema $schema): array {
+		return $this->nominateFor(object: $object, schema: $schema, cause: new NominationCause(trigger: 'closure'));
+	}//end nominate()
+
+	/**
+	 * Derive this object's archival future again, on request, and write it down.
+	 *
+	 * The trigger written on the block is `recompute`, with who asked and why.
+	 *
+	 * @param ObjectEntity $object The record.
+	 * @param Schema       $schema Its schema, holding the archive block.
+	 * @param string|null  $actor  Who asked.
+	 * @param string|null  $reason Why they asked.
+	 *
+	 * @return array<string, mixed> The nomination block that was written.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function recompute(ObjectEntity $object, Schema $schema, ?string $actor, ?string $reason): array {
+		return $this->nominateFor(object: $object, schema: $schema, cause: new NominationCause(trigger: 'recompute', actor: $actor, reason: $reason));
+	}//end recompute()
+
+	/**
+	 * Derive this object's archival future and write it down, for one cause.
+	 *
+	 * @param ObjectEntity    $object The record.
+	 * @param Schema          $schema Its schema, holding the archive block.
+	 * @param NominationCause $cause  What caused this, and for a recomputation who asked and why.
+	 *
+	 * @return array<string, mixed> The nomination block that was written.
+	 */
+	private function nominateFor(ObjectEntity $object, Schema $schema, NominationCause $cause): array {
 		$archive = $this->declarations->read(object: $object, schema: $schema);
 		if ($archive === []) {
 			return ['status' => self::STATUS_NOT_APPLICABLE, 'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING];
 		}
 
 		$derived = $this->derive(object: $object, schema: $schema, archive: $archive);
-		$block = $this->openBlock(status: $derived['status'], trigger: $trigger, actor: $actor, reason: $reason);
+		$block = $this->openBlock(status: $derived['status'], cause: $cause);
 		if ($derived['status'] === self::STATUS_UNNOMINATABLE) {
 			return $this->recordUnnominatable(object: $object, block: $block, reason: $derived['reason']);
 		}
@@ -231,7 +261,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		$this->write(object: $object, derived: $derived, block: $block);
 
 		return $block;
-	}//end nominate()
+	}//end nominateFor()
 
 	/**
 	 * Name the rule that decided, and the selectielijst row when one did.
@@ -253,21 +283,19 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	/**
 	 * The start of a nomination block: what, when, why and by whom.
 	 *
-	 * @param string      $status  The derived status.
-	 * @param string      $trigger What caused this: `closure` or `recompute`.
-	 * @param string|null $actor   Who asked, for a recomputation.
-	 * @param string|null $reason  Why they asked, for a recomputation.
+	 * @param string          $status The derived status.
+	 * @param NominationCause $cause  What caused this, and for a recomputation who asked and why.
 	 *
 	 * @return array<string, mixed> The block so far.
 	 */
-	private function openBlock(string $status, string $trigger, ?string $actor, ?string $reason): array {
+	private function openBlock(string $status, NominationCause $cause): array {
 		$block = [
 			'status' => $status,
 			'at' => (new DateTimeImmutable())->format('c'),
-			'trigger' => $trigger,
+			'trigger' => $cause->trigger,
 		];
 
-		foreach (['actor' => $actor, 'reason' => $reason] as $key => $value) {
+		foreach (['actor' => $cause->actor, 'reason' => $cause->reason] as $key => $value) {
 			if ($value !== null) {
 				$block[$key] = $value;
 			}
