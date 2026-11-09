@@ -25,6 +25,11 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 		},
 	},
 }))
+jest.mock('@nextcloud/l10n', () => ({
+	__esModule: true,
+	t: (app, text) => `t:${text}`,
+	translate: (app, text) => `t:${text}`,
+}))
 jest.mock('@nextcloud/vue', () => require('../__mocks__/goldenDom.js').library())
 jest.mock('vue-material-design-icons/ApplicationOutline.vue', () => require('../__mocks__/goldenDom.js').stubModule('ApplicationOutline'))
 jest.mock('../../components/shared/ActionMenu.vue', () => require('../__mocks__/goldenDom.js').stubModule('ActionMenu'))
