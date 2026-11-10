@@ -312,7 +312,10 @@ class FlowRunService implements FlowRunServiceInterface {
 		$context['resuming'] = true;
 
 		$start = $this->startFor(pass: $pinned, guard: $guard);
-		$result = $this->walk->engine->run(start: $start->withContext(context: $context)->withStreams(streams: $walk), items: ($run->getItems() ?? []));
+		$result = $this->walk->engine->run(
+			start: $start->withContext(context: $context)->withStreams(streams: $walk),
+			origin: new FlowRunOrigin(items: ($run->getItems() ?? []))
+		);
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end advanceBranch()
@@ -1093,8 +1096,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			$begin = $this->startFor(pass: $pass, guard: $guard);
 			$result = $this->walk->engine->run(
 				start: $begin->withContext(context: $context)->withStreams(streams: $walk),
-				items: $items,
-				startAt: $start
+				origin: new FlowRunOrigin(items: $items, startAt: $start)
 			);
 		} catch (Throwable $e) {
 			$this->releaseWalk(walk: $walk);

@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItemPlacement;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -99,7 +100,9 @@ class FlowOrMergeTest extends TestCase {
 		$engine = new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class));
 		$engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new OrMergeSubject(), dispatcher: $dispatcher)),
-			items: [FlowItems::item(json: ['page' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['page' => 1])]
+			)
 		);
 
 		// Each shard fired once with the trigger's item.
