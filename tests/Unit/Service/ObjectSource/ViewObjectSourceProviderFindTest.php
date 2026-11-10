@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -84,7 +86,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 		$queries = [];
 		$provider = $this->provider(rows: [$row], queries: $queries);
 
-		$found = $provider->find(register: new Register(), schema: new Schema(), id: 'o-1', config: ['view' => 'v-1']);
+		$found = $provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['view' => 'v-1']), id: 'o-1');
 
 		$this->assertSame($row, $found);
 		$this->assertSame(['o-1'], $queries[0]['_ids']);
@@ -102,7 +104,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 	public function testFindAnswersNullWhenTheViewDoesNotHoldIt(): void {
 		$queries = [];
 
-		$this->assertNull($this->provider(rows: [], queries: $queries)->find(register: new Register(), schema: new Schema(), id: 'o-2', config: ['view' => 'v-1']));
+		$this->assertNull($this->provider(rows: [], queries: $queries)->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['view' => 'v-1']), id: 'o-2'));
 		$this->assertSame(['o-2'], $queries[0]['_ids']);
 	}//end testFindAnswersNullWhenTheViewDoesNotHoldIt()
 }//end class
