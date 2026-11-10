@@ -134,10 +134,8 @@ class RenderObjectFilesGoldenTest extends TestCase {
 		$render = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
 		$stores = new \OCA\OpenRegister\Service\Object\RenderStores(
 			mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-				objectEntityMapper: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class),
-				registerMapper: $this->createMock(\OCA\OpenRegister\Db\RegisterMapperInterface::class),
-				schemaMapper: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class),
-				objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class)
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(\OCA\OpenRegister\Db\RegisterMapperInterface::class), schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
+					objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class)
 			),
 			files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
 				fileMapper: $fileMapper,

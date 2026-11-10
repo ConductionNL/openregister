@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
+use OCA\OpenRegister\Service\ConfigLookup;
 use OCA\OpenRegister\AppHost\Exception\ConfigurationMissingException;
 use OCA\OpenRegister\AppHost\Exception\FoundationUnavailableException;
 use OCP\App\IAppManager;
@@ -103,7 +104,7 @@ class RegisterConfigResolver {
 
 		return $this->guardEmptyConfig(
 			configKey: $configKey,
-			resolve: fn (): string => (string)$resolver->resolveRegisterId($this->appId, $configKey)
+			resolve: fn (): string => (string)$resolver->lookupId(new ConfigLookup(appId: $this->appId, configKey: $configKey))
 		);
 	}//end resolveRegisterId()
 
@@ -124,7 +125,7 @@ class RegisterConfigResolver {
 
 		return $this->guardEmptyConfig(
 			configKey: $configKey,
-			resolve: fn (): string => (string)$resolver->resolveSchemaId($this->appId, $configKey)
+			resolve: fn (): string => (string)$resolver->lookupId(new ConfigLookup(appId: $this->appId, configKey: $configKey))
 		);
 	}//end resolveSchemaId()
 

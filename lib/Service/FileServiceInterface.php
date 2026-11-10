@@ -26,6 +26,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\FileTransfer;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
@@ -202,9 +205,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	/**
 	 * Move a file to another object (copy + delete source).
 	 *
-	 * @param ObjectEntity $sourceObject The source object entity.
-	 * @param int $fileId The source file ID.
-	 * @param ObjectEntity $targetObject The target object entity.
+	 * @param FileTransfer $transfer The source object, the source file ID and the target object.
 	 *
 	 * @return File The moved file.
 	 *
@@ -212,14 +213,12 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File;
+	public function moveAttachedFile(FileTransfer $transfer): File;
 
 	/**
 	 * Rename a file attached to an object.
 	 *
-	 * @param ObjectEntity $object The parent object entity.
-	 * @param int $fileId The file ID.
-	 * @param string $newName The new file name.
+	 * @param FileRename $rename The parent object entity, the file ID and the new file name.
 	 *
 	 * @return File The renamed file.
 	 *
@@ -227,7 +226,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function renameFile(ObjectEntity $object, int $fileId, string $newName): File;
+	public function renameAttachedFile(FileRename $rename): File;
 
 	/**
 	 * Save a file to an object's folder (create new or update existing).
@@ -283,22 +282,15 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 * Update a file's OpenRegister-side metadata.
 	 *
 	 * Fronts `UpdateFileHandler::updateFileMetadata()` the same way this
-	 * service already fronts `updateFile()`, so the controller keeps talking to
+	 * service already fronts `overwriteFile()`, so the controller keeps talking to
 	 * one collaborator instead of reaching through this one to the handler.
 	 *
-	 * @param integer       $fileId      The Nextcloud filecache fileid.
-	 * @param string|null   $description New description; '' clears, null skips.
-	 * @param string|null   $category    New category; '' clears, null skips.
-	 * @param string[]|null $labels      New labels; [] clears, null skips.
+	 * @param FileMetadataChange $change The Nextcloud filecache fileid and the new description, category and labels
+	 *                                   ('' or [] clears, null skips).
 	 *
 	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFileMetadata(
-		int $fileId,
-		?string $description = null,
-		?string $category = null,
-		?array $labels = null,
-	): \OCA\OpenRegister\Files\Db\File;
+	public function changeFileMetadata(FileMetadataChange $change): \OCA\OpenRegister\Files\Db\File;
 }//end interface

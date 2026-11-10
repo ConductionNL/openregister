@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
@@ -93,13 +94,13 @@ class SubFlowNodeTokenTest extends TestCase {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child', 'edges' => []]);
 
 		$seenChildContext = null;
-		$this->runs->method('queue')->willReturnCallback(
-			function (...$args) use (&$seenChildContext) {
-				$seenChildContext = ($args[3] ?? ($args['context'] ?? null));
+		$this->runs->method('queueRun')->willReturnCallback(
+			function (string $flowId, FlowRunQueueOptions $options) use (&$seenChildContext) {
+				$seenChildContext = $options->context;
 				return $this->runWithToken(FlowRun::STATUS_QUEUED);
 			}
 		);
-		$this->runs->method('execute')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
+		$this->runs->method('executePass')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
 
 		$parentToken = new FlowToken(['resolvedRef' => 'source-7']);
 
@@ -130,13 +131,13 @@ class SubFlowNodeTokenTest extends TestCase {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child']);
 
 		$seenChildContext = null;
-		$this->runs->method('queue')->willReturnCallback(
-			function (...$args) use (&$seenChildContext) {
-				$seenChildContext = ($args[3] ?? ($args['context'] ?? null));
+		$this->runs->method('queueRun')->willReturnCallback(
+			function (string $flowId, FlowRunQueueOptions $options) use (&$seenChildContext) {
+				$seenChildContext = $options->context;
 				return $this->runWithToken(FlowRun::STATUS_QUEUED);
 			}
 		);
-		$this->runs->expects($this->never())->method('execute');
+		$this->runs->expects($this->never())->method('executePass');
 
 		$parentToken = new FlowToken(['mine' => 'parent']);
 
@@ -160,8 +161,8 @@ class SubFlowNodeTokenTest extends TestCase {
 	 */
 	public function testAWaitedChildReturnsItsValuesToTheParent(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child', 'edges' => []]);
-		$this->runs->method('queue')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
-		$this->runs->method('execute')->willReturn(
+		$this->runs->method('queueRun')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
+		$this->runs->method('executePass')->willReturn(
 			$this->runWithToken(FlowRun::STATUS_COMPLETED, ['resolvedByChild' => 'yes'])
 		);
 
@@ -181,8 +182,8 @@ class SubFlowNodeTokenTest extends TestCase {
 	 */
 	public function testTheChildWinsOnAConflictingKey(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child', 'edges' => []]);
-		$this->runs->method('queue')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
-		$this->runs->method('execute')->willReturn(
+		$this->runs->method('queueRun')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
+		$this->runs->method('executePass')->willReturn(
 			$this->runWithToken(FlowRun::STATUS_COMPLETED, ['shared' => 'child'])
 		);
 
@@ -201,8 +202,8 @@ class SubFlowNodeTokenTest extends TestCase {
 	 */
 	public function testAParentWithoutATokenStillRunsASubFlow(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child', 'edges' => []]);
-		$this->runs->method('queue')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
-		$this->runs->expects($this->once())->method('execute')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
+		$this->runs->method('queueRun')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
+		$this->runs->expects($this->once())->method('executePass')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
 
 		$items = $this->node->execute([], ['flow' => 'child'], []);
 

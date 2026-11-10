@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
@@ -198,7 +199,7 @@ class RulesController extends Controller {
 		return new JSONResponse(
 			[
 				'schema' => (string)($entity->getSlug() ?? ''),
-				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window, scope: $scope),
+				'rules' => $this->inventory->inventory(schema: $entity, options: new RuleInventoryOptions(idleDays: $window, scope: $scope)),
 			]
 		);
 

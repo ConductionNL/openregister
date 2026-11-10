@@ -434,26 +434,8 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * refusal belongs, and the message names the holder so the caller knows who
 	 * to ask rather than only that they were told no.
 	 *
-	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
-	 * @param integer|null $id The row being written.
-	 * @param array<int, string> $activeOrgUuids The acting organisation and its parents.
-	 *
-	 * @return void
-	 *
-	 * @throws SharedMasterDataWriteException When the acting organisation only consumes the row.
-	 *
-	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
-	 */
-	public function assertWritable(string $table, ?int $id, array $activeOrgUuids): void {
-		if ($id !== null) {
-			$this->assertRowWritable(row: new DeclaredRow(table: $table, id: $id), activeOrgUuids: $activeOrgUuids);
-		}
-	}//end assertWritable()
-
-	/**
-	 * Refuse a write to a shared master data row the acting organisation only consumes.
-	 *
-	 * No acting organisation consumes nothing, and is not refused here.
+	 * No acting organisation consumes nothing, and a row whose id is not known
+	 * asks nothing; neither is refused here.
 	 *
 	 * @param DeclaredRow        $row            The register or schema row being written.
 	 * @param array<int, string> $activeOrgUuids The acting organisation and its parents.
@@ -464,9 +446,9 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function assertRowWritable(DeclaredRow $row, array $activeOrgUuids): void {
+	public function assertWritable(DeclaredRow $row, array $activeOrgUuids): void {
 		$declaration = null;
-		if ($activeOrgUuids !== []) {
+		if ($row->id !== null && $activeOrgUuids !== []) {
 			$declaration = $this->consumedDeclaration(row: $row, orgUuids: $activeOrgUuids);
 		}
 
@@ -480,7 +462,7 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 			resourceType: $this->resourceTypeOf(table: $row->table),
 			resourceTitle: $declaration['title']
 		);
-	}//end assertRowWritable()
+	}//end assertWritable()
 
 	/**
 	 * The resource type a refusal names for a table.
