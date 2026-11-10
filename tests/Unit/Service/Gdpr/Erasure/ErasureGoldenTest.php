@@ -69,6 +69,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
 
 final class ErasureGoldenTest extends TestCase {
 	private const SUBJECT = 'jan@example.org';
@@ -501,14 +502,14 @@ final class ErasureGoldenTest extends TestCase {
 			}
 		);
 		$subjects->method('pseudonymiseObject')->willReturnCallback(
-			function (ObjectEntity $object, string $subjectId, array $matched): ?array {
-				$this->calls[] = 'scrub:' . $object->getUuid() . ':' . $subjectId . ':' . count($matched);
+			function (SubjectMatch $match, string $subjectId): ?array {
+				$this->calls[] = 'scrub:' . $match->object->getUuid() . ':' . $subjectId . ':' . count($match->matched);
 
-				if ($object->getUuid() === 's2') {
+				if ($match->object->getUuid() === 's2') {
 					return null;
 				}
 
-				return ['uuid' => $object->getUuid()];
+				return ['uuid' => $match->object->getUuid()];
 			}
 		);
 

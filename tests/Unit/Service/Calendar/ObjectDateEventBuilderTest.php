@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Calendar\ObjectDateEventBuilder;
+use OCA\OpenRegister\Service\Calendar\ObjectDateOccurrence;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -87,12 +88,12 @@ class ObjectDateEventBuilderTest extends TestCase {
 		$this->deadlines->method('resolve')
 			->willReturn(new DateTimeImmutable('2026-10-20T00:00:00+02:00'));
 
-		$event = $this->builder->build(
+		$event = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['title' => 'Bezwaar 2026-114', 'beslistermijn' => '2026-10-20']),
 			schemaId: 9,
 			declaration: $this->declaration('beslistermijn', ['kind' => 'deadline', 'alarmOffsetDays' => 7]),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$body = implode("\n", $event['lines']);
@@ -110,12 +111,12 @@ class ObjectDateEventBuilderTest extends TestCase {
 		$this->deadlines->method('resolve')
 			->willReturn(new DateTimeImmutable('2026-10-20T00:00:00+02:00'));
 
-		$event = $this->builder->build(
+		$event = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['beslistermijn' => '2026-10-20']),
 			schemaId: 9,
 			declaration: $this->declaration('beslistermijn', ['kind' => 'deadline']),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$this->assertStringNotContainsString('BEGIN:VALARM', implode("\n", $event['lines']));
@@ -125,12 +126,12 @@ class ObjectDateEventBuilderTest extends TestCase {
 		$this->deadlines->method('resolve')->willReturn(null);
 
 		$this->assertNull(
-			$this->builder->build(
+			$this->builder->build(new ObjectDateOccurrence(
 				object: $this->object(['beslistermijn' => '2026-10-20']),
 				schemaId: 9,
 				declaration: $this->declaration('beslistermijn', ['kind' => 'deadline']),
 				timeZone: $this->amsterdam
-			)
+			))
 		);
 	}
 
@@ -139,12 +140,12 @@ class ObjectDateEventBuilderTest extends TestCase {
 		$this->deadlines->method('resolve')
 			->willReturn(new DateTimeImmutable('2026-10-19T00:00:00+02:00'));
 
-		$event = $this->builder->build(
+		$event = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['beslistermijn' => '2026-10-17']),
 			schemaId: 9,
 			declaration: $this->declaration('beslistermijn', ['kind' => 'deadline']),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$body = implode("\n", $event['lines']);
@@ -153,12 +154,12 @@ class ObjectDateEventBuilderTest extends TestCase {
 	}
 
 	public function testAnAppointmentCarriesATimeZoneAndItsDuration(): void {
-		$event = $this->builder->build(
+		$event = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['title' => 'Hoorzitting', 'hoorzitting' => '2026-10-20T14:00:00+02:00']),
 			schemaId: 9,
 			declaration: $this->declaration('hoorzitting', ['kind' => 'appointment', 'durationMinutes' => 90]),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$body = implode("\n", $event['lines']);
@@ -170,12 +171,12 @@ class ObjectDateEventBuilderTest extends TestCase {
 	}
 
 	public function testAnAppointmentWithoutADurationGetsTheDefaultHour(): void {
-		$event = $this->builder->build(
+		$event = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['hoorzitting' => '2026-10-20T14:00:00+02:00']),
 			schemaId: 9,
 			declaration: $this->declaration('hoorzitting', ['kind' => 'appointment']),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$this->assertStringContainsString(
@@ -185,7 +186,7 @@ class ObjectDateEventBuilderTest extends TestCase {
 	}
 
 	public function testAPeriodSpansItsStartAndEnd(): void {
-		$event = $this->builder->build(
+		$event = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['bezwaartermijn' => '2026-10-01', 'bezwaarEinde' => '2026-11-12']),
 			schemaId: 9,
 			declaration: $this->declaration(
@@ -193,7 +194,7 @@ class ObjectDateEventBuilderTest extends TestCase {
 				['kind' => 'period', 'endProperty' => 'bezwaarEinde']
 			),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$body = implode("\n", $event['lines']);
@@ -204,12 +205,12 @@ class ObjectDateEventBuilderTest extends TestCase {
 
 	public function testAnUndeclaredOrAbsentDatePublishesNothing(): void {
 		$this->assertNull(
-			$this->builder->build(
+			$this->builder->build(new ObjectDateOccurrence(
 				object: $this->object(['title' => 'Bezwaar']),
 				schemaId: 9,
 				declaration: $this->declaration('hoorzitting', ['kind' => 'appointment']),
 				timeZone: $this->amsterdam
-			)
+			))
 		);
 	}
 
@@ -217,8 +218,8 @@ class ObjectDateEventBuilderTest extends TestCase {
 		$declaration = $this->declaration('hoorzitting', ['kind' => 'appointment']);
 		$object = $this->object(['hoorzitting' => '2026-10-20T14:00:00+02:00']);
 
-		$first = $this->builder->build(object: $object, schemaId: 9, declaration: $declaration, timeZone: $this->amsterdam);
-		$second = $this->builder->build(object: $object, schemaId: 9, declaration: $declaration, timeZone: $this->amsterdam);
+		$first = $this->builder->build(new ObjectDateOccurrence(object: $object, schemaId: 9, declaration: $declaration, timeZone: $this->amsterdam));
+		$second = $this->builder->build(new ObjectDateOccurrence(object: $object, schemaId: 9, declaration: $declaration, timeZone: $this->amsterdam));
 
 		$this->assertNotNull($first);
 		$this->assertNotNull($second);
@@ -234,18 +235,18 @@ class ObjectDateEventBuilderTest extends TestCase {
 	public function testTheUidSurvivesAMovedDate(): void {
 		$declaration = $this->declaration('hoorzitting', ['kind' => 'appointment']);
 
-		$before = $this->builder->build(
+		$before = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['hoorzitting' => '2026-10-01T14:00:00+02:00']),
 			schemaId: 9,
 			declaration: $declaration,
 			timeZone: $this->amsterdam
-		);
-		$after = $this->builder->build(
+		));
+		$after = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['hoorzitting' => '2026-10-15T14:00:00+02:00']),
 			schemaId: 9,
 			declaration: $declaration,
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($before);
 		$this->assertNotNull($after);
@@ -270,7 +271,7 @@ class ObjectDateEventBuilderTest extends TestCase {
 			attendees: $attendees
 		);
 
-		$event = $builder->build(
+		$event = $builder->build(new ObjectDateOccurrence(
 			object: $this->object(
 				[
 					'hoorzitting' => '2026-10-20T14:00:00+02:00',
@@ -283,7 +284,7 @@ class ObjectDateEventBuilderTest extends TestCase {
 				['kind' => 'appointment', 'attendeesProperty' => 'genodigden']
 			),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$body = implode("\n", $event['lines']);
@@ -297,7 +298,7 @@ class ObjectDateEventBuilderTest extends TestCase {
 		$this->deadlines->method('resolve')
 			->willReturn(new DateTimeImmutable('2026-10-20T00:00:00+02:00'));
 
-		$event = $this->builder->build(
+		$event = $this->builder->build(new ObjectDateOccurrence(
 			object: $this->object(['zaaknummer' => 'Z-2026-114', 'beslistermijn' => '2026-10-20']),
 			schemaId: 9,
 			declaration: $this->declaration(
@@ -305,7 +306,7 @@ class ObjectDateEventBuilderTest extends TestCase {
 				['kind' => 'deadline', 'summaryTemplate' => 'Beslistermijn {{zaaknummer}}']
 			),
 			timeZone: $this->amsterdam
-		);
+		));
 
 		$this->assertNotNull($event);
 		$this->assertStringContainsString('SUMMARY:Beslistermijn Z-2026-114', implode("\n", $event['lines']));

@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\BulkJob;
 
-use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
@@ -67,42 +66,23 @@ class BulkSelectionResolver {
 	}//end __construct()
 
 	/**
-	 * The uuids a selection stands for, in a stable order.
+	 * The uuids an id-list selection names, deduplicated, as strings, in a stable order.
 	 *
-	 * @param string $selectionType One of the BulkJob::SELECTION_* constants.
-	 * @param array<string, mixed> $selection The stored selection.
-	 * @param int|null $registerId The register the selection lives in.
-	 * @param int|null $schemaId The schema the selection lives in.
-	 * @param int $ceiling The largest selection a job may carry.
+	 * @param array<string, mixed> $criteria The stored selection, `{"ids": [...]}`.
 	 *
-	 * @return array<int, string> The selected uuids.
+	 * @return array<int, string> The selected uuids; empty when `ids` is not a list.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function resolveUuids(
-		string $selectionType,
-		array $selection,
-		?int $registerId,
-		?int $schemaId,
-		int $ceiling
-	): array {
-		if ($selectionType === BulkJob::SELECTION_IDS) {
-			$ids = ($selection['ids'] ?? []);
+	public function idsOf(array $criteria): array {
+		$ids = ($criteria['ids'] ?? []);
 
-			if (is_array($ids) === false) {
-				return [];
-			}
-
-			return array_values(array_unique(array_map(static fn ($id): string => (string)$id, $ids)));
+		if (is_array($ids) === false) {
+			return [];
 		}
 
-		return $this->resolveQuery(
-			query: ($selection['query'] ?? []),
-			registerId: $registerId,
-			schemaId: $schemaId,
-			ceiling: $ceiling
-		);
-	}//end resolveUuids()
+		return array_values(array_unique(array_map(static fn ($id): string => (string)$id, $ids)));
+	}//end idsOf()
 
 	/**
 	 * Load the objects behind a list of uuids, keyed by uuid.
@@ -111,19 +91,18 @@ class BulkSelectionResolver {
 	 * executor reports as a refusal rather than dropping it (D-3).
 	 *
 	 * @param array<int, string> $uuids The uuids to load.
-	 * @param int|null $registerId The register the selection lives in.
-	 * @param int|null $schemaId The schema the selection lives in.
+	 * @param BulkJobSelection   $scope The selection whose register and schema scope the read.
 	 *
 	 * @return array<string, ObjectEntity> The objects, keyed by uuid.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function hydrate(array $uuids, ?int $registerId, ?int $schemaId): array {
+	public function hydrate(array $uuids, BulkJobSelection $scope): array {
 		$objects = [];
 
 		foreach (array_chunk($uuids, self::HYDRATION_CHUNK) as $chunk) {
 			$found = $this->objectService->searchObjects(
-				query: $this->scopedQuery(query: [], registerId: $registerId, schemaId: $schemaId),
+				query: $this->scopedQuery(query: [], scope: $scope),
 				ids: $chunk
 			);
 
@@ -149,15 +128,15 @@ class BulkSelectionResolver {
 	 * One more than the ceiling is asked for, so the caller can tell a
 	 * selection that exactly fills the ceiling from one that overflows it.
 	 *
-	 * @param array<string, mixed> $query The stored query.
-	 * @param int|null $registerId The register the selection lives in.
-	 * @param int|null $schemaId The schema the selection lives in.
-	 * @param int $ceiling The largest selection a job may carry.
+	 * @param BulkJobSelection $selection The stored selection, `{"query": {...}}`, and its register and schema.
+	 * @param int              $ceiling   The largest selection a job may carry.
 	 *
 	 * @return array<int, string> The matching uuids.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	private function resolveQuery(array $query, ?int $registerId, ?int $schemaId, int $ceiling): array {
-		$scoped = $this->scopedQuery(query: $query, registerId: $registerId, schemaId: $schemaId);
+	public function queryUuids(BulkJobSelection $selection, int $ceiling): array {
+		$scoped = $this->scopedQuery(query: ($selection->criteria['query'] ?? []), scope: $selection);
 		$scoped['_limit'] = ($ceiling + 1);
 
 		$found = $this->objectService->searchObjects(query: $scoped);
@@ -165,7 +144,7 @@ class BulkSelectionResolver {
 		if (is_array($found) === false) {
 			$this->logger->warning(
 				message: '[BulkSelectionResolver] The selection query answered a count rather than objects',
-				context: ['register' => $registerId, 'schema' => $schemaId]
+				context: ['register' => $selection->registerId, 'schema' => $selection->schemaId]
 			);
 
 			return [];
@@ -181,19 +160,18 @@ class BulkSelectionResolver {
 		}
 
 		return $uuids;
-	}//end resolveQuery()
+	}//end queryUuids()
 
 	/**
 	 * The caller's query, scoped to the job's register and schema and
 	 * stripped of the keys that would turn entities into projections.
 	 *
 	 * @param array<string, mixed> $query The caller's query.
-	 * @param int|null $registerId The register the selection lives in.
-	 * @param int|null $schemaId The schema the selection lives in.
+	 * @param BulkJobSelection     $scope The selection whose register and schema scope the query.
 	 *
 	 * @return array<string, mixed> The scoped query.
 	 */
-	private function scopedQuery(array $query, ?int $registerId, ?int $schemaId): array {
+	private function scopedQuery(array $query, BulkJobSelection $scope): array {
 		foreach (self::STRIPPED_QUERY_KEYS as $key) {
 			unset($query[$key]);
 		}
@@ -203,12 +181,12 @@ class BulkSelectionResolver {
 			$self = [];
 		}
 
-		if ($registerId !== null) {
-			$self['register'] = $registerId;
+		if ($scope->registerId !== null) {
+			$self['register'] = $scope->registerId;
 		}
 
-		if ($schemaId !== null) {
-			$self['schema'] = $schemaId;
+		if ($scope->schemaId !== null) {
+			$self['schema'] = $scope->schemaId;
 		}
 
 		if ($self !== []) {

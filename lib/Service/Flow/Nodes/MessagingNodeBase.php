@@ -41,18 +41,31 @@ use UnexpectedValueException;
  */
 abstract class MessagingNodeBase {
 	/**
+	 * Translations for palette text and refusals.
+	 *
+	 * @var IL10N
+	 */
+	protected readonly IL10N $l10n;
+
+	/**
+	 * For the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	protected readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowMessagingService $messaging The shared send pipeline.
-	 * @param IL10N                $l10n      Translations for palette text and refusals.
-	 * @param IURLGenerator        $urls      For the palette icon.
+	 * @param FlowMessagingService $messaging    The shared send pipeline.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
 		protected readonly FlowMessagingService $messaging,
-		protected readonly IL10N $l10n,
-		protected readonly IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 	) {
-
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
 	}//end __construct()
 
 	/**
@@ -111,13 +124,24 @@ abstract class MessagingNodeBase {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
 	public function preview(array $items, array $config, array $context): array {
-		$messages = $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context);
+		return $this->previewOf(
+			messages: $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context)
+		);
+	}//end preview()
 
+	/**
+	 * The dry-run summary of the messages a run would send.
+	 *
+	 * @param array $messages The messages a real run would send.
+	 *
+	 * @return array{summary: string, messages: array} The preview.
+	 */
+	private function previewOf(array $messages): array {
 		return [
 			'summary' => sprintf('%s would send %d message(s)', $this->getDisplayName(), count($messages)),
 			'messages' => $messages,
 		];
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * Send, then pass the items through unchanged.

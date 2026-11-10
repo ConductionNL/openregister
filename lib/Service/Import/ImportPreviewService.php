@@ -46,6 +46,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
@@ -321,15 +322,40 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 */
 	public function commit(ImportPreview $preview, ?string $sourceHash, ?IUser $currentUser = null): ImportPreview {
 		$this->assertCommittable(preview: $preview, sourceHash: $sourceHash);
+		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $currentUser));
+	}//end commit()
 
+	/**
+	 * The run a commit writes: the preview, its resolved destination and the actor.
+	 *
+	 * @param ImportPreview $preview The previewed preview.
+	 * @param IUser|null $currentUser The actor.
+	 *
+	 * @return ImportRun The run.
+	 *
+	 * @throws InvalidArgumentException When the register or schema no longer resolves.
+	 */
+	private function commitRun(ImportPreview $preview, ?IUser $currentUser): ImportRun {
 		$register = $this->resolveRegister(value: $preview->getRegisterId());
 		$schema = $this->resolveSchema(value: $preview->getSchemaId());
-		$run = new ImportRun(
+		return new ImportRun(
 			preview: $preview,
 			destination: new ImportDestination(register: $register, schema: $schema),
 			currentUser: $currentUser
 		);
+	}//end commitRun()
 
+	/**
+	 * Write every decided row of a committable preview and record the outcome on it.
+	 *
+	 * @param ImportRun $run The preview being committed, its destination and actor.
+	 *
+	 * @return ImportPreview The preview, in state committed.
+	 *
+	 * @throws Throwable When the write fails; the preview is left failed.
+	 */
+	private function applyDecisions(ImportRun $run): ImportPreview {
+		$preview = $run->preview;
 		$preview->setState(ImportPreview::STATE_COMMITTING);
 		$this->store->previewMapper->persist(preview: $preview);
 
@@ -347,7 +373,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 			throw $exception;
 		}//end try
-	}//end commit()
+	}//end applyDecisions()
 
 	/**
 	 * Write every pending row, one batch at a time, flushing the counts after each.
@@ -645,11 +671,12 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		$preview = $run->preview;
 		$destination = $run->destination;
 		try {
-			$candidates = $this->matching->matchResolver->resolve(
-				object: $object,
-				matchKey: ($preview->getMatchKey() ?? []),
-				register: $destination->register,
-				schema: $destination->schema
+			$candidates = $this->matching->matchResolver->matchesOf(
+				query: new MatchQuery(
+					object: $object,
+					matchKey: ($preview->getMatchKey() ?? []),
+					table: new RegisterSchema(register: $destination->register, schema: $destination->schema)
+				)
 			);
 		} catch (MatchLookupFailedException $exception) {
 			return ImportRowPayload::refusal(reason: $exception->getMessage(), payload: $object);
@@ -752,7 +779,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			return $this->targets->registerMapper->find($value);
+			return $this->targets->catalog->registers()->find($value);
 		} catch (DoesNotExistException $exception) {
 			throw new InvalidArgumentException('Register "'.(string)$value.'" was not found.', 0, $exception);
 		}
@@ -777,7 +804,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			return $this->targets->schemaMapper->find($value);
+			return $this->targets->catalog->schemas()->find($value);
 		} catch (DoesNotExistException $exception) {
 			throw new InvalidArgumentException('Schema "'.(string)$value.'" was not found.', 0, $exception);
 		}

@@ -302,7 +302,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 			$objects[$uuid] = $this->object($uuid, ['status' => str_repeat('x', 200)]);
 		}
 
-		$this->resolver->method('resolveUuids')->willReturn($uuids);
+		$this->resolver->method('idsOf')->willReturn($uuids);
 		$this->resolver->method('hydrate')->willReturn($objects);
 		$this->registry->method('get')->willReturn($this->reversibleAction());
 		$this->jobMapper->expects($this->never())->method('createFromArray');

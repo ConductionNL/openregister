@@ -236,21 +236,21 @@ class FilePropertyHandler {
 	/**
 	 * Constructor for FilePropertyHandler.
 	 *
+	 * The executable-content detector is stateless, so the handler builds its own.
+	 *
 	 * @param LoggerInterface $logger Logger for logging operations
 	 * @param ObjectFilesInterface $fileService File service for file operations
-	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		LoggerInterface $logger,
 		private readonly ObjectFilesInterface $fileService,
-		ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),
 	) {
 		$this->parts = new FilePropertyParts(
 			logger: $logger,
 			fileService: $fileService,
-			executableDetector: $executableDetector,
+			executableDetector: new ExecutableContentDetector(),
 			dangerousExtensions: self::DANGEROUS_EXECUTABLE_EXTENSIONS
 		);
 	}//end __construct()
@@ -478,9 +478,8 @@ class FilePropertyHandler {
 	 * This method creates a unique filename by combining the property name,
 	 * timestamp, and random bytes to ensure uniqueness.
 	 *
-	 * @param string $propertyName The name of the file property.
-	 * @param string $extension The file extension.
-	 * @param int|null $index Optional index for array properties.
+	 * @param FileStoreRequest $request   The file being stored: its property name and optional array index.
+	 * @param string           $extension The file extension.
 	 *
 	 * @return string The generated unique filename.
 	 *
@@ -489,19 +488,15 @@ class FilePropertyHandler {
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	private function generateFileName(
-		string $propertyName,
-		string $extension,
-		?int $index = null,
-	): string {
+	private function generateFileName(FileStoreRequest $request, string $extension): string {
 		$timestamp = time();
 		$random = bin2hex(random_bytes(4));
 		$indexSuffix = '';
-		if ($index !== null) {
-			$indexSuffix = "_{$index}";
+		if ($request->index !== null) {
+			$indexSuffix = "_{$request->index}";
 		}
 
-		return "{$propertyName}{$indexSuffix}_{$timestamp}_{$random}.{$extension}";
+		return "{$request->propertyName}{$indexSuffix}_{$timestamp}_{$random}.{$extension}";
 	}//end generateFileName()
 
 	/**
@@ -606,7 +601,7 @@ class FilePropertyHandler {
 			return $fileValue;
 		}
 
-		return $this->storeFile(target: $target, fileInput: $fileValue, index: null);
+		return $this->processSingleFileProperty(request: $this->storeRequest(target: $target, index: null), fileInput: $fileValue);
 	}//end storedValue()
 
 	/**
@@ -638,7 +633,10 @@ class FilePropertyHandler {
 		$fileIds = [];
 		foreach ($fileValue as $index => $singleFileContent) {
 			if ($this->isFileProperty(value: $singleFileContent) === true) {
-				$fileIds[] = $this->storeFile(target: $target, fileInput: $singleFileContent, index: $index);
+				$fileIds[] = $this->processSingleFileProperty(
+					request: $this->storeRequest(target: $target, index: $index),
+					fileInput: $singleFileContent
+				);
 			}
 		}
 
@@ -646,27 +644,21 @@ class FilePropertyHandler {
 	}//end storeFiles()
 
 	/**
-	 * Store one file of a property through processSingleFileProperty().
+	 * The store request for one file of a property, for processSingleFileProperty().
 	 *
-	 * @param FilePropertyTarget $target    The file property.
-	 * @param mixed              $fileInput The file input.
-	 * @param int|null           $index     The index in an array property, null for a single file.
+	 * @param FilePropertyTarget $target The file property.
+	 * @param int|null           $index  The index in an array property, null for a single file.
 	 *
-	 * @return int The stored file's id.
-	 *
-	 * @throws Exception If the file cannot be validated or stored.
+	 * @return FileStoreRequest
 	 */
-	private function storeFile(FilePropertyTarget $target, mixed $fileInput, ?int $index): int {
-		return $this->processSingleFileProperty(
-			request: new FileStoreRequest(
-				objectEntity: $target->objectEntity,
-				propertyName: $target->name,
-				fileConfig: $target->fileConfig,
-				index: $index
-			),
-			fileInput: $fileInput
+	private function storeRequest(FilePropertyTarget $target, ?int $index): FileStoreRequest {
+		return new FileStoreRequest(
+			objectEntity: $target->objectEntity,
+			propertyName: $target->name,
+			fileConfig: $target->fileConfig,
+			index: $index
 		);
-	}//end storeFile()
+	}//end storeRequest()
 
 	/**
 	 * Processes a single file property with validation, tagging, and storage.
@@ -721,12 +713,7 @@ class FilePropertyHandler {
 	 */
 	private function processStringFileInput(FileStoreRequest $request, string $fileInput): int {
 		$fileData = $this->fileDataOf(fileInput: $fileInput);
-		$this->validateFileAgainstConfig(
-			fileData: $fileData,
-			fileConfig: $request->fileConfig,
-			propertyName: $request->propertyName,
-			index: $request->index
-		);
+		$this->validateFileAgainstConfig(fileData: $fileData, request: $request);
 
 		return $this->addFile(request: $request, fileData: $fileData);
 	}//end processStringFileInput()
@@ -744,7 +731,7 @@ class FilePropertyHandler {
 	private function addFile(FileStoreRequest $request, array $fileData): int {
 		$file = $this->fileService->addFile(
 			objectEntity: $request->objectEntity,
-			fileName: $this->generateFileName(propertyName: $request->propertyName, extension: $fileData['extension'], index: $request->index),
+			fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
 			content: $fileData['content'],
 			share: $request->fileConfig['autoShare'] ?? false,
 			tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
@@ -874,15 +861,12 @@ class FilePropertyHandler {
 	 *
 	 * Executables are refused first (unless explicitly allowed), then the MIME type, then the size.
 	 *
-	 * @param array $fileData The parsed file data.
-	 * @param array $fileConfig The file property configuration.
-	 * @param string $propertyName The property name (for error messages).
-	 * @param int|null $index Optional array index (for error messages).
+	 * @param array            $fileData The parsed file data.
+	 * @param FileStoreRequest $request  The file being stored: its property configuration, and its
+	 *                                   property name and optional array index (for error messages).
 	 *
 	 * @psalm-param   array{content: string, mimeType: string, extension: string, size: int} $fileData
-	 * @psalm-param   array<string, mixed> $fileConfig
 	 * @phpstan-param array{content: string, mimeType: string, extension: string, size: int} $fileData
-	 * @phpstan-param array<string, mixed> $fileConfig
 	 *
 	 * @return void
 	 *
@@ -890,18 +874,13 @@ class FilePropertyHandler {
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function validateFileAgainstConfig(
-		array $fileData,
-		array $fileConfig,
-		string $propertyName,
-		?int $index = null,
-	): void {
-		$errorPrefix = $this->parts->guard->errorPrefix(propertyName: $propertyName, index: $index);
-		if (($fileConfig['allowExecutables'] ?? false) === false) {
+	public function validateFileAgainstConfig(array $fileData, FileStoreRequest $request): void {
+		$errorPrefix = $this->parts->guard->errorPrefix(propertyName: $request->propertyName, index: $request->index);
+		if (($request->fileConfig['allowExecutables'] ?? false) === false) {
 			$this->blockExecutableFiles(fileData: $fileData, errorPrefix: $errorPrefix);
 		}
 
-		$this->parts->guard->assertAccepted(fileData: $fileData, fileConfig: $fileConfig, errorPrefix: $errorPrefix);
+		$this->parts->guard->assertAccepted(fileData: $fileData, fileConfig: $request->fileConfig, errorPrefix: $errorPrefix);
 	}//end validateFileAgainstConfig()
 
 	/**
@@ -928,7 +907,8 @@ class FilePropertyHandler {
 		// extension as well as by sniffed content type — see openregister#2776. An absent
 		// filename yields '', which is treated as text-ish and always scanned.
 		if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
-			$this->detectExecutableMagicBytes(
+			// The checks live in ExecutableContentDetector, shared with FileValidationHandler.
+			$this->parts->guard->blockExecutableContent(
 				content: $fileData['content'],
 				errorPrefix: $errorPrefix,
 				fileName: (string)($fileData['filename'] ?? '')
@@ -941,26 +921,6 @@ class FilePropertyHandler {
 			mimeTypes: $this->getExecutableMimeTypes()
 		);
 	}//end blockExecutableFiles()
-
-	/**
-	 * Detects executable magic bytes, script shebangs and embedded PHP tags in file content.
-	 *
-	 * The checks live in {@see ExecutableContentDetector}, the single source of truth shared
-	 * with {@see \OCA\OpenRegister\Service\File\FileValidationHandler} (see openregister#2776).
-	 *
-	 * @param string $content The file content to check.
-	 * @param string $errorPrefix The error message prefix.
-	 * @param string $fileName The filename, used for its extension only; '' when unknown.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception If executable magic bytes are detected.
-	 *
-	 * @spec openspec/specs/content-versioning/spec.md
-	 */
-	private function detectExecutableMagicBytes(string $content, string $errorPrefix, string $fileName = ''): void {
-		$this->parts->guard->blockExecutableContent(content: $content, errorPrefix: $errorPrefix, fileName: $fileName);
-	}//end detectExecutableMagicBytes()
 
 	/**
 	 * Gets file extension from MIME type.

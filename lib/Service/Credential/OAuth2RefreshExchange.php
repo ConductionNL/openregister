@@ -86,17 +86,31 @@ class OAuth2RefreshExchange {
 		#[\SensitiveParameter] string $refreshToken,
 		?string $actingUserId,
 	): array {
-		$oauth2 = ($provider['oauth2'] ?? []);
-		if (is_array($oauth2) === false) {
-			$oauth2 = [];
-		}
-
+		$oauth2 = $this->oauth2Of(provider: $provider);
 		$client = $this->clients->resolve(credential: $credential, provider: (string)($credential['provider'] ?? ''), actingUserId: $actingUserId);
 		$endpoint = $this->tokenEndpoint(oauth2: $oauth2, credential: $credential, credentialId: $credentialId);
 		$form = $this->refreshForm(oauth2: $oauth2, refreshToken: $refreshToken, client: $client);
 
 		return $this->accepted(decoded: $this->post(endpoint: $endpoint, form: $form, client: $client));
 	}//end redeem()
+
+	/**
+	 * The provider entry's `oauth2` block, or an empty block when it has none.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 *
+	 * @return array<string, mixed> The block.
+	 *
+	 * @spec exclude private catalogue accessor with no behaviour of its own
+	 */
+	private function oauth2Of(array $provider): array {
+		$oauth2 = ($provider['oauth2'] ?? []);
+		if (is_array($oauth2) === false) {
+			return [];
+		}
+
+		return $oauth2;
+	}//end oauth2Of()
 
 	/**
 	 * Build the refresh request's form body.

@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
@@ -52,7 +53,7 @@ class TransitionAndLinkObjectNodeTest extends TestCase {
 	 * @return TransitionNode
 	 */
 	private function transition(): TransitionNode {
-		return new TransitionNode($this->engine, $this->l10n, $this->createMock(IURLGenerator::class));
+		return new TransitionNode($this->engine, new FlowNodePresentation($this->l10n, $this->createMock(IURLGenerator::class)));
 	}//end transition()
 
 	/**

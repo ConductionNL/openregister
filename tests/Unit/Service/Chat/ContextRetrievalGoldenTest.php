@@ -11,6 +11,7 @@ use Exception;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -111,7 +112,10 @@ class ContextRetrievalGoldenTest extends TestCase {
 			}
 		}
 
-		$result = $this->handler($case)->retrieveContext('find the thing', $agent, $case['selected'] ?? [], $case['rag'] ?? []);
+		$request = new ChatMessageRequest(0, 'user', 'find the thing');
+		$request->selectedViews = $case['selected'] ?? [];
+		$request->ragSettings = $case['rag'] ?? [];
+		$result = $this->handler($case)->retrieveContext($request, $agent);
 		$actual = json_decode(json_encode(['result' => $result, 'calls' => $this->calls]), true);
 
 		$golden = [];

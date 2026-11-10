@@ -103,6 +103,17 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->contactsOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The contacts linked to an object; none when the contacts cannot be read.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function contactsOf(string $objectId): array {
 		try {
 			$result = $this->contactService->getContactsForObject(objectUuid: $objectId);
 		} catch (Throwable $e) {
@@ -110,7 +121,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 		}
 
 		return $result['results'] ?? [];
-	}//end list()
+	}//end contactsOf()
 
 	/**
 	 * Update a contact link's role.

@@ -59,6 +59,8 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -100,6 +102,7 @@ final class SearchWiring {
 		ViewMapperInterface::class => ViewMapper::class,
 		ExampleSetViewRowsInterface::class => ExampleSetViews::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
+		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 	];
 
 	/**

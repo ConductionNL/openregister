@@ -76,7 +76,7 @@ final class TextExtractionServiceFactory {
 		return [
 			new TextExtractionSources(
 				new TextExtractionStorage($fileMapper, $rootFolder, $db),
-				new TextExtractionObjects($objectEntityMapper, $schemaMapper, $registerMapper)
+				new TextExtractionObjects(new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $objectEntityMapper))
 			),
 			$chunkMapper,
 			new TextExtractionAnalysis($entityHandler, $settingsService, $riskLevelService, $logger),

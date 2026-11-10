@@ -119,6 +119,22 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
 	public function signalAs(string $runUuid, array $payload, ?string $actorUid, ?string $nodeId = null): FlowRun {
+		return $this->answerByUuid(runUuid: $runUuid, signal: new RunSignal(payload: $payload, actorUid: $actorUid, nodeId: $nodeId));
+	}//end signalAs()
+
+	/**
+	 * Answer a suspended run by uuid, guarded.
+	 *
+	 * @param string    $runUuid The run to answer.
+	 * @param RunSignal $signal  The payload, the actor and the addressed node.
+	 *
+	 * @return FlowRun The parked run, due for the worker's next pass.
+	 *
+	 * @throws FlowSignalRefused With reason RUN_NOT_FOUND, NOT_ASSIGNEE or NOT_SUSPENDED.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 */
+	public function answerByUuid(string $runUuid, RunSignal $signal): FlowRun {
 		try {
 			$run = $this->mapper->findByUuid($runUuid);
 		} catch (Throwable $e) {
@@ -126,12 +142,12 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 				reason: FlowSignalRefused::RUN_NOT_FOUND,
 				message: 'No run carries uuid "' . $runUuid . '"; the signal was not delivered.',
 				runUuid: $runUuid,
-				actorUid: $this->normalize(actorUid: $actorUid)
+				actorUid: $signal->actor()
 			);
 		}
 
-		return $this->signalRunAs(run: $run, payload: $payload, actorUid: $actorUid, nodeId: $nodeId);
-	}//end signalAs()
+		return $this->answer(run: $run, signal: $signal);
+	}//end answerByUuid()
 
 	/**
 	 * Answer an already-resolved run, as a named actor, guarded.
@@ -152,18 +168,25 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
 	public function signalRunAs(FlowRun $run, array $payload, ?string $actorUid, ?string $nodeId = null): FlowRun {
-		$actor = $this->normalize(actorUid: $actorUid);
-		// 🔑 THE REGISTRY GOES IN HERE TOO. A rule built without it refuses
-		// every TYPED assignment — the fail-closed direction, which is right
-		// when nothing can resolve, and wrong the moment something can. The
-		// fallback must build the same guard the container would.
-		$rule = ($this->assignees ?? new FlowRunAssignee(
-			groupManager: $this->groupManager,
-			principals: $this->principals
-		));
+		return $this->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $actorUid, nodeId: $nodeId));
+	}//end signalRunAs()
 
-		if ($rule->mayAnswer(run: $run, uid: $actor, nodeId: $nodeId) === false) {
-			$this->auditRefusal(run: $run, actor: $actor, assignee: $rule->recordedFor(run: $run, nodeId: $nodeId), nodeId: $nodeId);
+	/**
+	 * Answer an already-resolved run, guarded; a refusal touches nothing.
+	 *
+	 * @param FlowRun   $run    The run to answer.
+	 * @param RunSignal $signal The payload, the actor and the addressed node.
+	 *
+	 * @return FlowRun The parked run, due for the worker's next pass.
+	 *
+	 * @throws FlowSignalRefused With reason NOT_ASSIGNEE or NOT_SUSPENDED.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 */
+	public function answer(FlowRun $run, RunSignal $signal): FlowRun {
+		$actor = $signal->actor();
+		if ($this->rule()->mayAnswer(run: $run, uid: $actor, nodeId: $signal->nodeId) === false) {
+			$this->auditRefusal(run: $run, signal: $signal);
 
 			throw new FlowSignalRefused(
 				reason: FlowSignalRefused::NOT_ASSIGNEE,
@@ -174,34 +197,50 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 			);
 		}
 
-		$signalled = $this->runner->signal(run: $run, payload: $payload);
+		return $this->deliver(run: $run, signal: $signal);
+	}//end answer()
+
+	/**
+	 * The access rule.
+	 *
+	 * 🔑 THE REGISTRY GOES IN HERE TOO. A rule built without it refuses
+	 * every TYPED assignment — the fail-closed direction, which is right
+	 * when nothing can resolve, and wrong the moment something can. The
+	 * fallback must build the same guard the container would.
+	 *
+	 * @return FlowRunAssignee The injected rule, or the real one.
+	 */
+	private function rule(): FlowRunAssignee {
+		return ($this->assignees ?? new FlowRunAssignee(
+			groupManager: $this->groupManager,
+			principals: $this->principals
+		));
+	}//end rule()
+
+	/**
+	 * Deliver an admitted signal; only a suspended run takes one.
+	 *
+	 * @param FlowRun   $run    The run to answer.
+	 * @param RunSignal $signal The admitted signal.
+	 *
+	 * @return FlowRun The parked run.
+	 *
+	 * @throws FlowSignalRefused With reason NOT_SUSPENDED.
+	 */
+	private function deliver(FlowRun $run, RunSignal $signal): FlowRun {
+		$signalled = $this->runner->signal(run: $run, payload: $signal->payload);
 		if ($signalled === null) {
 			throw new FlowSignalRefused(
 				reason: FlowSignalRefused::NOT_SUSPENDED,
 				message: 'Only a suspended run can be signalled; run "' . (string)$run->getUuid()
 					. '" is ' . (string)$run->getStatus() . '.',
 				runUuid: (string)$run->getUuid(),
-				actorUid: $actor
+				actorUid: $signal->actor()
 			);
 		}
 
 		return $signalled;
 	}//end signalRunAs()
-
-	/**
-	 * An empty actor is an anonymous one.
-	 *
-	 * @param string|null $actorUid The claimed actor.
-	 *
-	 * @return string|null The uid, or null when there is effectively none.
-	 */
-	private function normalize(?string $actorUid): ?string {
-		if ($actorUid === null || trim($actorUid) === '') {
-			return null;
-		}
-
-		return trim($actorUid);
-	}//end normalize()
 
 	/**
 	 * Record who was refused from answering what.
@@ -212,14 +251,12 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	 * wrong person tried to advance this decision" is this record. Written by
 	 * the engine so it exists whether or not the consumer remembers to.
 	 *
-	 * @param FlowRun $run The run the signal addressed.
-	 * @param string|null $actor Who tried, or null when anonymous.
-	 * @param string $assignee Who the step is recorded for.
-	 * @param string|null $nodeId The addressed node, when the caller named one.
+	 * @param FlowRun   $run    The run the signal addressed.
+	 * @param RunSignal $signal The refused signal: who tried, and which node it named.
 	 *
 	 * @return void
 	 */
-	private function auditRefusal(FlowRun $run, ?string $actor, string $assignee, ?string $nodeId): void {
+	private function auditRefusal(FlowRun $run, RunSignal $signal): void {
 		$this->logger?->warning(
 			message: '[FlowRunSignalService] Refused a signal: the actor is not the awaiting step\'s assignee',
 			context: [
@@ -227,9 +264,9 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 				'line' => __LINE__,
 				'run' => (string)$run->getUuid(),
 				'flow' => (string)$run->getFlowId(),
-				'actor' => ($actor ?? '(anonymous)'),
-				'assignee' => $assignee,
-				'node' => ($nodeId ?? ''),
+				'actor' => ($signal->actor() ?? '(anonymous)'),
+				'assignee' => $this->rule()->recordedFor(run: $run, nodeId: $signal->nodeId),
+				'node' => ($signal->nodeId ?? ''),
 			]
 		);
 

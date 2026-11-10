@@ -22,9 +22,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\BackfillObjectSlugsCommand;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -60,7 +62,7 @@ class BackfillObjectSlugsCommandBehaviourTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->willReturn($this->schema);
 
-		return new CommandTester(new BackfillObjectSlugsCommand($registers, $schemas, $this->backfill));
+		return new CommandTester(new BackfillObjectSlugsCommand(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), $this->backfill));
 	}
 
 	public function testUnexpectedFailureIsReportedAndExitsFailure(): void {
