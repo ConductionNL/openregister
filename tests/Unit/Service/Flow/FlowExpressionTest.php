@@ -11,6 +11,7 @@ namespace Unit\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -22,7 +23,7 @@ use UnexpectedValueException;
 
 class FlowExpressionTest extends TestCase {
 	private function data(array $json, int $index = 0, int $count = 1, array $context = []): array {
-		return FlowExpression::dataFor(FlowItems::item(json: $json), $index, $count, $context);
+		return FlowExpression::documentFor(FlowItems::item(json: $json), new FlowExpressionDataOptions($index, $count, $context));
 	}
 
 	public function testAnExpressionReadsTheCurrentItemsRecord(): void {

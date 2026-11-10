@@ -106,7 +106,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$data = $response->getData();
-		$this->assertIsArray($data);
+		$this->assertSame(['solr' => ['enabled' => true], 'rbac' => ['enabled' => false]], $data);
 	}
 
 	/**
@@ -160,7 +160,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$data = $response->getData();
-		$this->assertIsArray($data);
+		$this->assertSame(['solr' => ['enabled' => true]], $data);
 	}
 
 	/**
@@ -202,7 +202,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$data = $response->getData();
-		$this->assertIsArray($data);
+		$this->assertSame(['registers' => 5, 'schemas' => 12, 'objects' => 1500], $data);
 	}
 
 	/**
@@ -225,7 +225,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$data = $response->getData();
-		$this->assertIsArray($data);
+		$this->assertSame(['registers' => 5, 'schemas' => 12, 'objects' => 1500], $data);
 	}
 
 	/**

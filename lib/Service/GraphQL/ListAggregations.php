@@ -24,6 +24,8 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use RuntimeException;
 
 /**
@@ -163,10 +165,12 @@ final class ListAggregations {
 
 		try {
 			return $this->runner->run(
-				registerRef: (string)$request->register->getSlug(),
-				schemaRef: (string)$request->schema->getSlug(),
-				name: $name,
-				extraFilter: $request->propertyFilter()
+				ref: new NamedAggregationRef(
+					register: (string)$request->register->getSlug(),
+					schema: (string)$request->schema->getSlug(),
+					name: $name
+				),
+				options: new NamedAggregationOptions(bypassRbac: false, extraFilter: $request->propertyFilter())
 			);
 		} catch (NotAuthorizedException | RuntimeException $e) {
 			throw new Error($e->getMessage());

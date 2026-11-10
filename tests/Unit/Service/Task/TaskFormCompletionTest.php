@@ -149,7 +149,7 @@ class TaskFormCompletionTest extends TestCase {
 				return $task;
 			}
 		);
-		$this->tasks->method('complete')->willReturnCallback(
+		$this->tasks->method('completeWithAnswer')->willReturnCallback(
 			function () use ($task): Task {
 				$this->calls[] = 'complete';
 
@@ -167,7 +167,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->engine->expects($this->never())->method('resolveTransitionInputs');
 		$this->engine->expects($this->never())->method('transition');
 		$this->objects->expects($this->never())->method('saveObject');
-		$this->tasks->expects($this->once())->method('complete')->with('t-7', 'approved', null, 'fine', 'alice');
+		$this->tasks->expects($this->once())->method('completeWithAnswer')->with('t-7', new TaskAnswer(outcome: 'approved', comment: 'fine'), 'alice');
 
 		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: 'fine'), data: [], actor: 'alice');
 	}//end testAFormlessTaskCompletesWithoutAnyFieldValidation()
@@ -182,7 +182,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->engine->expects($this->once())->method('resolveTransitionInputs')
 			->with([], ['reason' => 'x'], 'complete')
 			->willThrowException(new InvalidTransitionInputException('Transition "complete" does not accept input field(s): "reason".', ['reason']));
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 		$this->tasks->expects($this->once())->method('recordRefusedCompletion')->with(
 			$this->anything(),
 			$this->callback(static fn (TaskAct $attempt): bool => str_contains((string)$attempt->reason, 'reason') && $attempt->actor === 'alice')
@@ -207,7 +207,7 @@ class TaskFormCompletionTest extends TestCase {
 			->with([['field' => 'reason', 'required' => true], ['field' => 'note', 'required' => false]], ['note' => 'n'], 'complete')
 			->willThrowException(new InvalidTransitionInputException('Transition "complete" is missing required input field(s): "reason".', ['reason']));
 		$this->objects->expects($this->never())->method('saveObject');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		try {
 			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['note' => 'n'], actor: 'alice');
@@ -315,7 +315,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->openTask($this->task());
 		$this->forms->method('describe')->willReturn($this->nativeForm(action: 'reject'));
 		$this->engine->method('transition')->willThrowException(new HookStoppedException('reason must be one of: late, incomplete'));
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 		$this->tasks->expects($this->once())->method('recordRefusedCompletion');
 
 		$this->expectException(TaskSubjectWriteRefusedException::class);
@@ -334,7 +334,7 @@ class TaskFormCompletionTest extends TestCase {
 		$subject->setUuid('obj-1');
 		$this->objects->method('find')->willReturn($subject);
 		$this->objects->method('saveObject')->willThrowException(new ValidationException('reason must be a string'));
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->expectException(TaskSubjectWriteRefusedException::class);
 		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 7], actor: 'alice');
@@ -359,7 +359,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->openTask($this->task());
 		$this->forms->method('describe')->willReturn($this->nativeForm(action: 'reject'));
 		$this->engine->method('transition')->willThrowException(new NotAuthorizedException('You do not have permission to transition object "obj-1".'));
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 		$this->tasks->expects($this->never())->method('recordRefusedCompletion');
 
 		$this->expectException(TaskAccessDeniedException::class);
@@ -380,7 +380,7 @@ class TaskFormCompletionTest extends TestCase {
 				previous: new NotAuthorizedException('Insufficient permissions to read objects of this schema')
 			)
 		);
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->expectException(TaskAccessDeniedException::class);
 		$this->expectExceptionMessage('Insufficient permissions to read');
@@ -424,7 +424,7 @@ class TaskFormCompletionTest extends TestCase {
 				'requireChecklist' => false,
 			]
 		);
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		try {
 			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
@@ -450,7 +450,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->openTask($task);
 		$this->forms->method('describe')->willReturn($this->nativeForm(action: 'reject', requireChecklist: true));
 		$this->engine->expects($this->never())->method('transition');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		try {
 			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
@@ -469,7 +469,7 @@ class TaskFormCompletionTest extends TestCase {
 		$task->setChecklist([['id' => 'c1', 'label' => 'Identity verified', 'checked' => true]]);
 		$this->openTask($task);
 		$this->forms->method('describe')->willReturn(['form' => null, 'requireChecklist' => true]);
-		$this->tasks->expects($this->once())->method('complete');
+		$this->tasks->expects($this->once())->method('completeWithAnswer');
 
 		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
 	}//end testACompleteChecklistSatisfiesThePrecondition()
@@ -501,7 +501,7 @@ class TaskFormCompletionTest extends TestCase {
 		);
 		$this->engine->expects($this->never())->method('transition');
 		$this->objects->expects($this->never())->method('saveObject');
-		$this->tasks->expects($this->once())->method('complete')->with('t-7', 'submitted', 'submission 41', null, 'alice');
+		$this->tasks->expects($this->once())->method('completeWithAnswer')->with('t-7', new TaskAnswer(outcome: 'submitted', resultText: 'submission 41'), 'alice');
 
 		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'submitted', resultText: 'submission 41'), data: [], actor: 'alice');
 	}//end testAnExternalFormWritesNoObjectField()

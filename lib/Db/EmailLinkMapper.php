@@ -206,22 +206,15 @@ class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 	 * Tier-2 upsert in `EmailLinkService::linkEmail()` is idempotent
 	 * across re-syncs where Mail bumps the UID for the same message.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $mailAccountId The mail account id.
-	 * @param int $mailMessageId The mail message id.
-	 * @param string|null $mailMessageUid The mail message UID (nullable).
+	 * @param string         $objectUuid The object UUID.
+	 * @param MailMessageKey $message    The account, message id and message UID.
 	 *
 	 * @return EmailLink|null The link or null if not found.
 	 */
-	public function findByObjectAccountMessageUid(
-		string $objectUuid,
-		int $mailAccountId,
-		int $mailMessageId,
-		?string $mailMessageUid,
-	): ?EmailLink {
-		$qb = $this->objectAccountQuery(objectUuid: $objectUuid, mailAccountId: $mailAccountId);
-		$this->matchMessageId(qb: $qb, mailMessageId: $mailMessageId);
-		$this->matchMessageUid(qb: $qb, mailMessageUid: $mailMessageUid);
+	public function findByObjectAccountMessageUid(string $objectUuid, MailMessageKey $message): ?EmailLink {
+		$qb = $this->objectAccountQuery(objectUuid: $objectUuid, mailAccountId: $message->mailAccountId);
+		$this->matchMessageId(qb: $qb, mailMessageId: $message->mailMessageId);
+		$this->matchMessageUid(qb: $qb, mailMessageUid: $message->mailMessageUid);
 
 		return $this->findSingleOrNull(qb: $qb);
 	}//end findByObjectAccountMessageUid()

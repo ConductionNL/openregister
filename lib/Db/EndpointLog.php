@@ -191,7 +191,7 @@ class EndpointLog extends Entity implements JsonSerializable {
 			try {
 				$this->$method($value);
 			} catch (\Exception $exception) {
-				// Handle or log the exception if needed.
+				// Keys without a setter on this entity are ignored, as in the other entity hydrators.
 			}
 		}
 

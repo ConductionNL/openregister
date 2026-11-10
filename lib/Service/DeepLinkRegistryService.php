@@ -105,29 +105,6 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	}//end __construct()
 
 	/**
-	 * Register a deep link pattern for a (register, schema) combination.
-	 *
-	 * @param string $appId The consuming app ID (e.g., "procest")
-	 * @param string $registerSlug The register slug
-	 * @param string $schemaSlug The schema slug
-	 * @param string $urlTemplate URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-	 * @param string $icon Optional icon identifier (defaults to "icon-{appId}")
-	 * @param string|null $displayName Optional human-readable label for the app's
-	 *                                 unified-search results (defaults to null → app id)
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	public function register(string $appId, string $registerSlug, string $schemaSlug, string $urlTemplate, string $icon = '',
-		?string $displayName = null): void {
-		$this->add(registration: new DeepLinkRegistration(appId: $appId, registerSlug: $registerSlug, schemaSlug: $schemaSlug,
-			urlTemplate: $urlTemplate, icon: $icon, displayName: $displayName));
-	}//end register()
-
-	/**
 	 * Add a deep link registration for its (register, schema) combination.
 	 *
 	 * The first registration for a combination wins; a later one is ignored.

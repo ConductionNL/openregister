@@ -480,34 +480,13 @@ class MetadataHydrationHandler {
 	}//end filledPathValue()
 
 	/**
-	 * Processes twig-like templates by extracting field values and concatenating them.
-	 *
-	 * This method parses templates like "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
-	 * and replaces each {{ fieldName }} with the corresponding value from the data.
-	 * Empty or null values are handled gracefully and excess whitespace is cleaned up.
-	 *
-	 * Supports fallback syntax within {{ }} blocks:
-	 * - "{{ name | ggm_naam | identifier }}" tries each field until one has a value
-	 * - "{{ name | ggm_naam }} - {{ type }}" combines fallbacks with concatenation
-	 *
-	 * Supports map filter syntax within {{ }} blocks:
-	 * - "{{ field | map: key1=val1, key2=val2 }}" looks up the field value in the map
-	 * - Falls back to the raw field value if no mapping matches
-	 *
-	 * @param array $data The object data.
-	 * @param string $template The twig-like template string.
-	 * @param array $schemaProperties Optional schema properties for relation field detection.
-	 *
-	 * @return null|string The processed result or null if no values found.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function processTwigLikeTemplate(array $data, string $template, array $schemaProperties = []): ?string {
-		return $this->renderTemplate(template: $template, source: new TemplateSource(data: $data, schemaProperties: $schemaProperties));
-	}//end processTwigLikeTemplate()
-
-	/**
 	 * A twig-like template with each placeholder replaced by its value.
+	 *
+	 * Parses templates like "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}";
+	 * empty values are skipped and excess whitespace is cleaned up. Inside a block,
+	 * "{{ name | ggm_naam }}" tries each field until one has a value, and
+	 * "{{ field | map: key1=val1, key2=val2 }}" looks the value up in the map,
+	 * falling back to the raw value.
 	 *
 	 * @param string         $template The twig-like template string.
 	 * @param TemplateSource $source   The object data and schema properties.
@@ -516,7 +495,7 @@ class MetadataHydrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function renderTemplate(string $template, TemplateSource $source): ?string {
+	public function renderTemplate(string $template, TemplateSource $source): ?string {
 		preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
 		if (empty($matches[0]) === true) {
 			return null;

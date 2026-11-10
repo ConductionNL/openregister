@@ -124,10 +124,8 @@ class SaveObjectFieldEncryptionTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $objectEntityMapper,
-						unifiedObjectMapper: $unifiedObjectMapper,
-						schemaMapper: $schemaMapper,
-						registerMapper: $registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectEntityMapper),
+						unifiedObjectMapper: $unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $auditTrailMapper,

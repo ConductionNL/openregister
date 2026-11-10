@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionSettings;
 use OCP\App\IAppManager;
@@ -145,7 +146,7 @@ class OfficeSessionAccessGoldenTest extends TestCase {
 	public function testAUserOfficeRefusesGetsNoToken(): void {
 		foreach ([true, false] as $canWrite) {
 			try {
-				$this->service(officeForUser: false, userCanEdit: true)->open($this->file(), 'gast', 'Gast', $canWrite);
+				$this->service(officeForUser: false, userCanEdit: true)->openSession(new OfficeOpenRequest($this->file(), 'gast', 'Gast', $canWrite));
 				self::fail('Expected a refusal');
 			} catch (OfficeOpenRefusedException $e) {
 				self::assertSame(OfficeOpenRefusedException::NOT_PERMITTED, $e->getCode());
@@ -168,7 +169,7 @@ class OfficeSessionAccessGoldenTest extends TestCase {
 			[false, false, false],
 		];
 		foreach ($cases as [$canWrite, $userCanEdit, $writable]) {
-			$session = $this->service(officeForUser: true, userCanEdit: $userCanEdit)->open($this->file(), 'u', 'U', $canWrite);
+			$session = $this->service(officeForUser: true, userCanEdit: $userCanEdit)->openSession(new OfficeOpenRequest($this->file(), 'u', 'U', $canWrite));
 			self::assertSame($writable, $this->tokenArgs[4]);
 			self::assertSame(($writable === false), $session->readOnly);
 		}
@@ -180,7 +181,7 @@ class OfficeSessionAccessGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testGuestNameFallsBackToTheUid(): void {
-		$session = $this->service(officeForUser: true, userCanEdit: true)->open($this->file(), 'jdoe', '', true);
+		$session = $this->service(officeForUser: true, userCanEdit: true)->openSession(new OfficeOpenRequest($this->file(), 'jdoe', '', true));
 
 		self::assertSame(['9', 'openregister', 'jdoe', '0', true, 'https://nc.test/', 'jdoe'], $this->tokenArgs);
 		self::assertSame('https://office.test/cool.html?', $session->urlSrc);
@@ -196,7 +197,7 @@ class OfficeSessionAccessGoldenTest extends TestCase {
 	 */
 	public function testATokenFailureIsUnavailable(): void {
 		try {
-			$this->service(officeForUser: true, userCanEdit: true, tokenFails: true)->open($this->file(), 'u', 'U', true);
+			$this->service(officeForUser: true, userCanEdit: true, tokenFails: true)->openSession(new OfficeOpenRequest($this->file(), 'u', 'U', true));
 			self::fail('Expected a refusal');
 		} catch (OfficeOpenRefusedException $e) {
 			self::assertSame(OfficeOpenRefusedException::UNAVAILABLE, $e->getCode());

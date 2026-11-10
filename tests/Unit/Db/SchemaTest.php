@@ -342,6 +342,7 @@ class SchemaTest extends TestCase {
 	public function testHydrateDateTimeStrings(): void {
 		$this->schema->hydrate(['created' => '2024-01-15T10:30:00+00:00']);
 		$this->assertInstanceOf(DateTime::class, $this->schema->getCreated());
+		$this->assertSame('2024-01-15T10:30:00+00:00', $this->schema->getCreated()->format(DATE_ATOM));
 	}
 
 	public function testHydrateDateTimeObject(): void {
@@ -360,7 +361,7 @@ class SchemaTest extends TestCase {
 		$this->schema->hydrate(['configuration' => json_encode($config)]);
 		// setConfiguration goes through fallback path (no Server available)
 		$result = $this->schema->getConfiguration();
-		$this->assertIsArray($result);
+		$this->assertSame($config, $result);
 	}
 
 	public function testHydrateWithValidator(): void {

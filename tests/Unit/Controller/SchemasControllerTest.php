@@ -1609,8 +1609,8 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('findAll')->willReturn([$schema1, $schema2]);
 		$this->schemaMapper->method('hasReferenceToSchema')
 			->willReturnCallback(
-				function ($properties, $targetSchemaId) {
-					return $targetSchemaId === '2';
+				function ($properties, $target) {
+					return (string)$target->getId() === '2';
 				}
 			);
 

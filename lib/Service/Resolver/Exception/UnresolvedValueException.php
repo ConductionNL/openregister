@@ -45,26 +45,6 @@ abstract class UnresolvedValueException extends ResolverConfigException {
 	}//end __construct()
 
 	/**
-	 * The message of a slug/UUID that names no entity of that kind in the caller's tenant.
-	 *
-	 * @param string $kind          The entity kind, capitalised.
-	 * @param string $appId         Consumer app id.
-	 * @param string $configKey     Config key that resolved.
-	 * @param string $resolvedValue Slug/UUID the lookup attempted.
-	 *
-	 * @return string The message.
-	 */
-	protected static function notInTenant(string $kind, string $appId, string $configKey, string $resolvedValue): string {
-		return sprintf(
-			'%s "%s" (from config key "%s" on app "%s") not found in caller tenant.',
-			$kind,
-			$resolvedValue,
-			$configKey,
-			$appId
-		);
-	}//end notInTenant()
-
-	/**
 	 * Get the resolved value that could not be hydrated.
 	 *
 	 * @return string The slug, UUID or name the lookup attempted.
