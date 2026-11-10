@@ -181,6 +181,7 @@ class FacetResponseCache {
 			'freshness' => $this->facetFreshnessToken(facetQuery: $facetQuery),
 		];
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return 'facet_rbac_' . md5(json_encode($cacheData));
 	}//end keyFor()
 

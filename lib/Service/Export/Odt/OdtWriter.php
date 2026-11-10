@@ -218,6 +218,7 @@ class OdtWriter implements OdtWriterInterface {
 
 		$zip->close();
 		$bytes = (string) file_get_contents($path);
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the tempnam() file this method created.
 		unlink($path);
 
 		return $bytes;

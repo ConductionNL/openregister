@@ -51,6 +51,7 @@ use OCP\IAppConfig;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Service\Object\DraftSubject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -295,18 +296,16 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		$active = new ObjectEntity();
 		$active->setStatus(ObjectEntity::STATUS_ACTIVE);
 
-		$this->assertFalse($rule->keptFromCaller(object: $active, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'anna', isAdmin: false)));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: true)));
-		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(subject: new DraftSubject(object: $active, schema: $schema), caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(subject: new DraftSubject(object: $draft, schema: $schema), caller: new DraftCaller(userId: 'anna', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(subject: new DraftSubject(object: $draft, schema: $schema), caller: new DraftCaller(userId: 'bob', isAdmin: true)));
+		$this->assertTrue($rule->keptFromCaller(subject: new DraftSubject(object: $draft, schema: $schema), caller: new DraftCaller(userId: 'bob', isAdmin: false)));
 		$this->assertTrue($rule->keptFromCaller(
-			object: $draft,
-			schema: $schema,
+			subject: new DraftSubject(object: $draft, schema: $schema),
 			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: false)
 		));
 		$this->assertFalse($rule->keptFromCaller(
-			object: $draft,
-			schema: $schema,
+			subject: new DraftSubject(object: $draft, schema: $schema),
 			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: true)
 		));
 	}//end testOverrideClauseAndDraftCallerRule()
