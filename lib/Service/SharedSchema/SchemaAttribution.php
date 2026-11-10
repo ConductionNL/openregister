@@ -76,15 +76,8 @@ class SchemaAttribution {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function indexShared(array $registerSchemas): array {
-		$index = [];
-		foreach ($registerSchemas as $registerId => $schemaIds) {
-			foreach ($this->normaliseIds(candidates: $schemaIds) as $schemaId) {
-				$index[$schemaId][(int)$registerId] = true;
-			}
-		}
-
 		$shared = [];
-		foreach ($index as $schemaId => $registerIds) {
+		foreach ($this->referencingRegisters(registerSchemas: $registerSchemas) as $schemaId => $registerIds) {
 			if (count($registerIds) < 2) {
 				continue;
 			}
@@ -98,6 +91,24 @@ class SchemaAttribution {
 
 		return $shared;
 	}//end indexShared()
+
+	/**
+	 * Which registers reference each schema id, after normalising the ids.
+	 *
+	 * @param array<int, mixed> $registerSchemas registerId => stored schema id list.
+	 *
+	 * @return array<int, array<int, true>> schemaId => a set of the register ids referencing it.
+	 */
+	private function referencingRegisters(array $registerSchemas): array {
+		$index = [];
+		foreach ($registerSchemas as $registerId => $schemaIds) {
+			foreach ($this->normaliseIds(candidates: $schemaIds) as $schemaId) {
+				$index[$schemaId][(int)$registerId] = true;
+			}
+		}
+
+		return $index;
+	}//end referencingRegisters()
 
 	/**
 	 * Reduce a schema definition to the shape attribution compares on.
