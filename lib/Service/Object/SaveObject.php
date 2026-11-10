@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
@@ -2737,10 +2738,12 @@ class SaveObject implements SaveObjectInterface {
 		unset($this->pendingOrphans[(string)$existingObject->getUuid()]);
 
 		return $this->prepareObjectForUpdate(
-			existingObject: $existingObject,
-			schema: $call->schema,
-			payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
-			currentUser: $call->flags->currentUser
+			preparation: new UpdatePreparation(
+				existingObject: $existingObject,
+				schema: $call->schema,
+				payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
+				currentUser: $call->flags->currentUser
+			)
 		);
 	}//end prepareUpdatedObject()
 
@@ -3149,10 +3152,8 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Prepares an object for update by applying all necessary transformations.
 	 *
-	 * @param ObjectEntity $existingObject The existing object entity to prepare.
-	 * @param Schema $schema The schema of the object.
-	 * @param ObjectPayload $payload The updated object data and the @self metadata.
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
+	 * @param UpdatePreparation $preparation The stored object, its schema, the updated data with its @self metadata,
+	 *                                       and the explicit acting user for `@self.folder` access checks.
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -3160,14 +3161,12 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function prepareObjectForUpdate(
-		ObjectEntity $existingObject,
-		Schema $schema,
-		ObjectPayload $payload,
-		?IUser $currentUser = null,
-	): ObjectEntity {
-		$data     = $payload->data;
-		$selfData = $payload->selfData;
+	private function prepareObjectForUpdate(UpdatePreparation $preparation): ObjectEntity {
+		$existingObject = $preparation->existingObject;
+		$schema         = $preparation->schema;
+		$currentUser    = $preparation->currentUser;
+		$data           = $preparation->payload->data;
+		$selfData       = $preparation->payload->selfData;
 
 		// The stored record as property rules see it, taken before this request's
 		// `@self` is applied to the entity.
@@ -4265,9 +4264,11 @@ class SaveObject implements SaveObjectInterface {
 		$registerId = $run->register->getId();
 		$schemaId = $run->schema->getId();
 		$preparedObject = $this->prepareObjectForUpdate(
-			existingObject: $existingObject,
-			schema: $run->schema,
-			payload: new ObjectPayload(data: $run->data, selfData: $run->selfData)
+			preparation: new UpdatePreparation(
+				existingObject: $existingObject,
+				schema: $run->schema,
+				payload: new ObjectPayload(data: $run->data, selfData: $run->selfData)
+			)
 		);
 		$preparedObject = $this->recalculateArchiveDate(run: $run, preparedObject: $preparedObject);
 

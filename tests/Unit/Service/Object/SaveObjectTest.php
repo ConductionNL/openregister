@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -4832,7 +4834,12 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, [])]);
+		$preparation = new UpdatePreparation(
+			existingObject: $entity,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: [])
+		);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$preparation]);
 		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
 
 		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');
