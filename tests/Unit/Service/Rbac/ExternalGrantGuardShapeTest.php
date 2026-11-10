@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\LapseWindow;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -96,8 +97,7 @@ class ExternalGrantGuardShapeTest extends TestCase {
 					['user' => 'kim', 'until' => '2026-05-02T00:00:00+00:00'],
 				],
 			],
-			days: 7,
-			now: $now
+			window: new LapseWindow(now: $now, days: 7)
 		);
 
 		$this->assertCount(1, $lapsing);

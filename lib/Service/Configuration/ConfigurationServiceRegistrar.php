@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\IContainer;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -74,9 +75,48 @@ use Psr\Log\LoggerInterface;
  * Application::register() calls register() once.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A registrar names every service it wires.
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Factory closures list every constructor argument.
  */
 final class ConfigurationServiceRegistrar {
+
+	/**
+	 * The import services that are allowed to be missing.
+	 *
+	 * Setter => [service id, the name the log line used before this list existed].
+	 *
+	 * @var array<string, array{0: string, 1: string}>
+	 */
+	private const OPTIONAL_IMPORT_SERVICES = [
+		'setFileService' => [\OCA\OpenRegister\Service\FileService::class, 'FileService'],
+		'setRegisterFolderProvisioner' => [
+			\OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface::class,
+			'RegisterFolderProvisioner',
+		],
+		'setNoteService' => [\OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface::class, 'NoteService'],
+		'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
+		'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
+		'setGroupManager' => ['OCP\IGroupManager', 'IGroupManager'],
+		'setUserManager' => ['OCP\IUserManager', 'IUserManager'],
+		'setGroupProvisioner' => [
+			\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class,
+			'GroupProvisioner',
+		],
+		// Classifies, versions and logs the schema changes an import makes (#4102).
+		'setSchemaVersioning' => [
+			SchemaVersioningService::class,
+			'SchemaVersioningService',
+		],
+		// Writes the selectielijst categories an app ships (`components.selectionLists`).
+		'setSelectionListSeeder' => [
+			\OCA\OpenRegister\Service\Archival\SelectionListSeeder::class,
+			'SelectionListSeeder',
+		],
+		// Decides the slug of a seed object, so a seed cannot take a slug another
+		// live object holds (#4037); without it a seed slug is set as before.
+		'setSlugHandler' => [
+			\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class,
+			'ObjectSlugHandler',
+		],
+	];
 
 	/**
 	 * Register configuration-related services.
@@ -88,37 +128,13 @@ final class ConfigurationServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
-		$context->registerService(
-			ConfigurationUploadHandler::class,
-			function (ContainerInterface $container) {
-				return new ConfigurationUploadHandler(
-					client: new Client(),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
+		$context->registerService(ConfigurationUploadHandler::class, self::buildUploadHandler(...));
 
 		// Register GitHubHandler explicitly to fix IConfig auto-wiring issue.
-		$context->registerService(
-			GitHubHandler::class,
-			function (ContainerInterface $container) {
-				return new GitHubHandler(
-					client: $container->get('OCP\Http\Client\IClientService')->newClient(),
-					appConfig: $container->get('OCP\IAppConfig'),
-					config: $container->get('OCP\IConfig'),
-					cacheFactory: $container->get('OCP\ICacheFactory'),
-					attributionFormatter: $container->get('OCA\OpenRegister\Service\Configuration\AttributionFormatter'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
+		$context->registerService(GitHubHandler::class, self::buildGitHubHandler(...));
 
 		// Register ImportHandler (with both alias and real name to prevent auto-wiring conflicts).
-		$importHandlerFactory = function (
-			ContainerInterface $container,
-		): \OCA\OpenRegister\Service\Configuration\ImportHandler {
-			return self::buildImportHandler(container: $container);
-		};
+		$importHandlerFactory = self::buildImportHandler(...);
 
 		// Register under alias.
 		$context->registerService(ConfigurationImportHandler::class, $importHandlerFactory);
@@ -130,51 +146,48 @@ final class ConfigurationServiceRegistrar {
 		);
 
 		// Register ExportHandler with workflow dependencies.
-		$context->registerService(
-			ConfigurationExportHandler::class,
-			function (ContainerInterface $container): ConfigurationExportHandler {
-				$exportHandler = new ConfigurationExportHandler(
-					schemaMapper: $container->get(SchemaMapperInterface::class),
-					registerMapper: $container->get(RegisterMapperInterface::class),
-					objectEntityMapper: $container->get(MagicMapperInterface::class),
-					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-					mappingMapper: $container->get(MappingMapper::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-
-				return $exportHandler;
-			}
-		);
-
-		$context->registerService(
-			ConfigurationService::class,
-			function (ContainerInterface $container) {
-				return new ConfigurationService(
-					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-					platform: new ConfigurationServicePlatform(
-						appManager: $container->get('OCP\App\IAppManager'),
-						container: $container,
-						appConfig: $container->get('OCP\IAppConfig'),
-						logger: $container->get('Psr\Log\LoggerInterface')
-					),
-					gitHosts: new ConfigurationGitHosts(
-						githubHandler: $container->get(GitHubHandler::class),
-						gitlabHandler: $container->get(GitLabHandler::class)
-					),
-					// NOTE: ImportHandler is lazy-loaded in ConfigurationService to prevent circular dependency.
-					transfer: new ConfigurationTransferHandlers(
-						cacheHandler: $container->get(ConfigurationCacheHandler::class),
-						previewHandler: $container->get(PreviewHandler::class),
-						exportHandler: $container->get(ConfigurationExportHandler::class),
-						uploadHandler: $container->get(ConfigurationUploadHandler::class)
-					)
-				);
-			}
-		);
+		$context->registerService(ConfigurationExportHandler::class, self::buildExportHandler(...));
+		$context->registerService(ConfigurationService::class, self::buildConfigurationService(...));
 
 		self::registerSettingsServices(context: $context);
 		self::registerConfigurationDeploymentServices(context: $context);
 	}//end register()
+
+	/**
+	 * Build the configuration UploadHandler.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationUploadHandler The handler.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildUploadHandler(ContainerInterface $container): ConfigurationUploadHandler {
+		return new ConfigurationUploadHandler(
+			client: new Client(),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildUploadHandler()
+
+	/**
+	 * Build the GitHubHandler.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return GitHubHandler The handler.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildGitHubHandler(ContainerInterface $container): GitHubHandler {
+		return new GitHubHandler(
+			client: $container->get('OCP\Http\Client\IClientService')->newClient(),
+			appConfig: $container->get('OCP\IAppConfig'),
+			config: $container->get('OCP\IConfig'),
+			cacheFactory: $container->get('OCP\ICacheFactory'),
+			attributionFormatter: $container->get('OCA\OpenRegister\Service\Configuration\AttributionFormatter'),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildGitHubHandler()
 
 	/**
 	 * Build the configuration ImportHandler with everything it can reach.
@@ -190,58 +203,8 @@ final class ConfigurationServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function buildImportHandler(ContainerInterface $container): ConfigurationImportHandler {
-		$dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-		$appDataPath = $dataDir . '/appdata_openregister';
-
-		$logger = $container->get('Psr\Log\LoggerInterface');
-
-		// The guard that keeps a local change to an app-shipped schema alive
-		// across an upgrade (row 11.36). Optional on purpose: an instance whose
-		// container cannot build it imports exactly as it did before the guard
-		// existed, which is a known state rather than a broken one, and an
-		// unattended `occ upgrade` must finish.
-		$shippedGuard = null;
-		try {
-			$shippedGuard = $container->get(ShippedConfigurationGuard::class);
-		} catch (\Throwable $e) {
-			$logger->debug('[Application] ShippedConfigurationGuard unavailable for ImportHandler: ' . $e->getMessage());
-		}
-
-		// Stamps each app import with an import job id so a setup wizard can
-		// remove the example set it loaded. Resolved like the guard above, but
-		// its absence is logged as a warning: without it app imports cannot be
-		// removed by job, which somebody should hear about.
-		$importJobRecorder = null;
-		try {
-			$importJobRecorder = $container->get(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class);
-		} catch (\Throwable $e) {
-			$logger->warning('[Application] AppImportJobRecorder unavailable for ImportHandler: ' . $e->getMessage());
-		}
-
-		// Installs a schema's flows and notification webhooks when an import
-		// changed nothing and so fired no SchemaUpdatedEvent. Resolved like the
-		// guard: without it an unchanged re-import restores nothing it declares.
-		$schemaInstaller = null;
-		try {
-			$schemaInstaller = $container->get(\OCA\OpenRegister\Service\Configuration\SchemaImportInstaller::class);
-		} catch (\Throwable $e) {
-			$logger->warning('[Application] SchemaImportInstaller unavailable for ImportHandler: ' . $e->getMessage());
-		}
-
-		$importHandler = new ConfigurationImportHandler(
-			schemaMapper: $container->get(SchemaMapperInterface::class),
-			registerMapper: $container->get(RegisterMapperInterface::class),
-			objectEntityMapper: $container->get(MagicMapperInterface::class),
-			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-			mappingMapper: $container->get(MappingMapper::class),
-			appConfig: $container->get('OCP\IAppConfig'),
-			logger: $logger,
-			appDataPath: $appDataPath,
-			objectService: $container->get(ObjectOperationsInterface::class),
-			shippedGuard: $shippedGuard,
-			importJobRecorder: $importJobRecorder,
-			schemaInstaller: $schemaInstaller
-		);
+		$run           = self::startImportHandlerBuild(container: $container);
+		$importHandler = self::newImportHandler(run: $run);
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed
 		// data import, and for routing seed data to the correct magic table.
@@ -251,11 +214,131 @@ final class ConfigurationServiceRegistrar {
 		self::attachOptionalImportServices(
 			importHandler: $importHandler,
 			container: $container,
-			logger: $logger
+			logger: $run->logger
 		);
 
 		return $importHandler;
 	}//end buildImportHandler()
+
+	/**
+	 * Start an ImportHandler build: the app data path, then the logger.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ImportHandlerBuildRun The build.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function startImportHandlerBuild(ContainerInterface $container): ImportHandlerBuildRun {
+		$dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+
+		$run = new ImportHandlerBuildRun(
+			container: $container,
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+		$run->appDataPath = $dataDir . '/appdata_openregister';
+
+		return $run;
+	}//end startImportHandlerBuild()
+
+	/**
+	 * Construct the ImportHandler, resolving its three optional services first.
+	 *
+	 * The optional services are named first so they are resolved, and their
+	 * absence logged, before any of the required services are asked for.
+	 *
+	 * @param ImportHandlerBuildRun $run The build.
+	 *
+	 * @return ConfigurationImportHandler The handler.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function newImportHandler(ImportHandlerBuildRun $run): ConfigurationImportHandler {
+		return new ConfigurationImportHandler(
+			shippedGuard: self::resolveShippedGuard(run: $run),
+			importJobRecorder: self::resolveImportJobRecorder(run: $run),
+			schemaInstaller: self::resolveSchemaInstaller(run: $run),
+			schemaMapper: $run->container->get(SchemaMapperInterface::class),
+			registerMapper: $run->container->get(RegisterMapperInterface::class),
+			objectEntityMapper: $run->container->get(MagicMapperInterface::class),
+			configurationMapper: $run->container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+			mappingMapper: $run->container->get(MappingMapper::class),
+			appConfig: $run->container->get('OCP\IAppConfig'),
+			logger: $run->logger,
+			appDataPath: $run->appDataPath,
+			objectService: $run->container->get(ObjectOperationsInterface::class)
+		);
+	}//end newImportHandler()
+
+	/**
+	 * Resolve the guard that keeps a local change to an app-shipped schema alive
+	 * across an upgrade (row 11.36).
+	 *
+	 * Optional on purpose: an instance whose container cannot build it imports
+	 * exactly as it did before the guard existed, which is a known state rather
+	 * than a broken one, and an unattended `occ upgrade` must finish.
+	 *
+	 * @param ImportHandlerBuildRun $run The build.
+	 *
+	 * @return ShippedConfigurationGuard|null The guard, or null when it is not there.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function resolveShippedGuard(ImportHandlerBuildRun $run): ?ShippedConfigurationGuard {
+		try {
+			return $run->container->get(ShippedConfigurationGuard::class);
+		} catch (\Throwable $e) {
+			$run->logger->debug('[Application] ShippedConfigurationGuard unavailable for ImportHandler: ' . $e->getMessage());
+		}
+
+		return null;
+	}//end resolveShippedGuard()
+
+	/**
+	 * Resolve the recorder that stamps each app import with an import job id,
+	 * so a setup wizard can remove the example set it loaded.
+	 *
+	 * Resolved like the guard, but its absence is logged as a warning: without
+	 * it app imports cannot be removed by job, which somebody should hear about.
+	 *
+	 * @param ImportHandlerBuildRun $run The build.
+	 *
+	 * @return AppImportJobRecorder|null The recorder, or null when it is not there.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function resolveImportJobRecorder(ImportHandlerBuildRun $run): ?AppImportJobRecorder {
+		try {
+			return $run->container->get(AppImportJobRecorder::class);
+		} catch (\Throwable $e) {
+			$run->logger->warning('[Application] AppImportJobRecorder unavailable for ImportHandler: ' . $e->getMessage());
+		}
+
+		return null;
+	}//end resolveImportJobRecorder()
+
+	/**
+	 * Resolve the installer of a schema's flows and notification webhooks when an
+	 * import changed nothing and so fired no SchemaUpdatedEvent.
+	 *
+	 * Resolved like the guard: without it an unchanged re-import restores nothing
+	 * it declares, which is logged as a warning.
+	 *
+	 * @param ImportHandlerBuildRun $run The build.
+	 *
+	 * @return SchemaImportInstaller|null The installer, or null when it is not there.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function resolveSchemaInstaller(ImportHandlerBuildRun $run): ?SchemaImportInstaller {
+		try {
+			return $run->container->get(SchemaImportInstaller::class);
+		} catch (\Throwable $e) {
+			$run->logger->warning('[Application] SchemaImportInstaller unavailable for ImportHandler: ' . $e->getMessage());
+		}
+
+		return null;
+	}//end resolveSchemaInstaller()
 
 	/**
 	 * Attach the import services that are allowed to be missing.
@@ -278,41 +361,7 @@ final class ConfigurationServiceRegistrar {
 		ContainerInterface $container,
 		LoggerInterface $logger
 	): void {
-		// Setter => [service id, the name the log line used before this list existed].
-		$optional = [
-			'setFileService' => [\OCA\OpenRegister\Service\FileService::class, 'FileService'],
-			'setRegisterFolderProvisioner' => [
-				\OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface::class,
-				'RegisterFolderProvisioner',
-			],
-			'setNoteService' => [\OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface::class, 'NoteService'],
-			'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
-			'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
-			'setGroupManager' => ['OCP\IGroupManager', 'IGroupManager'],
-			'setUserManager' => ['OCP\IUserManager', 'IUserManager'],
-			'setGroupProvisioner' => [
-				\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class,
-				'GroupProvisioner',
-			],
-			// Classifies, versions and logs the schema changes an import makes (#4102).
-			'setSchemaVersioning' => [
-				SchemaVersioningService::class,
-				'SchemaVersioningService',
-			],
-			// Writes the selectielijst categories an app ships (`components.selectionLists`).
-			'setSelectionListSeeder' => [
-				\OCA\OpenRegister\Service\Archival\SelectionListSeeder::class,
-				'SelectionListSeeder',
-			],
-			// Decides the slug of a seed object, so a seed cannot take a slug another
-			// live object holds (#4037); without it a seed slug is set as before.
-			'setSlugHandler' => [
-				\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class,
-				'ObjectSlugHandler',
-			],
-		];
-
-		foreach ($optional as $setter => $service) {
+		foreach (self::OPTIONAL_IMPORT_SERVICES as $setter => $service) {
 			[$id, $label] = $service;
 
 			try {
@@ -322,6 +371,87 @@ final class ConfigurationServiceRegistrar {
 			}
 		}
 	}//end attachOptionalImportServices()
+
+
+	/**
+	 * Build the configuration ExportHandler with its workflow dependencies.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationExportHandler The handler.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildExportHandler(ContainerInterface $container): ConfigurationExportHandler {
+		$exportHandler = new ConfigurationExportHandler(
+			schemaMapper: $container->get(SchemaMapperInterface::class),
+			registerMapper: $container->get(RegisterMapperInterface::class),
+			objectEntityMapper: $container->get(MagicMapperInterface::class),
+			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+			mappingMapper: $container->get(MappingMapper::class),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+
+		return $exportHandler;
+	}//end buildExportHandler()
+
+	/**
+	 * Build the ConfigurationService from its platform, git hosts and transfer handlers.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationService The service.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildConfigurationService(ContainerInterface $container): ConfigurationService {
+		return new ConfigurationService(
+			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+			platform: self::buildConfigurationPlatform(container: $container),
+			gitHosts: new ConfigurationGitHosts(
+				githubHandler: $container->get(GitHubHandler::class),
+				gitlabHandler: $container->get(GitLabHandler::class)
+			),
+			// NOTE: ImportHandler is lazy-loaded in ConfigurationService to prevent circular dependency.
+			transfer: self::buildTransferHandlers(container: $container)
+		);
+	}//end buildConfigurationService()
+
+	/**
+	 * Build the platform the ConfigurationService runs on.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationServicePlatform The platform.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildConfigurationPlatform(ContainerInterface $container): ConfigurationServicePlatform {
+		return new ConfigurationServicePlatform(
+			appManager: $container->get('OCP\App\IAppManager'),
+			container: $container,
+			appConfig: $container->get('OCP\IAppConfig'),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildConfigurationPlatform()
+
+	/**
+	 * Build the cache, preview, export and upload handlers the ConfigurationService transfers with.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationTransferHandlers The handlers.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildTransferHandlers(ContainerInterface $container): ConfigurationTransferHandlers {
+		return new ConfigurationTransferHandlers(
+			cacheHandler: $container->get(ConfigurationCacheHandler::class),
+			previewHandler: $container->get(PreviewHandler::class),
+			exportHandler: $container->get(ConfigurationExportHandler::class),
+			uploadHandler: $container->get(ConfigurationUploadHandler::class)
+		);
+	}//end buildTransferHandlers()
 
 	/**
 	 * Register settings-related services including handlers.
@@ -333,50 +463,73 @@ final class ConfigurationServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function registerSettingsServices(IRegistrationContext $context): void {
-		$context->registerService(
-			ValidationOperationsHandler::class,
-			function (ContainerInterface $container) {
-				return new ValidationOperationsHandler(
-					validateHandler: null,
-					schemaMapper: $container->get(SchemaMapperInterface::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					container: $container
-				);
-			}
-		);
-
-		$context->registerService(
-			SettingsService::class,
-			function (ContainerInterface $container) {
-				return new SettingsService(
-					config: $container->get('OCP\IConfig'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					db: $container->get('OCP\IDBConnection'),
-					container: $container,
-					appName: 'openregister',
-					validOpsHandler: $container->get(ValidationOperationsHandler::class),
-					searchBackendHandler: $container->get(SearchBackendHandler::class),
-					llmSettingsHandler: $container->get(LlmSettingsHandler::class),
-					fileSettingsHandler: $container->get(FileSettingsHandler::class),
-					objRetentionHandler: $container->get(ObjectRetentionHandler::class),
-					cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
-					cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
-				);
-			}
-		);
+		$context->registerService(ValidationOperationsHandler::class, self::buildValidationOperationsHandler(...));
+		$context->registerService(SettingsService::class, self::buildSettingsService(...));
 
 		// Register TenantKeyService for audit-trail HMAC key management.
-		$context->registerService(
-			TenantKeyService::class,
-			function (ContainerInterface $container) {
-				return new TenantKeyService(
-					db: $container->get('OCP\IDBConnection'),
-					crypto: $container->get('OCP\Security\ICrypto'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
+		$context->registerService(TenantKeyService::class, self::buildTenantKeyService(...));
 	}//end registerSettingsServices()
+
+	/**
+	 * Build the ValidationOperationsHandler.
+	 *
+	 * @param IContainer $container The container; the ValidationOperationsHandler keeps it.
+	 *
+	 * @return ValidationOperationsHandler The handler.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildValidationOperationsHandler(IContainer $container): ValidationOperationsHandler {
+		return new ValidationOperationsHandler(
+			validateHandler: null,
+			schemaMapper: $container->get(SchemaMapperInterface::class),
+			logger: $container->get('Psr\Log\LoggerInterface'),
+			container: $container
+		);
+	}//end buildValidationOperationsHandler()
+
+	/**
+	 * Build the SettingsService from its settings handlers.
+	 *
+	 * @param IContainer $container The container; the SettingsService keeps it.
+	 *
+	 * @return SettingsService The service.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildSettingsService(IContainer $container): SettingsService {
+		return new SettingsService(
+			config: $container->get('OCP\IConfig'),
+			logger: $container->get('Psr\Log\LoggerInterface'),
+			db: $container->get('OCP\IDBConnection'),
+			container: $container,
+			appName: 'openregister',
+			validOpsHandler: $container->get(ValidationOperationsHandler::class),
+			searchBackendHandler: $container->get(SearchBackendHandler::class),
+			llmSettingsHandler: $container->get(LlmSettingsHandler::class),
+			fileSettingsHandler: $container->get(FileSettingsHandler::class),
+			objRetentionHandler: $container->get(ObjectRetentionHandler::class),
+			cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
+			cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
+		);
+	}//end buildSettingsService()
+
+	/**
+	 * Build the TenantKeyService.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return TenantKeyService The service.
+	 *
+	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+	 */
+	private static function buildTenantKeyService(ContainerInterface $container): TenantKeyService {
+		return new TenantKeyService(
+			db: $container->get('OCP\IDBConnection'),
+			crypto: $container->get('OCP\Security\ICrypto'),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildTenantKeyService()
 
 	/**
 	 * Register the configuration deployment lifecycle.
@@ -396,15 +549,7 @@ final class ConfigurationServiceRegistrar {
 		// than growing a second place to keep configuration about a schema,
 		// which is why it is registered here beside it and not in a corner of
 		// its own (row 11.36, ADR-012).
-		$context->registerService(
-			ShippedBaselineStore::class,
-			function (ContainerInterface $container) {
-				return new ShippedBaselineStore(
-					values: $container->get(ConfigurationValueStore::class),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
+		$context->registerService(ShippedBaselineStore::class, self::buildShippedBaselineStore(...));
 
 		// The administrator's decision to take shipped authorization MUST be
 		// shared: the re-import opens it (CountedRegisterImport) and the guard
@@ -418,93 +563,151 @@ final class ConfigurationServiceRegistrar {
 			}
 		);
 
-		$context->registerService(
-			ShippedConfigurationGuard::class,
-			function (ContainerInterface $container) {
-				$parts = new DescriptorParts();
-				$comparator = new DivergenceComparator(parts: $parts);
-
-				return new ShippedConfigurationGuard(
-					baselines: $container->get(ShippedBaselineStore::class),
-					merge: new GuardedDescriptorMerge(
-						parts: $parts,
-						comparator: $comparator,
-						decision: $container->get(ShippedAuthorizationDecision::class)
-					),
-					comparator: $comparator,
-					audit: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
-					session: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			ConfigurationValueStore::class,
-			function (ContainerInterface $container) {
-				return new ConfigurationValueStore(
-					values: $container->get(ConfigurationValueMapper::class),
-					appConfig: $container->get('OCP\IAppConfig'),
-					appName: 'openregister'
-				);
-			}
-		);
-
-		$context->registerService(
-			ConfigurationDraftService::class,
-			function (ContainerInterface $container) {
-				return new ConfigurationDraftService(
-					sets: $container->get(ConfigurationDraftSetMapperInterface::class),
-					drafts: $container->get(ConfigurationDraftMapperInterface::class),
-					store: $container->get(ConfigurationValueStore::class),
-					registry: $container->get(ConfigurationKeyRegistry::class),
-					session: $container->get('OCP\IUserSession'),
-					appConfig: $container->get('OCP\IAppConfig'),
-					appName: 'openregister'
-				);
-			}
-		);
-
-		$context->registerService(
-			DeploymentPreviewService::class,
-			function (ContainerInterface $container) {
-				return new DeploymentPreviewService(
-					drafts: $container->get(ConfigurationDraftService::class),
-					store: $container->get(ConfigurationValueStore::class),
-					registry: $container->get(ConfigurationKeyRegistry::class)
-				);
-			}
-		);
-
-		$context->registerService(
-			DeploymentService::class,
-			function (ContainerInterface $container) {
-				return new DeploymentService(
-					values: new DeploymentValues(
-						drafts: $container->get(ConfigurationDraftService::class),
-						previews: $container->get(DeploymentPreviewService::class),
-						store: $container->get(ConfigurationValueStore::class)
-					),
-					records: new DeploymentRecords(
-						deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
-						sets: $container->get(ConfigurationDraftSetMapperInterface::class),
-						db: $container->get('OCP\IDBConnection')
-					),
-					session: $container->get('OCP\IUserSession'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
-		);
-
-		$context->registerService(
-			ConfigurationExplainer::class,
-			function (ContainerInterface $container) {
-				return new ConfigurationExplainer(
-					store: $container->get(ConfigurationValueStore::class),
-					deployments: $container->get(ConfigurationDeploymentMapperInterface::class)
-				);
-			}
-		);
-
+		$context->registerService(ShippedConfigurationGuard::class, self::buildShippedConfigurationGuard(...));
+		$context->registerService(ConfigurationValueStore::class, self::buildConfigurationValueStore(...));
+		$context->registerService(ConfigurationDraftService::class, self::buildConfigurationDraftService(...));
+		$context->registerService(DeploymentPreviewService::class, self::buildDeploymentPreviewService(...));
+		$context->registerService(DeploymentService::class, self::buildDeploymentService(...));
+		$context->registerService(ConfigurationExplainer::class, self::buildConfigurationExplainer(...));
 	}//end registerConfigurationDeploymentServices()
+
+	/**
+	 * Build the ShippedBaselineStore on the deployment value store.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ShippedBaselineStore The store.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildShippedBaselineStore(ContainerInterface $container): ShippedBaselineStore {
+		return new ShippedBaselineStore(
+			values: $container->get(ConfigurationValueStore::class),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildShippedBaselineStore()
+
+	/**
+	 * Build the ShippedConfigurationGuard; its merge and itself share one comparator.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ShippedConfigurationGuard The guard.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildShippedConfigurationGuard(ContainerInterface $container): ShippedConfigurationGuard {
+		$parts      = new DescriptorParts();
+		$comparator = new DivergenceComparator(parts: $parts);
+
+		return new ShippedConfigurationGuard(
+			baselines: $container->get(ShippedBaselineStore::class),
+			merge: new GuardedDescriptorMerge(
+				parts: $parts,
+				comparator: $comparator,
+				decision: $container->get(ShippedAuthorizationDecision::class)
+			),
+			comparator: $comparator,
+			audit: $container->get(AuditTrailMapperInterface::class),
+			session: $container->get('OCP\IUserSession'),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildShippedConfigurationGuard()
+
+	/**
+	 * Build the ConfigurationValueStore.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationValueStore The store.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildConfigurationValueStore(ContainerInterface $container): ConfigurationValueStore {
+		return new ConfigurationValueStore(
+			values: $container->get(ConfigurationValueMapper::class),
+			appConfig: $container->get('OCP\IAppConfig'),
+			appName: 'openregister'
+		);
+	}//end buildConfigurationValueStore()
+
+	/**
+	 * Build the ConfigurationDraftService.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationDraftService The service.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildConfigurationDraftService(ContainerInterface $container): ConfigurationDraftService {
+		return new ConfigurationDraftService(
+			sets: $container->get(ConfigurationDraftSetMapperInterface::class),
+			drafts: $container->get(ConfigurationDraftMapperInterface::class),
+			store: $container->get(ConfigurationValueStore::class),
+			registry: $container->get(ConfigurationKeyRegistry::class),
+			session: $container->get('OCP\IUserSession'),
+			appConfig: $container->get('OCP\IAppConfig'),
+			appName: 'openregister'
+		);
+	}//end buildConfigurationDraftService()
+
+	/**
+	 * Build the DeploymentPreviewService.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return DeploymentPreviewService The service.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildDeploymentPreviewService(ContainerInterface $container): DeploymentPreviewService {
+		return new DeploymentPreviewService(
+			drafts: $container->get(ConfigurationDraftService::class),
+			store: $container->get(ConfigurationValueStore::class),
+			registry: $container->get(ConfigurationKeyRegistry::class)
+		);
+	}//end buildDeploymentPreviewService()
+
+	/**
+	 * Build the DeploymentService.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return DeploymentService The service.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildDeploymentService(ContainerInterface $container): DeploymentService {
+		return new DeploymentService(
+			values: new DeploymentValues(
+				drafts: $container->get(ConfigurationDraftService::class),
+				previews: $container->get(DeploymentPreviewService::class),
+				store: $container->get(ConfigurationValueStore::class)
+			),
+			records: new DeploymentRecords(
+				deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
+				sets: $container->get(ConfigurationDraftSetMapperInterface::class),
+				db: $container->get('OCP\IDBConnection')
+			),
+			session: $container->get('OCP\IUserSession'),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildDeploymentService()
+
+	/**
+	 * Build the ConfigurationExplainer.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationExplainer The explainer.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildConfigurationExplainer(ContainerInterface $container): ConfigurationExplainer {
+		return new ConfigurationExplainer(
+			store: $container->get(ConfigurationValueStore::class),
+			deployments: $container->get(ConfigurationDeploymentMapperInterface::class)
+		);
+	}//end buildConfigurationExplainer()
 }//end class

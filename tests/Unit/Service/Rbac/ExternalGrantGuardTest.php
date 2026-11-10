@@ -32,6 +32,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Rbac\ConstraintPoint;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\LapseWindow;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use PHPUnit\Framework\TestCase;
 
@@ -119,7 +120,7 @@ final class ExternalGrantGuardTest extends TestCase {
 			],
 		];
 
-		$lapsing = $this->guard->lapsingWithin($block, 14, $now);
+		$lapsing = $this->guard->lapsingWithin($block, new LapseWindow($now, 14));
 
 		self::assertCount(1, $lapsing);
 		self::assertSame('bijna-weg', $lapsing[0]['principal']);
@@ -136,7 +137,7 @@ final class ExternalGrantGuardTest extends TestCase {
 
 		// Reporting it as "about to lapse" would send somebody to renew access
 		// that already stopped answering.
-		self::assertSame([], $this->guard->lapsingWithin($block, 14, $now));
+		self::assertSame([], $this->guard->lapsingWithin($block, new LapseWindow($now, 14)));
 	}//end testAnEndAlreadyPastIsALapseNotAWarning()
 
 	public function testTheWarningsAreSoonestFirst(): void {
@@ -150,7 +151,7 @@ final class ExternalGrantGuardTest extends TestCase {
 
 		self::assertSame(
 			['eerder', 'later'],
-			array_column($this->guard->lapsingWithin($block, 30, $now), 'principal')
+			array_column($this->guard->lapsingWithin($block, new LapseWindow($now, 30)), 'principal')
 		);
 	}//end testTheWarningsAreSoonestFirst()
 

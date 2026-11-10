@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -123,7 +124,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$auditContexts = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) use (&$auditContexts) {
 				$auditContexts[(string)$object->getUuid()] = [
 					'action' => $action,
@@ -131,7 +132,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 				];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->runJob();
 
@@ -192,7 +193,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 				return $saved;
 			}
 		);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn($this->createMock(\OCA\OpenRegister\Db\AuditTrail::class));
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturn($this->createMock(\OCA\OpenRegister\Db\AuditTrail::class));
 
 		$this->runJob();
 
@@ -221,7 +222,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$this->objectService->expects($this->never())->method('saveObject');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->runJob();
 
@@ -244,7 +245,7 @@ class DsarDpiaDetectionJobTest extends TestCase {
 		);
 
 		$this->objectService->expects($this->never())->method('saveObject');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->runJob();
 

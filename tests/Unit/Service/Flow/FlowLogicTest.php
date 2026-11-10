@@ -12,6 +12,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -76,7 +77,7 @@ class RouteTaggingDispatcher implements FlowStepDispatcher {
 
 		if ($type === 'route') {
 			return array_map(
-				fn (array $item): array => FlowItems::item(json: (array)($item['json'] ?? []), output: $this->tag),
+				fn (array $item): array => FlowItems::item(json: (array)($item['json'] ?? []), options: new FlowItemOptions(output: $this->tag)),
 				$items
 			);
 		}

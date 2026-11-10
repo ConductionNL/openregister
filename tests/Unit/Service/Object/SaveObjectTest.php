@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
 use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
@@ -4822,7 +4823,7 @@ class SaveObjectTest extends TestCase {
 		$register = $this->createMockRegister(id: 7);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->objectEntityMapper->method('findSlugHolders')->willReturnCallback(
-			static fn (Register $r, Schema $s, string $slug): array => ($holders[$slug] ?? [])
+			static fn (RegisterSchema $table, string $slug): array => ($holders[$slug] ?? [])
 		);
 		$this->setPrivateProperty(
 			'slugHandler',

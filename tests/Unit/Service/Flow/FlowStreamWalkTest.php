@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
+use OCA\OpenRegister\Service\Flow\FlowPassFiring;
 use OCA\OpenRegister\Service\Flow\ClaimPass;
 use OCA\OpenRegister\Service\Flow\FiringClaim;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
@@ -157,7 +158,7 @@ class FlowStreamWalkTest extends TestCase {
 
 		$walk->exhaust(id: 'a');
 		$this->claims->method('claim')->willReturn(null);
-		$this->assertNull($walk->claim(id: 'b', transition: 'T', places: ['p2', 'q']));
+		$this->assertNull($walk->claim(id: 'b', transition: new Transition('T', ['p2'], ['q'])));
 		$this->commit->method('closeStream')->willReturn([]);
 		$walk->park(halt: (new FlowStreamHalt(streamId: 'c', claimed: ['p3'], enabled: false))->because(reason: 'timer'), resumeAt: new DateTime('+1 hour'));
 
@@ -174,7 +175,7 @@ class FlowStreamWalkTest extends TestCase {
 		$this->assertFalse($walk->budgetSpent());
 
 		$this->commit->method('commitFiring')->willReturnCallback(
-			fn (FlowRun $run, FlowFiring $firing, string $owner): FlowFiringResult => new FlowFiringResult(
+			fn (FlowRun $run, FlowPassFiring $firing): FlowFiringResult => new FlowFiringResult(
 				marking: ['p1' => 1, 'q' => 1],
 				placeItems: [],
 				streams: [$this->row('a', '0001.0001', 'p1'), $this->row('b', '0001.0002', 'q')],
@@ -198,7 +199,7 @@ class FlowStreamWalkTest extends TestCase {
 				$this->equalTo(new ClaimPass(owner: 'pass-1', runCap: null))
 			)
 			->willReturn(['p1', 'q']);
-		$this->assertSame(['p1', 'q'], $walk->claim(id: 'a', transition: 'T', places: ['p1', 'q']));
+		$this->assertSame(['p1', 'q'], $walk->claim(id: 'a', transition: new Transition('T', ['p1'], ['q'])));
 
 		$this->claims->expects($this->once())->method('release')->with('run-1', ['p1', 'q']);
 		$walk->release(places: ['p1', 'q']);
@@ -210,9 +211,11 @@ class FlowStreamWalkTest extends TestCase {
 		$walk->begin(marking: ['s' => 1]);
 
 		$captured = null;
+		$owner    = null;
 		$this->commit->method('commitFiring')->willReturnCallback(
-			function (FlowRun $run, FlowFiring $firing, string $owner) use (&$captured): FlowFiringResult {
-				$captured = $firing;
+			function (FlowRun $run, FlowPassFiring $firing) use (&$captured, &$owner): FlowFiringResult {
+				$captured = $firing->firing;
+				$owner    = $firing->owner;
 				return new FlowFiringResult(
 					marking: ['x' => 1, 'y' => 1],
 					placeItems: ['x' => [], 'y' => []],
@@ -233,7 +236,7 @@ class FlowStreamWalkTest extends TestCase {
 			->withLogEntry(logEntry: ['transition' => 'split', 'status' => 'completed'], enabledAfter: true);
 		$result = $walk->commitFiring(firing: $firing);
 
-		$this->assertSame('pass-1', 'pass-1');
+		$this->assertSame('pass-1', $owner, 'the commit carries the pass token as the owner');
 		$this->assertInstanceOf(FlowFiring::class, $captured);
 		$this->assertSame('0001', $captured->getStreamPath());
 		$this->assertSame(['s'], $captured->froms);

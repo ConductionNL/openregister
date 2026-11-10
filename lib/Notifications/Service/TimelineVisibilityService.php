@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -308,7 +309,7 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::AUDIT_ACTION, context: $context);
+			$this->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: self::AUDIT_ACTION, context: $context));
 		} catch (Throwable $e) {
 			$this->platform->logger->error(
 				'[TimelineVisibilityService] Visibility of note ' . $move->noteId . ' moved from ' . $context['from']

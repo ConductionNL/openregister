@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -73,7 +74,7 @@ class IterateNodeSeedBehaviourTest extends TestCase {
 		);
 
 		$out = $this->node->execute(
-			[FlowItems::item(json: ['cursor' => 'abc'], binary: ['f' => ['name' => 'x']]), FlowItems::item(json: ['cursor' => 'def'])],
+			[FlowItems::item(json: ['cursor' => 'abc'], options: new FlowItemOptions(binary: ['f' => ['name' => 'x']])), FlowItems::item(json: ['cursor' => 'def'])],
 			['source' => ['type' => 'src'], 'body' => [['type' => 'body']]],
 			[]
 		);

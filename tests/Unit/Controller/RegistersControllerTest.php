@@ -10,6 +10,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -37,6 +38,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 /**
  * Unit tests for RegistersController
@@ -899,7 +901,7 @@ class RegistersControllerTest extends TestCase {
 		]);
 		$this->registerService->method('findAll')->willReturn([$register]);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 3]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 3]);
 
 		$result = $this->controller->index();
 
@@ -928,7 +930,7 @@ class RegistersControllerTest extends TestCase {
 			10 => ['total' => 42],
 		]);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 3]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 3]);
 
 		$result = $this->controller->index();
 
@@ -955,7 +957,7 @@ class RegistersControllerTest extends TestCase {
 		// Return empty counts — schema 10 is not in the map
 		$this->registerService->method('getSchemaObjectCounts')->willReturn([]);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 0]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 0]);
 
 		$result = $this->controller->index();
 
@@ -995,7 +997,7 @@ class RegistersControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn('@self.stats');
 		$this->registerService->method('find')->willReturn($register);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 5]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 5]);
 
 		$result = $this->controller->show(1);
 
@@ -1013,7 +1015,7 @@ class RegistersControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn(['@self.stats']);
 		$this->registerService->method('find')->willReturn($register);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 5]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 5]);
 
 		$result = $this->controller->show(1);
 
@@ -1538,8 +1540,7 @@ class RegistersControllerTest extends TestCase {
 		$this->importService->expects($this->once())
 			->method('importFromJson')
 			->with(
-				$this->anything(),
-				$this->callback(fn ($register) => $register === null)
+				$this->callback(fn (ImportRequest $request): bool => $request->scope->register === null)
 			)
 			->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
 
@@ -2249,7 +2250,7 @@ class RegistersControllerTest extends TestCase {
 
 	public function testANonAdminListingRegistersIsNotGivenTheTrailCount(): void {
 		$this->currentUserIsAdmin = false;
-		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->auditTrailMapper->expects($this->never())->method('statisticsTotals');
 		$this->request->method('getParams')->willReturn(['_extend' => ['@self.stats']]);
 		$this->registerService->method('findAll')->willReturn([$this->createRealRegister(1, 'Test')]);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
@@ -2261,8 +2262,8 @@ class RegistersControllerTest extends TestCase {
 	}
 
 	public function testAnAdminListingRegistersIsGivenTheTrailCount(): void {
-		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
-			->with(1, null)->willReturn(['total' => 3, 'size' => 30]);
+		$this->auditTrailMapper->expects($this->once())->method('statisticsTotals')
+			->with(AuditStatisticsCalls::scope(1, null))->willReturn(['total' => 3, 'size' => 30]);
 		$this->request->method('getParams')->willReturn(['_extend' => ['@self.stats']]);
 		$this->registerService->method('findAll')->willReturn([$this->createRealRegister(1, 'Test')]);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
@@ -2274,7 +2275,7 @@ class RegistersControllerTest extends TestCase {
 
 	public function testANonAdminReadingARegisterIsNotGivenTheTrailCount(): void {
 		$this->currentUserIsAdmin = false;
-		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->auditTrailMapper->expects($this->never())->method('statisticsTotals');
 		$this->request->method('getParam')->willReturn('@self.stats');
 		$this->registerService->method('find')->willReturn($this->createRealRegister(1, 'Test'));
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
@@ -2286,8 +2287,8 @@ class RegistersControllerTest extends TestCase {
 	}
 
 	public function testAnAdminReadingARegisterIsGivenTheTrailCount(): void {
-		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
-			->with(1, null)->willReturn(['total' => 5, 'size' => 50]);
+		$this->auditTrailMapper->expects($this->once())->method('statisticsTotals')
+			->with(AuditStatisticsCalls::scope(1, null))->willReturn(['total' => 5, 'size' => 50]);
 		$this->request->method('getParam')->willReturn('@self.stats');
 		$this->registerService->method('find')->willReturn($this->createRealRegister(1, 'Test'));
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);

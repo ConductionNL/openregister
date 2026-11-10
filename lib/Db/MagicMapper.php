@@ -39,6 +39,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
@@ -88,7 +90,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicPaginatedSearch;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchRequest;
 use OCA\OpenRegister\Db\MagicMapper\LinkedEntityRef;
 use OCA\OpenRegister\Db\MagicMapper\FolderRecord;
-use OCA\OpenRegister\Db\MagicMapper\MagicUpsertBatch;
 use OCA\OpenRegister\Db\MagicMapper\RelationBatchLookup;
 use OCA\OpenRegister\Db\MagicMapper\UuidBatchLookup;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -119,6 +120,7 @@ use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
@@ -1596,12 +1598,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			// Initialize facet handler if not already done.
 			$this->initializeHandlers();
 
-			return $this->facetHandler->getSimpleFacets(
-				tableName: $tableName,
-				query: $query,
-				register: $register,
-				schema: $schema
-			);
+			$target            = new MagicTableTarget(register: $register, schema: $schema);
+			$target->tableName = $tableName;
+			return $this->facetHandler->getSimpleFacets(target: $target, query: $query);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[MagicMapper] Failed to get facets from register+schema table',
@@ -1974,10 +1973,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 		}
 
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query, isPostgres: $isPostgres);
+		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-batch union search merged',
@@ -2227,14 +2223,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the merged set, which is the whole point of the batching: the page has
 	 * to be the search's page, not the first batch's.
 	 *
-	 * @param array $rows       Rows from every batch, in batch order.
-	 * @param array $query      The caller's search parameters (offset and limit).
-	 * @param bool  $isPostgres Whether the platform is PostgreSQL.
+	 * @param array $rows  Rows from every batch, in batch order.
+	 * @param array $query The caller's search parameters (offset and limit).
 	 *
 	 * @return array The merged page.
 	 */
-	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
-		$order = new MagicUnionOrder(isPostgres: $isPostgres);
+	private function mergeUnionBatchRows(array $rows, array $query): array {
+		$order = new MagicUnionOrder(isPostgres: $this->isPostgresPlatform());
 
 		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
@@ -4224,8 +4219,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param IQueryBuilder     $qb     The lookup query.
 	 * @param MagicObjectLookup $lookup The lookup.
 	 *
-	 * @throws DoesNotExistException If no row matches, or the query or conversion fails.
+	 * @throws DoesNotExistException If no row matches, the row does not convert, or the table is absent.
 	 * @throws MultipleObjectsReturnedException If the identifier is ambiguous.
+	 * @throws ObjectLookupFailedException If the query fails for another reason.
 	 *
 	 * @return ObjectEntity The found object.
 	 */
@@ -4260,7 +4256,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				]
 			);
 
-			throw new DoesNotExistException($e->getMessage());
+			// Only an absent table means the object is absent; any other failure leaves it unknown.
+			if ($e instanceof \OCP\DB\Exception && $e->getReason() === \OCP\DB\Exception::REASON_DATABASE_OBJECT_NOT_FOUND) {
+				throw new DoesNotExistException($e->getMessage());
+			}
+
+			throw new ObjectLookupFailedException(message: $e->getMessage(), code: 0, previous: $e);
 		}//end try
 	}//end fetchSingleObject()
 
@@ -4467,15 +4468,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the caller keeps the rows that really are a suffixed variant. No RBAC or multitenancy
 	 * filter, as for every slug uniqueness query.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $prefix   The slug prefix, taken literally.
-	 * @param int      $limit    Most rows to return.
+	 * @param RegisterSchema $table  The register and schema whose table to use.
+	 * @param string         $prefix The slug prefix, taken literally.
+	 * @param int            $limit  Most rows to return.
 	 *
 	 * @return list<array{slug: string, uuid: string}> The matches.
 	 */
-	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array {
-		return ($this->slugTable(register: $register, schema: $schema)?->byPrefix(prefix: $prefix, limit: $limit) ?? []);
+	public function findSlugsByPrefix(RegisterSchema $table, string $prefix, int $limit=50): array {
+		return ($this->slugTable(register: $table->register, schema: $table->schema)?->byPrefix(prefix: $prefix, limit: $limit) ?? []);
 	}//end findSlugsByPrefix()
 
 	/**
@@ -4483,19 +4483,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * Resolved lazily, as on restore: the slug handler needs this mapper.
 	 *
-	 * @param ObjectEntity $entity   The object being moved (still carrying its uuid).
-	 * @param Register     $register The target register.
-	 * @param Schema       $schema   The target schema.
+	 * @param ObjectEntity   $entity The object being moved (still carrying its uuid).
+	 * @param RegisterSchema $table  The target register and schema.
 	 *
 	 * @return string|null The slug to store at the target.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
-		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(
-			entity: $entity,
-			table: new RegisterSchema(register: $register, schema: $schema)
-		);
+	public function slugForMove(ObjectEntity $entity, RegisterSchema $table): ?string {
+		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(entity: $entity, table: $table);
 	}//end slugForMove()
 
 	/**
@@ -4505,22 +4501,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * caller who cannot see the holder must still not take its slug. Soft-deleted
 	 * rows hold no slug, as on the read path.
 	 *
-	 * @param Register    $register    The register.
-	 * @param Schema      $schema      The schema.
-	 * @param string      $slug        The slug to look for.
+	 * @param RegisterSchema $table       The register and schema whose table to use.
+	 * @param string         $slug        The slug to look for.
 	 * @param string|null $excludeUuid The object being saved, which never collides with itself.
 	 *
 	 * @return list<string> The holders' uuids (at most one: enough to know the slug is taken).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function findSlugHolders(
-		Register $register,
-		Schema $schema,
-		string $slug,
-		?string $excludeUuid=null,
-	): array {
-		return ($this->slugTable(register: $register, schema: $schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
+	public function findSlugHolders(RegisterSchema $table, string $slug, ?string $excludeUuid=null): array {
+		return ($this->slugTable(register: $table->register, schema: $table->schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
 	}//end findSlugHolders()
 
 	/**
@@ -4531,17 +4521,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * row has none, absent when the row does not exist yet). The IN lists are
 	 * split into chunks of 1,000 values. No access filter, as findSlugHolders().
 	 *
-	 * @param Register      $register The register.
-	 * @param Schema        $schema   The schema.
-	 * @param list<string>  $slugs    Candidate slugs.
-	 * @param list<string>  $uuids    Uuids of the rows being decided.
+	 * @param RegisterSchema $table The register and schema whose table to use.
+	 * @param list<string>   $slugs Candidate slugs.
+	 * @param list<string>   $uuids Uuids of the rows being decided.
 	 *
 	 * @return array{holders: array<string, list<string>>, stored: array<string, string|null>}
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
-	public function findSlugState(Register $register, Schema $schema, array $slugs, array $uuids): array {
-		return ($this->slugTable(register: $register, schema: $schema)?->state(slugs: $slugs, uuids: $uuids) ?? ['holders' => [], 'stored' => []]);
+	public function findSlugState(RegisterSchema $table, array $slugs, array $uuids): array {
+		$column = $this->slugTable(register: $table->register, schema: $table->schema);
+		return ($column?->state(slugs: $slugs, uuids: $uuids) ?? ['holders' => [], 'stored' => []]);
 	}//end findSlugState()
 
 	/**
@@ -4649,22 +4639,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Only when the row still has no slug (null or empty), so a save that set
 	 * the slug while the backfill was planning is not undone.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $uuid     The object.
-	 * @param string   $slug     The new slug.
+	 * @param RegisterSchema $table The register and schema whose table to use.
+	 * @param string         $uuid  The object.
+	 * @param string         $slug  The new slug.
 	 *
 	 * @return int Rows updated: 0 when the row changed in the meantime.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function updateSlugColumn(
-		Register $register,
-		Schema $schema,
-		string $uuid,
-		string $slug,
-	): int {
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+	public function updateSlugColumn(RegisterSchema $table, string $uuid, string $slug): int {
+		$tableName = $this->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
 
 		return (new MagicSlugTable(db: $this->db, tableName: $tableName))->fillEmpty(uuid: $uuid, slug: $slug);
 	}//end updateSlugColumn()
@@ -6293,7 +6277,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		}
 
-		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: 'read', tableName: $tableName);
+		return $this->rbacHandler->buildRbacRowPredicateSql(call: (new RbacAccessCall(schema: $schema))->onTable(tableName: $tableName));
 	}//end rbacRowPredicateSql()
 
 	/**
@@ -7535,49 +7519,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Perform bulk upsert operation on register+schema table
 	 *
 	 * This method provides high-performance bulk insert/update operations for dynamic tables.
-	 * It delegates to MagicBulkHandler for the actual database operations.
+	 * It delegates to MagicBulkHandler for the actual database operations, and creates the
+	 * table when the first statement finds it missing.
 	 *
-	 * @param array $objects Array of object data in standard format
-	 * @param Register $register Register context
-	 * @param Schema $schema Schema context
-	 * @param string $tableName Target table name
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows (audit changeset or update
-	 *                                  event). False narrows the fetch to the uuid.
+	 * @param BulkUpsertCommand $command The rows, their register and schema, the target table
+	 *                                   name, and whether anything downstream reads the
+	 *                                   pre-update rows.
 	 *
 	 * @return array[] Array of complete objects with object_status field
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs
 	 *
 	 * @psalm-return list<array<string, mixed>>
-	 */
-	public function bulkUpsert(
-		array $objects,
-		Register $register,
-		Schema $schema,
-		string $tableName,
-		bool $needsPreUpdateState = true,
-	): array {
-		$target = new MagicTableTarget(register: $register, schema: $schema);
-		$target->tableName = $tableName;
-		return $this->bulkUpsertInto(target: $target, batch: new MagicUpsertBatch(objects: $objects, needsPreUpdateState: $needsPreUpdateState));
-	}//end bulkUpsert()
-
-	/**
-	 * Bulk upsert rows into a register+schema table, creating the table when it is missing (see bulkUpsert()).
 	 *
-	 * @param MagicTableTarget $target The register, schema and table name to write to.
-	 * @param MagicUpsertBatch $batch  The rows and whether their pre-update state is needed.
-	 *
-	 * @return array The handler's upsert result.
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function bulkUpsertInto(MagicTableTarget $target, MagicUpsertBatch $batch): array {
-		$register            = $target->register;
-		$schema              = $target->schema;
-		$tableName           = $target->tableName;
-		$objects             = $batch->objects;
-		$needsPreUpdateState = $batch->needsPreUpdateState;
+	public function bulkUpsert(BulkUpsertCommand $command): array {
+		$register  = $command->table->register;
+		$schema    = $command->table->schema;
+		$tableName = $command->tableName;
 
 		$this->logger->debug(
 			message: '[MagicMapper] Delegating bulk upsert to MagicBulkHandler',
@@ -7587,22 +7547,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				'register' => $register->getId(),
 				'schema' => $schema->getId(),
 				'table' => $tableName,
-				'object_count' => count($objects),
+				'object_count' => count($command->objects),
 			]
 		);
 
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
 
 		try {
-			return $this->bulkHandler->bulkUpsert(
-				objects: $objects,
-				register: $register,
-				schema: $schema,
-				tableName: $tableName,
-				needsPreUpdateState: $needsPreUpdateState
+			return $this->bulkHandler->upsert(
+				command: new BulkUpsertCommand(
+					objects: $objects,
+					table: $command->table,
+					tableName: $tableName,
+					needsPreUpdateState: $command->needsPreUpdateState
+				)
 			);
 		} catch (\Exception $e) {
 			$target = new MagicTableTarget(register: $register, schema: $schema);
@@ -7610,14 +7571,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$this->createMissingBulkTable(error: $e, target: $target);
 
 			// Retry the bulk upsert.
-			return $this->bulkHandler->bulkUpsert(
-				objects: $objects,
-				register: $register,
-				schema: $schema,
-				tableName: $tableName
+			return $this->bulkHandler->upsert(
+				command: new BulkUpsertCommand(objects: $objects, table: $command->table, tableName: $tableName)
 			);
 		}//end try
-	}//end bulkUpsertInto()
+	}//end bulkUpsert()
 
 	/**
 	 * Create the table a failed bulk upsert found missing, or rethrow the failure.
@@ -9536,11 +9494,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
 		return $this->bulkUpsert(
-			objects: $group->insertObjects,
-			register: $register,
-			schema: $schema,
-			tableName: 'openregister_table_' . $register->getId() . '_' . $schema->getId(),
-			needsPreUpdateState: $group->needsPreUpdateState
+			command: new BulkUpsertCommand(
+				objects: $group->insertObjects,
+				table: new RegisterSchema(register: $register, schema: $schema),
+				tableName: 'openregister_table_' . $register->getId() . '_' . $schema->getId(),
+				needsPreUpdateState: $group->needsPreUpdateState
+			)
 		);
 	}//end ultraFastBulkSaveSingleSchema()
 

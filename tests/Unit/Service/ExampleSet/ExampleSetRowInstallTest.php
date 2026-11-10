@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
+use OCA\OpenRegister\Service\ExampleSet\FilledRow;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -48,8 +49,8 @@ class ExampleSetRowInstallTest extends TestCase {
 		$asked   = [];
 		$install = new ExampleSetRowInstall(
 			rows: $rows,
-			refusal: function (array $data, array $users, array $context) use (&$asked): string {
-				$asked[] = [$data, $users, $context];
+			refusal: function (FilledRow $row, array $context) use (&$asked): string {
+				$asked[] = [$row->data, $row->users, $context];
 				return 'no';
 			},
 			fill: function (array $context) use (&$asked): array {
@@ -78,7 +79,7 @@ class ExampleSetRowInstallTest extends TestCase {
 		$rows->expects($this->once())->method('write')->with(new ExampleSetRow(app: 'demo', key: 'n', data: ['text' => 'hi']))->willReturn(['error' => '', 'entry' => ['id' => 9]]);
 		$install = new ExampleSetRowInstall(
 			rows: $rows,
-			refusal: static fn (array $data, array $users, array $context): string => '',
+			refusal: static fn (FilledRow $row, array $context): string => '',
 			fill: static fn (array $context): array => $context,
 			values: new ExampleSetValues()
 		);

@@ -41,7 +41,7 @@ final class ExampleSetRowInstall {
 	 *
 	 * @param ExampleSetEngineRows $rows    The kind of row: its part, noun, write, update and revert.
 	 * @param Closure              $refusal Why a filled row cannot be written in this run, or '': the kind's refusalIn(),
-	 *                                      called with the filled fields, the set's accounts and the context.
+	 *                                      called with the filled row (fields and the set's accounts) and the context.
 	 * @param Closure              $fill    The context the kind's rows are filled in: the kind's fillContext().
 	 * @param ExampleSetValues     $values  Fills placeholders.
 	 *
@@ -49,7 +49,7 @@ final class ExampleSetRowInstall {
 	 */
 	public function __construct(
 		private readonly ExampleSetEngineRows $rows,
-		/** @var Closure(array<string, mixed>, array<int, string>, array<string, mixed>): string */
+		/** @var Closure(FilledRow, array<string, mixed>): string */
 		private readonly Closure $refusal,
 		/** @var Closure(array<string, mixed>): array<string, mixed> */
 		private readonly Closure $fill,
@@ -194,8 +194,11 @@ final class ExampleSetRowInstall {
 	private function made(RowInstallStep $step, string $mode): array {
 		$run   = $step->run;
 		$gaps  = [];
-		$data  = (array) $this->values->fill(value: $step->row['entry']['data'], context: ($this->fill)($run->context), gaps: $gaps);
-		$error = ($this->refusal)($data, array_keys($run->ledger->record['users']), $run->context);
+		$data  = (array) $this->values->fill(
+			value: $step->row['entry']['data'],
+			scope: new ExampleSetFillScope(context: ($this->fill)($run->context), gaps: $gaps)
+		);
+		$error = ($this->refusal)(new FilledRow(data: $data, users: array_keys($run->ledger->record['users'])), $run->context);
 		if ($gaps !== []) {
 			$error = 'cannot resolve '.implode(', ', array_unique($gaps));
 		}

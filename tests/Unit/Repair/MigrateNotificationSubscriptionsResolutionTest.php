@@ -120,7 +120,7 @@ class MigrateNotificationSubscriptionsResolutionTest extends TestCase {
 
 	public function testAnAppConfigOfTheWrongTypeIsTreatedAsAbsentSoTheMigrationStillRuns(): void {
 		$prefs = $this->createMock(NotificationPreferencesInterface::class);
-		$prefs->expects($this->exactly(2))->method('setOverride');
+		$prefs->expects($this->exactly(2))->method('storeOverride');
 
 		$this->runWith(
 			[

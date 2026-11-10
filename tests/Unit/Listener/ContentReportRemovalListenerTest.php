@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Listener\ContentReportRemovalListener;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -45,12 +46,12 @@ final class ContentReportRemovalListenerTest extends TestCase {
 
 		$audit = $this->createMock(AuditTrailMapper::class);
 		$audit->expects(self::once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				self::anything(),
 				ContentReportService::ACTION_REMOVAL_NAMED,
 				self::callback(static fn (array $context): bool => $context['contentReports'] === ['report-1', 'report-2'])
-			)
+			]))
 			->willReturn(new AuditTrail());
 
 		(new ContentReportRemovalListener($reports, $audit, $this->createMock(LoggerInterface::class)))
@@ -62,7 +63,7 @@ final class ContentReportRemovalListenerTest extends TestCase {
 		$reports->method('noteRemoval')->willReturn([]);
 
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->expects(self::never())->method('createAuditTrailEntry');
+		$audit->expects(self::never())->method('recordObjectEvent');
 
 		(new ContentReportRemovalListener($reports, $audit, $this->createMock(LoggerInterface::class)))
 			->handle($this->deleted());
@@ -73,7 +74,7 @@ final class ContentReportRemovalListenerTest extends TestCase {
 		$reports->method('noteRemoval')->willReturn(['report-1']);
 
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willThrowException(new \RuntimeException('db down'));
+		$audit->method('recordObjectEvent')->willThrowException(new \RuntimeException('db down'));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('warning');
