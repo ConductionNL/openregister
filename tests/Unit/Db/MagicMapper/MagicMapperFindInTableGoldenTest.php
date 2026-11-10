@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
@@ -78,6 +79,8 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 
 	private array $events = [];
 
+	private ?\Throwable $failure = null;
+
 	private static function rowSets(): array {
 		return [
 			'none' => [],
@@ -130,6 +133,44 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testFindInRegisterSchemaTableMatchesGolden()
+
+	/**
+	 * A found row is returned, an empty result and an absent table read as not found, and any other
+	 * query failure is refused as a failed lookup rather than reported as a missing object.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAnAbsentObjectReadsAsNotFound(): void {
+		$call = [7, [false, false, false, false]];
+
+		$found = $this->find(setup: ['exists', self::rowSets()['one']], call: $call);
+		$this->assertSame([7, 'uuid-7', 'seven', 'Seven', '1', '2'], $found['found'] ?? null);
+
+		$none = $this->find(setup: ['exists', []], call: $call);
+		$this->assertSame('OCP\\AppFramework\\Db\\DoesNotExistException: Object not found in magic table', $none['thrown'] ?? null);
+
+		$absent = $this->createMock(\OCP\DB\Exception::class);
+		$absent->method('getReason')->willReturn(\OCP\DB\Exception::REASON_DATABASE_OBJECT_NOT_FOUND);
+		$this->failure = $absent;
+		$this->assertStringStartsWith(
+			'OCP\\AppFramework\\Db\\DoesNotExistException',
+			(string)($this->find(setup: ['exists', 'fail'], call: $call)['thrown'] ?? '')
+		);
+
+		$lost = $this->createMock(\OCP\DB\Exception::class);
+		$lost->method('getReason')->willReturn(\OCP\DB\Exception::REASON_CONNECTION_LOST);
+		$this->failure = $lost;
+		$this->assertStringStartsWith(
+			ObjectLookupFailedException::class,
+			(string)($this->find(setup: ['exists', 'fail'], call: $call)['thrown'] ?? '')
+		);
+
+		$this->failure = null;
+		$this->assertSame(
+			ObjectLookupFailedException::class.': database refused',
+			$this->find(setup: ['exists', 'fail'], call: $call)['thrown'] ?? null
+		);
+	}//end testOnlyAnAbsentObjectReadsAsNotFound()
 
 	private function find(array $setup, array $call): array {
 		[$table, $rows] = $setup;
@@ -259,7 +300,7 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 	}//end container()
 
 	private function failingBuilder(IQueryBuilder $qb): IQueryBuilder {
-		$qb->method('executeQuery')->willThrowException(new \RuntimeException('database refused'));
+		$qb->method('executeQuery')->willThrowException($this->failure ?? new \RuntimeException('database refused'));
 		return $qb;
 	}//end failingBuilder()
 }//end class
