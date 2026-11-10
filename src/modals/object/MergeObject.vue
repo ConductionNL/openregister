@@ -1211,6 +1211,15 @@ export default {
  * @return {object} The type per extension
  */
 function fileTypeNames() {
+	return { ...documentTypeNames(), ...imageAndArchiveTypeNames() }
+}
+
+/**
+ * The document file types, per extension.
+ *
+ * @return {object} The type per extension
+ */
+function documentTypeNames() {
 	return {
 		pdf: 'PDF',
 		doc: 'Word',
@@ -1220,13 +1229,23 @@ function fileTypeNames() {
 		ppt: 'PowerPoint',
 		pptx: 'PowerPoint',
 		txt: 'Text',
+	}
+}
+
+/**
+ * The image and archive file types, per extension.
+ *
+ * @return {object} The type per extension
+ */
+function imageAndArchiveTypeNames() {
+	return {
 		jpg: 'Image',
 		jpeg: 'Image',
 		png: 'Image',
 		gif: 'Image',
 		zip: 'Archive',
 		rar: 'Archive',
-}
+	}
 }
 
 /**
