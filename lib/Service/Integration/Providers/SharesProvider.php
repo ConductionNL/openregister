@@ -442,12 +442,12 @@ class SharesProvider extends AbstractIntegrationProvider {
 		if ($type !== 'public-token') {
 			// Only the public-token surface is supported by this provider;
 			// anything else defers to the abstract 501 contract.
-			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 		if ($service === null || method_exists($service, 'mint') === false) {
-			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
 		return $service->mint(
@@ -526,7 +526,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
 		if ($service === null || method_exists($service, 'revokeShare') === false) {
-			parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
+			parent::delete(ref: $ref, entityId: $entityId);
 			return;
 		}
 
@@ -548,7 +548,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 			return;
 		}
 
-		parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
+		parent::delete(ref: $ref, entityId: $entityId);
 	}//end deleteCaseToken()
 
 	/**
