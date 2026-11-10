@@ -2949,3 +2949,4 @@
 2026-11-10T23:37:49Z integrator-20261110T221231-b175a32d MERGED-TREE 41bef017da: 25 PRs in one push, main now 41bef017da = tested tree
 2026-11-10T23:40:04Z precheck-20261110T222343-e7320f00 RED tree 697eeabaef prs 1 front=skip: Tests: 55664, Assertions: 184004, Errors: 6, Failures: 12, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 2026-11-10T23:42:07Z integrator-20261110T221231-b175a32d GREEN tree 97dc555d58 on dev 41bef017da prs 50 front=ok: Tests: 55877, Assertions: 184654, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24.
+2026-11-10T23:43:13Z integrator-20261110T221231-b175a32d MERGED-TREE 97dc555d58: 50 PRs in one push, main now 97dc555d58 = tested tree
