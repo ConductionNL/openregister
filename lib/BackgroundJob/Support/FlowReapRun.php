@@ -50,6 +50,8 @@ final class FlowReapRun {
 	 * The moment before which work counts as abandoned.
 	 *
 	 * @return DateTime A new instance; the pass clock is not modified.
+	 *
+	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
 	 */
 	public function cutoff(): DateTime {
 		return (clone $this->now)->modify('-' . $this->minutes . ' minutes');
