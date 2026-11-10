@@ -49,9 +49,9 @@ jest.mock('../../store/store.js', () => ({
 		refreshSchemaList: () => Promise.resolve(),
 	},
 }))
-jest.mock('vue-material-design-icons/Cancel.vue', () => ({ __esModule: true, default: mockStub('Cancel') }), { virtual: true })
-jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: mockStub('ContentSaveOutline') }), { virtual: true })
-jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: mockStub('Plus') }), { virtual: true })
+jest.mock('vue-material-design-icons/Cancel.vue', () => ({ __esModule: true, default: mockStub('Cancel') }))
+jest.mock('vue-material-design-icons/ContentSaveOutline.vue', () => ({ __esModule: true, default: mockStub('ContentSaveOutline') }))
+jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: mockStub('Plus') }))
 jest.mock('../../components/shared/CloseCancelButton.vue', () => ({ __esModule: true, default: mockStub('CloseCancelButton') }))
 
 /**

@@ -10,9 +10,7 @@ jest.mock('../store/store.js', () => {
 	return { __esModule: true, organisationStore: reactive({ activeOrganisation: null }) }
 })
 jest.mock('../manifest.json', () => ({ menu: [{ id: 'dashboard' }], runtime: { user: { locale: 'nl' }, flag: true } }))
-// Virtual, as MigrationPacks.spec.js registers it: a mix of virtual and real
-// mocks of the same icon in one jest worker resolves to the unmocked file.
-jest.mock('vue-material-design-icons/Finance.vue', () => ({ __esModule: true, default: { template: '<i />' } }), { virtual: true })
+jest.mock('vue-material-design-icons/Finance.vue', () => ({ __esModule: true, default: { template: '<i />' } }))
 // The library nav is a stand-in that exposes the props it gets and renders
 // the primary-action slot this menu fills.
 jest.mock('@conduction/nextcloud-vue', () => ({
