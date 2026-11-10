@@ -1,0 +1,194 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectsTab requests (golden) asks nothing without a message 1`] = `
+{
+  "emitted": [
+    [
+      "count",
+      0,
+    ],
+  ],
+  "loading": false,
+  "objects": [],
+  "requests": [],
+}
+`;
+
+exports[`ObjectsTab requests (golden) clears the list on a failure 1`] = `
+{
+  "emitted": [
+    [
+      "count",
+      0,
+    ],
+  ],
+  "loading": false,
+  "objects": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/linked/mail/a1/7",
+      {
+        "timeout": 10000,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsTab requests (golden) lists nothing on an answer without results 1`] = `
+{
+  "emitted": [
+    [
+      "count",
+      0,
+    ],
+  ],
+  "loading": false,
+  "objects": [],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/linked/mail/a1/7",
+      {
+        "timeout": 10000,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsTab requests (golden) lists the linked objects 1`] = `
+{
+  "emitted": [
+    [
+      "count",
+      1,
+    ],
+  ],
+  "loading": false,
+  "objects": [
+    {
+      "uuid": "o1",
+    },
+  ],
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/linked/mail/a1/7",
+      {
+        "timeout": 10000,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsTab requests (golden) reports a failed unlink 1`] = `
+{
+  "deleted": [
+    [
+      "/index.php/apps/openregister/api/objects/o1/_linked/mail/a1/7",
+    ],
+  ],
+  "error": [
+    [
+      "t:Failed to remove connection",
+    ],
+  ],
+  "reloaded": 0,
+  "removeTarget": {
+    "uuid": "o1",
+  },
+  "removing": false,
+  "success": [],
+}
+`;
+
+exports[`ObjectsTab requests (golden) unlinks and reloads 1`] = `
+{
+  "deleted": [
+    [
+      "/index.php/apps/openregister/api/objects/o1/_linked/mail/a1/7",
+    ],
+  ],
+  "error": [],
+  "reloaded": 1,
+  "removeTarget": null,
+  "removing": false,
+  "success": [
+    [
+      "t:Connection removed",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsTab requests (golden) uploads an attachment named and typed 1`] = `
+{
+  "fetched": [
+    [
+      "/d/1",
+      {
+        "credentials": "same-origin",
+      },
+    ],
+  ],
+  "file": {
+    "name": "a.pdf",
+    "type": "application/pdf",
+  },
+  "options": {
+    "headers": {
+      "Content-Type": "multipart/form-data",
+    },
+    "timeout": 20000,
+  },
+  "url": "/index.php/apps/openregister/api/objects/r/s/o/filesMultipart",
+}
+`;
+
+exports[`ObjectsTab requests (golden) uploads an attachment typed by the download 1`] = `
+{
+  "fetched": [
+    [
+      "/d/2",
+      {
+        "credentials": "same-origin",
+      },
+    ],
+  ],
+  "file": {
+    "name": "attachment-2",
+    "type": "image/png",
+  },
+  "options": {
+    "headers": {
+      "Content-Type": "multipart/form-data",
+    },
+    "timeout": 20000,
+  },
+  "url": "/index.php/apps/openregister/api/objects/r/s/o/filesMultipart",
+}
+`;
+
+exports[`ObjectsTab requests (golden) uploads an attachment without any type 1`] = `
+{
+  "fetched": [
+    [
+      "/d/3",
+      {
+        "credentials": "same-origin",
+      },
+    ],
+  ],
+  "file": {
+    "name": "attachment-3",
+    "type": "application/octet-stream",
+  },
+  "options": {
+    "headers": {
+      "Content-Type": "multipart/form-data",
+    },
+    "timeout": 20000,
+  },
+  "url": "/index.php/apps/openregister/api/objects/r/s/o/filesMultipart",
+}
+`;
