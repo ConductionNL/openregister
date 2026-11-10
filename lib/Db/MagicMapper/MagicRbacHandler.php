@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -473,8 +474,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function reachableRowSqlFor(RbacAccessCall $call): string {
 		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
 			notPrivateSql: $this->notPrivateSqlFor(call: $call),
-			uuidColumn: $call->columnPrefix . '_uuid',
-			quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
+			granted: new GrantedRows(
+				uuidColumn: $call->columnPrefix . '_uuid',
+				quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
+			)
 		);
 
 		if ($this->hidesDrafts(call: $call) === true) {
