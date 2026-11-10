@@ -32,7 +32,9 @@ namespace Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Service\Flow\Timer\ServiceHours;
 use OCA\OpenRegister\Service\Flow\Timer\ServiceHoursClock;
+use OCA\OpenRegister\Service\Flow\Timer\ServiceHoursFrame;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use PHPUnit\Framework\TestCase;
@@ -222,11 +224,11 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 	 */
 	public function testTheClockIsAskedOnlyWhenWindowsAreDeclared(): void {
 		$clock = $this->getMockBuilder(ServiceHoursClock::class)
-			->onlyMethods(['due'])
+			->onlyMethods(['frame'])
 			->getMock();
 		$clock->expects($this->once())
-			->method('due')
-			->willReturn($this->amsterdam('2026-09-21 12:00:00'));
+			->method('frame')
+			->willReturnCallback(fn (WorkingCalendar $calendar, ServiceHours $windows): ServiceHoursFrame => new ServiceHoursFrame(calendar: $calendar, windows: $windows));
 
 		$calculator = new SlaCalculator(hoursClock: $clock);
 		$calculator->add(
@@ -237,9 +239,9 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 		);
 
 		$quiet = $this->getMockBuilder(ServiceHoursClock::class)
-			->onlyMethods(['due'])
+			->onlyMethods(['frame'])
 			->getMock();
-		$quiet->expects($this->never())->method('due');
+		$quiet->expects($this->never())->method('frame');
 
 		$plain = new SlaCalculator(hoursClock: $quiet);
 		$plain->add(
