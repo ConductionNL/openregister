@@ -77,19 +77,24 @@ import {
 } from '@nextcloud/vue'
 
 /**
- * Subscribe or unsubscribe through the push client.
+ * Subscribe or unsubscribe through the push client. A failure reverts the
+ * optimistic state and is handed back instead of thrown.
  *
  * @param {object} client The WebPush client
  * @param {boolean} checked The requested toggle state
- * @return {Promise<boolean>} Whether push is now enabled
+ * @return {Promise<{enabled: boolean, failure: Error|null}>} The new state and any failure
  */
 async function switchPush(client, checked) {
-	if (checked === true) {
-		await client.enablePush()
-		return true
+	try {
+		if (checked === true) {
+			await client.enablePush()
+			return { enabled: true, failure: null }
+		}
+		await client.disablePush()
+		return { enabled: false, failure: null }
+	} catch (e) {
+		return { enabled: !checked, failure: e }
 	}
-	await client.disablePush()
-	return false
 }
 
 /**
@@ -106,13 +111,21 @@ function clientLoadingMessage(vm) {
 }
 
 /**
- * The message shown when a toggle failed without a message of its own.
+ * The error to show for a toggle: none when it succeeded, else the failure's
+ * own message or a generic one.
  *
  * @param {object} vm The section, for its translator
- * @return {string} The message
+ * @param {Error|null} failure What went wrong, if anything
+ * @return {string|null} The message
  */
-function toggleFailedMessage(vm) {
-	return vm.t('openregister', 'Could not change browser notification settings.')
+function failureMessage(vm, failure) {
+	if (failure === null) {
+		return null
+	}
+	return (
+		failure.message
+		|| vm.t('openregister', 'Could not change browser notification settings.')
+	)
 }
 
 export default {
@@ -226,16 +239,11 @@ export default {
 			}
 			this.busy = true
 			this.error = null
-			try {
-				this.enabled = await switchPush(client, checked)
-			} catch (e) {
-				this.error = e.message || toggleFailedMessage(this)
-				// Revert the optimistic state on failure.
-				this.enabled = !checked
-			} finally {
-				this.permission = client.permission()
-				this.busy = false
-			}
+			const outcome = await switchPush(client, checked)
+			this.error = failureMessage(this, outcome.failure)
+			this.enabled = outcome.enabled
+			this.permission = client.permission()
+			this.busy = false
 		},
 	},
 }

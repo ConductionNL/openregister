@@ -35,6 +35,23 @@ import { h } from 'vue'
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 /**
+ * The classes of the tab strip.
+ *
+ * @param {boolean} justified Whether the tabs share the width
+ * @param {boolean} pills Whether the tabs render as pills
+ * @return {Array} The class list
+ */
+function tabListClasses(justified, pills) {
+	return [
+		'app-tabs__list',
+		{
+			'app-tabs__list--justified': justified,
+			'app-tabs__list--pills': pills,
+		},
+	]
+}
+
+/**
  * The classes of one tab button.
  *
  * @param {boolean} active Whether the tab is the selected one
@@ -49,6 +66,28 @@ function tabClasses(active, disabled) {
 			'app-tabs__tab--disabled': disabled,
 		},
 	]
+}
+
+/**
+ * The props of one tab button: its ids, classes, state and focus order.
+ *
+ * @param {object} tab The registered tab
+ * @param {boolean} active Whether the tab is the selected one
+ * @return {object} The button props
+ */
+function tabButtonProps(tab, active) {
+	const disabled = tab.disabled === true
+	return {
+		key: tab.uid,
+		type: 'button',
+		role: 'tab',
+		id: `app-tab-${tab.uid}`,
+		class: tabClasses(active, disabled),
+		disabled,
+		'aria-selected': active ? 'true' : 'false',
+		'aria-controls': `app-tabpanel-${tab.uid}`,
+		tabindex: active ? 0 : -1,
+	}
 }
 
 export default {
@@ -207,13 +246,7 @@ export default {
 				'div',
 				{
 					ref: 'tablist',
-					class: [
-						'app-tabs__list',
-						{
-							'app-tabs__list--justified': this.justified,
-							'app-tabs__list--pills': this.pills,
-						},
-					],
+					class: tabListClasses(this.justified, this.pills),
 					role: 'tablist',
 					onKeydown: this.onKeydown,
 				},
@@ -229,20 +262,10 @@ export default {
 		 * @return {object} The tab button vnode.
 		 */
 		renderTab(tab, index) {
-			const active = index === this.activeIndex
-			const disabled = tab.disabled === true
 			return h(
 				'button',
 				{
-					key: tab.uid,
-					type: 'button',
-					role: 'tab',
-					id: `app-tab-${tab.uid}`,
-					class: tabClasses(active, disabled),
-					disabled,
-					'aria-selected': active ? 'true' : 'false',
-					'aria-controls': `app-tabpanel-${tab.uid}`,
-					tabindex: active ? 0 : -1,
+					...tabButtonProps(tab, index === this.activeIndex),
 					onClick: () => this.select(index),
 				},
 				tab.titleSlot ? tab.titleSlot() : tab.title,

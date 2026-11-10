@@ -186,9 +186,7 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const data = await fetchRuns(this.ruleId, this.runFilters())
-				this.runs = data.runs ?? []
-				this.total = data.total ?? this.runs.length
+				this.showRuns(await fetchRuns(this.ruleId, this.runFilters()))
 			} catch (failure) {
 				this.showLoadFailure(failure)
 			} finally {
@@ -213,6 +211,17 @@ export default {
 				filters.until = this.until
 			}
 			return filters
+		},
+
+		/**
+		 * Show a page of the run log.
+		 *
+		 * @param {object} data The runs and their total
+		 * @return {void}
+		 */
+		showRuns(data) {
+			this.runs = data.runs ?? []
+			this.total = data.total ?? this.runs.length
 		},
 
 		/**
