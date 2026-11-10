@@ -138,6 +138,25 @@ class SchemaService implements SchemaExplorationInterface {
 	];
 
 	/**
+	 * How specific a detected format is: when two values disagree, the more specific format wins.
+	 *
+	 * @var array<string, int>
+	 */
+	private const FORMAT_PRIORITY = [
+		'date-time' => 10,
+		'date' => 9,
+		'time' => 8,
+		'uuid' => 7,
+		'email' => 6,
+		'url' => 5,
+		'hostname' => 4,
+		'ipv4' => 3,
+		'ipv6' => 3,
+		'color' => 2,
+		'duration' => 1,
+	];
+
+	/**
 	 * SchemaService constructor
 	 *
 	 * @param SchemaCatalogInterface $catalog The schema mapper (schema operations) and the magic mapper (object queries).
@@ -703,13 +722,7 @@ class SchemaService implements SchemaExplorationInterface {
 	 */
 	private function mergedExamples(array $existingExamples, array $newExamples): array {
 		if (count($existingExamples) < 10) {
-			foreach ($newExamples as $example) {
-				if (in_array($example, $existingExamples, true) === false) {
-					$existingExamples[] = $example;
-				}
-			}
-
-			$existingExamples = array_slice($existingExamples, 0, 5);
+			$existingExamples = array_slice(self::withUnseenExamples(existingExamples: $existingExamples, newExamples: $newExamples), 0, 5);
 		}
 
 		if (count($existingExamples) >= 10) {
@@ -720,6 +733,24 @@ class SchemaService implements SchemaExplorationInterface {
 
 		return $existingExamples;
 	}//end mergedExamples()
+
+	/**
+	 * The existing examples followed by the new ones not seen yet.
+	 *
+	 * @param array $existingExamples The examples so far.
+	 * @param array $newExamples      The examples of the new value.
+	 *
+	 * @return array
+	 */
+	private static function withUnseenExamples(array $existingExamples, array $newExamples): array {
+		foreach ($newExamples as $example) {
+			if (in_array($example, $existingExamples, true) === false) {
+				$existingExamples[] = $example;
+			}
+		}
+
+		return $existingExamples;
+	}//end withUnseenExamples()
 
 	/**
 	 * Widen the max and min length to include the new value's.
@@ -748,13 +779,7 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return void
 	 */
 	private function mergeValueHints(array &$existingAnalysis, array $newAnalysis): void {
-		// Merge detected formats (if consistent patterns emerge).
-		if (($newAnalysis['detected_format'] ?? null) !== null) {
-			$existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
-				existingFormat: $existingAnalysis['detected_format'] ?? null,
-				newFormat: $newAnalysis['detected_format']
-			);
-		}
+		$this->mergeFormatHint(existingAnalysis: $existingAnalysis, newAnalysis: $newAnalysis);
 
 		// Merge string patterns.
 		if (empty($newAnalysis['string_patterns']) === false) {
@@ -763,14 +788,42 @@ class SchemaService implements SchemaExplorationInterface {
 			);
 		}
 
-		// Merge numeric ranges.
+		$this->mergeRangeHint(existingAnalysis: $existingAnalysis, newAnalysis: $newAnalysis);
+	}//end mergeValueHints()
+
+	/**
+	 * Merge detected formats (if consistent patterns emerge).
+	 *
+	 * @param array $existingAnalysis The property analysis so far (updated in place).
+	 * @param array $newAnalysis      The analysis of the new value.
+	 *
+	 * @return void
+	 */
+	private function mergeFormatHint(array &$existingAnalysis, array $newAnalysis): void {
+		if (($newAnalysis['detected_format'] ?? null) !== null) {
+			$existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
+				existingFormat: $existingAnalysis['detected_format'] ?? null,
+				newFormat: $newAnalysis['detected_format']
+			);
+		}
+	}//end mergeFormatHint()
+
+	/**
+	 * Merge numeric ranges.
+	 *
+	 * @param array $existingAnalysis The property analysis so far (updated in place).
+	 * @param array $newAnalysis      The analysis of the new value.
+	 *
+	 * @return void
+	 */
+	private function mergeRangeHint(array &$existingAnalysis, array $newAnalysis): void {
 		if (empty($newAnalysis['numeric_range']) === false) {
 			$existingAnalysis['numeric_range'] = $this->mergeNumericRanges(
 				existingRange: $existingAnalysis['numeric_range'] ?? null,
 				newRange: $newAnalysis['numeric_range']
 			);
 		}
-	}//end mergeValueHints()
+	}//end mergeRangeHint()
 
 	/**
 	 * Merge a new object structure into the existing analysis, or take it when there is none yet.
@@ -817,22 +870,8 @@ class SchemaService implements SchemaExplorationInterface {
 		}
 
 		// If formats differ, prioritize more specific formats.
-		$formatPriority = [
-			'date-time' => 10,
-			'date' => 9,
-			'time' => 8,
-			'uuid' => 7,
-			'email' => 6,
-			'url' => 5,
-			'hostname' => 4,
-			'ipv4' => 3,
-			'ipv6' => 3,
-			'color' => 2,
-			'duration' => 1,
-		];
-
-		$existingPriority = $formatPriority[$existingFormat] ?? 0;
-		$newPriority = $formatPriority[$newFormat] ?? 0;
+		$existingPriority = self::FORMAT_PRIORITY[$existingFormat] ?? 0;
+		$newPriority = self::FORMAT_PRIORITY[$newFormat] ?? 0;
 
 		if ($newPriority > $existingPriority) {
 			return $newFormat;
@@ -911,26 +950,8 @@ class SchemaService implements SchemaExplorationInterface {
 		}
 
 		// Check if it's a list (indexed array) or object (associative array).
-		$isList = array_is_list($array);
-
-		if ($isList === true) {
-			// Analyze item types in the list.
-			$itemTypes = [];
-			foreach ($array as $item) {
-				$type = gettype($item);
-				if (isset($itemTypes[$type]) === false) {
-					$itemTypes[$type] = 0;
-				}
-
-				$itemTypes[$type]++;
-			}
-
-			return [
-				'type' => 'list',
-				'length' => count($array),
-				'item_types' => $itemTypes,
-				'sample_item' => $array[0] ?? null,
-			];
+		if (array_is_list($array) === true) {
+			return self::listStructure(list: $array);
 		}
 
 		// It's an associative array, analyze as object.
@@ -940,6 +961,33 @@ class SchemaService implements SchemaExplorationInterface {
 			'length' => count($array),
 		];
 	}//end analyzezArrayStructure()
+
+	/**
+	 * The structure of a list: its length, how many items of each type it holds, and its first item.
+	 *
+	 * @param array $list The list.
+	 *
+	 * @return array{type: string, length: int, item_types: array<string, int>, sample_item: mixed}
+	 */
+	private static function listStructure(array $list): array {
+		// Analyze item types in the list.
+		$itemTypes = [];
+		foreach ($list as $item) {
+			$type = gettype($item);
+			if (isset($itemTypes[$type]) === false) {
+				$itemTypes[$type] = 0;
+			}
+
+			$itemTypes[$type]++;
+		}
+
+		return [
+			'type' => 'list',
+			'length' => count($list),
+			'item_types' => $itemTypes,
+			'sample_item' => $list[0] ?? null,
+		];
+	}//end listStructure()
 
 	/**
 	 * Analyze object structure for nested properties
