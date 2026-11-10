@@ -94,7 +94,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 	 */
 	private static function outcome(ArchiveHandler $handler, ?string $register, ?string $schema): string {
 		try {
-			$handler->archive(identifier: 'o-1', register: $register, schema: $schema);
+			$handler->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: 'o-1', reason: null, register: $register, schema: $schema));
 			return 'ok';
 		} catch (\Exception $e) {
 			return (new \ReflectionClass($e))->getShortName() . ': ' . $e->getMessage();

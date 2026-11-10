@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -425,7 +427,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
-			->willReturnCallback(static fn ($schema, $property, $object) => $property !== 'restricted');
+			->willReturnCallback(static fn (SchemaProperty $read, PropertyAccessRequest $request) => $read->name !== 'restricted');
 
 		$object = $this->createObjectEntity('uuid-1', 'Object', ['public' => 'ok', 'restricted' => 'nope']);
 

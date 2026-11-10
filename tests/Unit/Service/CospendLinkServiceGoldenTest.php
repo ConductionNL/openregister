@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\CospendProjectDraft;
 use DateTime;
 use OCA\OpenRegister\Db\CospendEntryKey;
 use OCA\OpenRegister\Db\CospendLink;
@@ -143,6 +144,10 @@ class CospendLinkServiceGoldenTest extends TestCase {
 			$this->calls = [];
 			$service = $this->makeService(self::world($over));
 			$target = (new LinkTarget('obj-1', 3))->inSchema(4);
+			if ($method === 'createAndLinkProject') {
+				$args = [new CospendProjectDraft(...$args)];
+			}
+
 			if (in_array($method, ['linkProject', 'linkBill', 'createAndLinkProject'], true) === true) {
 				array_unshift($args, $target);
 			}

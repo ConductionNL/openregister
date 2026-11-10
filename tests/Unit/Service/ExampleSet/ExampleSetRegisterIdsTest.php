@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
@@ -107,7 +109,7 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$catalog = $this->store->find(register: 'publication', schema: 'catalog', filters: [])[0];
+		$catalog = $this->store->find(table: new RegisterSchemaRef(register: 'publication', schema: 'catalog'), filters: [])[0];
 		$this->assertSame([31], $catalog['registers'], 'a whole-value placeholder keeps the integer');
 		$this->assertSame([1113], $catalog['schemas']);
 		$this->assertSame('register 31', $catalog['note']);

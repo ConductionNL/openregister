@@ -105,7 +105,7 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 
 	public function testArchiveThenUnarchive(): void {
 		$handler = $this->handler();
-		$archived = $handler->archive(self::OBJ, 'done', 'zaken', '2');
+		$archived = $handler->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, 'done', 'zaken', '2'));
 		$this->assertSame(self::OBJ, $archived['uuid']);
 		$this->assertSame($this->object->getArchived(), $archived['archived']);
 		$this->assertSame(
@@ -120,19 +120,19 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 		);
 
 		$this->events = [];
-		$this->assertSame(['uuid' => self::OBJ, 'archived' => null], $handler->unarchive(self::OBJ, 'back', '1', 'zaak'));
+		$this->assertSame(['uuid' => self::OBJ, 'archived' => null], $handler->unarchiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, 'back', '1', 'zaak')));
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]', 'update:' . json_encode([1, 2, true]), 'audit:unarchive', 'info:[ArchiveHandler] unarchive:"back"'], $this->events);
 
 		$this->events = [];
-		$this->assertSame(['uuid' => self::OBJ, 'archived' => null], $handler->unarchive(self::OBJ));
+		$this->assertSame(['uuid' => self::OBJ, 'archived' => null], $handler->unarchiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, null, null, null)));
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]'], $this->events);
 	}
 
 	public function testArchivingAnArchivedObjectKeepsTheMarker(): void {
 		$handler = $this->handler();
-		$first = $handler->archive(self::OBJ, 'done');
+		$first = $handler->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, 'done', null, null));
 		$this->events = [];
-		$this->assertSame($first, $handler->archive(self::OBJ, 'again'));
+		$this->assertSame($first, $handler->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, 'again', null, null)));
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]'], $this->events);
 	}
 
@@ -148,11 +148,11 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]'], $this->events);
 
 		$this->events = [];
-		$this->assertSame(['uuid' => self::OBJ, 'frozen' => null], $handler->unfreeze(self::OBJ, 'release'));
+		$this->assertSame(['uuid' => self::OBJ, 'frozen' => null], $handler->unfreezeWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, 'release', null, null)));
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]', 'update:' . json_encode([1, 2, true]), 'audit:unfreeze', 'info:[ArchiveHandler] unfreeze:"release"'], $this->events);
 
 		$this->events = [];
-		$this->assertSame(['uuid' => self::OBJ, 'frozen' => null], $handler->unfreeze(self::OBJ));
+		$this->assertSame(['uuid' => self::OBJ, 'frozen' => null], $handler->unfreezeWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, null, null, null)));
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]'], $this->events);
 	}
 

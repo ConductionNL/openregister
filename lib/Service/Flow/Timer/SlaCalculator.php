@@ -141,16 +141,15 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	/**
 	 * Move a moment off a non-working day, and say what moved it.
 	 *
-	 * @param DateTimeInterface    $moment   The computed moment.
-	 * @param string               $roll     One of ROLLS.
-	 * @param WorkingCalendar|null $calendar The resolved calendar.
+	 * @param DateTimeInterface $moment The computed moment.
+	 * @param RollRule          $rule   Which way to roll, and the resolved calendar.
 	 *
 	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
 	 *
 	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
-	public function roll(DateTimeInterface $moment, string $roll, ?WorkingCalendar $calendar): array {
-		return $this->workingDayRoll->apply(moment: $moment, roll: $roll, calendar: $calendar);
+	public function roll(DateTimeInterface $moment, RollRule $rule): array {
+		return $this->workingDayRoll->apply(moment: $moment, roll: $rule->roll, calendar: $rule->calendar);
 	}//end roll()
 
 	/**
@@ -215,17 +214,15 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	/**
 	 * How much business time lies between two instants, signed.
 	 *
-	 * @param DateTimeInterface $from The start.
-	 * @param DateTimeInterface $to The end; before the start yields a negative amount.
-	 * @param string $unit The unit.
-	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param CalendarSpan $span The start, the end (before the start yields a negative amount) and the resolved calendar.
+	 * @param string       $unit The unit.
 	 *
 	 * @return float The amount in the unit.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
-	public function measure(DateTimeInterface $from, DateTimeInterface $to, string $unit, WorkingCalendar $calendar): float {
-		return $this->measureSpan(span: new CalendarSpan(from: $from, to: $to, calendar: $calendar), unit: $unit);
+	public function measure(CalendarSpan $span, string $unit): float {
+		return $this->measureSpan(span: $span, unit: $unit);
 	}//end measure()
 
 	/**
@@ -315,7 +312,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 
 		$windows = $span->calendar->getServiceHours();
 		if ($windows->areDeclared() === true) {
-			return $this->hoursClock->elapsed(from: $span->from, to: $span->to, calendar: $span->calendar, windows: $windows);
+			return $this->hoursClock->frame(calendar: $span->calendar, windows: $windows)->elapsed(from: $span->from, to: $span->to);
 		}
 
 		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingHours(span: $span, cursor: $cursor))
@@ -326,21 +323,18 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * Convert an amount between units, through hours as the pivot: one business
 	 * day is the calendar's working hours, one calendar day is 24 hours.
 	 *
-	 * @param float $value The amount.
-	 * @param string $fromUnit The unit it is in.
-	 * @param string $toUnit The unit wanted.
-	 * @param WorkingCalendar $calendar Supplies hoursPerWorkingDay.
+	 * @param UnitConversion $conversion The amount, the unit it is in, the unit wanted, and the calendar that supplies hoursPerWorkingDay.
 	 *
 	 * @return float The converted amount.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function convert(float $value, string $fromUnit, string $toUnit, WorkingCalendar $calendar): float {
-		$fromHours = $this->hoursPer(unit: $fromUnit, calendar: $calendar);
-		$toHours = $this->hoursPer(unit: $toUnit, calendar: $calendar);
+	public function convert(UnitConversion $conversion): float {
+		$fromHours = $this->hoursPer(unit: $conversion->fromUnit, calendar: $conversion->calendar);
+		$toHours = $this->hoursPer(unit: $conversion->toUnit, calendar: $conversion->calendar);
 		// An identical unit returns the amount untouched rather than through
 		// the pivot, so no rounding is introduced where nothing changed.
-		return match ($fromUnit) { $toUnit => $value, default => (($value * $fromHours) / $toHours) };
+		return match ($conversion->fromUnit) { $conversion->toUnit => $conversion->value, default => (($conversion->value * $fromHours) / $toHours) };
 	}//end convert()
 
 	/**
@@ -384,12 +378,9 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	private function addHours(SlaAddition $addition): DateTimeImmutable {
 		$calendar = $addition->serviceHoursCalendar();
 		if ($calendar !== null) {
-			return $this->hoursClock->due(
-				from: $addition->start,
-				hours: $addition->value,
-				calendar: $calendar,
-				windows: $calendar->getServiceHours()
-			);
+			$frame = $this->hoursClock->frame(calendar: $calendar, windows: $calendar->getServiceHours());
+
+			return $frame->due(from: $addition->start, hours: $addition->value);
 		}
 
 		return $this->shift(moment: $addition->start, modifier: sprintf('%+d seconds', (int)round($addition->value * 3600)));

@@ -115,30 +115,6 @@ class RevealCollector {
 	}//end isAudited()
 
 	/**
-	 * Record that one property of one object was shown to one user.
-	 *
-	 * Kept in this shape for the property read path; it names the reveal and
-	 * hands it to recordReveal(), which also takes the register.
-	 *
-	 * @param string   $userId     Who saw it.
-	 * @param string   $objectUuid Which object.
-	 * @param string   $property   Which property.
-	 * @param int|null $schemaId   The schema, for the entry.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
-	 */
-	public function record(
-		string $userId,
-		string $objectUuid,
-		string $property,
-		?int $schemaId = null,
-	): void {
-		$this->recordReveal(reveal: new PropertyReveal(userId: $userId, objectUuid: $objectUuid, property: $property, schemaId: $schemaId));
-	}//end record()
-
-	/**
 	 * Record one reveal, once per request.
 	 *
 	 * @param PropertyReveal $reveal     Who saw which property of which object.

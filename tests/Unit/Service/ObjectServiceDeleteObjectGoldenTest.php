@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -354,7 +355,8 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 
 		$deleteHandler = $this->createMock(DeleteObject::class);
 		$deleteHandler->method('deleteObject')->willReturnCallback(
-			function (Register|int|string|null $register, Schema|int|string|null $schema, string $uuid, ?string $originalObjectId = null, bool $_rbac = true, bool $_multitenancy = true, bool $scoped = false, ?ObjectEntity $preResolved = null, bool $permanent = false): bool {
+			function (DeletionRequest $request, bool $_rbac = true, bool $_multitenancy = true): bool {
+				[$register, $schema, $uuid, $originalObjectId, $scoped, $preResolved, $permanent] = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId, $request->options->scoped, $request->options->preResolved, $request->options->permanent];
 				$this->assertSame($this->sweeping, (new RetentionDestruction())->isRunning());
 				$this->calls[] = [
 					'deleteHandler' => $uuid,

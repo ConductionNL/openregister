@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
 use stdClass;
@@ -119,7 +121,7 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 		try {
 			$register = (string)($subject['register'] ?? '');
 			$schema = (string)($subject['schema'] ?? '');
-			$flowIds = $this->resolvers->flowsForTrigger($event, $register, $schema);
+			$flowIds = $this->resolvers->flowsForEvent(event: $event, table: new RegisterSchemaRef(register: $register, schema: $schema));
 			if ($flowIds === []) {
 				return 0;
 			}
@@ -226,10 +228,12 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 		$object = null;
 		$uuid = trim((string)($subject['uuid'] ?? ''));
 		if ($uuid !== '') {
-			$object = $this->resolvers->resolveSubject(
-				$uuid,
-				(string)($subject['register'] ?? ''),
-				(string)($subject['schema'] ?? '')
+			$object = $this->resolvers->resolveObject(
+				ref: new ObjectRef(
+					register: (string)($subject['register'] ?? ''),
+					schema: (string)($subject['schema'] ?? ''),
+					id: $uuid
+				)
 			);
 
 			if ($object === null) {

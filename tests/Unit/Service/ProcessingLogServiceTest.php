@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -181,7 +182,7 @@ class ProcessingLogServiceTest extends TestCase {
 		$this->stubResolvableActivity('act-uuid-1');
 
 		$object = $this->makeObject(['bsn' => '123456789']);
-		$this->service->logRead(object: $object, action: 'read');
+		$this->service->recordRead(object: $object, read: new ProcessingRead(action: 'read'));
 
 		$this->assertSame(1, $this->service->pendingCount());
 
@@ -224,7 +225,7 @@ class ProcessingLogServiceTest extends TestCase {
 			]
 		);
 
-		$this->service->logRead(object: $this->makeObject(['bsn' => '1']));
+		$this->service->recordRead(object: $this->makeObject(['bsn' => '1']), read: new ProcessingRead());
 
 		$this->assertSame(0, $this->service->pendingCount());
 		$this->logMapper->expects($this->never())->method('insertBatch');
@@ -239,7 +240,7 @@ class ProcessingLogServiceTest extends TestCase {
 	 */
 	public function testNoAnnotationNoEntry(): void {
 		$this->stubSchemaConfig([]);
-		$this->service->logRead(object: $this->makeObject());
+		$this->service->recordRead(object: $this->makeObject(), read: new ProcessingRead());
 		$this->assertSame(0, $this->service->pendingCount());
 
 	}//end testNoAnnotationNoEntry()
@@ -267,7 +268,7 @@ class ProcessingLogServiceTest extends TestCase {
 		$seeded->setUuid('fallback-uuid');
 		$this->vrwMapper->method('insert')->willReturn($seeded);
 
-		$this->service->logRead(object: $this->makeObject());
+		$this->service->recordRead(object: $this->makeObject(), read: new ProcessingRead());
 
 		$this->assertSame(1, $this->service->pendingCount());
 
@@ -297,7 +298,7 @@ class ProcessingLogServiceTest extends TestCase {
 		$fallback->setUuid('fallback-uuid');
 		$this->vrwMapper->method('findByCode')->willReturn($fallback);
 
-		$this->service->logRead(object: $this->makeObject());
+		$this->service->recordRead(object: $this->makeObject(), read: new ProcessingRead());
 
 		$this->logMapper->method('insertBatch')->willReturnCallback(
 			function (array $entries): int {
@@ -331,7 +332,7 @@ class ProcessingLogServiceTest extends TestCase {
 			->with(reference: 'act-b')
 			->willReturn($exportActivity);
 
-		$this->service->logRead(object: $this->makeObject(), action: 'export');
+		$this->service->recordRead(object: $this->makeObject(), read: new ProcessingRead(action: 'export'));
 
 		$this->logMapper->method('insertBatch')->willReturnCallback(
 			function (array $entries): int {
@@ -362,7 +363,7 @@ class ProcessingLogServiceTest extends TestCase {
 			$objects[] = $this->makeObject(['bsn' => (string)$i]);
 		}
 
-		$this->service->logReadList(objects: $objects, action: 'read');
+		$this->service->recordReadList(objects: $objects, read: new ProcessingRead(action: 'read'));
 
 		$this->assertSame(1, $this->service->pendingCount());
 		$this->logMapper->method('insertBatch')->willReturnCallback(
@@ -390,7 +391,7 @@ class ProcessingLogServiceTest extends TestCase {
 		);
 		$this->stubResolvableActivity('act-uuid');
 
-		$this->service->logRead(object: $this->makeObject());
+		$this->service->recordRead(object: $this->makeObject(), read: new ProcessingRead());
 		$this->logMapper->method('insertBatch')->willThrowException(new \RuntimeException('db down'));
 
 		// Must NOT throw.
@@ -401,7 +402,7 @@ class ProcessingLogServiceTest extends TestCase {
 	}//end testFlushIsFailSoft()
 
 	/**
-	 * A broken schema lookup is fail-soft: logRead swallows the error.
+	 * A broken schema lookup is fail-soft: recordRead swallows the error.
 	 *
 	 * @return void
 	 */
@@ -412,7 +413,7 @@ class ProcessingLogServiceTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($register);
 
 		// Must NOT throw.
-		$this->service->logRead(object: $this->makeObject());
+		$this->service->recordRead(object: $this->makeObject(), read: new ProcessingRead());
 		$this->assertSame(0, $this->service->pendingCount());
 
 	}//end testCaptureIsFailSoftOnSchemaError()
@@ -430,7 +431,7 @@ class ProcessingLogServiceTest extends TestCase {
 			]
 		);
 
-		$this->service->logRead(object: $this->makeObject());
+		$this->service->recordRead(object: $this->makeObject(), read: new ProcessingRead());
 		$this->assertSame(0, $this->service->pendingCount());
 
 	}//end testLegacyAnnotationDoesNotEnableReads()

@@ -143,5 +143,7 @@ class OpenRegisterAdminTest extends TestCase {
 		$result = $this->admin->getForm();
 
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('settings/admin', $result->getTemplateName());
+		$this->assertFalse($result->getParams()['mySetting']);
 	}//end testGetFormWithFalseSetting()
 }//end class

@@ -27,7 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Flow\FlowRunOptions;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
 use OCP\AppFramework\Http;
 use Psr\Log\LoggerInterface;
@@ -189,7 +191,10 @@ class ObjectActionFlowRun {
 		$sync       = ($definition->mode !== 'async');
 		$flowUuid   = $this->flowUuid(schema: $run->target->schema, definition: $definition);
 		if ($definition->kind === ObjectActionDefinition::KIND_STEPS) {
-			$flowRun = $this->engines->flows->runForAction(uuid: $flowUuid, subject: $subject, context: $context, sync: $sync);
+			$flowRun = $this->engines->flows->runForAction(
+				uuid: $flowUuid,
+				options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: Flow::TRIGGER_MANUAL)
+			);
 			return new ObjectActionFlowStart(run: $flowRun, flowUuid: $flowUuid, sync: $sync);
 		}
 

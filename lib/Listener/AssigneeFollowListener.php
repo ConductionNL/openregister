@@ -41,12 +41,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
-use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
 
@@ -60,27 +57,6 @@ use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
 final class AssigneeFollowListener implements IEventListener {
 
 	/**
-	 * Reads `x-openregister-role` from the schema.
-	 *
-	 * @var SemanticRoleHandlerInterface
-	 */
-	private readonly SemanticRoleHandlerInterface $roles;
-
-	/**
-	 * Tells a uid from a group id or a party reference.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
-	 * The follow primitive.
-	 *
-	 * @var WatcherServiceInterface
-	 */
-	private readonly WatcherServiceInterface $watchers;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface   $schemaMapper Resolves the object's schema and its roles.
@@ -90,13 +66,10 @@ final class AssigneeFollowListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		AssigneeFollowServices $follow,
+		private readonly AssigneeFollowServices $follow,
 		private readonly PermissionCheckInterface $permissions,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->roles = $follow->roles;
-		$this->userManager = $follow->userManager;
-		$this->watchers = $follow->watchers;
 	}//end __construct()
 
 	/**
@@ -164,7 +137,7 @@ final class AssigneeFollowListener implements IEventListener {
 			return;
 		}
 
-		$this->watchers->followAssigned(object: $object, userId: $assignee, register: (string)$object->getRegister(), schema: $schemaId);
+		$this->follow->watchers->followAssigned(object: $object, userId: $assignee, register: (string)$object->getRegister(), schema: $schemaId);
 
 	}//end followNewAssignee()
 
@@ -176,7 +149,7 @@ final class AssigneeFollowListener implements IEventListener {
 	 * @return string|null The new assignee's uid, or null.
 	 */
 	private function changedAssignee(AssigneeFollowRun $run): ?string {
-		$property = ($this->roles->roles(properties: $run->schema->getProperties())['assignee'] ?? null);
+		$property = ($this->follow->roles->roles(properties: $run->schema->getProperties())['assignee'] ?? null);
 		if ($property === null) {
 			return null;
 		}
@@ -199,7 +172,7 @@ final class AssigneeFollowListener implements IEventListener {
 	 * @return bool True for a changed value that is a user's uid.
 	 */
 	private function isNewUser(?string $assignee, ?string $previous): bool {
-		return $assignee !== null && $assignee !== $previous && $this->userManager->userExists($assignee) === true;
+		return $assignee !== null && $assignee !== $previous && $this->follow->userManager->userExists($assignee) === true;
 	}//end isNewUser()
 
 	/**

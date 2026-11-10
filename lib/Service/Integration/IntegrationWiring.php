@@ -289,10 +289,7 @@ final class IntegrationWiring {
 			return;
 		}
 
-		$logger = self::bootLogger(server: $server);
-		foreach (self::BUILTIN_PROVIDERS as $providerClass) {
-			self::addBuiltinProvider(server: $server, registry: $integrationRegistry, providerClass: $providerClass, logger: $logger);
-		}
+		self::addBuiltinProviders(server: $server, registry: $integrationRegistry);
 	}//end boot()
 
 	/**
@@ -313,34 +310,31 @@ final class IntegrationWiring {
 	}//end bootLogger()
 
 	/**
-	 * Resolve one built-in provider and add it to the registry.
+	 * Resolve every built-in provider and add it to the registry.
 	 *
 	 * Provider construction can fail if a wrapped service is missing on this
 	 * NC build, or if the DI factory closure was not updated for a Tier-2
 	 * constructor arg. One absent provider does not take the app down — its
 	 * tab simply won't render — but it is logged so the cause is diagnosable.
 	 *
-	 * @param mixed                         $server        Server container.
-	 * @param IntegrationRegistry           $registry      The shared registry.
-	 * @param string                        $providerClass The provider class to resolve.
-	 * @param \Psr\Log\LoggerInterface|null $logger        The logger, when one resolved.
+	 * @param mixed               $server   Server container.
+	 * @param IntegrationRegistry $registry The shared registry.
 	 *
 	 * @return void
 	 */
-	private static function addBuiltinProvider($server, IntegrationRegistry $registry, string $providerClass, ?\Psr\Log\LoggerInterface $logger): void {
-		try {
-			$registry->addProvider($server->get($providerClass));
-		} catch (\Throwable $e) {
-			$logger?->warning(
-				'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
-				[
-					'provider' => $providerClass,
-					'message' => $e->getMessage(),
-					'exception' => $e,
-				]
-			);
+	private static function addBuiltinProviders($server, IntegrationRegistry $registry): void {
+		$logger = self::bootLogger(server: $server);
+		foreach (self::BUILTIN_PROVIDERS as $providerClass) {
+			try {
+				$registry->addProvider($server->get($providerClass));
+			} catch (\Throwable $e) {
+				$logger?->warning(
+					'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
+					['provider' => $providerClass, 'message' => $e->getMessage(), 'exception' => $e]
+				);
+			}
 		}
-	}//end addBuiltinProvider()
+	}//end addBuiltinProviders()
 
 	/**
 	 * Install the lazy leaf loader on the shared IntegrationRegistry.

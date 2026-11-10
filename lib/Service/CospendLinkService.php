@@ -295,9 +295,8 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	/**
 	 * Create a new NC Cospend project and link it to an OR object.
 	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string $name New project name.
-	 * @param string $currency Project currency name.
+	 * @param LinkTarget          $target The object to link to.
+	 * @param CospendProjectDraft $draft  The project name and currency as given.
 	 *
 	 * @return CospendLink The persisted link row.
 	 *
@@ -306,22 +305,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-cospend capability.
 	 */
-	public function createAndLinkProject(LinkTarget $target, string $name, string $currency): CospendLink {
-		return $this->createAndLinkDraft(target: $target, draft: new CospendProjectDraft(name: $name, currency: $currency));
-	}//end createAndLinkProject()
-
-	/**
-	 * Create the drafted Cospend project and link it to the target object.
-	 *
-	 * @param LinkTarget          $target The object to link to.
-	 * @param CospendProjectDraft $draft  The project name and currency as given.
-	 *
-	 * @return CospendLink The persisted link row.
-	 *
-	 * @throws Exception On missing user (401), empty name (400),
-	 *                   Cospend unavailable (503), create failure (500).
-	 */
-	private function createAndLinkDraft(LinkTarget $target, CospendProjectDraft $draft): CospendLink {
+	public function createAndLinkProject(LinkTarget $target, CospendProjectDraft $draft): CospendLink {
 		$uid = $this->requireUid();
 
 		$name = trim($draft->name);
@@ -346,7 +330,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 		);
 
 		return $this->cospendLinkMapper->insert($link);
-	}//end createAndLinkDraft()
+	}//end createAndLinkProject()
 
 	/**
 	 * The currency for a new project link: the given one, else the project's own, else none.

@@ -121,9 +121,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * The object is loaded through `ObjectService::find()` under the caller's
 	 * RBAC (read guard, ADR-005).
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object id/uuid.
+	 * @param HandoffSourceRef $ref The register and schema (slug or id) and the object id/uuid.
 	 *
 	 * @return array<int, array<string, mixed>> One availability record per declared handoff.
 	 *
@@ -132,8 +130,8 @@ class HandoffService implements HandoffServiceInterface {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: Handoff REST surface)
 	 */
-	public function listAvailability(string $register, string $schema, string $id): array {
-		return $this->availabilityOf(source: $this->loadSource(ref: new HandoffSourceRef(register: $register, schema: $schema, id: $id)));
+	public function listAvailability(HandoffSourceRef $ref): array {
+		return $this->availabilityOf(source: $this->loadSource(ref: $ref));
 	}//end listAvailability()
 
 	/**
