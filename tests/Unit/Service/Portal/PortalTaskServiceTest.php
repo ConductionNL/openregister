@@ -107,7 +107,7 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks = $this->createMock(TaskService::class);
 		$this->mapper = $this->createMock(TaskMapper::class);
 		$this->files = $this->createMock(FileService::class);
-		$inbox = new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger());
+		$inbox = new TaskInboxService(tasks: $this->mapper, logger: new NullLogger());
 		$this->service = new PortalTaskService(
 			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
@@ -322,7 +322,7 @@ class PortalTaskServiceTest extends TestCase {
 			$tasks = $this->createMock(TaskService::class);
 			$tasks->method('openFor')->willReturn($task);
 			$service = new PortalTaskService(
-				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger()), temporal: new TaskTemporalProjection()),
+				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, logger: new NullLogger()), temporal: new TaskTemporalProjection()),
 				files: $this->files,
 				logger: new NullLogger()
 			);
@@ -402,7 +402,6 @@ class PortalTaskServiceTest extends TestCase {
 
 		$inbox = new TaskInboxService(
 			tasks: $this->mapper,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: $objects
 		);

@@ -76,7 +76,6 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks = $this->createMock(TaskMapper::class);
 		$this->inbox = new TaskInboxService(
 			tasks: $this->tasks,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: null
 		);
@@ -230,7 +229,7 @@ class TaskInboxServiceTest extends TestCase {
 				return [$case, $plain];
 			}
 		);
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$first = new Task();
 		$first->setUuid('t-1');
@@ -280,7 +279,7 @@ class TaskInboxServiceTest extends TestCase {
 				return [$one, $noUuid];
 			}
 		);
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$first = new Task();
 		$first->setUuid('t-1');
@@ -353,7 +352,6 @@ class TaskInboxServiceTest extends TestCase {
 
 		$inbox = new TaskInboxService(
 			tasks: $this->tasks,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: $objects,
 			locator: new \OCA\OpenRegister\Service\Task\TaskSubjectLocator(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $objects), new NullLogger())
@@ -394,7 +392,7 @@ class TaskInboxServiceTest extends TestCase {
 				},
 			]
 		);
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$task = new Task();
 		$task->setUuid('t-1');
@@ -416,7 +414,7 @@ class TaskInboxServiceTest extends TestCase {
 	public function testAFailingObjectStoreLeavesContextNull(): void {
 		$objects = $this->createMock(originalClassName: MagicMapperInterface::class);
 		$objects->method('findMultiple')->willThrowException(new \RuntimeException('store down'));
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$task = new Task();
 		$task->setUuid('t-1');
