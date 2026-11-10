@@ -10,3 +10,5 @@ FINAL MESSAGE: per PR: number, result (MERGEABLE now / skipped with reason), the
 
 Known reds on main that are not a PR's fault: DbalConnectionFactoryBehaviourTest (5 cases), MappingSlugFallbacksTest::testAMissingTransliteratorKeepsTheName, clock-dependent JwtValidatorBehaviourTest cases.
 Merge ONLY origin/main (fetched fresh) into a PR branch, never any other branch. In an import-block conflict keep both sides' use lines (dedupe exact duplicates). Foreground only, never end your turn while waiting.
+
+FLEET CALLERS (Ruben 2026-11-10 04:50Z): breaking another Conduction app's call into openregister is allowed and is not a reason to add compat delegates; list such callers in the PR body under 'Fleet callers'.
