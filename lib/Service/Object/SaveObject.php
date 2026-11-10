@@ -3024,7 +3024,7 @@ class SaveObject implements SaveObjectInterface {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $flags->unowned, _owner: $flags->owner);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, flags: $flags);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -3084,16 +3084,17 @@ class SaveObject implements SaveObjectInterface {
 	 * owned by `portal:<subjectRef>` (decision 195, see DraftOwner), names
 	 * it here. No controller forwards it either.
 	 *
-	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
-	 * @param bool         $_unowned     Stamp the system identity even when a session exists.
-	 * @param string|null  $_owner       An explicit owner; wins over the session and the system identity.
+	 * @param ObjectEntity    $objectEntity Entity being prepared for creation.
+	 * @param ObjectSaveFlags $flags        Its `unowned` stamps the system identity even when a session exists;
+	 *                                      its `owner` is an explicit owner that wins over the session and the
+	 *                                      system identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
-		$owner = ($this->attributedOwner(_unowned: $_unowned, _owner: $_owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
+	private function applyOwnerAttribution(ObjectEntity $objectEntity, ObjectSaveFlags $flags = new ObjectSaveFlags()): void {
+		$owner = ($this->attributedOwner(_unowned: $flags->unowned, _owner: $flags->owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
 		if ($owner !== null) {
 			$objectEntity->setOwner($owner);
 		}
