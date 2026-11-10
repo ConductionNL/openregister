@@ -35,11 +35,14 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationFilter;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IUserManager;
@@ -301,9 +304,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 
 		// Promote the EN slot to approved.
 		$promoted = $this->statusService->setStatus(
-			(string)$this->testObject->getUuid(),
-			'title',
-			'en',
+			new TranslationSlot((string)$this->testObject->getUuid(), 'title', 'en'),
 			Translation::STATUS_APPROVED
 		);
 		$this->assertSame(Translation::STATUS_APPROVED, $promoted->getStatus());
@@ -325,7 +326,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 		$this->projection->project($this->testObject);
 
 		// Cross-language: drop the language filter, hit both.
-		$hits = $this->statusService->search(query: $unique, language: null);
+		$hits = $this->statusService->search(new TranslationSearch(query: $unique));
 		$languages = array_map(fn ($r) => $r['language'], $hits);
 		$this->assertContains('nl', $languages);
 		$this->assertContains('en', $languages);
@@ -339,7 +340,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 		]);
 		$this->projection->project($this->testObject);
 
-		$hits = $this->statusService->search(query: $unique, language: 'nl');
+		$hits = $this->statusService->search(new TranslationSearch(filter: new TranslationFilter(language: 'nl'), query: $unique));
 		$this->assertCount(1, $hits);
 		$this->assertSame('nl', $hits[0]['language']);
 	}
