@@ -23,9 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * The collaborators of LinkedEntityController, wired by DI autowiring.
@@ -37,17 +34,13 @@ final class LinkedEntityControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param LinkedEntityServiceInterface $linkedEntityService The linked entity service
-	 * @param LoggerInterface $logger Logger
-	 * @param IUserSession $userSession Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param ControllerSession            $session             The caller's session, groups and logger
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
 	 */
 	public function __construct(
 		public readonly LinkedEntityServiceInterface $linkedEntityService,
-		public readonly LoggerInterface $logger,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
+		public readonly ControllerSession $session,
 	) {
 	}//end __construct()
 }//end class

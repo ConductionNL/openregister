@@ -50,9 +50,8 @@ use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
@@ -111,18 +110,11 @@ class EntityRelationsController extends Controller {
 	private readonly MagicObjectFinderInterface $magicMapper;
 
 	/**
-	 * Schema loader (for hasPermission inputs).
+	 * Schema loader (for hasPermission inputs) and register loader (for object lookup disambiguation).
 	 *
-	 * @var SchemaMapperInterface
+	 * @var SchemaCatalogInterface
 	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Register loader (for object lookup disambiguation).
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
+	private readonly SchemaCatalogInterface $catalog;
 
 	/**
 	 * EmailLink loader (for email-bound authz indirection).
@@ -167,9 +159,8 @@ class EntityRelationsController extends Controller {
 		$this->userSession = $services->platform->userSession;
 		$this->rootFolder = $services->platform->rootFolder;
 		$this->permissionHandler = $services->domain->permissionHandler;
-		$this->magicMapper = $services->mappers->magicMapper;
-		$this->schemaMapper = $services->mappers->schemaMapper;
-		$this->registerMapper = $services->mappers->registerMapper;
+		$this->catalog = $services->mappers->catalog;
+		$this->magicMapper = $this->catalog->tables();
 		$this->emailLinkMapper = $services->links->emailLinkMapper;
 		$this->logger = $services->platform->logger;
 		$this->relationDecisions = $services->domain->relationDecisions;
@@ -477,12 +468,12 @@ class EntityRelationsController extends Controller {
 		try {
 			$register = null;
 			if ($registerId !== null) {
-				$register = $this->registerMapper->find($registerId);
+				$register = $this->catalog->registers()->find($registerId);
 			}
 
 			$schema = null;
 			if ($schemaId !== null) {
-				$schema = $this->schemaMapper->find($schemaId);
+				$schema = $this->catalog->schemas()->find($schemaId);
 			}
 
 			return $this->magicMapper->find(
@@ -516,7 +507,7 @@ class EntityRelationsController extends Controller {
 	 */
 	private function loadSchemaOrDeny(string $schemaId, AuthDenialWarning $warning): ?Schema {
 		try {
-			return $this->schemaMapper->find($schemaId);
+			return $this->catalog->schemas()->find($schemaId);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: $warning->message,
@@ -631,7 +622,7 @@ class EntityRelationsController extends Controller {
 			// column is unexpectedly null at runtime.
 			$register = null;
 			if (empty($parentRegisterId) === false) {
-				$register = $this->registerMapper->find((string)$parentRegisterId);
+				$register = $this->catalog->registers()->find((string)$parentRegisterId);
 			}
 
 			return $this->magicMapper->find(

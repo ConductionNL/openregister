@@ -39,9 +39,11 @@ final class LinkedEntityControllerFactory {
 			$request,
 			new \OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices(
 				linkedEntityService: $linkedEntityService,
-				logger: $logger,
-				userSession: $userSession,
-				groupManager: $groupManager,
+				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+					userSession: $userSession,
+					groupManager: $groupManager,
+					logger: $logger,
+				),
 			),
 		];
 	}//end args()
