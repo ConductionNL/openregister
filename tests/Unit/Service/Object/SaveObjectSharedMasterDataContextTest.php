@@ -44,6 +44,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
@@ -91,13 +93,13 @@ class SaveObjectSharedMasterDataContextTest extends TestCase {
 		$this->expectException(SharedMasterDataWriteException::class);
 		OrganisationContext::run(
 			'org-consumer',
-			fn () => $handler->saveObject(data: ['name' => 'x'], schema: $this->schema(), register: $this->register(), _multitenancy: false)
+			fn () => $handler->saveObject(data: ['name' => 'x'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register(), schema: $this->schema())), _multitenancy: false)
 		);
 	}//end testASaveInsideAContextIsGuardedWithMultitenancyOff()
 
 	public function testASaveOutsideAContextWithMultitenancyOffIsNotGuarded(): void {
 		try {
-			$this->handler()->saveObject(data: ['name' => 'x'], schema: $this->schema(), register: $this->register(), _multitenancy: false);
+			$this->handler()->saveObject(data: ['name' => 'x'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register(), schema: $this->schema())), _multitenancy: false);
 		} catch (SharedMasterDataWriteException $e) {
 			self::fail('the guard must not run when the caller turned multitenancy off outside a context');
 		} catch (Throwable $e) {

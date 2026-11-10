@@ -83,6 +83,7 @@ use ReflectionClass;
 use RuntimeException;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Comprehensive unit tests for ObjectService.
@@ -754,10 +755,10 @@ class ObjectServiceTest extends TestCase {
 
 		$handlerScope = null;
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, ...$rest) use ($savedEntity, &$handlerScope): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, ...$rest) use ($savedEntity, &$handlerScope): ObjectEntity {
 				$handlerScope = ['register' => $register, 'schema' => $schema];
 				return $savedEntity;
-			}
+			})
 		);
 		$this->renderHandler->method('renderEntity')->willReturn($savedEntity);
 

@@ -2600,7 +2600,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $this->saveHandler->saveObject(
             data: $object,
-            options: new ObjectSaveOptions(target: $target, uuid: $options['uuid'], uploadedFiles: $options['uploadedFiles'], policy: $policy, actor: $actor),
+            options: new ObjectSaveOptions(
+                target: $target,
+                uuid: $options['uuid'],
+                uploadedFiles: $options['uploadedFiles'],
+                policy: $policy,
+                actor: $actor
+            ),
             _rbac: $options['_rbac'],
             _multitenancy: $options['_multitenancy']
         );

@@ -73,6 +73,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * A WRITE MUST NOT SCOPE THE NEXT READ.
@@ -246,14 +247,14 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		$this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
 		$this->saveHandler->method('seedLifecycleFieldOnCreate')->willReturnArgument(1);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ...$rest): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ...$rest): ObjectEntity {
 				$this->saveScope = ['register' => $register, 'schema' => $schema];
 
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-uuid');
 				$entity->setObject($data);
 				return $entity;
-			}
+			})
 		);
 
 		// New object: no row exists yet, so the save is a CREATE. A test that

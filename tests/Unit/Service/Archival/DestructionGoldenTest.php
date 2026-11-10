@@ -52,6 +52,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Golden outcomes of the destruction workflow.
@@ -419,7 +420,12 @@ class DestructionGoldenTest extends TestCase {
 		$saved->setUuid('new-list');
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->expects($this->once())->method('saveObject')
-			->with(7, 9, ['objects' => [['uuid' => 'ok-1'], ['uuid' => 'ok-2']]], null, false, false, true, true)
+			->with(
+				['objects' => [['uuid' => 'ok-1'], ['uuid' => 'ok-2']]],
+				$this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register === 7 && $options->target->schema === 9 && $options->uuid === null && $options->policy->silent === true),
+				false,
+				false
+			)
 			->willReturn($saved);
 
 		$result = $this->creator(retention: $retention, save: $save)->createFor([' ok-1', 'ok-1 ', 'held', '', 'nope', 'ok-2']);

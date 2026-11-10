@@ -73,6 +73,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Tests that a save cannot reach a draft its caller cannot read.
@@ -324,13 +325,13 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		);
 
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments): ObjectEntity {
 				$this->saves[] = $arguments;
 				$entity = new ObjectEntity();
 				$entity->setUuid('draft-1');
 
 				return $entity;
-			}
+			})
 		);
 	}//end hiddenFromTheCaller()
 
@@ -416,10 +417,9 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			return $arguments[$name];
 		}
 
-		foreach ((new \ReflectionMethod(SaveObject::class, 'saveObject'))->getParameters() as $index => $parameter) {
-			if ($parameter->getName() === $name) {
-				return ($arguments[$index] ?? $parameter->getDefaultValue());
-			}
+		$index = array_search($name, SaveObjectArgs::NAMES, true);
+		if ($index !== false) {
+			return $arguments[$index];
 		}
 
 		$this->fail('SaveObject::saveObject() has no parameter ' . $name);
@@ -433,10 +433,10 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$visible->setOwner('mallory');
 		$this->objectMapper->method('find')->willReturn($visible);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments) use ($visible): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments) use ($visible): ObjectEntity {
 				$this->saves[] = $arguments;
 				return $visible;
-			}
+			})
 		);
 		[$register, $schema] = $this->scope();
 
@@ -467,10 +467,10 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments): ObjectEntity {
 				$this->saves[] = $arguments;
 				return new ObjectEntity();
-			}
+			})
 		);
 		[$register, $schema] = $this->scope();
 
@@ -553,12 +553,12 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments): ObjectEntity {
 				$this->saves[] = $arguments;
 				$entity = new ObjectEntity();
 				$entity->setUuid('draft-1');
 				return $entity;
-			}
+			})
 		);
 
 		$this->saveOver(rbac: true);

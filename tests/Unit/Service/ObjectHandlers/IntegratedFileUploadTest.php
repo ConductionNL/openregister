@@ -42,6 +42,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use stdClass;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 
 /**
  * Testable Schema subclass that allows overriding methods that depend on external services.
@@ -318,16 +321,10 @@ class IntegratedFileUploadTest extends TestCase {
 		$objectData = ['title' => 'Test Document'];
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$objectData,
-			null,
-			false,
-			false,
-			true,
-			true,
-			false,
-			$uploadedFiles
+			data: $objectData,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uploadedFiles: $uploadedFiles, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: Object was created with file data.
@@ -373,15 +370,10 @@ class IntegratedFileUploadTest extends TestCase {
 		];
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$objectData,
-			null,
-			false,
-			false,
-			true,
-			true,
-			false
+			data: $objectData,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: Object was created.
@@ -422,15 +414,10 @@ class IntegratedFileUploadTest extends TestCase {
 		];
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$objectData,
-			null,
-			false,
-			false,
-			true,
-			true,
-			false
+			data: $objectData,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: Object was created.
@@ -503,16 +490,10 @@ class IntegratedFileUploadTest extends TestCase {
 		];
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$objectData,
-			null,
-			false,
-			false,
-			true,
-			true,
-			false,
-			$uploadedFiles
+			data: $objectData,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uploadedFiles: $uploadedFiles, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: Object was created.
@@ -571,15 +552,10 @@ class IntegratedFileUploadTest extends TestCase {
 		];
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$objectData,
-			null,
-			false,
-			false,
-			true,
-			true,
-			false
+			data: $objectData,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: Object was created.
@@ -631,16 +607,10 @@ class IntegratedFileUploadTest extends TestCase {
 		$objectData = ['title' => 'Test'];
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$objectData,
-			null,
-			false,
-			false,
-			true,
-			true,
-			false,
-			$uploadedFiles
+			data: $objectData,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uploadedFiles: $uploadedFiles, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: Object created despite upload error.
@@ -701,16 +671,10 @@ class IntegratedFileUploadTest extends TestCase {
 		$objectData = ['title' => 'Background Job Test Document'];
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$objectData,
-			null,
-			false,
-			false,
-			true,
-			true,
-			false,
-			$uploadedFiles
+			data: $objectData,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uploadedFiles: $uploadedFiles, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: File was uploaded successfully.
@@ -772,16 +736,10 @@ class IntegratedFileUploadTest extends TestCase {
 		$startTime = microtime(true);
 
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			[],
-			null,
-			false,
-			false,
-			true,
-			true,
-			false,
-			$uploadedFiles
+			data: [],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uploadedFiles: $uploadedFiles, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$uploadTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
@@ -825,15 +783,10 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Act: Upload PDF.
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			['pdf' => $dataUri],
-			null,
-			false,
-			false,
-			true,
-			true,
-			false
+			data: ['pdf' => $dataUri],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assert: PDF uploaded successfully.

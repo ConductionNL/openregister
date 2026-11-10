@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Unit test for the read-only-projection write-guard on a tables-bound schema.
@@ -127,8 +129,7 @@ class SaveObjectTablesReadOnlyGuardTest extends TestCase {
 
 		$this->handler()->saveObject(
 			data: ['name' => 'should never persist'],
-			schema: $schema,
-			register: $register
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 	}//end testSaveIntoTablesBoundSchemaIsRejected()
 }//end class

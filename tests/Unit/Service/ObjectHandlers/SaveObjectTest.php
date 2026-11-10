@@ -47,6 +47,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Unit tests for SaveObject service
@@ -263,10 +265,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $uuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $uuid)
 		);
 
 		// Assertions.
@@ -311,10 +311,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $uuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $uuid)
 		);
 
 		// Assertions.
@@ -356,9 +354,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
-			data: $data
+			data: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema))
 		);
 
 		// Assertions.
@@ -458,10 +455,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -562,10 +557,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -653,10 +646,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -750,10 +741,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -859,10 +848,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -930,10 +917,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test - cascading silently skips invalid schema references.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Should still return an ObjectEntity, with the invalid ref stored as-is.
@@ -1022,10 +1007,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -1120,10 +1103,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.

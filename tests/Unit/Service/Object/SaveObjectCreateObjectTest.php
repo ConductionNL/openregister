@@ -40,6 +40,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
 use Stringable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * What a create through SaveObject::saveObject() does around the insert: the
@@ -146,17 +150,11 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$args = $case['args'];
 		try {
 			$saved = $handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
-			uuid: self::UUID,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID, policy: new SavePolicy(silent: ($args['silent'] ?? false), failIfExists: ($args['failIfExists'] ?? false)), actor: new SaveActor(owner: ($args['_owner'] ?? null), unowned: ($args['_unowned'] ?? false))),
 			_rbac: false,
-			persist: ($args['persist'] ?? true),
-			silent: ($args['silent'] ?? false),
-			failIfExists: ($args['failIfExists'] ?? false),
-			_unowned: ($args['_unowned'] ?? false),
-			_owner: ($args['_owner'] ?? null)
-			);
+			persist: ($args['persist'] ?? true)
+		);
 		} catch (\RuntimeException $e) {
 			return ['trace' => $this->trace, 'thrown' => $e->getMessage()];
 		}

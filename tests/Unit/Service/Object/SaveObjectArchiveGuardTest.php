@@ -43,6 +43,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * The write guard for the archived and frozen states.
@@ -209,9 +211,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 		try {
 			$this->handler(existing: $object)->saveObject(
 				data: ['title' => 'gewijzigd'],
-				schema: $schema,
-				register: $register,
-				uuid: self::UUID
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 			);
 		} finally {
 			// The object is unchanged: the guard fires before anything is
@@ -262,9 +262,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 
 		$this->handler(existing: $object)->saveObject(
 			data: ['title' => 'gewijzigd'],
-			schema: $schema,
-			register: $register,
-			uuid: self::UUID
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 		);
 	}//end testWriteToAFrozenObjectIsRefusedAndNamesTheState()
 
@@ -284,9 +282,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 		try {
 			$this->handler(existing: $object)->saveObject(
 				data: ['title' => 'gewijzigd'],
-				schema: $schema,
-				register: $register,
-				uuid: self::UUID
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 			);
 		} catch (ObjectStateWriteException $e) {
 			$refused = true;

@@ -413,7 +413,8 @@ class SelectielijstImportService implements SelectielijstImportServiceInterface 
 			// The ENTITIES, not their ids. saveObject() accepts either, and a
 			// register or schema whose id is not yet materialised would be
 			// passed as null, which its signature refuses.
-			$this->storage->writer->saveObject(data: $row, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $table->register, schema: $table->schema)));
+			$target = new ObjectFindTarget(register: $table->register, schema: $table->schema);
+			$this->storage->writer->saveObject(data: $row, options: new ObjectSaveOptions(target: $target));
 			return true;
 		} catch (Throwable $e) {
 			$this->logger->warning(

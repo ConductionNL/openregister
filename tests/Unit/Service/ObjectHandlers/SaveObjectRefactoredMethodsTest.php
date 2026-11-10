@@ -51,6 +51,9 @@ use ReflectionClass;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 
 /**
  * Testable Schema subclass for SaveObjectRefactoredMethods tests.
@@ -668,15 +671,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		// Execute full saveObject method with positional params.
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$data,
-			$uuid,
-			false,
-			false,
-			true,
-			true,
-			false
+			data: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $uuid, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assertions.

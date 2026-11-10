@@ -48,6 +48,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * The permission check of the nested create records the RBAC mode it is asked in and then
@@ -173,7 +175,7 @@ class SaveObjectCascadeScopeTest extends TestCase {
 		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $note, '1' => $incident]);
 
 		try {
-			$handler->saveObject(register: $register, schema: $incident, data: ['note' => ['text' => 'nested']], uuid: $uuid, _rbac: $rbac);
+			$handler->saveObject(data: ['note' => ['text' => 'nested']], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $incident), uuid: $uuid), _rbac: $rbac);
 			$this->fail('The refused nested create was saved.');
 		} catch (NotAuthorizedException $e) {
 			$this->assertSame(expected: 'no create in note', actual: $e->getMessage());

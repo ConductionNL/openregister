@@ -30,6 +30,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * A complete write-back appends the source to each target's inverse list; an incomplete declaration,
@@ -136,7 +137,7 @@ class InverseWriteBackBehaviourTest extends TestCase {
 		$this->objects->method('find')->willReturn($this->target(self::TARGET_1, ['cases' => ['case-0']]));
 		$this->saver->expects($this->once())
 			->method('saveObject')
-			->with('4', '5', $this->callback(static fn (array $d): bool => $d['cases'] === ['case-0', 'case-1']), self::TARGET_1);
+			->with($this->callback(static fn (array $d): bool => $d['cases'] === ['case-0', 'case-1']), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register === '4' && $options->target->schema === '5' && $options->uuid === self::TARGET_1));
 
 		$data = $this->writeBack(
 			['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'cases', 'writeBack' => true, 'removeAfterWriteBack' => true]],
@@ -200,7 +201,7 @@ class InverseWriteBackBehaviourTest extends TestCase {
 		);
 		$this->saver->expects($this->once())
 			->method('saveObject')
-			->with('4', '5', $this->callback(static fn (array $d): bool => $d['cases'] === ['case-1']), self::TARGET_2);
+			->with($this->callback(static fn (array $d): bool => $d['cases'] === ['case-1']), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register === '4' && $options->target->schema === '5' && $options->uuid === self::TARGET_2));
 
 		$this->writeBack(
 			['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'cases', 'writeBack' => true]],

@@ -35,6 +35,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Golden test for DestructionExecutionJob::run().
@@ -297,7 +298,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
     {
         $saver = $this->createMock(SaveObject::class);
         $saver->method('saveObject')->willReturnCallback(
-            function (...$args) use ($case): ObjectEntity {
+            SaveObjectArgs::callback(callback: function (...$args) use ($case): ObjectEntity {
                 $this->record('saveObject', array_slice($args, 0, 8));
                 if (($case['cert'] ?? null) === 'throw') {
                     throw new RuntimeException('cert refused');
@@ -306,7 +307,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
                 $cert = new ObjectEntity();
                 $cert->setUuid('cert-1');
                 return $cert;
-            }
+            })
         );
         return $saver;
     }//end saver()

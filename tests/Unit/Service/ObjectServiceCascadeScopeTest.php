@@ -78,6 +78,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * The pre-validation cascade runs inside a cascade scope that carries the save's RBAC mode.
@@ -175,13 +176,13 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (...$arguments): ObjectEntity {
 				$this->calls[] = 'save';
 				$this->savedData = $arguments[2];
 				$entity = new ObjectEntity();
 				$entity->setUuid('11111111-1111-1111-1111-111111111111');
 				return $entity;
-			}
+			})
 		);
 
 		$validator = $this->createMock(ValidateObject::class);

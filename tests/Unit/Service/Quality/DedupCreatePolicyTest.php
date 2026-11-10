@@ -298,15 +298,15 @@ class DedupCreatePolicyTest extends TestCase {
 		);
 
 		$method = new \ReflectionMethod(\OCA\OpenRegister\Service\Object\SaveObject::class, 'saveObject');
-		$names = array_map(
-			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
+		$types = array_map(
+			static fn (\ReflectionParameter $parameter): string => (string)$parameter->getType(),
 			$method->getParameters()
 		);
 
 		$this->assertContains(
-			'_dedupOverride',
-			$names,
-			'SaveObject::saveObject() must carry the override as a parameter: the controller strips it from the body.'
+			\OCA\OpenRegister\Service\Object\ObjectSaveOptions::class,
+			$types,
+			'SaveObject::saveObject() must carry the override in its save options: the controller strips it from the body.'
 		);
 	}//end testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody()
 

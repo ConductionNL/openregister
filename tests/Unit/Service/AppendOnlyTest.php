@@ -71,6 +71,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Tests for the appendOnly schema flag enforcement in ObjectService.
@@ -499,11 +500,11 @@ class AppendOnlyTest extends TestCase {
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use ($savedEntity): ObjectEntity {
+				SaveObjectArgs::callback(callback: function (mixed ...$args) use ($savedEntity): ObjectEntity {
 					$this->assertSame('3f2c6a3e-1111-4222-8333-444455556666', ($args[3] ?? null));
 					$this->assertTrue(($args[11] ?? false), 'an append-only insert must be insert-only down to the mapper');
 					return $savedEntity;
-				}
+				})
 			);
 
 		$result = $this->service->saveObject(
@@ -640,10 +641,10 @@ class AppendOnlyTest extends TestCase {
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
+				SaveObjectArgs::callback(callback: function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
 					$failIfExists = ($args[11] ?? null);
 					return $savedEntity;
-				}
+				})
 			);
 
 		$this->assertSame($savedEntity, $this->service->saveObject(object: ['id' => 'fresh-uuid'], _rbac: $rbac));

@@ -1599,7 +1599,10 @@ class SaveObject implements SaveObjectInterface {
 		// The parent object's audit trail still captures the overall operation.
 		$savedObject = $this->saveObject(
 			data: $object,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schemaId), policy: new SavePolicy(silent: true)),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $register, schema: $schemaId),
+				policy: new SavePolicy(silent: true)
+			),
 			_rbac: true,
 			_multitenancy: true
 		);
@@ -3835,7 +3838,8 @@ class SaveObject implements SaveObjectInterface {
 			// Clear the slot first: a row that reaches neither terminal path must
 			// not be classified with the PREVIOUS row's verdict.
 			$this->lastSaveOutcome = null;
-			$entity = $this->saveObject(data: $rowData, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $run->register, schema: $run->schema)));
+			$target = new ObjectFindTarget(register: $run->register, schema: $run->schema);
+			$entity = $this->saveObject(data: $rowData, options: new ObjectSaveOptions(target: $target));
 			$this->recordStreamOutcome(run: $run, uuid: (string)$entity->getUuid());
 		} catch (Exception $e) {
 			$rowUuid = self::streamRowUuid(row: $run->row);

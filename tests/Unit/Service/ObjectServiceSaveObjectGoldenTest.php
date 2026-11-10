@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\Object\SaveActor;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Golden test for ObjectService::saveObject().
@@ -311,6 +312,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 				'applyExpressionDefaults' => fn (array $a): array => $a[1] + ['expression' => 1],
 				'seedLifecycleFieldOnCreate' => fn (array $a): array => $a[1] + ['seeded' => 1],
 				'saveObject' => function (array $a) use ($case): ObjectEntity {
+					$a = SaveObjectArgs::flat(args: $a);
 					if (($case['saveThrows'] ?? false) === true) {
 						throw new Exception('database refused');
 					}
@@ -411,6 +413,10 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 		if ($method === 'permissions.checkPermission' && ($args[2] ?? null) instanceof PermissionCheckOptions) {
 			$options = $args[2];
 			$args    = [$args[0], $args[1], $options->userId, $options->objectOwner, $args[3], $options->object, $options->register];
+		}
+
+		if ($method === 'saveHandler.saveObject') {
+			$args = SaveObjectArgs::flat(args: $args);
 		}
 
 		if (in_array($method, ['logger.debug', 'logger.info', 'logger.warning', 'logger.error'], true) === true && is_array($args[1] ?? null) === true) {

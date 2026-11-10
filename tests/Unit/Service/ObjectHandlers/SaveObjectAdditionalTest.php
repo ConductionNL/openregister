@@ -64,6 +64,8 @@ use stdClass;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -1195,11 +1197,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->expectExceptionMessage('not authorized to modify');
 
 		$this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'Updated', 'secret_field' => 'hacked'],
-			uuid: $uuid,
-			_rbac: true
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 	}
 
@@ -1239,11 +1238,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		try {
 			$this->saveObject->saveObject(
-				register: $this->mockRegister,
-				schema: $schema,
 				data: ['name' => 'Updated'],
-				uuid: $uuid,
-				_rbac: true
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 			);
 			$this->fail('the refused property was written');
 		} catch (Exception $e) {
@@ -1301,11 +1297,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'New'],
-			uuid: $uuid,
-			_rbac: true
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
@@ -1335,9 +1328,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
-			data: ['name' => 'New']
+			data: ['name' => 'New'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema))
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
@@ -1389,10 +1381,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'New', 'logo' => 'file-data'],
-			uuid: $uuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
