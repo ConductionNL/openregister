@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
@@ -166,7 +165,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 			return 'an export needs its content (text, or contentBase64 for a binary file), at most '.self::MAX_BYTES.' bytes';
 		}
 
-		if (isset($data['producedAt']) === true && $this->moment(value: $data['producedAt']) === null) {
+		if (isset($data['producedAt']) === true && ExampleSetDateValue::moment(value: $data['producedAt']) === null) {
 			return 'producedAt is a date and time';
 		}
 
@@ -227,7 +226,7 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 				)
 			);
 
-			$producedAt = $this->moment(value: ($data['producedAt'] ?? null));
+			$producedAt = ExampleSetDateValue::moment(value: ($data['producedAt'] ?? null));
 			if ($producedAt !== null) {
 				// The run reads as made then, and lives its usual time from that moment.
 				$run->setProducedAt($producedAt);
@@ -300,25 +299,6 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	private function plainName(string $name): bool {
 		return preg_match('/^[^\/\\\\\x00]+$/', $name) === 1 && str_starts_with($name, '.') === false;
 	}//end plainName()
-
-	/**
-	 * A moment, or null when the value is none or no date.
-	 *
-	 * @param mixed $value The declared value.
-	 *
-	 * @return DateTime|null
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		try {
-			return new DateTime($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end moment()
 
 	/**
 	 * The file's bytes: the text content, or the decoded contentBase64; null when neither is usable.
