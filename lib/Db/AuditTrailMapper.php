@@ -3146,40 +3146,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findByIdentifier()
 
 	/**
-	 * Find audit trail entries by the actor (user UID) that produced them.
-	 *
-	 * Returns an associative array with `results` (array of AuditTrail entities)
-	 * and `total` (unbounded count matching the filters).
-	 *
-	 * @param string $userId The actor UID to filter on.
-	 * @param int $limit Maximum number of rows to return.
-	 * @param int $offset Row offset for pagination.
-	 * @param string|null $action Optional action filter (create|update|delete).
-	 * @param string|null $from Optional ISO-8601 start date (inclusive).
-	 * @param string|null $to Optional ISO-8601 end date (inclusive).
-	 *
-	 * @return array{results: array<int, AuditTrail>, total: int}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	public function findByActor(
-		string $userId,
-		int $limit = 25,
-		int $offset = 0,
-		?string $action = null,
-		?string $from = null,
-		?string $to = null,
-	): array {
-		$window = new ActionWindow(action: $action, from: $from, to: $to);
-
-		return $this->findActorTrail(query: new ActorTrailQuery(userId: $userId, limit: $limit, offset: $offset, window: $window));
-	}//end findByActor()
-
-	/**
 	 * One page of the entries one actor produced, with the unbounded total.
-	 *
-	 * The typed form of {@see findByActor()}, which keeps its signature for other apps.
 	 *
 	 * @param ActorTrailQuery $query The actor, the page and the optional action and date range.
 	 *

@@ -642,26 +642,13 @@ interface AuditTrailMapperInterface {
 	public function findByIdentifier(string $identifier): array;
 
 	/**
-	 * Find audit trail entries by the actor (user UID) that produced them.
+	 * One page of the entries one actor produced, with the unbounded total.
 	 *
-	 * Returns an associative array with `results` (array of AuditTrail entities)
-	 * and `total` (unbounded count matching the filters).
-	 *
-	 * @param string $userId The actor UID to filter on.
-	 * @param int $limit Maximum number of rows to return.
-	 * @param int $offset Row offset for pagination.
-	 * @param string|null $action Optional action filter (create|update|delete).
-	 * @param string|null $from Optional ISO-8601 start date (inclusive).
-	 * @param string|null $to Optional ISO-8601 end date (inclusive).
+	 * @param AuditTrail\ActorTrailQuery $query The actor, the page and the optional action and date range.
 	 *
 	 * @return array{results: array<int, AuditTrail>, total: int}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function findByActor(
-		string $userId, int $limit = 25, int $offset = 0, ?string $action = null, ?string $from = null, ?string $to = null
-	): array;
+	public function findActorTrail(AuditTrail\ActorTrailQuery $query): array;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a write that was

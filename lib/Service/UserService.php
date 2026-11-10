@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
+use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use OCA\OpenRegister\Service\User\AccountPropertyChange;
@@ -1298,7 +1300,7 @@ class UserService implements UserServiceInterface {
 		$profile = $this->buildUserDataArray(user: $user);
 
 		// Get audit trail entries.
-		$auditData = $this->auditTrailMapper->findByActor($userId, 1000, 0);
+		$auditData = $this->auditTrailMapper->findActorTrail(query: new ActorTrailQuery(userId: $userId, limit: 1000));
 		$auditTrail = array_map(
 			function ($entry) {
 				return $entry->jsonSerialize();
@@ -1407,13 +1409,9 @@ class UserService implements UserServiceInterface {
 	 * @spec openspec/specs/profile-actions/spec.md
 	 */
 	public function activity(IUser $user, ActivityQuery $query): array {
-		$data = $this->auditTrailMapper->findByActor(
-			$user->getUID(),
-			$query->limit,
-			$query->offset,
-			$query->type,
-			$query->period->from,
-			$query->period->to
+		$window = new ActionWindow(action: $query->type, from: $query->period->from, to: $query->period->to);
+		$data = $this->auditTrailMapper->findActorTrail(
+			query: new ActorTrailQuery(userId: $user->getUID(), limit: $query->limit, offset: $query->offset, window: $window)
 		);
 
 		return [

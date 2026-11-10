@@ -258,7 +258,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('jan');
 
-		$this->auditTrailMapper->method('findByActor')->willReturn([
+		$this->auditTrailMapper->method('findActorTrail')->willReturn([
 			'results' => [],
 			'total' => 0,
 		]);
