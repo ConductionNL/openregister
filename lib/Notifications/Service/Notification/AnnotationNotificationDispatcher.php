@@ -969,7 +969,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end holdDelivery()
 
 	/**
-	 * Persist the held delivery's `QueuedNotification` row; a failed insert is logged, never thrown.
+	 * Build the held delivery's `QueuedNotification` row and persist it.
 	 *
 	 * @param HeldDeliveryRun $run  The firing and the recipient delivery.
 	 * @param HoldDecision    $hold Why the delivery waits, and since when.
@@ -983,14 +983,31 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$entity->setDueAtHint(DateTime::createFromImmutable($hold->at));
 		$entity->setCreatedAt(DateTime::createFromImmutable($hold->at));
 
+		$this->keepOrWarn(run: $run, row: $entity);
+	}//end keepHeldRow()
+
+	/**
+	 * Persist a held row; a failed insert is logged, never thrown.
+	 *
+	 * @param HeldDeliveryRun    $run The firing and the recipient delivery, for the log line.
+	 * @param QueuedNotification $row The row, with reason and payload set.
+	 *
+	 * @return void
+	 */
+	private function keepOrWarn(HeldDeliveryRun $run, QueuedNotification $row): void {
 		try {
-			$this->gates->deliveryHold->keep(row: $entity);
+			$this->gates->deliveryHold->keep(row: $row);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				sprintf('[AnnotationNotificationDispatcher] failed to queue rule="%s" recipient="%s": %s', $run->firing->ruleId, $run->delivery->uid, $e->getMessage())
+				sprintf(
+					'[AnnotationNotificationDispatcher] failed to queue rule="%s" recipient="%s": %s',
+					$run->firing->ruleId,
+					$run->delivery->uid,
+					$e->getMessage()
+				)
 			);
 		}
-	}//end keepHeldRow()
+	}//end keepOrWarn()
 
 	/**
 	 * The JSON payload a held row carries: the rendered text and the object it is about.
