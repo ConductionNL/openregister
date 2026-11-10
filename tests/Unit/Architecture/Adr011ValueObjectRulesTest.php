@@ -41,6 +41,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/MassValidationRequest.php',
 		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
+		'Kernel/Contracts/LinkedTaskDraft.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
 		'Kernel/Contracts/PreferenceAddress.php',
@@ -49,6 +50,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/ReportCaller.php',
 		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/TemplateRendering.php',
+		'Kernel/Contracts/TaskLocation.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
 	];
 
@@ -62,6 +64,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/MassValidationRequest.php',
 		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
+		'Kernel/Contracts/LinkedTaskDraft.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
 		'Kernel/Contracts/PreferenceAddress.php',
@@ -71,6 +74,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/TemplateRendering.php',
 		'Kernel/Contracts/RelationDecisionUpdate.php',
+		'Kernel/Contracts/TaskLocation.php',
 		'Kernel/Contracts/TimerAnchorMove.php',
 		'Kernel/Contracts/TimerChange.php',
 		'Kernel/Contracts/TimerSubjectRef.php',

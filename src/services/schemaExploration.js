@@ -12,6 +12,16 @@
  * @return {object}
  */
 function baseSettings() {
+	return { ...behaviourFlags(), ...valueConstraints() }
+}
+
+/**
+ * How a new property behaves: optional, editable, current, shown everywhere
+ * and not a facet.
+ *
+ * @return {object} The flags.
+ */
+function behaviourFlags() {
 	return {
 		required: false,
 		immutable: false,
@@ -20,6 +30,16 @@ function baseSettings() {
 		hideOnCollection: false,
 		hideOnForm: false,
 		facetable: false,
+	}
+}
+
+/**
+ * The value constraints of a new property: none.
+ *
+ * @return {object} The constraints.
+ */
+function valueConstraints() {
+	return {
 		pattern: '',
 		minimum: null,
 		maximum: null,
@@ -87,15 +107,41 @@ export function selectedPropertyConfig(propertyName, suggestion) {
 	return {
 		...baseSettings(),
 		selected: true,
-		type: suggestion?.recommended_type || 'string',
-		title: propertyName,
-		description: suggestion?.description || '',
-		format: suggestion?.detected_format || '',
+		...suggestedDescription(propertyName, suggestion),
 		displayTitle: propertyName,
 		userDescription: '',
 		example: '',
 		order: 100,
 		technicalDescription: '',
+		...suggestedLengths(suggestion),
+	}
+}
+
+/**
+ * The type, title, description and format of a property, as the analysis
+ * suggested them.
+ *
+ * @param {string} propertyName The property name, which is also its title.
+ * @param {object|undefined} suggestion The analysis suggestion.
+ * @return {object} The fields.
+ */
+function suggestedDescription(propertyName, suggestion) {
+	return {
+		type: suggestion?.recommended_type || 'string',
+		title: propertyName,
+		description: suggestion?.description || '',
+		format: suggestion?.detected_format || '',
+	}
+}
+
+/**
+ * The length limits the analysis suggested, or none.
+ *
+ * @param {object|undefined} suggestion The analysis suggestion.
+ * @return {object} The fields.
+ */
+function suggestedLengths(suggestion) {
+	return {
 		maxLength: suggestion?.max_length || null,
 		minLength: suggestion?.min_length || null,
 	}

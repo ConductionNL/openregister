@@ -145,32 +145,14 @@ class FlowRunAssignee {
 			return '';
 		}
 
-		$nodeId = trim((string)$nodeId);
-		if ($nodeId !== '') {
-			$slot = ($slots[$nodeId] ?? null);
-			if (is_array($slot) === true && isset($slot['askedAt']) === true) {
-				// The addressed node is asking; ITS record decides, including
-				// an empty one — an unassigned step is deliberately open.
-				return ($slot['assignee'] ?? '');
-			}
+		$addressed = self::askingSlotAt(slots: $slots, nodeId: trim((string)$nodeId));
+		if ($addressed !== null) {
+			// The addressed node is asking; ITS record decides, including
+			// an empty one — an unassigned step is deliberately open.
+			return ($addressed['assignee'] ?? '');
 		}
 
-		foreach ($slots as $slot) {
-			if (is_array($slot) === false) {
-				continue;
-			}
-
-			if (isset($slot['askedAt']) === false) {
-				continue;
-			}
-
-			$assignee = ($slot['assignee'] ?? '');
-			if ($this->isUnassigned(value: $assignee) === false) {
-				return $assignee;
-			}
-		}
-
-		return '';
+		return $this->firstAssignedAssignee(slots: $slots);
 	}//end recordedValueFor()
 
 	/**
@@ -252,6 +234,60 @@ class FlowRunAssignee {
 
 		return PrincipalReference::listFrom(value: $value) === [];
 	}//end isUnassigned()
+
+	/**
+	 * The slot of the addressed node, when that node is asking.
+	 *
+	 * @param array<mixed> $slots  The run's resume slots.
+	 * @param string       $nodeId The addressed node, '' when none.
+	 *
+	 * @return array<string, mixed>|null The asking slot, or null when there is none to decide.
+	 */
+	private static function askingSlotAt(array $slots, string $nodeId): ?array {
+		if ($nodeId === '') {
+			return null;
+		}
+
+		$slot = ($slots[$nodeId] ?? null);
+		if (self::isAsking(slot: $slot) === true) {
+			return $slot;
+		}
+
+		return null;
+	}//end askingSlotAt()
+
+	/**
+	 * Whether a slot entry is a slot that has asked its question.
+	 *
+	 * @param mixed $slot The slot entry.
+	 *
+	 * @return bool
+	 */
+	private static function isAsking(mixed $slot): bool {
+		return (is_array($slot) === true && isset($slot['askedAt']) === true);
+	}//end isAsking()
+
+	/**
+	 * The run-level rule: the first asking slot that names somebody.
+	 *
+	 * @param array<mixed> $slots The run's resume slots.
+	 *
+	 * @return mixed The recorded assignee, or '' when every asking slot is unassigned.
+	 */
+	private function firstAssignedAssignee(array $slots): mixed {
+		foreach ($slots as $slot) {
+			if (self::isAsking(slot: $slot) === false) {
+				continue;
+			}
+
+			$assignee = ($slot['assignee'] ?? '');
+			if ($this->isUnassigned(value: $assignee) === false) {
+				return $assignee;
+			}
+		}
+
+		return '';
+	}//end firstAssignedAssignee()
 
 	/**
 	 * The pre-typed reading: uid equality, then group membership.

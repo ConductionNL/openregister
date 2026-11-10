@@ -44,6 +44,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\DenyRowTest;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -603,7 +605,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return bool True when the list returns nothing.
 	 */
 	private function unconditionallyDenied(RbacAccessCall $call, array $principals): bool {
-		$unconditional = $this->denyResolver()->unconditionalDenial(authorization: $call->authorization, action: $call->action, principals: $principals);
+		$unconditional = $this->denyResolver()->unconditionalDenial(
+			authorization: $call->authorization,
+			question: new DenyQuestion(action: $call->action, principals: $principals)
+		);
 		if ($unconditional === null) {
 			return false;
 		}
@@ -625,9 +630,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function conditionalDenyTerm(RbacAccessCall $call, array $principals): string|false {
 		$rowTest = $this->denyResolver()->notDeniedRowSql(
-			columnName: $call->authorizationColumn(),
-			action: $call->action,
-			isPostgres: $this->isPostgres(),
+			test: new DenyRowTest(columnName: $call->authorizationColumn(), action: $call->action, isPostgres: $this->isPostgres()),
 			principals: $principals
 		);
 
@@ -649,7 +652,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function negatedConditionalDenials(RbacAccessCall $call, array $principals): array|false {
 		$columns = $call->columns();
-		$denials = $this->denyResolver()->conditionalDenials(authorization: $call->authorization, action: $call->action, principals: $principals);
+		$denials = $this->denyResolver()->conditionalDenials(
+			authorization: $call->authorization,
+			question: new DenyQuestion(action: $call->action, principals: $principals)
+		);
 		$negated = [];
 		foreach ($denials as $denial) {
 			$compiled = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns);
@@ -1731,7 +1737,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function denyBlockSelects(RbacPermissionCheck $check, array $block): bool {
 		$resolver = $this->denyResolver();
 		$principals = $resolver->principalsFor(userId: $check->userId, userGroups: $check->userGroups);
-		if ($resolver->unconditionalDenial(authorization: $block, action: $check->action, principals: $principals) !== null) {
+		if ($resolver->unconditionalDenial(authorization: $block, question: new DenyQuestion(action: $check->action, principals: $principals)) !== null) {
 			return true;
 		}
 
@@ -1741,7 +1747,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		return $this->anyDenialSelects(
 			check: $check,
-			denials: $resolver->conditionalDenials(authorization: $block, action: $check->action, principals: $principals)
+			denials: $resolver->conditionalDenials(
+				authorization: $block,
+				question: new DenyQuestion(action: $check->action, principals: $principals)
+			)
 		);
 	}//end denyBlockSelects()
 
