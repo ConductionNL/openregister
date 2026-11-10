@@ -30,7 +30,10 @@ use Closure;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
 use OCA\OpenRegister\Service\Flow\Timer\WalkCollector;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use PHPUnit\Framework\TestCase;
@@ -141,7 +144,7 @@ class SlaCalculatorGoldenTest extends TestCase {
 			];
 			foreach ($spans as $spanName => [$from, $to]) {
 				foreach (SlaCalculator::UNITS as $unit) {
-					$actual["measure / {$calName} / {$spanName} / {$unit}"] = self::capture(fn () => $calc->measure(from: self::at($from), to: self::at($to), unit: $unit, calendar: $calendar));
+					$actual["measure / {$calName} / {$spanName} / {$unit}"] = self::capture(fn () => $calc->measure(span: new CalendarSpan(from: self::at($from), to: self::at($to), calendar: $calendar), unit: $unit));
 				}
 
 				$actual["elapsed / {$calName} / {$spanName}"] = self::capture(fn () => $calc->elapsedBusinessHours(from: self::at($from), to: self::at($to), calendar: $calendar));
@@ -149,14 +152,14 @@ class SlaCalculatorGoldenTest extends TestCase {
 
 			foreach (SlaCalculator::UNITS as $fromUnit) {
 				foreach (SlaCalculator::UNITS as $toUnit) {
-					$actual["convert / {$calName} / {$fromUnit} -> {$toUnit}"] = self::capture(fn () => $calc->convert(value: 3.0, fromUnit: $fromUnit, toUnit: $toUnit, calendar: $calendar));
+					$actual["convert / {$calName} / {$fromUnit} -> {$toUnit}"] = self::capture(fn () => $calc->convert(conversion: new UnitConversion(value: 3.0, fromUnit: $fromUnit, toUnit: $toUnit, calendar: $calendar)));
 				}
 			}
 
-			$actual["convert / {$calName} / bad unit"] = self::capture(fn () => $calc->convert(value: 3.0, fromUnit: 'weeks', toUnit: 'hours', calendar: $calendar));
-			$actual["measure / {$calName} / bad unit"] = self::capture(fn () => $calc->measure(from: self::at('2026-01-01'), to: self::at('2026-01-02'), unit: 'weeks', calendar: $calendar));
+			$actual["convert / {$calName} / bad unit"] = self::capture(fn () => $calc->convert(conversion: new UnitConversion(value: 3.0, fromUnit: 'weeks', toUnit: 'hours', calendar: $calendar)));
+			$actual["measure / {$calName} / bad unit"] = self::capture(fn () => $calc->measure(span: new CalendarSpan(from: self::at('2026-01-01'), to: self::at('2026-01-02'), calendar: $calendar), unit: 'weeks'));
 			foreach (SlaCalculator::ROLLS as $roll) {
-				$rolled = $calc->roll(moment: self::at('2026-04-27 15:00:00 Europe/Amsterdam'), roll: $roll, calendar: $calendar);
+				$rolled = $calc->roll(moment: self::at('2026-04-27 15:00:00 Europe/Amsterdam'), rule: new RollRule(roll: $roll, calendar: $calendar));
 				$actual["roll / {$calName} / {$roll}"] = array_map(static fn ($value) => $value instanceof DateTimeInterface ? $value->format('Y-m-d H:i:s P') : $value, $rolled);
 			}
 		}

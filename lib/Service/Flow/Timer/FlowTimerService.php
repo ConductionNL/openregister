@@ -229,10 +229,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$priorFireAt = $timer->getFireAt();
 		$consumed = $this->arithmetic->calculator->measure(
-			from: $timer->getRunningSince(),
-			to: $act->now,
-			unit: (string)$timer->getBudgetUnit(),
-			calendar: $calendar
+			span: new CalendarSpan(from: $timer->getRunningSince(), to: $act->now, calendar: $calendar),
+			unit: (string)$timer->getBudgetUnit()
 		);
 
 		return $this->transactional(
@@ -568,7 +566,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 			return null;
 		}
 
-		return $this->arithmetic->calculator->measure(from: $fireAt, to: $now, unit: (string)$timer->getBudgetUnit(), calendar: $scope->calendar);
+		$span = new CalendarSpan(from: $fireAt, to: $now, calendar: $scope->calendar);
+		return $this->arithmetic->calculator->measure(span: $span, unit: (string)$timer->getBudgetUnit());
 	}//end overdueBy()
 
 	/**
@@ -760,10 +759,12 @@ class FlowTimerService implements FlowTimerControlInterface {
 
 		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$added = $this->arithmetic->calculator->convert(
-			value: (float)$extension->amount,
-			fromUnit: $this->arithmetic->calculator->validateUnit(unit: $extension->unit),
-			toUnit: (string)$timer->getBudgetUnit(),
-			calendar: $calendar
+			conversion: new UnitConversion(
+				value: (float)$extension->amount,
+				fromUnit: $this->arithmetic->calculator->validateUnit(unit: $extension->unit),
+				toUnit: (string)$timer->getBudgetUnit(),
+				calendar: $calendar
+			)
 		);
 
 		return $this->transactional(

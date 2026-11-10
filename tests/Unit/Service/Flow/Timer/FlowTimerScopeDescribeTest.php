@@ -19,13 +19,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTime;
 use DateTimeImmutable;
-use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEventMapperInterface;
 use OCA\OpenRegister\Db\FlowTimerFireMapperInterface;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerStorage;
@@ -69,9 +69,9 @@ class FlowTimerScopeDescribeTest extends TestCase {
 
 		$calculator = $this->createMock(SlaCalculatorInterface::class);
 		$calculator->method('measure')->willReturnCallback(
-			function (DateTimeInterface $from, DateTimeInterface $to, string $unit, WorkingCalendar $used) use ($calendar): float {
-				$this->measured[] = [$from->format('Y-m-d'), $to->format('Y-m-d'), $unit, $used === $calendar];
-				return $from->format('Y-m-d') === '2026-09-10' ? 2.0 : 9.0;
+			function (CalendarSpan $span, string $unit) use ($calendar): float {
+				$this->measured[] = [$span->from->format('Y-m-d'), $span->to->format('Y-m-d'), $unit, $span->calendar === $calendar];
+				return $span->from->format('Y-m-d') === '2026-09-10' ? 2.0 : 9.0;
 			}
 		);
 

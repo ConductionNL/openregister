@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use PHPUnit\Framework\TestCase;
@@ -174,12 +175,7 @@ class WorkingCalendarYearBoundaryTest extends TestCase {
 		self::assertSame(expected: '2027-01-06 09:00:00', actual: $landing->format('Y-m-d H:i:s'));
 
 		// And the measurement is its own inverse across the boundary.
-		$measured = $calculator->measure(
-			from: new DateTimeImmutable('2026-12-23 09:00:00', $utc),
-			to: $landing,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $calendar
-		);
+		$measured = $calculator->measure(span: new CalendarSpan(from: new DateTimeImmutable('2026-12-23 09:00:00', $utc), to: $landing, calendar: $calendar), unit: SlaCalculator::UNIT_BUSINESS_DAYS);
 		self::assertEqualsWithDelta(expected: 8.0, actual: $measured, delta: 0.0001);
 
 		// Wed 30 Dec 09:00 + 5, which consumes New Year's Day.

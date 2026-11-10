@@ -28,6 +28,7 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
@@ -88,7 +89,7 @@ class FlowTimerEdgeCasesTest extends TestCase {
 		}
 
 		try {
-			$this->calculator->measure(from: $this->at('1926-01-01 00:00'), to: $this->at('2026-09-01 00:00'), unit: 'businessDays', calendar: $noWork);
+			$this->calculator->measure(span: new CalendarSpan(from: $this->at('1926-01-01 00:00'), to: $this->at('2026-09-01 00:00'), calendar: $noWork), unit: 'businessDays');
 			self::fail('an unbounded measure terminated');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('exceeds 20000 calendar days', $refused->getMessage());
