@@ -340,11 +340,13 @@ class ExampleSetPeople {
 	private function createAccount(array $person, string $password): string {
 		$uid = (string) $person['uid'];
 
-		return $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) ($person['displayName'] ?? $uid),
-			email: (string) ($person['email'] ?? ''),
-			password: $password
+		return $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: $uid,
+				displayName: (string) ($person['displayName'] ?? $uid),
+				email: (string) ($person['email'] ?? ''),
+				password: $password
+			)
 		);
 	}//end createAccount()
 
@@ -481,11 +483,13 @@ class ExampleSetPeople {
 	 * @return string The error, or '' when it was created.
 	 */
 	private function createServiceAccount(array $account): string {
-		return $this->accounts->createUser(
-			uid: (string) $account['uid'],
-			displayName: (string) $account['displayName'],
-			email: '',
-			password: $this->accounts->newPassword().$this->accounts->newPassword()
+		return $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: (string) $account['uid'],
+				displayName: (string) $account['displayName'],
+				email: '',
+				password: $this->accounts->newPassword().$this->accounts->newPassword()
+			)
 		);
 	}//end createServiceAccount()
 

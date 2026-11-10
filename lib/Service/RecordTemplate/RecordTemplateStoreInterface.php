@@ -36,15 +36,14 @@ interface RecordTemplateStoreInterface {
 	/**
 	 * The templates the caller may use, each with the access they hold on it.
 	 *
-	 * @param ViewerReach $reach    The caller.
-	 * @param string|null $register Only templates for this register id.
-	 * @param string|null $schema   Only templates for this schema id.
+	 * @param ViewerReach         $reach   The caller.
+	 * @param TemplateListOptions $options Only templates for this register id and this schema id, where set.
 	 *
 	 * @return RecordTemplate[] The usable templates.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array;
+	public function listFor(ViewerReach $reach, TemplateListOptions $options=new TemplateListOptions()): array;
 
 	/**
 	 * One template the caller may use.
@@ -77,10 +76,8 @@ interface RecordTemplateStoreInterface {
 	/**
 	 * Change a template the caller owns, or any template for an administrator.
 	 *
-	 * @param string               $uuid    The template uuid.
-	 * @param array<string, mixed> $data    The fields to set.
-	 * @param ViewerReach          $reach   The caller.
-	 * @param bool                 $partial True for PATCH (only the fields sent), false for PUT.
+	 * @param TemplateChange $change The template uuid, the fields to set and whether only those are set (PATCH) or all (PUT).
+	 * @param ViewerReach    $reach  The caller.
 	 *
 	 * @return RecordTemplate The stored template.
 	 *
@@ -88,7 +85,7 @@ interface RecordTemplateStoreInterface {
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function change(string $uuid, array $data, ViewerReach $reach, bool $partial): RecordTemplate;
+	public function change(TemplateChange $change, ViewerReach $reach): RecordTemplate;
 
 	/**
 	 * Delete a template the caller owns, or any template for an administrator.
