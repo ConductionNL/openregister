@@ -95,21 +95,8 @@ class MergeController extends Controller {
 
 		try {
 			$result = $this->mergeService->previewMerge(from: $from, into: $into);
-		} catch (MergeNotFullyReadableException $e) {
-			// MUST be caught before the RuntimeException below, which answers
-			// 404. A merge refused because the caller cannot read a restricted
-			// property is a permissions answer, and reporting it as "not found"
-			// would send a handler looking for a missing record instead of the
-			// group they are not in. The properties travel with it; their
-			// values never do.
-			return new JSONResponse(
-				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
-				Http::STATUS_FORBIDDEN
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (MergeNotFullyReadableException | NotAuthorizedException | RuntimeException $e) {
+			return $this->refused(error: $e);
 		}
 
 		return new JSONResponse($result);
@@ -156,15 +143,8 @@ class MergeController extends Controller {
 				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
 				Http::STATUS_UNPROCESSABLE_ENTITY
 			);
-		} catch (MergeNotFullyReadableException $e) {
-			return new JSONResponse(
-				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
-				Http::STATUS_FORBIDDEN
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (MergeNotFullyReadableException | NotAuthorizedException | RuntimeException $e) {
+			return $this->refused(error: $e);
 		}
 
 		return new JSONResponse($result);
@@ -196,4 +176,31 @@ class MergeController extends Controller {
 
 		return new JSONResponse($result);
 	}//end reverse()
+
+	/**
+	 * The answer to a preview or merge the service refused.
+	 *
+	 * A merge refused because the caller cannot read a restricted property is
+	 * a permissions answer (403), not "not found": a 404 would send a handler
+	 * looking for a missing record instead of the group they are not in. The
+	 * properties travel with it; their values never do.
+	 *
+	 * @param MergeNotFullyReadableException|NotAuthorizedException|RuntimeException $error The refusal.
+	 *
+	 * @return JSONResponse 403 with the properties, 403, or 404 for a missing object.
+	 */
+	private function refused(MergeNotFullyReadableException|NotAuthorizedException|RuntimeException $error): JSONResponse {
+		if ($error instanceof MergeNotFullyReadableException) {
+			return new JSONResponse(
+				['error' => $error->getMessage(), 'properties' => $error->getProperties()],
+				Http::STATUS_FORBIDDEN
+			);
+		}
+
+		if ($error instanceof NotAuthorizedException) {
+			return new JSONResponse(['error' => $error->getMessage()], Http::STATUS_FORBIDDEN);
+		}
+
+		return new JSONResponse(['error' => $error->getMessage()], Http::STATUS_NOT_FOUND);
+	}//end refused()
 }//end class
