@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 /**
- * What one {@see LifecycleTransitionsValidator::validate()} call checks against and has found.
+ * What one {@see LifecycleTransitionsValidator::validateGraph()} call checks against and has found.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */

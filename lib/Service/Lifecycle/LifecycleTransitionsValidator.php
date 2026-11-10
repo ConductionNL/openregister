@@ -56,12 +56,28 @@ final class LifecycleTransitionsValidator {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validate(LifecycleGraph $graph): array {
+	public function validateGraph(LifecycleGraph $graph): array {
 		$check = new LifecycleGraphCheck(states: $graph->states, knownGuards: $graph->knownGuards);
 		$this->checkStates(initial: $graph->initial, check: $check);
 		$this->checkTransitions(transitions: $graph->transitions, check: $check);
 		$this->checkUnreachable(initial: $graph->initial, check: $check);
 		return $check->errors();
+	}//end validateGraph()
+
+	/**
+	 * Validate a lifecycle given as loose values, as other apps pass it (fail closed).
+	 *
+	 * @param array<int, mixed>       $states      The states.
+	 * @param string|null             $initial     The initial state.
+	 * @param array<int|string,mixed> $transitions The transitions.
+	 * @param array<int, string>|null $knownGuards The guard catalogue; null skips the guard check.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function validate(array $states, ?string $initial, array $transitions, ?array $knownGuards=null): array {
+		return $this->validateGraph(graph: new LifecycleGraph(states: $states, initial: $initial, transitions: $transitions, knownGuards: $knownGuards));
 	}//end validate()
 
 	/**

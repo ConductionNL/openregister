@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 /**
  * The states, initial state, transitions and guard catalogue of one lifecycle
  * passed as data: the operation object of
- * {@see LifecycleTransitionsValidator::validate()} (ADR-011 Rule 2).
+ * {@see LifecycleTransitionsValidator::validateGraph()} (ADR-011 Rule 2).
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */

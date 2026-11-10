@@ -74,7 +74,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testValidGraphHasNoErrors(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: ['draft', 'proposed', 'decided'], initial: 'draft', transitions: [
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: ['draft', 'proposed', 'decided'], initial: 'draft', transitions: [
 				['from' => 'draft', 'to' => 'proposed', 'guards' => ['quorum_met']],
 				['from' => ['proposed'], 'to' => 'decided'],
 			], knownGuards: ['quorum_met', 'chair_only']));
@@ -88,7 +88,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testTransitionsKeyedByActionAreAccepted(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: ['open', 'closed'], initial: 'open', transitions: ['close' => ['from' => 'open', 'to' => 'closed']]));
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: ['open', 'closed'], initial: 'open', transitions: ['close' => ['from' => 'open', 'to' => 'closed']]));
 
 		self::assertSame([], $errors);
 	}//end testTransitionsKeyedByActionAreAccepted()
@@ -99,7 +99,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptyStatesAreRefused(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: [], initial: 'draft', transitions: []));
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: [], initial: 'draft', transitions: []));
 
 		self::assertContains('lifecycle-states-empty', $this->codes($errors));
 	}//end testEmptyStatesAreRefused()
@@ -110,8 +110,8 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testInitialStateMustBeDeclared(): void {
-		$missing = $this->validator->validate(new LifecycleGraph(states: ['a', 'b'], initial: null, transitions: [['from' => 'a', 'to' => 'b']]));
-		$unknown = $this->validator->validate(new LifecycleGraph(states: ['a', 'b'], initial: 'ghost', transitions: [['from' => 'a', 'to' => 'b']]));
+		$missing = $this->validator->validateGraph(new LifecycleGraph(states: ['a', 'b'], initial: null, transitions: [['from' => 'a', 'to' => 'b']]));
+		$unknown = $this->validator->validateGraph(new LifecycleGraph(states: ['a', 'b'], initial: 'ghost', transitions: [['from' => 'a', 'to' => 'b']]));
 
 		self::assertContains('lifecycle-initial-missing', $this->codes($missing));
 		self::assertContains('lifecycle-initial-not-declared', $this->codes($unknown));
@@ -124,7 +124,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testDanglingTransitionIsRefused(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: ['draft', 'decided'], initial: 'draft', transitions: [['from' => 'draft', 'to' => 'decided'], ['from' => 'decided', 'to' => 'ghost']]));
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: ['draft', 'decided'], initial: 'draft', transitions: [['from' => 'draft', 'to' => 'decided'], ['from' => 'decided', 'to' => 'ghost']]));
 
 		self::assertSame(['lifecycle-to-not-declared'], $this->codes($errors));
 		self::assertStringContainsString('ghost', $this->messages($errors));
@@ -136,7 +136,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testMalformedTransitionsAreRefused(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: ['oops', ['from' => 'a'], ['to' => 'b', 'from' => []], ['from' => 'a', 'to' => 'b']]));
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: ['oops', ['from' => 'a'], ['to' => 'b', 'from' => []], ['from' => 'a', 'to' => 'b']]));
 
 		self::assertSame(
 			['lifecycle-transition-malformed', 'lifecycle-to-missing', 'lifecycle-from-missing'],
@@ -150,7 +150,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testStateNoTransitionTouchesIsRefused(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: ['draft', 'decided', 'orphan'], initial: 'draft', transitions: [['from' => 'draft', 'to' => 'decided']]));
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: ['draft', 'decided', 'orphan'], initial: 'draft', transitions: [['from' => 'draft', 'to' => 'decided']]));
 
 		self::assertSame(['lifecycle-state-unreachable'], $this->codes($errors));
 		self::assertStringContainsString('orphan', $this->messages($errors));
@@ -163,7 +163,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoneInitialStateIsNotUnreachable(): void {
-		self::assertSame([], $this->validator->validate(new LifecycleGraph(states: ['only'], initial: 'only', transitions: [])));
+		self::assertSame([], $this->validator->validateGraph(new LifecycleGraph(states: ['only'], initial: 'only', transitions: [])));
 	}//end testLoneInitialStateIsNotUnreachable()
 
 	/**
@@ -172,7 +172,7 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testUnknownGuardIsRefusedAgainstACatalogue(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: [['from' => 'a', 'to' => 'b', 'guards' => ['quorum_met', 'made_up_token', 7]]], knownGuards: ['quorum_met']));
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: [['from' => 'a', 'to' => 'b', 'guards' => ['quorum_met', 'made_up_token', 7]]], knownGuards: ['quorum_met']));
 
 		self::assertSame(['lifecycle-guard-unknown', 'lifecycle-guard-unknown'], $this->codes($errors));
 		self::assertStringContainsString('made_up_token', $this->messages($errors));
@@ -184,8 +184,8 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testGuardsWithoutACatalogueAreShapeChecked(): void {
-		$ok = $this->validator->validate(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: [['from' => 'a', 'to' => 'b', 'guards' => ['anything']]]));
-		$bad = $this->validator->validate(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: [['from' => 'a', 'to' => 'b', 'guards' => 'not-a-list']]));
+		$ok = $this->validator->validateGraph(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: [['from' => 'a', 'to' => 'b', 'guards' => ['anything']]]));
+		$bad = $this->validator->validateGraph(new LifecycleGraph(states: ['a', 'b'], initial: 'a', transitions: [['from' => 'a', 'to' => 'b', 'guards' => 'not-a-list']]));
 
 		self::assertSame([], $ok);
 		self::assertSame(['lifecycle-guards-malformed'], $this->codes($bad));
@@ -197,8 +197,23 @@ final class LifecycleTransitionsValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testStatesAsNamedObjectsAreAccepted(): void {
-		$errors = $this->validator->validate(new LifecycleGraph(states: [['name' => 'a'], ['name' => 'b'], ['label' => 'no name']], initial: 'a', transitions: [['from' => 'a', 'to' => 'b']]));
+		$errors = $this->validator->validateGraph(new LifecycleGraph(states: [['name' => 'a'], ['name' => 'b'], ['label' => 'no name']], initial: 'a', transitions: [['from' => 'a', 'to' => 'b']]));
 
 		self::assertSame([], $errors);
 	}//end testStatesAsNamedObjectsAreAccepted()
+
+	/**
+	 * The loose-value signature decidiq calls by name, and positionally, finds what the graph variant finds.
+	 *
+	 * @return void
+	 */
+	public function testTheLooseValueSignatureAnswersByNameAndPositionally(): void {
+		$transitions = [['from' => 'a', 'to' => 'b', 'guards' => ['quorum_met', 'made_up_token']]];
+		$expected    = $this->validator->validateGraph(new LifecycleGraph(states: ['a', 'b', 'orphan'], initial: 'a', transitions: $transitions, knownGuards: ['quorum_met']));
+
+		self::assertNotSame([], $expected);
+		self::assertSame($expected, $this->validator->validate(states: ['a', 'b', 'orphan'], initial: 'a', transitions: $transitions, knownGuards: ['quorum_met']));
+		self::assertSame($expected, $this->validator->validate(['a', 'b', 'orphan'], 'a', $transitions, ['quorum_met']));
+		self::assertSame([], $this->validator->validate(['only'], 'only', []));
+	}//end testTheLooseValueSignatureAnswersByNameAndPositionally()
 }//end class
