@@ -81,6 +81,13 @@ class FacetResponseCache {
 	private ?ICache $facetCache = null;
 
 	/**
+	 * Whether the backend has been opened (or found unavailable) yet; it is opened once, on first use.
+	 *
+	 * @var boolean
+	 */
+	private bool $facetCacheOpened = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ICacheFactory     $cacheFactory      Builds the distributed, then the local, cache.
@@ -94,22 +101,44 @@ class FacetResponseCache {
 		private readonly FacetCacheVersion $facetCacheVersion,
 		private readonly LoggerInterface $logger,
 	) {
+	}//end __construct()
+
+	/**
+	 * The facet cache backend, opened on first use: the distributed cache, else the local one, else none.
+	 *
+	 * @return ICache|null The backend, or null when no caching is available (logged once).
+	 */
+	private function backend(): ?ICache {
+		if ($this->facetCacheOpened === false) {
+			$this->facetCacheOpened = true;
+			$this->facetCache       = $this->openBackend();
+		}
+
+		return $this->facetCache;
+	}//end backend()
+
+	/**
+	 * Open the distributed cache, falling back to the local one; null (logged) when neither is available.
+	 *
+	 * @return ICache|null The opened backend.
+	 */
+	private function openBackend(): ?ICache {
 		try {
-			$this->facetCache = $this->cacheFactory->createDistributed('openregister_facets');
+			return $this->cacheFactory->createDistributed('openregister_facets');
 		} catch (\Exception $e) {
 			// Fallback to local cache if distributed cache unavailable.
 			try {
-				$this->facetCache = $this->cacheFactory->createLocal('openregister_facets');
+				return $this->cacheFactory->createLocal('openregister_facets');
 			} catch (\Exception $e) {
 				// No caching available - cache operations are skipped.
-				$this->facetCache = null;
 				$this->logger->warning(
 					message: '[FacetResponseCache] Facet caching unavailable',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 				);
+				return null;
 			}
 		}
-	}//end __construct()
+	}//end openBackend()
 
 	/**
 	 * Generate cache key for facet responses.
@@ -279,12 +308,13 @@ class FacetResponseCache {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function get(string $cacheKey): ?array {
-		if ($this->facetCache === null) {
+		$backend = $this->backend();
+		if ($backend === null) {
 			return null;
 		}
 
 		try {
-			$cached = $this->facetCache->get($cacheKey);
+			$cached = $backend->get($cacheKey);
 			if ($cached !== null) {
 				$this->logger->debug(
 					message: '[FacetResponseCache] Facet response cache hit',
@@ -312,7 +342,8 @@ class FacetResponseCache {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function put(string $cacheKey, array $result): void {
-		if ($this->facetCache === null) {
+		$backend = $this->backend();
+		if ($backend === null) {
 			return;
 		}
 
@@ -324,7 +355,7 @@ class FacetResponseCache {
 				$ttl = self::COLLECTION_FACET_TTL;
 			}
 
-			$this->facetCache->set($cacheKey, $result, $ttl);
+			$backend->set($cacheKey, $result, $ttl);
 
 			$this->logger->debug(
 				message: '[FacetResponseCache] Facet response cached',
