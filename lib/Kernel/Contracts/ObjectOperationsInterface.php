@@ -23,12 +23,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Service\ObjectMigration;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 
@@ -885,26 +888,19 @@ interface ObjectOperationsInterface {
     /**
      * Renders the rendered object.
      *
-     * @param ObjectEntity $entity        The entity to be rendered
-     * @param array|null   $_extend       Optional array to extend the entity
-     * @param int|null     $depth         Optional depth for rendering
-     * @param array|null   $filter        Optional filters to apply
-     * @param array|null   $fields        Optional fields to include
-     * @param array|null   $unset         Optional fields to exclude
-     * @param bool         $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool         $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * A top-level render: depth 0, nothing preloaded.
+     *
+     * @param ObjectEntity         $entity        The entity to be rendered
+     * @param RenderSelection|null $selection     The extend, filter, fields and unset lists; null renders the plain object
+     * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
      * @return array Rendered entity data
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
      * @spec exclude Facade delegating object rendering to the render handler;
      *   render contract owned by files-render-extension / schema-driven-read-coercion.
      */
-    public function renderEntity(
-    	ObjectEntity $entity, ?array $_extend=[], ?int $depth=0, ?array $filter=[], ?array $fields=[], ?array $unset=[], bool $_rbac=true,
-    	bool $_multitenancy=true
-    ): array;
+    public function renderEntity(ObjectEntity $entity, ?RenderSelection $selection=null, bool $_rbac=true, bool $_multitenancy=true): array;
 
     /**
      * Get the objects cache containing all extended/related objects indexed by UUID.
@@ -1065,12 +1061,7 @@ interface ObjectOperationsInterface {
      * This method migrates multiple objects from one register/schema combination
      * to another register/schema combination with property mapping.
      *
-     * @param string|int $sourceRegister The source register ID or slug
-     * @param string|int $sourceSchema   The source schema ID or slug
-     * @param string|int $targetRegister The target register ID or slug
-     * @param string|int $targetSchema   The target schema ID or slug
-     * @param array      $objectIds      Array of object IDs to migrate
-     * @param array      $mapping        Mapping where keys are target properties, values are source properties
+     * @param ObjectMigration $migration Which objects move, from where to where, and the target-to-source property mapping.
      *
      * The caller needs create permission on the target schema. Only the source
      * objects the caller may read (RBAC and multitenancy of the source table) and
@@ -1084,10 +1075,7 @@ interface ObjectOperationsInterface {
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    public function migrateObjects(
-    	string|int $sourceRegister, string|int $sourceSchema, string|int $targetRegister, string|int $targetSchema, array $objectIds,
-    	array $mapping
-    ): array;
+    public function migrate(ObjectMigration $migration): array;
 
     /**
      * Perform bulk delete operations on objects by UUID
@@ -1152,9 +1140,8 @@ interface ObjectOperationsInterface {
      * constructed on virtually every request, and this is the only method that needs
      * it.
      *
-     * @param int  $registerId The ID of the register
-     * @param int  $schemaId   The ID of the schema whose objects should be deleted
-     * @param bool $hardDelete Whether to force hard delete (default: false)
+     * @param RegisterSchemaRef $table      The register and schema ids whose objects are deleted
+     * @param bool              $hardDelete Whether to force hard delete (default: false)
      *
      * @return (int|string[])[]
      *
@@ -1168,7 +1155,7 @@ interface ObjectOperationsInterface {
      *
      * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
-    public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array;
+    public function deleteObjectsOfTable(RegisterSchemaRef $table, bool $hardDelete=false): array;
 
     /**
      * Delete all objects belonging to a specific register
@@ -1177,7 +1164,7 @@ interface ObjectOperationsInterface {
      * transaction, snapshotting each object to the audit trail first. Refuses the
      * whole request with ArchivalImmutableException, before touching any row, when
      * any of those schemas is archival. The work lives in SchemaDeletionService,
-     * resolved lazily for the reason deleteObjectsBySchema() gives.
+     * resolved lazily for the reason deleteObjectsOfTable() gives.
      *
      * @param int  $registerId The ID of the register whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
@@ -1271,13 +1258,9 @@ interface ObjectOperationsInterface {
     /**
      * List objects with filtering and pagination
      *
-     * @param array       $query         Search query parameters
-     * @param bool        $_rbac         Apply RBAC filters
-     * @param bool        $_multitenancy Apply multitenancy filters
-     * @param bool        $_deleted      Include deleted objects
-     * @param array|null  $_ids          Optional array of object IDs to filter
-     * @param string|null $_uses         Optional object ID that results must use
-     * @param array|null  $_views        Optional view filters
+     * @param array $query         Search query parameters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
@@ -1287,10 +1270,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Facade alias delegating to searchObjects(); listing behavior owned by zoeken-filteren.
      */
-    public function listObjects(
-    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $_deleted=false, ?array $_ids=null, ?string $_uses=null,
-    	?array $_views=null
-    ): array|int;
+    public function listObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true): array|int;
 
     /**
      * Create new object
@@ -1415,22 +1395,19 @@ interface ObjectOperationsInterface {
     public function validateObjectsBySchema(int $schemaId): array;
 
     /**
-     * Validate and save all objects by schema, updating metadata like _name.
+     * Validate and save one page of a register and schema's objects, updating metadata like _name.
      *
-     * This method validates all objects belonging to the specified schema and saves them
-     * to update metadata fields. This is useful for bulk updating object metadata after
-     * schema changes or imports.
+     * This is useful for bulk updating object metadata after schema changes or imports.
+     * An unbounded query processes every object.
      *
-     * @param int      $registerId Register ID
-     * @param int      $schemaId   Schema ID
-     * @param int|null $limit      Maximum number of objects to process (null = all)
-     * @param int      $offset     Number of objects to skip before processing
+     * @param RegisterSchemaRef $table The register and schema ids
+     * @param ListQuery         $query The page: its limit (or unbounded) and offset
      *
      * @return array{processed: int, updated: int, failed: int, total: int, errors: array} Validation statistics
      *
      * @spec exclude Delegation to ValidationHandler::validateAndSaveObjectsBySchema() with a saveObject callback; handler owns the loop.
      */
-    public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, ?int $limit=null, int $offset=0): array;
+    public function validateAndSaveTable(RegisterSchemaRef $table, ListQuery $query): array;
 
     /**
      * Reset the current register, schema, and object context.
