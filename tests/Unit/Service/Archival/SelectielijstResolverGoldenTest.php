@@ -21,6 +21,7 @@ use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -47,9 +48,10 @@ class SelectielijstResolverGoldenTest extends TestCase {
 	 * @return SelectielijstResolver The resolver.
 	 */
 	private function resolver(array $rows, array $settings, ?ObjectRetentionHandler $handler = null): SelectielijstResolver {
-		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
-		$objectMapper->method('findAll')->willReturnCallback(
-			static function (?int $limit = null, ?int $offset = null, ?array $filters = null) use ($rows): array {
+		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAllListed'])->getMock();
+		$objectMapper->method('findAllListed')->willReturnCallback(
+			static function (MagicListRequest $request) use ($rows): array {
+				$filters = $request->query->filters;
 				$category = ($filters['object->categorie'] ?? null);
 				if ($category === 'boom') {
 					throw new Exception('store down');

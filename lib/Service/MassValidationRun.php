@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -456,7 +458,8 @@ final class MassValidationRun {
 	 */
 	private function saveBatch(array $job): array {
 		$batchStartTime = microtime(true);
-		$objects = $this->objectMapper->findAll(limit: $job['limit'], offset: $job['offset']);
+		$listing = new ListQuery(limit: $job['limit'], offset: $job['offset']);
+		$objects = $this->objectMapper->findAllListed(request: new MagicListRequest(table: null, query: $listing));
 
 		$batch = $this->resaveAll(objects: $objects);
 		$batch['failed'] = count($batch['errors']);

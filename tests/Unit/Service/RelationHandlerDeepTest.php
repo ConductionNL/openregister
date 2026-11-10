@@ -97,7 +97,7 @@ class RelationHandlerDeepTest extends TestCase {
 		}
 
 		// The method will cap at 200 and then batch load.
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
 		// Should still work (returns empty because mock returns []).
@@ -119,7 +119,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$idProp->setAccessible(true);
 		$idProp->setValue($obj, 1);
 
-		$this->objectMapper->method('findAll')->willReturn([$obj]);
+		$this->objectMapper->method('findAllListed')->willReturn([$obj]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched(['uuid-1']);
 		$this->assertArrayHasKey('uuid-1', $result);
@@ -133,7 +133,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testBulkLoadRelationshipsBatchedBatchException(): void {
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willThrowException(new \Exception('DB error'));
 
 		// Should not throw — continues past failed batch.
@@ -163,7 +163,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedException(): void {
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willThrowException(new \Exception('Query failed'));
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
@@ -178,7 +178,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 */
 	public function testLoadRelationshipChunkOptimizedReturns(): void {
 		$obj = $this->createMock(ObjectEntity::class);
-		$this->objectMapper->method('findAll')->willReturn([$obj]);
+		$this->objectMapper->method('findAllListed')->willReturn([$obj]);
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
 		$this->assertCount(1, $result);

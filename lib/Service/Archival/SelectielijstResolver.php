@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
@@ -173,11 +175,11 @@ class SelectielijstResolver {
 	 * @throws Exception When the register, the schema or the rows cannot be read.
 	 */
 	private function rowsFor(string $category, RegisterSchema $table): array {
-		return $this->storage->catalog->tables()->findAll(
-			limit: self::SELECTION_LIST_ROW_CAP,
-			filters: ['object->categorie' => $category],
-			register: $table->register,
-			schema: $table->schema
+		return $this->storage->catalog->tables()->findAllListed(
+			request: new MagicListRequest(
+				table: $table,
+				query: new ListQuery(limit: self::SELECTION_LIST_ROW_CAP, filters: ['object->categorie' => $category])
+			)
 		);
 	}//end rowsFor()
 

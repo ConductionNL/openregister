@@ -41,7 +41,7 @@ class MassValidationRunSerialTest extends TestCase {
 	private function runSerial(int $batches): array {
 		$mapper = $this->createMock(MagicMapperInterface::class);
 		$mapper->method('countSearchObjects')->willReturn($batches);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 
 		$debug    = [];
 		$progress = [];

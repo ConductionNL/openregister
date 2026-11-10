@@ -163,7 +163,7 @@ class RelationHandlerTest extends TestCase {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 250));
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willReturn([]);
 
 		$this->logger->expects($this->atLeastOnce())->method('warning');
@@ -184,7 +184,7 @@ class RelationHandlerTest extends TestCase {
 		$entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willReturn([$entity]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
@@ -206,7 +206,7 @@ class RelationHandlerTest extends TestCase {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 60));
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willThrowException(new \RuntimeException('DB error'));
 
 		$this->logger->expects($this->atLeastOnce())->method('error');
@@ -228,7 +228,7 @@ class RelationHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsEmptyForNoIds(): void {
-		$this->objectMapper->expects($this->never())->method('findAll');
+		$this->objectMapper->expects($this->never())->method('findAllListed');
 
 		$result = $this->handler->loadRelationshipChunkOptimized([]);
 
@@ -245,7 +245,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->with($this->anything())
 			->willReturn([$entity]);
 
@@ -262,7 +262,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsEmptyOnMapperException(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willThrowException(new \RuntimeException('DB error'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -686,7 +686,7 @@ class RelationHandlerTest extends TestCase {
 		$entity1->setUuid('aaaaaaaa-bbbb-cccc-dddd-000000000001');
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willReturn([$entity1]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
@@ -707,7 +707,7 @@ class RelationHandlerTest extends TestCase {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 5));
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willThrowException(new \RuntimeException('DB error'));
 
 		$this->logger->expects($this->atLeastOnce())->method('error');
@@ -726,7 +726,7 @@ class RelationHandlerTest extends TestCase {
 	public function testBulkLoadRelationshipsBatchedExactly200NoCap(): void {
 		$ids = array_map(fn ($i) => "id-$i", range(1, 200));
 
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		// warning should NOT be called -- exactly 200 is not over the limit.
 		$this->logger->expects($this->never())->method('warning');
@@ -898,7 +898,7 @@ class RelationHandlerTest extends TestCase {
 
 		$callCount = 0;
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;
 				return [];
@@ -924,7 +924,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->willReturn([$entity]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
@@ -947,7 +947,7 @@ class RelationHandlerTest extends TestCase {
 		$e2 = $this->makeObjectEntity(20);
 		$e2->setUuid('aaaa-2222');
 
-		$this->objectMapper->method('findAll')->willReturn([$e1, $e2]);
+		$this->objectMapper->method('findAllListed')->willReturn([$e1, $e2]);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
 		$this->logger->expects($this->atLeastOnce())->method('debug');
@@ -976,7 +976,7 @@ class RelationHandlerTest extends TestCase {
 		$capturedIds = null;
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->willReturnCallback(function () use ($e1, $e2, &$capturedIds) {
 				$capturedIds = func_get_args();
 				return [$e1, $e2];

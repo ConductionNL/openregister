@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -271,10 +272,11 @@ class ExportHandlerGoldenTest extends TestCase {
 		);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (...$args): array {
-				$this->calls[] = ['objects.findAll', $args];
-				$register = $args[2]['register'];
+		$objectMapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$q = $request->query;
+				$this->calls[] = ['objects.findAll', [$q->limitOrNull(), $q->offset, ($q->filters ?: null), null, null, $q->sort, $q->search, $request->ids, $request->uses, false, null, null]];
+				$register = $request->query->filters['register'];
 				$objects = [];
 				foreach ([[$register, 11], [$register, 12], [7, 99]] as $index => [$registerId, $schemaId]) {
 					$object = $this->createMock(ObjectEntity::class);

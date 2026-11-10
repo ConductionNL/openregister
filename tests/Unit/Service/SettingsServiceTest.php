@@ -1849,7 +1849,7 @@ class SettingsServiceTest extends TestCase {
 		// Total objects is 1000, but maxObjects limits to 50.
 		$objectMapper->method('countSearchObjects')
 			->willReturn(1000);
-		$objectMapper->method('findAll')
+		$objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$service = $this->createServiceWithContainer($container);
@@ -1905,7 +1905,7 @@ class SettingsServiceTest extends TestCase {
 	public function testMassValidateObjectsReSavesEveryObject(string $mode): void {
 		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 		$objectMapper->method('countSearchObjects')->willReturn(2);
-		$objectMapper->method('findAll')->willReturn($this->massValidationObjects());
+		$objectMapper->method('findAllListed')->willReturn($this->massValidationObjects());
 
 		$saved = [];
 		$objectService = $this->createMock(ObjectService::class);
@@ -1946,7 +1946,7 @@ class SettingsServiceTest extends TestCase {
 	public function testMassValidateObjectsStopsAtFirstFailedSave(): void {
 		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 		$objectMapper->method('countSearchObjects')->willReturn(2);
-		$objectMapper->method('findAll')->willReturn($this->massValidationObjects());
+		$objectMapper->method('findAllListed')->willReturn($this->massValidationObjects());
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->expects($this->once())->method('saveObject')
@@ -1969,7 +1969,7 @@ class SettingsServiceTest extends TestCase {
 	public function testMassValidateObjectsCollectsErrorsAndContinues(): void {
 		$objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 		$objectMapper->method('countSearchObjects')->willReturn(2);
-		$objectMapper->method('findAll')->willReturn($this->massValidationObjects());
+		$objectMapper->method('findAllListed')->willReturn($this->massValidationObjects());
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->expects($this->exactly(2))->method('saveObject')
@@ -2472,7 +2472,7 @@ class SettingsServiceTest extends TestCase {
 		// maxObjects = totalObjects, no limiting applied.
 		$objectMapper->method('countSearchObjects')
 			->willReturn(50);
-		$objectMapper->method('findAll')
+		$objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$service = $this->createServiceWithContainer($container);
@@ -2499,7 +2499,7 @@ class SettingsServiceTest extends TestCase {
 
 		$objectMapper->method('countSearchObjects')
 			->willReturn(10);
-		$objectMapper->method('findAll')
+		$objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$service = $this->createServiceWithContainer($container);

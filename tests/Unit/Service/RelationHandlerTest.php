@@ -110,7 +110,7 @@ class RelationHandlerTest extends TestCase {
 		$obj->method('getId')->willReturn(42);
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willReturn([$obj]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched(['test-uuid-123']);
@@ -133,7 +133,7 @@ class RelationHandlerTest extends TestCase {
 		}
 
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willReturn([]);
 
 		// Should not throw, just cap.
@@ -148,7 +148,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testBulkLoadRelationshipsBatchedHandlesExceptions(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willThrowException(new \Exception('DB error'));
 
 		// Should not throw, continue with next batch.
@@ -181,7 +181,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->willReturn([$obj]);
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
@@ -196,7 +196,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsEmptyOnException(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findAllListed')
 			->willThrowException(new \Exception('DB error'));
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);

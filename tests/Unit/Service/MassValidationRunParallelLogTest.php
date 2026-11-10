@@ -39,7 +39,7 @@ class MassValidationRunParallelLogTest extends TestCase {
 	public function testEachChunkLogsItsStartAndEnd(): void {
 		$mapper = $this->createMock(MagicMapperInterface::class);
 		$mapper->method('countSearchObjects')->willReturn(6);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 
 		$starts = [];
 		$ends   = [];

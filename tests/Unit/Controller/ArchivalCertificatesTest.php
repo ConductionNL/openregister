@@ -25,6 +25,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -77,7 +78,7 @@ class ArchivalCertificatesTest extends TestCase {
 
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['find', 'findAll', 'update'])
+			->onlyMethods(['find', 'findAllListed', 'update'])
 			->getMock();
 		$objectMapper->method('find')->willReturnCallback(
 			function (string|int $identifier): ObjectEntity {
@@ -88,8 +89,9 @@ class ArchivalCertificatesTest extends TestCase {
 				return $this->objects[(string)$identifier];
 			}
 		);
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (?int $limit = null, ?int $offset = null, ?array $filters = null): array {
+		$objectMapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$filters = $request->query->filters;
 				$statuses = ($filters['status'] ?? null);
 				return array_values(
 					array_filter(

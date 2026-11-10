@@ -38,6 +38,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
@@ -600,7 +602,7 @@ class SelectielijstImportService implements SelectielijstImportServiceInterface 
 		}
 
 		try {
-			return $this->storage->catalog->tables()->findAll(limit: self::MAX_ROWS, register: $table->register, schema: $table->schema);
+			return $this->storage->catalog->tables()->findAllListed(request: new MagicListRequest(table: $table, query: new ListQuery(limit: self::MAX_ROWS)));
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectielijstImportService] Could not read the selectielijst: ' . $e->getMessage());
 			return [];

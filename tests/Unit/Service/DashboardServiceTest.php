@@ -424,7 +424,7 @@ class DashboardServiceTest extends TestCase {
 	}
 
 	public function testRecalculateAllSizesWithFilters(): void {
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
 		$result = $this->service->sizes()->recalculateAllSizes(1, 2);
@@ -444,7 +444,7 @@ class DashboardServiceTest extends TestCase {
 	}
 
 	public function testRecalculateAllSizesThrowsWhenLogRecalcFails(): void {
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 		$this->auditTrailMapper
 			->method('findAll')
 			->willThrowException(new Exception('DB error'));
@@ -701,7 +701,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testCalculateReturnsFullResponseNoFilters(): void {
 		// No register/schema means fetchRegister/fetchSchema return null.
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
 		$result = $this->service->sizes()->calculate();
@@ -723,7 +723,7 @@ class DashboardServiceTest extends TestCase {
 			->with(1)
 			->willReturn($register);
 
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
 		$result = $this->service->sizes()->calculate(1);
@@ -748,7 +748,7 @@ class DashboardServiceTest extends TestCase {
 			->with(10)
 			->willReturn($schema);
 
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
 		$result = $this->service->sizes()->calculate(1, 10);
@@ -859,7 +859,7 @@ class DashboardServiceTest extends TestCase {
 			->with(10)
 			->willReturn($schema);
 
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 		$this->auditTrailMapper->method('findAll')->willReturn([]);
 
 		// No register means fetchSchema won't check in_array.

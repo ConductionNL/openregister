@@ -19,6 +19,8 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -239,7 +241,7 @@ class RelationHandler {
 
 		try {
 			// Use the mapper's optimized bulk fetch.
-			return $this->stores->objects->findAll(ids: $relationshipIds, includeDeleted: false);
+			return $this->stores->objects->findAllListed(request: new MagicListRequest(table: null, query: ListQuery::unbounded(), ids: $relationshipIds));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to load relationship chunk',

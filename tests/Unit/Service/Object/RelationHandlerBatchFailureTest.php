@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -43,15 +44,10 @@ class RelationHandlerBatchFailureTest extends TestCase {
 	public function testAFailingBatchIsLoggedAndSkipped(): void {
 		$ids = array_map(static fn (int $i): string => 'u' . $i, range(1, 120));
 
-		$position = 0;
-		foreach ((new \ReflectionMethod(MagicMapperInterface::class, 'findAll'))->getParameters() as $i => $param) {
-			$position = $param->getName() === 'ids' ? $i : $position;
-		}
-
 		$mapper = $this->createMock(MagicMapperInterface::class);
-		$mapper->method('findAll')->willReturnCallback(
-			function (...$args) use ($position): array {
-				$batch = $args[$position];
+		$mapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$batch = $request->ids;
 				if (in_array('u51', $batch, true) === true) {
 					$broken = $this->createMock(ObjectEntity::class);
 					$broken->method('getUuid')->willThrowException(new RuntimeException('corrupt row'));
