@@ -224,18 +224,15 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 *
 	 * The trigger written on the block is `recompute`, with who asked and why.
 	 *
-	 * @param ObjectEntity $object The record.
-	 * @param Schema       $schema Its schema, holding the archive block.
-	 * @param string|null  $actor  Who asked.
-	 * @param string|null  $reason Why they asked.
+	 * @param NominationRecompute $request The record, its schema (holding the archive block), who asked and why.
 	 *
 	 * @return array<string, mixed> The nomination block that was written.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function recompute(ObjectEntity $object, Schema $schema, ?string $actor, ?string $reason): array {
-		$cause = new NominationCause(trigger: 'recompute', actor: $actor, reason: $reason);
-		return $this->nominateFor(run: new NominationRun(object: $object, schema: $schema), cause: $cause);
+	public function recompute(NominationRecompute $request): array {
+		$cause = new NominationCause(trigger: 'recompute', actor: $request->actor, reason: $request->reason);
+		return $this->nominateFor(run: new NominationRun(object: $request->object, schema: $request->schema), cause: $cause);
 	}//end recompute()
 
 	/**
@@ -339,7 +336,8 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		// row 48). The same resolver decides it at creation, so a record is
 		// created and nominated under one category.
 		$archive = $run->archive;
-		$classification = (new ClassificationOverride())->effective(archive: $archive, data: ($run->object->getObject() ?? []));
+		$declaration = new CategoryDeclaration(archive: $archive);
+		$classification = (new ClassificationOverride())->effective(declaration: $declaration, data: ($run->object->getObject() ?? []));
 		$run->classification = $classification;
 
 		$found = $this->fromSelectionList(classification: $classification);

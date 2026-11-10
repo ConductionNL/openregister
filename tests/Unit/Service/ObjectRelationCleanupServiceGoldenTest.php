@@ -123,7 +123,7 @@ class ObjectRelationCleanupServiceGoldenTest extends TestCase {
 			$this->recorder(NoteService::class, 'notes', ['deleteNotesForObject' => null]),
 			$this->recorder(TaskService::class, 'tasks', ['getTasksForObject' => $tasks, 'deleteTask' => null]),
 			new ObjectRelationCleanupLinks(
-				$this->recorder(EmailService::class, 'emails', ['deleteLinksForObject' => 2, 'getEmailsForObject' => [1, 2]]),
+				$this->recorder(EmailService::class, 'emails', ['deleteLinksForObject' => 2, 'getEmailsForObject' => ['results' => [1, 2, 3], 'total' => 3]]),
 				$this->recorder(CalendarEventService::class, 'events', ['unlinkEventsForObject' => null, 'getEventsForObject' => [1]]),
 				$this->recorder(ContactService::class, 'contacts', ['deleteLinksForObject' => null, 'getContactsForObject' => [1, 2, 3]]),
 				$this->recorder(DeckCardService::class, 'deck', ['deleteLinksForObject' => 0, 'getCardsForObject' => [1, 2, 3, 4]])
@@ -225,17 +225,18 @@ class ObjectRelationCleanupServiceGoldenTest extends TestCase {
 	}//end testDestroyTimelineLinksLeavesNotesAndTasks()
 
 	/**
-	 * The count sums the four link sources; a failing one contributes nothing and is logged.
+	 * The count sums the four link sources, the emails from their results
+	 * envelope; a failing one contributes nothing and is logged.
 	 *
 	 * @return void
 	 */
 	public function testCountTimelineLinks(): void {
 		$service = $this->build();
-		$this->assertSame(10, $service->countTimelineLinks('u5'));
+		$this->assertSame(11, $service->countTimelineLinks('u5'));
 
 		$this->failing = ['contacts.getContactsForObject' => true];
 		$this->lines = [];
-		$this->assertSame(7, $service->countTimelineLinks('u5'));
+		$this->assertSame(8, $service->countTimelineLinks('u5'));
 		$this->assertSame(['warning: Could not count contacts for object u5: contacts getContactsForObject broke'], $this->lines);
 		$this->assertNotContains('notes.deleteNotesForObject(u5)', $this->calls);
 	}//end testCountTimelineLinks()
