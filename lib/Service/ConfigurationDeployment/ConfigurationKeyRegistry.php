@@ -225,15 +225,7 @@ class ConfigurationKeyRegistry implements ConfigurationKeyRegistryInterface {
 	 */
 	public function valueRefusalFor(string $configKey, mixed $value): ?string {
 		$type = $this->typeOf(configKey: $configKey);
-		$fits = match ($type) {
-			self::TYPE_OBJECT => is_array($value),
-			self::TYPE_STRING => is_string($value),
-			self::TYPE_BOOLEAN => is_bool($value),
-			self::TYPE_INTEGER => is_int($value),
-			default => true,
-		};
-
-		if ($fits === false) {
+		if (self::fitsType(type: $type, value: $value) === false) {
 			return sprintf(
 				'"%s" is declared as %s and the value is %s',
 				$configKey,
@@ -249,6 +241,25 @@ class ConfigurationKeyRegistry implements ConfigurationKeyRegistryInterface {
 		return null;
 
 	}//end valueRefusalFor()
+
+	/**
+	 * Whether a value has the shape a declared type asks for; any shape fits an open type.
+	 *
+	 * @param string $type  The declared type.
+	 * @param mixed  $value The value.
+	 *
+	 * @return bool True when it fits.
+	 */
+	private static function fitsType(string $type, mixed $value): bool {
+		return match ($type) {
+			self::TYPE_OBJECT => is_array($value),
+			self::TYPE_STRING => is_string($value),
+			self::TYPE_BOOLEAN => is_bool($value),
+			self::TYPE_INTEGER => is_int($value),
+			default => true,
+		};
+
+	}//end fitsType()
 
 	/**
 	 * The vocabulary a caller may draft against.
