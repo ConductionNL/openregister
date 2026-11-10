@@ -27,6 +27,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\FileTransfer;
 
 class FilesControllerFileActionsTest extends TestCase {
 
@@ -128,7 +129,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$file->method('getName')->willReturn('new-name.pdf');
 
 		$this->request->method('getParams')->willReturn(['name' => 'new-name.pdf']);
-		$this->fileService->method('renameFile')->willReturn($file);
+		$this->fileService->method('renameAttachedFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'new-name.pdf']);
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -145,7 +146,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$this->request->method('getParams')->willReturn(['name' => 'existing.pdf']);
-		$this->fileService->method('renameFile')
+		$this->fileService->method('renameAttachedFile')
 			->willThrowException(new Exception('A file with name "existing.pdf" already exists for this object'));
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -161,7 +162,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$this->request->method('getParams')->willReturn(['name' => 'file<>.pdf']);
-		$this->fileService->method('renameFile')
+		$this->fileService->method('renameAttachedFile')
 			->willThrowException(new Exception('File name contains invalid characters'));
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -637,8 +638,8 @@ class FilesControllerFileActionsTest extends TestCase {
 		// moveFile is the integration point that does copy+delete; assert
 		// it is called exactly once with the expected source/target.
 		$this->fileService->expects($this->once())
-			->method('moveFile')
-			->with($sourceObject, 42, $targetObject)
+			->method('moveAttachedFile')
+			->with(new FileTransfer($sourceObject, 42, $targetObject))
 			->willReturn($movedFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'moved.pdf']);
 
@@ -666,7 +667,7 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 
-		$this->fileService->method('moveFile')
+		$this->fileService->method('moveAttachedFile')
 			->willThrowException(new Exception('File is locked by user-2'));
 
 		$response = $this->controller->move('reg', 'sch', 'source-uuid', 42);
@@ -752,7 +753,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['labels' => ['x']]);
 
 		// The file mutation must never be reached on the denied path.
-		$this->fileService->expects($this->never())->method('updateFile');
+		$this->fileService->expects($this->never())->method('overwriteFile');
 
 		$response = $this->controller->updateLabels('reg', 'sch', 'abc-123', 42);
 

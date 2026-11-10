@@ -33,6 +33,8 @@ use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectExport;
+use OCA\OpenRegister\Controller\Support\ObjectCountScope;
+use OCA\OpenRegister\Controller\Support\ObjectDeleteRoute;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\ObjectCreate;
 use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
@@ -1964,8 +1966,8 @@ class ObjectsController extends Controller {
 		$params = $this->request->getParams();
 		$entries = ($params['counts'] ?? null);
 
-		// Missing counts key → empty success (spec: empty or missing → { results: [] }).
-		if ($entries === null) {
+		// Missing counts key or empty array → empty success (spec: empty or missing → { results: [] }).
+		if ($entries === null || $entries === []) {
 			return new JSONResponse(data: ['results' => []]);
 		}
 
@@ -1977,58 +1979,83 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		// Empty array → empty success.
-		if ($entries === []) {
-			return new JSONResponse(data: ['results' => []]);
+		// Validate every entry up-front so a malformed batch is rejected
+		// wholesale rather than silently skipping entries.
+		$malformed = self::malformedCountEntry(entries: $entries);
+		if ($malformed !== null) {
+			return new JSONResponse(
+				data: [
+					'error' => 'Malformed counts entry at index ' . $malformed
+						. ': register and schema are required scalars and filter must be an object',
+				],
+				statusCode: 400
+			);
 		}
 
 		// Derive the RBAC + multitenancy posture from the caller's admin
 		// status — identical to the collection read (index() lines 1160-1162).
 		// Never honour request-supplied rbac/multi flags on a data endpoint.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = ($isAdmin === false);
-		$multi = ($isAdmin === false);
+		$scoped = ($this->isCurrentUserAdmin() === false);
+		$scope = new ObjectCountScope(rbac: $scoped, multi: $scoped, objectService: $objectService);
 
-		// Validate every entry up-front so a malformed batch is rejected
-		// wholesale rather than silently skipping entries.
+		return new JSONResponse(data: ['results' => $this->countResults(entries: $entries, scope: $scope)]);
+	}//end counts()
+
+	/**
+	 * The index of the first malformed counts entry.
+	 *
+	 * @param array $entries The counts entries.
+	 *
+	 * @return int|string|null The index, or null when every entry is well formed.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function malformedCountEntry(array $entries): int|string|null {
 		foreach ($entries as $index => $entry) {
-			if (is_array($entry) === false
-				|| isset($entry['register']) === false
-				|| isset($entry['schema']) === false
-				|| is_scalar($entry['register']) === false
-				|| is_scalar($entry['schema']) === false
-				|| (isset($entry['filter']) === true && is_array($entry['filter']) === false)
-			) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Malformed counts entry at index ' . $index
-							. ': register and schema are required scalars and filter must be an object',
-					],
-					statusCode: 400
-				);
+			if (self::isCountEntry(entry: $entry) === false) {
+				return $index;
 			}
 		}
 
-		// Dedupe identical (register, schema, filter) triples: run one
-		// aggregate per distinct triple, but return one result per input
-		// entry in request order (duplicates share the deduped count).
+		return null;
+	}//end malformedCountEntry()
+
+	/**
+	 * Whether a counts entry names a scalar register and schema, and an object as its filter.
+	 *
+	 * @param mixed $entry The counts entry.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function isCountEntry(mixed $entry): bool {
+		return is_array($entry) === true
+			&& is_scalar($entry['register'] ?? null) === true
+			&& is_scalar($entry['schema'] ?? null) === true
+			&& is_array($entry['filter'] ?? []) === true;
+	}//end isCountEntry()
+
+	/**
+	 * The count of every entry in request order.
+	 *
+	 * Runs one aggregate per distinct (register, schema, filter) triple;
+	 * duplicates share the deduped count.
+	 *
+	 * @param array            $entries The counts entries.
+	 * @param ObjectCountScope $scope   The scoping of the counts.
+	 *
+	 * @return array The results.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function countResults(array $entries, ObjectCountScope $scope): array {
 		$cache = [];
 		$results = [];
 		foreach ($entries as $entry) {
-			$register = (string)$entry['register'];
-			$schema = (string)$entry['schema'];
-			$filter = ($entry['filter'] ?? []);
-
-			$cacheKey = $register . '|' . $schema . '|' . json_encode($filter);
+			$cacheKey = $entry['register'] . '|' . $entry['schema'] . '|' . json_encode($entry['filter'] ?? []);
 			if (array_key_exists($cacheKey, $cache) === false) {
-				$cache[$cacheKey] = $this->countPairScoped(
-					register: $register,
-					schema: $schema,
-					filter: $filter,
-					rbac: $rbac,
-					multi: $multi,
-					objectService: $objectService
-				);
+				$cache[$cacheKey] = $this->countPairScoped(entry: $entry, scope: $scope);
 			}
 
 			$results[] = [
@@ -2036,10 +2063,10 @@ class ObjectsController extends Controller {
 				'schema' => $entry['schema'],
 				'count' => $cache[$cacheKey],
 			];
-		}//end foreach
+		}
 
-		return new JSONResponse(data: ['results' => $results]);
-	}//end counts()
+		return $results;
+	}//end countResults()
 
 	/**
 	 * Produce a single (register, schema, filter) object count with the exact
@@ -2059,84 +2086,119 @@ class ObjectsController extends Controller {
 	 * Returns null when the pair cannot be resolved, so a restricted or
 	 * unknown pair is withheld without disclosing which.
 	 *
-	 * @param string $register Register id or slug.
-	 * @param string $schema Schema id or slug.
-	 * @param array $filter Object-property filters for this entry.
-	 * @param bool $rbac Whether to apply RBAC (parity with the list read).
-	 * @param bool $multi Whether to apply multitenancy (parity with the list read).
-	 * @param ObjectOperationsInterface $objectService The object service (DI).
+	 * @param array            $entry The counts entry: register, schema and filter.
+	 * @param ObjectCountScope $scope The scoping of the count.
 	 *
 	 * @return int|null The scoped count, or null when the pair is withheld.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function countPairScoped(
-		string $register,
-		string $schema,
-		array $filter,
-		bool $rbac,
-		bool $multi,
-		ObjectOperationsInterface $objectService,
-	): ?int {
+	private function countPairScoped(array $entry, ObjectCountScope $scope): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
 			$resolved = $this->resolveRegisterSchemaIds(
-				register: $register,
-				schema: $schema,
-				objectService: $objectService
+				register: (string)$entry['register'],
+				schema: (string)$entry['schema'],
+				objectService: $scope->objectService
 			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			// Withhold: never disclose whether the pair is missing or restricted.
 			return null;
 		}
 
-		$registerEntity = ($resolved['registerEntity'] ?? null);
-		$schemaEntity = ($resolved['schemaEntity'] ?? null);
-
 		// Build the search query from the per-entry filter using the same
 		// builder index() uses, scoped to the resolved numeric ids.
-		$query = $objectService->buildSearchQuery(
-			requestParams: $filter,
+		$query = $scope->objectService->buildSearchQuery(
+			requestParams: ($entry['filter'] ?? []),
 			register: $resolved['register'],
 			schema: $resolved['schema']
 		);
 
-		// Magic-mapped parity: count via the magic table with RBAC /
-		// multitenancy threaded into the query (index() lines 1194-1198, 1279-1283).
-		if ($registerEntity !== null && $schemaEntity !== null) {
-			$isMagicMapped = $registerEntity->isMagicMappingEnabledForSchema(
-				schemaId: $schemaEntity->getId(),
-				schemaSlug: $schemaEntity->getSlug()
-			);
+		if ($this->countsInMagicTable(resolved: $resolved) === true) {
+			return $this->magicTableCount(query: self::scopedCountQuery(query: $query, scope: $scope), resolved: $resolved);
+		}
 
-			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
-				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+		return self::paginatedCount(query: $query, scope: $scope);
+	}//end countPairScoped()
 
-				$countQuery = $query;
-				unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
-				$countQuery['_rbac'] = $rbac;
-				$countQuery['_multitenancy'] = $multi;
-				$countQuery['_multitenancy_explicit'] = false;
+	/**
+	 * Whether a resolved pair is counted through its magic table.
+	 *
+	 * @param array $resolved The resolved register and schema.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function countsInMagicTable(array $resolved): bool {
+		$register = ($resolved['registerEntity'] ?? null);
+		$schema = ($resolved['schemaEntity'] ?? null);
+		if ($register === null || $schema === null) {
+			return false;
+		}
 
-				return (int)$magicMapper->countObjectsInRegisterSchemaTable(
-					query: $countQuery,
-					register: $registerEntity,
-					schema: $schemaEntity
-				);
-			}
-		}//end if
+		return $register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true
+			&& $schema->getObjectSource() === null;
+	}//end countsInMagicTable()
 
-		// Database-backed parity: read the paginated total at _limit=1, which
-		// is produced by the same RBAC/multitenancy-scoped query the
-		// collection read runs (index() lines 1443-1448).
+	/**
+	 * A count query with RBAC and multitenancy threaded in, without paging (index() lines 1194-1198, 1279-1283).
+	 *
+	 * @param array            $query The search query.
+	 * @param ObjectCountScope $scope The scoping of the count.
+	 *
+	 * @return array The count query.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function scopedCountQuery(array $query, ObjectCountScope $scope): array {
+		unset($query['_limit'], $query['_offset'], $query['_page']);
+		$query['_rbac'] = $scope->rbac;
+		$query['_multitenancy'] = $scope->multi;
+		$query['_multitenancy_explicit'] = false;
+
+		return $query;
+	}//end scopedCountQuery()
+
+	/**
+	 * Count a pair through its magic table.
+	 *
+	 * @param array $query    The scoped count query.
+	 * @param array $resolved The resolved register and schema.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function magicTableCount(array $query, array $resolved): int {
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+
+		return (int)$magicMapper->countObjectsInRegisterSchemaTable(
+			query: $query,
+			register: $resolved['registerEntity'],
+			schema: $resolved['schemaEntity']
+		);
+	}//end magicTableCount()
+
+	/**
+	 * The paginated total at _limit=1, produced by the same scoped query the collection read runs.
+	 *
+	 * @param array            $query The search query.
+	 * @param ObjectCountScope $scope The scoping of the count.
+	 *
+	 * @return int|null The total, or null when it is withheld.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function paginatedCount(array $query, ObjectCountScope $scope): ?int {
 		$query['_limit'] = 1;
 		unset($query['_offset'], $query['_page']);
 
 		try {
-			$result = $objectService->searchObjectsPaginated(
+			$result = $scope->objectService->searchObjectsPaginated(
 				query: $query,
-				_rbac: $rbac,
-				_multitenancy: $multi,
+				_rbac: $scope->rbac,
+				_multitenancy: $scope->multi,
 				deleted: false
 			);
 		} catch (NotAuthorizedException $exception) {
@@ -2145,13 +2207,12 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		$total = ($result['total'] ?? null);
-		if ($total === null) {
+		if (($result['total'] ?? null) === null) {
 			return null;
 		}
 
-		return (int)$total;
-	}//end countPairScoped()
+		return (int)$result['total'];
+	}//end paginatedCount()
 
 	/**
 	 * Geo-search endpoint — POST /api/objects/{register}/{schema}/geo-search.
@@ -4192,123 +4253,209 @@ class ObjectsController extends Controller {
 	public function destroy(string $id, string $register, string $schema, ObjectHandlerAccessInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.destroy.in');
 
+		$route = new ObjectDeleteRoute(id: $id, register: $register, schema: $schema, objectService: $objectService);
 		try {
 			// Set the register and schema context for ObjectService.
 			$objectService->setRegister(register: $register);
 			$objectService->setSchema(schema: $schema);
 
-			// Determine RBAC and multitenancy settings based on admin status.
-			$isAdmin = $this->isCurrentUserAdmin();
-			$rbac = !$isAdmin;
-			// If admin, _rbac: disable RBAC.
-			$multi = !$isAdmin;
-			// If admin, _multitenancy: disable multitenancy.
-			// Use ObjectService to delete the object (includes RBAC permission checks,
-			// persist: audit trail, silent: and soft delete).
-			//
-			// Pass the scope EXPLICITLY. deleteObject() decides whether to scope
-			// its lookup from its own arguments ($hasScope), not from the
-			// register/schema set on the service above — so omitting them here
-			// resolved the UUID by UNION-ing every magic table on the instance.
-			// It also meant the URL's scope was never enforced: an object could
-			// be deleted through a register/schema it does not belong to.
-			$deleteResult = $objectService->deleteObject(
-				uuid: $id,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $multi
-			);
-
-			if ($deleteResult === false) {
-				// If delete operation failed, return error.
-				return new JSONResponse(data: ['error' => 'Failed to delete object'], statusCode: 500);
-			}
-
-			// Return 204 No Content for successful delete (REST convention).
-			return new JSONResponse(data: null, statusCode: 204);
-		} catch (ArchivalImmutableException $exception) {
-			// 🔴 THE REFUSAL HAS A WIRE CONTRACT AND THIS ENDPOINT WAS NOT
-			// HONOURING IT. `ArchivalImmutableException::toResponseBody()`
-			// exists and DeletedController and BulkController both use it, but
-			// this catch was missing here, so a refusal on the endpoint clients
-			// actually call fell through to the generic handler and answered
-			// `{"error": "SCHEMA_ARCHIVAL_IMMUTABLE: Schema ... declares ..."}`
-			// as one flattened string. A client following the spec and testing
-			// `body.error === 'SCHEMA_ARCHIVAL_IMMUTABLE'` matched nothing, and
-			// `schema`, `operation` and `hint` were not there to read at all.
-			//
-			// 403, not the trait's 405: the spec says 403 and the route already
-			// answered 403 through the generic path, so the status stays put
-			// and only the body becomes what was promised.
-			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
-		} catch (AppendOnlyException $exception) {
-			// Reject delete on append-only schema with HTTP 405.
-			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
-		} catch (ReferentialIntegrityException $exception) {
-			if ($this->isCurrentUserAdmin() === false) {
-				$readable = $objectService->readableDeletionAnalysis(analysis: $exception->getAnalysis());
-				$exception = new ReferentialIntegrityException(analysis: $readable);
-			}
-
-			return new JSONResponse(
-				data: $exception->toResponseBody(),
-				statusCode: 409
-			);
-		} catch (HookStoppedException $exception) {
-			// A guard on the deleting event may name its own status. A refusal
-			// because another row still references this one is a conflict, not
-			// a malformed body, and 422 would tell the caller to fix a payload
-			// that has nothing wrong with it. Only a hook that says so gets a
-			// different status; everything else keeps the 422 it had.
-			$errors = $exception->getErrors();
-			$statusCode = 422;
-			if (isset($errors['status']) === true && is_int($errors['status']) === true) {
-				$statusCode = $errors['status'];
-			}
-
-			return new JSONResponse(
-				data: ['error' => $exception->getMessage(), 'errors' => $errors],
-				statusCode: $statusCode
-			);
-		} catch (DoesNotExistException $exception) {
-			// Absent objects (native or external) are a uniform 404.
-			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $exception) {
-			// Handle all exceptions (including RBAC permission errors and object not found).
-			// Sanitized external-write failures carry their own 4xx status
-			// (dbal-virtual-registers-crud) — never flatten them to 403.
-			if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
-				return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
-			}
-
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
-		} catch (\Throwable $throwable) {
-			// Safety net for fatal errors (\Error/\TypeError) that do NOT extend
-			// \Exception and would otherwise escape as an HTML 500 fatal-error page
-			// to API clients. Log the full trace and return a clean JSON 500 so the
-			// contract is always machine-readable. \Throwable MUST be caught last so
-			// the specific catches above keep their dedicated status codes.
-			$this->logger->error(
-				message: '[ObjectsController] Unexpected fatal error while deleting object',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register' => $register,
-					'schema' => $schema,
-					'id' => $id,
-					'exception' => $throwable->getMessage(),
-					'trace' => $throwable->getTraceAsString(),
-				]
-			);
-			return new JSONResponse(
-				data: ['error' => 'An unexpected error occurred while deleting the object'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+			return $this->deleteInScope(route: $route);
+		} catch (\Throwable $failure) {
+			return $this->deleteFailureResponse(failure: $failure, route: $route);
+		}
 	}//end destroy()
+
+	/**
+	 * Delete the object on a route, in the scope the caller's admin status gives.
+	 *
+	 * @param ObjectDeleteRoute $route The delete route.
+	 *
+	 * @return JSONResponse 204, or 500 when the delete did not happen.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function deleteInScope(ObjectDeleteRoute $route): JSONResponse {
+		// Determine RBAC and multitenancy settings based on admin status.
+		$scoped = ($this->isCurrentUserAdmin() === false);
+		// Use ObjectService to delete the object (includes RBAC permission checks,
+		// persist: audit trail, silent: and soft delete).
+		//
+		// Pass the scope EXPLICITLY. deleteObject() decides whether to scope
+		// its lookup from its own arguments ($hasScope), not from the
+		// register/schema set on the service above — so omitting them here
+		// resolved the UUID by UNION-ing every magic table on the instance.
+		// It also meant the URL's scope was never enforced: an object could
+		// be deleted through a register/schema it does not belong to.
+		$deleteResult = $route->objectService->deleteObject(
+			uuid: $route->id,
+			register: $route->register,
+			schema: $route->schema,
+			_rbac: $scoped,
+			_multitenancy: $scoped
+		);
+
+		if ($deleteResult === false) {
+			// If delete operation failed, return error.
+			return new JSONResponse(data: ['error' => 'Failed to delete object'], statusCode: 500);
+		}
+
+		// Return 204 No Content for successful delete (REST convention).
+		return new JSONResponse(data: null, statusCode: 204);
+	}//end deleteInScope()
+
+	/**
+	 * The answer to a delete that threw; the order keeps the most specific refusal first.
+	 *
+	 * @param \Throwable        $failure The failure.
+	 * @param ObjectDeleteRoute $route   The delete route.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function deleteFailureResponse(\Throwable $failure, ObjectDeleteRoute $route): JSONResponse {
+		return match (true) {
+			$failure instanceof ArchivalImmutableException => self::archivalDeleteRefusal(exception: $failure),
+			// Reject delete on append-only schema with HTTP 405.
+			$failure instanceof AppendOnlyException => new JSONResponse(data: $failure->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
+			$failure instanceof ReferentialIntegrityException => $this->integrityDeleteRefusal(exception: $failure, objectService: $route->objectService),
+			$failure instanceof HookStoppedException => self::hookDeleteRefusal(exception: $failure),
+			// Absent objects (native or external) are a uniform 404.
+			$failure instanceof DoesNotExistException => new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404),
+			$failure instanceof MultipleObjectsReturnedException => $this->ambiguousIdentifierResponse(id: $route->id),
+			$failure instanceof \Exception => self::deleteErrorResponse(exception: $failure),
+			default => $this->unexpectedDeleteResponse(failure: $failure, route: $route),
+		};
+	}//end deleteFailureResponse()
+
+	/**
+	 * The answer to a delete an archival schema refuses.
+	 *
+	 * @param ArchivalImmutableException $exception The refusal.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function archivalDeleteRefusal(ArchivalImmutableException $exception): JSONResponse {
+		// 🔴 THE REFUSAL HAS A WIRE CONTRACT AND THIS ENDPOINT WAS NOT
+		// HONOURING IT. `ArchivalImmutableException::toResponseBody()`
+		// exists and DeletedController and BulkController both use it, but
+		// this catch was missing here, so a refusal on the endpoint clients
+		// actually call fell through to the generic handler and answered
+		// `{"error": "SCHEMA_ARCHIVAL_IMMUTABLE: Schema ... declares ..."}`
+		// as one flattened string. A client following the spec and testing
+		// `body.error === 'SCHEMA_ARCHIVAL_IMMUTABLE'` matched nothing, and
+		// `schema`, `operation` and `hint` were not there to read at all.
+		//
+		// 403, not the trait's 405: the spec says 403 and the route already
+		// answered 403 through the generic path, so the status stays put
+		// and only the body becomes what was promised.
+		return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
+	}//end archivalDeleteRefusal()
+
+	/**
+	 * The answer to a delete referential integrity refuses; a non-admin hears only what they may read.
+	 *
+	 * @param ReferentialIntegrityException $exception     The refusal.
+	 * @param ObjectHandlerAccessInterface  $objectService The object service.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function integrityDeleteRefusal(ReferentialIntegrityException $exception, ObjectHandlerAccessInterface $objectService): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			$readable = $objectService->readableDeletionAnalysis(analysis: $exception->getAnalysis());
+			$exception = new ReferentialIntegrityException(analysis: $readable);
+		}
+
+		return new JSONResponse(
+			data: $exception->toResponseBody(),
+			statusCode: 409
+		);
+	}//end integrityDeleteRefusal()
+
+	/**
+	 * The answer to a delete a hook stopped.
+	 *
+	 * @param HookStoppedException $exception The refusal.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function hookDeleteRefusal(HookStoppedException $exception): JSONResponse {
+		// A guard on the deleting event may name its own status. A refusal
+		// because another row still references this one is a conflict, not
+		// a malformed body, and 422 would tell the caller to fix a payload
+		// that has nothing wrong with it. Only a hook that says so gets a
+		// different status; everything else keeps the 422 it had.
+		$errors = $exception->getErrors();
+		$statusCode = 422;
+		if (isset($errors['status']) === true && is_int($errors['status']) === true) {
+			$statusCode = $errors['status'];
+		}
+
+		return new JSONResponse(
+			data: ['error' => $exception->getMessage(), 'errors' => $errors],
+			statusCode: $statusCode
+		);
+	}//end hookDeleteRefusal()
+
+	/**
+	 * The answer to any other delete exception.
+	 *
+	 * @param \Exception $exception The exception.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function deleteErrorResponse(\Exception $exception): JSONResponse {
+		// Handle all exceptions (including RBAC permission errors and object not found).
+		// Sanitized external-write failures carry their own 4xx status
+		// (dbal-virtual-registers-crud) — never flatten them to 403.
+		if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+		}
+
+		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+	}//end deleteErrorResponse()
+
+	/**
+	 * The answer to a fatal error during a delete.
+	 *
+	 * @param \Throwable        $failure The failure.
+	 * @param ObjectDeleteRoute $route   The delete route.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function unexpectedDeleteResponse(\Throwable $failure, ObjectDeleteRoute $route): JSONResponse {
+		// Safety net for fatal errors (\Error/\TypeError) that do NOT extend
+		// \Exception and would otherwise escape as an HTML 500 fatal-error page
+		// to API clients. Log the full trace and return a clean JSON 500 so the
+		// contract is always machine-readable. \Throwable MUST be caught last so
+		// the specific catches above keep their dedicated status codes.
+		$this->logger->error(
+			message: '[ObjectsController] Unexpected fatal error while deleting object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'register' => $route->register,
+				'schema' => $route->schema,
+				'id' => $route->id,
+				'exception' => $failure->getMessage(),
+				'trace' => $failure->getTraceAsString(),
+			]
+		);
+		return new JSONResponse(
+			data: ['error' => 'An unexpected error occurred while deleting the object'],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unexpectedDeleteResponse()
 
 	/**
 	 * Check if an object can be deleted (pre-flight referential integrity analysis).
@@ -4337,28 +4484,9 @@ class ObjectsController extends Controller {
 			$objectService->setRegister(register: $register);
 			$objectService->setSchema(schema: $schema);
 
-			// Read in the caller's own scope, as the delete itself reads it: an
-			// object the caller may not read is a 404, not an analysis of what
-			// refers to it.
-			$scoped = ($this->isCurrentUserAdmin() === false);
-			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
-				id: $id,
-				register: $register,
-				schema: $schema,
-				_rbac: $scoped,
-				_multitenancy: $scoped
-			));
-			if ($objectEntity === null) {
-				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-			}
-
-			$deleteHandler = $objectService->getDeleteHandler();
-			$analysis = $deleteHandler->canDelete($objectEntity);
-			if ($scoped === true) {
-				$analysis = $objectService->readableDeletionAnalysis(analysis: $analysis);
-			}
-
-			return new JSONResponse(data: $analysis->toArray(), statusCode: 200);
+			return $this->deletionAnalysisResponse(
+				route: new ObjectDeleteRoute(id: $id, register: $register, schema: $schema, objectService: $objectService)
+			);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $exception) {
@@ -4367,6 +4495,41 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
 		}//end try
 	}//end canDelete()
+
+	/**
+	 * What a delete of the object on a route would do, as far as the caller may read.
+	 *
+	 * @param ObjectDeleteRoute $route The delete route.
+	 *
+	 * @return JSONResponse The analysis, or 404.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function deletionAnalysisResponse(ObjectDeleteRoute $route): JSONResponse {
+		$objectService = $route->objectService;
+
+		// Read in the caller's own scope, as the delete itself reads it: an
+		// object the caller may not read is a 404, not an analysis of what
+		// refers to it.
+		$scoped = ($this->isCurrentUserAdmin() === false);
+		$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
+			id: $route->id,
+			register: $route->register,
+			schema: $route->schema,
+			_rbac: $scoped,
+			_multitenancy: $scoped
+		));
+		if ($objectEntity === null) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$analysis = $objectService->getDeleteHandler()->canDelete($objectEntity);
+		if ($scoped === true) {
+			$analysis = $objectService->readableDeletionAnalysis(analysis: $analysis);
+		}
+
+		return new JSONResponse(data: $analysis->toArray(), statusCode: 200);
+	}//end deletionAnalysisResponse()
 
 	/**
 	 * Retrieves call logs for a object
@@ -4402,38 +4565,7 @@ class ObjectsController extends Controller {
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
 
-		// Get request parameters for filtering.
-		$requestParams = $this->request->getParams();
-
-		// Extract specific parameters.
-		$limit = (int)($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-
-		// Determine offset value.
-		$offset = null;
-		if (isset($requestParams['_offset']) === true) {
-			$offset = (int)$requestParams['_offset'];
-		}
-
-		if (isset($requestParams['offset']) === true) {
-			$offset = (int)$requestParams['offset'];
-		}
-
-		// Determine page value.
-		$page = null;
-		if (isset($requestParams['_page']) === true) {
-			$page = (int)$requestParams['_page'];
-		}
-
-		if (isset($requestParams['page']) === true) {
-			$page = (int)$requestParams['page'];
-		}
-
-		// Build filters array.
-		$filters = [
-			'limit' => $limit,
-			'offset' => $offset,
-			'page' => $page,
-		];
+		$filters = self::contractsFilters(params: $this->request->getParams());
 
 		// Use ObjectService delegation to handler.
 		try {
@@ -4443,16 +4575,68 @@ class ObjectsController extends Controller {
 		}
 
 		// Stamp resourceUrls (deep-links) before paginating.
-		$result = $this->stampObjectUrls(result: $result);
+		return $this->contractsPage(result: $this->stampObjectUrls(result: $result), filters: $filters);
+	}//end contracts()
 
-		// Return empty paginated response.
+	/**
+	 * The paging filters of a contracts request; a plain name wins over its `_` form.
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return array{limit: int, offset: int|null, page: int|null} The filters.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function contractsFilters(array $params): array {
+		return [
+			'limit' => (self::pagingParam(params: $params, name: 'limit') ?? 20),
+			'offset' => self::pagingParam(params: $params, name: 'offset'),
+			'page' => self::pagingParam(params: $params, name: 'page'),
+		];
+	}//end contractsFilters()
+
+	/**
+	 * A paging parameter as an integer, by its plain name or its `_` form.
+	 *
+	 * @param array  $params The request parameters.
+	 * @param string $name   The plain name.
+	 *
+	 * @return int|null The value, or null when neither form is set.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function pagingParam(array $params, string $name): int|null {
+		$value = ($params[$name] ?? $params['_' . $name] ?? null);
+		if ($value === null) {
+			return null;
+		}
+
+		return (int)$value;
+	}//end pagingParam()
+
+	/**
+	 * One page of an object's contracts.
+	 *
+	 * @param array $result  The stamped contracts.
+	 * @param array $filters The paging filters.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function contractsPage(array $result, array $filters): JSONResponse {
 		return new JSONResponse(
 			data: $this->paginate(
 				results: ($result['results'] ?? []),
-				window: new ResultWindow(total: ($result['total'] ?? 0), limit: $limit, offset: $offset, page: $page)
+				window: new ResultWindow(
+					total: ($result['total'] ?? 0),
+					limit: $filters['limit'],
+					offset: $filters['offset'],
+					page: $filters['page']
+				)
 			)
 		);
-	}//end contracts()
+	}//end contractsPage()
 
 	/**
 	 * Stamp a canonical `url` (resourceUrl) onto each related-object record.
@@ -4610,9 +4794,6 @@ class ObjectsController extends Controller {
 	 *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
 	 *     array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function logs(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
@@ -4628,73 +4809,85 @@ class ObjectsController extends Controller {
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
 
-		// Try to fetch the object by ID/UUID only (no register/schema filter yet).
+		// Fetch the object by ID/UUID only (no register/schema filter yet).
+		$object = $this->historyObject(id: $id, objectService: $objectService);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		if (self::livesAt(object: $object, route: self::resolvedRoute(route: [$register, $schema], objectService: $objectService)) === false) {
+			$msg = 'Object does not belong to specified register/schema';
+			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
+		}
+
+		return $this->logsPage(id: $id, objectService: $objectService);
+	}//end logs()
+
+	/**
+	 * The object whose history an administrator asks for.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the answer when it cannot be read.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function historyObject(string $id, ObjectOperationsInterface $objectService): ObjectEntity|JSONResponse {
 		try {
 			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
-			if ($object === null) {
-				return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
-			}
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
 			return $this->historyLookupFailureResponse(failure: $e);
 		}
 
-		// Normalize and compare register.
-		$objectRegister = $object->getRegister();
-		// Could be ID or slug.
-		$objectSchema = $object->getSchema();
-		// Could be ID, schema: slug, _extend: or array/object.
-		// Normalize requested register.
-		$requestedRegister = $register;
-		$requestedSchema = $schema;
+		return ($object ?? new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404));
+	}//end historyObject()
 
-		// If objectSchema is an array/object, files: get slug and id.
-		// Initialize before conditional assignment.
-		$objectSchemaId = '';
-		$objectSchemaSlug = null;
-		if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
-			$objectSchemaId = (string)$objectSchema['id'];
-			$objectSchemaSlug = null;
-			if (isset($objectSchema['slug']) === true) {
-				$objectSchemaSlug = strtolower($objectSchema['slug']);
-			}
-		}
+	/**
+	 * Whether an object's stored register and schema are the given ones, ignoring case.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param array        $route  The register and schema to compare with.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function livesAt(ObjectEntity $object, array $route): bool {
+		return strtolower((string)$object->getRegister()) === strtolower($route[0])
+			&& strtolower((string)$object->getSchema()) === strtolower($route[1]);
+	}//end livesAt()
 
-		if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
-			$objectSchemaId = (string)$objectSchema->id;
-			$objectSchemaSlug = null;
-			if (isset($objectSchema->slug) === true) {
-				$objectSchemaSlug = strtolower($objectSchema->slug);
-			}
-		}
+	/**
+	 * The ids a route's register and schema resolved to; a part that did not resolve stays as named.
+	 *
+	 * @param array                     $route         The register and schema on the route.
+	 * @param ObjectOperationsInterface $objectService The object service, with the route set.
+	 *
+	 * @return array The register and schema.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function resolvedRoute(array $route, ObjectOperationsInterface $objectService): array {
+		return [
+			(string)($objectService->getCurrentRegisterEntity()?->getId() ?? $route[0]),
+			(string)($objectService->getCurrentSchemaEntity()?->getId() ?? $route[1]),
+		];
+	}//end resolvedRoute()
 
-		if (is_array($objectSchema) === false && is_object($objectSchema) === false) {
-			$objectSchemaId = (string)$objectSchema;
-		}
-
-		// Normalize requested schema.
-		$requestedSchemaNorm = strtolower($requestedSchema);
-		$objectSchemaIdNorm = strtolower((string)$objectSchemaId);
-		// $objectSchemaSlug is already lowercase from lines 1154/1157.
-		$objectSchemaSlugNorm = $objectSchemaSlug;
-
-		// Check schema match (by id or slug).
-		$schemaMatch = (
-			$requestedSchemaNorm === $objectSchemaIdNorm
-			|| ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
-		);
-
-		// Register normalization (string compare).
-		$objectRegisterNorm = strtolower((string)$objectRegister);
-		$reqRegisterNorm = strtolower($requestedRegister);
-		$registerMatch = ($objectRegisterNorm === $reqRegisterNorm);
-
-		if ($schemaMatch === false || $registerMatch === false) {
-			$msg = 'Object does not belong to specified register/schema';
-			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
-		}
-
+	/**
+	 * One page of an object's audit log, masked for explicit-reveal values.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The page.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function logsPage(string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		// Get config and fetch logs.
 		$config = $this->getConfig();
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
@@ -4705,17 +4898,14 @@ class ObjectsController extends Controller {
 			$logs = $trailMasker->mask(entries: $logs);
 		}
 
-		// Get total count of logs.
-		$total = count($logs);
-
 		// Return paginated results.
 		return new JSONResponse(
 			data: $this->paginate(
 				results: $logs,
-				window: new ResultWindow(total: $total, limit: $config['limit'], offset: $config['offset'], page: $config['page'])
+				window: new ResultWindow(total: count($logs), limit: $config['limit'], offset: $config['offset'], page: $config['page'])
 			)
 		);
-	}//end logs()
+	}//end logsPage()
 
 	/**
 	 * One object's history for a non-admin, when they may read the object.
@@ -4736,9 +4926,7 @@ class ObjectsController extends Controller {
 
 		try {
 			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
-				register: (string)$ref->register,
-				schema: (string)$ref->schema,
-				id: $ref->id,
+				ref: $ref,
 				params: [
 					'limit' => $config['limit'],
 					'offset' => $config['offset'],

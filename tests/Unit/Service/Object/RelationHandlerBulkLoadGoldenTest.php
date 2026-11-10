@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -56,9 +56,8 @@ class RelationHandlerBulkLoadGoldenTest extends TestCase {
 
 	private function handler(array &$calls): RelationHandler {
 		$mapper = $this->createMock(MagicMapperInterface::class);
-		$mapper->method('findAllListed')->willReturnCallback(function (MagicListRequest $request) use (&$calls) {
-			$ids = ($request->ids ?? []);
-			$calls[] = ['findAll', count($ids), $ids[0] ?? null];
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturnCallback(function (array $ids) use (&$calls) {
+			$calls[] = ['findMultipleAcrossAllMagicTables', count($ids), $ids[0] ?? null];
 			if (in_array('boom', $ids, true) === true) {
 				throw new RuntimeException('db');
 			}
@@ -67,9 +66,21 @@ class RelationHandlerBulkLoadGoldenTest extends TestCase {
 				$o = new ObjectEntity();
 				$o->setUuid($id);
 				$o->setId((int)substr($id, 1) + 1000);
+				$o->setRegister('1');
+				$o->setSchema('1');
 				return $o;
 			}, $ids);
 		});
+		$mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(function ($register, $schema, $limit = null, $offset = null, ?array $filters = null) {
+			return array_map(function ($id) {
+				$o = new ObjectEntity();
+				$o->setUuid($id);
+				$o->setId((int)substr($id, 1) + 1000);
+				return $o;
+			}, $filters['_ids'] ?? []);
+		});
+		$rbac = $this->createMock(RelatedRowRbacInterface::class);
+		$rbac->method('isAdmin')->willReturn(true);
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['debug', 'info', 'warning', 'error'] as $level) {
 			$logger->method($level)->willReturnCallback(function ($message, $context = []) use (&$calls, $level) {
@@ -83,6 +94,7 @@ class RelationHandlerBulkLoadGoldenTest extends TestCase {
 			$type = $param->getType()->getName();
 			$args[] = match ($type) {
 				MagicMapperInterface::class => $mapper,
+				RelatedRowRbacInterface::class => $rbac,
 				LoggerInterface::class => $logger,
 				RelationHandlerStores::class => new RelationHandlerStores(
 					objects: $mapper,
