@@ -306,50 +306,101 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			throw new Exception('Deck is not available', 503);
 		}
 
-		$userUid = $user->getUID();
+		$run = new DeckCardRun(cardService: $cardService, target: $target, card: $card, ownerUid: $user->getUID());
+		$cardId = (int)$this->writeCard(run: $run)->getId();
 
+		return $this->deckLinkMapper->insert($this->newCardLink(run: $run, cardId: $cardId));
+	}//end createAndLinkCard()
+
+	/**
+	 * Create the card in Deck and give it its description and due date.
+	 *
+	 * @param DeckCardRun $run The card creation.
+	 *
+	 * @return object The created Deck card.
+	 *
+	 * @throws Exception 500 when Deck fails to create or update the card (logged).
+	 */
+	private function writeCard(DeckCardRun $run): object {
 		try {
-			$created = $cardService->create($card->title, $card->stackId, 'plain', 0, $userUid);
-			// Deck CardService::update signature:
-			// update($id, $title, $stackId, $type, $owner, $description='', $order=0, $duedate=null, ...)
-			// The owner argument must be a string user UID.
-			$cardService->update(
-				$created->getId(),
-				$card->title,
-				$card->stackId,
-				'plain',
-				$userUid,
-				$card->descriptionFor(objectUuid: $target->objectUuid),
-				0,
-				$card->duedate()
-			);
+			$created = $run->cardService->create($run->card->title, $run->card->stackId, 'plain', 0, $run->ownerUid);
+			$this->describeCard(run: $run, created: $created);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->warning('Failed to create Deck card: ' . $e->getMessage());
 			throw new Exception('Failed to create Deck card: ' . $e->getMessage(), 500);
 		}
 
-		$cardId = (int)$created->getId();
+		return $created;
+	}//end writeCard()
 
-		// Resolve board id authoritatively from the persisted card so we
-		// don't trust the (caller-supplied) value in case the stack was
-		// moved between boards.
+	/**
+	 * Set a created card's description (with the link back to the object) and due date.
+	 *
+	 * @param DeckCardRun $run     The card creation.
+	 * @param object      $created The created Deck card.
+	 *
+	 * @return void
+	 */
+	private function describeCard(DeckCardRun $run, object $created): void {
+		// Deck CardService::update signature:
+		// update($id, $title, $stackId, $type, $owner, $description='', $order=0, $duedate=null, ...)
+		// The owner argument must be a string user UID.
+		$run->cardService->update(
+			$created->getId(),
+			$run->card->title,
+			$run->card->stackId,
+			'plain',
+			$run->ownerUid,
+			$run->card->descriptionFor(objectUuid: $run->target->objectUuid),
+			0,
+			$run->card->duedate()
+		);
+	}//end describeCard()
+
+	/**
+	 * The link row for a created card, stamped with the object and the user.
+	 *
+	 * @param DeckCardRun $run    The card creation.
+	 * @param int         $cardId The created card's id.
+	 *
+	 * @return DeckLink The unsaved link.
+	 */
+	private function newCardLink(DeckCardRun $run, int $cardId): DeckLink {
+		$resolvedBoard = $this->createdCardBoard(card: $run->card, cardId: $cardId);
+
+		$link = new DeckLink();
+		$link->setBoardId($resolvedBoard);
+		$link->setStackId($run->card->stackId);
+		$link->setCardId($cardId);
+		$link->setCardTitle($run->card->title);
+		$link->setDueDate($run->card->dueDateTime());
+		$link->setLabels(null);
+		$link->setAssignees(null);
+		$run->target->stamp(link: $link, linkedBy: $run->ownerUid);
+
+		return $link;
+	}//end newCardLink()
+
+	/**
+	 * The board a created card sits on.
+	 *
+	 * Resolved authoritatively from the persisted card so we don't trust the
+	 * (caller-supplied) value in case the stack was moved between boards; the
+	 * caller's board is the fallback.
+	 *
+	 * @param CardDraft $card   The card as requested.
+	 * @param int       $cardId The created card's id.
+	 *
+	 * @return int The board id.
+	 */
+	private function createdCardBoard(CardDraft $card, int $cardId): int {
 		$resolvedBoard = $this->resolveBoardId(cardId: $cardId);
 		if ($resolvedBoard === 0) {
 			$resolvedBoard = $card->boardId();
 		}
 
-		$link = new DeckLink();
-		$link->setBoardId($resolvedBoard);
-		$link->setStackId($card->stackId);
-		$link->setCardId($cardId);
-		$link->setCardTitle($card->title);
-		$link->setDueDate($card->dueDateTime());
-		$link->setLabels(null);
-		$link->setAssignees(null);
-		$target->stamp(link: $link, linkedBy: $userUid);
-
-		return $this->deckLinkMapper->insert($link);
-	}//end createAndLinkCard()
+		return $resolvedBoard;
+	}//end createdCardBoard()
 
 	/**
 	 * Return the Deck boards visible to the current user.
