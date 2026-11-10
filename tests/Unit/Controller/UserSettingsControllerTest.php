@@ -30,7 +30,6 @@ class UserSettingsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = UserSettingsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->gitHubService,
 			$this->userSession,

@@ -109,7 +109,8 @@ class CodedValueGuardTest extends TestCase {
 		$this->concepts = $this->createMock(ConceptRepository::class);
 		$this->concepts->method('conceptsOf')->willReturn($this->scheme);
 		$this->concepts->method('resolve')->willReturnCallback(
-			function (string $value, string $schemeUri, string $store = 'uri'): ?array {
+			function (string $value, CodedPropertyDeclaration $declaration): ?array {
+				$store = $declaration->store;
 				if ($store === 'notation') {
 					foreach ($this->scheme as $concept) {
 						if (($concept['notation'] ?? null) === $value) {
@@ -124,17 +125,12 @@ class CodedValueGuardTest extends TestCase {
 			}
 		);
 
+		$scheme = new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess(concepts: $this->concepts, hierarchy: $hierarchy, lifecycle: $lifecycle);
 		$this->guard = new CodedValueGuard(
-			concepts: $this->concepts,
-			lifecycle: $lifecycle,
-			hierarchy: $hierarchy,
+			scheme: $scheme,
 			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
-		$this->options = new CodedOptionsBuilder(
-			concepts: $this->concepts,
-			hierarchy: $hierarchy,
-			lifecycle: $lifecycle
-		);
+		$this->options = new CodedOptionsBuilder(scheme: $scheme);
 	}//end setUp()
 
 	/**
@@ -232,7 +228,7 @@ class CodedValueGuardTest extends TestCase {
 
 		// ... and the value still resolves, with its label, for the record
 		// that already holds it.
-		$held = $this->concepts->resolve(value: 'urn:ingetrokken', schemeUri: self::SCHEME);
+		$held = $this->concepts->resolve(value: 'urn:ingetrokken', declaration: new CodedPropertyDeclaration(scheme: self::SCHEME));
 		$this->assertNotNull($held);
 		$this->assertSame('Ingetrokken', $held['prefLabel']['nl']);
 	}//end testARetiredValueIsAbsentFromTheOptionsAndStillResolves()
@@ -309,17 +305,17 @@ class CodedValueGuardTest extends TestCase {
 
 		$lifecycle = new ConceptLifecycle();
 		$guard = new CodedValueGuard(
-			concepts: $concepts,
-			lifecycle: $lifecycle,
-			hierarchy: new ConceptHierarchy(lifecycle: $lifecycle),
+			scheme: new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess(concepts: $concepts, hierarchy: new ConceptHierarchy(lifecycle: $lifecycle), lifecycle: $lifecycle),
 			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
 
 		$this->assertSame(
 			[],
 			$guard->collectViolations(
-				object: ['resultaat' => 'urn:whatever'],
-				schema: $this->schemaWith(declaration: [])
+				write: new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite(
+					object: ['resultaat' => 'urn:whatever'],
+					schema: $this->schemaWith(declaration: [])
+				)
 			)
 		);
 	}//end testAnUnreadableSchemeRefusesNothing()
@@ -404,9 +400,11 @@ class CodedValueGuardTest extends TestCase {
 		$schema = $this->schemaWith(declaration: ['store' => 'notation']);
 
 		$violations = $this->guard->collectViolations(
-			object: ['resultaat' => 'ING'],
-			schema: $schema,
-			at: new DateTimeImmutable('2026-09-14')
+			write: new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite(
+				object: ['resultaat' => 'ING'],
+				schema: $schema,
+				at: new DateTimeImmutable('2026-09-14')
+			)
 		);
 
 		$this->assertArrayHasKey('resultaat', $violations);
