@@ -34,6 +34,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\UserShareGrant;
 
 /**
  * The system account is created on first use and joined to the app group; a node the caller
@@ -193,7 +194,7 @@ final class FileOwnershipHandlerTransferTest extends TestCase {
 	public function testAFileTheCallerOwnsIsSharedBack(): void {
 		$this->aliceWithSystemAccount();
 		$file = $this->readOnlyFile(owner: $this->user(uid: 'alice'));
-		$this->sharing->expects($this->once())->method('shareFileWithUser')->with($file, 'alice');
+		$this->sharing->expects($this->once())->method('shareFileWithUser')->with($this->equalTo(new UserShareGrant($file, 'alice')));
 		$this->logger->expects($this->exactly(2))->method('info');
 
 		$this->handler()->transferFileOwnershipIfNeeded(file: $file, fileSharingHandler: $this->sharing);
@@ -266,7 +267,7 @@ final class FileOwnershipHandlerTransferTest extends TestCase {
 		$folder->method('getOwner')->willReturn($this->user(uid: 'alice'));
 		$folder->method('getName')->willReturn('case-1');
 		$folder->method('getStorage')->willReturn($this->createMock(IStorage::class));
-		$this->sharing->expects($this->once())->method('shareFolderWithUser')->with($folder, 'alice');
+		$this->sharing->expects($this->once())->method('shareFolderWithUser')->with($this->equalTo(new UserShareGrant($folder, 'alice')));
 
 		$this->handler()->transferFolderOwnershipIfNeeded(folder: $folder, fileSharingHandler: $this->sharing);
 		$this->handler()->transferFolderOwnershipIfNeeded(folder: $folder);

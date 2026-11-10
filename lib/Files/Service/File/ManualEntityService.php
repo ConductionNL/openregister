@@ -225,11 +225,11 @@ class ManualEntityService {
 		}
 
 		try {
-			return $this->matcher->match(
+			return $this->matcher->search(search: new ChunkSearch(
 				chunks: $chunks,
 				request: $request,
 				chunkOverlap: $chunkOverlap
-			);
+			));
 		} catch (ChunkMatcherException $e) {
 			// Both `value_too_long` and `regex_compile_failure` map to
 			// `regex_compile_failure`; the controller does not distinguish them.
