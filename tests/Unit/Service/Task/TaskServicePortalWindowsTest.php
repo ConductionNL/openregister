@@ -45,7 +45,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * Tests for {@see TaskService::openFor()}, {@see TaskService::record()} and
@@ -218,7 +218,9 @@ class TaskServicePortalWindowsTest extends TestCase {
 			}
 		);
 
-		$returned = $this->service->record(uuid: 't-1', action: 'match', actor: 'caseworker', reason: "Matched role 'initiator' to 'party:bsn-1'.");
+		$returned = $this->service->record(
+			entry: new TaskAuditEntry(uuid: 't-1', action: 'match', actor: 'caseworker', reason: "Matched role 'initiator' to 'party:bsn-1'."),
+		);
 		$this->assertSame($task, $returned);
 		$this->assertSame(Task::STATE_ACTIVE, $task->getState());
 		$this->assertSame('match', $audited->getAction());
@@ -271,7 +273,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$tasks = $this->createMock(TaskService::class);
 		$tasks->expects($this->once())
 			->method('record')
-			->with('t-1', 'match', 'caseworker', 'the reason')
+			->with(new TaskAuditEntry(uuid: 't-1', action: 'match', actor: 'caseworker', reason: 'the reason'))
 			->willReturn($this->task());
 
 		$bridge = new FlowTaskBridge(
