@@ -1539,6 +1539,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
+@use './schemaCountSummary.scss' as *;
 
 .summary-cards {
 	display: grid;
@@ -1889,25 +1890,7 @@ export default {
 	font-size: 1.2rem;
 }
 
-@include object-count-centered-rules;
-
-.count-label {
-	color: var(--color-text-lighter);
-}
-
-@include loading-count-rules;
-
-.breakdown-item:last-child {
-	margin-bottom: 0;
-}
-
-@include breakdown-label-rules;
-
-.steps-section {
-	margin-bottom: 2rem;
-}
-
-@include steps-section-h4-rules;
+@include schema-count-summary-rules;
 
 .start-analysis {
 	text-align: center;
