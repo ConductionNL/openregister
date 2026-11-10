@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Rbac\SharerFolderAccess;
@@ -59,14 +59,14 @@ class SharerAccessSweepJob extends TimedJob {
 	 * @param ITimeFactory            $time         Time factory for TimedJob.
 	 * @param SharerFolderAccess      $sharerAccess Reads and ends the sharer views.
 	 * @param FolderManagementHandler $folders      The openregister account, which gives the views.
-	 * @param MagicMapper             $objects      Finds the object a view's folder belongs to.
+	 * @param MagicMapperInterface    $objects      Finds the object a view's folder belongs to.
 	 * @param LoggerInterface         $logger       Diagnostics.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly SharerFolderAccess $sharerAccess,
 		private readonly FolderManagementHandler $folders,
-		private readonly MagicMapper $objects,
+		private readonly MagicMapperInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
