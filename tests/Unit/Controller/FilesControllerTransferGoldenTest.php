@@ -28,6 +28,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Golden test for FilesController::copy() and move().
@@ -191,8 +192,8 @@ class FilesControllerTransferGoldenTest extends TestCase {
 
 			return $this->object(uuid: 'checked-' . $args[2]);
 		};
-		$access->method('readable')->willReturnCallback(fn (...$args) => $answer('readable', $args));
-		$access->method('changeable')->willReturnCallback(fn (...$args) => $answer('changeable', $args));
+		$access->method('readable')->willReturnCallback(fn (ObjectRef $ref, ...$rest) => $answer('readable', [$ref->register, $ref->schema, $ref->id, ...$rest]));
+		$access->method('changeable')->willReturnCallback(fn (ObjectRef $ref, ...$rest) => $answer('changeable', [$ref->register, $ref->schema, $ref->id, ...$rest]));
 		return $access;
 	}
 
