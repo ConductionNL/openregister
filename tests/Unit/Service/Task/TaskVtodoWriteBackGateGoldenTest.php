@@ -119,7 +119,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 
 			return $outcome;
 		};
-		$tasks->method('complete')->willReturnCallback(
+		$tasks->method('completeWithAnswer')->willReturnCallback(
 			static fn (string $uuid, TaskAnswer $completion, ?string $actor): Task => $answer(
 				['complete', $uuid, $completion->outcome, $completion->resultText, $completion->comment, $actor]
 			)

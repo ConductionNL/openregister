@@ -264,6 +264,6 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 			return $this->tasks->cancel(uuid: $attempt->taskUuid, reason: 'Cancelled from the calendar.', actor: $attempt->actor);
 		}
 
-		return $this->tasks->complete(uuid: $attempt->taskUuid, answer: new TaskAnswer(outcome: 'done'), actor: $attempt->actor);
+		return $this->tasks->completeWithAnswer(uuid: $attempt->taskUuid, answer: new TaskAnswer(outcome: 'done'), actor: $attempt->actor);
 	}//end perform()
 }//end class

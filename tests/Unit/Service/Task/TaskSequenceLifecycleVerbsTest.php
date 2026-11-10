@@ -156,7 +156,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage("terminal state 'completed'");
-		$this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
 	}//end testDecidingAnAlreadyTerminalTaskIsRefusedNamingTheState()
 
 	public function testTheRequesterIsRefusedBeforeThePerformerCheck(): void {
@@ -168,14 +168,14 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->authorization->expects(self::never())->method('assertMay');
 
 		$this->expectException(TaskSeparationOfDutiesException::class);
-		$this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 	}//end testTheRequesterIsRefusedBeforeThePerformerCheck()
 
 	public function testANonRequesterPassesTheGuardAndCompletes(): void {
 		$this->sequenceRequestedBy(requester: 'alice');
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 
-		$completed = $this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'bob');
 
 		self::assertSame(Task::STATE_COMPLETED, $completed->getState());
 		self::assertSame('approved', $completed->getOutcome());
@@ -186,7 +186,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 
 		try {
-			$this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: '  '), actor: 'bob');
+			$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: '  '), actor: 'bob');
 			self::fail('a comment-less rejection must be refused');
 		} catch (\OCA\OpenRegister\Exception\TaskValidationException $refusal) {
 			self::assertStringContainsString('comment is mandatory', $refusal->getMessage());

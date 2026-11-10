@@ -134,7 +134,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 				return true;
 			}));
 
-		$this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(['commit', 'transition', 'terminal'], $this->sequence);
 	}//end testACompletionIsAnnouncedOnceAfterTheCommit()
@@ -163,7 +163,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 
 		$this->expectException(TaskValidationException::class);
 
-		$this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: ''), actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: ''), actor: 'alice');
 	}//end testARefusedCompletionAnnouncesNothing()
 
 	/**
@@ -175,7 +175,7 @@ class TaskServiceTerminalEventTest extends TestCase {
 		$this->db->expects($this->never())->method('rollBack');
 		$this->dispatcher->method('dispatchTyped')->willThrowException(new RuntimeException('listener blew up'));
 
-		$completed = $this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
 		$this->assertTrue($completed->getIsTerminal());

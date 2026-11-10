@@ -236,7 +236,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$task->setResponses(['kept' => true]);
 		$this->tasks->method('findByUuid')->willReturn($task);
 
-		$completed = $this->service->complete(
+		$completed = $this->service->completeWithAnswer(
 			uuid: 't-1',
 			answer: new TaskAnswer(
 				outcome: 'submitted',
@@ -255,7 +255,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$again->setResponses(['kept' => true]);
 		$again->setEvidence([['fileId' => 1]]);
 		$this->tasks->method('findByUuid')->willReturn($again);
-		$plain = $this->service->complete(uuid: 't-1', answer: new TaskAnswer(outcome: 'done'), actor: 'party:bsn-1');
+		$plain = $this->service->completeWithAnswer(uuid: 't-1', answer: new TaskAnswer(outcome: 'done'), actor: 'party:bsn-1');
 		$this->assertSame(['kept' => true], $plain->getResponses(), 'absent responses overwrite nothing');
 		$this->assertSame([['fileId' => 1]], $plain->getEvidence(), 'absent evidence overwrites nothing');
 	}//end testCompleteCarriesResponsesAndEvidence()

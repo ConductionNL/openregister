@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -34,8 +35,6 @@ use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCA\OpenRegister\Service\Portal\PortalTaskSources;
-use OCA\OpenRegister\Service\Task\TaskAct;
-use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -196,14 +195,14 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks->expects($this->once())
 			->method('complete')
 			->willReturnCallback(
-				function (string $uuid, TaskAnswer $answer, ?string $actor) use ($task): Task {
+				function (string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses, ?array $evidence) use ($task): Task {
 					$this->trace[] = 'record';
 					$this->assertSame('t-1', $uuid);
-					$this->assertSame('submitted', $answer->outcome);
+					$this->assertSame('submitted', $outcome);
 					$this->assertSame('party:bsn-1', $actor);
-					$this->assertSame(['remarks' => 'ok'], $answer->payload->responses);
-					$this->assertSame(42, $answer->payload->evidence[0]['fileId']);
-					$this->assertSame('/case-7/payslip.pdf', $answer->payload->evidence[0]['path']);
+					$this->assertSame(['remarks' => 'ok'], $responses);
+					$this->assertSame(42, $evidence[0]['fileId']);
+					$this->assertSame('/case-7/payslip.pdf', $evidence[0]['path']);
 					$task->setState(Task::STATE_COMPLETED);
 
 					return $task;

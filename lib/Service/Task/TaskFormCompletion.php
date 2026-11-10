@@ -95,7 +95,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $uuid);
 		$this->submit(submission: new TaskFormSubmission(task: $task, data: $data, actor: $actor));
 
-		return $this->tasks->complete(
+		return $this->tasks->completeWithAnswer(
 			uuid: $uuid,
 			answer: new TaskAnswer(outcome: $answer->outcome, resultText: $answer->resultText, comment: $answer->comment),
 			actor: $actor

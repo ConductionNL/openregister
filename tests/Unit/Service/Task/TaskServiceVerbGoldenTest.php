@@ -189,8 +189,12 @@ class TaskServiceVerbGoldenTest extends TestCase {
 
 		$done = $this->service()->complete(
 			uuid: 't-7',
-			answer: new TaskAnswer(outcome: 'approved', resultText: 'ok', comment: 'fine', payload: new TaskAnswerPayload(responses: ['a' => 1], evidence: ['e' => 2])),
-			actor: 'alice'
+			outcome: 'approved',
+			resultText: 'ok',
+			comment: 'fine',
+			actor: 'alice',
+			responses: ['a' => 1],
+			evidence: ['e' => 2]
 		);
 
 		$this->assertSame('approved', $done->getOutcome());
@@ -225,7 +229,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task->setEvidence(['kept' => true]);
 		$this->stored($task);
 
-		$done = $this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
+		$done = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(['kept' => true], $done->getResponses());
 		$this->assertSame(['kept' => true], $done->getEvidence());
@@ -251,7 +255,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		try {
-			$this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'mallory');
+			$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'mallory');
 			$this->fail('Expected a denial');
 		} catch (TaskAccessDeniedException $thrown) {
 			$this->assertSame($denial, $thrown);
@@ -310,7 +314,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		$this->expectRefusal(
-			fn () => $this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'Rejected', comment: '  '), actor: 'alice'),
+			fn () => $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'Rejected', comment: '  '), actor: 'alice'),
 			TaskValidationException::class,
 			"Outcome 'Rejected' rejects or returns the work, so a non-empty comment is mandatory."
 		);
@@ -321,7 +325,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task->setOnReject('dead_letter');
 		$this->stored($task);
 
-		$done = $this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'denied', comment: 'bad'), actor: 'alice');
+		$done = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'denied', comment: 'bad'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_DISABLED, $done->getState());
 		$this->assertSame('dead_letter', $done->getOutcome());
@@ -337,7 +341,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task->setOnReject('skip');
 		$this->stored($task);
 
-		$done = $this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'bad'), actor: 'alice');
+		$done = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'bad'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_COMPLETED, $done->getState());
 		$this->assertSame('rejected', $done->getOutcome());
@@ -349,7 +353,7 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$this->openWrites = [false];
 
 		$this->expectRefusal(
-			fn () => $this->service()->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice'),
+			fn () => $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice'),
 			TaskConflictException::class,
 			"Task 't-7' was closed concurrently; this change was not applied."
 		);
