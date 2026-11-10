@@ -87,6 +87,44 @@ function exportSlugs(register, schema) {
 	return [register.slug || register.id, schema.slug || schema.id]
 }
 
+/**
+ * Download the objects of a register and schema in the given format.
+ *
+ * @param {Array<string>} slugs The register and schema slugs
+ * @param {string} format The export format
+ * @return {Promise<object>} The blob response
+ */
+function requestExport(slugs, format) {
+	const url = generateUrl(
+		`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
+	)
+	const params = {
+		type: format,
+	}
+
+	return axios({
+		url,
+		method: 'GET',
+		params,
+		responseType: 'blob',
+	})
+}
+
+/**
+ * Why the export failed: the server's error, the error's message, or a
+ * generic one.
+ *
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function exportFailureMessage(error) {
+	return (
+		error.response?.data?.error
+		|| error.message
+		|| t('openregister', 'Failed to export objects')
+	)
+}
+
 export default {
 	name: 'ExportRegister',
 	components: {
@@ -157,27 +195,11 @@ export default {
 
 			try {
 				const slugs = exportSlugs(register, schema)
-				const url = generateUrl(
-					`/apps/openregister/api/objects/${slugs[0]}/${slugs[1]}/export`,
-				)
-				const params = {
-					type: this.exportFormat,
-				}
-
-				const response = await axios({
-					url,
-					method: 'GET',
-					params,
-					responseType: 'blob',
-				})
-
+				const response = await requestExport(slugs, this.exportFormat)
 				this.saveExport(response, slugs)
 				this.closeModal()
 			} catch (error) {
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| t('openregister', 'Failed to export objects')
+				this.error = exportFailureMessage(error)
 			} finally {
 				this.loading = false
 			}
