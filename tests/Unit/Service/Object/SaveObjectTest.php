@@ -14,6 +14,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -1245,7 +1248,7 @@ class SaveObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// extractUuidAndSelfData (private)
+	// splitSelfData (private)
 	// =========================================================================
 
 	public function testExtractUuidAndSelfDataWithSelfMetadata(): void {
@@ -1254,7 +1257,7 @@ class SaveObjectTest extends TestCase {
 			'name' => 'Test',
 		];
 
-		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('extractUuidAndSelfData', [$data, null, null]);
+		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('splitSelfData', [$data, null]);
 
 		$this->assertSame('test-uuid', $uuid);
 		$this->assertSame(['id' => 'test-uuid', 'slug' => 'test'], $selfData);
@@ -1265,7 +1268,7 @@ class SaveObjectTest extends TestCase {
 	public function testExtractUuidAndSelfDataWithExplicitUuid(): void {
 		$data = ['name' => 'Test'];
 
-		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('extractUuidAndSelfData', [$data, 'explicit-uuid', null]);
+		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('splitSelfData', [$data, 'explicit-uuid']);
 
 		$this->assertSame('explicit-uuid', $uuid);
 	}
@@ -1273,7 +1276,7 @@ class SaveObjectTest extends TestCase {
 	public function testExtractUuidAndSelfDataWithIdInData(): void {
 		$data = ['id' => 'data-id', 'name' => 'Test'];
 
-		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('extractUuidAndSelfData', [$data, null, null]);
+		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('splitSelfData', [$data, null]);
 
 		$this->assertSame('data-id', $uuid);
 		$this->assertArrayNotHasKey('id', $cleanedData);
@@ -1282,7 +1285,7 @@ class SaveObjectTest extends TestCase {
 	public function testExtractUuidAndSelfDataNormalizesEmptyString(): void {
 		$data = ['name' => 'Test'];
 
-		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('extractUuidAndSelfData', [$data, '', null]);
+		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('splitSelfData', [$data, '']);
 
 		$this->assertNull($uuid);
 	}
@@ -1296,7 +1299,8 @@ class SaveObjectTest extends TestCase {
 			->with($uploadedFiles, $data)
 			->willReturn(['name' => 'Test', 'file' => 'data:text/plain;base64,dGVzdA==']);
 
-		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('extractUuidAndSelfData', [$data, null, $uploadedFiles]);
+		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod('splitSelfData', [$data, null]);
+		$cleanedData = $this->invokePrivateMethod('injectUploadedFiles', [$cleanedData, $uploadedFiles]);
 
 		$this->assertArrayHasKey('file', $cleanedData);
 	}
@@ -1307,7 +1311,7 @@ class SaveObjectTest extends TestCase {
 		$this->filePropertyHandler->expects($this->never())
 			->method('processUploadedFiles');
 
-		$this->invokePrivateMethod('extractUuidAndSelfData', [$data, null, null]);
+		$this->invokePrivateMethod('splitSelfData', [$data, null]);
 	}
 
 	// =========================================================================
@@ -1500,7 +1504,7 @@ class SaveObjectTest extends TestCase {
 		// ObjectSlugHandler::applyOnSave() decides the slug after hydration (#4037).
 		$entity = new ObjectEntity();
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['slug' => 'my-slug'], ['slug' => 'data-slug']]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['slug' => 'my-slug'])]);
 
 		$this->assertNull($entity->getSlug());
 	}
@@ -1511,7 +1515,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['published' => '2025-06-15'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -1521,7 +1525,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['published' => ''];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -1531,7 +1535,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['published' => 'not-a-date-at-all-!!!'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -1541,7 +1545,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['depublished' => '2025-12-31'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -1551,7 +1555,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = [];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -1562,7 +1566,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['owner' => 'injected-owner'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		// Owner must remain null — client-supplied value is discarded.
 		$this->assertNull($entity->getOwner());
@@ -1576,7 +1580,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['organisation' => 'org-uuid'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		// Entity stays null — the caller has no access to 'org-uuid'.
 		$this->assertNull($entity->getOrganisation());
@@ -1593,7 +1597,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['organisation' => 'org-uuid'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}
@@ -1610,7 +1614,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['organisation' => 'org-uuid'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertNull($entity->getOrganisation());
 	}
@@ -1693,7 +1697,7 @@ class SaveObjectTest extends TestCase {
 		$reflection = new \ReflectionClass($handler);
 		$method = $reflection->getMethod('setSelfMetadata');
 		$method->setAccessible(true);
-		$method->invokeArgs($handler, [$entity, $selfData]);
+		$method->invokeArgs($handler, [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}
@@ -3651,7 +3655,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['depublished' => ''];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -3661,7 +3665,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['depublished' => 'not-a-date-!!!'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -3879,7 +3883,7 @@ class SaveObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// extractUuidAndSelfData — additional edge cases
+	// splitSelfData — additional edge cases
 	// =========================================================================
 
 	public function testExtractUuidAndSelfDataPrefersExplicitUuidOverSelfId(): void {
@@ -3889,8 +3893,8 @@ class SaveObjectTest extends TestCase {
 		];
 
 		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, 'explicit-uuid', null]
+			'splitSelfData',
+			[$data, 'explicit-uuid']
 		);
 
 		$this->assertSame('explicit-uuid', $uuid);
@@ -3903,8 +3907,8 @@ class SaveObjectTest extends TestCase {
 		];
 
 		[$uuid, $selfData, $cleanedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, null, null]
+			'splitSelfData',
+			[$data, null]
 		);
 
 		$this->assertSame([], $selfData);
@@ -3966,7 +3970,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = []; // No 'published' key.
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -4570,7 +4574,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = [];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertTrue(true);
 	}
@@ -4580,7 +4584,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$selfData = ['published' => true];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 		$this->assertTrue(true);
 	}
 
@@ -4833,7 +4837,8 @@ class SaveObjectTest extends TestCase {
 		$data = ['title' => 'A Completely New Title'];
 
 		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, [])]);
-		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
+		$sent = new ObjectPayload(data: $data, selfData: []);
+		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), 'hello-world']);
 
 		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');
 	}
@@ -4842,7 +4847,8 @@ class SaveObjectTest extends TestCase {
 		$this->useRealSlugHandler();
 		[$entity, $schema] = $this->slugEntity('hello-world');
 
-		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [['slug' => 'something-else'], ['title' => 'Hello World']]]);
+		$sent = new ObjectPayload(data: ['title' => 'Hello World'], selfData: ['slug' => 'something-else']);
+		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), 'hello-world']);
 
 		$this->assertSame('hello-world', $entity->getSlug());
 	}
@@ -4851,7 +4857,8 @@ class SaveObjectTest extends TestCase {
 		$this->useRealSlugHandler();
 		[$entity, $schema] = $this->slugEntity('hello-world');
 
-		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [['slug' => ''], ['title' => 'Hello World']]]);
+		$sent = new ObjectPayload(data: ['title' => 'Hello World'], selfData: ['slug' => '']);
+		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), 'hello-world']);
 
 		$this->assertSame('hello-world', $entity->getSlug());
 	}
@@ -4883,7 +4890,8 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->method('update')->willReturnArgument(0);
 		$this->unifiedObjectMapper->method('update')->willReturnArgument(0);
 
-		$this->invokePrivateMethod('decideSlug', [$entity, $schema, null, [['slug' => 'taken'], $data]]);
+		$sent = new ObjectPayload(data: $data, selfData: ['slug' => 'taken']);
+		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), null]);
 		$this->assertNull($entity->getSlug(), 'precondition: the decision is no slug');
 
 		$updated = $this->handler->updateObject(register: $register, schema: $schema, data: $data, existingObject: $entity, silent: true);

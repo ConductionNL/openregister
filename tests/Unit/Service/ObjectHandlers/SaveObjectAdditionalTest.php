@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -1586,8 +1587,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['slug' => 'my-slug'],
-			[],
+			new SelfSubmission(selfData: ['slug' => 'my-slug']),
 		]);
 
 		// The slug is decided after hydration by ObjectSlugHandler (#4037).
@@ -1600,8 +1600,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['published' => '2024-01-15T10:00:00+00:00'],
-			[],
+			new SelfSubmission(selfData: ['published' => '2024-01-15T10:00:00+00:00']),
 		]);
 
 		$this->assertTrue(true);
@@ -1613,8 +1612,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['published' => null],
-			[],
+			new SelfSubmission(selfData: ['published' => null]),
 		]);
 
 		$this->assertTrue(true);
@@ -1626,8 +1624,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['depublished' => '2025-12-31T23:59:59+00:00'],
-			[],
+			new SelfSubmission(selfData: ['depublished' => '2025-12-31T23:59:59+00:00']),
 		]);
 
 		$this->assertTrue(true);
