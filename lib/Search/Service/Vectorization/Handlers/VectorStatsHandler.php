@@ -37,6 +37,19 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  */
 class VectorStatsHandler {
+
+	/**
+	 * The statistics reported when the database cannot be read.
+	 *
+	 * @var array{total_vectors: int, by_type: array<never>, by_model: array<never>, object_vectors: int, file_vectors: int}
+	 */
+	private const EMPTY_STATS = [
+		'total_vectors' => 0,
+		'by_type' => [],
+		'by_model' => [],
+		'object_vectors' => 0,
+		'file_vectors' => 0,
+	];
 	/**
 	 * Constructor
 	 *
@@ -67,13 +80,7 @@ class VectorStatsHandler {
 				message: '[VectorStatsHandler] Failed to get vector stats',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return [
-				'total_vectors' => 0,
-				'by_type' => [],
-				'by_model' => [],
-				'object_vectors' => 0,
-				'file_vectors' => 0,
-			];
+			return self::EMPTY_STATS;
 		}//end try
 	}//end getStats()
 
@@ -96,30 +103,10 @@ class VectorStatsHandler {
 		$total = (int)$qb->executeQuery()->fetchOne();
 
 		// By entity type.
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('entity_type', $qb->func()->count('id', 'count'))
-			->from('openregister_vectors')
-			->groupBy('entity_type');
-		$result = $qb->executeQuery();
-		$byType = [];
-		while (($row = $result->fetch()) !== false) {
-			$byType[$row['entity_type']] = (int)$row['count'];
-		}
-
-		$result->closeCursor();
+		$byType = $this->countsBy(column: 'entity_type');
 
 		// By model.
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('embedding_model', $qb->func()->count('id', 'count'))
-			->from('openregister_vectors')
-			->groupBy('embedding_model');
-		$result = $qb->executeQuery();
-		$byModel = [];
-		while (($row = $result->fetch()) !== false) {
-			$byModel[$row['embedding_model']] = (int)$row['count'];
-		}
-
-		$result->closeCursor();
+		$byModel = $this->countsBy(column: 'embedding_model');
 
 		return [
 			'total_vectors' => $total,
@@ -129,4 +116,27 @@ class VectorStatsHandler {
 			'file_vectors' => $byType['file'] ?? 0,
 		];
 	}//end getStatsFromDatabase()
+
+	/**
+	 * Count the stored vectors per value of one column.
+	 *
+	 * @param string $column The column to group on (entity_type or embedding_model).
+	 *
+	 * @return array<int|string, int> The count per column value.
+	 */
+	private function countsBy(string $column): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($column, $qb->func()->count('id', 'count'))
+			->from('openregister_vectors')
+			->groupBy($column);
+		$result = $qb->executeQuery();
+		$counts = [];
+		while (($row = $result->fetch()) !== false) {
+			$counts[$row[$column]] = (int)$row['count'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countsBy()
 }//end class
