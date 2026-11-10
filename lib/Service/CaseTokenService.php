@@ -47,6 +47,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
@@ -255,10 +256,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 			// read predicate. We do NOT pass an admin bypass.
 			$entity = $objectService->find(
 				id: $row->getObjectUuid(),
-				_extend: [],
-				files: false,
-				register: $row->getRegisterId(),
-				schema: $row->getSchemaId(),
+				options: new ObjectFindOptions(register: $row->getRegisterId(), schema: $row->getSchemaId()),
 				_rbac: true,
 				_multitenancy: true
 			);

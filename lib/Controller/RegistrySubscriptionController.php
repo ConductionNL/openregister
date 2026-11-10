@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -215,7 +216,7 @@ class RegistrySubscriptionController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveObjectAndGuardUpdate(ObjectRef $ref): array {
-		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _render: false));
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $ref->id, options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false)));
 		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
 
 		if ($this->mayUpdate(schema: $resolvedSchema, object: $object) === false) {

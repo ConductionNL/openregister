@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use Throwable;
@@ -170,7 +171,7 @@ class ScheduleReleaseReader {
 		}
 
 		try {
-			return WriteCause::asLookup(fn () => $this->objects->find(id: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false));
+			return WriteCause::asLookup(fn () => $this->objects->find(id: $uuid, options: new ObjectFindOptions(register: $register, schema: $schema), _rbac: false, _multitenancy: false));
 		} catch (Throwable $e) {
 			return null;
 		}

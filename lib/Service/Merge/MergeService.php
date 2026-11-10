@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
@@ -617,7 +618,7 @@ class MergeService implements ObjectMergerInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function reverseMerge(string $mergeOperationId, string $reversedBy): array {
-		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, schema: self::MERGE_SCHEMA));
+		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, options: new ObjectFindOptions(schema: self::MERGE_SCHEMA)));
 		if ($operationEntity === null) {
 			throw new RuntimeException('Merge operation not found.');
 		}
@@ -1275,9 +1276,9 @@ class MergeService implements ObjectMergerInterface {
 		try {
 			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false
+				_multitenancy: true
 			));
 		} catch (Throwable $e) {
 			$this->logger->warning('[MergeService] unrendered read failed: ' . $e->getMessage());

@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use DateTime;
 use Generator;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Notifications\Db\EntryReference;
 use OCA\OpenRegister\Notifications\Db\EntryReferenceMapper;
 use OCA\OpenRegister\Notifications\Db\ReferencePattern;
@@ -444,7 +445,7 @@ class ReferenceService {
 	 */
 	private function targetUuidOf(ReferencePattern $pattern, string $code): ?string {
 		try {
-			$object = $this->objects->find(id: $code, register: $pattern->getRegister(), schema: $pattern->getSchema(), _render: false, _audit: false);
+			$object = $this->objects->find(id: $code, options: new ObjectFindOptions(register: $pattern->getRegister(), schema: $pattern->getSchema(), render: false, audit: false));
 			if ($object !== null) {
 				return (string)$object->getUuid();
 			}

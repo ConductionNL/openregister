@@ -36,6 +36,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -124,8 +125,7 @@ class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface 
 		try {
 			return $this->objects->find(
 				id: $objectUuid,
-				_render: false,
-				_audit: false
+				options: new ObjectFindOptions(render: false, audit: false)
 			) !== null;
 		} catch (\Throwable $denied) {
 			unset($denied);

@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
@@ -366,7 +367,7 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	 */
 	private function findReferenced(string $id): ?ObjectEntity {
 		try {
-			return $this->lookups->objects->find(id: $id, _rbac: false, _multitenancy: false, _render: false, _audit: false);
+			return $this->lookups->objects->find(id: $id, options: new ObjectFindOptions(render: false, audit: false), _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[ReferencedAddressNotifier] reference "%s" did not resolve: %s', $id, $e->getMessage())

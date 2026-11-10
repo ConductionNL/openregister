@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
@@ -137,8 +138,7 @@ class ObjectFileAccess {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
 				_rbac: true,
 				_multitenancy: true
 			));
@@ -223,8 +223,7 @@ class ObjectFileAccess {
 		try {
 			$readable = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $identifier,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
+				options: new ObjectFindOptions(register: $object->getRegister(), schema: $object->getSchema()),
 				_rbac: true,
 				_multitenancy: true
 			));

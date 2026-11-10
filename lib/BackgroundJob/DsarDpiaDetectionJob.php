@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
@@ -288,8 +289,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 			try {
 				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 					id: $uuid,
-					register: CaseObjectAccessorInterface::REGISTER_SLUG,
-					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
+					options: new ObjectFindOptions(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG),
 					_rbac: false,
 					_multitenancy: false
 				));

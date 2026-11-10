@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectReadOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * The register and schema one ObjectService::find() call names, as the caller gave them.
@@ -54,13 +54,13 @@ final class ObjectFindTarget {
 	/**
 	 * The target a read's options name; an entity this app did not build is passed by its id.
 	 *
-	 * @param ObjectReadOptions $options The read's options.
+	 * @param ObjectFindOptions $options The read's options.
 	 *
 	 * @return self The target.
 	 *
 	 * @spec exclude Value object of the ObjectService::find() facade; read behaviour owned by object-interactions.
 	 */
-	public static function fromReadOptions(ObjectReadOptions $options): self {
+	public static function fromFindOptions(ObjectFindOptions $options): self {
 		$register = $options->register;
 		if ($register instanceof RegisterInterface && ($register instanceof Register) === false) {
 			$register = $register->getId();
@@ -72,5 +72,5 @@ final class ObjectFindTarget {
 		}
 
 		return new self(register: $register, schema: $schema);
-	}//end fromReadOptions()
+	}//end fromFindOptions()
 }//end class

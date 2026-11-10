@@ -47,6 +47,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -474,10 +475,8 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 */
 	private function storedCredential(string $credentialId): ObjectEntity {
 		$stored = WriteCause::asLookup(fn () => $this->stores->objectService->find(
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
 			id: $credentialId,
-			_render: false,
+			options: new ObjectFindOptions(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA, render: false),
 			_rbac: false,
 			_multitenancy: false
 		));

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
@@ -446,7 +447,7 @@ class FilesController extends Controller {
 	private function objectUnderReadCheck(FileAccessCheck $check): ?ObjectEntity {
 		$route = $check->route;
 		$object = WriteCause::asLookup(
-			fn () => $this->objectService->find(id: $route->id, register: $route->register, schema: $route->schema, _rbac: true)
+			fn () => $this->objectService->find(id: $route->id, options: new ObjectFindOptions(register: $route->register, schema: $route->schema), _rbac: true)
 		);
 		if ($object instanceof ObjectEntity === false) {
 			return null;
@@ -916,11 +917,9 @@ class FilesController extends Controller {
 		return WriteCause::asLookup(
 			fn () => $this->objectService->find(
 				id: $route->id,
-				register: $route->register,
-				schema: $route->schema,
+				options: new ObjectFindOptions(register: $route->register, schema: $route->schema, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_audit: false
+				_multitenancy: false
 			)
 		);
 	}//end objectWithoutChecks()

@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Case;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -72,8 +73,7 @@ class CaseObjectAccessor implements CaseObjectAccessorInterface {
 	public function load(string $caseUuid): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $caseUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG),
 			_rbac: true,
 			_multitenancy: true
 		));

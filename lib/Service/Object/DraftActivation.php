@@ -46,6 +46,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
@@ -221,12 +222,9 @@ class DraftActivation implements DraftActivationInterface {
 		try {
 			return $this->objects->find(
 				id: $address->draftId,
-				register: $address->register,
-				schema: $address->schema,
+				options: new ObjectFindOptions(register: $address->register, schema: $address->schema, render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return null;

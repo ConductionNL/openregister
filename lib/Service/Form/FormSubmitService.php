@@ -48,6 +48,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
@@ -786,11 +787,9 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	private function written(array $done): array {
 		$entity = ($this->destinations->objects->find(
 			id: (string)$done['object']->getUuid(),
-			register: $done['plan']['register'],
-			schema: $done['plan']['schema'],
+			options: new ObjectFindOptions(register: $done['plan']['register'], schema: $done['plan']['schema'], audit: false),
 			_rbac: false,
-			_multitenancy: false,
-			_audit: false
+			_multitenancy: false
 		) ?? $done['object']);
 
 		return ['entry' => $this->entryOf(plan: $done['plan'], entity: $entity), 'entity' => $entity, 'schema' => $done['plan']['schema']];

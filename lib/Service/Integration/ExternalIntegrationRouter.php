@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Integration;
 use LogicException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -519,11 +520,9 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			$source = $this->absentAsNull(
 				read: static fn () => $objectService->find(
 					id: $sourceId,
-					register: $register,
-					schema: self::SOURCE_SCHEMA,
+					options: new ObjectFindOptions(register: $register, schema: self::SOURCE_SCHEMA, audit: false),
 					_rbac: false,
-					_multitenancy: false,
-					_audit: false
+					_multitenancy: false
 				)
 			);
 

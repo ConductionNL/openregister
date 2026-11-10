@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectReadOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\IUser;
 
 /**
@@ -189,7 +189,7 @@ interface ObjectServiceInterface {
 	 * Find a single object by id, UUID or slug.
 	 *
 	 * @param int|string             $id            Object id, UUID or slug.
-	 * @param ObjectReadOptions|null $options       Register, schema, extend, files, render and audit.
+	 * @param ObjectFindOptions|null $options       Register, schema, extend, files, render and audit.
 	 * @param bool                   $_rbac         Apply register RBAC.
 	 * @param bool                   $_multitenancy Apply organisation scoping.
 	 *
@@ -197,7 +197,7 @@ interface ObjectServiceInterface {
 	 */
 	public function find(
 		int|string $id,
-		?ObjectReadOptions $options=null,
+		?ObjectFindOptions $options=null,
 		bool $_rbac=true,
 		bool $_multitenancy=true
 	): ?ObjectEntityInterface;
@@ -647,7 +647,7 @@ interface ObjectServiceInterface {
 	 * Find an object without emitting audit or read events.
 	 *
 	 * @param string                 $id            Object id, UUID or slug.
-	 * @param ObjectReadOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+	 * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
 	 * @param bool                   $_rbac         Apply register RBAC.
 	 * @param bool                   $_multitenancy Apply organisation scoping.
 	 *
@@ -655,7 +655,7 @@ interface ObjectServiceInterface {
 	 */
 	public function findSilent(
 		string $id,
-		?ObjectReadOptions $options=null,
+		?ObjectFindOptions $options=null,
 		bool $_rbac=true,
 		bool $_multitenancy=true
 	): ObjectEntityInterface;

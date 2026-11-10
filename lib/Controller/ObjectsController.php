@@ -86,6 +86,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
@@ -2885,10 +2886,7 @@ class ObjectsController extends Controller {
 	private function storedForOptions(ReferenceOptionsAsk $ask): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $ask->id,
-			files: false,
-			register: $ask->register,
-			schema: $ask->schema,
-			_render: false
+			options: new ObjectFindOptions(register: $ask->register, schema: $ask->schema, render: false)
 		));
 	}//end storedForOptions()
 
@@ -3028,13 +3026,9 @@ class ObjectsController extends Controller {
 	private function foundForShow(ObjectShow $show, ObjectReadOptions $read): ?ObjectEntity {
 		return $this->objectService->find(
 			id: $show->id,
-			_extend: $read->extend,
-			files: false,
-			register: $show->path[0],
-			schema: $show->path[1],
+			options: new ObjectFindOptions(register: $show->path[0], schema: $show->path[1], extend: $read->extend, render: false),
 			_rbac: $read->scoped,
-			_multitenancy: $read->scoped,
-			_render: false
+			_multitenancy: $read->scoped
 		);
 	}//end foundForShow()
 
@@ -3228,10 +3222,7 @@ class ObjectsController extends Controller {
 	private function silentPatchRead(ObjectUpdate $patch): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $patch->target->id,
-			_extend: [],
-			files: false,
-			register: $patch->target->resolved['registerEntity'],
-			schema: $patch->target->resolved['schemaEntity'],
+			options: new ObjectFindOptions(register: $patch->target->resolved['registerEntity'], schema: $patch->target->resolved['schemaEntity']),
 			_rbac: $patch->caller->scoped,
 			_multitenancy: $patch->caller->scoped
 		);
@@ -3783,10 +3774,7 @@ class ObjectsController extends Controller {
 	private function silentlyRead(ObjectUpdate $update): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $update->target->id,
-			_extend: [],
-			files: false,
-			register: $update->target->resolved['register'],
-			schema: $update->target->resolved['schema'],
+			options: new ObjectFindOptions(register: $update->target->resolved['register'], schema: $update->target->resolved['schema']),
 			_rbac: $update->caller->scoped,
 			_multitenancy: $update->caller->scoped
 		);
@@ -4342,8 +4330,7 @@ class ObjectsController extends Controller {
 			$scoped = ($this->isCurrentUserAdmin() === false);
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
-				register: $register,
-				schema: $schema,
+				options: new ObjectFindOptions(register: $register, schema: $schema),
 				_rbac: $scoped,
 				_multitenancy: $scoped
 			));
@@ -6887,12 +6874,9 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
+				options: new ObjectFindOptions(register: $register, schema: $schema, render: false),
 				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
+				_multitenancy: $rbac
 			));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
@@ -6954,12 +6938,9 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
+				options: new ObjectFindOptions(register: $register, schema: $schema, render: false),
 				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
+				_multitenancy: $rbac
 			));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);

@@ -46,6 +46,7 @@ use OCA\OpenRegister\Controller\Support\VocabularyControllerServices;
 use OCA\OpenRegister\Controller\Support\VocabularyLanguage;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionScope;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilderInterface;
@@ -466,7 +467,7 @@ class VocabularyController extends Controller {
 	 */
 	private function schemeById(string $uuid): ?ObjectEntity {
 		try {
-			return WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_SCHEME));
+			return WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SCHEME)));
 		} catch (Throwable $e) {
 			return null;
 		}

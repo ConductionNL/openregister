@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SyncRecord;
 use OCA\OpenRegister\Db\SyncRecordInputs;
 use OCA\OpenRegister\Db\SyncRecordMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -508,8 +509,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		try {
 			$local = WriteCause::asLookup(fn () => $this->importServices->objectService->find(
 				id: (string)$previous->getObjectUuid(),
-				register: $source->getTargetRegister(),
-				schema: $source->getTargetSchema()
+				options: new ObjectFindOptions(register: $source->getTargetRegister(), schema: $source->getTargetSchema())
 			));
 		} catch (Throwable $e) {
 			return false;

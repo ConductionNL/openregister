@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ObjectReadOptions: where to look for one object and what to return with it.
+ * ObjectFindOptions: where to look for one object and what to return with it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -31,7 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
  *
  * @spec exclude ADR-011 parameter object of the object read, not a capability of its own
  */
-final class ObjectReadOptions {
+final class ObjectFindOptions {
 
 	/**
 	 * Constructor

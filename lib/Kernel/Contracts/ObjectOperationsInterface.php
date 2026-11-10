@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectReadOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\RenderSelection;
 use OCA\OpenRegister\Service\ObjectMigration;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -218,7 +218,7 @@ interface ObjectOperationsInterface {
      * Finds an object by ID or UUID and renders it.
      *
      * @param int|string             $id            The object ID or UUID.
-     * @param ObjectReadOptions|null $options       Register, schema, extend and files, plus `render`
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
      *                                              (false when the caller performs its own single render,
      *                                              e.g. ObjectsController::show(); permission checks and
      *                                              read logging still run) and `audit` (false for
@@ -238,7 +238,7 @@ interface ObjectOperationsInterface {
      *   read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
-    	int | string $id, ?ObjectReadOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
+    	int | string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ?ObjectEntity;
 
     /**
@@ -248,7 +248,7 @@ interface ObjectOperationsInterface {
      * retrieve an object without logging the read action.
      *
      * @param string                 $id            The ID of the object to get.
-     * @param ObjectReadOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
      * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
@@ -261,7 +261,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Facade variant of find() that skips audit logging; read behavior owned by object-interactions / audit-trail-immutable.
      */
     public function findSilent(
-    	string $id, ?ObjectReadOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
+    	string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ObjectEntity;
 
     /**

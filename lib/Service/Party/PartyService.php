@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Throwable;
 
 /**
@@ -119,7 +120,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 */
 	private function findOnInstance(string $partyUuid): ?ObjectEntity {
 		try {
-			return $this->objects->find(id: $partyUuid, _render: false, _audit: false);
+			return $this->objects->find(id: $partyUuid, options: new ObjectFindOptions(render: false, audit: false));
 		} catch (Throwable) {
 			return null;
 		}
@@ -137,10 +138,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		try {
 			return $this->objects->find(
 				id: $partyUuid,
-				register: $table['register'],
-				schema: $table['schema'],
-				_render: false,
-				_audit: false
+				options: new ObjectFindOptions(register: $table['register'], schema: $table['schema'], render: false, audit: false)
 			);
 		} catch (Throwable) {
 			return null;
@@ -207,7 +205,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		}
 
 		try {
-			return $this->objects->find(id: $uuid, _render: false, _audit: false, _rbac: false, _multitenancy: false);
+			return $this->objects->find(id: $uuid, options: new ObjectFindOptions(render: false, audit: false), _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return null;
 		}

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Throwable;
 
 /**
@@ -93,11 +94,9 @@ class DraftFinder {
 		try {
 			return $this->objects->find(
 				id: $address->draftId,
-				register: $address->register,
-				schema: $address->schema,
+				options: new ObjectFindOptions(register: $address->register, schema: $address->schema, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return null;

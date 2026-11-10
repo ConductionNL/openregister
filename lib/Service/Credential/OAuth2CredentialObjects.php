@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -71,11 +72,9 @@ final readonly class OAuth2CredentialObjects {
 	public function find(string $credentialId): ?ObjectEntity {
 		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $credentialId,
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
+			options: new ObjectFindOptions(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA, render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		));
 
 		if ($entity instanceof ObjectEntity === false) {

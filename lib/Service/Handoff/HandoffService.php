@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
@@ -144,7 +145,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * @throws \Exception       When the object cannot be read by the caller.
 	 */
 	private function loadSource(HandoffSourceRef $ref): ObjectEntity {
-		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $ref->id, register: $ref->register, schema: $ref->schema));
+		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $ref->id, options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema)));
 		if ($source === null) {
 			throw new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'Object not found.');
 		}

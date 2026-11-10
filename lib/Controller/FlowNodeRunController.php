@@ -57,6 +57,7 @@ use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
@@ -523,16 +524,14 @@ class FlowNodeRunController extends Controller {
 		try {
 			$object = $this->objects->find(
 				id: $ref['uuid'],
-				register: $ref['register'],
-				schema: $ref['schema'],
-				_rbac: false,
-				_multitenancy: true,
 				// This load is the boundary CHECK, not the business read — the
 				// node itself performs whatever reads/writes it is built to,
 				// and those are what should appear in the audit trail. Auditing
 				// this preliminary load too would double every direct-invoke
 				// call in the trail for a read that touched no shown data.
-				_audit: false
+				options: new ObjectFindOptions(register: $ref['register'], schema: $ref['schema'], audit: false),
+				_rbac: false,
+				_multitenancy: true
 			);
 		} catch (Throwable $e) {
 			return null;

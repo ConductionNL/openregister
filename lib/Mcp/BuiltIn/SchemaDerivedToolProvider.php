@@ -51,6 +51,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -556,8 +557,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $arguments['id'],
-			register: $register,
-			schema: $schema
+			options: new ObjectFindOptions(register: $register, schema: $schema)
 		));
 
 		return $object->jsonSerialize();
