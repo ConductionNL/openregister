@@ -2126,28 +2126,79 @@ class RenderObject implements RenderObjectInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): ObjectEntity {
-		if (self::isVisited(entity: $entity, visitedIds: $visitedIds) === true) {
+		$selection = new RenderSelection(extend: $_extend, filter: $filter, fields: $fields, unset: $unset);
+		$preloads  = new RenderPreloads(registers: $registers, schemas: $schemas, objects: $objects);
+		$request   = new RenderRequest(selection: $selection, preloads: $preloads, path: new RenderPath(depth: $depth, visitedIds: $visitedIds));
+		return $this->render(entity: $entity, request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end renderEntity()
+
+	/**
+	 * Render an entity with the extensions, filters and field selection a request asks for.
+	 *
+	 * @param ObjectEntity  $entity        The entity to render
+	 * @param RenderRequest $request       The selection, the preloaded registers, schemas and objects, and the path
+	 * @param bool          $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity The rendered entity with applied extensions and filters
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	public function render(ObjectEntity $entity, RenderRequest $request, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+		if (self::isVisited(entity: $entity, visitedIds: $request->path->visitedIds) === true) {
 			// @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
 			$entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
 			return $entity;
 		}
 
-		if ($depth === 0) {
+		if ($request->path->depth === 0) {
 			$this->applyReadRule(rbac: $_rbac, multitenancy: $_multitenancy);
 		}
 
 		$context = new RenderContext(
-			new RenderSelection($_extend, $filter, self::withIdentityFields(fields: $fields), $unset), new RenderPreloads($registers, $schemas, $objects),
-			new RenderPath($depth, self::withVisitedId(entity: $entity, visitedIds: $visitedIds)), $_rbac
+			self::withIdentitySelection(selection: $request->selection), $request->preloads,
+			new RenderPath($request->path->depth, self::withVisitedId(entity: $entity, visitedIds: $request->path->visitedIds)), $_rbac
 		);
 		$this->primeRenderCaches(context: $context);
 
-		$rendered = $this->renderWithContext(entity: $entity, context: $context);
+		return $this->markRendered(rendered: $this->renderWithContext(entity: $entity, context: $context));
+	}//end render()
+
+	/**
+	 * The selection with the identity fields added when the caller selected fields.
+	 *
+	 * @param RenderSelection $selection The caller's selection
+	 *
+	 * @return RenderSelection
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withIdentitySelection(RenderSelection $selection): RenderSelection {
+		return new RenderSelection(
+			extend: $selection->extend,
+			filter: $selection->filter,
+			fields: self::withIdentityFields(fields: $selection->fields),
+			unset: $selection->unset
+		);
+	}//end withIdentitySelection()
+
+	/**
+	 * Remember that an entity went through a render, so `@self.objects` can tell it from a loaded one.
+	 *
+	 * @param ObjectEntity $rendered The rendered entity
+	 *
+	 * @return ObjectEntity The same entity
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function markRendered(ObjectEntity $rendered): ObjectEntity {
 		$this->renderedEntities ??= new WeakMap();
 		$this->renderedEntities[$rendered] = true;
 
 		return $rendered;
-	}//end renderEntity()
+	}//end markRendered()
 
 	/**
 	 * Render an entity once its options are gathered in a RenderContext.
@@ -3996,14 +4047,9 @@ class RenderObject implements RenderObjectInterface {
 			$subExtend = array_merge(['all'], $run->keyExtends);
 		}
 
-		$rendered = $this->renderEntity(
+		$rendered = $this->render(
 			entity: $object,
-			_extend: $subExtend,
-			depth: $run->depth + 1,
-			filter: [],
-			fields: [],
-			unset: [],
-			visitedIds: $run->visitedIds
+			request: RenderRequest::nested(extend: $subExtend, path: new RenderPath(depth: $run->depth + 1, visitedIds: $run->visitedIds))
 		)->jsonSerialize();
 
 		return $this->applyLinkExposure(rendered: $rendered, descriptor: $run->descriptor);
@@ -4543,14 +4589,9 @@ class RenderObject implements RenderObjectInterface {
 			return $identifier;
 		}
 
-		return $this->renderEntity(
+		return $this->render(
 			entity: $related,
-			_extend: [],
-			depth: ($run->depth + 1),
-			filter: [],
-			fields: [],
-			unset: [],
-			visitedIds: $run->visitedIds
+			request: RenderRequest::nested(extend: [], path: new RenderPath(depth: ($run->depth + 1), visitedIds: $run->visitedIds))
 		)->jsonSerialize();
 	}//end resolveSourceRef()
 
@@ -4680,7 +4721,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function renderRelated(ObjectEntity $object): array {
-		return $this->renderEntity(entity: $object, _extend: [], depth: 1, filter: [], fields: [], unset: [])->jsonSerialize();
+		return $this->render(entity: $object, request: RenderRequest::nested(extend: [], path: new RenderPath(depth: 1, visitedIds: [])))->jsonSerialize();
 	}//end renderRelated()
 
 	/**
@@ -4852,46 +4893,96 @@ class RenderObject implements RenderObjectInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
-		if (is_string($_extend) === true) {
-			$_extend = explode(',', $_extend);
-		}
+		$selection = new RenderSelection(
+			extend: self::extendList(extend: $_extend), filter: self::trimmedList(value: $_filter),
+			fields: self::trimmedList(value: $_fields), unset: self::trimmedList(value: $_unset)
+		);
+		return $this->renderRows(entities: $entities, selection: $selection, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end renderEntities()
 
+	/**
+	 * Render a page of entities with one selection: extensions, filters and field selections.
+	 *
+	 * @param array           $entities      Array of ObjectEntity instances to render.
+	 * @param RenderSelection $selection     What every row shows: extend, filter, fields and unset.
+	 * @param bool            $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool            $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	public function renderRows(array $entities, RenderSelection $selection, bool $_rbac = true, bool $_multitenancy = true): array {
 		$page = new PageRender();
-		$page->extend = ($_extend ?? []);
-		$page->fields = self::trimmedList(value: $_fields);
-		$page->filter = self::trimmedList(value: $_filter);
-		$page->unset = self::trimmedList(value: $_unset);
+		$page->extend = self::extendList(extend: $selection->extend);
+		$page->fields = $selection->fields;
+		$page->filter = $selection->filter;
+		$page->unset = $selection->unset;
 		$page->rbac = $_rbac;
 		$page->multitenancy = $_multitenancy;
 
+		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
+		$this->preloadPage(extend: $page->extend, entities: $entities);
+
+		return $this->renderPage(page: $page, entities: $entities);
+	}//end renderRows()
+
+	/**
+	 * Load what every row of a page needs before the first row renders, to prevent N+1 queries.
+	 *
+	 * @param array $extend   The page's extend list
+	 * @param array $entities The page of entities
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadPage(array $extend, array $entities): void {
 		// Debug level: this fires on EVERY extended list render (hot path).
 		$this->runtime->logger->debug(
 			message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'extendParam' => $page->extend,
+				'extendParam' => $extend,
 				'entityCount' => count($entities),
 			]
 		);
 
-		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
-
 		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
-		if (empty($page->extend) === false && empty($entities) === false) {
-			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
+		if (empty($extend) === false && empty($entities) === false) {
+			$this->preloadExtendedRelations(entities: $entities, extend: $extend);
 		}
 
-		$this->prefetchPageFileIds(entities: $entities, extend: $page->extend);
+		$this->prefetchPageFileIds(entities: $entities, extend: $extend);
 
 		// PERF-1: batch-prefetch full file objects + tags for every file-typed property
 		// value across the whole page, so renderFileProperties()/getFileObject() do not
 		// issue 1+ queries per file per row. Caches are request-scoped and cleared in
 		// the finally of renderPage().
 		$this->batchPreloadFileObjects(entities: $entities);
+	}//end preloadPage()
 
-		return $this->renderPage(page: $page, entities: $entities);
-	}//end renderEntities()
+	/**
+	 * An extend option as a list: a comma-separated string split, null as no extends.
+	 *
+	 * @param array|string|null $extend The extend option
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function extendList(array|string|null $extend): array {
+		if (is_string($extend) === true) {
+			return explode(',', $extend);
+		}
+
+		return ($extend ?? []);
+	}//end extendList()
 
 	/**
 	 * A comma-separated option as a list of trimmed, non-empty names; any other value as it is.
@@ -5040,19 +5131,22 @@ class RenderObject implements RenderObjectInterface {
 	 */
 	private function renderPage(PageRender $page, array $entities): array {
 		$renderedEntities = [];
+		$selection        = new RenderSelection(
+			extend: $page->extend,
+			filter: self::trimmedList(value: $page->filter),
+			fields: self::trimmedList(value: $page->fields),
+			unset: self::trimmedList(value: $page->unset)
+		);
+		$request          = RenderRequest::page(selection: $selection);
 
 		// PERF-8: mark a page render so extendObject() skips per-row re-preloading.
 		$this->pageRenderActive = true;
 
 		try {
 			foreach ($entities as $entity) {
-				$renderedEntity = $this->renderEntity(
+				$renderedEntity = $this->render(
 					entity: $entity,
-					_extend: $page->extend,
-					depth: 0,
-					filter: $page->filter,
-					fields: $page->fields,
-					unset: $page->unset,
+					request: $request,
 					_rbac: $page->rbac,
 					_multitenancy: $page->multitenancy
 				);

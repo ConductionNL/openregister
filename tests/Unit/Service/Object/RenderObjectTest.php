@@ -6975,14 +6975,14 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 
 	/**
-	 * A RenderObject whose renderEntity() records its arguments, with the state of the real handler.
+	 * A RenderObject whose render() records its request and flags, with the state of the real handler.
 	 *
-	 * @param array $calls Receives each renderEntity() call.
+	 * @param array $calls Receives each render() call, its request flattened in renderEntity()'s parameter order.
 	 *
 	 * @return RenderObject
 	 */
 	private function renderEntitySpy(array &$calls): RenderObject {
-		$spy = $this->getMockBuilder(RenderObject::class)->disableOriginalConstructor()->onlyMethods(['renderEntity'])->getMock();
+		$spy = $this->getMockBuilder(RenderObject::class)->disableOriginalConstructor()->onlyMethods(['render'])->getMock();
 		$values = [];
 		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
 			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true) {
@@ -6996,9 +6996,13 @@ class RenderObjectTest extends TestCase {
 			}
 		}, $spy, RenderObject::class)($values);
 
-		$spy->method('renderEntity')->willReturnCallback(
-			function (ObjectEntity $entity, ...$args) use (&$calls, $spy): ObjectEntity {
+		$spy->method('render')->willReturnCallback(
+			function (ObjectEntity $entity, \OCA\OpenRegister\Service\Object\RenderRequest $request, bool $rbac, bool $multitenancy) use (&$calls, $spy): ObjectEntity {
 				$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+				$args = [
+					$request->selection->extend, $request->path->depth, $request->selection->filter, $request->selection->fields, $request->selection->unset,
+					$request->preloads->registers, $request->preloads->schemas, $request->preloads->objects, $request->path->visitedIds, $rbac, $multitenancy,
+				];
 				$calls[] = ['uuid' => $entity->getUuid(), 'args' => $args, 'fileIds' => $state[0], 'pageRender' => $state[1]];
 				return $entity;
 			}
@@ -7061,6 +7065,20 @@ class RenderObjectTest extends TestCase {
 			[['@self.files'], 0, ['a' => ' b '], [' c '], null, [], [], [], [], true, true],
 			$calls[0]['args']
 		);
+	}
+
+	/**
+	 * renderRows() renders every row with the selection it is given, as renderEntities() does with list options.
+	 *
+	 * @return void
+	 */
+	public function testRenderRowsRendersEveryRowWithTheSelection(): void {
+		$this->setupBasicMocks();
+		$calls = [];
+		$selection = new \OCA\OpenRegister\Service\Object\RenderSelection(['owner'], ['a' => 'b'], ['name'], ['secret']);
+		$this->renderEntitySpy($calls)->renderRows([$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')], $selection, false, true);
+
+		$this->assertSame([['owner'], 0, ['a' => 'b'], ['name'], ['secret'], [], [], [], [], false, true], $calls[0]['args']);
 	}
 
 	// =========================================================================
