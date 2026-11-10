@@ -27,10 +27,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCP\AppFramework\Controller;
@@ -143,13 +145,22 @@ class ObjectStateController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function freeze(string $register, string $schema, string $id): JSONResponse {
-		$verb = fn (?string $reason): array => $this->archiveHandler->freeze(
-			request: new ObjectStateRequest(identifier: $id, reason: $reason, register: $register, schema: $schema),
+		return $this->asSignedInUser(verb: $this->freezing(ref: new ObjectRef(register: $register, schema: $schema, id: $id)));
+	}//end freeze()
+
+	/**
+	 * The freeze verb for one object; the requested state is read when it runs.
+	 *
+	 * @param ObjectRef $ref The object as the route names it.
+	 *
+	 * @return Closure(?string): array<string, mixed> The verb, given the reason.
+	 */
+	private function freezing(ObjectRef $ref): Closure {
+		return fn (?string $reason): array => $this->archiveHandler->freeze(
+			request: new ObjectStateRequest(identifier: $ref->id, reason: $reason, register: (string)$ref->register, schema: (string)$ref->schema),
 			state: $this->textFromRequest(key: 'state')
 		);
-
-		return $this->asSignedInUser(verb: $verb);
-	}//end freeze()
+	}//end freezing()
 
 	/**
 	 * Unfreeze an object.

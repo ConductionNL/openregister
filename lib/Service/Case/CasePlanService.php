@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CasePlanExistsException;
 use OCA\OpenRegister\Exception\CaseValidationException;
@@ -431,7 +432,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	public function findStuck(?string $type, ?string $state, int $limit, int $offset, ?string $uid): array {
 		$this->assertListsAcrossCases(uid: $uid);
 
-		return $this->stuckPage(query: new CaseStuckItemsQuery(type: $type, state: $state, limit: $limit, offset: $offset));
+		return $this->stuckPage(query: new ListQuery(limit: $limit, offset: $offset, filters: ['type' => $type, 'state' => $state]));
 	}//end findStuck()
 
 	/**
@@ -453,18 +454,21 @@ class CasePlanService implements CasePlanServiceInterface {
 	/**
 	 * One page of items by type and state, with the total computed in the datastore.
 	 *
-	 * @param CaseStuckItemsQuery $query The filters and the page.
+	 * @param ListQuery $query The page, and the `type` and `state` filters (either null for any).
 	 *
 	 * @return array<string, mixed> results, total, limit, offset.
 	 */
-	private function stuckPage(CaseStuckItemsQuery $query): array {
-		$rows = $this->store->items->findByTypeAndState(type: $query->type, state: $query->state, limit: $query->limit, offset: $query->offset);
+	private function stuckPage(ListQuery $query): array {
+		$type = ($query->filters['type'] ?? null);
+		$state = ($query->filters['state'] ?? null);
+		$offset = (int)$query->offset;
+		$rows = $this->store->items->findByTypeAndState(type: $type, state: $state, limit: $query->limit, offset: $offset);
 
 		return [
 			'results' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
-			'total' => $this->store->items->countByTypeAndState(type: $query->type, state: $query->state),
+			'total' => $this->store->items->countByTypeAndState(type: $type, state: $state),
 			'limit' => $query->limit,
-			'offset' => $query->offset,
+			'offset' => $offset,
 		];
 	}//end stuckPage()
 

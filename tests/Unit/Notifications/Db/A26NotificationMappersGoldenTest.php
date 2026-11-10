@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
+use OCA\OpenRegister\Notifications\Db\DispatchIdempotencyKey;
 use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
 use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\HistoryNotice;
@@ -156,8 +157,8 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'dedupe deleteSeenBefore fail'  => [$dedupe, 'deleteSeenBefore', [$at], [], true],
 			'dedupe listRuleKeys'           => [$dedupe, 'listRuleKeysForSchema', [2], [self::ROWS_TWO], false],
 			'dedupe listRuleKeys failure'   => [$dedupe, 'listRuleKeysForSchema', [2], [], true],
-			'log isDuplicate yes'           => [$log, 'isDuplicate', ['n', 'k', 60], [[['c' => 1]]], false],
-			'log isDuplicate no'            => [$log, 'isDuplicate', ['n', 'k'], [[['c' => 0]]], false],
+			'log isDuplicate yes'           => [$log, 'isDuplicate', [new DispatchIdempotencyKey('n', 'k'), 60], [[['c' => 1]]], false],
+			'log isDuplicate no'            => [$log, 'isDuplicate', [new DispatchIdempotencyKey('n', 'k')], [[['c' => 0]]], false],
 			'log record'                    => [$log, 'record', ['n', 'k'], [], false],
 			'log record duplicate'          => [$logRacing(true), 'record', ['n', 'k'], [], false],
 			'log record other failure'      => [$logRacing(false), 'record', ['n', 'k'], [], false],

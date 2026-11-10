@@ -24,7 +24,6 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -95,13 +94,11 @@ class ReadFileHandler {
 	 *
 	 * @param ReadFileSources               $sources              The root folder, folders, objects and file metadata a read looks in.
 	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
 	 * @param LoggerInterface               $logger               Logger for logging operations.
 	 */
 	public function __construct(
 		ReadFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->rootFolder = $sources->rootFolder;
