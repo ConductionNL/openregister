@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
+use OCA\OpenRegister\Service\Case\AppPlanWrite;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
@@ -577,7 +578,13 @@ class CasePlanServiceTest extends TestCase {
 		$this->anchor->method('read')->willReturn(['status' => 'open']);
 		$this->anchor->method('mayRead')->willReturn(false);
 
-		$plan = $this->service()->createPlanAsSystem(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), app: 'dossiq');
+		$plan = $this->service()->createPlanAsSystem(
+			write: new AppPlanWrite(
+				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1),
+				definition: CasePlanDefinitionTest::permitDefinition(),
+				app: 'dossiq'
+			)
+		);
 		$this->assertCount(7, $plan['items']);
 		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
 		$this->assertCount(7, $this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: 'dossiq')['items']);

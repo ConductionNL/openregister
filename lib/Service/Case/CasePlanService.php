@@ -175,11 +175,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * running inside the server reaches it, and it can already write every
 	 * row. The audit names `system:<app>`. Never routed.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param int|null $registerId Its register.
-	 * @param int|null $schemaId Its schema.
-	 * @param array<string, mixed> $definition The definition (`settings`, `items`).
-	 * @param string $app The acting app id.
+	 * @param AppPlanWrite $write The anchor, the definition and the acting app id.
 	 *
 	 * @return array<string, mixed> The plan as {@see getPlan()} returns it.
 	 *
@@ -189,12 +185,11 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
-	public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
-		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId);
-		$creation = new CasePlanCreation(anchor: $anchor, definition: $definition, actor: $this->systemActor(app: $app));
-		$this->insertNormalised(creation: $creation, normalised: $this->mechanics->definitions->validate(definition: $definition));
+	public function createPlanAsSystem(AppPlanWrite $write): array {
+		$creation = new CasePlanCreation(anchor: $write->anchor, definition: $write->definition, actor: $this->systemActor(app: $write->app));
+		$this->insertNormalised(creation: $creation, normalised: $this->mechanics->definitions->validate(definition: $write->definition));
 
-		return $this->getPlanAsSystem(objectUuid: $objectUuid, app: $app);
+		return $this->getPlanAsSystem(objectUuid: $write->anchor->objectUuid, app: $write->app);
 	}//end createPlanAsSystem()
 
 	/**
