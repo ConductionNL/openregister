@@ -181,13 +181,27 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 
 		foreach ($rules as $index => $rule) {
 			$usable = $this->usableRule(index: $index, rule: $rule);
-			if ($usable !== null && $this->conditionMatches(rule: $usable, row: $row) === true) {
+			if ($this->usableAndMatching(rule: $usable, row: $row) === true) {
 				return ['index' => (int)$index, 'retention' => $usable->retention];
 			}
 		}
 
 		return null;
 	}//end firstMatchingRule()
+
+	/**
+	 * Whether a rule is usable and its condition matches the row.
+	 *
+	 * @param IndexedRule|null     $rule The rule, null when it is unusable.
+	 * @param array<string, mixed> $row  Row data keyed by field name.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-true IndexedRule $rule
+	 */
+	private function usableAndMatching(?IndexedRule $rule, array $row): bool {
+		return ($rule !== null && $this->conditionMatches(rule: $rule, row: $row) === true);
+	}//end usableAndMatching()
 
 	/**
 	 * A rule with a string condition and a string retention, or null.
