@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Notifications\Search;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntrySearch;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -210,11 +211,8 @@ class TimelineEntriesProvider implements IFilteringProvider {
 			$kind = null;
 		}
 
-		$hits = $this->entries->search(
-			term: $term,
-			visibility: null,
-			kind: $kind,
-			limit: self::PAGE_LIMIT
+		$hits = $this->entries->findHits(
+			search: new EntrySearch(term: $term, visibility: null, kind: $kind, limit: self::PAGE_LIMIT)
 		);
 
 		$rows = [];

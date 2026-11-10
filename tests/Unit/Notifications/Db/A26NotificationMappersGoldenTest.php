@@ -45,6 +45,7 @@ use OCA\OpenRegister\Notifications\Db\ReferencePatternMapper;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
+use OCA\OpenRegister\Notifications\Db\TimelineSearch;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
@@ -234,10 +235,10 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'entry findByComment missing'    => [$entries, 'findByComment', [12], [[]], false],
 			'entry findForObject'            => [$entries, 'findForObject', ['o-1'], [[self::ROW]], false],
 			'entry findForObject public'     => [$entries, 'findForObject', ['o-1', 'public', 5, 10], [[]], false],
-			'entry search'                   => [$entries, 'search', ['50%_off', new TimelineEntryScope()], [[self::ROW]], false],
-			'entry search narrowed'          => [$entries, 'search', ['x', new TimelineEntryScope(['o-1', 'o-2'], 'call', 900), 'public'], [[]], false],
-			'entry search no objects'        => [$entries, 'search', ['x', new TimelineEntryScope([])], [], false],
-			'entry search low limit'         => [$entries, 'search', ['x', new TimelineEntryScope(null, null, 0)], [[]], false],
+			'entry search'                   => [$entries, 'searchEntries', [new TimelineSearch('50%_off', new TimelineEntryScope())], [[self::ROW]], false],
+			'entry search narrowed'          => [$entries, 'searchEntries', [new TimelineSearch('x', new TimelineEntryScope(['o-1', 'o-2'], 'call', 900), 'public')], [[]], false],
+			'entry search no objects'        => [$entries, 'searchEntries', [new TimelineSearch('x', new TimelineEntryScope([]))], [], false],
+			'entry search low limit'         => [$entries, 'searchEntries', [new TimelineSearch('x', new TimelineEntryScope(null, null, 0))], [[]], false],
 			'entry followUps'                => [$entries, 'findOpenFollowUps', [new TimelineEntryScope()], [[self::ROW]], false],
 			'entry followUps narrowed'       => [$entries, 'findOpenFollowUps', [new TimelineEntryScope(['o-1'], 'call', 3)], [[]], false],
 			'entry followUps no objects'     => [$entries, 'findOpenFollowUps', [new TimelineEntryScope([])], [], false],
