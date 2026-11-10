@@ -56,17 +56,13 @@ interface WriteConstraintValidatorInterface {
 	 * MUST throw `ValidationException` (or return an equivalent 422 response) when
 	 * this method returns a non-empty list.
 	 *
-	 * @param array $incomingObject The candidate object data (top-level keys
-	 *                              are property names).
-	 * @param array $existingObject The previously-stored object data (same
-	 *                              shape). Pass the empty array `[]` to
-	 *                              opt out (CREATE / no existing record).
-	 * @param Schema $schema The schema whose `readOnly` declarations
-	 *                       drive enforcement.
+	 * @param WriteConstraintCheck $check  The candidate and the previously-stored object data. An empty
+	 *                                     stored side opts out (CREATE / no existing record).
+	 * @param Schema               $schema The schema whose `readOnly` declarations drive enforcement.
 	 *
 	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
 	 */
-	public function validateReadOnlyConstraints(array $incomingObject, array $existingObject, Schema $schema): array;
+	public function validateReadOnlyConstraints(WriteConstraintCheck $check, Schema $schema): array;
 
 	/**
 	 * Enforce `immutable: true` on the UPDATE write path.
@@ -86,14 +82,13 @@ interface WriteConstraintValidatorInterface {
 	 * Returns the list of violations, empty when the update is compliant.
 	 * Callers MUST refuse the write when this returns a non-empty list.
 	 *
-	 * @param array $incomingObject The candidate object data.
-	 * @param array $existingObject The previously-stored object data. Pass `[]`
-	 *                              to opt out (CREATE / no existing record).
-	 * @param Schema $schema The schema whose declarations drive enforcement.
+	 * @param WriteConstraintCheck $check  The candidate and the previously-stored object data. An empty
+	 *                                     stored side opts out (CREATE / no existing record).
+	 * @param Schema               $schema The schema whose declarations drive enforcement.
 	 *
 	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function validateImmutableConstraints(array $incomingObject, array $existingObject, Schema $schema): array;
+	public function validateImmutableConstraints(WriteConstraintCheck $check, Schema $schema): array;
 }//end interface

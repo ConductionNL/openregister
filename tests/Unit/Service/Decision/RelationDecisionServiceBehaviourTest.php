@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Decision;
 
 use OCA\OpenRegister\Db\Decision;
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
@@ -95,7 +96,8 @@ class RelationDecisionServiceBehaviourTest extends TestCase
             ['policy' => ReviewPolicy::fromDeclaration(declaration: ['ownership' => 'decider']), 'subject' => ['subjectId' => '5']]
         );
         $this->relations->method('updateDecisionMetadata')->willReturnCallback(
-            static function (EntityRelation $relation, array $fields): EntityRelation {
+            static function (DecisionMetadataEdit $edit): EntityRelation {
+                [$relation, $fields] = [$edit->relation, $edit->fields];
                 if (array_key_exists('bases', $fields) === true) {
                     $relation->setBases($fields['bases']);
                 }

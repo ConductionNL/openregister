@@ -40,10 +40,9 @@ interface AuditTrailPageQueryInterface {
 	/**
 	 * One page, newest first.
 	 *
-	 * @param array<string, mixed> $filters  Keys of AuditTrailPageQuery::FILTER_COLUMNS plus `from` and `to` (dates).
-	 * @param string|null          $search   Full text on the change summary.
-	 * @param int                  $limit    Page size, at most MAX_LIMIT.
-	 * @param int|null             $beforeId The cursor: only rows with a smaller id.
+	 * @param AuditTrail\AuditPageRequest $request The criteria (keys of AuditTrailPageQuery::FILTER_COLUMNS plus `from`
+	 *                                             and `to`, and the full-text search), the page size (at most
+	 *                                             MAX_LIMIT) and the cursor.
 	 *
 	 * @return array{results: AuditTrail[], nextCursor: int|null} The rows and the cursor of the next page, null at the end.
 	 *
@@ -51,18 +50,17 @@ interface AuditTrailPageQueryInterface {
 	 *
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
 	 */
-	public function page(array $filters, ?string $search, int $limit, ?int $beforeId = null): array;
+	public function page(AuditTrail\AuditPageRequest $request): array;
 
 	/**
 	 * Every row matching the filters, in pages, up to a ceiling.
 	 *
-	 * @param array<string, mixed> $filters The filters, as for page().
-	 * @param string|null          $search  Full text on the change summary.
-	 * @param int                  $ceiling The most rows to return.
+	 * @param AuditTrail\AuditTrailCriteria $criteria The filters, as for page(), and the full-text search.
+	 * @param int                           $ceiling  The most rows to return.
 	 *
 	 * @return array{results: AuditTrail[], truncated: bool} The rows, and whether more matched than the ceiling.
 	 *
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
-	public function collect(array $filters, ?string $search, int $ceiling): array;
+	public function collect(AuditTrail\AuditTrailCriteria $criteria, int $ceiling): array;
 }//end interface

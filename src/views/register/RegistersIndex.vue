@@ -213,6 +213,74 @@ function warmupSuccessText(data) {
 }
 
 /**
+ * The toast after a warmup, from the endpoint's answer.
+ *
+ * @param {object|null} data The warmup response body
+ * @return {string} The translated message
+ */
+function warmupResultText(data) {
+	if (data && data.success) {
+		return warmupSuccessText(data)
+	}
+	return t('openregister', 'Names cache warmup completed')
+}
+
+/**
+ * Ask the server to rebuild the names cache.
+ *
+ * @return {Promise<object>} The axios response
+ */
+function postNamesWarmup() {
+	const baseUrl = window.location.origin
+	// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
+	// the server rebuild the entire name cache. That route is gone
+	// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
+	// maintenance action on an admin screen should have been calling.
+	const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
+	return axios.post(
+		apiUrl,
+		{},
+		{
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
+		},
+	)
+}
+
+/**
+ * The URL of a register's OpenAPI specification.
+ *
+ * @param {object} register The register row
+ * @return {string} The absolute URL
+ */
+function registerOasUrl(register) {
+	const baseUrl = window.location.origin
+	return `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
+}
+
+/**
+ * Let the browser save data as a pretty-printed JSON file.
+ *
+ * @param {object} data The data to save
+ * @param {string} filename The file name to offer
+ * @return {void}
+ */
+function saveJsonFile(data, filename) {
+	const blob = new Blob([JSON.stringify(data, null, 2)], {
+		type: 'application/json',
+	})
+	const downloadLink = document.createElement('a')
+	downloadLink.href = URL.createObjectURL(blob)
+	downloadLink.download = filename
+	document.body.appendChild(downloadLink)
+	downloadLink.click()
+	document.body.removeChild(downloadLink)
+	URL.revokeObjectURL(downloadLink.href)
+}
+
+/**
  * The reason a request failed: the server's message, else the error's own.
  *
  * @param {object} error The axios error
@@ -220,6 +288,29 @@ function warmupSuccessText(data) {
  */
 function failureText(error) {
 	return error.response?.data?.message || error.message || 'Unknown error'
+}
+
+/**
+ * Whether objects are still attached to a register.
+ *
+ * @param {object} register The register row
+ * @return {boolean} True while it holds objects
+ */
+function hasAttachedObjects(register) {
+	return register.stats?.total > 0
+}
+
+/**
+ * Why the delete entry is locked: '' unless objects are still attached.
+ *
+ * @param {object} register The register row
+ * @return {string} The reason
+ */
+function deleteLockReason(register) {
+	if (!hasAttachedObjects(register)) {
+		return ''
+	}
+	return t('openregister', 'Cannot delete: objects are still attached')
 }
 
 export default {
@@ -456,18 +547,31 @@ export default {
 		 * @return {object}
 		 */
 		lockedEdit(register) {
-			const locked = this.isManagedByExternalConfig(register)
-			const title = this.getManagingConfiguration(register)?.title
-			return editAction(() => this.$refs.indexPage.openFormDialog(register), {
-				title: locked
-					? t(
-							'openregister',
-							'Cannot edit: This register is managed by external configuration {title}',
-							{ title },
-						)
-					: '',
-				disabled: locked,
+			const openForm = () => this.$refs.indexPage.openFormDialog(register)
+			return editAction(openForm, {
+				title: this.editLockReason(register),
+				disabled: this.isManagedByExternalConfig(register),
 			})
+		},
+
+		/**
+		 * Why the edit entry is locked: '' unless an external configuration
+		 * manages the register.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @return {string}
+		 */
+		editLockReason(register) {
+			if (!this.isManagedByExternalConfig(register)) {
+				return ''
+			}
+			const title = this.getManagingConfiguration(register)?.title
+			return t(
+				'openregister',
+				'Cannot edit: This register is managed by external configuration {title}',
+				{ title },
+			)
 		},
 
 		/**
@@ -479,13 +583,10 @@ export default {
 		 * @return {object}
 		 */
 		lockedDelete(register, selected) {
-			const locked = register.stats?.total > 0
 			const run = selected(() => navigationStore.setDialog('deleteRegister'))
 			return deleteAction(run, {
-				title: locked
-					? t('openregister', 'Cannot delete: objects are still attached')
-					: '',
-				disabled: locked,
+				title: deleteLockReason(register),
+				disabled: hasAttachedObjects(register),
 			})
 		},
 
@@ -590,20 +691,12 @@ export default {
 		 * @spec exclude list-view row-action; fetches and downloads the register OAS as JSON (oas-validation contract)
 		 */
 		async downloadOas(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${register.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				const response = await axios.get(registerOasUrl(register))
+				saveJsonFile(
+					response.data,
+					`${register.title.toLowerCase()}-api-specification.json`,
+				)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -615,10 +708,8 @@ export default {
 		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
 		 */
 		viewOasDoc(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
+				`https://redocly.github.io/redoc/?url=${encodeURIComponent(registerOasUrl(register))}`,
 				'_blank',
 			)
 		},
@@ -639,32 +730,10 @@ export default {
 		 * @spec exclude list-view action; POSTs to the names-cache warmup endpoint and reports results via toast
 		 */
 		async warmupNamesCache() {
-			const baseUrl = window.location.origin
-			// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
-			// the server rebuild the entire name cache. That route is gone
-			// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
-			// maintenance action on an admin screen should have been calling.
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
-
 			try {
 				showSuccess(t('openregister', 'Starting names cache warmup...'))
-
-				const response = await axios.post(
-					apiUrl,
-					{},
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
-				if (response.data && response.data.success) {
-					showSuccess(warmupSuccessText(response.data))
-				} else {
-					showSuccess(t('openregister', 'Names cache warmup completed'))
-				}
+				const response = await postNamesWarmup()
+				showSuccess(warmupResultText(response.data))
 			} catch (error) {
 				console.error('Error warming up names cache:', error)
 				showError(

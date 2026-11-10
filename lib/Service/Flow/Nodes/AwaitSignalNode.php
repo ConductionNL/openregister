@@ -58,6 +58,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowStop;
@@ -257,9 +258,7 @@ class AwaitSignalNode implements IFlowNode, AwaitSignalNodeInterface, IFlowNodeC
 	/**
 	 * Suspend until answered; pass the answer on when it arrives.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each carrying the answer.
 	 *
@@ -268,7 +267,10 @@ class AwaitSignalNode implements IFlowNode, AwaitSignalNodeInterface, IFlowNodeC
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->await(step: new NodeInvocation(items: $items, config: $config, context: $context));
 	}//end execute()
 

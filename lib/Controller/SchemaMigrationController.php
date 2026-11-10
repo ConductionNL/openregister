@@ -37,6 +37,7 @@ use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\Schema;
@@ -216,7 +217,10 @@ class SchemaMigrationController extends Controller {
 		$limit = $this->intParam(name: '_limit');
 		$offset = $this->intParam(name: '_offset');
 
-		$entries = $this->mappers->changelogMapper->findBySchema(schemaId: $id, limit: $limit, offset: $offset);
+		$entries = $this->mappers->changelogMapper->findBySchema(
+			schemaId: $id,
+			query: new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset)
+		);
 
 		return new JSONResponse(['results' => array_map(static fn ($e) => $e->jsonSerialize(), $entries)]);
 	}//end changelog()
@@ -278,8 +282,7 @@ class SchemaMigrationController extends Controller {
 	public function runs(int $id): JSONResponse {
 		$runs = $this->mappers->runMapper->findBySchema(
 			schemaId: $id,
-			limit: $this->intParam(name: '_limit'),
-			offset: $this->intParam(name: '_offset')
+			query: new ListQuery(limit: $this->intParam(name: '_limit') ?? ListQuery::UNBOUNDED, offset: $this->intParam(name: '_offset'))
 		);
 
 		return new JSONResponse(['results' => array_map(static fn ($r) => $r->jsonSerialize(), $runs)]);

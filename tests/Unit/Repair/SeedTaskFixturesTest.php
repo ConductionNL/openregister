@@ -239,4 +239,19 @@ class SeedTaskFixturesTest extends TestCase {
 		$this->step(enabled: true)->run(output: $output);
 		$this->assertSame('Seed the task fixtures (flow-task-entity)', $this->step(enabled: true)->getName());
 	}//end testAFailingFixtureIsReportedAndTheRestContinue()
+	/**
+	 * Characterisation: the exact five fixtures, task fields and audit rows,
+	 * pinned so a restructuring of the fixture builders cannot drift.
+	 *
+	 * @return void
+	 */
+	public function testTheFixturesArePinned(): void {
+		$fixtures = (new \ReflectionMethod(SeedTaskFixtures::class, 'fixtures'))->invoke($this->step(true));
+
+		$this->assertSame(
+			['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000005'],
+			array_column($fixtures, 'uuid')
+		);
+		$this->assertSame('31086393d07157ddb696f60909e854699b09f9570e92d42bb0ec535a5a9a457f', hash('sha256', serialize($fixtures)));
+	}//end testTheFixturesArePinned()
 }//end class
