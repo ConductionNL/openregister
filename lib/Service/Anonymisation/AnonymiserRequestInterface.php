@@ -46,9 +46,7 @@ interface AnonymiserRequestInterface {
 	 * unsigned requests, so a plain HTTP call to the internal host would fail —
 	 * routing and auth headers are handled by AppAPI.
 	 *
-	 * @param string $route ExApp route (e.g. `/api/v1/analyze`).
-	 * @param array<string, mixed> $params Request body parameters.
-	 * @param string $method HTTP method (default POST).
+	 * @param AnonymiserCall $call The ExApp route (e.g. `/api/v1/analyze`), the request body parameters and the HTTP method.
 	 *
 	 * @return array<string, mixed>|null Decoded JSON response, or null on failure.
 	 *
@@ -56,5 +54,5 @@ interface AnonymiserRequestInterface {
 	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
-	public function requestOpenAnonymiser(string $route, array $params, string $method = 'POST'): ?array;
+	public function requestOpenAnonymiser(AnonymiserCall $call): ?array;
 }//end interface

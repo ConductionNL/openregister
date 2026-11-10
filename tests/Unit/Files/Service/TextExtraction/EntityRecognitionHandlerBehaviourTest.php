@@ -48,6 +48,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Service\Anonymisation\AnonymiserCall;
 
 class EntityRecognitionHandlerBehaviourTest extends TestCase {
 
@@ -226,7 +227,7 @@ class EntityRecognitionHandlerBehaviourTest extends TestCase {
 		$this->settings->method('getFileSettingsOnly')->willReturn(['openAnonymiserApiEndpoint' => 'http://127.0.0.1:1']);
 		$this->anonymiser->expects($this->once())
 			->method('requestOpenAnonymiser')
-			->with('/api/v1/analyze', ['text' => 'Jan', 'language' => 'nl'])
+			->with(new AnonymiserCall('/api/v1/analyze', ['text' => 'Jan', 'language' => 'nl'], 'POST'))
 			->willReturn([['entity_type' => 'PERSON', 'start' => 0, 'end' => 3, 'score' => 0.7]]);
 		$this->logger->expects($this->never())->method('error');
 
