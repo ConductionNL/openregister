@@ -30,7 +30,9 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\SharedMasterDataService;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use RuntimeException;
@@ -49,6 +51,13 @@ final class SaveObjectResolvedSaveGuardsTest extends TestCase {
 	 * @var array<int, array>
 	 */
 	private array $normalised = [];
+
+	/**
+	 * Every service the handler asked its container for.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $asked = [];
 
 	/**
 	 * Run saveResolvedObject on a call with these flags and schema answers; answer what stopped it.
@@ -75,6 +84,15 @@ final class SaveObjectResolvedSaveGuardsTest extends TestCase {
 		$mapper->method('find')->willThrowException(new RuntimeException('stopped at the stored-object lookup'));
 		$reflection->getProperty('objectEntityMapper')->setValue($handler, $mapper);
 		$reflection->getProperty('logger')->setValue($handler, new NullLogger());
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id): object {
+				$this->asked[] = $id;
+
+				return new \stdClass();
+			}
+		);
+		$reflection->getProperty('container')->setValue($handler, $container);
 
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getObjectSource')->willReturn($source);
@@ -111,6 +129,7 @@ final class SaveObjectResolvedSaveGuardsTest extends TestCase {
 			$this->stopOf(flags: $flags, source: ['provider' => 'view'], guarded: true)
 		);
 		$this->assertSame([['title' => 'x']], $this->normalised);
+		$this->assertSame([], $this->asked);
 	}//end testANonPersistingRbacOffSaveSkipsTheGuards()
 
 	/**
@@ -128,5 +147,24 @@ final class SaveObjectResolvedSaveGuardsTest extends TestCase {
 			['RuntimeException: stopped at the stored-object lookup', ['title' => 'x', 'normalised' => true]],
 			$this->stopOf(flags: $flags, source: null, guarded: false)
 		);
+		$this->assertSame([], $this->asked);
 	}//end testAPlainPersistingSaveReachesTheLookup()
+
+	/**
+	 * A persisting multitenant save asks for the shared master data guard first.
+	 *
+	 * @return void
+	 */
+	public function testAPersistingMultitenantSaveAsksTheSharedMasterDataGuard(): void {
+		$flags = new ObjectSaveFlags();
+		$flags->persist = true;
+		$flags->multitenancy = true;
+		$flags->rbac = false;
+
+		$this->assertSame(
+			['RuntimeException: stopped at the stored-object lookup', ['title' => 'x', 'normalised' => true]],
+			$this->stopOf(flags: $flags, source: null, guarded: true)
+		);
+		$this->assertSame([SharedMasterDataService::class], $this->asked);
+	}//end testAPersistingMultitenantSaveAsksTheSharedMasterDataGuard()
 }//end class
