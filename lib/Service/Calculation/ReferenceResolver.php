@@ -327,6 +327,18 @@ class ReferenceResolver implements ReferenceResolverInterface {
 		// saving object's tenant are dropped by the guard, keeping the sort
 		// order so the most-relevant ADMITTED row wins.
 		$results = $this->objectService->findAll($config, _rbac: false, _multitenancy: false);
+		return $this->lookupOutcome(query: $query, results: $results);
+	}//end resolveLookup()
+
+	/**
+	 * The lookup's outcome: the first row the saving object's tenant admits, or nothing when no row matched.
+	 *
+	 * @param ReferenceQuery      $query   The saving object's organisation.
+	 * @param array<int, mixed> $results The matching rows, most relevant first.
+	 *
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted row (or null), and whether any row matched.
+	 */
+	private function lookupOutcome(ReferenceQuery $query, array $results): array {
 		if (count($results) === 0) {
 			return ['entity' => null, 'attempted' => false];
 		}
@@ -335,7 +347,7 @@ class ReferenceResolver implements ReferenceResolverInterface {
 			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $query->organisation, candidates: $results),
 			'attempted' => true,
 		];
-	}//end resolveLookup()
+	}//end lookupOutcome()
 
 	/**
 	 * The findAll() configuration of a lookup.
