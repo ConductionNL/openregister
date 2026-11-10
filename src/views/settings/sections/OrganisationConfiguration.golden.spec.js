@@ -127,4 +127,16 @@ describe('OrganisationConfiguration', () => {
 		await ctx.saveSettings()
 		expect({ data: dataOf(ctx), logged: logged.mock.calls.map(([text]) => text) }).toMatchSnapshot()
 	})
+
+	it.each([
+		['full statistics', () => Promise.resolve({ data: { total: 4, active: 3, totalMembers: 9, avgMembers: 2.25 } })],
+		['empty statistics', () => Promise.resolve({ data: {} })],
+		['no answer body', () => Promise.resolve({ data: null })],
+		['a failure', () => Promise.reject(new Error('offline'))],
+	])('loads %s', async (label, answer) => {
+		const ctx = section({ stats: { kept: true } })
+		axios.get.mockImplementation(answer)
+		await ctx.loadStatistics()
+		expect({ stats: ctx.stats, calls: axios.get.mock.calls, logged: logged.mock.calls.map(([text]) => text) }).toMatchSnapshot()
+	})
 })

@@ -34,6 +34,70 @@ exports[`OrganisationConfiguration keeps the settings when they cannot be read 1
 }
 `;
 
+exports[`OrganisationConfiguration loads a failure 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [
+    "Error loading statistics:",
+  ],
+  "stats": {
+    "kept": true,
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads empty statistics 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [],
+  "stats": {
+    "activeOrganisations": 0,
+    "averageMembersPerOrg": 0,
+    "totalMembers": 0,
+    "totalOrganisations": 0,
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads full statistics 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [],
+  "stats": {
+    "activeOrganisations": 3,
+    "averageMembersPerOrg": 2.25,
+    "totalMembers": 9,
+    "totalOrganisations": 4,
+  },
+}
+`;
+
+exports[`OrganisationConfiguration loads no answer body 1`] = `
+{
+  "calls": [
+    [
+      "/gen/apps/openregister/api/organisations/statistics",
+    ],
+  ],
+  "logged": [],
+  "stats": {
+    "kept": true,
+  },
+}
+`;
+
 exports[`OrganisationConfiguration loads the organisations from a failure 1`] = `
 {
   "data": {
