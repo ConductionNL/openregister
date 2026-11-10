@@ -94,11 +94,13 @@ final class ReferenceFilterDeclaration {
 	 * Constructor.
 	 *
 	 * @param array<int, array{field: string, op: string, from: string}> $conditions The parsed conditions.
+	 * @param string                                                     $path       The property path, for messages.
 	 *
 	 * @return void
 	 */
 	private function __construct(
 		public readonly array $conditions,
+		public readonly string $path = '',
 	) {
 	}//end __construct()
 
@@ -119,29 +121,29 @@ final class ReferenceFilterDeclaration {
 			return null;
 		}
 
+		self::assertNarrowsAReference(property: $property, path: $path);
 		$raw = $property[self::ANNOTATION];
-		self::assertNarrowsAReference(raw: $raw, property: $property, path: $path);
 
 		$conditions = [];
 		foreach ($raw as $index => $condition) {
 			$conditions[] = self::condition(condition: $condition, path: $path . '/' . (string)$index);
 		}
 
-		return new self(conditions: $conditions);
+		return new self(conditions: $conditions, path: $path);
 	}//end fromProperty()
 
 	/**
 	 * Refuse a filter that is no list of conditions, or sits on a property that references nothing.
 	 *
-	 * @param mixed                $raw      The declared filter.
-	 * @param array<string, mixed> $property The schema property definition.
+	 * @param array<string, mixed> $property The schema property definition, carrying the declared filter.
 	 * @param string               $path     The property path, for the message.
 	 *
 	 * @return void
 	 *
 	 * @throws ReferenceFilterException When the filter cannot narrow anything.
 	 */
-	private static function assertNarrowsAReference(mixed $raw, array $property, string $path): void {
+	private static function assertNarrowsAReference(array $property, string $path): void {
+		$raw = $property[self::ANNOTATION];
 		if (is_array($raw) === false || $raw === []) {
 			throw self::refusal(message: sprintf('%s at \'%s\' must be a non-empty list of conditions.', self::ANNOTATION, $path), path: $path);
 		}
@@ -205,7 +207,6 @@ final class ReferenceFilterDeclaration {
 	 *
 	 * @param array<string, mixed> $ownProperties The properties of the schema holding the reference.
 	 * @param array<string, mixed> $farProperties The properties of the referenced schema.
-	 * @param string               $path          The property path, for the message.
 	 *
 	 * @return void
 	 *
@@ -213,7 +214,8 @@ final class ReferenceFilterDeclaration {
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
-	public function assertOperandsExist(array $ownProperties, array $farProperties, string $path = ''): void {
+	public function assertOperandsExist(array $ownProperties, array $farProperties): void {
+		$path = $this->path;
 		foreach ($this->conditions as $condition) {
 			if (array_key_exists($condition['from'], $ownProperties) === false) {
 				throw self::refusal(message: sprintf(self::MSG_UNKNOWN_FROM, $path, $condition['from']), path: $path);

@@ -22,7 +22,6 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
-use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * What the three tenant background jobs consider a tenant.
@@ -112,12 +111,7 @@ class TenantJobsScopeTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn('30');
 
-		$job = new TenantPurgeJob(
-			$this->createMock(ITimeFactory::class),
-			new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
-		);
+		$job = new TenantPurgeJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(\OCA\OpenRegister\Service\TenantLifecycleServiceInterface::class)));
 
 		$this->runJob($job);
 
@@ -147,12 +141,7 @@ class TenantJobsScopeTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('30');
 
 		$this->runJob(
-			new TenantPurgeJob(
-				$this->createMock(ITimeFactory::class),
-				new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
-				$appConfig,
-				$this->createMock(LoggerInterface::class)
-			)
+			new TenantPurgeJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(\OCA\OpenRegister\Service\TenantLifecycleServiceInterface::class)))
 		);
 
 		$this->assertSame([], $deleted);
@@ -182,12 +171,7 @@ class TenantJobsScopeTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('30');
 
 		$this->runJob(
-			new TenantPurgeJob(
-				$this->createMock(ITimeFactory::class),
-				new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
-				$appConfig,
-				$this->createMock(LoggerInterface::class)
-			)
+			new TenantPurgeJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(\OCA\OpenRegister\Service\TenantLifecycleServiceInterface::class)))
 		);
 
 		$this->assertSame([], $deleted);
@@ -230,12 +214,7 @@ class TenantJobsScopeTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn('30');
 
-		return new TenantPurgeJob(
-			$this->createMock(ITimeFactory::class),
-			new TenantPurgeStores($mapper, $usage),
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
-		);
+		return new TenantPurgeJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $usage, $this->createMock(\OCA\OpenRegister\Service\TenantLifecycleServiceInterface::class)));
 
 	}//end purgeJobOver()
 
@@ -334,12 +313,7 @@ class TenantJobsScopeTest extends TestCase {
 		);
 
 		$this->runJob(
-			new TenantDeprovisionJob(
-				$this->createMock(ITimeFactory::class),
-				$mapper,
-				$this->createMock(TenantLifecycleService::class),
-				$this->createMock(LoggerInterface::class),
-			)
+			new TenantDeprovisionJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(\OCP\IAppConfig::class), $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->createMock(\OCA\OpenRegister\Db\TenantUsageMapperInterface::class), $this->createMock(TenantLifecycleService::class)))
 		);
 
 		$this->assertSame(['status' => TenantLifecycleService::STATUS_DEPROVISIONING], $seenFilters);
@@ -365,12 +339,7 @@ class TenantJobsScopeTest extends TestCase {
 		$mapper->expects($this->never())->method('findLocalTenants');
 
 		$this->runJob(
-			new TenantUsageSyncJob(
-				$this->createMock(ITimeFactory::class),
-				$mapper,
-				$this->createMock(TenantUsageMapper::class),
-				$this->createMock(LoggerInterface::class),
-			)
+			new TenantUsageSyncJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(\OCP\IAppConfig::class), $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->createMock(TenantUsageMapper::class), $this->createMock(\OCA\OpenRegister\Service\TenantLifecycleServiceInterface::class)))
 		);
 
 		$this->addToAssertionCount(1);
