@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -223,15 +224,13 @@ class DestructionScopeService {
 
 		try {
 			return match ($member) {
-				DestructionScope::VERSIONS => $this->auditTrailMapper->countForObject(
+				DestructionScope::VERSIONS => $this->auditTrailMapper->countObjectTrail(
 					objectUuid: $uuid,
-					onlyActions: DestructionScope::VERSION_ACTIONS,
-					excludeActions: DestructionScope::EVIDENCE_ACTIONS
+					scope: new ActionScope(onlyActions: DestructionScope::VERSION_ACTIONS, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 				),
-				DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->countForObject(
+				DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->countObjectTrail(
 					objectUuid: $uuid,
-					onlyActions: null,
-					excludeActions: DestructionScope::EVIDENCE_ACTIONS
+					scope: new ActionScope(onlyActions: null, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 				),
 				DestructionScope::NOTES => $this->companions->noteService?->countNotesForObject($uuid) ?? 0,
 				DestructionScope::FILES => count($this->companions->fileService?->getFiles($object) ?? []),
@@ -267,15 +266,13 @@ class DestructionScopeService {
 		$expected = $member->expected;
 
 		return match ($member->name) {
-			DestructionScope::VERSIONS => $this->auditTrailMapper->tombstoneForObject(
+			DestructionScope::VERSIONS => $this->auditTrailMapper->tombstoneObjectTrail(
 				objectUuid: $uuid,
-				onlyActions: DestructionScope::VERSION_ACTIONS,
-				excludeActions: DestructionScope::EVIDENCE_ACTIONS
+				scope: new ActionScope(onlyActions: DestructionScope::VERSION_ACTIONS, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 			),
-			DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->tombstoneForObject(
+			DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->tombstoneObjectTrail(
 				objectUuid: $uuid,
-				onlyActions: null,
-				excludeActions: DestructionScope::EVIDENCE_ACTIONS
+				scope: new ActionScope(onlyActions: null, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
 			),
 			DestructionScope::NOTES => $this->destroyNotes(uuid: $uuid, expected: $expected),
 			DestructionScope::FILES => $this->destroyFiles(object: $object, expected: $expected),

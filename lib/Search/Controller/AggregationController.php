@@ -48,9 +48,14 @@ use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Search\Controller\Support\AggregationRun;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Support\AggregationFilterRequest;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\UnknownFilterKeys;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -128,18 +133,17 @@ class AggregationController extends Controller {
 		}
 
 		$normalised = FilterParams::forAggregation(
-			bracket: $bracket,
-			params: $params,
-			controlParams: $controlParams,
+			request: new AggregationFilterRequest(bracket: $bracket, params: $params, controlParams: $controlParams),
 			properties: ($resolvedSchema->getProperties() ?? [])
 		);
 
 		FilterParams::warnUnknownKeys(
 			logger: $this->services->logger,
-			keys: $normalised['unknown'],
-			endpoint: 'aggregation#' . $action,
-			register: $run->register,
-			schema: $run->schema
+			unknown: new UnknownFilterKeys(
+				keys: $normalised['unknown'],
+				endpoint: 'aggregation#' . $action,
+				table: new RegisterSchemaRef(register: $run->register, schema: $run->schema)
+			)
 		);
 
 		return $normalised['filter'];
@@ -195,10 +199,8 @@ class AggregationController extends Controller {
 			$extraFilter = $this->resolveFilter(run: $run, action: 'aggregate');
 
 			$result = $this->services->runner->run(
-				registerRef: $run->register,
-				schemaRef: $run->schema,
-				name: $name,
-				extraFilter: $extraFilter
+				ref: new NamedAggregationRef(register: $run->register, schema: $run->schema, name: $name),
+				options: new NamedAggregationOptions(bypassRbac: false, extraFilter: $extraFilter)
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);

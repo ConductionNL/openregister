@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
+use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -111,7 +112,7 @@ class SearchDictionaryProviderTest extends TestCase {
 			[['prefLabel' => ['nl' => 'de']]]
 		);
 
-		$expansion = $this->provider->forLanguage('nl')->expand('de omgevingsvergunning', 5, 20);
+		$expansion = $this->provider->forLanguage('nl')->expand('de omgevingsvergunning', new SynonymCaps(5, 20));
 
 		$this->assertSame('(omgevingsvergunning OR bouwvergunning)', $expansion->term());
 	}//end testAdministeredConceptsBecomeTheDictionary()

@@ -51,6 +51,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use LogicException;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Sends on behalf of a flow run, through the notification subsystem.
@@ -173,25 +174,6 @@ class FlowMessagingService {
 	/**
 	 * Send an in-app Nextcloud notification (web-push riding along) per item.
 	 *
-	 * @param array $config The step configuration (`recipients`, `title`, `message`).
-	 * @param array $items The flow items; one send per recipient per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
-	 *
-	 * @return array The outcome report also written to the run log.
-	 *
-	 * @throws RuntimeException When there is no resolvable acting user, the
-	 *                          recipient bound is exceeded, or a send failed.
-	 *
-	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
-	 */
-	public function sendNotification(array $config, array $items, array $context, string $stepName): array {
-		return $this->notify(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
-	}//end sendNotification()
-
-	/**
-	 * Send an in-app notification per recipient per item; see {@see self::sendNotification()}.
-	 *
 	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
 	 * @return array The outcome report also written to the run log.
@@ -250,25 +232,6 @@ class FlowMessagingService {
 	/**
 	 * Send an email per recipient per item.
 	 *
-	 * @param array $config The step configuration (`recipients`, `subject`, `body`).
-	 * @param array $items The flow items; one send per recipient per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
-	 *
-	 * @return array The outcome report also written to the run log.
-	 *
-	 * @throws RuntimeException When there is no resolvable acting user, the
-	 *                          recipient bound is exceeded, or a send failed.
-	 *
-	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
-	 */
-	public function sendEmail(array $config, array $items, array $context, string $stepName): array {
-		return $this->email(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
-	}//end sendEmail()
-
-	/**
-	 * Send an email per recipient per item; see {@see self::sendEmail()}.
-	 *
 	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
 	 * @return array The outcome report also written to the run log.
@@ -292,24 +255,6 @@ class FlowMessagingService {
 	 * The conversation is a token or an item-field template. The acting user
 	 * MUST be a participant; "not a participant" is a step failure with that
 	 * reason, never an auto-join.
-	 *
-	 * @param array $config The step configuration (`conversation`, `message`).
-	 * @param array $items The flow items; one post per item.
-	 * @param array $context The run context (acting user, report handle).
-	 * @param string $stepName The step's type id, used as the send's rule identity.
-	 *
-	 * @return array The outcome report also written to the run log.
-	 *
-	 * @throws RuntimeException When there is no resolvable acting user or a post failed.
-	 *
-	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
-	 */
-	public function sendTalkMessage(array $config, array $items, array $context, string $stepName): array {
-		return $this->talk(request: new MessageSend(config: $config, items: $items, context: $context, stepName: $stepName));
-	}//end sendTalkMessage()
-
-	/**
-	 * Post a Talk chat message per item; see {@see self::sendTalkMessage()}.
 	 *
 	 * @param MessageSend $request The step configuration, items, run context and step id.
 	 *
@@ -561,11 +506,13 @@ class FlowMessagingService {
 	 */
 	private function askOptOut(FlowSend $send): void {
 		$runId = (string)($this->scalarContext(context: $send->context)[FlowRunContext::CONTEXT_RUN] ?? '');
-		$send->decisions = $this->optOut->ask(
-			channel: 'email',
-			category: (string)($this->scalarContext(context: $send->config)['messageCategory'] ?? ''),
-			addresses: array_map('strval', array_keys($send->distinctAddresses)),
-			correlationId: 'openregister-flow:' . $runId . ':' . $send->stepName
+		$send->decisions = $this->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: (string)($this->scalarContext(context: $send->config)['messageCategory'] ?? ''),
+				addresses: array_map('strval', array_keys($send->distinctAddresses)),
+				correlationId: 'openregister-flow:' . $runId . ':' . $send->stepName
+			)
 		);
 	}//end askOptOut()
 
@@ -693,12 +640,13 @@ class FlowMessagingService {
 	 */
 	private function mailAddress(FlowSend $send, FlowSendItem $item): void {
 		$unsubscribe = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient)['unsubscribe'];
-		$outcome = $this->channels->emailSender->sendToAddress(
-			address: $item->recipient,
-			displayName: $item->name,
-			subject: $item->title,
-			body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
-			unsubscribe: $unsubscribe
+		$outcome = $this->channels->emailSender->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $item->recipient, displayName: $item->name),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $item->title,
+				body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
 		);
 		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {
 			$send->add(bucket: 'delivered', recipient: $item->recipient);

@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -175,7 +176,7 @@ class DraftExpiryJobTest extends TestCase {
 						return new \OCA\OpenRegister\Db\AuditTrail();
 					}
 				);
-				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
+				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				return true;
 			}

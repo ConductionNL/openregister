@@ -233,7 +233,7 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 		// reference" while the row sat there matching two of the four.
 		try {
 			return $this->mapper->find($reference);
-		} catch (Throwable $e) {
+		} catch (\Exception $e) {
 			// Fall through to the reference lookup below.
 		}
 
