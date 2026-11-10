@@ -6631,6 +6631,87 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * A delete carries the route's register and schema, so the URL's scope is enforced.
+	 *
+	 * @return void
+	 */
+	public function testDestroyPassesTheRouteScope(): void {
+		$this->setupAdminUser();
+		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', false, false)->willReturn(true);
+
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * A non-admin's delete runs in the caller's scope.
+	 *
+	 * @return void
+	 */
+	public function testDestroyScopesANonAdmin(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', true, true)->willReturn(true);
+
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * What a delete that throws answers.
+	 *
+	 * @return array<string, array{0: \Throwable, 1: int, 2: mixed}>
+	 */
+	public static function deleteFailures(): array {
+		$hook = \OCA\OpenRegister\Exception\HookStoppedException::class;
+		$dbal = \OCA\OpenRegister\Service\ObjectSource\DbalWriteException::class;
+
+		return [
+			'append only'       => [new \OCA\OpenRegister\Exception\AppendOnlyException('s', 'delete'), 405, null],
+			'not found'         => [new \OCP\AppFramework\Db\DoesNotExistException('x'), 404, ['error' => 'Not Found']],
+			'hook'              => [new $hook('stop', ['a' => 'b']), 422, ['error' => 'stop', 'errors' => ['a' => 'b']]],
+			'hook with status'  => [new $hook('stop', ['status' => 409]), 409, ['error' => 'stop', 'errors' => ['status' => 409]]],
+			'hook, odd status'  => [new $hook('stop', ['status' => '409']), 422, ['error' => 'stop', 'errors' => ['status' => '409']]],
+			'external write'    => [new $dbal('nope', 418), 418, ['error' => 'nope']],
+			'any other failure' => [new \RuntimeException('no right'), 403, ['error' => 'no right']],
+			'fatal'             => [new \TypeError('bad'), 500, ['error' => 'An unexpected error occurred while deleting the object']],
+		];
+	}
+
+	/**
+	 * Every delete failure keeps its status and body.
+	 *
+	 * @dataProvider deleteFailures
+	 *
+	 * @param \Throwable $failure  The failure.
+	 * @param int        $status   The status.
+	 * @param mixed      $expected The body, or null when only the status is pinned.
+	 *
+	 * @return void
+	 */
+	public function testDestroyFailureAnswers(\Throwable $failure, int $status, mixed $expected): void {
+		$this->objectService->method('deleteObject')->willThrowException($failure);
+
+		$result = $this->controller->destroy('id', 'r', 's', $this->objectService);
+
+		$this->assertSame($status, $result->getStatus());
+		if ($expected !== null) {
+			$this->assertSame($expected, $result->getData());
+		}
+	}
+
+	/**
+	 * Contracts paging: the plain name wins over the `_` form, and the limit defaults to 20.
+	 *
+	 * @return void
+	 */
+	public function testContractsPagingParameters(): void {
+		$this->request->method('getParams')->willReturn(['_offset' => '1', 'offset' => '2', '_page' => '3', 'page' => '4']);
+		$this->objectService->expects($this->once())->method('getObjectContracts')
+			->with('id', ['limit' => 20, 'offset' => 2, 'page' => 4])
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$this->assertSame(200, $this->controller->contracts('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
 	 * An object stored in a register and schema, on a route that names them by slug.
 	 *
 	 * @param int $registerId The id the route's register resolves to.
