@@ -104,6 +104,11 @@ class MagicSearchHandler {
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
 
 	/**
+	 * The SQL comparison of each archiefactiedatum range bound among the `tmlo.` filters.
+	 */
+	private const TMLO_ARCHIEFACTIE_RANGE = ['archiefactiedatum[from]' => '>=', 'archiefactiedatum[to]' => '<='];
+
+	/**
 	 * The expression-builder method of each comparison operator on a metadata column, in binding order.
 	 */
 	private const METADATA_COMPARISON_METHODS = ['gte' => 'gte', 'lte' => 'lte', 'gt' => 'gt', 'lt' => 'lt', 'ne' => 'neq'];
@@ -2289,47 +2294,65 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 */
 	private function buildMetadataFilterConditionsSql(ConditionSqlRun $run): array {
-		$connection      = $run->connection;
-		$isPostgres      = $run->isPostgres;
 		$metadataFilters = ($run->query['@self'] ?? []);
 		if (is_array($metadataFilters) === false || empty($metadataFilters) === true) {
 			return [];
 		}
 
 		$conditions = [];
-
 		foreach ($metadataFilters as $field => $value) {
-			$column = $this->quoteIdentifier(
-				name: $this->resolveMetadataColumn(field: (string)$field),
-				isPostgres: $isPostgres
-			);
-
-			if ($value === 'IS NOT NULL') {
-				$conditions[] = "{$column} IS NOT NULL";
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$conditions[] = "{$column} IS NULL";
-				continue;
-			}
-
-			if (is_array($value) === true) {
-				$conditions = array_merge(
-					$conditions,
-					$this->buildMetadataOperatorConditionsSql(
-						column: new QuotedSqlColumn(name: $column, connection: $connection),
-						value: $value
-					)
-				);
-				continue;
-			}
-
-			$conditions[] = "{$column} = " . $connection->quote((string)$value);
-		}//end foreach
+			$column     = $this->quotedMetadataColumn(run: $run, field: $field);
+			$conditions = array_merge($conditions, $this->metadataValueConditionsSql(column: $column, value: $value));
+		}
 
 		return $conditions;
 	}//end buildMetadataFilterConditionsSql()
+
+	/**
+	 * The quoted metadata column a `@self` key names, with the connection that quotes its values
+	 *
+	 * @param ConditionSqlRun $run   The condition pass: query, table, connection and platform.
+	 * @param int|string      $field The `@self` key.
+	 *
+	 * @return QuotedSqlColumn The column
+	 *
+	 * @throws UnknownMetadataFieldException When the key names no metadata column.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 */
+	private function quotedMetadataColumn(ConditionSqlRun $run, int|string $field): QuotedSqlColumn {
+		$column = $this->quoteIdentifier(
+			name: $this->resolveMetadataColumn(field: (string)$field),
+			isPostgres: $run->isPostgres
+		);
+		return new QuotedSqlColumn(name: $column, connection: $run->connection);
+	}//end quotedMetadataColumn()
+
+	/**
+	 * The raw-SQL conditions of one `@self` value: a null sentinel, an operator bag (or bare list), or an equality
+	 *
+	 * @param QuotedSqlColumn $column The metadata column and the connection that quotes values.
+	 * @param mixed           $value  The filter value.
+	 *
+	 * @return string[] The conditions
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 */
+	private function metadataValueConditionsSql(QuotedSqlColumn $column, mixed $value): array {
+		if ($value === 'IS NOT NULL') {
+			return ["{$column->name} IS NOT NULL"];
+		}
+
+		if ($value === 'IS NULL') {
+			return ["{$column->name} IS NULL"];
+		}
+
+		if (is_array($value) === true) {
+			return $this->buildMetadataOperatorConditionsSql(column: $column, value: $value);
+		}
+
+		return ["{$column->name} = " . $column->connection->quote((string)$value)];
+	}//end metadataValueConditionsSql()
 
 	/**
 	 * Build the SQL for one metadata column's operator bag (or bare IN list)
@@ -2519,43 +2542,58 @@ class MagicSearchHandler {
 	 */
 	private function buildTmloFilterConditionsSql(array $query, object $connection): array {
 		$conditions = [];
-		$archiefactieFrom = null;
-		$archiefactieTo = null;
-
-		foreach ($query as $key => $value) {
-			if (str_starts_with($key, 'tmlo.') === false) {
-				continue;
-			}
-
-			$subField = substr($key, 5);
-
+		$range      = [];
+		foreach ($this->tmloSubFilters(query: $query) as [$subField, $value]) {
 			// Handle date range filters for archiefactiedatum.
-			if ($subField === 'archiefactiedatum[from]') {
-				$archiefactieFrom = $value;
-				continue;
-			}
-
-			if ($subField === 'archiefactiedatum[to]') {
-				$archiefactieTo = $value;
+			if (isset(self::TMLO_ARCHIEFACTIE_RANGE[$subField]) === true) {
+				$range[self::TMLO_ARCHIEFACTIE_RANGE[$subField]] = $value;
 				continue;
 			}
 
 			// Standard exact match on TMLO JSON sub-field.
-			$quotedValue = $connection->quote((string)$value);
+			$quotedValue  = $connection->quote((string)$value);
 			$conditions[] = '_tmlo::jsonb ->> ' . $connection->quote($subField) . " = {$quotedValue}";
-		}//end foreach
-
-		// Build archiefactiedatum range condition.
-		if ($archiefactieFrom !== null) {
-			$conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' >= " . $connection->quote($archiefactieFrom);
 		}
 
-		if ($archiefactieTo !== null) {
-			$conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' <= " . $connection->quote($archiefactieTo);
+		return array_merge($conditions, $this->tmloRangeConditionsSql(range: $range, connection: $connection));
+	}//end buildTmloFilterConditionsSql()
+
+	/**
+	 * The `tmlo.` filters of a query, as sub-field and value pairs in query order
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 *
+	 * @return list<array{0: string, 1: mixed}> The sub-field (the key without `tmlo.`) and its value
+	 */
+	private function tmloSubFilters(array $query): array {
+		$subFilters = [];
+		foreach ($query as $key => $value) {
+			if (str_starts_with($key, 'tmlo.') === true) {
+				$subFilters[] = [substr($key, 5), $value];
+			}
+		}
+
+		return $subFilters;
+	}//end tmloSubFilters()
+
+	/**
+	 * The archiefactiedatum range conditions, lower bound first
+	 *
+	 * @param array<string, mixed> $range      The bound per SQL comparison operator.
+	 * @param object               $connection Database connection for value quoting.
+	 *
+	 * @return string[] The conditions
+	 */
+	private function tmloRangeConditionsSql(array $range, object $connection): array {
+		$conditions = [];
+		foreach (['>=', '<='] as $sqlOperator) {
+			if (($range[$sqlOperator] ?? null) !== null) {
+				$conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' {$sqlOperator} " . $connection->quote($range[$sqlOperator]);
+			}
 		}
 
 		return $conditions;
-	}//end buildTmloFilterConditionsSql()
+	}//end tmloRangeConditionsSql()
 
 	/**
 	 * Get the list of reserved query parameter names
@@ -4048,25 +4086,54 @@ class MagicSearchHandler {
 	private function extractRelationFieldFilters(array $query): array {
 		$filters = [];
 		foreach ($query as $key => $value) {
-			if (str_starts_with($key, '_relations.') === false) {
+			$field = $this->relationFilterField(key: $key);
+			if ($field === '') {
 				continue;
 			}
 
-			$field = substr($key, strlen('_relations.'));
-			if ($field === '' || is_array($value) === true || $value === null) {
-				continue;
+			$stringValue = $this->relationFilterValue(value: $value);
+			if ($stringValue !== null) {
+				$filters[$field] = $stringValue;
 			}
-
-			$stringValue = (string)$value;
-			if ($stringValue === '') {
-				continue;
-			}
-
-			$filters[$field] = $stringValue;
-		}//end foreach
+		}
 
 		return $filters;
 	}//end extractRelationFieldFilters()
+
+	/**
+	 * The relation field a `_relations.<field>` key names, or '' for any other key
+	 *
+	 * @param int|string $key The query key.
+	 *
+	 * @return string The relation field name, or ''
+	 */
+	private function relationFilterField(int|string $key): string {
+		if (str_starts_with($key, '_relations.') === false) {
+			return '';
+		}
+
+		return substr($key, strlen('_relations.'));
+	}//end relationFilterField()
+
+	/**
+	 * The referenced id of a relation-field filter, or null when the value names none
+	 *
+	 * @param mixed $value The filter value.
+	 *
+	 * @return string|null The id, or null for a list, null or empty value
+	 */
+	private function relationFilterValue(mixed $value): ?string {
+		if (is_array($value) === true || $value === null) {
+			return null;
+		}
+
+		$stringValue = (string)$value;
+		if ($stringValue === '') {
+			return null;
+		}
+
+		return $stringValue;
+	}//end relationFilterValue()
 
 	/**
 	 * Apply a dotted relation-field filter to a QueryBuilder.
