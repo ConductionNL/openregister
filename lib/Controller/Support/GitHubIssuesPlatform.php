@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCP\ICacheFactory;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * The platform services of the git hub issues API.
@@ -35,15 +33,13 @@ final class GitHubIssuesPlatform {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IUserSession    $userSession  Resolves the submitting NC user
-	 * @param LoggerInterface $logger       Structured logger
-	 * @param ICacheFactory   $cacheFactory Builds the distributed cache for GitHub reads
+	 * @param ControllerSession $session      Resolves the submitting NC user; structured logger
+	 * @param ICacheFactory     $cacheFactory Builds the distributed cache for GitHub reads
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
 	 */
 	public function __construct(
-		public readonly IUserSession $userSession,
-		public readonly LoggerInterface $logger,
+		public readonly ControllerSession $session,
 		public readonly ICacheFactory $cacheFactory,
 	) {
 	}//end __construct()
