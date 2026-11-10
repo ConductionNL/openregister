@@ -26,11 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Geo;
 
+use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -148,4 +150,52 @@ class PdokGeocoderRequestGoldenTest extends TestCase {
 
 		$this->assertSame([], $geocoder->geocodeFree('Markt 1'));
 	}//end testAnUnloadableCallServiceSkipsWithAnInfoLine()
+	/**
+	 * A free search sends the query, at least one row, and the BAG filter only when asked.
+	 *
+	 * @return void
+	 */
+	public function testAFreeSearchSendsItsQueryRowsAndFilter(): void {
+		$calls = [];
+		$transport = function (string $url, array $params) use (&$calls): array {
+			$calls[] = [$url, $params];
+			return [];
+		};
+		$geocoder = $this->geocoder($transport, $this->createMock(LoggerInterface::class));
+
+		$geocoder->geocodeFree('  Markt 1  ', new GeocodeOptions(maxItems: 0, bagOnly: true));
+		$geocoder->geocodeFree('Markt 2', new GeocodeOptions(maxItems: 3));
+
+		$this->assertStringEndsWith('/free', $calls[0][0]);
+		$this->assertSame(['q' => 'Markt 1', 'rows' => 1, 'fq' => 'type:adres'], $calls[0][1]);
+		$this->assertSame(['q' => 'Markt 2', 'rows' => 3], $calls[1][1]);
+	}//end testAFreeSearchSendsItsQueryRowsAndFilter()
+
+	/**
+	 * A CallService response decodes from an array, a JSON string or a wrapped body, and nothing else.
+	 *
+	 * @return void
+	 */
+	public function testACallServiceResponseDecodes(): void {
+		$geocoder = $this->geocoder(null, $this->createMock(LoggerInterface::class));
+		$decode = new ReflectionMethod(PdokGeocoder::class, 'decode');
+		$wrapped = new class {
+			/**
+			 * The wrapped response.
+			 *
+			 * @return array<string, string> The response.
+			 */
+			public function getResponse(): array {
+				return ['body' => '{"b":2}'];
+			}
+		};
+
+		$this->assertSame(['a' => 1], $decode->invoke($geocoder, ['a' => 1]));
+		$this->assertSame(['s' => 1], $decode->invoke($geocoder, '{"s":1}'));
+		$this->assertSame(['b' => 2], $decode->invoke($geocoder, $wrapped));
+		$this->assertNull($decode->invoke($geocoder, '"just a string"'));
+		$this->assertNull($decode->invoke($geocoder, 'not json'));
+		$this->assertNull($decode->invoke($geocoder, 42));
+		$this->assertNull($decode->invoke($geocoder, new \stdClass()));
+	}//end testACallServiceResponseDecodes()
 }//end class
