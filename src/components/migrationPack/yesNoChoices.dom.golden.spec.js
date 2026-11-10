@@ -8,8 +8,8 @@
  * @copyright 2026 Conduction B.V.
  */
 import { mount } from '@vue/test-utils'
-import KeyValueRows from './KeyValueRows.vue'
 import TransformDialog from '../../dialogs/migrationPack/TransformDialog.vue'
+import KeyValueRows from './KeyValueRows.vue'
 import { newTransform } from '../../views/migrationPack/packDraft.js'
 
 jest.mock(
