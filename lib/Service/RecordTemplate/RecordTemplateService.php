@@ -237,7 +237,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 */
 	private function administered(string $uuid, ViewerReach $reach): RecordTemplate {
 		$template = $this->get(uuid: $uuid, reach: $reach);
-		if ($this->shares->mayAdminister(view: $template->jsonSerialize(), userId: $reach->userId, isAdmin: $reach->isAdmin) === false) {
+		if ($this->shares->mayAdministerAs(view: $template->jsonSerialize(), reach: $reach) === false) {
 			throw new RecordTemplateRefused(status: 403, message: 'Only the owner or an administrator may change this record template.');
 		}
 

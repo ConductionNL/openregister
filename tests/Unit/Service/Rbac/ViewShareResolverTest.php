@@ -259,11 +259,11 @@ class ViewShareResolverTest extends TestCase {
 	public function testTheOwnerAndAnAdministratorMayChangeEverything(): void {
 		$this->assertTrue($this->resolver->mayAdministerAs($this->view(), new ViewerReach('mallory', [], true)));
 
-		$this->assertTrue($this->resolver->mayAdminister($this->view(), 'alice', false));
-		$this->assertTrue($this->resolver->mayAdminister($this->view(), 'mallory', true));
-		$this->assertFalse($this->resolver->mayAdminister($this->view(), 'mallory', false));
+		$this->assertTrue($this->resolver->mayAdministerAs($this->view(), new ViewerReach('alice', [], false)));
+		$this->assertTrue($this->resolver->mayAdministerAs($this->view(), new ViewerReach('mallory', [], true)));
+		$this->assertFalse($this->resolver->mayAdministerAs($this->view(), new ViewerReach('mallory', [], false)));
 		$this->assertFalse(
-			$this->resolver->mayAdminister($this->view(), '', false),
+			$this->resolver->mayAdministerAs($this->view(), new ViewerReach('', [], false)),
 			'an unauthenticated caller never administers a view'
 		);
 	}//end testTheOwnerAndAnAdministratorMayChangeEverything()

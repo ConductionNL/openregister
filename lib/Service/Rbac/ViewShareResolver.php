@@ -190,21 +190,6 @@ class ViewShareResolver implements ViewShareResolverInterface {
 	}//end targetKey()
 
 	/**
-	 * Whether this caller may change the shares, the owner, or delete the view.
-	 *
-	 * @param array<string, mixed> $view The view.
-	 * @param string $userId The caller.
-	 * @param bool $isAdmin Whether the caller is an administrator.
-	 *
-	 * @return bool True for the owner and for an administrator.
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md
-	 */
-	public function mayAdminister(array $view, string $userId, bool $isAdmin): bool {
-		return $this->mayAdministerAs(view: $view, reach: new ViewerReach(userId: $userId, groups: [], isAdmin: $isAdmin));
-	}//end mayAdminister()
-
-	/**
 	 * Whether this reach may change the shares, the owner, or delete the view.
 	 *
 	 * @param array<string, mixed> $view  The view.
