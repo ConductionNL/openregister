@@ -223,16 +223,30 @@ class ObjectCalendarFeedService {
 				)
 			);
 
-			if ($event === null) {
-				continue;
-			}
-
-			$events['lines'] = array_merge($events['lines'], $event['lines']);
-			$events['years'] = array_merge($events['years'], $event['years']);
+			$events = $this->withEvent(events: $events, event: $event);
 		}
 
 		return $events;
 	}//end objectEvents()
+
+	/**
+	 * Events with one more event's lines and years added; a date that publishes nothing adds nothing.
+	 *
+	 * @param array{lines: array<int, string>, years: array<int, int>}      $events The events so far.
+	 * @param array{lines: array<int, string>, years: array<int, int>}|null $event  The built event, or null.
+	 *
+	 * @return array{lines: array<int, string>, years: array<int, int>} The events.
+	 */
+	private function withEvent(array $events, ?array $event): array {
+		if ($event === null) {
+			return $events;
+		}
+
+		$events['lines'] = array_merge($events['lines'], $event['lines']);
+		$events['years'] = array_merge($events['years'], $event['years']);
+
+		return $events;
+	}//end withEvent()
 
 	/**
 	 * Resolve what a token covers: one schema, or one saved view.
@@ -386,19 +400,30 @@ class ObjectCalendarFeedService {
 		}
 
 		$this->declarationCache[$schemaId] = [];
+		$this->declarationCache[$schemaId] = $this->readDeclarations(schemaId: $schemaId);
 
+		return $this->declarationCache[$schemaId];
+	}//end declarationsFor()
+
+	/**
+	 * The date declarations of a schema, read from it; none (logged) when it cannot be read.
+	 *
+	 * @param string $schemaId The schema.
+	 *
+	 * @return array<int, ObjectDateDeclaration> The declarations.
+	 */
+	private function readDeclarations(string $schemaId): array {
 		try {
 			$schema = $this->sources->schemas->find($schemaId);
-			$this->declarationCache[$schemaId] = $this->declarationsOn(schema: $schema);
+			return $this->declarationsOn(schema: $schema);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[ObjectCalendarFeedService] Could not read date declarations for schema '
 				. $schemaId . ': ' . $failure->getMessage()
 			);
+			return [];
 		}
-
-		return $this->declarationCache[$schemaId];
-	}//end declarationsFor()
+	}//end readDeclarations()
 
 	/**
 	 * The declarations a schema carries, or none when it is not calendar-enabled.
