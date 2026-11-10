@@ -202,17 +202,29 @@ class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface 
 			return null;
 		}
 
+		return self::orphanedManageSentence(subject: $subject, denied: $this->quoteList(values: $denied));
+	}//end orphanedManageFinding()
+
+	/**
+	 * The refusal of a deny that would leave nobody holding `manage`.
+	 *
+	 * @param string $subject What the block belongs to.
+	 * @param string $denied  The denied principals, quoted and listed.
+	 *
+	 * @return string The sentence.
+	 */
+	private static function orphanedManageSentence(string $subject, string $denied): string {
 		return sprintf(
 			'The authorization of %s would deny "%s" to %s and leave no principal holding it, '
 			. 'so nobody could edit the access rules of %s afterwards. '
 			. 'Grant "%s" to another group first, then write the deny.',
 			$subject,
 			self::ACTION_MANAGE,
-			$this->quoteList(values: $denied),
+			$denied,
 			$subject,
 			self::ACTION_MANAGE
 		);
-	}//end orphanedManageFinding()
+	}//end orphanedManageSentence()
 
 	/**
 	 * The principals granted `manage` that the deny does not take it from.
