@@ -179,13 +179,8 @@ export default {
 			// Try to process as table-style changes
 			if (typeof changed === 'object' && !Array.isArray(changed)) {
 				// Check if it's in the format { field: { old: value, new: value } }
-				const hasStandardFormat = Object.values(changed).every(
-					(value) =>
-						typeof value === 'object'
-						&& value !== null
-						&& (Object.hasOwn(value, 'old')
-							|| Object.hasOwn(value, 'new')),
-				)
+				const hasStandardFormat =
+					Object.values(changed).every(isOldNewChange)
 
 				if (hasStandardFormat) {
 					return changed
@@ -298,6 +293,20 @@ export default {
 			navigationStore.setDialog('auditTrailDetails')
 		},
 	},
+}
+
+/**
+ * Whether a logged change is in the `{ old, new }` form.
+ *
+ * @param {unknown} value The logged change of one field
+ * @return {boolean} True when it holds an old or a new value
+ */
+function isOldNewChange(value) {
+	return (
+		typeof value === 'object'
+		&& value !== null
+		&& (Object.hasOwn(value, 'old') || Object.hasOwn(value, 'new'))
+	)
 }
 </script>
 
