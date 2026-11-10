@@ -46,17 +46,11 @@ final class EmptyJsonHydration {
 	 * @spec exclude entity plumbing, not a capability of its own
 	 */
 	public function hydrate(Entity $entity, array $object): void {
-		$jsonFields = $entity->getJsonFields();
-
 		if (isset($object['metadata']) === false) {
 			$object['metadata'] = [];
 		}
 
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
+		foreach ($this->emptyJsonAsNull(entity: $entity, object: $object) as $key => $value) {
 			$method = 'set' . ucfirst($key);
 
 			try {
@@ -66,4 +60,26 @@ final class EmptyJsonHydration {
 			}
 		}
 	}//end hydrate()
+
+	/**
+	 * The data with every empty array on one of the entity's JSON fields replaced by null.
+	 *
+	 * @param ObjectEntity|Source $entity The entity the data is for.
+	 * @param array               $object The data, keyed by field name.
+	 *
+	 * @return array The data, keys in the same order.
+	 *
+	 * @spec exclude entity plumbing, not a capability of its own
+	 */
+	private function emptyJsonAsNull(Entity $entity, array $object): array {
+		$jsonFields = $entity->getJsonFields();
+
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields) === true && $value === []) {
+				$object[$key] = null;
+			}
+		}
+
+		return $object;
+	}//end emptyJsonAsNull()
 }//end class
