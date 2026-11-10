@@ -233,4 +233,29 @@ class SchemasControllerResolveAndRelatedCharacterisationTest extends TestCase {
 		$this->assertSame([3], array_column($data['incoming'], 'id'));
 		$this->assertSame(2, $data['total']);
 	}//end testOutgoingReferencesSkipSelfAndKeepEachReferencedSchemaOnce()
+
+	// ---- publishDraft refusals -------------------------------------------
+
+	public function testPublishingTheDraftOfAMissingSchemaIsNotFound(): void {
+		$this->schemaMapper->method('find')->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('gone'));
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$response = $this->controller()->publishDraft(7);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['error' => 'Schema not found'], $response->getData());
+	}//end testPublishingTheDraftOfAMissingSchemaIsNotFound()
+
+	public function testPublishingWithoutManagePermissionIsForbiddenAndWritesNothing(): void {
+		$schema = $this->schema(7, 'contact');
+		$schema->setDraft(['title' => 'Contact v2']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$response = $this->controller()->publishDraft(7);
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame(['error' => 'User does not have permission to manage this schema'], $response->getData());
+	}//end testPublishingWithoutManagePermissionIsForbiddenAndWritesNothing()
 }//end class
