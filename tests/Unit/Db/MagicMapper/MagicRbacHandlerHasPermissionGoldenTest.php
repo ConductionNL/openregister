@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -225,9 +226,9 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
 		$grants = $this->createMock(ObjectGrantResolver::class);
 		$grants->method('isGranted')->willReturnCallback(
-			function (?string $userId, ?string $objectUuid, string $action = 'read'): bool {
-				$this->calls[] = "isGranted {$userId} {$objectUuid} {$action}";
-				return $userId === 'jan' && $objectUuid === 'u-granted';
+			function (GrantLookup $lookup, string $action = 'read'): bool {
+				$this->calls[] = "isGranted {$lookup->userId} {$lookup->objectUuid} {$action}";
+				return $lookup->userId === 'jan' && $lookup->objectUuid === 'u-granted';
 			}
 		);
 
