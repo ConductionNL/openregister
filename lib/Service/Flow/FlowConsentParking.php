@@ -121,11 +121,25 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function park(FlowRun $run, string $declaredBy, string $runAs, string $reason): FlowRun {
+		return $this->parkFor(run: $run, ask: new ConsentAsk(declaredBy: $declaredBy, runAs: $runAs, reason: $reason));
+	}//end park()
+
+	/**
+	 * Write the run as awaiting consent, its context recording both parties and the reason.
+	 *
+	 * @param FlowRun    $run The run to park.
+	 * @param ConsentAsk $ask Who must allow whom, and why.
+	 *
+	 * @return FlowRun The parked run.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function parkFor(FlowRun $run, ConsentAsk $ask): FlowRun {
 		$context = ($run->getContext() ?? []);
 		$context[self::CONTEXT_KEY] = [
-			'principal' => $declaredBy,
-			'actingAs' => $runAs,
-			'reason' => $reason,
+			'principal' => $ask->declaredBy,
+			'actingAs' => $ask->runAs,
+			'reason' => $ask->reason,
 			'since' => (new DateTime())->format('c'),
 		];
 
@@ -135,12 +149,10 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 		// would hand the run to the timed-resume sweep, which would start it
 		// before anybody had answered.
 		$run->setResumeAt(null);
-		$run->setError(
-			sprintf('Waiting for "%s" to allow "%s" to act as them.', $runAs, $declaredBy)
-		);
+		$run->setError(sprintf('Waiting for "%s" to allow "%s" to act as them.', $ask->runAs, $ask->declaredBy));
 
 		return $this->runs->update($run);
-	}//end park()
+	}//end parkFor()
 
 	/**
 	 * Release or fail every parked run whose answer has arrived.

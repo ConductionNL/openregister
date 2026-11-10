@@ -11,11 +11,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\RunActionAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
@@ -40,9 +42,9 @@ class RunActionActionTest extends TestCase {
 			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
 		);
 		$this->objects = $this->createMock(ObjectService::class);
-		$schemas = $this->createMock(MacroActionResolver::class);
-		$schemas->method('loadSchema')->willReturn(new Schema());
-		$this->action = new RunActionAction($this->runner, $schemas, $this->objects);
+		$schemas = $this->createMock(SchemaMapperInterface::class);
+		$schemas->method('find')->willReturn(new Schema());
+		$this->action = new RunActionAction($this->runner, new BulkObjectAccess($this->objects, $schemas, new NullLogger()));
 	}//end setUp()
 
 	/**

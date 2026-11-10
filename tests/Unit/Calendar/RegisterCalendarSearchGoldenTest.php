@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -235,6 +237,7 @@ class RegisterCalendarSearchGoldenTest extends TestCase {
 		string $principalUri,
 		LoggerInterface $logger
 	): RegisterCalendar {
-		return new RegisterCalendar($schema, $config, $principalUri, new RegisterCalendarSources($magicMapper, $registerMapper, $transformer, $logger));
+		$catalog = new SchemaCatalog($registerMapper, $this->createMock(SchemaMapper::class), $magicMapper);
+		return new RegisterCalendar(new CalendarDefinition($schema, $config), $principalUri, new RegisterCalendarSources($catalog, $transformer, $logger));
 	}
 }

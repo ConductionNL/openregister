@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -80,7 +81,7 @@ class TriggerNodesTest extends TestCase {
 		);
 
 		$this->object = new TriggerObjectNode($l10n, $urls);
-		$this->schedule = new TriggerScheduleNode($l10n, $urls, $userManager);
+		$this->schedule = new TriggerScheduleNode(new FlowNodePresentation($l10n, $urls), $userManager);
 		$this->manual = new TriggerManualNode($l10n, $urls);
 
 	}//end setUp()

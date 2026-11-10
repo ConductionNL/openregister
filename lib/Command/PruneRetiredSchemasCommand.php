@@ -41,9 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use Symfony\Component\Console\Command\Command;
@@ -62,8 +61,7 @@ class PruneRetiredSchemasCommand extends Command {
 	/**
 	 * Wire the mappers and the cascade service.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper (app-scoped resolution).
-	 * @param RegisterMapperInterface $registerMapper Register mapper, to unlink the retired id.
+	 * @param SchemaCatalogInterface  $catalog         Schema lookups (app-scoped resolution) and the register mapper, to unlink the retired id.
 	 * @param SchemaTeardownInterface $deletionService Cascade teardown (objects, tables, row).
 	 *
 	 * @return void
@@ -71,8 +69,7 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly SchemaTeardownInterface $deletionService,
 	) {
 		parent::__construct();
@@ -243,7 +240,7 @@ class PruneRetiredSchemasCommand extends Command {
 		// instance: opencatalogi owned two `document` rows (39 and 40), this
 		// pruned 40, printed `Pruned=1, skipped=0`, and left 39 answering
 		// every lookup.
-		$schemas = $this->schemaMapper->findAllByApplicationAndSlug(slug: $slug, application: $appId);
+		$schemas = $this->catalog->schemas()->findAllByApplicationAndSlug(slug: $slug, application: $appId);
 
 		if ($schemas === []) {
 			$run->missing++;
@@ -541,7 +538,7 @@ class PruneRetiredSchemasCommand extends Command {
 			$register->setSchemas(self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId));
 
 			try {
-				$this->registerMapper->update($register);
+				$this->catalog->registers()->update($register);
 				$output->writeln(sprintf('  <info>unlinked from %s</info>', $label));
 			} catch (\Throwable $e) {
 				$output->writeln(
@@ -563,7 +560,7 @@ class PruneRetiredSchemasCommand extends Command {
 	private function registersReferencing(int $schemaId): array {
 		$matches = [];
 
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->catalog->registers()->findAll(_rbac: false, _multitenancy: false) as $register) {
 			foreach ($register->getSchemas() as $ref) {
 				if ((int)$ref === $schemaId) {
 					$matches[] = $register;

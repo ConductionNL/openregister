@@ -18,7 +18,6 @@ namespace Unit\Service\Archival;
 
 use Exception;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Archival\SelectielijstStores;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -29,6 +28,9 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 /**
  * Golden outcomes of SelectielijstResolver.
@@ -76,7 +78,7 @@ class SelectielijstResolverGoldenTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		return new SelectielijstResolver(new SelectielijstStores($objectMapper, $schemaMapper, $registerMapper), $handler, new NullLogger());
+		return new SelectielijstResolver(new SelectielijstStorage(settings: $handler, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $this->createMock(SaveObjectWriterInterface::class)), new NullLogger());
 	}
 
 	/**

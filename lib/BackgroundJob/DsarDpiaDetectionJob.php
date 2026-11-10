@@ -48,11 +48,11 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -129,24 +129,36 @@ class DsarDpiaDetectionJob extends TimedJob {
 	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory required by parent.
-	 * @param IAppConfig $appConfig App-config reader.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param DsarDpiaDetectionServices $services Object path, policy packs, pattern detector and audit trail.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
+		ConfiguredJobRuntime $runtime,
 		DsarDpiaDetectionServices $services,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
 		$this->objectService = $services->objectService;
 		$this->packResolver = $services->packResolver;
 		$this->detectionService = $services->detectionService;
 		$this->auditTrailMapper = $services->auditTrailMapper;
-		parent::__construct(time: $time);
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 
 	}//end __construct()
@@ -244,10 +256,13 @@ class DsarDpiaDetectionJob extends TimedJob {
 				continue;
 			}
 
-			$groups = $this->detectionService->detect(cases: $partitionCases, config: $config, now: $now);
+			$request = new DpiaDetectionRequest(cases: $partitionCases, config: $config, now: $now);
+			$groups = $this->detectionService->detect(request: $request);
 			foreach ($groups as $group) {
 				$summary['groupsTriggered']++;
-				$this->flagGroup(group: $group, config: $config, summary: $summary);
+				$outcome = $this->flagGroup(group: $group, config: $config);
+				$summary['flagged'] += $outcome['flagged'];
+				$summary['errors'] += $outcome['errors'];
 			}
 		}//end foreach
 
@@ -259,16 +274,16 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 *
 	 * @param array{key: string, count: int, caseUuids: list<string>, unflaggedUuids: list<string>} $group The triggering group.
 	 * @param array<string, mixed> $config The pack's `dpiaDetection` block.
-	 * @param array<string, int> $summary Running summary counters (by reference).
 	 *
-	 * @return void
+	 * @return array{flagged: int, errors: int} How many cases were flagged and how many failed.
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
 	 *   (Scenario: Threshold crossing flags the group)
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function flagGroup(array $group, array $config, array &$summary): void {
+	private function flagGroup(array $group, array $config): array {
+		$outcome = ['flagged' => 0, 'errors' => 0];
 		foreach ($group['unflaggedUuids'] as $uuid) {
 			try {
 				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
@@ -312,9 +327,9 @@ class DsarDpiaDetectionJob extends TimedJob {
 					]
 				);
 
-				$summary['flagged']++;
+				$outcome['flagged']++;
 			} catch (\Throwable $e) {
-				$summary['errors']++;
+				$outcome['errors']++;
 				$this->logger->warning(
 					message: '[DsarDpiaDetectionJob] flagging failed for case ' . $uuid . ': ' . $e->getMessage(),
 					context: ['file' => __FILE__, 'line' => __LINE__]
@@ -322,6 +337,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 			}//end try
 		}//end foreach
 
+		return $outcome;
 	}//end flagGroup()
 
 	/**

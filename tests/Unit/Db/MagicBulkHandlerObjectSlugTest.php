@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkUpsertSql;
+use OCA\OpenRegister\Db\MagicMapper\MagicUpsertChunkRun;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
@@ -111,22 +113,16 @@ class MagicBulkHandlerObjectSlugTest extends TestCase {
 		);
 
 		$handler = new MagicBulkHandler(
-			db: $db,
-			logger: $this->createMock(LoggerInterface::class),
+			sql: new MagicTableSql(db: $db, config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
-			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
-			config: $this->createMock(IConfig::class)
+			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class)
 		);
 		// bulkUpsert() records this per table before its chunks run.
 		(new \ReflectionProperty(MagicBulkHandler::class, 'managedSlugTables'))->setValue($handler, ['openregister_table_1_2' => $freezeSlug]);
 		$method = new ReflectionMethod(MagicBulkHandler::class, 'executeUpsertChunk');
-		$method->invoke(
-			$handler,
-			[['_uuid' => 'u-1', '_slug' => 'hello', '_name' => 'Hello']],
-			'openregister_table_1_2',
-			1,
-			false
-		);
+		$run = new MagicUpsertChunkRun('openregister_table_1_2', 1);
+		$run->needsPreUpdateState = false;
+		$method->invoke($handler, $run, [['_uuid' => 'u-1', '_slug' => 'hello', '_name' => 'Hello']]);
 
 		$inserts = array_values(array_filter($prepared, static fn (string $sql): bool => str_starts_with($sql, 'INSERT INTO')));
 		$this->assertCount(1, $inserts, 'exactly one upsert statement is prepared');

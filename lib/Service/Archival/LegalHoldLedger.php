@@ -68,7 +68,22 @@ class LegalHoldLedger {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function place(array $retention, string $reason, ?string $ownerKey, HoldStamp $stamp): array {
-		$ownerKey = $this->owner(ownerKey: $ownerKey);
+		return $this->placeAction(retention: $retention, action: new HoldAction(ownerKey: $ownerKey, reason: $reason, stamp: $stamp));
+	}//end place()
+
+	/**
+	 * The retention array with one matter's hold added, or restated.
+	 *
+	 * @param array      $retention The object's retention array.
+	 * @param HoldAction $action    The matter placing it, why, and who places it when.
+	 *
+	 * @return array The retention array with the hold in place.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function placeAction(array $retention, HoldAction $action): array {
+		[$reason, $stamp] = [$action->reason, $action->stamp];
+		$ownerKey = $this->owner(ownerKey: $action->ownerKey);
 		$holds = $this->holds(legalHold: ($retention['legalHold'] ?? null));
 
 		$index = $this->indexOf(holds: $holds, ownerKey: $ownerKey);
@@ -83,7 +98,7 @@ class LegalHoldLedger {
 		];
 
 		return $this->write(retention: $retention, holds: $holds);
-	}//end place()
+	}//end placeAction()
 
 	/**
 	 * Lift the hold of one owner, or every hold when no owner is named
@@ -98,6 +113,21 @@ class LegalHoldLedger {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function release(array $retention, ?string $ownerKey, string $releaseReason, HoldStamp $stamp): array {
+		return $this->releaseAction(retention: $retention, action: new HoldAction(ownerKey: $ownerKey, reason: $releaseReason, stamp: $stamp));
+	}//end release()
+
+	/**
+	 * The retention array with one matter's hold, or every hold, moved to history.
+	 *
+	 * @param array      $retention The object's retention array.
+	 * @param HoldAction $action    The matter releasing its hold (null releases every hold), why, and who releases it when.
+	 *
+	 * @return array The retention array, the released holds moved to history.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function releaseAction(array $retention, HoldAction $action): array {
+		[$ownerKey, $stamp] = [$action->ownerKey, $action->stamp];
 		$history = $this->history(retention: $retention);
 
 		$kept = [];
@@ -107,13 +137,13 @@ class LegalHoldLedger {
 				continue;
 			}
 
-			$history[] = array_merge($hold, ['releasedBy' => $stamp->userId, 'releasedDate' => $stamp->now, 'releaseReason' => $releaseReason]);
+			$history[] = array_merge($hold, ['releasedBy' => $stamp->userId, 'releasedDate' => $stamp->now, 'releaseReason' => $action->reason]);
 		}
 
 		$retention['legalHold'] = ['history' => $history];
 
 		return $this->write(retention: $retention, holds: $kept);
-	}//end release()
+	}//end releaseAction()
 
 	/**
 	 * The active holds on a retention array, a stored single slot read as a list of one

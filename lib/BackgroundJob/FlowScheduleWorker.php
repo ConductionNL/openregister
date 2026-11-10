@@ -31,7 +31,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -41,18 +40,24 @@ use Throwable;
  */
 class FlowScheduleWorker extends TimedJob {
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Job scheduling clock (kept by the base Job as $this->time).
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param FlowScheduleServiceInterface $schedule Decides which flows are due and fires them.
-	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly FlowScheduleServiceInterface $schedule,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		// Every five minutes: the finest schedule this supports is "every
 		// minute", and a five-minute tick keeps a per-minute cron within a few
 		// minutes of its time without waking the instance every minute.

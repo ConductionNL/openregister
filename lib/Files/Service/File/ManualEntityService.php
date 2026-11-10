@@ -261,8 +261,7 @@ class ManualEntityService {
 			);
 
 			[$insertedRelations, $matchesSkipped] = $this->createRelationsForMatches(
-				fileId: $request->fileId,
-				entity: $entity,
+				placement: new EntityPlacement(fileId: $request->fileId, entity: $entity),
 				matches: $matches
 			);
 
@@ -456,18 +455,18 @@ class ManualEntityService {
 	 * For each match position, insert a new relation row unless one
 	 * already exists at exactly that position.
 	 *
-	 * @param int $fileId Target file id.
-	 * @param GdprEntity $entity Catalogue entry the relations point to.
+	 * @param EntityPlacement $placement Target file and the catalogue entry the relations point to.
 	 * @param array<int, array{chunkId: int, positionStart: int, positionEnd: int, context: string}> $matches Output of `ChunkTextMatcher::match`.
 	 *
 	 * @return array{0: EntityRelation[], 1: int} Tuple of (insertedRelations, matchesSkipped).
 	 */
-	private function createRelationsForMatches(int $fileId, GdprEntity $entity, array $matches): array {
+	private function createRelationsForMatches(EntityPlacement $placement, array $matches): array {
+		$fileId = $placement->fileId;
 		$rowsToInsert = [];
 		$matchesSkipped = 0;
 
 		foreach ($matches as $match) {
-			$mention = EntityMention::atMatch(entityId: (int)$entity->getId(), match: $match);
+			$mention = EntityMention::atMatch(entityId: $placement->entityId(), match: $match);
 			if ($this->entityRelationMapper->existsForFileAtPosition(fileId: $fileId, mention: $mention) === true) {
 				$matchesSkipped++;
 				continue;

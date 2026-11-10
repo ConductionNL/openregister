@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -99,8 +101,7 @@ class RegisterDescriptorServiceShapeGoldenTest extends TestCase {
 			new RegisterImporters(
 				$this->configurationService,
 				new CountedRegisterImport(
-				registerMapper: $this->registerMapper,
-				schemaMapper: $this->createMock(SchemaMapper::class),
+				catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 				decision: new ShippedAuthorizationDecision()
 			),
 				new AppRegisterImportRunner(

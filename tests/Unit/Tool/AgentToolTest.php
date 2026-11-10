@@ -6,6 +6,9 @@ use BadMethodCallException;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateAgentCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateAgentCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -25,9 +28,8 @@ class AgentToolTest extends TestCase {
 		$this->agentMapper = $this->createMock(AgentMapper::class);
 
 		$this->tool = new AgentTool(
-			$this->agentMapper,
-			$this->userSession,
-			$this->logger
+			new ToolCallTrail($this->userSession, $this->logger),
+			$this->agentMapper
 		);
 
 		$user = $this->createMock(IUser::class);
@@ -197,7 +199,7 @@ class AgentToolTest extends TestCase {
 			->method('insert')
 			->willReturn($agent);
 
-		$result = $this->tool->createAgent('NewBot', 'Desc', 'chat', 'You are a bot');
+		$result = $this->tool->createAgent(new CreateAgentCommand('NewBot', 'Desc', 'chat', 'You are a bot'));
 		$this->assertTrue($result['success']);
 		$this->assertStringContainsString('NewBot', $result['message']);
 		$this->assertStringContainsString('new-uuid', $result['message']);
@@ -208,7 +210,7 @@ class AgentToolTest extends TestCase {
 
 		$this->agentMapper->method('insert')->willReturn($agent);
 
-		$result = $this->tool->createAgent('SimpleBot');
+		$result = $this->tool->createAgent(new CreateAgentCommand('SimpleBot'));
 		$this->assertTrue($result['success']);
 	}
 
@@ -216,7 +218,7 @@ class AgentToolTest extends TestCase {
 		$agent = $this->createAgentEntity('uuid', 'Bot');
 		$this->agentMapper->method('insert')->willReturn($agent);
 
-		$result = $this->tool->createAgent('Bot', '', '', '');
+		$result = $this->tool->createAgent(new CreateAgentCommand('Bot', '', '', ''));
 		$this->assertTrue($result['success']);
 	}
 
@@ -227,7 +229,7 @@ class AgentToolTest extends TestCase {
 		$insertedAgent = $this->createAgentEntity('uuid', 'Bot');
 		$this->agentMapper->method('insert')->willReturn($insertedAgent);
 
-		$result = $this->tool->createAgent('Bot');
+		$result = $this->tool->createAgent(new CreateAgentCommand('Bot'));
 		$this->assertTrue($result['success']);
 	}
 
@@ -235,7 +237,7 @@ class AgentToolTest extends TestCase {
 		$this->agentMapper->method('insert')
 			->willThrowException(new \Exception('Constraint violation'));
 
-		$result = $this->tool->createAgent('Bad');
+		$result = $this->tool->createAgent(new CreateAgentCommand('Bad'));
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('Constraint violation', $result['error']);
 	}
@@ -252,7 +254,7 @@ class AgentToolTest extends TestCase {
 			return $entity;
 		});
 
-		$result = $this->tool->updateAgent('uuid-1', 'New', 'New desc', 'New prompt');
+		$result = $this->tool->updateAgent(new UpdateAgentCommand('uuid-1', 'New', 'New desc', 'New prompt'));
 		$this->assertTrue($result['success']);
 		$this->assertStringContainsString('updated', $result['message']);
 	}
@@ -265,7 +267,7 @@ class AgentToolTest extends TestCase {
 			return $entity;
 		});
 
-		$result = $this->tool->updateAgent('uuid-1');
+		$result = $this->tool->updateAgent(new UpdateAgentCommand('uuid-1'));
 		$this->assertTrue($result['success']);
 	}
 
@@ -273,7 +275,7 @@ class AgentToolTest extends TestCase {
 		$this->agentMapper->method('findByUuid')
 			->willThrowException(new DoesNotExistException('not found'));
 
-		$result = $this->tool->updateAgent('bad-uuid', 'x');
+		$result = $this->tool->updateAgent(new UpdateAgentCommand('bad-uuid', 'x'));
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('not found', $result['error']);
 	}
@@ -282,7 +284,7 @@ class AgentToolTest extends TestCase {
 		$this->agentMapper->method('findByUuid')
 			->willThrowException(new \Exception('DB error'));
 
-		$result = $this->tool->updateAgent('uuid');
+		$result = $this->tool->updateAgent(new UpdateAgentCommand('uuid'));
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('DB error', $result['error']);
 	}

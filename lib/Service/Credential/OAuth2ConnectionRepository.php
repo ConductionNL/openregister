@@ -166,9 +166,8 @@ class OAuth2ConnectionRepository implements OAuth2ConnectionRepositoryInterface 
 	 * broker time; the other order would leave a credential that looks disconnected
 	 * and still holds a live token.
 	 *
-	 * @param string $credentialId The credential UUID.
-	 * @param array<string, mixed> $data The credential's property bag.
-	 * @param string $lastError A secret-free reason the upstream revoke failed, or an empty string.
+	 * @param OAuth2ConnectionRecord $connection The credential UUID and its property bag.
+	 * @param string                 $lastError  A secret-free reason the upstream revoke failed, or an empty string.
 	 *
 	 * @return void
 	 *
@@ -176,12 +175,12 @@ class OAuth2ConnectionRepository implements OAuth2ConnectionRepositoryInterface 
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
-	public function disable(string $credentialId, array $data, string $lastError): void {
-		$scope = (string)($data['scope'] ?? 'personal');
-		$this->credentialStore->delete($credentialId, $scope);
+	public function disable(OAuth2ConnectionRecord $connection, string $lastError): void {
+		$scope = (string)($connection->data['scope'] ?? 'personal');
+		$this->credentialStore->delete($connection->credentialId, $scope);
 
-		$disabled = array_merge($data, ['status' => 'disabled', 'lastError' => $lastError, 'expiresAt' => null]);
-		$this->objects()->save(credentialId: $credentialId, object: $disabled);
+		$disabled = array_merge($connection->data, ['status' => 'disabled', 'lastError' => $lastError, 'expiresAt' => null]);
+		$this->objects()->save(credentialId: $connection->credentialId, object: $disabled);
 	}//end disable()
 
 	/**

@@ -79,31 +79,18 @@ class OperatorEvaluator {
 	 */
 	public function valueMatchesOperator(mixed $value, array $operators): bool {
 		foreach ($operators as $operator => $operand) {
-			if ($this->applySingleOperator(value: $value, operator: $operator, operand: $operand) === false) {
+			$method = (self::OPERATOR_METHODS[$operator] ?? null);
+			if ($method === null) {
+				return $this->rejectUnknownOperator(operator: $operator);
+			}
+
+			if ($this->{$method}(value: $value, operand: $operand) === false) {
 				return false;
 			}
 		}//end foreach
 
 		return true;
 	}//end valueMatchesOperator()
-
-	/**
-	 * Apply a single operator check against a value
-	 *
-	 * @param mixed $value Object value
-	 * @param string $operator Operator name (e.g. '$eq', '$gt')
-	 * @param mixed $operand Operand to compare against
-	 *
-	 * @return bool True if value satisfies the operator condition
-	 */
-	private function applySingleOperator(mixed $value, string $operator, mixed $operand): bool {
-		$method = (self::OPERATOR_METHODS[$operator] ?? null);
-		if ($method === null) {
-			return $this->rejectUnknownOperator(operator: $operator);
-		}
-
-		return $this->{$method}(value: $value, operand: $operand);
-	}//end applySingleOperator()
 
 	/**
 	 * Refuse a match on an operator this evaluator does not know.

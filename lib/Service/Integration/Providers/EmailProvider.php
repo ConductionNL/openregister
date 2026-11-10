@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
@@ -186,8 +187,20 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$registerId = (int)($payload['registerId'] ?? $register);
-		$schemaId = (int)($payload['schemaId'] ?? $schema);
+		return $this->linkEmailFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	}//end create()
+
+	/**
+	 * Link one mail message to an object.
+	 *
+	 * @param ObjectRef           $ref     The owning object; the payload may name its register and schema ids.
+	 * @param array<string,mixed> $payload The mail account and message id or uid (Tier-2 or legacy names).
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function linkEmailFor(ObjectRef $ref, array $payload): array {
+		$registerId = (int)($payload['registerId'] ?? $ref->register);
+		$schemaId = (int)($payload['schemaId'] ?? $ref->schema);
 		$mailAccountId = (int)($payload['mailAccountId'] ?? 0);
 
 		// Tier-2 fields first, legacy fall-through second.
@@ -195,12 +208,12 @@ class EmailProvider extends AbstractIntegrationProvider {
 		$messageUid = (string)($payload['messageUid'] ?? $payload['mailMessageUid'] ?? '');
 
 		$link = $this->emailLinkService->linkEmail(
-			target: (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId),
+			target: (new LinkTarget(objectUuid: $ref->id, registerId: $registerId))->inSchema(schemaId: $schemaId),
 			message: (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))->withUid(uid: $messageUid)
 		);
 
 		return $link->jsonSerialize();
-	}//end create()
+	}//end linkEmailFor()
 
 	/**
 	 * Unlink an email from an OR object. The message stays in NC Mail.

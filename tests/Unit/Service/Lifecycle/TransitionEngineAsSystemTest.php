@@ -190,7 +190,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 			ast: new CalculationEvaluator(placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class)))
 		);
 		$this->listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new LifecycleTransitionResolver($this->actions), $this->logger), $this->userSession, $this->permission),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new LifecycleTransitionResolver($this->actions)), $this->userSession, $this->permission),
 			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer, $serverContainer, $this->logger)), new LifecycleConditionEvaluator($this->userSession, $groupManager, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->createMock(RuleRunRecorder::class)
 		);
@@ -477,9 +477,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->createMock(IDBConnection::class),
-			$this->userSession,
-			$request,
-			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class))
+			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->userSession, $request)
 		);
 	}//end auditMapper()
 }//end class

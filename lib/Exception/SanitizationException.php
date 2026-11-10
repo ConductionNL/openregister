@@ -88,37 +88,38 @@ class SanitizationException extends \Exception {
 	public const REASON_INTERNAL = 'internal';
 
 	/**
-	 * The structured reason code (one of the REASON_* constants).
-	 *
-	 * MUST NOT carry filename or content (ADR-005).
-	 *
-	 * @var string
-	 */
-	public readonly string $reason;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param string $reason One of the REASON_* constants.
+	 * @param string $reason One of the REASON_* constants. MUST NOT carry
+	 *                       filename or content (ADR-005).
 	 * @param string $message PII-free human-readable detail.
 	 * @param Throwable|null $previous Previous exception.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function __construct(
-		string $reason,
-		string $message = '',
-		?Throwable $previous = null,
+		public readonly string $reason,
+		string $message='',
+		?Throwable $previous=null,
 	) {
-		$this->reason = $reason;
+		parent::__construct(message: self::describe(reason: $reason, message: $message), code: 0, previous: $previous);
+	}//end __construct()
 
-		$finalMessage = $message;
-		if ($finalMessage === '') {
-			$finalMessage = sprintf('Office document sanitisation failed: %s', $reason);
+	/**
+	 * The caller's message, or the default sentence naming the reason when it is empty.
+	 *
+	 * @param string $reason  One of the REASON_* constants.
+	 * @param string $message The caller's message, possibly empty.
+	 *
+	 * @return string The message.
+	 */
+	private static function describe(string $reason, string $message): string {
+		if ($message === '') {
+			return sprintf('Office document sanitisation failed: %s', $reason);
 		}
 
-		parent::__construct(message: $finalMessage, code: 0, previous: $previous);
-	}//end __construct()
+		return $message;
+	}//end describe()
 
 	/**
 	 * Get the structured reason code.

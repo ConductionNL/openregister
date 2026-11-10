@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -123,8 +124,7 @@ class SchemaDraftTest extends TestCase {
 		$versioning = new SchemaVersioningService(
 			new SchemaDiffService(),
 			$this->changelogMapper,
-			$this->createMock(SchemaRunMapper::class),
-			$this->createMock(SchemaRunEntryMapper::class),
+			new SchemaPopulationRuns($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class), $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			$userSession,
 			$this->createMock(LoggerInterface::class)
 		);

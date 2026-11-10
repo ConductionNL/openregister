@@ -20,8 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 
 /**
@@ -33,13 +32,11 @@ final readonly class ScheduledObjectSources {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $objectMapper Magic object mapper.
+	 * @param SchemaCatalogInterface   $catalog         The schema mapper (schema lookup) and the magic mapper (objects).
 	 * @param ScheduledFilterEvaluator $filterEvaluator Operator-aware filter evaluator.
 	 */
 	public function __construct(
-		public SchemaMapperInterface $schemaMapper,
-		public MagicMapperInterface $objectMapper,
+		public SchemaCatalogInterface $catalog,
 		public ScheduledFilterEvaluator $filterEvaluator,
 	) {
 	}//end __construct()

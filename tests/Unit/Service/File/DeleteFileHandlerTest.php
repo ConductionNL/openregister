@@ -91,7 +91,6 @@ class DeleteFileHandlerTest extends TestCase {
 		$this->handler = new DeleteFileHandler(
 			new DeleteFileSources($this->rootFolder, $this->readFileHandler, $this->logger),
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
 			$this->fileLockHandler
 		);
 	}//end setUp()

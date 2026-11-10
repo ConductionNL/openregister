@@ -433,4 +433,49 @@ class ReferencedAddressNotifierTest extends TestCase {
 			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $ok, data: $ok->getObject(), schema: $schema), path: 'first.next.contactEmail')['reason']
 		);
 	}//end testEveryHopOfALongerPathIsCheckedAgainstItsOwnSchema()
+
+	/**
+	 * integriq is asked once, about the resolved addresses only, under the
+	 * rule's category and the triggering object's correlation id; entries
+	 * that are not `email` entries, or not entries at all, are skipped.
+	 *
+	 * @return void
+	 */
+	public function testIntegriqIsAskedOnceAboutResolvedAddressesOnly(): void {
+		$asked = [];
+		$this->optOut->method('ask')->willReturnCallback(
+			static function (string $channel, string $category, array $addresses, string $correlationId) use (&$asked): array {
+				$asked[] = [$channel, $category, $addresses, $correlationId];
+				return ['ok@example.org' => ['send' => true, 'code' => 'allowed', 'unsubscribe' => null]];
+			}
+		);
+		$this->store['a'] = $this->object('a', ['contactEmail' => 'ok@example.org']);
+		$object = $this->object('msg-9', ['refA' => 'a', 'missing' => 'gone']);
+
+		$outcomes = $this->notifier()->notify(
+			object: $object,
+			data: $object->getObject(),
+			recipientsSpec: [
+				'not-an-entry',
+				['kind' => 'email', 'field' => ' refA.contactEmail '],
+				['kind' => 'users', 'users' => ['x']],
+				['kind' => 'email', 'field' => 'missing.contactEmail'],
+			],
+			subject: 'Onderwerp',
+			body: 'Tekst',
+			category: 'marketing',
+			schema: $this->referencing(['refA', 'missing'])
+		);
+
+		$this->assertSame([['email', 'marketing', ['ok@example.org'], 'openregister-email:msg-9']], $asked);
+		$this->assertSame(
+			[
+				['field' => 'refA.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED],
+				['field' => 'missing.contactEmail', 'outcome' => ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND],
+			],
+			$outcomes
+		);
+		$this->assertCount(1, $this->sent);
+		$this->assertSame(['address' => 'ok@example.org', 'subject' => 'Onderwerp', 'body' => 'Tekst', 'unsubscribe' => null], $this->sent[0]);
+	}//end testIntegriqIsAskedOnceAboutResolvedAddressesOnly()
 }//end class
