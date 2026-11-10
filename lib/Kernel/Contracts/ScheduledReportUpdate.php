@@ -1,13 +1,13 @@
 <?php
 
 /**
- * The caller a scheduled report is accessed as.
+ * One update of a scheduled report.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,25 +20,27 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
- * The caller a scheduled report is read, changed or deleted as: their uid and whether they are an administrator.
+ * One update of a scheduled report: which report, the fields to change and who asks.
  *
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-final class ReportCaller {
+final class ScheduledReportUpdate {
 	/**
 	 * Hold the values.
 	 *
-	 * @param string $uid     The calling user's uid.
-	 * @param bool   $isAdmin Whether the caller is a Nextcloud administrator.
+	 * @param int                 $id     The scheduled report id.
+	 * @param array<string,mixed> $data   Fields to update (same shape as create()).
+	 * @param ReportCaller        $caller Who asks.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	public function __construct(
-		public readonly string $uid,
-		public readonly bool $isAdmin,
+		public readonly int $id,
+		public readonly array $data,
+		public readonly ReportCaller $caller,
 	) {
 	}//end __construct()
 }//end class

@@ -1064,9 +1064,6 @@
     "no-console": {
       "count": 1
     },
-    "vue/match-component-import-name": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
