@@ -158,3 +158,4 @@
 2026-11-10T15:14:50Z dev=cd5c411f0b prs=8936,8937 Tests: 54836, Assertions: 181535, Errors: 7, Failures: 15, Warnings: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=skip
 2026-11-10T15:19:54Z dev=cd5c411f0b prs=8936 Tests: 54836, Assertions: 181535, Errors: 7, Failures: 15, Warnings: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=skip
 2026-11-10T15:21:50Z dev=cd5c411f0b prs=9472 Tests: 54836, Assertions: 181559, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=red
+2026-11-10T15:31:15Z dev=cd5c411f0b prs=9370 Tests: 54836, Assertions: 181559, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=red
