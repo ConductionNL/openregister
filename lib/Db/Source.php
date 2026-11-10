@@ -272,7 +272,7 @@ class Source extends Entity implements JsonSerializable {
 	 * @spec exclude entity plumbing, not a capability of its own
 	 */
 	public function hydrate(array $object): static {
-		EmptyJsonHydration::hydrate(entity: $this, object: $object);
+		(new EmptyJsonHydration())->hydrate(entity: $this, object: $object);
 
 		return $this;
 	}//end hydrate()

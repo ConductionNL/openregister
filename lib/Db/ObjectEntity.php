@@ -1305,7 +1305,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @return static Returns the hydrated entity
 	 */
 	public function hydrate(array $object): static {
-		EmptyJsonHydration::hydrate(entity: $this, object: $object);
+		(new EmptyJsonHydration())->hydrate(entity: $this, object: $object);
 
 		return $this;
 	}//end hydrate()

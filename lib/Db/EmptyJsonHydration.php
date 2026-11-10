@@ -45,7 +45,7 @@ final class EmptyJsonHydration {
 	 *
 	 * @spec exclude entity plumbing, not a capability of its own
 	 */
-	public static function hydrate(Entity $entity, array $object): void {
+	public function hydrate(Entity $entity, array $object): void {
 		$jsonFields = $entity->getJsonFields();
 
 		if (isset($object['metadata']) === false) {
