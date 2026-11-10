@@ -1125,39 +1125,39 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function lifecycleConditionsSql(ConditionSqlRun $run): array {
-		$query          = $run->query;
-		$schema         = $run->schema();
-		$missingColumns = $this->missingMetadataColumns(tableName: $run->table->tableName);
-		$conditions = [];
-
-		$lens = new DeletedLens();
-		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: '');
-		if ($deleted !== null) {
-			$conditions[] = $deleted;
-		}
-
-		$archivedMode = $this->resolveArchivedMode(query: $query);
-		$columns = new LifecycleColumns(prefix: '', missing: $missingColumns);
-		$archived = $this->archivedConditionSql(mode: $archivedMode, columns: $columns);
-		if ($archived !== null) {
-			$conditions[] = $archived;
-		}
+		$query   = $run->query;
+		$columns = new LifecycleColumns(prefix: '', missing: $this->missingMetadataColumns(tableName: $run->table->tableName));
+		$lens    = new DeletedLens();
 
 		// Decision 201: drafts stay out of a list unless asked for, on this
 		// path as on applyBasicFilters(), with the caller's own kept in view.
-		$userId = $this->rbacHandler->getCurrentUserId();
-		$owner = null;
-		if ($userId !== null && $userId !== '') {
-			$owner = (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
-		}
+		$conditions = [
+			$lens->condition(mode: $lens->mode(query: $query), columnPrefix: ''),
+			$this->archivedConditionSql(mode: $this->resolveArchivedMode(query: $query), columns: $columns),
+			$this->draftConditionSql(
+				columns: $columns,
+				request: new DraftListRequest(query: $query, schema: $run->schema(), owner: $this->quotedDraftOwner())
+			),
+		];
 
-		$drafts = $this->draftConditionSql(columns: $columns, request: new DraftListRequest(query: $query, schema: $schema, owner: $owner));
-		if ($drafts !== null) {
-			$conditions[] = $drafts;
-		}
-
-		return $conditions;
+		return array_values(array_filter($conditions, static fn (?string $condition): bool => $condition !== null));
 	}//end lifecycleConditionsSql()
+
+	/**
+	 * The current user as a quoted SQL literal, the owner whose drafts stay in view; null without a user.
+	 *
+	 * @return string|null The quoted user id.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 */
+	private function quotedDraftOwner(): ?string {
+		$userId = $this->rbacHandler->getCurrentUserId();
+		if ($userId === null || $userId === '') {
+			return null;
+		}
+
+		return (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
+	}//end quotedDraftOwner()
 
 	/**
 	 * The metadata columns a table is known to lack after an attempt to heal it.
@@ -1199,11 +1199,7 @@ class MagicSearchHandler {
 		}
 
 		if ($columns->lacks(column: '_archived') === true) {
-			if ($mode === self::ARCHIVED_ONLY) {
-				return '1=0';
-			}
-
-			return null;
+			return $this->archivedWithoutColumnSql(mode: $mode);
 		}
 
 		if ($mode === self::ARCHIVED_ONLY) {
@@ -1212,6 +1208,24 @@ class MagicSearchHandler {
 
 		return $columns->prefix.'_archived IS NULL';
 	}//end archivedConditionSql()
+
+	/**
+	 * The archive predicate of a table without an `_archived` column: it holds
+	 * no archived row, so the archived lens is empty and the working set is all of it.
+	 *
+	 * @param string $mode One of the ARCHIVED_* constants.
+	 *
+	 * @return string|null The predicate, or null when every row is in scope.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	private function archivedWithoutColumnSql(string $mode): ?string {
+		if ($mode === self::ARCHIVED_ONLY) {
+			return '1=0';
+		}
+
+		return null;
+	}//end archivedWithoutColumnSql()
 
 	/**
 	 * The draft predicate (decision 201), or null when it puts no condition on the list.
@@ -1265,59 +1279,10 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
 	private function boundaryConditionsSql(ConditionSqlRun $run): array {
-		$query      = $run->query;
-		$table      = $run->table;
-		$connection = $run->connection;
-		$conditions = [];
-		$schema     = $table->schema;
-		$rbac       = ($query['_rbac'] ?? true);
-
-		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
-		$resolvedMultitenancy = $this->resolveMultitenancyFlag(
-			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
-			multitenancyExplicit: $multitenancyExplicit,
-			schema: $schema
-		);
-
-		$multitenancyApplies = $this->multitenancyApplies(
-			schema: $schema,
-			_rbac: $this->flagFromQuery(value: $rbac),
-			_multitenancy: $resolvedMultitenancy,
-			multitenancyExplicit: $multitenancyExplicit
-		);
-
-		if ($multitenancyApplies === true) {
-			$orgCondition = $this->buildOrganizationConditionSql(
-				boundary: new OrganisationBoundary(
-					registerId: ($table->registerId ?? $this->registerIdFromQuery(query: $query)),
-					schemaId: $schema->getId(),
-					withOrgless: $this->organisationlessRowsAdmitted(
-						schema: $schema,
-						posture: new ReadPosture(
-							rbac: $this->flagFromQuery(value: $rbac),
-							multitenancy: $resolvedMultitenancy,
-							multitenancyExplicit: $multitenancyExplicit
-						)
-					)
-				),
-				connection: $connection
-			);
-			$crossBranch = null;
-			if ($multitenancyExplicit === false && $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === true) {
-				$crossBranch = $this->rbacHandler->getCrossOrganisationBranchSql(schema: $schema);
-			}
-
-			if ($orgCondition !== null && $crossBranch !== null) {
-				$orgCondition = '(' . $orgCondition . ' OR ' . $crossBranch . ')';
-			}
-
-			if ($orgCondition !== null) {
-				$conditions[] = $orgCondition;
-			}
-		}
-
+		$rbac       = ($run->query['_rbac'] ?? true);
+		$conditions = $this->organisationBoundaryConditionsSql(run: $run);
 		if ($rbac === true) {
-			$rbacCondition = $this->buildRbacConditionSql(schema: $schema, tableName: $table->tableName);
+			$rbacCondition = $this->buildRbacConditionSql(schema: $run->schema(), tableName: $run->table->tableName);
 			if ($rbacCondition !== null) {
 				$conditions[] = $rbacCondition;
 			}
@@ -1325,6 +1290,125 @@ class MagicSearchHandler {
 
 		return $conditions;
 	}//end boundaryConditionsSql()
+
+	/**
+	 * The organisation predicate of the union path, when multitenancy applies to the read
+	 *
+	 * The decision is the SAME one the QueryBuilder path takes
+	 * (`multitenancyApplies()`); only the rendering differs.
+	 *
+	 * @param ConditionSqlRun $run The condition pass: query, table, connection and platform.
+	 *
+	 * @return string[] The organisation condition, or none.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function organisationBoundaryConditionsSql(ConditionSqlRun $run): array {
+		$posture = $this->boundaryPosture(run: $run);
+		$applies = $this->multitenancyApplies(
+			schema: $run->schema(),
+			_rbac: $posture->rbac,
+			_multitenancy: $posture->multitenancy,
+			multitenancyExplicit: $posture->multitenancyExplicit
+		);
+		if ($applies === false) {
+			return [];
+		}
+
+		return $this->scopedOrganisationConditionsSql(run: $run, posture: $posture);
+	}//end organisationBoundaryConditionsSql()
+
+	/**
+	 * The read posture a union-path query asks for: its `_rbac` flag, its
+	 * resolved `_multitenancy` flag and whether multitenancy was asked explicitly
+	 *
+	 * @param ConditionSqlRun $run The condition pass: query, table, connection and platform.
+	 *
+	 * @return ReadPosture The posture.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function boundaryPosture(ConditionSqlRun $run): ReadPosture {
+		$query                = $run->query;
+		$multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
+		$resolvedMultitenancy = $this->resolveMultitenancyFlag(
+			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
+			multitenancyExplicit: $multitenancyExplicit,
+			schema: $run->schema()
+		);
+
+		return new ReadPosture(
+			rbac: $this->flagFromQuery(value: ($query['_rbac'] ?? true)),
+			multitenancy: $resolvedMultitenancy,
+			multitenancyExplicit: $multitenancyExplicit
+		);
+	}//end boundaryPosture()
+
+	/**
+	 * The organisation condition of the union path, widened by the schema's
+	 * cross-organisation branch unless multitenancy was asked explicitly
+	 *
+	 * @param ConditionSqlRun $run     The condition pass: query, table, connection and platform.
+	 * @param ReadPosture     $posture The read posture of the query.
+	 *
+	 * @return string[] The condition, or none when every row is in scope.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function scopedOrganisationConditionsSql(ConditionSqlRun $run, ReadPosture $posture): array {
+		$orgCondition = $this->buildOrganizationConditionSql(
+			boundary: $this->organisationBoundaryFor(run: $run, posture: $posture),
+			connection: $run->connection
+		);
+		$crossBranch  = $this->crossOrganisationBranchSql(schema: $run->schema(), posture: $posture);
+		if ($orgCondition === null) {
+			return [];
+		}
+
+		if ($crossBranch !== null) {
+			return ['(' . $orgCondition . ' OR ' . $crossBranch . ')'];
+		}
+
+		return [$orgCondition];
+	}//end scopedOrganisationConditionsSql()
+
+	/**
+	 * The organisation boundary of a union-path read: its register, schema, and
+	 * whether org-less rows are admitted through the RBAC cascade
+	 *
+	 * @param ConditionSqlRun $run     The condition pass: query, table, connection and platform.
+	 * @param ReadPosture     $posture The read posture of the query.
+	 *
+	 * @return OrganisationBoundary The boundary.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function organisationBoundaryFor(ConditionSqlRun $run, ReadPosture $posture): OrganisationBoundary {
+		$schema = $run->schema();
+		return new OrganisationBoundary(
+			registerId: ($run->table->registerId ?? $this->registerIdFromQuery(query: $run->query)),
+			schemaId: $schema->getId(),
+			withOrgless: $this->organisationlessRowsAdmitted(schema: $schema, posture: $posture)
+		);
+	}//end organisationBoundaryFor()
+
+	/**
+	 * The schema's cross-organisation branch, unless multitenancy was asked explicitly
+	 *
+	 * @param Schema      $schema  The schema read.
+	 * @param ReadPosture $posture The read posture of the query.
+	 *
+	 * @return string|null The branch SQL, or null when there is none.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function crossOrganisationBranchSql(Schema $schema, ReadPosture $posture): ?string {
+		if ($posture->multitenancyExplicit === false && $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === true) {
+			return $this->rbacHandler->getCrossOrganisationBranchSql(schema: $schema);
+		}
+
+		return null;
+	}//end crossOrganisationBranchSql()
 
 	/**
 	 * Read a reserved boolean flag out of a query, failing closed.
@@ -1548,8 +1632,6 @@ class MagicSearchHandler {
 	private function buildOrganizationConditionSql(OrganisationBoundary $boundary, object $connection): ?string {
 		$scope = $this->organisationScopeFor(boundary: $boundary);
 
-		$column = '_organisation';
-
 		// Read the mode rather than assume it: a decision that arrives without
 		// one is a decision this renderer cannot read, and the answer to that is
 		// the empty set, not the whole table.
@@ -1560,18 +1642,28 @@ class MagicSearchHandler {
 		}
 
 		if ($mode === MagicOrganizationHandler::SCOPE_NULL_ONLY) {
-			return $column . ' IS NULL';
+			return '_organisation IS NULL';
 		}
 
-		$scoped = [
-			MagicOrganizationHandler::SCOPE_IN,
-			MagicOrganizationHandler::SCOPE_IN_OR_NULL,
-		];
-		if (in_array($mode, $scoped, true) === false) {
+		if (in_array($mode, [MagicOrganizationHandler::SCOPE_IN, MagicOrganizationHandler::SCOPE_IN_OR_NULL], true) === false) {
 			// SCOPE_NONE, and anything this renderer does not know.
 			return '1 = 0';
 		}
 
+		return $this->organisationInConditionSql(scope: $scope, connection: $connection);
+	}//end buildOrganizationConditionSql()
+
+	/**
+	 * The `_organisation IN (...)` condition of a scope that names organisations
+	 *
+	 * @param array{mode: string, uuids?: array<int, mixed>} $scope      The decided scope, SCOPE_IN or SCOPE_IN_OR_NULL.
+	 * @param object                                         $connection The connection that quotes the organisation uuids.
+	 *
+	 * @return string The SQL condition.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 */
+	private function organisationInConditionSql(array $scope, object $connection): string {
 		$uuids = array_values(array_filter(
 			($scope['uuids'] ?? []),
 			static fn ($uuid): bool => is_string($uuid) === true && $uuid !== ''
@@ -1583,22 +1675,17 @@ class MagicSearchHandler {
 			return '1 = 0';
 		}
 
-		$quoted = array_map(
-			static fn (string $uuid): string => $connection->quote($uuid),
-			$uuids
-		);
-
-		$condition = $column . ' IN (' . implode(', ', $quoted) . ')';
-
-		if ($mode === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
+		$quoted    = array_map(static fn (string $uuid): string => $connection->quote($uuid), $uuids);
+		$condition = '_organisation IN (' . implode(', ', $quoted) . ')';
+		if ($scope['mode'] === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
 			// SQL `IN` never matches NULL, so the org-less rows an admin may see
 			// need their own disjunct. Leaving it out is how the aggregation API
 			// once made every org-less row invisible.
-			$condition = '(' . $condition . ' OR ' . $column . ' IS NULL)';
+			$condition = '(' . $condition . ' OR _organisation IS NULL)';
 		}
 
 		return $condition;
-	}//end buildOrganizationConditionSql()
+	}//end organisationInConditionSql()
 
 	/**
 	 * Build the RBAC SQL condition
@@ -2479,54 +2566,108 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	private function applyBasicFilters(TableFilterRun $run): void {
-		$qb             = $run->qb;
-		$query          = $run->query;
-		$schema         = $run->schema();
-		$missingColumns = $this->missingMetadataColumns(tableName: $run->table->tableName);
-		$lens = new DeletedLens();
-		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: 't.');
+		$qb      = $run->qb;
+		$columns = new LifecycleColumns(prefix: 't.', missing: $this->missingMetadataColumns(tableName: $run->table->tableName));
+		$lens    = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $run->query), columnPrefix: 't.');
 		if ($deleted !== null) {
 			$qb->andWhere($qb->createFunction($deleted));
 		}
 
-		// Handle the archive filter. Exclusion is the DEFAULT rather than a
-		// filter the caller has to remember, so a caller who forgets the
-		// parameter gets the working set — the safe answer. Asking for both is
-		// the only way to see an archived row beside an open one.
-		$archivedMode = $this->resolveArchivedMode(query: $query);
-		$columns = new LifecycleColumns(prefix: 't.', missing: $missingColumns);
+		$this->applyArchivedFilter(run: $run, columns: $columns);
+		$this->applyDraftFilter(run: $run, columns: $columns);
+	}//end applyBasicFilters()
+
+	/**
+	 * Apply the archive lens on the QueryBuilder path
+	 *
+	 * Exclusion is the DEFAULT rather than a filter the caller has to remember,
+	 * so a caller who forgets the parameter gets the working set — the safe
+	 * answer. Asking for both is the only way to see an archived row beside an
+	 * open one.
+	 *
+	 * @param TableFilterRun   $run     The filter pass: query builder, query and table.
+	 * @param LifecycleColumns $columns The table alias and the metadata columns this table lacks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	private function applyArchivedFilter(TableFilterRun $run, LifecycleColumns $columns): void {
+		$qb              = $run->qb;
+		$archivedMode    = $this->resolveArchivedMode(query: $run->query);
 		$archivedMissing = $columns->lacks(column: '_archived');
 		if ($archivedMode === self::ARCHIVED_EXCLUDE && $archivedMissing === false) {
 			$qb->andWhere($qb->expr()->isNull('t._archived'));
 		}
 
 		if ($archivedMode === self::ARCHIVED_ONLY) {
-			if ($archivedMissing === true) {
-				// No column, so no archived row: the archived lens is empty.
-				$qb->andWhere($qb->createFunction('1=0'));
-			} else {
-				$qb->andWhere($qb->expr()->isNotNull('t._archived'));
-			}
+			$qb->andWhere($this->archivedOnlyPredicate(qb: $qb, archivedMissing: $archivedMissing));
+		}
+	}//end applyArchivedFilter()
+
+	/**
+	 * The predicate of the archived lens alone on the QueryBuilder path
+	 *
+	 * @param IQueryBuilder $qb              The query builder.
+	 * @param bool          $archivedMissing Whether the table lacks the `_archived` column.
+	 *
+	 * @return mixed The predicate
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	private function archivedOnlyPredicate(IQueryBuilder $qb, bool $archivedMissing): mixed {
+		if ($archivedMissing === true) {
+			// No column, so no archived row: the archived lens is empty.
+			return $qb->createFunction('1=0');
 		}
 
-		// Decision 201: drafts stay out of a list unless asked for, whoever
-		// asks. The read RBAC keeps a draft to its owner, but an administrator
-		// and an app's service listing with RBAC off pass that by, and their
-		// work lists are the ones the decision is about. The caller's own
-		// drafts stay in view. Raw SQL through createFunction(), spelled once
-		// in DraftListLens for this path and lifecycleConditionsSql().
-		$userId = $this->rbacHandler->getCurrentUserId();
-		$owner = null;
-		if ($userId !== null && $userId !== '') {
-			$owner = (string)$qb->createNamedParameter($userId);
-		}
+		return $qb->expr()->isNotNull('t._archived');
+	}//end archivedOnlyPredicate()
 
-		$drafts = $this->draftConditionSql(columns: $columns, request: new DraftListRequest(query: $query, schema: $schema, owner: $owner));
+	/**
+	 * Apply the draft lens on the QueryBuilder path
+	 *
+	 * Decision 201: drafts stay out of a list unless asked for, whoever asks.
+	 * The read RBAC keeps a draft to its owner, but an administrator and an
+	 * app's service listing with RBAC off pass that by, and their work lists
+	 * are the ones the decision is about. The caller's own drafts stay in
+	 * view. Raw SQL through createFunction(), spelled once in DraftListLens for
+	 * this path and lifecycleConditionsSql().
+	 *
+	 * @param TableFilterRun   $run     The filter pass: query builder, query and table.
+	 * @param LifecycleColumns $columns The table alias and the metadata columns this table lacks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 */
+	private function applyDraftFilter(TableFilterRun $run, LifecycleColumns $columns): void {
+		$qb     = $run->qb;
+		$owner  = $this->boundDraftOwner(qb: $qb);
+		$drafts = $this->draftConditionSql(columns: $columns, request: new DraftListRequest(query: $run->query, schema: $run->schema(), owner: $owner));
 		if ($drafts !== null) {
 			$qb->andWhere($qb->createFunction($drafts));
 		}
+	}//end applyDraftFilter()
 
-	}//end applyBasicFilters()
+	/**
+	 * The current user as a bound parameter, the owner whose drafts stay in view; null without a user.
+	 *
+	 * @param IQueryBuilder $qb The query builder that binds the value.
+	 *
+	 * @return string|null The parameter placeholder.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 */
+	private function boundDraftOwner(IQueryBuilder $qb): ?string {
+		$userId = $this->rbacHandler->getCurrentUserId();
+		if ($userId === null || $userId === '') {
+			return null;
+		}
+
+		return (string)$qb->createNamedParameter($userId);
+	}//end boundDraftOwner()
 
 	/**
 	 * Resolve the archive lens a query asks for.
