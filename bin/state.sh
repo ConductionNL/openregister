@@ -40,10 +40,10 @@ _st_push() {
 	local msg=$1
 	_g diff --cached --quiet && return 1
 	_g commit -q -m "$msg" -m "$TRAILER" || return 2
-	for _ in 1 2 3 4 5 6; do
+	for _ in $(seq 1 20); do
 		_g push -q origin "HEAD:refs/heads/$ST_BRANCH" 2>/dev/null && return 0
 		st_sync || return 3
-		python3 -c "import random,time;time.sleep(random.uniform(1,4))"
+		python3 -c "import random,time;time.sleep(random.uniform(1,6))"
 	done
 	return 2
 }
