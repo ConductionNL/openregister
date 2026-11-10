@@ -75,17 +75,17 @@ class _McpStubProvider extends AbstractIntegrationProvider {
 	}//end isEnabled()
 
 	public function list(ObjectRef $ref, array $filters = []): array {
-		$this->listCalled = compact('register', 'schema', 'objectId', 'filters');
+		$this->listCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'filters' => $filters];
 		return [['id' => 'a'], ['id' => 'b']];
 	}//end list()
 
 	public function get(ObjectRef $ref, string $entityId): array {
-		$this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
+		$this->getCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId];
 		return ['id' => $entityId, 'name' => 'thing'];
 	}//end get()
 
 	public function create(ObjectRef $ref, array $payload): array {
-		$this->createCalled = compact('register', 'schema', 'objectId', 'payload');
+		$this->createCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'payload' => $payload];
 		return ['id' => 'new-id'];
 	}//end create()
 }//end class

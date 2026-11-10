@@ -93,7 +93,7 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 	}//end isEnabled()
 
 	public function list(ObjectRef $ref, array $filters = []): array {
-		$this->listCalled = compact('register', 'schema', 'objectId', 'filters');
+		$this->listCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'filters' => $filters];
 		if ($this->listThrowsNotImplemented === true) {
 			throw new NotImplementedException('list not supported');
 		}
@@ -104,12 +104,12 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 	}//end list()
 
 	public function get(ObjectRef $ref, string $entityId): array {
-		$this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
+		$this->getCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId];
 		return ['id' => $entityId, 'name' => 'thing'];
 	}//end get()
 
 	public function create(ObjectRef $ref, array $payload): array {
-		$this->createCalled = compact('register', 'schema', 'objectId', 'payload');
+		$this->createCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'payload' => $payload];
 		if ($this->createThrowsUnavailable === true) {
 			throw new ProviderUnavailableException(
 				'upstream down',
@@ -120,11 +120,11 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 	}//end create()
 
 	public function delete(ObjectRef $ref, string $entityId): void {
-		$this->deleteCalled = compact('register', 'schema', 'objectId', 'entityId');
+		$this->deleteCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId];
 	}//end delete()
 
 	public function update(ObjectRef $ref, string $entityId, array $payload): array {
-		$this->updateCalled = compact('register', 'schema', 'objectId', 'entityId', 'payload');
+		$this->updateCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId, 'payload' => $payload];
 		return ['id' => $entityId];
 	}//end update()
 
