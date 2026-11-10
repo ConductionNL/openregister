@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\ConflictReport;
+use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\GroupRuleEntries;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
@@ -329,16 +330,16 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		$entry->setUserName('  ');
 		$entry->setCreated(new DateTime('2030-01-02T03:04:05+00:00'));
 
-		$two = $report->build(stored: $stored, schema: $schema, sent: ['a' => 5, 'b' => 6, 'c' => 7], intervening: [$entry]);
+		$two = $report->build(write: new RefusedWrite(stored: $stored, schema: $schema, sent: ['a' => 5, 'b' => 6, 'c' => 7]), intervening: [$entry]);
 		$this->assertSame('This object changed since you read it, and somebody else wrote the same fields.', $two['message']);
 		$this->assertSame(['a', 'b'], array_keys($two['conflicts']));
 		$this->assertSame(['status' => 'conflict', 'sent' => 5, 'read' => 0, 'stored' => 1], $two['conflicts']['a']);
 		$this->assertSame(['u-9', '2030-01-02T03:04:05+00:00'], [$two['changedBy'], $two['changedAt']]);
 
-		$one = $report->build(stored: $stored, schema: $schema, sent: ['a' => 5, 'b' => 2], intervening: [$entry]);
+		$one = $report->build(write: new RefusedWrite(stored: $stored, schema: $schema, sent: ['a' => 5, 'b' => 2]), intervening: [$entry]);
 		$this->assertSame('This object changed since you read it, and somebody else wrote the same field.', $one['message']);
 
-		$none = $report->build(stored: $stored, schema: $schema, sent: ['c' => 7], intervening: []);
+		$none = $report->build(write: new RefusedWrite(stored: $stored, schema: $schema, sent: ['c' => 7]), intervening: []);
 		$this->assertSame('This object changed since you read it. Re-read it and try again.', $none['message']);
 		$this->assertSame([[], null, null], [$none['conflicts'], $none['changedBy'], $none['changedAt']]);
 	}//end testConflictReportWording()

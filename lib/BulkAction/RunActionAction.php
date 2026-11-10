@@ -34,7 +34,10 @@ namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCall;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Http;
 use OCP\IUser;
@@ -184,10 +187,8 @@ class RunActionAction implements RunActionActionInterface {
 	 * @return BulkActionResult Applied, or the refusal the run would give.
 	 */
 	private function preview(BulkStep $step, Schema $schema): BulkActionResult {
-		$checked = $this->runner->check(
-			object: $step->object,
-			schema: $schema,
-			key: (string)($step->parameters['action'] ?? ''),
+		$checked = $this->runner->rehearse(
+			call: new ObjectActionCall(object: $step->object, schema: $schema, key: (string)($step->parameters['action'] ?? '')),
 			given: (array)($step->parameters['inputs'] ?? [])
 		);
 
@@ -204,15 +205,14 @@ class RunActionAction implements RunActionActionInterface {
 	 */
 	private function run(BulkStep $step, Schema $schema): BulkActionResult {
 		$parameters = $step->parameters;
-		$target = $this->runner->target(
+		$target = new ObjectActionTarget(
 			object: $step->object,
 			schema: $schema,
 			register: (string)($parameters['register'] ?? $step->object->getRegister()),
 			schemaRef: (string)($parameters['schema'] ?? $step->object->getSchema())
 		);
-		$key    = (string)($parameters['action'] ?? '');
-		$inputs = (array)($parameters['inputs'] ?? []);
-		$run    = fn (): array => $this->runner->run(target: $target, key: $key, given: $inputs);
+		$request = new ObjectActionRequest(key: (string)($parameters['action'] ?? ''), given: (array)($parameters['inputs'] ?? []));
+		$run     = fn (): array => $this->runner->run(target: $target, request: $request);
 		if ($step->actor === null) {
 			return $this->resultOf(answer: $run());
 		}

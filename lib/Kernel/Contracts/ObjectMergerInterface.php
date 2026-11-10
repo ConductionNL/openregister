@@ -47,14 +47,11 @@ interface ObjectMergerInterface {
 	 * recompute the survivor via `SurvivorshipResolver`, flip statuses,
 	 * persist a `mergeOperation` row, and dispatch `ObjectsMergedEvent`.
 	 *
-	 * @param string $from Uuid of the object being merged away.
-	 * @param string $into Uuid of the surviving object.
-	 * @param string $reason Steward-supplied merge reason.
-	 * @param string $mergedBy Acting user uid.
-	 * @param array<string, mixed>|null $decisions Per-property choices (`property => 'from' | 'into'`).
-	 *                                            Null keeps the pre-existing behaviour exactly: the
-	 *                                            resolver's proposal applies and no payload property
-	 *                                            is rewritten.
+	 * @param MergeInstruction          $instruction Which object merges into which, why and by whom.
+	 * @param array<string, mixed>|null $decisions   Per-property choices (`property => 'from' | 'into'`).
+	 *                                               Null keeps the pre-existing behaviour exactly: the
+	 *                                               resolver's proposal applies and no payload property
+	 *                                               is rewritten.
 	 *
 	 * @return array<string, mixed> The persisted `mergeOperation` row.
 	 *
@@ -62,13 +59,7 @@ interface ObjectMergerInterface {
 	 * @throws \OCA\OpenRegister\Exception\MergeDecisionException When the decision map does not describe the preview it approves.
 	 * @throws \OCA\OpenRegister\Exception\MergeNotFullyReadableException When either object carries a property the caller may not read.
 	 */
-	public function executeMerge(
-		string $from,
-		string $into,
-		string $reason,
-		string $mergedBy,
-		?array $decisions = null,
-	): array;
+	public function merge(MergeInstruction $instruction, ?array $decisions = null): array;
 
 	/**
 	 * Reverse a merge within the reversal window: restore both objects from

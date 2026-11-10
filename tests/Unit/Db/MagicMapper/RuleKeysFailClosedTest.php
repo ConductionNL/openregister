@@ -12,6 +12,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -258,16 +260,16 @@ class RuleKeysFailClosedTest extends TestCase {
 		$closed = static fn (string $sql): string => str_replace(["r0.`status` = 'open'", "`status` = 'open'"], '1 = 0', $sql);
 
 		$this->assertSame(
-			array_map($closed, $handler->buildRbacConditionsSql(schema: $known, action: 'read')['conditions']),
-			$handler->buildRbacConditionsSql(schema: $refused, action: 'read')['conditions']
+			array_map($closed, $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $known))->forAction('read'))['conditions']),
+			$handler->buildRbacConditionsSql((new RbacAccessCall(schema: $refused))->forAction('read'))['conditions']
 		);
 		$this->assertSame(
 			$closed($handler->buildRbacPredicateForAlias(schema: $known, rows: new AliasedRows(alias: 'r0'))),
 			$handler->buildRbacPredicateForAlias(schema: $refused, rows: new AliasedRows(alias: 'r0'))
 		);
 		$this->assertSame(
-			$closed((string)$handler->buildRbacRowPredicateSql(schema: $known)),
-			$handler->buildRbacRowPredicateSql(schema: $refused)
+			$closed((string)$handler->buildRbacRowPredicateSql((new RbacAccessCall(schema: $known)))),
+			$handler->buildRbacRowPredicateSql((new RbacAccessCall(schema: $refused)))
 		);
 	}//end testAnAllowCompilesToTheFailClosedPredicate()
 
@@ -282,7 +284,7 @@ class RuleKeysFailClosedTest extends TestCase {
 		$this->assertStringContainsString("r0.`status` = 'open'", $handler->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 'r0')));
 
 		$wheres = [];
-		$handler->applyRbacFilters($this->queryBuilder($wheres), $schema);
+		$handler->applyRbacFilters((new RbacFilterCall(qb: $this->queryBuilder($wheres), schema: $schema)));
 		$this->assertStringContainsString('eq(t.status,"open")', $wheres[0]);
 	}//end testAKnownKeyCompilesWithItsAlias()
 
@@ -292,10 +294,7 @@ class RuleKeysFailClosedTest extends TestCase {
 	 * @return void
 	 */
 	public function testARefusedKeyBesideAKnownKeyClosesTheClause(): void {
-		$sql = implode(' OR ', $this->handler()->buildRbacConditionsSql(
-			schema: $this->schema($this->allow(['status' => 'open', 'x) or (1=1' => 'a'])),
-			action: 'read'
-		)['conditions']);
+		$sql = implode(' OR ', $this->handler()->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schema($this->allow(['status' => 'open', 'x) or (1=1' => 'a']))))->forAction('read'))['conditions']);
 
 		$this->assertStringContainsString('1 = 0', $sql);
 		$this->assertStringNotContainsString('status', str_replace('_status', '', $sql));
@@ -327,7 +326,7 @@ class RuleKeysFailClosedTest extends TestCase {
 	#[DataProvider('refusedKeys')]
 	public function testTheQueryBuilderListIsClosed(string $key): void {
 		$wheres = [];
-		$this->handler()->applyRbacFilters($this->queryBuilder($wheres), $this->schema($this->allow([$key => 'a'])));
+		$this->handler()->applyRbacFilters((new RbacFilterCall(qb: $this->queryBuilder($wheres), schema: $this->schema($this->allow([$key => 'a'])))));
 
 		$this->assertCount(1, $wheres);
 		$this->assertStringContainsString(',eq(1,0))', $wheres[0]);
@@ -348,11 +347,11 @@ class RuleKeysFailClosedTest extends TestCase {
 		$handler = $this->handler(denyMode: DenyEnforcementMode::MODE_ENFORCING);
 		$schema = $this->schema($this->deny([$key => 'a']));
 
-		$this->assertSame([], $handler->buildRbacConditionsSql(schema: $schema, action: 'read')['conditions']);
+		$this->assertSame([], $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'))['conditions']);
 		$this->assertSame('FALSE', $handler->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 'r0')));
 
 		$wheres = [];
-		$handler->applyRbacFilters($this->queryBuilder($wheres), $schema);
+		$handler->applyRbacFilters((new RbacFilterCall(qb: $this->queryBuilder($wheres), schema: $schema)));
 		$this->assertSame(['eq(1,0)'], $wheres);
 	}//end testADenyEmptiesTheList()
 
@@ -368,7 +367,7 @@ class RuleKeysFailClosedTest extends TestCase {
 		$this->assertStringContainsString("(NOT (r0.`status` = 'a'))", $sql);
 
 		$wheres = [];
-		$handler->applyRbacFilters($this->queryBuilder($wheres), $this->schema($this->deny(['status' => 'a'])));
+		$handler->applyRbacFilters((new RbacFilterCall(qb: $this->queryBuilder($wheres), schema: $this->schema($this->deny(['status' => 'a'])))));
 		$this->assertStringContainsString("(NOT (t.`status` = 'a'))", $wheres[0]);
 	}//end testADenyOnAKnownKeyKeepsTheList()
 

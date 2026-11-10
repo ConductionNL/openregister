@@ -35,6 +35,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
@@ -218,7 +219,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
 		$this->magicMapper->expects($this->never())->method('dropTable');
 		$this->schemaMapper->expects($this->never())->method('delete');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 	}//end expectNothingTouched()
 
 	/**
@@ -228,7 +229,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 	 */
 	private function recordAuditEntries(): \ArrayObject {
 		$entries = new \ArrayObject();
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context, ?string $actorId = null, ?string $actorName = null) use ($entries) {
 				$entries->append(
 					['object' => $object, 'action' => $action, 'context' => $context, 'actor' => $actorId, 'name' => $actorName]
@@ -236,7 +237,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 
 				return new \OCA\OpenRegister\Db\AuditTrail();
 			}
-		);
+		));
 
 		return $entries;
 	}//end recordAuditEntries()
@@ -406,13 +407,13 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 				$events->append('commit');
 			}
 		);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			static function (ObjectEntity $object, string $action) use ($events) {
 				$events->append($action);
 
 				return new \OCA\OpenRegister\Db\AuditTrail();
 			}
-		);
+		));
 
 		$result = $this->service->cascadeDeleteSchema(
 			schema: $this->schema,

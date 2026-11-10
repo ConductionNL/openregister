@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\OrphanDeletionGuard;
@@ -254,8 +255,8 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 
 		$shared = $this->createMock(SharedMasterDataService::class);
 		$shared->method('assertWritable')->willReturnCallback(
-			function (string $table, ?int $id): void {
-				if ($this->onlyConsumes === true && $table === SharedMasterDataService::SCHEMAS && $id === 2) {
+			function (DeclaredRow $row): void {
+				if ($this->onlyConsumes === true && $row->table === SharedMasterDataService::SCHEMAS && $row->id === 2) {
 					throw new SharedMasterDataWriteException(holderUuid: 'org-holder', holderName: null, resourceType: 'schema', resourceTitle: 'note');
 				}
 			}
@@ -727,8 +728,8 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 	public function testAConsumerOfASharedRegisterDeletesNothing(): void {
 		$shared = $this->createMock(SharedMasterDataService::class);
 		$shared->method('assertWritable')->willReturnCallback(
-			static function (string $table): void {
-				if ($table === SharedMasterDataService::REGISTERS) {
+			static function (DeclaredRow $row): void {
+				if ($row->table === SharedMasterDataService::REGISTERS) {
 					throw new SharedMasterDataWriteException(holderUuid: 'org-holder');
 				}
 			}

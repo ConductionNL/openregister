@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -241,7 +242,7 @@ class ExampleSetPartiesBehaviourTest extends TestCase {
 	 */
 	public function testARevertUnlinksTheHeldLink(): void {
 		$this->links->method('findByObjectContactAndRole')->willReturn(new ContactLink());
-		$this->roles->expects($this->once())->method('removeParty')->with('obj-1', 'party-1', 'gemachtigde')->willReturn(1);
+		$this->roles->expects($this->once())->method('removeParty')->with('obj-1', new PartyHolding('party-1', 'gemachtigde'))->willReturn(1);
 
 		$this->assertSame(
 			'removed',

@@ -106,7 +106,7 @@ class RefactoredTestableSchema extends Schema {
  * Unit tests for SaveObject refactored methods.
  *
  * Tests the extracted private methods using reflection:
- * 1. extractUuidAndSelfData()
+ * 1. splitSelfData()
  * 2. resolveSchemaAndRegister()
  * 3. findAndValidateExistingObject()
  * 4. clearImageMetadataIfFileProperty()
@@ -290,10 +290,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		return $method->invokeArgs($this->saveObject, $parameters);
 	}
 
-	// ==================== extractUuidAndSelfData() Tests ====================
+	// ==================== splitSelfData() Tests ====================
 
 	/**
-	 * Test extractUuidAndSelfData with data containing 'id' field.
+	 * Test splitSelfData with data containing 'id' field.
 	 *
 	 * @return void
 	 */
@@ -304,11 +304,11 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			'name' => 'Test Object'
 		];
 
-		// Method signature: extractUuidAndSelfData(array $data, ?string $uuid, ?array $uploadedFiles)
+		// Method signature: splitSelfData(array $data, ?string $uuid)
 		// Returns: [$uuid, $selfData, $data]
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, null, null]
+			'splitSelfData',
+			[$data, null]
 		);
 
 		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from id field.');
@@ -317,7 +317,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
-	 * Test extractUuidAndSelfData with explicit UUID parameter.
+	 * Test splitSelfData with explicit UUID parameter.
 	 *
 	 * @return void
 	 */
@@ -330,8 +330,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		];
 
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, $explicitUuid, null]
+			'splitSelfData',
+			[$data, $explicitUuid]
 		);
 
 		$this->assertEquals($explicitUuid, $extractedUuid, 'Explicit UUID parameter should take precedence.');
@@ -339,7 +339,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
-	 * Test extractUuidAndSelfData without UUID returns null.
+	 * Test splitSelfData without UUID returns null.
 	 *
 	 * @return void
 	 */
@@ -347,8 +347,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		$data = ['name' => 'Test Object'];
 
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, null, null]
+			'splitSelfData',
+			[$data, null]
 		);
 
 		$this->assertNull($extractedUuid, 'UUID should be null when not provided in data or params.');
@@ -356,7 +356,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
-	 * Test extractUuidAndSelfData with @self data.
+	 * Test splitSelfData with @self data.
 	 *
 	 * @return void
 	 */
@@ -371,8 +371,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		];
 
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, null, null]
+			'splitSelfData',
+			[$data, null]
 		);
 
 		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from @self.id.');

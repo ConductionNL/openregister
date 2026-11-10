@@ -35,10 +35,12 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -245,11 +247,12 @@ final class PartyControllerA24GoldenTest extends TestCase {
 		$this->objectIs($object);
 		$schema = new Schema();
 		$this->objects->method('getCurrentSchemaEntity')->willReturn($schema);
-		$this->permissions->expects($this->exactly(4))->method('checkPermission')->with($schema, 'update', null, 'marleen', true, $object);
+		$asked = new PermissionCheckOptions(objectOwner: 'marleen', object: $object);
+		$this->permissions->expects($this->exactly(4))->method('checkPermission')->with($schema, 'update', $asked, true);
 		$this->params = ['partyUuid' => ' party-b ', 'role' => '  ', 'kind' => 'person'];
 		$this->roles->expects($this->once())->method('addParty')->with('case-1', 3, '7', $this->params)->willReturn($this->link());
 		$this->roles->expects($this->once())->method('replacePrimaryParty')->with($object, 'party-b', null)->willReturn($this->link());
-		$this->roles->expects($this->once())->method('removeParty')->with('case-1', 'party-a', null)->willReturn(2);
+		$this->roles->expects($this->once())->method('removeParty')->with('case-1', new PartyHolding('party-a', null))->willReturn(2);
 
 		$this->assertSame([201, $this->link()->jsonSerialize()], $this->outcome($this->controller()->create('zaken', 'zaak', 'case-1')));
 		$this->assertSame([200, $this->link()->jsonSerialize()], $this->outcome($this->controller()->replacePrimary('zaken', 'zaak', 'case-1')));

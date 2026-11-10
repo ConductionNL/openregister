@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;
@@ -73,9 +74,9 @@ class ExportRunListingScopeGoldenTest extends TestCase {
 		$run->setExpiresAt(new DateTime('@1900000000'));
 
 		$mapper = $this->createMock(ExportRunMapper::class);
-		$mapper->method('findForActor')->willReturnCallback(
-			function (?string $actor, array $filters=[], int $limit=50, int $offset=0) use ($run): array {
-				$this->calls[] = [$actor, $filters, $limit, $offset];
+		$mapper->method('listForActor')->willReturnCallback(
+			function (?string $actor, ListQuery $query) use ($run): array {
+				$this->calls[] = [$actor, $query->filters, $query->limit, $query->offset];
 
 				return [$run];
 			}

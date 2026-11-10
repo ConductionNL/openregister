@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Controller\ObjectGrantsController;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -116,7 +117,7 @@ class ObjectGrantsControllerA24GoldenTest extends TestCase {
 
 	public function testPrincipalTypesAreSplitAndTrimmed(): void {
 		$this->report->expects($this->exactly(2))->method('rowsFor')
-			->willReturnCallback(fn (ObjectEntity $object, mixed $register, mixed $schema, array $types): array => [$register, $schema, $types]);
+			->willReturnCallback(fn (ObjectEntity $object, GrantRowsQuery $query): array => [$query->table->register, $query->table->schema, $query->principalTypes]);
 		$controller = $this->controller(true, true);
 
 		$this->assertOutcome(200, [1, 7, ['user', 'group']], $controller->index('r', 's', 'case-1', ' user, ,group,'));
