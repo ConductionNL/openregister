@@ -269,36 +269,16 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 * UI or {@see linkRoom()}) are entirely unaffected either way — this
 	 * only widens who this platform endpoint may invite.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param string $roomToken Talk room token (must already be linked to `$objectUuid`).
-	 * @param string $email External participant's email address.
-	 * @param string|null $displayName Optional display name (defaults to the email).
+	 * @param ExternalInvitation $invitation Who is invited (email, optional display name) into which linked room.
 	 *
-	 * @return array{invited: bool, unavailable?: bool, cause?: string, actorType?: string, actorId?: string}
-	 *     Degrades to `{invited: false, unavailable: true, cause: ...}` (AD-23)
-	 *     when Talk's participant API is unavailable — never throws for that.
+	 * @return array<string, mixed> The invite result; degrades to `{invited: false, unavailable: true, cause: ...}`
+	 *     (AD-23) when Talk's participant API is unavailable — never throws for that.
 	 *
 	 * @throws Exception When the room is not linked to the object (404), the
 	 *                   object's schema does not opt in (403), the email is
 	 *                   malformed (400), or no user is logged in.
 	 *
 	 * @spec openspec/specs/guardian-participant-messaging-leaf/spec.md
-	 */
-	public function inviteExternalParticipant(string $objectUuid, string $roomToken, string $email, ?string $displayName = null): array {
-		return $this->invite(
-			invitation: new ExternalInvitation(objectUuid: $objectUuid, roomToken: $roomToken, email: $email, displayName: $displayName)
-		);
-	}//end inviteExternalParticipant()
-
-	/**
-	 * Invite an external (e-mail) participant (value-object form of inviteExternalParticipant()).
-	 *
-	 * @param ExternalInvitation $invitation Who is invited into which linked room.
-	 *
-	 * @return array<string, mixed> The invite result, or the degraded shape.
-	 *
-	 * @throws Exception On 400/403/404 or no user.
-	 *
 	 * @spec openspec/specs/integration-talk/spec.md
 	 */
 	public function invite(ExternalInvitation $invitation): array {

@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\TalkLink\ExternalInvitation;
 
 /**
  * Minimal Talk `Manager`/`ParticipantService` stubs, aliased under Talk's own
@@ -323,7 +324,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(404);
 		$this->expectExceptionMessage('Talk link not found');
 
-		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 	}
 
 	/**
@@ -342,7 +343,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(403);
 
-		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 	}
 
 	/**
@@ -360,7 +361,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'not-an-email');
+		$this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'not-an-email'));
 	}
 
 	/**
@@ -379,7 +380,7 @@ class TalkLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 	}
 
 	/**
@@ -401,7 +402,7 @@ class TalkLinkServiceTest extends TestCase {
 		// independent of whether OCA\Talk\Manager is aliased for other tests.
 		$this->appManager->method('isEnabledForUser')->with('spreed')->willReturn(false);
 
-		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$result = $this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 
 		$this->assertFalse($result['invited']);
 		$this->assertTrue($result['unavailable']);
@@ -458,7 +459,7 @@ class TalkLinkServiceTest extends TestCase {
 		// stub declares no getRoomByToken() fallback — findRoom() returns null.
 		$this->talkAvailable(manager: $manager, participantService: null);
 
-		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$result = $this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 
 		$this->assertFalse($result['invited']);
 		$this->assertTrue($result['unavailable']);
@@ -483,7 +484,7 @@ class TalkLinkServiceTest extends TestCase {
 		$manager->room = $this->opaqueRoom();
 		$this->talkAvailable(manager: $manager, participantService: null);
 
-		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$result = $this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 
 		$this->assertFalse($result['invited']);
 		$this->assertTrue($result['unavailable']);
@@ -509,7 +510,7 @@ class TalkLinkServiceTest extends TestCase {
 		$participantService = new TalkLinkServiceTestParticipantServiceStub();
 		$this->talkAvailable(manager: $manager, participantService: $participantService);
 
-		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test', 'Jan de Vries');
+		$result = $this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test', 'Jan de Vries'));
 
 		$this->assertTrue($result['invited']);
 		$this->assertSame('emails', $result['actorType']);
@@ -539,7 +540,7 @@ class TalkLinkServiceTest extends TestCase {
 		$participantService = new TalkLinkServiceTestParticipantServiceStub();
 		$this->talkAvailable(manager: $manager, participantService: $participantService);
 
-		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 
 		$this->assertSame('guardian@example.test', $participantService->calls[0][1][0]['displayName']);
 	}
@@ -563,7 +564,7 @@ class TalkLinkServiceTest extends TestCase {
 		$participantService->throwsOnAddUsers = true;
 		$this->talkAvailable(manager: $manager, participantService: $participantService);
 
-		$result = $this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$result = $this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 
 		$this->assertFalse($result['invited']);
 		$this->assertTrue($result['unavailable']);
@@ -586,7 +587,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(403);
 
-		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 	}
 
 	/**
@@ -602,6 +603,6 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(403);
 
-		$this->service->inviteExternalParticipant('abc-123', 'room-tok', 'guardian@example.test');
+		$this->service->invite(new ExternalInvitation('abc-123', 'room-tok', 'guardian@example.test'));
 	}
 }
