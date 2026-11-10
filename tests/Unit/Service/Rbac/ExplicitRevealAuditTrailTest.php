@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -294,7 +295,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 			),
 			cursors: $this->auditCursors()
 		);
-		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', limit: 20));
+		$encoded = (string)json_encode(value: $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20)));
 
 		$this->assertStringContainsString(needle: 'obj-1', haystack: $encoded);
 		$this->assertStringNotContainsString(needle: self::BSN, haystack: $encoded);

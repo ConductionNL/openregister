@@ -89,6 +89,7 @@ class DraftCallerRule {
 
 		$cli = ($commandLine ?? (PHP_SAPI === 'cli'));
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $cli === false && SystemOperationContext::isActive() === false;
 	}//end keptFromNoUser()
 }//end class

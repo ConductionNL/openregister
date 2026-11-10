@@ -43,6 +43,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -204,7 +205,7 @@ class GeneratedIdentifierListener implements IEventListener {
 
 		$scopeKey = $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now));
 		return $declaration->render(
-			sequenceValue: $this->sequences->reserveNext(registerId: 0, schemaId: 0, scopeKey: $scopeKey),
+			sequenceValue: $this->sequences->reserveNext(new SequenceScope(registerId: 0, schemaId: 0, scopeKey: $scopeKey)),
 			moment: $run->now
 		);
 
@@ -350,9 +351,7 @@ class GeneratedIdentifierListener implements IEventListener {
 		}
 
 		$this->sequences->advanceTo(
-			registerId: 0,
-			schemaId: 0,
-			scopeKey: $this->scopeKey(declaration: $declaration, period: $parsed['period']),
+			new SequenceScope(registerId: 0, schemaId: 0, scopeKey: $this->scopeKey(declaration: $declaration, period: $parsed['period'])),
 			reserved: $parsed['sequence']
 		);
 

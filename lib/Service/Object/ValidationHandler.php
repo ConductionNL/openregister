@@ -185,11 +185,8 @@ class ValidationHandler {
 	 * - total: Total number of objects in the schema (for pagination)
 	 * - errors: Array of error details (currently empty)
 	 *
-	 * @param int $registerId The ID of the register containing the schema
-	 * @param int $schemaId The ID of the schema whose objects should be validated
-	 * @param array $saveCallback Array-callable to save objects, e.g. [$objectService, 'saveObject']
-	 * @param int|null $limit Maximum number of objects to process (null = all)
-	 * @param int $offset Number of objects to skip before processing
+	 * @param SchemaRevalidation $revalidation The register and schema, the page (an unbounded query
+	 *                                         processes every object) and the save callback.
 	 *
 	 * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
 	 *
@@ -197,16 +194,16 @@ class ValidationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, array $saveCallback, ?int $limit = null, int $offset = 0): array {
-		$loaded = $this->loadSchemaAndRegister(registerId: $registerId, schemaId: $schemaId);
+	public function validateAndSaveObjectsBySchema(SchemaRevalidation $revalidation): array {
+		$run = new ValidationRun(registerId: (int)$revalidation->table->register, schemaId: (int)$revalidation->table->schema);
+		$loaded = $this->loadSchemaAndRegister(registerId: $run->registerId, schemaId: $run->schemaId);
 		if ($loaded === null) {
 			return ['processed' => 0, 'updated' => 0, 'failed' => 0, 'errors' => [['error' => 'Failed to load schema or register']]];
 		}
 
-		$run = new ValidationRun(registerId: $registerId, schemaId: $schemaId);
-		$run->saveCallback = $saveCallback;
-		$run->limit        = $limit;
-		$run->offset       = $offset;
+		$run->saveCallback = $revalidation->saveCallback;
+		$run->limit        = $revalidation->query->limitOrNull();
+		$run->offset       = ($revalidation->query->offset ?? 0);
 
 		return $this->validateLoaded(loaded: $loaded, run: $run);
 	}//end validateAndSaveObjectsBySchema()
