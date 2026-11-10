@@ -121,6 +121,7 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Search\Service\ViewAudience;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -619,14 +620,14 @@ abstract class ExampleSetTestCase extends TestCase {
 				return $view;
 			}
 		);
-		$service->method('update')->willReturnCallback(
-			function (int|string $id, string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $favoredBy = null, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+		$service->method('revise')->willReturnCallback(
+			function (int|string $id, ViewEdit $edit): View {
 				$view = ($this->savedViews[(string) $id] ?? throw new DoesNotExistException('no view '.$id));
-				$view->setName($name);
-				$view->setIsPublic($isPublic);
-				$view->setQuery($query);
-				$view->setAlert($alert);
-				$view->setSharedWith($sharedWith ?? []);
+				$view->setName($edit->definition->name);
+				$view->setIsPublic($edit->audience->isPublic);
+				$view->setQuery($edit->definition->query);
+				$view->setAlert($edit->alert);
+				$view->setSharedWith($edit->audience->sharedWith ?? []);
 				return $view;
 			}
 		);
