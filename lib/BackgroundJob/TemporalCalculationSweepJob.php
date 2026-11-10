@@ -129,16 +129,7 @@ class TemporalCalculationSweepJob extends TimedJob {
 	 *   (Scenario: Untouched case crosses the reminder tier)
 	 */
 	protected function run($argument): void {
-		$enabled = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_ENABLED,
-				default: 'true'
-			),
-			FILTER_VALIDATE_BOOLEAN
-		);
-
-		if ($enabled === false) {
+		if ($this->isSweepEnabled() === false) {
 			$this->logger->info(
 				message: '[TemporalCalculationSweepJob] sweep disabled (temporal_calculation_sweep_enabled=false), skipping',
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -147,19 +138,43 @@ class TemporalCalculationSweepJob extends TimedJob {
 		}
 
 		try {
-			$summary = $this->sweepService->runSweep();
-			if ($summary['objectsRewritten'] > 0 || $summary['errors'] > 0) {
-				$this->logger->info(
-					message: '[TemporalCalculationSweepJob] sweep complete',
-					context: array_merge(['file' => __FILE__, 'line' => __LINE__], $summary)
-				);
-			}
+			$this->sweep();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[TemporalCalculationSweepJob] sweep failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
-
 	}//end run()
+
+	/**
+	 * Whether the sweep is switched on (it is unless configured off).
+	 *
+	 * @return bool
+	 */
+	private function isSweepEnabled(): bool {
+		return filter_var(
+			$this->appConfig->getValueString(
+				app: self::APP_ID,
+				key: self::CONFIG_KEY_ENABLED,
+				default: 'true'
+			),
+			FILTER_VALIDATE_BOOLEAN
+		);
+	}//end isSweepEnabled()
+
+	/**
+	 * Run one sweep and log it when it rewrote something or hit errors.
+	 *
+	 * @return void
+	 */
+	private function sweep(): void {
+		$summary = $this->sweepService->runSweep();
+		if ($summary['objectsRewritten'] > 0 || $summary['errors'] > 0) {
+			$this->logger->info(
+				message: '[TemporalCalculationSweepJob] sweep complete',
+				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $summary)
+			);
+		}
+	}//end sweep()
 }//end class
