@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TypedColumnRef;
 
 /**
  * Locks the 22P02 fix around numeric-column filtering by non-numeric (UUID)
@@ -117,7 +118,7 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase {
 	private function invokeColumnRef(string $columnRef, string $propertyType, mixed $value, bool $isPostgres): string {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildFilterColumnRef');
 		$method->setAccessible(true);
-		return $method->invoke($this->handler, $columnRef, $propertyType, $value, $isPostgres);
+		return $method->invoke($this->handler, new TypedColumnRef(ref: $columnRef, propertyType: $propertyType, isPostgres: $isPostgres), $value);
 	}//end invokeColumnRef()
 
 	// -------------------------------------------------------------------------

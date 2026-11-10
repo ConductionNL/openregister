@@ -41,8 +41,8 @@ use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
 
 /**
  * Clears, snoozes and archives a user's own notices.
@@ -53,12 +53,12 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * Constructor.
 	 *
 	 * @param NotificationHistoryMapper $mapper The dispatched notices.
-	 * @param IUserSession $userSession Resolves the calling user.
+	 * @param PrincipalDirectory $principals Resolves the calling user.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly NotificationHistoryMapper $mapper,
-		private readonly IUserSession $userSession,
+		private readonly PrincipalDirectory $principals,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -209,7 +209,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * @return integer How many notices were cleared.
 	 */
 	private function clear(NoticeSubject $subject, ?string $userId): int {
-		$uid = ($userId ?? $this->userSession->getUser()?->getUID());
+		$uid = ($userId ?? $this->principals->userSession->getUser()?->getUID());
 		if ($subject->objectUuid === '' || $uid === null || $uid === '') {
 			return 0;
 		}
@@ -260,7 +260,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * @return string The uid.
 	 */
 	private function requireCaller(): string {
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid = $this->principals->userSession->getUser()?->getUID();
 		if ($uid === null || $uid === '') {
 			throw new NotAuthorizedException(message: 'Clearing a notification needs a signed-in user');
 		}
