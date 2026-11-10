@@ -47,6 +47,7 @@ use OCP\DB\Types;
 use OCA\OpenRegister\Db\Schema\NotSuppliedReasons;
 use OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration;
 use OCA\OpenRegister\Db\Schema\PresentationAnnotations;
+use OCA\OpenRegister\Db\Schema\FacetBlockStamp;
 use OCA\OpenRegister\Db\Schema\PropertyFacetBlock;
 use OCP\IURLGenerator;
 use stdClass;
@@ -2222,10 +2223,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	public function regenerateFacetsFromProperties(): void {
 		$this->setFacets(
-			facets: (new PropertyFacetBlock())->built(
+			facets: (new PropertyFacetBlock())->builtFor(
 				properties: $this->getProperties(),
-				version: $this->getVersion(),
-				generatedAt: time()
+				stamp: new FacetBlockStamp(version: $this->getVersion(), generatedAt: time())
 			)
 		);
 	}//end regenerateFacetsFromProperties()
