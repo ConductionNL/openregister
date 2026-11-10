@@ -217,3 +217,4 @@ OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookSchedu
 /root/sigint/or/tests/Unit/Architecture/F10ValueBuildersTest.php:140
 /root/sigint/or/tests/Unit/Architecture/K21InterfaceBindingsTest.php:133
 /root/sigint/or/tests/Unit/Architecture/F09ConfigurationDeploymentInterfaceBindingsTest.php:128
+/root/sigint/or/tests/Unit/Dependencies/PhpWordReplacedTest.php:53
