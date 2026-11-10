@@ -155,7 +155,7 @@ final class FlowTimerDeadlines {
 		$timer = $scope->timer;
 		$rolled = $this->calculator->roll(
 			moment: $this->landed(scope: $scope),
-			rule: new CalendarRoll(roll: (string)($timer->getRollToWorkingDay() ?? SlaCalculatorInterface::ROLL_NONE), calendar: $scope->calendar)
+			rule: new RollRule(roll: (string)($timer->getRollToWorkingDay() ?? SlaCalculatorInterface::ROLL_NONE), calendar: $scope->calendar)
 		);
 		$timer->setFireAt($this->values->mutable(value: $rolled['at']));
 		$timer->setUnrolledAt($this->values->mutableOrNull(value: $rolled['unrolledAt']));

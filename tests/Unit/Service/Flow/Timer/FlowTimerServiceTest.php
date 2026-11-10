@@ -33,7 +33,7 @@ use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
-use OCA\OpenRegister\Service\Flow\Timer\CalendarRoll;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic;
@@ -286,7 +286,7 @@ class FlowTimerServiceTest extends TestCase {
 					value: (float)$timer->getBudgetValue() - (float)$timer->getConsumedValue(),
 					unit: (string)$timer->getBudgetUnit(),
 					calendar: $calendar
-				), rule: new CalendarRoll(roll: (string)($timer->getRollToWorkingDay() ?? 'none'), calendar: $calendar))['at'];
+				), rule: new RollRule(roll: (string)($timer->getRollToWorkingDay() ?? 'none'), calendar: $calendar))['at'];
 			self::assertNotNull($timer->getFireAt());
 			self::assertEqualsWithDelta($expected->getTimestamp(), $timer->getFireAt()->getTimestamp(), 1, 'fire_at = roll(add(running_since, budget - consumed))');
 		}

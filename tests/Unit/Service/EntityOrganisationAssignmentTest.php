@@ -195,7 +195,7 @@ class EntityOrganisationAssignmentTest extends TestCase {
 		);
 
 		$this->registerService = new RegisterService(
-			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, db: $this->createMock(IDBConnection::class)),
+			storage: new RegisterServiceStorage(db: $this->createMock(IDBConnection::class), catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			helpers: new RegisterServiceHelpers(
 				$this->fileService,
 				new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)

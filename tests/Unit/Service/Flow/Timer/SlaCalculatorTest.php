@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\CalendarRoll;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
@@ -137,7 +137,7 @@ class SlaCalculatorTest extends TestCase {
 		$landed = $this->calculator->add(from: $this->at('2026-02-22 09:00'), value: 42, unit: 'calendarDays', calendar: $this->calendar);
 		self::assertSame('2026-04-05 09:00 Sunday', $landed->format('Y-m-d H:i l'));
 
-		$rolled = $this->calculator->roll(moment: $landed, rule: new CalendarRoll(roll: SlaCalculator::ROLL_NONE, calendar: $this->calendar));
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NONE, calendar: $this->calendar));
 		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
 		self::assertNull($rolled['unrolledAt'], 'nothing moved, so nothing is reported as having moved');
 		self::assertNull($rolled['rolledBy']);
@@ -151,7 +151,7 @@ class SlaCalculatorTest extends TestCase {
 	 */
 	public function testNextWalksTheWholeEasterCluster(): void {
 		$landed = $this->at('2026-04-05 09:00');
-		$rolled = $this->calculator->roll(moment: $landed, rule: new CalendarRoll(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame('2026-04-07 09:00 Tuesday', $rolled['at']->format('Y-m-d H:i l'));
 		self::assertSame('2026-04-05', $rolled['unrolledAt']->format('Y-m-d'));
@@ -168,7 +168,7 @@ class SlaCalculatorTest extends TestCase {
 	 */
 	public function testANamedHolidayIsReportedByItsDeclaredName(): void {
 		// Tweede Paasdag 2026 is Monday 6 April.
-		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 14:30'), rule: new CalendarRoll(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
+		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 14:30'), rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame('2026-04-07 14:30', $rolled['at']->format('Y-m-d H:i'));
 		self::assertSame('Tweede Paasdag', $rolled['rolledBy']);
@@ -180,7 +180,7 @@ class SlaCalculatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testPreviousWalksBackwards(): void {
-		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 16:45'), rule: new CalendarRoll(roll: SlaCalculator::ROLL_PREVIOUS, calendar: $this->calendar));
+		$rolled = $this->calculator->roll(moment: $this->at('2026-04-06 16:45'), rule: new RollRule(roll: SlaCalculator::ROLL_PREVIOUS, calendar: $this->calendar));
 
 		// Back past Easter Sunday and the Saturday to Friday 3 April — which is
 		// Goede Vrijdag on this calendar, so back again to Thursday the 2nd.
@@ -198,7 +198,7 @@ class SlaCalculatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnObservedShiftIsFollowed(): void {
-		$rolled = $this->calculator->roll(moment: $this->at('2031-04-26 09:00'), rule: new CalendarRoll(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
+		$rolled = $this->calculator->roll(moment: $this->at('2031-04-26 09:00'), rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame('2031-04-28 09:00 Monday', $rolled['at']->format('Y-m-d H:i l'));
 		self::assertSame('Koningsdag', $rolled['rolledBy'], 'the observed date is the one that stopped it');
@@ -212,7 +212,7 @@ class SlaCalculatorTest extends TestCase {
 	 */
 	public function testABusinessDayBudgetNeedsNoRoll(): void {
 		$landed = $this->calculator->add(from: $this->at('2026-04-02 09:00'), value: 1, unit: 'businessDays', calendar: $this->calendar);
-		$rolled = $this->calculator->roll(moment: $landed, rule: new CalendarRoll(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: $this->calendar));
 
 		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
 		self::assertNull($rolled['unrolledAt']);
@@ -228,7 +228,7 @@ class SlaCalculatorTest extends TestCase {
 	 */
 	public function testWithoutACalendarNothingRolls(): void {
 		$landed = $this->at('2026-04-05 09:00');
-		$rolled = $this->calculator->roll(moment: $landed, rule: new CalendarRoll(roll: SlaCalculator::ROLL_NEXT, calendar: null));
+		$rolled = $this->calculator->roll(moment: $landed, rule: new RollRule(roll: SlaCalculator::ROLL_NEXT, calendar: null));
 
 		self::assertSame($landed->format('c'), $rolled['at']->format('c'));
 		self::assertNull($rolled['rolledBy']);

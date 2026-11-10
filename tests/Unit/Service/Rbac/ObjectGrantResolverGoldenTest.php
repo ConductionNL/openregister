@@ -179,6 +179,24 @@ final class ObjectGrantResolverGoldenTest extends TestCase {
 	}//end testAnonymousCallersAreRefused()
 
 	/**
+	 * A missing object uuid is refused and never reaches the share manager,
+	 * while the same caller is admitted on a uuid the grant names.
+	 *
+	 * @return void
+	 */
+	public function testAMissingObjectIsRefusedWithoutReadingShares(): void {
+		$resolver = $this->resolver(fn () => [$this->share(self::UUID_A, Constants::PERMISSION_ALL)]);
+
+		$this->assertFalse($resolver->isGranted('alice', null, 'read'));
+		$this->assertFalse($resolver->isGranted('alice', '', 'read'));
+		$this->assertFalse($resolver->grantCarriesVerb('alice', null, 'use'));
+		$this->assertFalse($resolver->grantCarriesVerb('alice', '', 'use'));
+		$this->assertSame([], $this->calls);
+
+		$this->assertTrue($resolver->isGranted('alice', self::UUID_A, 'read'));
+	}//end testAMissingObjectIsRefusedWithoutReadingShares()
+
+	/**
 	 * An unreachable share manager fails closed and logs an error, memoised.
 	 *
 	 * @return void

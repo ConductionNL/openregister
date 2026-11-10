@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\PartyControllerServices;
 use OCA\OpenRegister\Controller\Support\PartyObjectAccess;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuardInterface;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
@@ -121,13 +122,24 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The listing.
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		return $this->objectAccess->read(
-			target: [$register, $schema, $id],
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
 			handler: fn (ObjectEntity $object): JSONResponse => new JSONResponse(
 				$this->roles->listForObject(objectUuid: (string)$object->getUuid(), schemaId: $object->getSchema())
 			)
 		);
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Give a party a role on an object.
@@ -144,11 +156,22 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
+		return $this->createForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end create()
+
+	/**
+	 * create() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The link as stored, or the refusal naming the kind.
+	 */
+	private function createForObject(ObjectRef $ref): JSONResponse {
 		return $this->objectAccess->write(
-			target: [$register, $schema, $id],
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
 			handler: fn (ObjectEntity $object): JSONResponse => new JSONResponse($this->addParty(object: $object)->jsonSerialize(), 201)
 		);
-	}//end create()
+	}//end createForObject()
 
 	/**
 	 * Replace the party the object is filed against.
@@ -165,11 +188,22 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function replacePrimary(string $register, string $schema, string $id): JSONResponse {
+		return $this->replacePrimaryForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end replacePrimary()
+
+	/**
+	 * replacePrimary() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The new primary link.
+	 */
+	private function replacePrimaryForObject(ObjectRef $ref): JSONResponse {
 		return $this->objectAccess->write(
-			target: [$register, $schema, $id],
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
 			handler: fn (ObjectEntity $object): JSONResponse => $this->replacePrimaryOf(object: $object)
 		);
-	}//end replacePrimary()
+	}//end replacePrimaryForObject()
 
 	/**
 	 * Take a party off an object: every role, or the one named by `?role=`.
@@ -187,13 +221,25 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function destroy(string $register, string $schema, string $id, string $partyUuid): JSONResponse {
+		return $this->destroyForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), partyUuid: $partyUuid);
+	}//end destroy()
+
+	/**
+	 * destroy() for the object the route names.
+	 *
+	 * @param ObjectRef $ref       The object the route names.
+	 * @param string    $partyUuid The party.
+	 *
+	 * @return JSONResponse How many roles went.
+	 */
+	private function destroyForObject(ObjectRef $ref, string $partyUuid): JSONResponse {
 		return $this->objectAccess->write(
-			target: [$register, $schema, $id],
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
 			handler: fn (ObjectEntity $object): JSONResponse => new JSONResponse(
 				['removed' => $this->removeParty(object: $object, partyUuid: $partyUuid)]
 			)
 		);
-	}//end destroy()
+	}//end destroyForObject()
 
 	/**
 	 * Every object a party holds a role on, and the indicators it carries.
@@ -348,25 +394,28 @@ class PartyController extends Controller {
 			return new JSONResponse(['error' => 'Object "' . $partyUuid . '" is not a party'], 400);
 		}
 
-		return new JSONResponse($this->described(party: $party, definition: $definition, partyUuid: $partyUuid));
+		$body = $this->described(party: $party, definition: $definition);
+		$body['objects'] = $this->indicators->objectsOfParty(partyUuid: $partyUuid);
+
+		return new JSONResponse($body);
 	}//end describe()
 
 	/**
 	 * The body of a party read.
 	 *
+	 * The caller adds the objects of the party, keyed on the party as asked for.
+	 *
 	 * @param ObjectEntity    $party      The party record.
 	 * @param PartyDefinition $definition Its party definition.
-	 * @param string          $partyUuid  The party as asked for.
 	 *
 	 * @return array<string, mixed> The body.
 	 */
-	private function described(ObjectEntity $party, PartyDefinition $definition, string $partyUuid): array {
+	private function described(ObjectEntity $party, PartyDefinition $definition): array {
 		return [
 			'uuid' => $party->getUuid(),
 			'kind' => $definition->kind(),
 			'addresses' => $this->parties->addresses(party: $party, definition: $definition),
 			'indicators' => $this->parties->indicators(party: $party, definition: $definition),
-			'objects' => $this->indicators->objectsOfParty(partyUuid: $partyUuid),
 		];
 	}//end described()
 

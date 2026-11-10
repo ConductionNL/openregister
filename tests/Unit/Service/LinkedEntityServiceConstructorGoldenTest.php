@@ -12,6 +12,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -66,6 +71,11 @@ class LinkedEntityServiceConstructorGoldenTest extends TestCase {
 		$arguments = [];
 		foreach ((new ReflectionMethod($class, '__construct'))->getParameters() as $parameter) {
 			$type = (string)$parameter->getType();
+			if ($type === SchemaCatalogInterface::class) {
+				$arguments[] = $this->catalogOfNamedDoubles();
+				continue;
+			}
+
 			if (class_exists($type) === true && (new ReflectionClass($type))->isFinal() === true) {
 				$arguments[] = new $type(...$this->argumentsFor($type));
 				continue;
@@ -78,4 +88,21 @@ class LinkedEntityServiceConstructorGoldenTest extends TestCase {
 
 		return $arguments;
 	}//end argumentsFor()
+
+	/**
+	 * A real SchemaCatalog over doubles recorded under the mapper names the service keeps.
+	 *
+	 * @return SchemaCatalog
+	 */
+	private function catalogOfNamedDoubles(): SchemaCatalog {
+		$this->doubles['magicMapper']    = $this->createMock(MagicMapperInterface::class);
+		$this->doubles['schemaMapper']   = $this->createMock(SchemaMapperInterface::class);
+		$this->doubles['registerMapper'] = $this->createMock(RegisterMapperInterface::class);
+
+		return new SchemaCatalog(
+			registers: $this->doubles['registerMapper'],
+			schemas: $this->doubles['schemaMapper'],
+			tables: $this->doubles['magicMapper']
+		);
+	}//end catalogOfNamedDoubles()
 }//end class

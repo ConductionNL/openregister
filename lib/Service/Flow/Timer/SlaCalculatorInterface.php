@@ -122,13 +122,13 @@ interface SlaCalculatorInterface {
 	 * Move a moment off a non-working day, and say what moved it.
 	 *
 	 * @param DateTimeInterface $moment The computed moment.
-	 * @param CalendarRoll      $rule   Which way to roll, and the resolved calendar.
+	 * @param RollRule          $rule   Which way to roll, and the resolved calendar.
 	 *
 	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
 	 *
 	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
-	public function roll(DateTimeInterface $moment, CalendarRoll $rule): array;
+	public function roll(DateTimeInterface $moment, RollRule $rule): array;
 
 	/**
 	 * Add an amount of business time to an instant.

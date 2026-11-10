@@ -30,7 +30,7 @@ use Closure;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use OCA\OpenRegister\Service\Flow\Timer\CalendarRoll;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
@@ -159,7 +159,7 @@ class SlaCalculatorGoldenTest extends TestCase {
 			$actual["convert / {$calName} / bad unit"] = self::capture(fn () => $calc->convert(conversion: new UnitConversion(value: 3.0, fromUnit: 'weeks', toUnit: 'hours', calendar: $calendar)));
 			$actual["measure / {$calName} / bad unit"] = self::capture(fn () => $calc->measure(span: new CalendarSpan(from: self::at('2026-01-01'), to: self::at('2026-01-02'), calendar: $calendar), unit: 'weeks'));
 			foreach (SlaCalculator::ROLLS as $roll) {
-				$rolled = $calc->roll(moment: self::at('2026-04-27 15:00:00 Europe/Amsterdam'), rule: new CalendarRoll(roll: $roll, calendar: $calendar));
+				$rolled = $calc->roll(moment: self::at('2026-04-27 15:00:00 Europe/Amsterdam'), rule: new RollRule(roll: $roll, calendar: $calendar));
 				$actual["roll / {$calName} / {$roll}"] = array_map(static fn ($value) => $value instanceof DateTimeInterface ? $value->format('Y-m-d H:i:s P') : $value, $rolled);
 			}
 		}
