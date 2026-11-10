@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Raw-SQL object field filters and nested-path filters, recorded per filter and platform.
@@ -185,7 +186,7 @@ class MagicSearchHandlerRawObjectFiltersGoldenTest extends TestCase {
 				return $this->captured;
 			}
 
-			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, $this->queryBuilder(), $filters, $schema);
+			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $filters);
 		} catch (\Throwable $e) {
 			$this->captured[] = 'threw ' . get_class($e) . ': ' . $e->getMessage();
 		}

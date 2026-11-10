@@ -80,7 +80,7 @@ class MdtoEventMapperBoundTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('u-1');
 
-		return (new MdtoEventMapper(auditTrailMapper: $mapper, logger: $logger))->forObject(object: $object);
+		return (new MdtoEventMapper(new \OCA\OpenRegister\Service\Edepot\AuditRecording($mapper, $logger)))->forObject(object: $object);
 	}//end events()
 
 	/**

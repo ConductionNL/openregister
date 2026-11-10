@@ -69,9 +69,9 @@ class ObjectTreeBoundsTest extends TestCase {
 
 		$this->assertSame(
 			['children' => ['b' => 'r'], 'overflow' => true],
-			$bounds->withinBudget(rows: ['a' => 'r', 'b' => 'r', 'c' => 'r'], seen: ['a' => true], budget: 1)
+			$bounds->withinBudget(rows: ['a' => 'r', 'b' => 'r', 'c' => 'r'], read: ['seen' => ['a' => true], 'budget' => 1])
 		);
-		$this->assertSame(['children' => [], 'overflow' => false], $bounds->withinBudget(rows: [], seen: [], budget: 0));
+		$this->assertSame(['children' => [], 'overflow' => false], $bounds->withinBudget(rows: [], read: ['seen' => [], 'budget' => 0]));
 	}//end testWithinBudget()
 
 	/**

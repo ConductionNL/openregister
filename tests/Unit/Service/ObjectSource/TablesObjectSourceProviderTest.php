@@ -116,14 +116,13 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$columnMapper = new TablesColumnMapper($this->deriver, new NullLogger());
 
 		return new TablesObjectSourceProvider(
-			new TablesProviderParts(
+			parts: new TablesProviderParts(
 				reader: $this->reader,
 				columnMapper: $columnMapper,
 				uuidDeriver: $this->deriver,
 				syncService: $this->syncService
 			),
-			$userSession,
-			new NullLogger()
+			session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $userSession, logger: new NullLogger())
 		);
 	}//end provider()
 
@@ -539,14 +538,13 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$logger->expects($this->once())->method('warning')->with($this->stringContains('first 1000 rows of table 5'));
 
 		$provider = new TablesObjectSourceProvider(
-			new TablesProviderParts(
+			parts: new TablesProviderParts(
 				reader: $this->reader,
 				columnMapper: new TablesColumnMapper($this->deriver, new NullLogger()),
 				uuidDeriver: $this->deriver,
 				syncService: $this->syncService
 			),
-			$this->session(),
-			$logger
+			session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $this->session(), logger: $logger)
 		);
 		$provider->findAll($register, $schema, ['search' => 'x'], ['tableId' => 5]);
 	}//end testAScanAtTheCapWarns()

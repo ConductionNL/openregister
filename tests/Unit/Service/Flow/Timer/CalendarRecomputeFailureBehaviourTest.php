@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 use DateTime;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarDependency;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeSources;
@@ -137,14 +138,14 @@ class CalendarRecomputeFailureBehaviourTest extends TestCase {
 		$this->logger->expects(self::once())->method('warning')
 			->with(self::stringContains('timer t-1 could not be projected against nl-national: calendar gone'));
 
-		$counts = $this->recompute(forDependency: $this->resolving(), forProjection: $this->failing())->recomputeBatch(
+		$counts = $this->recompute(forDependency: $this->resolving(), forProjection: $this->failing())->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: 'v2',
 			timers: [$this->armed('t-1')],
 			supersede: static function (FlowTimer $timer) use (&$superseded): void {
 				$superseded[] = $timer->getUuid();
 			}
-		);
+		));
 
 		self::assertSame(1, $counts['unresolvable']);
 		self::assertSame(0, $counts['moved']);
@@ -167,7 +168,7 @@ class CalendarRecomputeFailureBehaviourTest extends TestCase {
 			->with(self::stringContains('timer t-1 could not be superseded for nl-national: locked'));
 		$superseded = [];
 
-		$counts = $this->recompute(forDependency: $this->resolving(), forProjection: $this->resolving())->recomputeBatch(
+		$counts = $this->recompute(forDependency: $this->resolving(), forProjection: $this->resolving())->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: 'v2',
 			// Both stored moments differ from the projection, so both have moved.
@@ -179,7 +180,7 @@ class CalendarRecomputeFailureBehaviourTest extends TestCase {
 
 				$superseded[] = $timer->getUuid();
 			}
-		);
+		));
 
 		self::assertSame(2, $counts['examined']);
 		self::assertSame(1, $counts['unresolvable']);

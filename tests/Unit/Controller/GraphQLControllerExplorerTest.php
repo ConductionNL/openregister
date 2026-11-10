@@ -124,8 +124,7 @@ class GraphQLControllerExplorerTest extends TestCase {
 
 		$this->controller = new GraphQLController(
 			$this->request,
-			$this->graphQLService,
-			new GraphQLControllerServices($this->urlGenerator, $this->nonceManager, $this->csrfManager)
+			new GraphQLControllerServices($this->graphQLService, $this->urlGenerator, $this->nonceManager, $this->csrfManager)
 		);
 	}
 

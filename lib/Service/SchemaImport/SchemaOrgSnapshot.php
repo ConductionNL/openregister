@@ -188,7 +188,7 @@ class SchemaOrgSnapshot {
 		$needle = strtolower(trim($query));
 		$results = [];
 		foreach ($this->classes as $name => $class) {
-			if ($this->classMatches(name: (string)$name, class: $class, needle: $needle) === true) {
+			if ($this->classMatches(texts: [(string)$name, (string)($class['comment'] ?? '')], needle: $needle) === true) {
 				$results[] = $class;
 			}
 
@@ -203,16 +203,23 @@ class SchemaOrgSnapshot {
 	/**
 	 * Whether a class matches a lowercased search needle (empty matches all).
 	 *
-	 * @param string               $name   The bare class name.
-	 * @param array<string, mixed> $class  The class record.
-	 * @param string               $needle The lowercased, trimmed needle.
+	 * @param array<int, string> $texts  The bare class name and its comment.
+	 * @param string             $needle The lowercased, trimmed needle.
 	 *
 	 * @return bool True when the name or comment contains the needle.
 	 */
-	private function classMatches(string $name, array $class, string $needle): bool {
-		return $needle === ''
-			|| str_contains(strtolower($name), $needle) === true
-			|| str_contains(strtolower((string)$class['comment']), $needle) === true;
+	private function classMatches(array $texts, string $needle): bool {
+		if ($needle === '') {
+			return true;
+		}
+
+		foreach ($texts as $text) {
+			if (str_contains(strtolower($text), $needle) === true) {
+				return true;
+			}
+		}
+
+		return false;
 	}//end classMatches()
 
 	/**

@@ -629,7 +629,7 @@ class SaveObjectDeepTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueComplexTemplate(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willReturn('John Doe');
 
 		$result = $this->invokePrivateMethod('resolveDefaultTemplateValue', ['{{ first }} {{ last }}', ['first' => 'John', 'last' => 'Doe'], []]);
@@ -647,7 +647,7 @@ class SaveObjectDeepTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueException(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$result = $this->invokePrivateMethod('resolveDefaultTemplateValue', ['{{ a }} {{ b }}', ['a' => 'x'], []]);

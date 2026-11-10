@@ -1,0 +1,145 @@
+##
+# dark-suites.yml: tests/Db, tests/Service and tests/Api against a live
+# Nextcloud and Postgres, one job per suite, with coverage.
+#
+# phpunit.xml sets defaultTestSuite="Unit Tests", so the Code Quality PHPUnit
+# job runs tests/Unit only. These suites resolve services from \OC::$server
+# and query a real database, so they need an installed Nextcloud. They used to
+# run as a continue-on-error STEP inside the Newman job of
+# api-test-coverage.yml, where a red step left the job green and nobody saw it.
+#
+# NOT YET BLOCKING. Each suite is its own job, so a red suite shows as a red
+# job on the pull request, but `continue-on-error` keeps the workflow green and
+# this check is not required by the ruleset. Set a suite's `blocking: true`
+# below once it is green, and never set a green suite back to false. Red files that cannot be fixed in a test-only
+# change are quarantined in phpunit-dark.xml, each entry naming its failure.
+#
+# Coverage: each job uploads its own clover (artifact `dark-clover-<suite>`).
+# The coverage ratchet in Code Quality reads only the Unit clover; a suite
+# joins that clover by being added to phpunit.xml's defaultTestSuite once it is
+# green, which also makes it blocking there.
+##
+
+name: Dark PHPUnit suites
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: dark-suites-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suite:
+    name: "PHPUnit ${{ matrix.suite }} (live NC${{ !matrix.blocking && ', not yet blocking' || '' }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: ${{ !matrix.blocking }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: "Database Tests"
+            blocking: false
+          - suite: "Service Tests"
+            blocking: false
+          - suite: "Api Tests"
+            blocking: false
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: nextcloud
+          POSTGRES_PASSWORD: nextcloud
+          POSTGRES_DB: nextcloud
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U nextcloud"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout Nextcloud server
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          repository: nextcloud/server
+          ref: stable34
+          path: server
+
+      - name: Checkout server submodules
+        run: git -C server submodule update --init 3rdparty
+
+      - name: Checkout app
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: server/apps/openregister
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pgsql, pdo_pgsql, zip, gd, curl, xml, json
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Cache composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-composer-dark-${{ hashFiles('server/apps/openregister/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-dark-
+
+      - name: Install Nextcloud
+        working-directory: server
+        run: |
+          php occ maintenance:install \
+            --database pgsql \
+            --database-host 127.0.0.1 \
+            --database-port 5432 \
+            --database-name nextcloud \
+            --database-user nextcloud \
+            --database-pass nextcloud \
+            --admin-user admin \
+            --admin-pass admin
+          chmod -R a+w config
+
+      - name: Install app dependencies and enable app
+        run: |
+          cd server/apps/openregister
+          composer install --no-progress --prefer-dist --optimize-autoloader
+          cd ../..
+          php occ app:enable openregister
+
+      - name: Run ${{ matrix.suite }}
+        working-directory: server/apps/openregister
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          slug="$(echo "$SUITE" | tr 'A-Z ' 'a-z-')"
+          echo "SLUG=$slug" >> "$GITHUB_ENV"
+          ./vendor/bin/phpunit -c phpunit-dark.xml \
+            --testsuite "$SUITE" \
+            --colors=never \
+            --coverage-clover "coverage/dark-$slug.xml" \
+            --log-junit "coverage/dark-$slug-junit.xml"
+
+      - name: Upload clover and junit
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dark-clover-${{ env.SLUG }}
+          path: server/apps/openregister/coverage/dark-*.xml
+          retention-days: 14
+          if-no-files-found: warn

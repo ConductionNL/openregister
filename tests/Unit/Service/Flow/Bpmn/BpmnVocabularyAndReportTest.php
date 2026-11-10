@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Bpmn;
 
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport;
+use OCA\OpenRegister\Service\Flow\Bpmn\BpmnReading;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
 use PHPUnit\Framework\TestCase;
 
@@ -185,7 +186,7 @@ class BpmnVocabularyAndReportTest extends TestCase {
 	public function testAnEntryWithNoElementIdIsRefused(): void {
 		$report = new BpmnMappingReport();
 
-		$this->assertFalse($report->record(elementId: '  ', kind: 'subProcess', verdict: BpmnMappingReport::REFUSED));
+		$this->assertFalse($report->record(elementId: '  ', reading: new BpmnReading(kind: 'subProcess', verdict: BpmnMappingReport::REFUSED)));
 		$this->assertSame([], $report->entries(), 'a report that cannot name the element records nothing');
 	}//end testAnEntryWithNoElementIdIsRefused()
 
@@ -198,7 +199,7 @@ class BpmnVocabularyAndReportTest extends TestCase {
 		$report = new BpmnMappingReport();
 
 		$this->assertTrue(
-			$report->record(elementId: 'Activity_1', kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED, action: 'assign a type'),
+			$report->record(elementId: 'Activity_1', reading: new BpmnReading(kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED, action: 'assign a type')),
 			'the control: an entry naming its element is recorded'
 		);
 		$this->assertCount(1, $report->entries());
@@ -213,7 +214,7 @@ class BpmnVocabularyAndReportTest extends TestCase {
 		$report = new BpmnMappingReport();
 
 		$this->assertFalse(
-			$report->record(elementId: 'Activity_1', kind: 'userTask', verdict: 'partially-ok'),
+			$report->record(elementId: 'Activity_1', reading: new BpmnReading(kind: 'userTask', verdict: 'partially-ok')),
 			'a fourth verdict invented at a call site is a fourth way of losing something'
 		);
 	}//end testAVerdictOutsideTheClosedSetIsRefused()
@@ -228,7 +229,7 @@ class BpmnVocabularyAndReportTest extends TestCase {
 	 */
 	public function testAnApproximationCountsAsALoss(): void {
 		$report = new BpmnMappingReport();
-		$report->record(elementId: 'Activity_1', kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED);
+		$report->record(elementId: 'Activity_1', reading: new BpmnReading(kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED));
 
 		$this->assertTrue($report->lostSomething(), 'a narrowed import is still an import that lost something');
 		$this->assertFalse($report->failsStrict(), 'but strict fails on refusals, or it would be unusable on real files');
@@ -241,7 +242,7 @@ class BpmnVocabularyAndReportTest extends TestCase {
 	 */
 	public function testAReportWithOnlyMappedEntriesLostNothing(): void {
 		$report = new BpmnMappingReport();
-		$report->record(elementId: 'StartEvent_1', kind: 'startEvent', verdict: BpmnMappingReport::MAPPED);
+		$report->record(elementId: 'StartEvent_1', reading: new BpmnReading(kind: 'startEvent', verdict: BpmnMappingReport::MAPPED));
 
 		$this->assertFalse($report->lostSomething(), 'the control: a faithful import must not claim a loss');
 		$this->assertFalse($report->failsStrict());
@@ -254,7 +255,7 @@ class BpmnVocabularyAndReportTest extends TestCase {
 	 */
 	public function testARefusalFailsAStrictImport(): void {
 		$report = new BpmnMappingReport();
-		$report->record(elementId: 'SubProcess_1', kind: 'subProcess:event', verdict: BpmnMappingReport::REFUSED);
+		$report->record(elementId: 'SubProcess_1', reading: new BpmnReading(kind: 'subProcess:event', verdict: BpmnMappingReport::REFUSED));
 
 		$this->assertTrue($report->failsStrict());
 		$this->assertSame(
@@ -270,7 +271,7 @@ class BpmnVocabularyAndReportTest extends TestCase {
 	 */
 	public function testTheSerialisedReportCarriesEverythingTheCallerRenders(): void {
 		$report = new BpmnMappingReport();
-		$report->record(elementId: 'Activity_1', kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED, action: 'check the reading');
+		$report->record(elementId: 'Activity_1', reading: new BpmnReading(kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED, action: 'check the reading'));
 
 		$serialised = $report->jsonSerialize();
 
@@ -287,9 +288,9 @@ class BpmnVocabularyAndReportTest extends TestCase {
 	 */
 	public function testEntriesKeepFileOrder(): void {
 		$report = new BpmnMappingReport();
-		$report->record(elementId: 'A', kind: 'startEvent', verdict: BpmnMappingReport::MAPPED);
-		$report->record(elementId: 'B', kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED);
-		$report->record(elementId: 'C', kind: 'transaction', verdict: BpmnMappingReport::REFUSED);
+		$report->record(elementId: 'A', reading: new BpmnReading(kind: 'startEvent', verdict: BpmnMappingReport::MAPPED));
+		$report->record(elementId: 'B', reading: new BpmnReading(kind: 'userTask', verdict: BpmnMappingReport::APPROXIMATED));
+		$report->record(elementId: 'C', reading: new BpmnReading(kind: 'transaction', verdict: BpmnMappingReport::REFUSED));
 
 		$this->assertSame(['A', 'B', 'C'], array_column($report->entries(), 'elementId'));
 	}//end testEntriesKeepFileOrder()

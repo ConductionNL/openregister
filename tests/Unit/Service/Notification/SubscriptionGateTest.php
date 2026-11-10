@@ -24,6 +24,17 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCP\Activity\IManager as IActivityManager;
@@ -67,18 +78,40 @@ class SubscriptionGateTest extends TestCase {
 		);
 
 		$dispatcher = new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			subscriptionMapper: $subscriptions,
-			ncSender: $ncSender,
-			recipientResolver: $resolver
+			channels: new ChannelSet(
+				ncSender: $ncSender,
+				emailSender: new EmailSender(
+					userManager: $this->createMock(IUserManager::class),
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold(),
+				subscriptionMapper: $subscriptions
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: $resolver
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
 		);
 
 		$schema = new Schema();

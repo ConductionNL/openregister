@@ -103,17 +103,28 @@ class WalkCollector {
 			return;
 		}
 
-		$kind = self::WORKING;
-		if ($counted === false) {
-			$kind = ($rule ?? self::WEEKEND);
-		}
-
 		$this->rows[] = [
 			'date' => $day->format('Y-m-d'),
-			'kind' => $kind,
+			'kind' => self::kindOf(counted: $counted, rule: $rule),
 			'counted' => $counted,
 		];
 	}//end examine()
+
+	/**
+	 * What a day was: working, or the rule (or the weekend) that skipped it.
+	 *
+	 * @param bool        $counted Whether the day counted as a working day.
+	 * @param string|null $rule    The calendar rule that made it non-working, if any.
+	 *
+	 * @return string `working`, the rule's name, or `weekend`.
+	 */
+	private static function kindOf(bool $counted, ?string $rule): string {
+		if ($counted === true) {
+			return self::WORKING;
+		}
+
+		return ($rule ?? self::WEEKEND);
+	}//end kindOf()
 
 	/**
 	 * The walk, as ordered rows (D-3).
