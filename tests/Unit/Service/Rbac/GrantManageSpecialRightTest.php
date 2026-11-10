@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
 use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
 use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectSharingControllerFactory;
 use OCA\OpenRegister\Controller\ObjectSharingController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -271,13 +272,13 @@ class GrantManageSpecialRightTest extends TestCase {
 		$share->method('getShareType')->willReturn(IShare::TYPE_USER);
 
 		$rows = [];
-		$this->trail->expects($this->exactly(2))->method('createAuditTrailEntry')->willReturnCallback(
+		$this->trail->expects($this->exactly(2))->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context) use (&$rows) {
 				$rows[] = [$object->getUuid(), $action, $context];
 
 				return new \OCA\OpenRegister\Db\AuditTrail();
 			}
-		);
+		));
 
 		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'reviewer', terms: new GrantTerms(permissions: 1)));
 		$this->sharing->revoke($this->record, 'ocinternal:9');
@@ -297,13 +298,13 @@ class GrantManageSpecialRightTest extends TestCase {
 		$share->method('getToken')->willReturn('secret-token');
 
 		$rows = [];
-		$this->trail->expects($this->exactly(2))->method('createAuditTrailEntry')->willReturnCallback(
+		$this->trail->expects($this->exactly(2))->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context) use (&$rows) {
 				$rows[] = [$action, $context];
 
 				return new \OCA\OpenRegister\Db\AuditTrail();
 			}
-		);
+		));
 
 		$this->sharing->createLink(object: $this->record, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
 		$this->sharing->inviteByEmail(object: $this->record, invitation: new LinkInvitation(recipient: 'guest@example.nl', permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
@@ -317,7 +318,7 @@ class GrantManageSpecialRightTest extends TestCase {
 
 	public function testARefusedGrantLeavesNoAuditRow(): void {
 		$this->signIn('service-account', [self::SERVICE_GROUP]);
-		$this->trail->expects($this->never())->method('createAuditTrailEntry');
+		$this->trail->expects($this->never())->method('recordObjectEvent');
 
 		$this->expectException(NotAuthorizedException::class);
 		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'service-account', terms: new GrantTerms(permissions: 1)));
@@ -325,11 +326,11 @@ class GrantManageSpecialRightTest extends TestCase {
 
 	public function testANewOwningGroupLeavesAnAuditRowWithBothSides(): void {
 		$this->signIn('service-account', [self::SERVICE_GROUP]);
-		$this->trail->expects($this->once())->method('createAuditTrailEntry')->with(
+		$this->trail->expects($this->once())->method('recordObjectEvent')->with(AuditTrailEvents::matching([
 			$this->record,
 			GrantChangeAuditor::ACTION_OWNER_GROUP,
 			['ownerGroup' => ['old' => null, 'new' => 'supervisors']]
-		);
+		]));
 
 		$this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
 	}//end testANewOwningGroupLeavesAnAuditRowWithBothSides()

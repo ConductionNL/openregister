@@ -100,7 +100,7 @@ final class ImportHandlerUnlinkableActionsWarnTest extends TestCase {
 
 	public function testImportSchemaWritesThroughTheWarningScope(): void {
 		$source = (string)file_get_contents(dirname(__DIR__, 4) . '/lib/Service/Configuration/ImportHandler.php');
-		preg_match('/private function importSchemaDefinition\(.*?\/\/end importSchemaDefinition\(\)/s', $source, $body);
+		preg_match('/public function importSchema\(.*?\/\/end importSchema\(\)/s', $source, $body);
 
 		$this->assertSame(2, substr_count($body[0] ?? '', 'withUnlinkableActionsAsWarnings(save: fn (): Schema => $this->'));
 		$this->assertStringNotContainsString('return $this->createImportedSchema(', $body[0] ?? '');

@@ -215,7 +215,7 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->jobMapper->expects($this->once())
 			->method('findByActor')
 			->willReturn([$this->job()]);
-		$this->jobMapper->expects($this->never())->method('findAllJobs');
+		$this->jobMapper->expects($this->never())->method('findJobs');
 
 		$data = $this->controller()->index()->getData();
 
@@ -227,7 +227,7 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->signIn('root', true);
 		$this->params['all'] = 'true';
 		$this->jobMapper->expects($this->once())
-			->method('findAllJobs')
+			->method('findJobs')
 			->willReturn([$this->job()]);
 
 		$this->assertCount(1, $this->controller()->index()->getData()['results']);
@@ -319,7 +319,7 @@ final class BulkJobsControllerTest extends TestCase {
 	public function testAMalformedCreateAnswersFourHundred(): void {
 		$this->signIn('coordinator');
 		$this->params['action'] = 'openregister:assign';
-		$this->service->method('create')->willThrowException(
+		$this->service->method('createFromRequest')->willThrowException(
 			new \InvalidArgumentException('A bulk job needs both a register and a schema.')
 		);
 

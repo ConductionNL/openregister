@@ -153,7 +153,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->build();
 		$this->provider->method('create')->willReturnCallback(
 			function (...$args) use ($created) {
-				$this->calls[] = $args;
+				$this->calls[] = [$args[0]->register, $args[0]->schema, $args[0]->id, ...array_slice($args, 1)];
 				if ($created instanceof Exception) {
 					throw $created;
 				}
@@ -170,7 +170,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->mapper->method('findByObjectAndWorkPackage')->willReturn(null);
 		$this->provider->method('get')->willReturnCallback(
 			function (...$args) use ($row) {
-				$this->calls[] = $args;
+				$this->calls[] = [$args[0]->register, $args[0]->schema, $args[0]->id, ...array_slice($args, 1)];
 				if ($row instanceof Exception) {
 					throw $row;
 				}
@@ -200,7 +200,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->mapper->method('findByObjectUuid')->willReturn([self::storedLink(cachedAt: $cachedAt)]);
 		$this->provider->method('get')->willReturnCallback(
 			function (...$args) use ($row) {
-				$this->calls[] = $args;
+				$this->calls[] = [$args[0]->register, $args[0]->schema, $args[0]->id, ...array_slice($args, 1)];
 				if ($row instanceof Exception) {
 					throw $row;
 				}

@@ -341,7 +341,7 @@ class ObjectFolderController extends Controller {
 	 * @throws ObjectFileAccessDeniedException With 404 when they may not read it.
 	 */
 	private function ensureReadable(ObjectRef $ref): ObjectEntity {
-		return $this->objectFileAccess->readable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
+		return $this->objectFileAccess->readable(ref: $ref);
 	}//end ensureReadable()
 
 	/**
@@ -357,7 +357,7 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
 	 */
 	private function ensureChangeable(ObjectRef $ref): ObjectEntity {
-		$object = $this->objectFileAccess->changeable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
+		$object = $this->objectFileAccess->changeable(ref: $ref);
 
 		// Asked after the access rule, so a caller without access still gets
 		// 404 or 403 and learns nothing of the state; the same order the files

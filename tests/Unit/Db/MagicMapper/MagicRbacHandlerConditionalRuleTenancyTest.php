@@ -29,7 +29,9 @@ namespace Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -685,7 +687,7 @@ class MagicRbacHandlerConditionalRuleTenancyTest extends TestCase {
 	 * @return array<int, string> The uuids the list returns, sorted.
 	 */
 	private function visibleRows(Schema $schema): array {
-		$conditions = $this->searchHandler()->buildWhereConditionsSql(query: [], schema: $schema);
+		$conditions = $this->searchHandler()->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: $schema)));
 
 		$pdo = new PDO('sqlite::memory:');
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

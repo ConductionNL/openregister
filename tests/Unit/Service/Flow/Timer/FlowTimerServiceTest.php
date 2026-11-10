@@ -33,6 +33,9 @@ use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Service\Flow\Timer\RollRule;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
@@ -48,6 +51,8 @@ use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -678,7 +683,7 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertCount(2, $this->store->fires);
 
 		// The window is extended by 3 days: the anchoring event moves.
-		$successor = $this->service->supersede(uuid: $uuid, anchorEventAt: $start->modify('+3 days'), reason: 'Bezwaartermijn verlengd', actor: 'carol', now: $start->modify('+50 days'));
+		$successor = $this->service->supersede(move: new TimerAnchorMove(uuid: $uuid, anchorEventAt: $start->modify('+3 days')), change: new TimerChange(reason: 'Bezwaartermijn verlengd', actor: 'carol', now: $start->modify('+50 days')));
 		$prior = $this->store->timers[$uuid];
 
 		self::assertSame(FlowTimer::STATE_SUPERSEDED, $prior->getState());
@@ -711,7 +716,7 @@ class FlowTimerServiceTest extends TestCase {
 		$expiry = $this->service->arm(config: $this->config(['purpose' => 'expiry', 'legalEffect' => 'wettelijk', 'onExpiry' => 'skip', 'sla' => ['value' => 70, 'unit' => 'calendarDays']]), actor: null, now: $start);
 		self::assertSame('2026-11-10 09:00', $this->store->tasks['task-1']->getExpiresAt()->format('Y-m-d H:i'));
 
-		$cancelled = $this->service->cancelForSubject(subjectType: 'task', subjectUuid: 'task-1', reason: "Task 'task-1' reached terminal state 'completed'.", actor: 'task:task-1', now: $start->modify('+10 days'));
+		$cancelled = $this->service->cancelForSubject(subject: new TimerSubjectRef(type: 'task', uuid: 'task-1'), change: new TimerChange(reason: "Task 'task-1' reached terminal state 'completed'.", actor: 'task:task-1', now: $start->modify('+10 days')));
 		self::assertSame(2, $cancelled);
 		foreach ([$due, $expiry] as $timer) {
 			$row = $this->store->timers[(string)$timer->getUuid()];
@@ -723,7 +728,7 @@ class FlowTimerServiceTest extends TestCase {
 
 		self::assertNull($this->store->tasks['task-1']->getDueAt());
 		self::assertNull($this->store->tasks['task-1']->getExpiresAt());
-		self::assertSame(0, $this->service->cancelForSubject(subjectType: 'task', subjectUuid: 'task-1', reason: 'again', actor: null), 'idempotent');
+		self::assertSame(0, $this->service->cancelForSubject(subject: new TimerSubjectRef(type: 'task', uuid: 'task-1'), change: new TimerChange(reason: 'again')), 'idempotent');
 
 		// Long after both would have been due: nothing is selected, nothing raised, nothing applied.
 		$mapper = $this->store->timerMapper();
@@ -742,8 +747,8 @@ class FlowTimerServiceTest extends TestCase {
 		$this->service->arm(config: $this->config(['subjectType' => 'run', 'subjectUuid' => 'run-1']), actor: null, now: $start);
 		$this->service->arm(config: $this->config(['subjectType' => 'object', 'subjectUuid' => 'o-1']), actor: null, now: $start);
 
-		self::assertSame(2, $this->service->cancelForRun(runUuid: 'run-1', reason: 'run failed', actor: 'flow-run:run-1', now: $start));
-		self::assertSame(0, $this->service->cancelForRun(runUuid: '', reason: 'x', actor: null));
+		self::assertSame(2, $this->service->cancelForRun(runUuid: 'run-1', change: new TimerChange(reason: 'run failed', actor: 'flow-run:run-1', now: $start)));
+		self::assertSame(0, $this->service->cancelForRun(runUuid: '', change: new TimerChange(reason: 'x')));
 		self::assertCount(1, array_filter($this->store->timers, static fn (FlowTimer $t): bool => $t->getState() === FlowTimer::STATE_ARMED));
 	}//end testARunTerminalityCancelsSubjectAndProvenanceTimers()
 
@@ -751,7 +756,10 @@ class FlowTimerServiceTest extends TestCase {
 		$start = $this->at('2026-09-01 09:00');
 		$applied = [];
 		$this->taskService->method('applyTimerOutcome')->willReturnCallback(
-			function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+			function (string $uuid, TimerOutcome $timer) use (&$applied): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				$applied[$uuid] = [$outcome, $source];
 
 				return $this->store->tasks[$uuid];
@@ -926,10 +934,10 @@ class FlowTimerServiceTest extends TestCase {
 	public function testATerminalTimerCannotBeSuperseded(): void {
 		$this->task();
 		$timer = $this->service->arm(config: $this->config(['ladder' => null]), actor: null, now: $this->at('2026-09-01 09:00'));
-		$this->service->cancelForSubject(subjectType: 'task', subjectUuid: 'task-1', reason: 'done', actor: null, now: $this->at('2026-09-02 09:00'));
+		$this->service->cancelForSubject(subject: new TimerSubjectRef(type: 'task', uuid: 'task-1'), change: new TimerChange(reason: 'done', now: $this->at('2026-09-02 09:00')));
 		$this->expectException(FlowTimerStateException::class);
 		$this->expectExceptionMessage("cannot be superseded: its state is 'cancelled'");
-		$this->service->supersede(uuid: (string)$timer->getUuid(), anchorEventAt: $this->at('2026-09-03 09:00'), reason: 'moved', actor: null, now: $this->at('2026-09-02 10:00'));
+		$this->service->supersede(move: new TimerAnchorMove(uuid: (string)$timer->getUuid(), anchorEventAt: $this->at('2026-09-03 09:00')), change: new TimerChange(reason: 'moved', now: $this->at('2026-09-02 10:00')));
 	}//end testATerminalTimerCannotBeSuperseded()
 
 	public function testAnAbsentTaskSubjectIsLoggedNotFatal(): void {
@@ -1019,7 +1027,10 @@ class FlowTimerServiceTest extends TestCase {
 
 		$applied = [];
 		$this->taskService->method('applyTimerOutcome')->willReturnCallback(
-			function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+			function (string $uuid, TimerOutcome $timer) use (&$applied): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				$applied[] = [$uuid, $outcome, $reason];
 
 				return $this->store->tasks[$uuid];
@@ -1103,7 +1114,7 @@ class FlowTimerServiceTest extends TestCase {
 			),
 			logger: new NullLogger()
 		);
-		self::assertSame(0, $service->cancelForSubject(subjectType: 'task', subjectUuid: 't', reason: 'r', actor: null));
+		self::assertSame(0, $service->cancelForSubject(subject: new TimerSubjectRef(type: 'task', uuid: 't'), change: new TimerChange(reason: 'r')));
 	}//end testAMapperHandingBackAClosedTimerIsSkippedDefensively()
 
 	public function testARungFireOnAnAbsentTaskFallsBackToRoleDescriptors(): void {

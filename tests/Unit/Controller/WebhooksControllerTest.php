@@ -240,6 +240,25 @@ class WebhooksControllerTest extends TestCase {
 		$this->assertArrayHasKey('total', $data);
 	}
 
+	public function testIndexPassesThePageAndFiltersAsListQueries(): void {
+		$this->request->method('getParams')->willReturn([
+			'_limit' => '10',
+			'_page' => '3',
+			'filters' => ['enabled' => true],
+		]);
+		$queries = [];
+		$this->webhookMapper->method('findAll')->willReturnCallback(
+			function (ListQuery $query) use (&$queries): array {
+				$queries[] = [$query->limitOrNull(), $query->offset, $query->filters];
+				return [];
+			}
+		);
+
+		$this->controller->index();
+
+		$this->assertSame([[10, 20, ['enabled' => true]], [null, null, ['enabled' => true]]], $queries);
+	}
+
 	public function testIndexWithStringExtend(): void {
 		$this->request->method('getParams')->willReturn([
 			'_extend' => 'logs',

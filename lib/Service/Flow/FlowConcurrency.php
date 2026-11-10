@@ -83,6 +83,29 @@ class FlowConcurrency {
 	public const MAX_LIMIT = 20;
 
 	/**
+	 * Concurrent calls in flight for map(); null means DEFAULT_LIMIT.
+	 *
+	 * @var integer|null
+	 */
+	private ?int $limit = null;
+
+	/**
+	 * This dispatcher with another limit on concurrent calls in flight, clamped to MAX_LIMIT.
+	 *
+	 * @param int|null $limit Concurrent calls in flight; null for DEFAULT_LIMIT.
+	 *
+	 * @return self A copy; this instance keeps its own limit.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-that-calls-out-per-item-must-be-able-to-do-so-concurrently
+	 */
+	public function within(?int $limit): self {
+		$copy        = clone $this;
+		$copy->limit = $limit;
+
+		return $copy;
+	}//end within()
+
+	/**
 	 * Map items through per-item work, concurrently and in order.
 	 *
 	 * `$work` is called with `(item, index)` and returns EITHER a promise or a
@@ -96,9 +119,10 @@ class FlowConcurrency {
 	 * once and make the limit decorative — the failure this class exists to
 	 * prevent, arrived at from the inside.
 	 *
+	 * At most {@see within()}'s limit is in flight, DEFAULT_LIMIT when none was set.
+	 *
 	 * @param array<int, mixed> $items The item list.
 	 * @param callable $work `fn(mixed $item, int $index): PromiseInterface|mixed`.
-	 * @param int|null $limit Concurrent calls in flight; clamped to MAX_LIMIT.
 	 *
 	 * @return array<int, array{ok: bool, value: mixed, error: Throwable|null}> One
 	 *                                                                          result per input item, in INPUT order.
@@ -113,14 +137,14 @@ class FlowConcurrency {
 	 * static access one file sideways and buys nothing. The two calls are
 	 * two lines apart in one generator, both visible above.
 	 */
-	public function map(array $items, callable $work, ?int $limit = null): array {
+	public function map(array $items, callable $work): array {
 		if ($items === []) {
 			return [];
 		}
 
 		$promises = $this->promisesFor(items: array_values($items), work: $work);
 
-		return $this->settled(promises: $promises, concurrency: $this->boundedLimit(limit: $limit));
+		return $this->settled(promises: $promises, concurrency: $this->boundedLimit(limit: $this->limit));
 	}//end map()
 
 	/**
