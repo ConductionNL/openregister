@@ -101,25 +101,50 @@ class ConfigurationExplainer {
 	private function answerFor(string $configKey, array $chain): array {
 		$effective = $this->effectiveOf(chain: $chain);
 
-		if ($effective === null) {
-			return [
-				'key' => $configKey,
-				'found' => false,
-				'value' => null,
-				'layer' => null,
-				'layerRef' => null,
-				'deployment' => null,
-				'predatesFirstDeployment' => false,
-				'explanation' => sprintf('no layer sets "%s"', $configKey),
-				'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
-			];
+		$answer = $this->notFoundAnswer(configKey: $configKey);
+		if ($effective !== null) {
+			$answer = $this->foundAnswer(configKey: $configKey, effective: $effective);
 		}
 
+		return ['key' => $configKey] + $answer + [
+			'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
+		];
+
+	}//end answerFor()
+
+	/**
+	 * The answer for a key no layer sets, between its key and its chain.
+	 *
+	 * @param string $configKey The configuration key.
+	 *
+	 * @return array<string, mixed> found, value, layer, layerRef, deployment, predatesFirstDeployment and explanation.
+	 */
+	private function notFoundAnswer(string $configKey): array {
+		return [
+			'found' => false,
+			'value' => null,
+			'layer' => null,
+			'layerRef' => null,
+			'deployment' => null,
+			'predatesFirstDeployment' => false,
+			'explanation' => sprintf('no layer sets "%s"', $configKey),
+		];
+
+	}//end notFoundAnswer()
+
+	/**
+	 * The answer for a key from the layer that sets it, between its key and its chain.
+	 *
+	 * @param string                $configKey The configuration key.
+	 * @param ConfigurationSnapshot $effective The highest-precedence snapshot holding a value.
+	 *
+	 * @return array<string, mixed> found, value, layer, layerRef, deployment, predatesFirstDeployment and explanation.
+	 */
+	private function foundAnswer(string $configKey, ConfigurationSnapshot $effective): array {
 		$deployment = $this->deploymentFor(uuid: $effective->deploymentUuid);
-		$predates = ($effective->hasProvenance() === false);
+		$predates   = ($effective->hasProvenance() === false);
 
 		return [
-			'key' => $configKey,
 			'found' => true,
 			'value' => $effective->value,
 			'layer' => $effective->layer,
@@ -130,10 +155,9 @@ class ConfigurationExplainer {
 				setAt: self::setAt(configKey: $configKey, effective: $effective),
 				deployment: $deployment
 			),
-			'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
 		];
 
-	}//end answerFor()
+	}//end foundAnswer()
 
 	/**
 	 * The highest-precedence snapshot that holds a value.
