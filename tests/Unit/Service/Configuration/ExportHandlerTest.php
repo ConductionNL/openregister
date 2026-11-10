@@ -245,6 +245,39 @@ class ExportHandlerTest extends TestCase {
 		$this->assertNotEmpty($result['components']['objects']);
 	}
 
+	#[Test]
+	public function testExportConfigReadsTheObjectsOfEachSchemaTableOfTheRegister(): void {
+		$register = $this->createRegister(1, 'My Reg', 'my-reg');
+		$items    = $this->createSchema(11, 'Item', 'item');
+		$people   = $this->createSchema(12, 'Person', 'person');
+
+		$this->registerMapper->method('getSchemasByRegisterId')->with(1)->willReturn([$items, $people]);
+		$this->schemaMapper->method('getIdToSlugMap')->willReturn([]);
+		$this->registerMapper->method('getIdToSlugMap')->willReturn([]);
+
+		$object = static function (int $schemaId, string $name): \OCA\OpenRegister\Db\ObjectEntity {
+			$entity = new \OCA\OpenRegister\Db\ObjectEntity();
+			$entity->setUuid($name);
+			$entity->setRegister('1');
+			$entity->setSchema((string)$schemaId);
+			$entity->setObject(['name' => $name]);
+			return $entity;
+		};
+		$this->objectEntityMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			static fn (Register $r, Schema $s): array => match ($s->getId()) {
+				11 => [$object(11, 'item-1'), $object(11, 'item-2')],
+				default => [$object(12, 'person-1')],
+			}
+		);
+
+		$result = $this->handler->exportConfig($register, true);
+
+		$this->assertSame(
+			[['my-reg', 'item'], ['my-reg', 'item'], ['my-reg', 'person']],
+			array_map(static fn (array $o): array => [$o['@self']['register'], $o['@self']['schema']], $result['components']['objects'])
+		);
+	}
+
 	// =========================================================================
 	// exportConfig with empty registers
 	// =========================================================================
