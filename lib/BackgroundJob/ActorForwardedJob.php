@@ -210,16 +210,28 @@ abstract class ActorForwardedJob extends QueuedJob {
 		}
 
 		if ($current !== $captured) {
-			$this->logger->info(
-				message: '[ActorForwardedJob] Active organisation drifted since capture — running under current authority',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'job' => static::class,
-					'captured' => $captured,
-					'current' => $current,
-				]
-			);
+			$this->logDrift(captured: $captured, current: $current);
 		}
 	}//end logOrganisationDrift()
+
+	/**
+	 * Log that the active organisation is not the one captured.
+	 *
+	 * @param string      $captured The organisation captured at dispatch.
+	 * @param string|null $current  The user's active organisation now.
+	 *
+	 * @return void
+	 */
+	private function logDrift(string $captured, ?string $current): void {
+		$this->logger->info(
+			message: '[ActorForwardedJob] Active organisation drifted since capture — running under current authority',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'job' => static::class,
+				'captured' => $captured,
+				'current' => $current,
+			]
+		);
+	}//end logDrift()
 }//end class
