@@ -108,6 +108,7 @@ use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
@@ -1002,11 +1003,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		return $this->resolveRegisterAndSchema(
-			register: $register,
-			schema: $schema,
-			objectService: $objectService
-		);
+		return $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 	}//end resolveRegisterSchemaIds()
 
 	/**
@@ -2236,7 +2233,7 @@ class ObjectsController extends Controller {
 		}
 
 		$params = $this->request->getParams();
-		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+		$rows = $this->scopedGeoRows(table: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
@@ -2305,7 +2302,7 @@ class ObjectsController extends Controller {
 		}
 
 		$params = $this->request->getParams();
-		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+		$rows = $this->scopedGeoRows(table: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
@@ -2455,16 +2452,15 @@ class ObjectsController extends Controller {
 	 * per-object read access — then returns just the `results`. Geo
 	 * endpoints build on this so they can never widen access.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
+	 * @param RegisterSchemaRef         $table         Register and schema slugs or ids.
 	 * @param ObjectOperationsInterface $objectService Object service via DI.
 	 *
 	 * @return array The RBAC-scoped result rows.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	private function scopedGeoRows(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+	private function scopedGeoRows(RegisterSchemaRef $table, ObjectOperationsInterface $objectService): array {
+		$listing = $this->index(register: (string)$table->register, schema: (string)$table->schema, objectService: $objectService);
 		$payload = (array)$listing->getData();
 		$rows = ($payload['results'] ?? []);
 		if (is_array($rows) === true) {
