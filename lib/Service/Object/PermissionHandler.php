@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -1580,8 +1581,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function denialAnswer(DenialQuestion $question): ?array {
 		$unconditional = $this->denyResolver()->unconditionalDenial(
 			authorization: $question->authorization,
-			action: $question->action,
-			principals: $question->principals
+			question: new DenyQuestion(action: $question->action, principals: $question->principals)
 		);
 		if ($unconditional !== null || $question->object === null) {
 			return $unconditional;
@@ -1610,8 +1610,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function firstMatchingConditionalDenial(DenialQuestion $question, ObjectEntity $object): ?array {
 		$conditional = $this->denyResolver()->conditionalDenials(
 			authorization: $question->authorization,
-			action: $question->action,
-			principals: $question->principals
+			question: new DenyQuestion(action: $question->action, principals: $question->principals)
 		);
 		if ($conditional === []) {
 			return null;
