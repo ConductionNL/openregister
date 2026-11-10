@@ -153,7 +153,7 @@ class LlmAndFileSettingsGoldenTest extends TestCase {
 		if ($kind === 'llm') {
 			$handler = new LlmSettingsHandler($appConfig, $recorder);
 		} else {
-			$handler = new FileSettingsHandler($appConfig, 'openregister', $recorder);
+			$handler = new FileSettingsHandler($appConfig, $recorder);
 		}
 
 		try {

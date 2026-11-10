@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapperInterface;
@@ -77,16 +78,14 @@ class ContentReportController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName     App identifier.
 	 * @param IRequest            $request     Active request.
 	 * @param ContentReportControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ContentReportControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->reports = $services->reports;
 		$this->service = $services->service;
 		$this->objects = $services->objects;

@@ -95,8 +95,10 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	public function run(IOutput $output): void {
 		try {
 			$flows = $this->everyFlow();
-			$versions = $this->container->get(FlowVersionMapperInterface::class);
-			$semver = $this->container->get(FlowSemanticVersionInterface::class);
+			$numbering = new FlowVersionNumbering(
+				versions: $this->container->get(FlowVersionMapperInterface::class),
+				semver: $this->container->get(FlowSemanticVersionInterface::class)
+			);
 		} catch (Throwable $e) {
 			// The tables may not exist yet on a fresh install. Nothing to
 			// back-fill is not a failure.
@@ -109,11 +111,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 
 		foreach ($flows as $flow) {
 			try {
-				$stamped += $this->stampOneFlow(
-					flow: $flow,
-					versions: $versions,
-					semver: $semver
-				);
+				$stamped += $this->stampOneFlow(flow: $flow, numbering: $numbering);
 			} catch (Throwable $e) {
 				// One flow's history being unreadable must not stop the rest,
 				// and must not fail the upgrade.
@@ -178,16 +176,15 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * is a stronger fact than anything this step can produce, and overwriting
 	 * one would replace evidence with a guess.
 	 *
-	 * @param Flow               $flow     The flow.
-	 * @param FlowVersionMapperInterface  $versions The version rows.
-	 * @param FlowSemanticVersionInterface $semver  The numbering.
+	 * @param Flow                 $flow      The flow.
+	 * @param FlowVersionNumbering $numbering The version rows and their numbering.
 	 *
 	 * @return int How many rows were stamped.
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
-	private function stampOneFlow(Flow $flow, FlowVersionMapperInterface $versions, FlowSemanticVersionInterface $semver): int {
-		$rows = $versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
+	private function stampOneFlow(Flow $flow, FlowVersionNumbering $numbering): int {
+		$rows = $numbering->versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
 
 		// Oldest first: the sequence is the flow's own history, and
 		// `findAllForFlow` answers newest first for the UI.
@@ -209,9 +206,9 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 				continue;
 			}
 
-			$row->setSemver($semver->backfilled(ordinalPosition: $position));
+			$row->setSemver($numbering->semver->backfilled(ordinalPosition: $position));
 			$row->setSemverSource(FlowSemanticVersionInterface::SOURCE_BACKFILL);
-			$versions->update($row);
+			$numbering->versions->update($row);
 			$stamped++;
 		}
 

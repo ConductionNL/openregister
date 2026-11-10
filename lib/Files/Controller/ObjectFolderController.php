@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
@@ -31,6 +32,7 @@ use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -88,18 +90,16 @@ class ObjectFolderController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName          The app name.
 	 * @param IRequest            $request          The request.
 	 * @param ObjectFolderControllerServices $services The object folder controller services.
 	 * @param FileWriteGuardInterface        $fileWriteGuard   Refuses a change to the files of a frozen or archived object.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectFolderControllerServices $services,
 		private readonly FileWriteGuardInterface $fileWriteGuard,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$this->objectFileAccess = $services->objectFileAccess;
 		$this->browser = $services->browser;
@@ -125,16 +125,24 @@ class ObjectFolderController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id, string $path = ''): JSONResponse {
-		try {
-			$object = $this->ensureReadable(register: $register, schema: $schema, id: $id);
-			$listing = $this->browser->listFolder(object: $object, path: $path);
-			$listing['canChange'] = $this->objectFileAccess->mayUpdate(object: $object);
-
-			return new JSONResponse(data: $listing);
-		} catch (Throwable $e) {
-			return $this->responder->failure(e: $e);
-		}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+		return $this->answer(work: fn (): JSONResponse => $this->listing(object: $this->ensureReadable(ref: $ref), path: $path));
 	}//end index()
+
+	/**
+	 * The listing of a folder of an object the caller may read.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $path   The folder, relative to the object folder.
+	 *
+	 * @return JSONResponse The listing, with `canChange`.
+	 */
+	private function listing(ObjectEntity $object, string $path): JSONResponse {
+		$listing = $this->browser->listFolder(object: $object, path: $path);
+		$listing['canChange'] = $this->objectFileAccess->mayUpdate(object: $object);
+
+		return new JSONResponse(data: $listing);
+	}//end listing()
 
 	/**
 	 * Create a folder inside the object folder.
@@ -153,16 +161,11 @@ class ObjectFolderController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id, string $name = '', string $path = ''): JSONResponse {
-		try {
-			$object = $this->ensureChangeable(register: $register, schema: $schema, id: $id);
-
-			return new JSONResponse(
-				data: $this->browser->createFolder(object: $object, path: $path, name: $name),
-				statusCode: 201
-			);
-		} catch (Throwable $e) {
-			return $this->responder->failure(e: $e);
-		}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+		return $this->answer(work: fn (): JSONResponse => new JSONResponse(
+			data: $this->browser->createFolder(object: $this->ensureChangeable(ref: $ref), path: $path, name: $name),
+			statusCode: 201
+		));
 	}//end create()
 
 	/**
@@ -185,21 +188,29 @@ class ObjectFolderController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function upload(string $register, string $schema, string $id, string $path = ''): JSONResponse {
-		try {
-			$object = $this->ensureChangeable(register: $register, schema: $schema, id: $id);
-			$uploads = $this->uploadedFiles();
-			if ($uploads === []) {
-				return $this->responder->noUpload();
-			}
-
-			return $this->responder->uploaded(
-				outcome: $this->services->uploads->uploadAll(object: $object, path: $path, uploads: $uploads),
-				total: count($uploads)
-			);
-		} catch (Throwable $e) {
-			return $this->responder->failure(e: $e);
-		}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+		return $this->answer(work: fn (): JSONResponse => $this->uploadInto(object: $this->ensureChangeable(ref: $ref), path: $path));
 	}//end upload()
+
+	/**
+	 * Store the request's uploads in a folder of an object the caller may change.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $path   The target folder, relative to the object folder.
+	 *
+	 * @return JSONResponse The upload outcome, or the answer to no upload at all.
+	 */
+	private function uploadInto(ObjectEntity $object, string $path): JSONResponse {
+		$uploads = $this->uploadedFiles();
+		if ($uploads === []) {
+			return $this->responder->noUpload();
+		}
+
+		return $this->responder->uploaded(
+			outcome: $this->services->uploads->uploadAll(object: $object, path: $path, uploads: $uploads),
+			total: count($uploads)
+		);
+	}//end uploadInto()
 
 	/**
 	 * Rename a file or folder inside the object folder.
@@ -218,13 +229,10 @@ class ObjectFolderController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function rename(string $register, string $schema, string $id, int $nodeId, string $name = ''): JSONResponse {
-		try {
-			$object = $this->ensureChangeable(register: $register, schema: $schema, id: $id);
-
-			return new JSONResponse(data: $this->browser->rename(object: $object, nodeId: $nodeId, name: $name));
-		} catch (Throwable $e) {
-			return $this->responder->failure(e: $e);
-		}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+		return $this->answer(work: fn (): JSONResponse => new JSONResponse(
+			data: $this->browser->rename(object: $this->ensureChangeable(ref: $ref), nodeId: $nodeId, name: $name)
+		));
 	}//end rename()
 
 	/**
@@ -243,37 +251,56 @@ class ObjectFolderController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $register, string $schema, string $id, int $nodeId): JSONResponse {
-		try {
-			$object = $this->ensureChangeable(register: $register, schema: $schema, id: $id);
-			$this->browser->delete(object: $object, nodeId: $nodeId);
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+		return $this->answer(work: fn (): JSONResponse => $this->deleted(object: $this->ensureChangeable(ref: $ref), nodeId: $nodeId));
+	}//end destroy()
 
-			return new JSONResponse(data: ['deleted' => true]);
+	/**
+	 * Delete a file or folder of an object the caller may change.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $nodeId The file or folder.
+	 *
+	 * @return JSONResponse `{deleted: true}`.
+	 */
+	private function deleted(ObjectEntity $object, int $nodeId): JSONResponse {
+		$this->browser->delete(object: $object, nodeId: $nodeId);
+
+		return new JSONResponse(data: ['deleted' => true]);
+	}//end deleted()
+
+	/**
+	 * Run one action, answering any failure the way every action here does.
+	 *
+	 * @param callable(): JSONResponse $work The action, access checks included.
+	 *
+	 * @return JSONResponse The action's answer, or the failure's.
+	 */
+	private function answer(callable $work): JSONResponse {
+		try {
+			return $work();
 		} catch (Throwable $e) {
 			return $this->responder->failure(e: $e);
 		}
-	}//end destroy()
+	}//end answer()
 
 	/**
 	 * The object, when the signed-in person may read it.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object uuid or id.
+	 * @param ObjectRef $ref The object.
 	 *
 	 * @return ObjectEntity The object.
 	 *
 	 * @throws ObjectFileAccessDeniedException With 404 when they may not read it.
 	 */
-	private function ensureReadable(string $register, string $schema, string $id): ObjectEntity {
-		return $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
+	private function ensureReadable(ObjectRef $ref): ObjectEntity {
+		return $this->objectFileAccess->readable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
 	}//end ensureReadable()
 
 	/**
 	 * The object, when the signed-in person may update it.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object uuid or id.
+	 * @param ObjectRef $ref The object.
 	 *
 	 * @return ObjectEntity The object.
 	 *
@@ -282,8 +309,8 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
 	 */
-	private function ensureChangeable(string $register, string $schema, string $id): ObjectEntity {
-		$object = $this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id);
+	private function ensureChangeable(ObjectRef $ref): ObjectEntity {
+		$object = $this->objectFileAccess->changeable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
 
 		// Asked after the access rule, so a caller without access still gets
 		// 404 or 403 and learns nothing of the state; the same order the files

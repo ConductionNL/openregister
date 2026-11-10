@@ -41,6 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationDeliveryWindowControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -51,20 +53,33 @@ class NotificationDeliveryWindowController extends Controller {
 	use NotificationRequestTrait;
 
 	/**
+	 * Override-only window store and evaluator.
+	 *
+	 * @var NotificationDeliveryWindowService
+	 */
+	private readonly NotificationDeliveryWindowService $windowService;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param NotificationDeliveryWindowService $windowService Override-only window store + evaluator.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param IRequest                                      $request  Request.
+	 * @param NotificationDeliveryWindowControllerServices $services The window store and the session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationDeliveryWindowService $windowService,
-		private readonly IUserSession $userSession,
+		NotificationDeliveryWindowControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->windowService = $services->windowService;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**

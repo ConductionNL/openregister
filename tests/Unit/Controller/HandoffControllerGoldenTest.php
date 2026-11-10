@@ -51,10 +51,11 @@ class HandoffControllerGoldenTest extends TestCase {
 		$this->service = $this->createMock(HandoffService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->controller = new HandoffController(
-			'openregister',
 			$this->createMock(IRequest::class),
-			$this->service,
-			$this->logger
+			new \OCA\OpenRegister\Controller\Support\HandoffControllerServices(
+				$this->service,
+				$this->logger,
+			)
 		);
 	}
 

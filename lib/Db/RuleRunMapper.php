@@ -166,13 +166,25 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
 		(new RuleRunFilter(verdict: $verdict, since: $since, until: $until))->applyTo(qb: $qb);
 
+		return $this->fetchRunCount(qb: $qb);
+
+	}//end countByRule()
+
+	/**
+	 * Run a count query and read its `run_count` column; no row counts as zero.
+	 *
+	 * @param IQueryBuilder $qb The count query.
+	 *
+	 * @return int The count.
+	 */
+	private function fetchRunCount(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
 
 		return (int)($row['run_count'] ?? 0);
 
-	}//end countByRule()
+	}//end fetchRunCount()
 
 	/**
 	 * One page with the limit clamped to 1..MAX_LIMIT and the offset to at least 0.

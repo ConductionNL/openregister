@@ -112,8 +112,8 @@ class ReplyThreadResolver {
 		$objects = [];
 		$firstMatch = null;
 
-		foreach (self::HEADER_ORDER as $header) {
-			foreach ($this->hitsIn(headers: $headers, header: $header, lookup: $lookup) as $hit) {
+		foreach ($this->hitsByHeader(headers: $headers, lookup: $lookup) as $header => $hits) {
+			foreach ($hits as $hit) {
 				$objects[$hit['objectUuid']] = true;
 				$firstMatch ??= $hit;
 			}
@@ -158,34 +158,37 @@ class ReplyThreadResolver {
 	}//end resolve()
 
 	/**
-	 * Walk one header's references, listing the objects they point at.
+	 * Walk each header's references in HEADER_ORDER, listing the objects they point at.
 	 *
-	 * The caller folds the hits of BOTH headers: `References` adds to what
-	 * `In-Reply-To` already found, and the earliest hit keeps its place.
+	 * Lazy: a header is only looked up when the caller asks for it, so a
+	 * decisive `In-Reply-To` never costs a `References` lookup. The caller
+	 * folds the hits of BOTH headers: `References` adds to what `In-Reply-To`
+	 * already found, and the earliest hit keeps its place.
 	 *
 	 * @param array<string,mixed> $headers The reply's headers.
-	 * @param string              $header  Which header to read.
 	 * @param callable            $lookup  `fn(string $messageId): ?array`.
 	 *
-	 * @return array<int,array{objectUuid:string,matchedOn:string,messageId:string}> The hits, in header order.
+	 * @return \Generator<string,array<int,array{objectUuid:string,matchedOn:string,messageId:string}>> The hits per header, in header order.
 	 *
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	private function hitsIn(array $headers, string $header, callable $lookup): array {
-		$hits = [];
-		foreach ($this->referencesIn(headers: $headers, header: $header) as $messageId) {
-			$link = $lookup($messageId);
-			if (is_array($link) === false) {
-				continue;
+	private function hitsByHeader(array $headers, callable $lookup): \Generator {
+		foreach (self::HEADER_ORDER as $header) {
+			$hits = [];
+			foreach ($this->referencesIn(headers: $headers, header: $header) as $messageId) {
+				$link = $lookup($messageId);
+				if (is_array($link) === false) {
+					continue;
+				}
+
+				foreach ($this->objectUuidsOf(link: $link) as $objectUuid) {
+					$hits[] = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
+				}
 			}
 
-			foreach ($this->objectUuidsOf(link: $link) as $objectUuid) {
-				$hits[] = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
-			}
+			yield $header => $hits;
 		}
-
-		return $hits;
-	}//end hitsIn()
+	}//end hitsByHeader()
 
 	/**
 	 * The objects a recorded link names.

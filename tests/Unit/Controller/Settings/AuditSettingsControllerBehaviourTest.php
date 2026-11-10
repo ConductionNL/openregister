@@ -44,7 +44,7 @@ class AuditSettingsControllerBehaviourTest extends TestCase {
 	private function controller(mixed $windowSeconds = null): AuditSettingsController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->with('windowSeconds')->willReturn($windowSeconds);
-		return new AuditSettingsController('openregister', $request, $this->aggregation);
+		return new AuditSettingsController($request, $this->aggregation);
 	}
 
 	public function testReadingReportsTheWindowAndThatMergingIsOn(): void {

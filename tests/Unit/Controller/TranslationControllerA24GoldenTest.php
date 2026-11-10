@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
+use OCA\OpenRegister\Controller\Support\TranslationMappers;
 use OCA\OpenRegister\Controller\TranslationController;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -116,10 +117,12 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$request->method('getParams')->willReturn($params);
 
 		return new TranslationController(
-			'openregister',
 			$request,
-			new TranslationControllerServices($this->status, $this->translations, $this->schemas, $this->bulk),
-			$this->objects
+			new TranslationControllerServices(
+				$this->status,
+				$this->bulk,
+				new TranslationMappers($this->translations, $this->schemas, $this->objects)
+			)
 		);
 	}//end controller()
 

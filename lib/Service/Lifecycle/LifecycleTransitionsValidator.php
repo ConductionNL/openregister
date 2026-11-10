@@ -63,19 +63,41 @@ final class LifecycleTransitionsValidator {
 	 */
 	public function validate(array $states, ?string $initial, array $transitions, ?array $knownGuards=null): array {
 		$check = new LifecycleGraphCheck(states: $states, knownGuards: $knownGuards);
+		$this->checkStates(initial: $initial, check: $check);
+		$this->checkTransitions(transitions: $transitions, check: $check);
+		$this->checkUnreachable(initial: $initial, check: $check);
+		return $check->errors();
+	}//end validate()
+
+	/**
+	 * Refuse an empty state list, then check the initial state against it.
+	 *
+	 * @param string|null         $initial The initial state.
+	 * @param LifecycleGraphCheck $check   The graph and the errors found so far.
+	 *
+	 * @return void
+	 */
+	private function checkStates(?string $initial, LifecycleGraphCheck $check): void {
 		if ($check->stateNames === []) {
 			$check->addError(code: 'lifecycle-states-empty', message: 'A lifecycle must declare at least one named state.');
 		}
 
 		$this->checkInitial(initial: $initial, check: $check);
+	}//end checkStates()
+
+	/**
+	 * Check every declared transition, in declaration order.
+	 *
+	 * @param array<int|string, mixed> $transitions A list, or a map keyed by action, of `{from, to, guards?}`.
+	 * @param LifecycleGraphCheck      $check       The graph and the errors found so far.
+	 *
+	 * @return void
+	 */
+	private function checkTransitions(array $transitions, LifecycleGraphCheck $check): void {
 		foreach ($transitions as $action => $spec) {
 			$this->checkTransition(transition: ['label' => $this->label(action: $action), 'spec' => $spec], check: $check);
 		}
-
-		$this->checkUnreachable(initial: $initial, check: $check);
-
-		return $check->errors();
-	}//end validate()
+	}//end checkTransitions()
 
 	/**
 	 * Check the initial state.

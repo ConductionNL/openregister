@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -51,7 +52,7 @@ class IterateNodeSeedBehaviourTest extends TestCase {
 		$this->dispatcher = $this->createMock(FlowStepDispatcher::class);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->with(FlowStepDispatcher::class)->willReturn($this->dispatcher);
-		$this->node = new IterateNode(l10n: $l10n, urls: $this->createMock(IURLGenerator::class), container: $container);
+		$this->node = new IterateNode(presentation: new FlowNodePresentation(l10n: $l10n, urls: $this->createMock(IURLGenerator::class)), container: $container);
 	}//end setUp()
 
 	public function testTheFirstPassSeedsTheSourceWithTheIncomingItemsAndLaterPassesWithABareItem(): void {

@@ -143,7 +143,6 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		}
 
 		return new SchemaMigrationController(
-			'openregister',
 			$request,
 			new SchemaMigrationControllerServices(
 				mappers: new SchemaMigrationMappers($this->schemas, $this->changelog, $this->runs, $this->entries),
