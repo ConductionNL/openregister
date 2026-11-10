@@ -3,6 +3,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -89,9 +90,7 @@ class RegisterSchemaRbacTest extends TestCase {
 					$this->schemaMapperDependency,
 					$this->eventDispatcher,
 					$this->container,
-					$this->organisationMapper,
-					$this->userSession,
-					$this->groupManager,
+					new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 					$this->appConfig,
 					$this->logger,
 				]
