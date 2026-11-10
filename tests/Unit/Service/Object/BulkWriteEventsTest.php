@@ -195,7 +195,7 @@ class BulkWriteEventsTest extends TestCase {
 	 */
 	private function saveObjects(IEventDispatcher $dispatcher): SaveObjects {
 		return new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(SchemaMapper::class), tables: $this->objectMapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $this->groupManager),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $dispatcher, auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
 			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, rowRules: new BulkRowRules(bulkWriteEvents: $this->policy($dispatcher)))
