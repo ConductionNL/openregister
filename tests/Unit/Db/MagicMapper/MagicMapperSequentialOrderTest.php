@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -122,7 +123,8 @@ class MagicMapperSequentialOrderTest extends TestCase {
 			->getMock();
 
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			static function (array $query, Register $register, Schema $schema): array {
+			static function (RegisterSchema $table, array $query): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$rows = self::orderLikeOneTable(rows: self::ROWS[$schema->getSlug()], query: $query);
 				$rows = array_slice(
 					$rows,

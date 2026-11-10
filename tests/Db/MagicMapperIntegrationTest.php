@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -245,7 +246,7 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Search applies RBAC/multitenancy filters, so without a user session
 		// results may be filtered. Verify it returns an array without errors.
-		$results = $this->mapper->searchObjectsInRegisterSchemaTable([], $register, $schema);
+		$results = $this->mapper->searchObjectsInRegisterSchemaTable(new RegisterSchema($register, $schema), []);
 		$this->assertIsArray($results);
 	}
 
@@ -280,7 +281,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->ensureTableForRegisterSchema($register, $schema);
 		$this->trackTable($register, $schema);
 
-		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable([], $register, $schema);
+		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(new RegisterSchema($register, $schema), []);
 		$this->assertIsArray($facets);
 	}
 
@@ -500,7 +501,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 		}
 
-		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable([], $register, $schema);
+		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(new RegisterSchema($register, $schema), []);
 		$this->assertIsArray($facets);
 	}
 
@@ -520,9 +521,8 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Query with a filter
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
-			['name' => 'FacetFilter'],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['name' => 'FacetFilter']
 		);
 		$this->assertIsArray($facets);
 	}
@@ -534,7 +534,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->ensureTableForRegisterSchema($register, $schema);
 		$this->trackTable($register, $schema);
 
-		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable([], $register, $schema);
+		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(new RegisterSchema($register, $schema), []);
 		$this->assertIsArray($facets);
 	}
 
@@ -587,9 +587,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['name' => 'SearchableAlice'],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['name' => 'SearchableAlice']
 		);
 		$this->assertIsArray($results);
 	}
@@ -611,9 +610,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		}
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_limit' => 2, '_offset' => 0],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_limit' => 2, '_offset' => 0]
 		);
 		$this->assertIsArray($results);
 	}
@@ -633,9 +631,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_order' => ['age' => 'DESC']],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_order' => ['age' => 'DESC']]
 		);
 		$this->assertIsArray($results);
 	}
@@ -670,9 +667,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		}
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_order' => ['occurredAt' => 'ASC']],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_order' => ['occurredAt' => 'ASC']]
 		);
 
 		$names = array_map(static fn (ObjectEntity $o): ?string => ($o->getObject()['name'] ?? null), $results);
@@ -716,9 +712,8 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Filter on a property not in schema - should not crash
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['nonExistentProperty' => 'value'],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['nonExistentProperty' => 'value']
 		);
 		$this->assertIsArray($results);
 	}
@@ -771,9 +766,8 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Search with RBAC disabled
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_rbac' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_rbac' => false]
 		);
 		$this->assertIsArray($results);
 	}
@@ -794,9 +788,8 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Search with RBAC enabled (default) - may filter results based on user session
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_rbac' => true],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_rbac' => true]
 		);
 		$this->assertIsArray($results);
 	}
@@ -842,9 +835,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
-			['_rbac' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_rbac' => false]
 		);
 		$this->assertIsArray($facets);
 	}
@@ -864,9 +856,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_rbac' => false, '_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_rbac' => false, '_multitenancy' => false]
 		);
 		$this->assertIsArray($results);
 	}
@@ -892,7 +883,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			];
 		}
 
-		$uuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$uuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertIsArray($uuids);
 		$this->assertCount(3, $uuids);
 	}
@@ -904,7 +895,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->ensureTableForRegisterSchema($register, $schema);
 		$this->trackTable($register, $schema);
 
-		$uuids = $this->mapper->saveObjectsToRegisterSchemaTable([], $register, $schema);
+		$uuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), []);
 		$this->assertIsArray($uuids);
 		$this->assertEmpty($uuids);
 	}
@@ -1271,9 +1262,8 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Search using @self metadata filter on uuid
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['@self' => ['uuid' => $uuid]],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['@self' => ['uuid' => $uuid]]
 		);
 		$this->assertIsArray($results);
 	}
@@ -1297,9 +1287,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_search' => 'UniqueSearchable'],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_search' => 'UniqueSearchable']
 		);
 		$this->assertIsArray($results);
 	}
@@ -1404,15 +1393,14 @@ class MagicMapperIntegrationTest extends TestCase {
 		}
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_limit' => 3,
 				'_offset' => 1,
 				'_order' => ['age' => 'ASC'],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 		$this->assertIsArray($results);
 		$this->assertLessThanOrEqual(3, count($results));
@@ -1537,15 +1525,14 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 		$this->assertEquals($testUuid, $savedUuids[0]);
 
 		// Search for the object to trigger convertRowToObjectEntity path
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_search' => 'Test Title'],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_search' => 'Test Title']
 		);
 		// Search may or may not find results depending on column types and search implementation
 		$this->assertIsArray($results);
@@ -1572,7 +1559,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 
 		// Retrieve and verify boolean false was stored correctly
@@ -1601,7 +1588,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 	}
 
@@ -1686,7 +1673,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 
 		// Retrieve and verify datetime fields were stored
@@ -1721,7 +1708,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 	}
 
@@ -1746,7 +1733,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		];
 
 		// Should not crash - invalid dates are set to null
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 	}
 
@@ -1774,12 +1761,12 @@ class MagicMapperIntegrationTest extends TestCase {
 		];
 
 		// First save - insert
-		$this->mapper->saveObjectsToRegisterSchemaTable([$object], $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), [$object]);
 
 		// Second save with same UUID - should update
 		$object['name'] = 'Updated Name';
 		$object['age'] = 25;
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable([$object], $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), [$object]);
 		$this->assertCount(1, $savedUuids);
 		$this->assertEquals($testUuid, $savedUuids[0]);
 
@@ -1824,7 +1811,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Retrieve - exercises date format conversion in convertRowToObjectEntity
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
@@ -1864,7 +1851,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Retrieve - exercises JSON decoding in convertRowToObjectEntity
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
@@ -1900,7 +1887,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
 		$objectData = $entity->getObject();
@@ -1988,7 +1975,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		];
 
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Soft delete
 		$deleted = $this->mapper->deleteObjectsByUuids($register, $schema, [$uuid1], false);
@@ -2025,7 +2012,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => "Bulk Soft Delete $i", 'age' => $i, 'active' => true,
 			];
 		}
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Soft delete all
 		$deleted = $this->mapper->deleteObjectsBySchema($register, $schema, false);
@@ -2087,19 +2074,25 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema2);
 
 		// Insert objects
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema1),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema1->getId()],
 				'name' => 'Cross1', 'age' => 10, 'active' => true,
 			],
-		], $register, $schema1);
+		]
+		);
 
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema2),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema2->getId()],
 				'label' => 'Cross2',
 			],
-		], $register, $schema2);
+		]
+		);
 
 		// Search with _facets (forces sequential fallback per shouldUseUnionQuery)
 		$results = $this->mapper->searchAcrossMultipleTables(
@@ -2129,19 +2122,25 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema1);
 		$this->trackTable($register, $schema2);
 
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema1),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema1->getId()],
 				'name' => 'UnionSearch1', 'age' => 10, 'active' => true,
 			],
-		], $register, $schema1);
+		]
+		);
 
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema2),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema2->getId()],
 				'label' => 'UnionSearch2',
 			],
-		], $register, $schema2);
+		]
+		);
 
 		// Search without facets - triggers UNION ALL path for 2+ tables
 		$results = $this->mapper->searchAcrossMultipleTables(
@@ -2161,7 +2160,9 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->ensureTableForRegisterSchema($register, $schema);
 		$this->trackTable($register, $schema);
 
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'name' => 'Alpha', 'age' => 10, 'active' => true,
@@ -2170,7 +2171,8 @@ class MagicMapperIntegrationTest extends TestCase {
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'name' => 'Beta', 'age' => 20, 'active' => true,
 			],
-		], $register, $schema);
+		]
+		);
 
 		// Search with _order on a metadata field
 		$results = $this->mapper->searchAcrossMultipleTables(
@@ -2273,7 +2275,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'Has Relation', 'age' => 25, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// findByRelation should find the object (via row_to_json LIKE search)
 		$results = $this->mapper->findByRelation($targetUuid);
@@ -2306,7 +2308,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'Batch Ref Test', 'age' => 30, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// findByRelationBatchInSchema exercises the JSONB containment query path
 		$results = $this->mapper->findByRelationBatchInSchema(
@@ -2338,7 +2340,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => $targetUuid, 'age' => 10, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Exercise the additionalFieldNames code path
 		$results = $this->mapper->findByRelationBatchInSchema(
@@ -2388,7 +2390,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'Relations Column Test', 'age' => 20, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		$results = $this->mapper->findByRelationUsingRelationsColumn($targetUuid);
 		$this->assertIsArray($results);
@@ -2418,7 +2420,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'Multi2', 'age' => 20, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		$results = $this->mapper->findMultipleAcrossAllMagicTables([$uuid1, $uuid2]);
 		$this->assertIsArray($results);
@@ -2434,12 +2436,15 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$uuid = Uuid::v4()->toRfc4122();
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => $uuid, 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'name' => 'Dedup', 'age' => 1, 'active' => true,
 			],
-		], $register, $schema);
+		]
+		);
 
 		// Pass same UUID twice - should deduplicate
 		$results = $this->mapper->findMultipleAcrossAllMagicTables([$uuid, $uuid]);
@@ -2471,7 +2476,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'RelAcross', 'age' => 10, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		$results = $this->mapper->findByRelationAcrossAllMagicTables($targetUuid);
 		$this->assertIsArray($results);
@@ -2644,7 +2649,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'Slug Test', 'age' => 30, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Find by slug
 		$entity = $this->mapper->findInRegisterSchemaTable($testSlug, $register, $schema);
@@ -2670,7 +2675,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'ID Test', 'age' => 30, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Find the entity first by UUID to get its auto-generated ID
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
@@ -2702,7 +2707,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'Deleted Object', 'age' => 40, 'active' => false,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Find with includeDeleted=true should still find it
 		$found = $this->mapper->findInRegisterSchemaTable(
@@ -2728,7 +2733,9 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		// Insert objects
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'name' => 'Zulu', 'age' => 10, 'active' => true,
@@ -2737,7 +2744,8 @@ class MagicMapperIntegrationTest extends TestCase {
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'name' => 'Alpha', 'age' => 20, 'active' => true,
 			],
-		], $register, $schema);
+		]
+		);
 
 		// Exercises the findAllInRegisterSchemaTable with all parameters
 		$results = $this->mapper->findAllInRegisterSchemaTable(
@@ -2754,7 +2762,9 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		// Insert object with published date
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => [
 					'uuid' => Uuid::v4()->toRfc4122(),
@@ -2764,7 +2774,8 @@ class MagicMapperIntegrationTest extends TestCase {
 				],
 				'name' => 'Published Object', 'age' => 10, 'active' => true,
 			],
-		], $register, $schema);
+		]
+		);
 
 		// Call findAllInRegisterSchemaTable with published=true
 		// This exercises the published query building code path even if the
@@ -2864,12 +2875,15 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$testUuid = Uuid::v4()->toRfc4122();
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => $testUuid, 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'rating' => 85,
 			],
-		], $register, $schema);
+		]
+		);
 
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
 		$this->assertInstanceOf(ObjectEntity::class, $entity);
@@ -2890,12 +2904,15 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$testUuid = Uuid::v4()->toRfc4122();
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => $testUuid, 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'population' => 8000000000,
 			],
-		], $register, $schema);
+		]
+		);
 
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
 		$this->assertInstanceOf(ObjectEntity::class, $entity);
@@ -2938,12 +2955,15 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$testUuid = Uuid::v4()->toRfc4122();
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => $testUuid, 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'homepage' => 'https://example.com/page',
 			],
-		], $register, $schema);
+		]
+		);
 
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
 		$this->assertInstanceOf(ObjectEntity::class, $entity);
@@ -2964,12 +2984,15 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$testUuid = Uuid::v4()->toRfc4122();
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => $testUuid, 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'code' => 'ABC',
 			],
-		], $register, $schema);
+		]
+		);
 
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
 		$this->assertInstanceOf(ObjectEntity::class, $entity);
@@ -3023,7 +3046,9 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		// Insert data and get facets
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'category' => 'books', 'status' => 'available',
@@ -3036,12 +3061,12 @@ class MagicMapperIntegrationTest extends TestCase {
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'category' => 'music', 'status' => 'available',
 			],
-		], $register, $schema);
+		]
+		);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
-			['_facets' => ['category', 'status']],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_facets' => ['category', 'status']]
 		);
 		$this->assertIsArray($facets);
 	}
@@ -3057,7 +3082,9 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->ensureTableForRegisterSchema($register, $schema);
 		$this->trackTable($register, $schema);
 
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'name' => 'CountSearch Alpha', 'age' => 10, 'active' => true,
@@ -3066,7 +3093,8 @@ class MagicMapperIntegrationTest extends TestCase {
 				'@self' => ['uuid' => Uuid::v4()->toRfc4122(), 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'name' => 'CountSearch Beta', 'age' => 20, 'active' => true,
 			],
-		], $register, $schema);
+		]
+		);
 
 		$count = $this->mapper->countObjectsInRegisterSchemaTable(
 			['_search' => 'CountSearch'],
@@ -3095,7 +3123,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 
 		// Don't create table - search should return empty
-		$results = $this->mapper->searchObjectsInRegisterSchemaTable([], $register, $schema);
+		$results = $this->mapper->searchObjectsInRegisterSchemaTable(new RegisterSchema($register, $schema), []);
 		$this->assertIsArray($results);
 		$this->assertEmpty($results);
 	}
@@ -3114,7 +3142,9 @@ class MagicMapperIntegrationTest extends TestCase {
 		$testSlug = 'unique-slug-' . uniqid();
 		$testUuid = Uuid::v4()->toRfc4122();
 
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => [
 					'uuid' => $testUuid,
@@ -3124,7 +3154,8 @@ class MagicMapperIntegrationTest extends TestCase {
 				],
 				'name' => 'Slug Across Test', 'age' => 10, 'active' => true,
 			],
-		], $register, $schema);
+		]
+		);
 
 		$result = $this->mapper->findAcrossAllMagicTables($testSlug);
 		$this->assertIsArray($result);
@@ -3153,7 +3184,7 @@ class MagicMapperIntegrationTest extends TestCase {
 				'name' => 'Deleted Across', 'age' => 10, 'active' => true,
 			],
 		];
-		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 
 		// Should find with includeDeleted=true even though _deleted is set
 		$result = $this->mapper->findAcrossAllMagicTables($testUuid, true);
@@ -3199,9 +3230,8 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Search with a filter that doesn't exist in the schema
 		$this->mapper->searchObjectsInRegisterSchemaTable(
-			['nonExistentProperty' => 'someValue'],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['nonExistentProperty' => 'someValue']
 		);
 
 		$ignored = $this->mapper->getIgnoredFilters();
@@ -3288,7 +3318,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		];
 
 		// Should not crash - base64 data URL is set to null to prevent DB error
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 	}
 
@@ -3323,7 +3353,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		];
 
 		// First item is base64 and should be filtered; second should survive
-		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+		$savedUuids = $this->mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), $objects);
 		$this->assertCount(1, $savedUuids);
 	}
 
@@ -3371,14 +3401,17 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$testUuid = Uuid::v4()->toRfc4122();
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => $testUuid, 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'firstName' => 'John',
 				'lastName' => 'Doe',
 				'emailAddress' => 'john@example.com',
 			],
-		], $register, $schema);
+		]
+		);
 
 		// Retrieve and verify the original property names are preserved
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);
@@ -3403,13 +3436,16 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$testUuid = Uuid::v4()->toRfc4122();
-		$this->mapper->saveObjectsToRegisterSchemaTable([
+		$this->mapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
+			[
 			[
 				'@self' => ['uuid' => $testUuid, 'register' => $register->getId(), 'schema' => $schema->getId()],
 				'e-mailadres' => 'test@example.nl',
 				'postal-code' => '1234AB',
 			],
-		], $register, $schema);
+		]
+		);
 
 		// Retrieve - exercises column-to-property name mapping
 		$entity = $this->mapper->findInRegisterSchemaTable($testUuid, $register, $schema);

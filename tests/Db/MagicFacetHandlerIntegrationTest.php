@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -166,15 +167,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Charlie', 'category' => 'B', 'age' => 35, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -195,15 +195,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Inactive', 'category' => 'Y', 'age' => 22, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'active' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -227,15 +226,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Old', 'category' => 'B', 'age' => 50, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'age' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -258,6 +256,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Bob', 'category' => 'B', 'age' => 25, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
@@ -266,9 +265,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -294,6 +291,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// Get facets while filtering on category=A
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'category' => 'A',
 				'_facets' => [
@@ -301,9 +299,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -322,15 +318,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->trackTable($register, $schema);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -354,9 +349,8 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// No _facets in query - should return empty
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
-			['_rbac' => false, '_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_rbac' => false, '_multitenancy' => false]
 		);
 
 		$this->assertIsArray($facets);
@@ -377,13 +371,12 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// _facets as string 'extend' means expand all schema properties into facets
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => 'extend',
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -404,13 +397,12 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// _facets as numerically-indexed array of field names
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => ['category', 'active'],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -431,6 +423,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'MetaFacet2', 'category' => 'B', 'age' => 25, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'@self' => [
@@ -440,9 +433,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -465,15 +456,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'TitleTest', 'category' => 'Cat', 'age' => 10, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms', 'title' => 'Custom Category Title'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -497,15 +487,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Metrics', 'category' => 'M', 'age' => 10, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -529,15 +518,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'C3', 'category' => 'Beta', 'age' => 30, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -655,15 +643,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'RbacFacet', 'category' => 'R', 'age' => 42, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -697,15 +684,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		}
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -730,15 +716,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'NoCat', 'age' => 20, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'category' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -760,6 +745,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'DateItem2', 'category' => 'B', 'age' => 20, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'@self' => [
@@ -768,9 +754,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -836,6 +820,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Day2', 'category' => 'B', 'age' => 20, 'active' => false]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'@self' => [
@@ -844,9 +829,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -866,6 +849,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Week1', 'category' => 'A', 'age' => 10, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'@self' => [
@@ -874,9 +858,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -892,6 +874,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'Year1', 'category' => 'A', 'age' => 10, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'@self' => [
@@ -900,9 +883,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -923,13 +904,12 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// _facets as comma-separated string with specific field names
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => 'category,active',
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -949,13 +929,12 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// Comma-separated with metadata fields register, schema
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => 'register,schema',
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -976,13 +955,12 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// created and updated are metadata date fields
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => 'created,updated',
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1023,13 +1001,12 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => 'extend',
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1062,13 +1039,12 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => 'extend',
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1093,6 +1069,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// Apply _search combined with facets
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_search' => 'Searchable',
 				'_facets' => [
@@ -1100,9 +1077,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1143,15 +1118,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'tags' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1272,6 +1246,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'RegMeta1', 'category' => 'A', 'age' => 10, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'@self' => [
@@ -1280,9 +1255,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1309,15 +1282,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'NonExist', 'category' => 'A', 'age' => 10, 'active' => true]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'nonexistent_column' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1380,6 +1352,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// Filter by category array AND get active facets
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'category' => ['A', 'B'],
 				'_facets' => [
@@ -1387,9 +1360,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1411,6 +1382,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 
 		// Filter on a non-existent column should result in zero results
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'nonexistent_filter' => 'val',
 				'_facets' => [
@@ -1418,9 +1390,7 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);
@@ -1463,15 +1433,14 @@ class MagicFacetHandlerIntegrationTest extends TestCase {
 		]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'firstName' => ['type' => 'terms'],
 				],
 				'_rbac' => false,
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 
 		$this->assertIsArray($facets);

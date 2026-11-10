@@ -10,6 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -125,7 +126,7 @@ class ObjectsControllerMagicListingGoldenTest extends TestCase {
 		$answers = ['none asked' => null, 'empty' => [], 'facets' => ['f' => 1], 'fails' => new RuntimeException('no facets')];
 		foreach ($answers as $name => $answer) {
 			$mapper = $this->createMock(MagicMapperInterface::class);
-			$mapper->method('getSimpleFacetsFromRegisterSchemaTable')->willReturnCallback(function (array $query) use ($answer): array {
+			$mapper->method('getSimpleFacetsFromRegisterSchemaTable')->willReturnCallback(function (RegisterSchema $table, array $query) use ($answer): array {
 				$this->calls[] = ['facets' => $query];
 				if ($answer instanceof RuntimeException) {
 					throw $answer;

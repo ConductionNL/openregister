@@ -547,9 +547,8 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		// The engine path: same table, same row, RBAC disabled.
 		$asEngine = $this->keysOf(
 			$this->mapper->searchObjectsInRegisterSchemaTable(
-				['_multitenancy' => false, '_rbac' => false],
-				$register,
-				$schema
+				new RegisterSchema($register, $schema),
+				['_multitenancy' => false, '_rbac' => false]
 			)
 		);
 
@@ -1206,9 +1205,8 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		// can only be enabled by the grant-forcing (design D3c).
 		$visible = $this->keysOf(
 			$this->mapper->searchObjectsInRegisterSchemaTable(
-				['_multitenancy' => true],
-				$register,
-				$schema
+				new RegisterSchema($register, $schema),
+				['_multitenancy' => true]
 			)
 		);
 
@@ -1407,9 +1405,8 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 */
 	private function readBackByKey(Register $register, Schema $schema): array {
 		$rows = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false, '_rbac' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_multitenancy' => false, '_rbac' => false]
 		);
 
 		$byKey = [];
@@ -1438,9 +1435,8 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	private function visibleKeys(Register $register, Schema $schema): array {
 		return $this->keysOf(
 			$this->mapper->searchObjectsInRegisterSchemaTable(
-				['_multitenancy' => false],
-				$register,
-				$schema
+				new RegisterSchema($register, $schema),
+				['_multitenancy' => false]
 			)
 		);
 	}//end visibleKeys()
