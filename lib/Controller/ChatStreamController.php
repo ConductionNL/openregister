@@ -37,9 +37,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Controller\Support\ChatStreamControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatStreamTurn;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Mcp\Db\Conversation;

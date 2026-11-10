@@ -25,7 +25,6 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Mcp\Db\ConversationScope;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
@@ -38,6 +37,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationScope;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
