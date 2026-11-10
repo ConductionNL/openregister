@@ -27,6 +27,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -59,11 +60,9 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		$calls = [];
 		foreach ([[null, null], [5, null], [null, 9], [5, 9]] as [$reg, $sch]) {
 			$tag = 'reg ' . var_export($reg, true) . ' sch ' . var_export($sch, true);
-			$calls["getStatistics $tag"] = fn (AuditTrailMapper $m) => $m->getStatistics($reg, $sch);
-			$calls["getStatistics exclude $tag"] = fn (AuditTrailMapper $m) => $m->getStatistics(
-				$reg,
-				$sch,
-				[['register' => 1, 'schema' => 2], ['register' => 3], ['schema' => 4]]
+			$calls["getStatistics $tag"] = fn (AuditTrailMapper $m) => $m->statisticsTotals(AuditStatisticsCalls::scope($reg, $sch));
+			$calls["getStatistics exclude $tag"] = fn (AuditTrailMapper $m) => $m->statisticsTotals(
+				AuditStatisticsCalls::scope($reg, $sch, [['register' => 1, 'schema' => 2], ['register' => 3], ['schema' => 4]])
 			);
 			$calls["getActionChartData $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData(null, null, $reg, $sch);
 			$calls["getActionChartData range $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData($from, $till, $reg, $sch);
@@ -149,7 +148,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		$actual['most active without limit'] = preg_grep('/setMaxResults/', $this->queryLog);
 
 		$failing = [
-			'getStatistics' => fn (AuditTrailMapper $m) => $m->getStatistics(),
+			'getStatistics' => fn (AuditTrailMapper $m) => $m->statisticsTotals(AuditStatisticsCalls::scope()),
 			'getActionChartData' => fn (AuditTrailMapper $m) => $m->getActionChartData(),
 			'getDetailedStatistics' => fn (AuditTrailMapper $m) => $m->detailedStatistics(new AuditStatisticsScope()),
 			'getActionCounts' => fn (AuditTrailMapper $m) => $m->getActionCounts(5, 9),
@@ -188,7 +187,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		$this->assertSame([], $this->queryLog);
 
 		$this->queuedRows = [[]];
-		$this->mapper()->getStatistics(null, null, [[]]);
+		$this->mapper()->statisticsTotals(AuditStatisticsCalls::scope(null, null, [[]]));
 		$this->assertSame([], preg_grep('/andWhere/', $this->queryLog));
 
 		$calls = 0;

@@ -136,7 +136,7 @@ class DashboardServiceTest extends TestCase {
 	private function setupStatsMappers(): void {
 		$this->objectMapper->method('getStatistics')
 			->willReturn($this->defaultObjectStats());
-		$this->auditTrailMapper->method('getStatistics')
+		$this->auditTrailMapper->method('statisticsTotals')
 			->willReturn($this->defaultLogStats());
 		$this->webhookLogMapper->method('getStatistics')
 			->willReturn($this->defaultWebhookStats());
@@ -1285,7 +1285,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->objectMapper->method('getStatistics')
 			->willReturn($this->defaultObjectStats());
-		$this->auditTrailMapper->method('getStatistics')
+		$this->auditTrailMapper->method('statisticsTotals')
 			->willReturn($this->defaultLogStats());
 		// Return empty array without 'total' key.
 		$this->webhookLogMapper->method('getStatistics')

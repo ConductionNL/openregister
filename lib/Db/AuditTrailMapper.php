@@ -2139,12 +2139,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end bumpPatchVersion()
 
 	/**
-	 * Get statistics for audit trails with optional filtering
+	 * The number and total size of the audit trails in a scope.
 	 *
-	 * @param int|null $registerId The register ID (null for all registers)
-	 * @param int|null $schemaId The schema ID (null for all schemas)
-	 * @param array $exclude Array of register/schema combinations to exclude,
-	 *                       format: [['register' => id, 'schema' => id], ...]
+	 * @param AuditStatisticsScope $scope The register and schema (null for all) and the combinations to leave out.
 	 *
 	 * @return int[] Array containing total count and size of audit trails:
 	 *               - total: Total number of audit trails
@@ -2152,12 +2149,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @psalm-return array{total: int, size: int}
 	 */
-	public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array {
-		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
-		$scope->exclude = $exclude;
-
+	public function statisticsTotals(AuditStatisticsScope $scope): array {
 		return $this->statistics()->totals(scope: $scope);
-	}//end getStatistics()
+	}//end statisticsTotals()
 
 	/**
 	 * Updates an entity in the database
@@ -2217,7 +2211,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *     deletes: int, reads: int}
 	 */
 	public function detailedStatistics(AuditStatisticsScope $scope): array {
-		$total = $this->getStatistics(registerId: $scope->registerId, schemaId: $scope->schemaId)['total'];
+		$total = $this->statisticsTotals(scope: new AuditStatisticsScope(registerId: $scope->registerId, schemaId: $scope->schemaId))['total'];
 
 		return $this->actionStatistics()->windowedActions(scope: $scope, total: $total);
 	}//end detailedStatistics()
@@ -2630,7 +2624,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * Get audit trail statistics grouped by schema for multiple schemas in a single query
 	 *
 	 * Returns per-schema statistics using GROUP BY instead of one query per schema.
-	 * This replaces N individual getStatistics() calls with 1 query.
+	 * This replaces N individual statisticsTotals() calls with 1 query.
 	 *
 	 * @param int[] $schemaIds Array of schema IDs to get statistics for
 	 *

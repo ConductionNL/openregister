@@ -28,6 +28,7 @@ use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
@@ -2787,7 +2788,7 @@ class SchemasController extends Controller {
 			return self::NO_LOG_STATS;
 		}
 
-		return $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaId);
+		return $this->auditTrailMapper->statisticsTotals(scope: new AuditStatisticsScope(schemaId: $schemaId));
 	}//end auditLogStats()
 
 	/**
