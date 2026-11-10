@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Exception\CasePlanExistsException;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
 use UnexpectedValueException;
 
 /**
@@ -160,13 +161,7 @@ class CaseOpenNode extends CaseNodeBase implements CaseOpenNodeInterface {
 	private function open(CaseStepCall $call, array $definition): array {
 		$target = $call->target;
 		try {
-			$this->steps->plans->createPlan(
-				objectUuid: $target->objectUuid,
-				registerId: $target->registerId,
-				schemaId: $target->schemaId,
-				definition: $definition,
-				uid: $call->uid
-			);
+			$this->steps->plans->createPlan(creation: new CasePlanCreation(anchor: $target, definition: $definition, actor: $call->uid));
 		} catch (CasePlanExistsException) {
 			return ['opened' => false, 'reason' => 'exists'];
 		}

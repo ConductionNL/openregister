@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -36,17 +37,14 @@ interface CasePlanServiceInterface {
 	/**
 	 * Plan items that have not moved, for administrators.
 	 *
-	 * @param string|null $type   The plan-item type filter.
-	 * @param string|null $state  The state filter.
-	 * @param integer     $limit  Page size.
-	 * @param integer     $offset Page offset.
-	 * @param string|null $uid    The reading identity.
+	 * @param ListQuery   $query The page, and the `type` and `state` filters (either null for any).
+	 * @param string|null $uid   The reading identity.
 	 *
 	 * @return array<string, mixed> results, total, limit, offset.
 	 *
 	 * @throws CaseAccessDeniedException For a non-administrator.
 	 */
-	public function findStuck(?string $type, ?string $state, int $limit, int $offset, ?string $uid): array;
+	public function findStuck(ListQuery $query, ?string $uid): array;
 
 	/**
 	 * The plan anchored on an object.
@@ -63,28 +61,14 @@ interface CasePlanServiceInterface {
 	/**
 	 * Create the plan of an object from a definition.
 	 *
-	 * @param string               $objectUuid  The anchoring object.
-	 * @param integer|null         $registerId  Its register.
-	 * @param integer|null         $schemaId    Its schema.
-	 * @param array<string, mixed> $definition  The definition (`settings`, `items`).
-	 * @param string|null          $uid         The creating identity.
-	 * @param string|null          $flowUuid    Definition provenance, when any.
-	 * @param integer|null         $flowVersion Definition provenance, when any.
+	 * @param CasePlanCreation $creation The anchor, the definition, the creating identity and the provenance.
 	 *
 	 * @return array<string, mixed> The plan as getPlan() returns it.
 	 *
 	 * @throws CaseValidationException When the definition is refused, or the object already has a plan.
 	 * @throws CaseAccessDeniedException When the caller may not administer it.
 	 */
-	public function createPlan(
-		string $objectUuid,
-		?int $registerId,
-		?int $schemaId,
-		array $definition,
-		?string $uid,
-		?string $flowUuid = null,
-		?int $flowVersion = null,
-	): array;
+	public function createPlan(CasePlanCreation $creation): array;
 
 	/**
 	 * Run the sentry passes of a plan.
@@ -111,30 +95,26 @@ interface CasePlanServiceInterface {
 	/**
 	 * Attach an ad-hoc item to a plan.
 	 *
-	 * @param string               $objectUuid The anchoring object.
-	 * @param array<string, mixed> $data       The item (`key`, `type`, `name`, `parent` uuid, criteria, candidates, deadlines).
-	 * @param string|null          $uid        The acting identity.
+	 * @param CaseAdHocRequest $request The anchoring object, the item and the acting identity.
 	 *
 	 * @return CaseItem The item after attachment and evaluation.
 	 *
 	 * @throws CaseAccessDeniedException When denied.
 	 * @throws CaseValidationException When the item is refused.
 	 */
-	public function attachAdHoc(string $objectUuid, array $data, ?string $uid): CaseItem;
+	public function attachAdHoc(CaseAdHocRequest $request): CaseItem;
 
 	/**
 	 * Close a finished case with a result.
 	 *
-	 * @param string      $objectUuid The anchoring object.
-	 * @param string      $result     The result.
-	 * @param string|null $uid        The acting identity.
+	 * @param CaseCompletion $completion The anchoring object, the result and the acting identity.
 	 *
 	 * @return array<string, mixed> The plan, plus `result`.
 	 *
 	 * @throws CaseValidationException When the result is outside the set, or the plan is not finished.
 	 * @throws CaseAccessDeniedException When the caller may not administer the plan.
 	 */
-	public function completeCase(string $objectUuid, string $result, ?string $uid): array;
+	public function completeCase(CaseCompletion $completion): array;
 
 	/**
 	 * Delete the plan of an object.
@@ -151,17 +131,14 @@ interface CasePlanServiceInterface {
 	/**
 	 * Move one plan item to another state.
 	 *
-	 * @param string      $itemUuid The item.
-	 * @param string      $to       The target state.
-	 * @param string|null $uid      The acting identity.
-	 * @param string|null $reason   Free text.
+	 * @param CaseItemTransition $transition The item, the target state, the acting identity and the reason.
 	 *
 	 * @return CaseItem The item as persisted.
 	 *
 	 * @throws CaseAccessDeniedException When denied.
 	 * @throws \OCA\OpenRegister\Exception\CaseTransitionException When illegal.
 	 */
-	public function transition(string $itemUuid, string $to, ?string $uid, ?string $reason = null): CaseItem;
+	public function transition(CaseItemTransition $transition): CaseItem;
 
 	/**
 	 * Enable one discretionary item.
@@ -189,13 +166,11 @@ interface CasePlanServiceInterface {
 	/**
 	 * Feed an object event to the plans that listen for it.
 	 *
-	 * @param string               $objectUuid The object.
-	 * @param string               $event      The catalog event id.
-	 * @param array<string, mixed> $payload    The object's data after the change.
+	 * @param CasePlanTrigger $trigger The object, the catalog event id and the object's data after the change.
 	 *
 	 * @return void
 	 */
-	public function onObjectEvent(string $objectUuid, string $event, array $payload): void;
+	public function onObjectEvent(CasePlanTrigger $trigger): void;
 
 	/**
 	 * Advance the item a finished task or run realised.

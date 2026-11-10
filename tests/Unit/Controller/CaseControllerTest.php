@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 
 /**
  * HTTP translation, route contract and structural absences.
@@ -299,9 +300,11 @@ class CaseControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->request->method('getParams')->willReturn(['authorization' => ['me']]);
 		$this->plans->expects($this->once())->method('attachAdHoc')->with(
-			'o',
-			$this->callback(static fn (array $data): bool => $data['authorization'] === ['me'] && $data['required'] === false && $data['key'] === 'k' && array_key_exists('name', $data) === false),
-			'alice'
+			$this->callback(
+				static fn (CaseAdHocRequest $request): bool => $request->objectUuid === 'o'
+					&& $request->data['authorization'] === ['me'] && $request->data['required'] === false && $request->data['key'] === 'k'
+					&& array_key_exists('name', $request->data) === false && $request->actor === 'alice'
+			)
 		)->willThrowException(new CaseValidationException('An ad-hoc item cannot declare its own authorization'));
 
 		$response = $this->controller()->attach('o', 'k', 'humanTask', null, null, 'intake', null, null, null, null, null, null, null, false);
