@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -236,7 +238,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		$this->assertNotEmpty(actual: $result['conditions']);
@@ -258,7 +260,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		$this->assertNotEmpty(actual: $result['conditions']);
@@ -281,7 +283,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		// Owner-condition is always added for authenticated users; the public
@@ -306,7 +308,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		// The public-match is dropped, because alice does not qualify for
@@ -362,7 +364,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertGrantsEveryNonPrivateRow(result: $result);
 
@@ -383,7 +385,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse(condition: $result['bypass']);
 		// No unconditional public bypass for alice. Asserted on the conditions
@@ -408,7 +410,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertGrantsEveryNonPrivateRow(result: $result);
 
@@ -430,7 +432,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertGrantsEveryNonPrivateRow(result: $result);
 
@@ -450,7 +452,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 			]
 		);
 
-		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertTrue(condition: $result['bypass']);
 
@@ -483,7 +485,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 		// including the owner condition — via andWhere(orX(...)).
 		$qb->expects($this->atLeastOnce())->method('andWhere');
 
-		$this->handler->applyRbacFilters(qb: $qb, schema: $schema, action: 'read');
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $schema))->forAction('read'));
 
 	}//end testApplyRbacFiltersAuthInheritFalseDeniesAccess()
 

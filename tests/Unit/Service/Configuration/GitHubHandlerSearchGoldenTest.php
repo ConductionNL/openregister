@@ -33,6 +33,7 @@ use OCP\ICacheFactory;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 
 /**
  * Runs searchConfigurations() over a fixed corpus and compares the result
@@ -41,7 +42,7 @@ use Psr\Log\LoggerInterface;
  * regenerate the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
- * @uses   \OCA\OpenRegister\Service\Configuration\GitHubFileLocation
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation
  */
 class GitHubHandlerSearchGoldenTest extends TestCase {
 
@@ -251,7 +252,7 @@ class GitHubHandlerSearchGoldenTest extends TestCase {
 		);
 
 		try {
-			$out = ['returned' => $handler->searchConfigurations($search, $page, $perPage)];
+			$out = ['returned' => $handler->searchConfigurations(search: $search, page: new RepositorySearchPage(page: $page, perPage: $perPage))];
 		} catch (\Throwable $e) {
 			$out = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}

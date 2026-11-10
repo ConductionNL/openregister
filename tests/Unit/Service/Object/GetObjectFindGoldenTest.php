@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -88,7 +89,10 @@ class GetObjectFindGoldenTest extends TestCase {
 					return 'live';
 				}
 
-				public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity {
+				public function find(SourcedTable $source, string $id): ?ObjectEntity {
+					$register = $source->table->register;
+					$schema   = $source->table->schema;
+					$config   = $source->config;
 					$this->calls[] = ['source', $register->getId(), $schema->getId(), $id, $config];
 					if ($id === 'missing') {
 						return null;
@@ -99,7 +103,7 @@ class GetObjectFindGoldenTest extends TestCase {
 					return $row;
 				}
 
-				public function count(Register $register, Schema $schema, array $query=[], array $config=[]): int {
+				public function count(SourcedTable $source, array $query = []): int {
 					return 0;
 				}
 
@@ -107,7 +111,7 @@ class GetObjectFindGoldenTest extends TestCase {
 					return $this->enabled;
 				}
 
-				public function findAll(Register $register, Schema $schema, array $query=[], array $config=[]): array {
+				public function findAll(SourcedTable $source, array $query = []): array {
 					return [];
 				}
 			};

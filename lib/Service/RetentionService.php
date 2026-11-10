@@ -51,6 +51,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ActionDateFollower;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\CategoryDeclaration;
 use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
@@ -162,7 +163,7 @@ class RetentionService implements RetentionServiceInterface {
 		// The schema's category, unless this record names its own through the
 		// property the schema declares for that (DECISIONS row 48).
 		$classification = (new ClassificationOverride())->effective(
-			archive: $archiveConfig,
+			declaration: new CategoryDeclaration(archive: $archiveConfig),
 			data: ($object->getObject() ?? [])
 		);
 
@@ -314,7 +315,8 @@ class RetentionService implements RetentionServiceInterface {
 
 		$this->guardClassificationOverride(schema: $update->schema, data: $data);
 
-		return $this->rederiveCategory(update: $update, effective: $override->effective(archive: $archive, data: $data, configuration: ($update->schema->getConfiguration() ?? [])));
+		$declaration = new CategoryDeclaration(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
+		return $this->rederiveCategory(update: $update, effective: $override->effective(declaration: $declaration, data: $data));
 	}//end applyClassification()
 
 	/**
@@ -505,21 +507,6 @@ class RetentionService implements RetentionServiceInterface {
 	}//end validateNotImmutable()
 
 	/**
-	 * Place a legal hold on an object.
-	 *
-	 * @param ObjectEntity $object   The object to place hold on
-	 * @param string       $reason   The reason for the legal hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
-	 *
-	 * @return ObjectEntity The object with legal hold applied
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function placeLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->placeHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
-	}//end placeLegalHold()
-
-	/**
 	 * Place a legal hold on an object, as ordered.
 	 *
 	 * @param ObjectEntity $object The object to place the hold on
@@ -540,21 +527,6 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $object;
 	}//end placeHold()
-
-	/**
-	 * Release a legal hold on an object.
-	 *
-	 * @param ObjectEntity $object   The object to release hold from
-	 * @param string       $reason   The reason for releasing the hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
-	 *
-	 * @return ObjectEntity The object with legal hold released
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->releaseHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
-	}//end releaseLegalHold()
 
 	/**
 	 * Release a legal hold on an object, as ordered.

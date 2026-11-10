@@ -18,6 +18,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Coverage tests for ConfigurationController — targets uncovered branches.
@@ -235,7 +236,7 @@ class ConfigurationControllerCoverageTest extends TestCase {
 		]);
 		$this->githubHandler->expects($this->once())
 			->method('listConfigurationFiles')
-			->with('conduction', 'openregister', 'develop')
+			->with(new GitHubFileLocation(owner: 'conduction', repo: 'openregister', path: '', branch: 'develop'))
 			->willReturn([['path' => '.openregister/config.json']]);
 
 		$result = $this->controller->getGitHubConfigurations();

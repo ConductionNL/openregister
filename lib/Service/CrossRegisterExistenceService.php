@@ -161,20 +161,28 @@ class CrossRegisterExistenceService {
 			);
 		}
 
+		return $this->searchedAnswer(target: $target, probe: $probe);
+	}//end one()
+
+	/**
+	 * The answer to a complete probe: what its search found, revealing only the fields the caller may read.
+	 *
+	 * @param array{register:string,schema:string} $target The trimmed register and schema.
+	 * @param array<string,mixed>                  $probe  The probe.
+	 *
+	 * @return array<string,mixed> The answer.
+	 *
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 */
+	private function searchedAnswer(array $target, array $probe): array {
 		[$allowed, $refusedFields] = $this->narrowReveal(
 			schema: $target['schema'],
 			reveal: $this->wantedFields(probe: $probe)
 		);
 
-		$found = $this->search(target: $target, filters: $filters);
+		$found = $this->search(target: $target, filters: ($probe['filters'] ?? []));
 		if ($found === null) {
-			return $this->answer(
-				target: $target,
-				outcome: [
-					'refusedFields' => $refusedFields,
-					'refused' => 'This probe was refused. It is not an answer about whether a row exists.',
-				],
-			);
+			return $this->refusedSearchAnswer(target: $target, refusedFields: $refusedFields);
 		}
 
 		$rows = $this->rowsOf(value: $found['value']);
@@ -183,7 +191,27 @@ class CrossRegisterExistenceService {
 			target: $target,
 			outcome: $this->matched(rows: $rows, fields: $allowed) + ['refusedFields' => $refusedFields],
 		);
-	}//end one()
+	}//end searchedAnswer()
+
+	/**
+	 * The answer to a probe whose search was refused: it says nothing about whether a row exists.
+	 *
+	 * @param array{register:string,schema:string} $target        The trimmed register and schema.
+	 * @param array<int,string>                    $refusedFields The fields the caller may not have revealed.
+	 *
+	 * @return array<string,mixed> The answer.
+	 *
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 */
+	private function refusedSearchAnswer(array $target, array $refusedFields): array {
+		return $this->answer(
+			target: $target,
+			outcome: [
+				'refusedFields' => $refusedFields,
+				'refused' => 'This probe was refused. It is not an answer about whether a row exists.',
+			],
+		);
+	}//end refusedSearchAnswer()
 
 	/**
 	 * Whether a probe lacks a register, a schema or a filter.

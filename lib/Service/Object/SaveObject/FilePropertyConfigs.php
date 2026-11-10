@@ -112,8 +112,7 @@ final class FilePropertyConfigs {
 	 * @return void
 	 */
 	private function warnAutoPublishIgnored(Schema $schema): void {
-		$this->log->write(
-			level: 'warning',
+		$this->log->warning(
 			message: "[FilePropertyHandler] Schema config key 'autoPublish' is deprecated and ignored; "
 				. "rename it to 'autoShare' to keep auto-sharing uploaded files.",
 			context: ['schemaId' => $schema->getId()]

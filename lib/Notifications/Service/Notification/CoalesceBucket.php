@@ -51,6 +51,7 @@ final class CoalesceBucket {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function key(): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return 'coalesce:'.sha1($this->ruleId.'|'.$this->recipient);
 	}//end key()
 

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientRes
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
@@ -219,8 +220,8 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$policy = $this->createMock(NotificationChannelPolicy::class);
 		$policy->method('isChannelEnabled')->willReturn($enabled);
 		$templating = $this->createMock(NotificationTemplating::class);
-		$templating->method('interpolate')->willReturnCallback(
-			fn (string $template, array $data): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($data[$m[1]] ?? ''), $template)
+		$templating->method('render')->willReturnCallback(
+			fn (string $template, PlaceholderValues $values): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($values->data[$m[1]] ?? ''), $template)
 		);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturn($bound);
@@ -316,9 +317,9 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 			$this->record(call: 'email.send', args: [$uid, $subject, $body]);
 			return self::outcome(recipient: $uid);
 		});
-		$sender->method('sendToAddress')->willReturnCallback(function (string $address, string $displayName, string $subject, string $body): string {
-			$this->record(call: 'email.sendToAddress', args: [$address, $displayName, $subject, $body]);
-			return self::outcome(recipient: $address);
+		$sender->method('sendMailTo')->willReturnCallback(function (\OCA\OpenRegister\Notifications\Service\Notification\MailAddressee $to, \OCA\OpenRegister\Notifications\Service\Notification\MailContent $mail): string {
+			$this->record(call: 'email.sendToAddress', args: [$to->address, $to->displayName, $mail->subject, $mail->body]);
+			return self::outcome(recipient: $to->address);
 		});
 		return $sender;
 	}//end emailSender()

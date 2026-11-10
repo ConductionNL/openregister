@@ -29,16 +29,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaDeletionStores;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -247,7 +251,7 @@ class SchemaDeletionServiceTest extends TestCase {
 	public function testCascadeOnSchemaWithZeroObjects(): void {
 		$this->stubOneTableWith([]);
 
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 		$this->schemaMapper->expects($this->once())->method('delete')->with($this->schema);
 		$this->magicMapper->expects($this->once())->method('dropTable')->with(self::TABLE_NAME);
 
@@ -331,8 +335,8 @@ class SchemaDeletionServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->exactly(2))
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $object, string $action, array $context) use (&$callOrder): AuditTrail {
 					$callOrder[] = 'audit:' . $object->getUuid();
 
@@ -348,7 +352,7 @@ class SchemaDeletionServiceTest extends TestCase {
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$this->magicMapper
 			->method('deleteObjectsBySchema')
@@ -391,7 +395,8 @@ class SchemaDeletionServiceTest extends TestCase {
 			->expects($this->atLeastOnce())
 			->method('findAllInRegisterSchemaTable')
 			->willReturnCallback(
-				function (Register $register, Schema $schema, ?int $limit, ?int $offset, ?array $filters, array $sort = []): array {
+				function (RegisterSchema $table, ListQuery $listing): array {
+					[$register, $schema, $limit, $offset, $filters, $sort] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 					$this->assertTrue($filters['_includeDeleted']);
 					$this->assertFalse($filters['_rbac']);
 					$this->assertFalse($filters['_multitenancy']);
@@ -413,14 +418,11 @@ class SchemaDeletionServiceTest extends TestCase {
 	public function testBulkDeleteObjectsBySchemaReturnsCountAndUuids(): void {
 		$this->stubOneTableWith([$this->makeObject('uuid-1'), $this->makeObject('uuid-2')]);
 
-		$this->auditTrailMapper->expects($this->exactly(2))->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->exactly(2))->method('recordObjectEvent');
 		$this->schemaMapper->expects($this->never())->method('delete');
 		$this->magicMapper->expects($this->never())->method('dropTable');
 
-		$result = $this->service->deleteObjectsBySchema(
-			registerId: self::REGISTER_ID,
-			schemaId: self::SCHEMA_ID
-		);
+		$result = $this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID));
 
 		$this->assertSame(2, $result['deleted_count']);
 		$this->assertSame(['uuid-1', 'uuid-2'], $result['deleted_uuids']);
@@ -434,10 +436,7 @@ class SchemaDeletionServiceTest extends TestCase {
 	public function testBulkDeleteOnSchemaWithNoObjects(): void {
 		$this->stubOneTableWith([]);
 
-		$result = $this->service->deleteObjectsBySchema(
-			registerId: self::REGISTER_ID,
-			schemaId: self::SCHEMA_ID
-		);
+		$result = $this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID));
 
 		$this->assertSame(0, $result['deleted_count']);
 		$this->assertSame([], $result['deleted_uuids']);
@@ -453,12 +452,9 @@ class SchemaDeletionServiceTest extends TestCase {
 		$this->magicMapper->method('tableExistsForRegisterSchema')->willReturn(false);
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
-		$result = $this->service->deleteObjectsBySchema(
-			registerId: self::REGISTER_ID,
-			schemaId: self::SCHEMA_ID
-		);
+		$result = $this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID));
 
 		$this->assertSame(0, $result['deleted_count']);
 

@@ -46,6 +46,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 
 final class BulkJobsControllerTest extends TestCase {
 
@@ -214,7 +215,7 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->jobMapper->expects($this->once())
 			->method('findByActor')
 			->willReturn([$this->job()]);
-		$this->jobMapper->expects($this->never())->method('findAllJobs');
+		$this->jobMapper->expects($this->never())->method('findJobs');
 
 		$data = $this->controller()->index()->getData();
 
@@ -226,7 +227,7 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->signIn('root', true);
 		$this->params['all'] = 'true';
 		$this->jobMapper->expects($this->once())
-			->method('findAllJobs')
+			->method('findJobs')
 			->willReturn([$this->job()]);
 
 		$this->assertCount(1, $this->controller()->index()->getData()['results']);
@@ -318,7 +319,7 @@ final class BulkJobsControllerTest extends TestCase {
 	public function testAMalformedCreateAnswersFourHundred(): void {
 		$this->signIn('coordinator');
 		$this->params['action'] = 'openregister:assign';
-		$this->service->method('create')->willThrowException(
+		$this->service->method('createFromRequest')->willThrowException(
 			new \InvalidArgumentException('A bulk job needs both a register and a schema.')
 		);
 
@@ -433,8 +434,8 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->reversal->expects($this->once())
 			->method('reverse')
 			->willReturnCallback(
-				function (BulkJob $job, string $actorUid, ?string $justification) use (&$seen): BulkJob {
-					$seen = ['actor' => $actorUid, 'reason' => $justification];
+				function (ReversalRequest $request) use (&$seen): BulkJob {
+					$seen = ['actor' => $request->actorUid, 'reason' => $request->justification];
 
 					return $this->job('fatima');
 				}
