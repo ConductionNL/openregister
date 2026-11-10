@@ -44,37 +44,4 @@ final class FlowNodeCall {
 		public readonly array $context=[],
 	) {
 	}//end __construct()
-
-	/**
-	 * The same call with other input items.
-	 *
-	 * @param array $items The input items.
-	 *
-	 * @return self The new call.
-	 */
-	public function withItems(array $items): self {
-		return new self(items: $items, config: $this->config, context: $this->context);
-	}//end withItems()
-
-	/**
-	 * The same call with another configuration.
-	 *
-	 * @param array $config The step configuration.
-	 *
-	 * @return self The new call.
-	 */
-	public function withConfig(array $config): self {
-		return new self(items: $this->items, config: $config, context: $this->context);
-	}//end withConfig()
-
-	/**
-	 * The same call with another run context.
-	 *
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return self The new call.
-	 */
-	public function withContext(array $context): self {
-		return new self(items: $this->items, config: $this->config, context: $context);
-	}//end withContext()
 }//end class
