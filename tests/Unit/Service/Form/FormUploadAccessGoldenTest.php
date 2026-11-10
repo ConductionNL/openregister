@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
@@ -201,7 +202,7 @@ class FormUploadAccessGoldenTest extends TestCase {
 			$schema->setRequired([]);
 			$schema->setAuthorization($authorization);
 
-			return $validator->validate(mapping: ['fields' => []], schema: $schema, options: ['audience' => $audience]) === [];
+			return $validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema, audience: $audience)) === [];
 		};
 
 		$this->assertTrue($open([], 'public'));
