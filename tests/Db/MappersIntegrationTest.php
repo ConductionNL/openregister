@@ -14,6 +14,7 @@
 namespace OCA\OpenRegister\Tests\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -735,8 +736,7 @@ class MappersIntegrationTest extends TestCase {
 		try {
 			$updated = $this->configurationMapper->updateSyncStatus(
 				$config->getId(),
-				'success',
-				new DateTime()
+				new ConfigurationSyncResult('success', new DateTime())
 			);
 			$this->assertSame('success', $updated->getSyncStatus());
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
