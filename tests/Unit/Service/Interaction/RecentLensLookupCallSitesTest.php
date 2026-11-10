@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
@@ -139,8 +140,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		);
 		$accessor->load(caseUuid: 'case-1');
 		WriteCause::runAs(
-			cause: WriteCause::SCHEDULED,
-			run: 'sweep-1',
+			frame: new CauseFrame(cause: WriteCause::SCHEDULED, run: 'sweep-1'),
 			operation: static fn () => $accessor->load(caseUuid: 'case-1')
 		);
 
