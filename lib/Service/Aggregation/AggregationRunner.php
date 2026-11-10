@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -125,6 +126,27 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private const JOIN_SELECT_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
 
 	/**
+	 * Magic-table mapper used for the PHP fallback path.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Register loader.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema loader.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * The shared register-scoped schema resolver.
 	 *
 	 * Built here rather than injected: it is a stateless collaborator over the
@@ -159,9 +181,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $magicMapper Magic-table mapper used for the PHP fallback path.
-	 * @param RegisterMapperInterface $registerMapper Register loader.
-	 * @param SchemaMapperInterface $schemaMapper Schema loader.
+	 * @param SchemaCatalogInterface $catalog The register and schema loaders and the magic-table mapper (PHP fallback path).
 	 * @param PlaceholderResolverInterface $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
 	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
@@ -188,9 +208,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly PlaceholderResolverInterface $placeholders,
 		private readonly IDBConnection $db,
 		private readonly AggregationCacheInterface $cache,
@@ -209,9 +227,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 		private readonly ?PropertyRbacHandler $propertyRbac = null,
 		private readonly ?ExplicitReveal $explicitReveal = null,
 	) {
+		$this->magicMapper    = $catalog->tables();
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
 		$this->scopedResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper
 		);
 		$this->expressions = new MetricExpressionEvaluator();
 	}//end __construct()
