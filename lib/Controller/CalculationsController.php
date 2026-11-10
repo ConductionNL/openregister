@@ -26,12 +26,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
 use OCP\AppFramework\Controller;
@@ -59,40 +59,36 @@ class CalculationsController extends Controller {
 	private readonly CalculationTrialServiceInterface $trials;
 
 	/**
-	 * Register lookup, scoped to the caller.
+	 * Register and schema lookups, each scoped to the caller by RBAC and tenancy.
 	 *
-	 * @var RegisterMapperInterface
+	 * @var SchemaCatalogInterface
 	 */
-	private readonly RegisterMapperInterface $registerMapper;
+	private readonly SchemaCatalogInterface $schemaCatalog;
 
 	/**
-	 * Schema lookup, scoped to the caller.
+	 * Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
-	 * @var SchemaMapperInterface
+	 * @var MagicTableRowReaderInterface
 	 */
-	private readonly SchemaMapperInterface $schemaMapper;
+	private readonly MagicTableRowReaderInterface $objectMapper;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
+	 * @param IRequest                       $request  Request.
 	 * @param CalculationsControllerServices $services The calculations controller services.
-	 * @param MagicTableRowReaderInterface $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		CalculationsControllerServices $services,
-		private readonly MagicTableRowReaderInterface $objectMapper,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->catalogue = $services->catalogue;
 		$this->trials = $services->trials;
-		$this->registerMapper = $services->registerMapper;
-		$this->schemaMapper = $services->schemaMapper;
+		$this->schemaCatalog = $services->schemaCatalog;
+		$this->objectMapper = $services->objectMapper;
 
 	}//end __construct()
 
@@ -233,8 +229,8 @@ class CalculationsController extends Controller {
 	 * @throws Throwable When the register, schema or object is absent or not readable by the caller.
 	 */
 	private function readableObject(array $target): array {
-		$register = $this->registerMapper->find($target['register'], _rbac: true, _multitenancy: true);
-		$schema = $this->schemaMapper->find($target['schema'], _rbac: true, _multitenancy: true);
+		$register = $this->schemaCatalog->registers()->find($target['register'], _rbac: true, _multitenancy: true);
+		$schema = $this->schemaCatalog->schemas()->find($target['schema'], _rbac: true, _multitenancy: true);
 		$object = $this->objectMapper->findInRegisterSchemaTable(
 			identifier: $target['objectId'],
 			register: $register,
