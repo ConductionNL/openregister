@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IRequest;
 use Throwable;
 
@@ -43,15 +42,13 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Reads the schema a coded property is declared on.
-	 * @param CodedPropertyDeclarationFactory $declarationFactory Builds a declaration off a schema property.
-	 * @param IRequest $request Current request (the unsaved path reads its knobs off the query).
+	 * @param CodedSchemaTables $tables  Reads the schema a coded property is declared on and builds its declaration.
+	 * @param IRequest          $request Current request (the unsaved path reads its knobs off the query).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly CodedPropertyDeclarationFactory $declarationFactory,
+		private readonly CodedSchemaTables $tables,
 		private readonly IRequest $request,
 	) {
 	}//end __construct()
@@ -76,13 +73,13 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
 		if ($schemaRef !== '' && $property !== '') {
 			try {
-				$schema = $this->schemaMapper->find(id: $schemaRef);
+				$schema = $this->tables->schemas->find(id: $schemaRef);
 			} catch (Throwable $missing) {
 				return null;
 			}
 
 			$properties = ($schema->getProperties() ?? []);
-			$declaration = $this->declarationFactory->fromProperty(property: ($properties[$property] ?? null));
+			$declaration = $this->tables->declarations->fromProperty(property: ($properties[$property] ?? null));
 			if ($declaration !== null) {
 				return $declaration;
 			}
@@ -92,7 +89,7 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 			return null;
 		}
 
-		return $this->declarationFactory->fromProperty(
+		return $this->tables->declarations->fromProperty(
 			property: [
 				CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
 			]

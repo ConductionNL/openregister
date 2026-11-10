@@ -93,7 +93,7 @@ class CodedValueGuardGoldenTest extends TestCase {
 			}
 		);
 
-		$this->guard = new CodedValueGuard($concepts, $lifecycle, new ConceptHierarchy($lifecycle), new CodedPropertyDeclarationFactory());
+		$this->guard = new CodedValueGuard(new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess($concepts, new ConceptHierarchy($lifecycle), $lifecycle), new CodedPropertyDeclarationFactory());
 	}//end setUp()
 
 	/**

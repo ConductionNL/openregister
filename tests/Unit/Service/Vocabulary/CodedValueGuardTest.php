@@ -124,17 +124,12 @@ class CodedValueGuardTest extends TestCase {
 			}
 		);
 
+		$scheme = new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess(concepts: $this->concepts, hierarchy: $hierarchy, lifecycle: $lifecycle);
 		$this->guard = new CodedValueGuard(
-			concepts: $this->concepts,
-			lifecycle: $lifecycle,
-			hierarchy: $hierarchy,
+			scheme: $scheme,
 			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
-		$this->options = new CodedOptionsBuilder(
-			concepts: $this->concepts,
-			hierarchy: $hierarchy,
-			lifecycle: $lifecycle
-		);
+		$this->options = new CodedOptionsBuilder(scheme: $scheme);
 	}//end setUp()
 
 	/**
@@ -309,9 +304,7 @@ class CodedValueGuardTest extends TestCase {
 
 		$lifecycle = new ConceptLifecycle();
 		$guard = new CodedValueGuard(
-			concepts: $concepts,
-			lifecycle: $lifecycle,
-			hierarchy: new ConceptHierarchy(lifecycle: $lifecycle),
+			scheme: new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess(concepts: $concepts, hierarchy: new ConceptHierarchy(lifecycle: $lifecycle), lifecycle: $lifecycle),
 			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
 		);
 

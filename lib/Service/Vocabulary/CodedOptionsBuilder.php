@@ -48,14 +48,10 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads the scheme's concepts.
-	 * @param ConceptHierarchy $hierarchy Walks broader and narrower.
-	 * @param ConceptLifecycle $lifecycle Answers the validity window.
+	 * @param ConceptSchemeAccess $scheme Reads the scheme's concepts, hierarchy and validity windows.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptHierarchy $hierarchy,
-		private readonly ConceptLifecycle $lifecycle,
+		private readonly ConceptSchemeAccess $scheme,
 	) {
 
 	}//end __construct()
@@ -147,7 +143,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	 * @return array<string,mixed> The root's tree node.
 	 */
 	private function subtree(CodedOptionQuery $query, string $uri): array {
-		return $this->hierarchy->tree(
+		return $this->scheme->hierarchy->tree(
 			rootUri: $uri,
 			conceptsByUri: $query->conceptsByUri,
 			reading: $query->reading,
@@ -165,7 +161,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	 */
 	private function query(CodedPropertyDeclaration $declaration, array $scope): ?CodedOptionQuery {
 		$instant = ($scope[2] ?? new DateTimeImmutable());
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $declaration->scheme);
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $declaration->scheme);
 		if ($conceptsByUri === []) {
 			return null;
 		}
@@ -191,7 +187,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 			return array_keys($query->conceptsByUri);
 		}
 
-		return $this->hierarchy->branchUris(
+		return $this->scheme->hierarchy->branchUris(
 			rootUri: $branch,
 			conceptsByUri: $query->conceptsByUri,
 			maxDepth: $query->declaration->maxDepth
@@ -247,7 +243,8 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	private function isOffered(CodedOptionQuery $query, string $uri): bool {
 		$declaration = $query->declaration;
 		$concept = $query->concept(uri: $uri);
-		if ($this->lifecycle->isOfferable(concept: $concept, at: $query->reading->instant, allowDeprecated: $declaration->allowDeprecated) === false) {
+		$lifecycle = $this->scheme->lifecycle;
+		if ($lifecycle->isOfferable(concept: $concept, at: $query->reading->instant, allowDeprecated: $declaration->allowDeprecated) === false) {
 			return false;
 		}
 
@@ -255,7 +252,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 			return false;
 		}
 
-		return $declaration->leafOnly === false || $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri) === true;
+		return $declaration->leafOnly === false || $this->scheme->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri) === true;
 	}//end isOffered()
 
 	/**
@@ -292,10 +289,10 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 
 		return [
 			'uri' => $uri,
-			'label' => $this->hierarchy->labelOf(concept: $concept, language: $query->reading->language),
+			'label' => $this->scheme->hierarchy->labelOf(concept: $concept, language: $query->reading->language),
 			'notation' => ($concept['notation'] ?? null),
-			'weight' => $this->lifecycle->weightOf(concept: $concept),
-			'leaf' => $this->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri),
+			'weight' => $this->scheme->lifecycle->weightOf(concept: $concept),
+			'leaf' => $this->scheme->hierarchy->isLeaf(uri: $uri, conceptsByUri: $query->conceptsByUri),
 			'fields' => ($concept[ConceptLifecycle::FIELD_FIELDS] ?? null),
 		];
 	}//end optionFields()

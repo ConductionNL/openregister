@@ -54,18 +54,14 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads schemes and their concepts.
-	 * @param ConceptLifecycle $lifecycle Answers window, group and weight.
-	 * @param ConceptHierarchy $hierarchy Walks broader/narrower.
+	 * @param ConceptSchemeAccess             $scheme             Reads schemes, their concepts, hierarchy and lifecycle.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptLifecycle $lifecycle,
-		ConceptHierarchy $hierarchy,
+		private readonly ConceptSchemeAccess $scheme,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
-		$this->refusals = new CodedValueRefusals(lifecycle: $lifecycle, hierarchy: $hierarchy);
+		$this->refusals = new CodedValueRefusals(lifecycle: $scheme->lifecycle, hierarchy: $scheme->hierarchy);
 	}//end __construct()
 
 	/**
@@ -171,7 +167,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 			return null;
 		}
 
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $subject->declaration->scheme);
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $subject->declaration->scheme);
 		if ($conceptsByUri === []) {
 			// An unreadable or unseeded scheme refuses nothing: a
 			// vocabulary outage must not become a write outage.
@@ -224,7 +220,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 		foreach ($this->declarationsOf(schema: $schema) as $property => $declaration) {
 			if ($declaration->scoreProperty !== null && array_key_exists($property, $object) === true) {
 				$held = $this->heldConcepts(declaration: $declaration, value: $object[$property]);
-				$scores[$declaration->scoreProperty] = $this->lifecycle->rollUpWeights(concepts: $held);
+				$scores[$declaration->scoreProperty] = $this->scheme->lifecycle->rollUpWeights(concepts: $held);
 			}
 		}
 
@@ -260,7 +256,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * @return array<string,mixed>|null The concept, or null when the scheme does not hold it.
 	 */
 	private function resolve(CodedPropertyDeclaration $declaration, string $value): ?array {
-		return $this->concepts->resolve(value: $value, schemeUri: $declaration->scheme, store: $declaration->store);
+		return $this->scheme->concepts->resolve(value: $value, schemeUri: $declaration->scheme, store: $declaration->store);
 	}//end resolve()
 
 	/**
