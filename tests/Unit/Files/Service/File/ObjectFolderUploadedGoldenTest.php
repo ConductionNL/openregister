@@ -24,8 +24,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Files\Service\File;
 
+use InvalidArgumentException;
+use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
+use OCA\OpenRegister\Exception\ObjectFolderConflictException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
+use OCP\Files\NotFoundException;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -80,4 +88,38 @@ final class ObjectFolderUploadedGoldenTest extends TestCase {
 			$this->answer(['stored' => [], 'rejected' => []], 1)
 		);
 	}//end testAnswers()
+
+	/**
+	 * Every failure answer: refusals, bad requests, conflicts, and the logged 500.
+	 *
+	 * @return void
+	 */
+	public function testFailureAnswers(): void {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text): string => 'T:'.$text);
+		$logged = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				$logged[] = [$message, $context['exception']->getMessage()];
+			}
+		);
+		$responder = new ObjectFolderResponder($l10n, $logger);
+		$answer = static function (\Throwable $e) use ($responder): array {
+			$response = $responder->failure($e);
+			return [$response->getStatus(), $response->getData()];
+		};
+
+		self::assertSame([404, ['error' => 'T:Object not found']], $answer(new ObjectFileAccessDeniedException(ObjectFileAccessDeniedException::NOT_READABLE)));
+		self::assertSame([403, ['error' => 'T:You do not have access to this object']], $answer(new ObjectFileAccessDeniedException(ObjectFileAccessDeniedException::NOT_CHANGEABLE)));
+		self::assertSame([400, ['error' => 'T:The path is not a folder of this object']], $answer(new InvalidArgumentException('x', ObjectFolderBrowser::BAD_PATH)));
+		self::assertSame([400, ['error' => 'T:This name cannot be used']], $answer(new InvalidArgumentException('x', 7)));
+		self::assertSame([404, ['error' => 'T:Not found']], $answer(new NotFoundException('x')));
+		$frozen = new ObjectStateWriteException('Frozen');
+		self::assertSame([409, $frozen->toResponseBody()], $answer($frozen));
+		self::assertSame([409, ['error' => 'T:A file or folder with that name is already here']], $answer(new ObjectFolderConflictException('x', ObjectFolderBrowser::TAKEN)));
+		self::assertSame([409, ['error' => 'T:A file in this folder is locked by someone else']], $answer(new ObjectFolderConflictException('x', ObjectFolderBrowser::LOCKED)));
+		self::assertSame([500, ['error' => 'T:Internal server error']], $answer(new RuntimeException('disk on fire')));
+		self::assertSame([['[ObjectFolder] disk on fire', 'disk on fire']], $logged);
+	}//end testFailureAnswers()
 }//end class
