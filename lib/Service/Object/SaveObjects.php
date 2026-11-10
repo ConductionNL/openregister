@@ -3223,6 +3223,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function dispatchesChunkEvents(bool $events): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $events === true && $this->reporting->eventDispatcher !== null && SystemOperationContext::isActive() === false;
 	}//end dispatchesChunkEvents()
 

@@ -4554,6 +4554,7 @@ class ImportHandler {
 		//
 		// Scoped to seeding alone. Schemas, registers and mappings are imported
 		// outside this call and are unaffected, as is every ordinary save.
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		SystemOperationContext::run(
 			function () use ($seed, $configuration): void {
 				$this->importSeedDataObjects(seed: $seed, configuration: $configuration);
