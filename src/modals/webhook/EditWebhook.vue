@@ -812,10 +812,7 @@ export default {
 				)
 				this.preview = response.data
 			} catch {
-				this.previewError = t(
-					'openregister',
-					'Could not preview the payload',
-				)
+				this.previewError = previewFailedText()
 			} finally {
 				this.previewing = false
 			}
@@ -1032,6 +1029,15 @@ function savedText(isUpdate) {
 	return isUpdate
 		? t('openregister', 'Webhook updated successfully')
 		: t('openregister', 'Webhook created successfully')
+}
+
+/**
+ * What the form says when the payload cannot be previewed.
+ *
+ * @return {string} The message
+ */
+function previewFailedText() {
+	return t('openregister', 'Could not preview the payload')
 }
 
 /**
