@@ -103,7 +103,7 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			);
 
 		$this->handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: null),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->eventDispatcher, auditTrailMapper: $this->auditTrailMapper),
 			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null)
