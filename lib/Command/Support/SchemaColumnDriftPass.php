@@ -101,13 +101,27 @@ final class SchemaColumnDriftPass {
 		$counts['columns'] = count($drift['missing']) + count($drift['narrow']);
 		$this->report(drift: $drift);
 		if ($this->apply === true) {
-			$repaired = $this->repair(drift: $drift);
-			$counts['repaired'] = (int)$repaired;
-			$counts['failed'] = (int)($repaired === false);
+			$counts = $this->repairAndCount(drift: $drift, counts: $counts);
 		}
 
 		return $counts;
 	}//end reconcile()
+
+	/**
+	 * Repair one table's drift and record whether it was repaired or failed.
+	 *
+	 * @param array              $drift  The drift.
+	 * @param array<string, int> $counts The table's counts so far.
+	 *
+	 * @return array<string, int> The counts with `repaired` and `failed` set.
+	 */
+	private function repairAndCount(array $drift, array $counts): array {
+		$repaired = $this->repair(drift: $drift);
+		$counts['repaired'] = (int)$repaired;
+		$counts['failed'] = (int)($repaired === false);
+
+		return $counts;
+	}//end repairAndCount()
 
 	/**
 	 * Print the closing line of the command and pick its exit code.
