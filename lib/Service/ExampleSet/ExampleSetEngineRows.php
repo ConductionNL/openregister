@@ -166,14 +166,9 @@ abstract class ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
 	protected function dateRefusal(string $field, mixed $value, array $context, bool $isEnd): string {
-		if ($this->isBlank(value: $value) === true) {
-			return $field.' is not a date';
-		}
-
-		try {
-			$moment = new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return $field.' "'.$value.'" is not a date';
+		$moment = $this->momentOf(value: $value);
+		if ($moment === null) {
+			return $this->notADate(field: $field, value: $value);
 		}
 
 		if ($isEnd === true && $this->beforeDay(moment: $moment, today: ($context['today'] ?? null)) === true) {
@@ -182,6 +177,41 @@ abstract class ExampleSetEngineRows {
 
 		return '';
 	}//end dateRefusal()
+
+	/**
+	 * The moment a declared date names, or null when it names none.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return DateTimeImmutable|null
+	 */
+	private function momentOf(mixed $value): ?DateTimeImmutable {
+		if ($this->isBlank(value: $value) === true) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($value);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end momentOf()
+
+	/**
+	 * The refusal for a value that is not a date: blank, or not parseable.
+	 *
+	 * @param string $field The field.
+	 * @param mixed  $value The declared value.
+	 *
+	 * @return string
+	 */
+	private function notADate(string $field, mixed $value): string {
+		if ($this->isBlank(value: $value) === true) {
+			return $field.' is not a date';
+		}
+
+		return $field.' "'.$value.'" is not a date';
+	}//end notADate()
 
 	/**
 	 * Whether a filled value is no text, or only blanks.
