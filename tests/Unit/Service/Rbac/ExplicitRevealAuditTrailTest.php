@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -194,7 +195,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 	 */
 	public function testTheListExportShowsItMasked(): void {
 		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$trails->method('findAll')->willReturn([$this->entry()]);
+		$trails->method('findTrail')->willReturn([$this->entry()]);
 
 		$file = $this->logService(trails: $trails)->exportLogs(format: 'json', config: ['includeChanges' => true]);
 
@@ -253,7 +254,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 		$entry = $this->entry();
 		$entry->setObjectUuid('obj-1');
 		$trails = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$trails->method('findAll')->willReturnCallback(
+		$trails->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit = null, ?int $offset = null) use ($entry): array {
 				if (($offset ?? 0) > 0) {
 					return [];
@@ -261,7 +262,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 				return [$entry];
 			}
-		);
+		));
 		$object = new ObjectEntity();
 		$object->setUuid('obj-1');
 		$object->setRegister('5');

@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -67,8 +68,8 @@ class ObjectActionHistoryTest extends TestCase {
 
 	public function testTheHistoryNamesWhatTheLastActionDidAndKeepsOldMacroEntries(): void {
 		$this->gate->method('may')->willReturn(true);
-		$this->audit->expects($this->once())->method('findAll')
-			->with(100, null, ['object_uuid' => 'case-1', 'action' => 'action.run,action.macro'], ['created' => 'DESC', 'id' => 'DESC'])
+		$this->audit->expects($this->once())->method('findTrail')
+			->with(new ListQuery(100, null, ['object_uuid' => 'case-1', 'action' => 'action.run,action.macro'], ['created' => 'DESC', 'id' => 'DESC']))
 			->willReturn(
 				[
 					$this->row(
@@ -99,7 +100,7 @@ class ObjectActionHistoryTest extends TestCase {
 
 	public function testTheHistoryNeedsRead(): void {
 		$this->gate->method('may')->with($this->anything(), 'read', $this->anything())->willReturn(false);
-		$this->audit->expects($this->never())->method('findAll');
+		$this->audit->expects($this->never())->method('findTrail');
 
 		$this->expectException(NotAuthorizedException::class);
 

@@ -287,7 +287,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([$log1]);
 
 		$this->auditTrailMapper
@@ -306,7 +306,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([$log1, $log2]);
 
 		$callCount = 0;
@@ -330,7 +330,7 @@ class DashboardServiceTest extends TestCase {
 	public function testRecalculateLogSizesWithRegisterFilter(): void {
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([]);
 
 		$result = $this->service->sizes()->recalculateLogSizes(1, null);
@@ -342,7 +342,7 @@ class DashboardServiceTest extends TestCase {
 	public function testRecalculateLogSizesWithSchemaFilter(): void {
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([]);
 
 		$result = $this->service->sizes()->recalculateLogSizes(null, 2);
@@ -354,7 +354,7 @@ class DashboardServiceTest extends TestCase {
 	public function testRecalculateLogSizesWithBothFilters(): void {
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([]);
 
 		$result = $this->service->sizes()->recalculateLogSizes(1, 2);
@@ -366,7 +366,7 @@ class DashboardServiceTest extends TestCase {
 	public function testRecalculateLogSizesThrowsOnError(): void {
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willThrowException(new Exception('DB error'));
 
 		$this->expectException(Exception::class);
@@ -385,7 +385,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([]);
 
 		$result = $this->service->sizes()->recalculateAllSizes();
@@ -409,7 +409,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findTrail')
 			->willReturn([$log1]);
 		$this->auditTrailMapper
 			->method('update')
@@ -425,7 +425,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testRecalculateAllSizesWithFilters(): void {
 		$this->objectMapper->method('findAll')->willReturn([]);
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->sizes()->recalculateAllSizes(1, 2);
 
@@ -446,7 +446,7 @@ class DashboardServiceTest extends TestCase {
 	public function testRecalculateAllSizesThrowsWhenLogRecalcFails(): void {
 		$this->objectMapper->method('findAll')->willReturn([]);
 		$this->auditTrailMapper
-			->method('findAll')
+			->method('findTrail')
 			->willThrowException(new Exception('DB error'));
 
 		$this->expectException(Exception::class);
@@ -702,7 +702,7 @@ class DashboardServiceTest extends TestCase {
 	public function testCalculateReturnsFullResponseNoFilters(): void {
 		// No register/schema means fetchRegister/fetchSchema return null.
 		$this->objectMapper->method('findAll')->willReturn([]);
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->sizes()->calculate();
 
@@ -724,7 +724,7 @@ class DashboardServiceTest extends TestCase {
 			->willReturn($register);
 
 		$this->objectMapper->method('findAll')->willReturn([]);
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->sizes()->calculate(1);
 
@@ -749,7 +749,7 @@ class DashboardServiceTest extends TestCase {
 			->willReturn($schema);
 
 		$this->objectMapper->method('findAll')->willReturn([]);
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->sizes()->calculate(1, 10);
 
@@ -821,7 +821,7 @@ class DashboardServiceTest extends TestCase {
 				return $obj;
 			});
 
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		$result = $this->service->sizes()->calculate();
 
@@ -841,7 +841,7 @@ class DashboardServiceTest extends TestCase {
 		$this->givenPairsHolding([[1, 2]], [$obj1]);
 		$this->objectMapper->method('update')->willReturnArgument(0);
 
-		$this->auditTrailMapper->method('findAll')->willReturn([$log1]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$log1]);
 		$this->auditTrailMapper->method('update')->willReturnArgument(0);
 
 		$result = $this->service->sizes()->calculate();
@@ -860,7 +860,7 @@ class DashboardServiceTest extends TestCase {
 			->willReturn($schema);
 
 		$this->objectMapper->method('findAll')->willReturn([]);
-		$this->auditTrailMapper->method('findAll')->willReturn([]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([]);
 
 		// No register means fetchSchema won't check in_array.
 		$result = $this->service->sizes()->calculate(null, 10);

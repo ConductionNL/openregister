@@ -547,7 +547,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end find()
 
 	/**
-	 * The columns findAll() filters and sorts on. A key outside this list is dropped.
+	 * The columns findTrail() filters and sorts on. A key outside this list is dropped.
 	 *
 	 * @var string[]
 	 */
@@ -569,7 +569,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		'created',
 		// Flow attribution. Absent from this allowlist a filter is
 		// not rejected — it is silently DROPPED by the `continue`
-		// in findAll(), so `?flow_run=<uuid>` would return the whole
+		// in findTrail(), so `?flow_run=<uuid>` would return the whole
 		// unfiltered audit trail with a 200 and read as a run that
 		// had touched everything on the instance.
 		'flow_run',
@@ -577,7 +577,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		'flow_step',
 		// The cause and its run. Absent from this allowlist a
 		// filter is not rejected, it is silently DROPPED by the
-		// `continue` in findAll() — so `?cause=import` would answer the
+		// `continue` in findTrail() — so `?cause=import` would answer the
 		// WHOLE unfiltered trail with a 200 and read as a load
 		// that had touched everything on the instance.
 		'cause',
@@ -585,39 +585,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	];
 
 	/**
-	 * Find all audit trails with filters and sorting
+	 * Audit trails matching a listing's filters, search and sort, from its offset.
 	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
-	 * @param array|null $filters The filters to apply
-	 * @param array|null $sort The sort to apply
-	 * @param string|null $search Optional search term to filter by ext fields
-	 *
-	 * @return AuditTrail[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
-	 *
-	 * @spec openspec/specs/enhanced-audit-trail/spec.md
-	 */
-	public function findAll(
-		int|null $limit = null,
-		int|null $offset = null,
-		array|null $filters = [],
-		array|null $sort = ['created' => 'DESC'],
-		string|null $search = null,
-	): array {
-		$query = new ListQuery(limit: ($limit ?? 0), offset: $offset, filters: ($filters ?? []), sort: ($sort ?? []), search: $search);
-		if ($limit === null) {
-			return $this->findEvery(query: $query);
-		}
-
-		return $this->findListed(query: $query);
-	}//end findAll()
-
-	/**
-	 * One page of audit trails matching a listing's filters, search and sort.
-	 *
-	 * The typed form of {@see findAll()} with a limit, which keeps its signature for other apps.
+	 * An unbounded listing ({@see ListQuery::unbounded()}) returns every match.
 	 *
 	 * @param ListQuery $query The limit, offset, filters, sort and search.
 	 *
@@ -625,40 +595,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
 	 *
-	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function findListed(ListQuery $query): array {
-		return $this->findWithin(query: $query, limit: $query->limit);
-	}//end findListed()
-
-	/**
-	 * Every audit trail matching a listing's filters, search and sort, from its offset, without a limit.
-	 *
-	 * The typed form of {@see findAll()} without a limit: the query's limit is not applied.
-	 *
-	 * @param ListQuery $query The offset, filters, sort and search.
-	 *
-	 * @return AuditTrail[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
-	 *
-	 * @spec openspec/specs/audit-trail-immutable/spec.md
-	 */
-	public function findEvery(ListQuery $query): array {
-		return $this->findWithin(query: $query, limit: null);
-	}//end findEvery()
-
-	/**
-	 * Audit trails matching a listing's filters, search and sort, from its offset, up to a limit.
-	 *
-	 * @param ListQuery $query The offset, filters, sort and search.
-	 * @param int|null  $limit The limit, or null for none.
-	 *
-	 * @return AuditTrail[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
-	 */
-	private function findWithin(ListQuery $query, ?int $limit): array {
+	public function findTrail(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
@@ -667,10 +606,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$this->applyFindFilters(qb: $qb, filters: $query->filters);
 		$this->applyChangedSearch(qb: $qb, search: $query->search);
 		$this->applyFindSort(qb: $qb, sort: $query->sort);
-		(new QueryPage(limit: $limit, offset: $query->offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findWithin()
+	}//end findTrail()
 
 	/**
 	 * Add the search on the changed field, when a search term is provided.
@@ -691,7 +630,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end applyChangedSearch()
 
 	/**
-	 * Apply the filters of findAll(): system variables (starting with _) and
+	 * Apply the filters of findTrail(): system variables (starting with _) and
 	 * columns outside QUERY_COLUMNS are ignored.
 	 *
 	 * @param IQueryBuilder $qb      The query being built.
@@ -781,7 +720,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end listOrEqualExpression()
 
 	/**
-	 * Apply the sort of findAll(): columns outside QUERY_COLUMNS are ignored,
+	 * Apply the sort of findTrail(): columns outside QUERY_COLUMNS are ignored,
 	 * and a direction other than DESC (any case) sorts ascending.
 	 *
 	 * @param IQueryBuilder $qb   The query being built.
@@ -804,8 +743,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			// The default is assigned to a SEPARATE name. Writing it back over
 			// `$direction` first, then testing `$direction`, compares the
 			// default with itself, so the branch can never be taken and every
-			// sort this mapper is given comes back ASCENDING. `findAll()`
-			// defaults to `['created' => 'DESC']` and returned oldest-first
+			// sort this mapper is given comes back ASCENDING. The listing sort
+			// `['created' => 'DESC']` returned oldest-first
 			// regardless, which is how a case history read bottom-up on the
 			// page while both the caller and this signature said newest-first.
 			$order = 'ASC';

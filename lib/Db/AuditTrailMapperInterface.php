@@ -149,25 +149,17 @@ interface AuditTrailMapperInterface {
 	public function find(int $id): AuditTrail;
 
 	/**
-	 * Find all audit trails with filters and sorting
+	 * Audit trails matching a listing's filters, search and sort, from its offset.
 	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
-	 * @param array|null $filters The filters to apply
-	 * @param array|null $sort The sort to apply
-	 * @param string|null $search Optional search term to filter by ext fields
+	 * An unbounded listing ({@see ListQuery::unbounded()}) returns every match.
+	 *
+	 * @param ListQuery $query The limit, offset, filters, sort and search.
 	 *
 	 * @return AuditTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	public function findAll(
-		?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $sort = ['created' => 'DESC'], ?string $search = null
-	): array;
+	public function findTrail(ListQuery $query): array;
 
 	/**
 	 * Creates an audit trail for object changes

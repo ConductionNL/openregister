@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -136,7 +137,7 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 			$sort = ['created' => 'DESC'];
 		}
 
-		$rows = $this->services->auditTrailMapper->findAll(filters: $filters, sort: $sort);
+		$rows = $this->services->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $filters, sort: $sort));
 
 		$entries = $this->services->redactor->redact(rows: $rows, readable: $readable);
 
