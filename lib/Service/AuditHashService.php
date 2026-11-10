@@ -100,6 +100,17 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * @var string
 	 */
+	/**
+	 * The counters of a re-chain window before its first row.
+	 *
+	 * @var array{rechained: int, tombstonesPreserved: int, lastId: int}
+	 */
+	private const EMPTY_RECHAIN_WINDOW = [
+		'rechained' => 0,
+		'tombstonesPreserved' => 0,
+		'lastId' => 0,
+	];
+
 	private const GENESIS_SEED = 'openregister-genesis-v2';
 
 	/**
@@ -569,6 +580,27 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	public function getIntegrityStatus(): array {
+		$total = $this->countAuditRows();
+		$unsealed = $this->countUnsealed();
+		$sealed = ($total - $unsealed);
+		$lastSealedId = $this->lastSealedId();
+
+		return [
+			'total' => $total,
+			'sealed' => $sealed,
+			'unsealed' => $unsealed,
+			'coverage' => $this->sealedCoverage(sealed: $sealed, total: $total),
+			'lastSealedId' => $lastSealedId,
+		];
+	}//end getIntegrityStatus()
+
+
+	/**
+	 * Count every audit row, sealed or not.
+	 *
+	 * @return int The number of rows.
+	 */
+	private function countAuditRows(): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('id', 'total'))
 			->from('openregister_audit_trails');
@@ -576,9 +608,15 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$total = (int)$result->fetchOne();
 		$result->closeCursor();
 
-		$unsealed = $this->countUnsealed();
-		$sealed = ($total - $unsealed);
+		return $total;
+	}//end countAuditRows()
 
+	/**
+	 * The highest id that carries a hash.
+	 *
+	 * @return int|null The id, or null when no row is sealed.
+	 */
+	private function lastSealedId(): ?int {
 		$qb = $this->db->getQueryBuilder();
 		// The max() function builder takes only the field — unlike count(), it
 		// has no alias parameter. A second argument is silently swallowed by
@@ -591,25 +629,28 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$lastSealed = $result->fetchOne();
 		$result->closeCursor();
 
-		$coverage = 100.0;
+		if ($lastSealed === false || $lastSealed === null) {
+			return null;
+		}
+
+		return (int)$lastSealed;
+	}//end lastSealedId()
+
+	/**
+	 * The sealed share of the trail as a percentage; an empty trail is fully covered.
+	 *
+	 * @param int $sealed The sealed rows.
+	 * @param int $total  All rows.
+	 *
+	 * @return float The coverage, rounded to two decimals.
+	 */
+	private function sealedCoverage(int $sealed, int $total): float {
 		if ($total > 0) {
-			$coverage = round((($sealed / $total) * 100), 2);
+			return round((($sealed / $total) * 100), 2);
 		}
 
-		$lastSealedId = null;
-		if ($lastSealed !== false && $lastSealed !== null) {
-			$lastSealedId = (int)$lastSealed;
-		}
-
-		return [
-			'total' => $total,
-			'sealed' => $sealed,
-			'unsealed' => $unsealed,
-			'coverage' => $coverage,
-			'lastSealedId' => $lastSealedId,
-		];
-
-	}//end getIntegrityStatus()
+		return 100.0;
+	}//end sealedCoverage()
 
 	/**
 	 * Re-chain EVERY row from genesis, replacing any stored hash.
@@ -651,74 +692,120 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	public function rechainAll(int $batchSize = self::SWEEP_BATCH_SIZE): array {
+		$this->logRechainStarted();
+
+		if ($this->acquireSealLock() === false) {
+			return $this->refuseRechain();
+		}
+
+		try {
+			$totals = $this->rechainEveryWindow(batchSize: $batchSize);
+			$this->logRechainComplete(totals: $totals);
+
+			return $totals;
+		} finally {
+			$this->releaseSealLock();
+		}//end try
+	}//end rechainAll()
+
+
+	/**
+	 * Log, at warning level, that a full re-chain starts.
+	 *
+	 * @return void
+	 */
+	private function logRechainStarted(): void {
 		$this->logger->warning(
 			message: '[AuditHashService] FULL RE-CHAIN STARTED — every audit hash will be recomputed. '
 				. 'This rewrites stored hashes and must only ever run as a deliberate operator repair.',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
 		);
+	}//end logRechainStarted()
 
-		if ($this->acquireSealLock() === false) {
-			$this->logger->error(
-				message: '[AuditHashService] Re-chain aborted: seal lock unavailable. '
-					. 'Refusing to re-chain while another seal pass may be writing.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
-			);
+	/**
+	 * Refuse a re-chain because the seal lock is unavailable.
+	 *
+	 * @return array{rechained: int, tombstonesPreserved: int} Nothing re-chained.
+	 */
+	private function refuseRechain(): array {
+		$this->logger->error(
+			message: '[AuditHashService] Re-chain aborted: seal lock unavailable. '
+				. 'Refusing to re-chain while another seal pass may be writing.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+		);
 
-			return [
-				'rechained' => 0,
-				'tombstonesPreserved' => 0,
-			];
+		return [
+			'rechained' => 0,
+			'tombstonesPreserved' => 0,
+		];
+	}//end refuseRechain()
+
+	/**
+	 * Walk every window in id order from genesis, carrying the chain across windows.
+	 *
+	 * The caller holds the seal lock.
+	 *
+	 * @param int $batchSize Rows re-chained per query window.
+	 *
+	 * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
+	 */
+	private function rechainEveryWindow(int $batchSize): array {
+		$window = ['previousHash' => $this->getGenesisHash(), 'lastId' => 0];
+		$totals = ['rechained' => 0, 'tombstonesPreserved' => 0];
+
+		while (true) {
+			$rows = $this->auditRowsAfter(afterId: $window['lastId'], batchSize: $batchSize);
+			if ($rows === []) {
+				return $totals;
+			}
+
+			$window = $this->rechainWindow(rows: $rows, previousHash: $window['previousHash']);
+			$totals['rechained'] += $window['rechained'];
+			$totals['tombstonesPreserved'] += $window['tombstonesPreserved'];
 		}
+	}//end rechainEveryWindow()
 
-		try {
-			$previousHash = $this->getGenesisHash();
-			$rechained = 0;
-			$tombstonesPreserved = 0;
-			$afterId = 0;
+	/**
+	 * The next window of audit rows after an id, in id order.
+	 *
+	 * @param int $afterId   The last id of the previous window (0 to start).
+	 * @param int $batchSize Rows per window.
+	 *
+	 * @return array<int, array<string, mixed>> The rows; empty when the walk is done.
+	 */
+	private function auditRowsAfter(int $afterId, int $batchSize): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($batchSize);
 
-			while (true) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('*')
-					->from('openregister_audit_trails')
-					->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-					->orderBy('id', 'ASC')
-					->setMaxResults($batchSize);
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
 
-				$result = $qb->executeQuery();
-				$rows = $result->fetchAll();
-				$result->closeCursor();
+		return $rows;
+	}//end auditRowsAfter()
 
-				if ($rows === []) {
-					break;
-				}
-
-				$window = $this->rechainWindow(rows: $rows, previousHash: $previousHash);
-
-				$previousHash = $window['previousHash'];
-				$rechained += $window['rechained'];
-				$tombstonesPreserved += $window['tombstonesPreserved'];
-				$afterId = $window['lastId'];
-			}//end while
-
-			$this->logger->warning(
-				message: sprintf(
-					'[AuditHashService] FULL RE-CHAIN COMPLETE — %d audit row(s) re-chained from genesis, '
-					. '%d retention tombstone(s) left untouched.',
-					$rechained,
-					$tombstonesPreserved
-				),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
-			);
-
-			return [
-				'rechained' => $rechained,
-				'tombstonesPreserved' => $tombstonesPreserved,
-			];
-		} finally {
-			$this->releaseSealLock();
-		}//end try
-
-	}//end rechainAll()
+	/**
+	 * Log, at warning level, how many rows a full re-chain rewrote.
+	 *
+	 * @param array{rechained: int, tombstonesPreserved: int} $totals The re-chain totals.
+	 *
+	 * @return void
+	 */
+	private function logRechainComplete(array $totals): void {
+		$this->logger->warning(
+			message: sprintf(
+				'[AuditHashService] FULL RE-CHAIN COMPLETE — %d audit row(s) re-chained from genesis, '
+				. '%d retention tombstone(s) left untouched.',
+				$totals['rechained'],
+				$totals['tombstonesPreserved']
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+		);
+	}//end logRechainComplete()
 
 	/**
 	 * Re-chain one window of rows, carrying the chain across it.
@@ -735,62 +822,92 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	private function rechainWindow(array $rows, string $previousHash): array {
-		$rechained = 0;
-		$tombstonesPreserved = 0;
-		$lastId = 0;
+		$window = ['previousHash' => $previousHash] + self::EMPTY_RECHAIN_WINDOW;
 
 		foreach ($rows as $row) {
-			$lastId = (int)$row['id'];
+			$window['lastId'] = (int)$row['id'];
 
-			// A retention tombstone must NOT be re-chained. Its payload was
-			// lawfully destroyed, so recomputing its hash would hash the emptied
-			// row and silently replace the one piece of evidence the tombstone
-			// still carries — under a banner reading "repair". Its stored hash
-			// is also the link the next row committed to, so carrying it forward
-			// keeps the chain continuous: verifyChain() treats a tombstone
-			// exactly this way, and the two must agree or a re-chain would
-			// manufacture the break it was run to fix.
+			// A retention tombstone must NOT be re-chained: see tombstoneLink().
 			if (($row['purged_at'] ?? null) !== null) {
-				$storedHash = ($row['hash'] ?? null);
-				if ($storedHash !== null && $storedHash !== '') {
-					$previousHash = $storedHash;
-				}
-
-				$tombstonesPreserved++;
+				$window['previousHash'] = $this->tombstoneLink(row: $row, previousHash: $window['previousHash']);
+				$window['tombstonesPreserved']++;
 				continue;
 			}
 
-			$entry = new AuditTrail();
-			$entry->hydrate(object: $this->mapRowToEntity(row: $row));
+			$window['previousHash'] = $this->rechainRow(row: $row, previousHash: $window['previousHash']);
+			$window['rechained']++;
+		}
 
-			$hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
-
-			$update = $this->db->getQueryBuilder();
-			$update->update('openregister_audit_trails')
-				->set('hash', $update->createNamedParameter($hash))
-				->set('previous_hash', $update->createNamedParameter($previousHash))
-				->where(
-					$update->expr()->eq(
-						'id',
-						$update->createNamedParameter($lastId, IQueryBuilder::PARAM_INT)
-					)
-				);
-			$update->executeStatement();
-
-			// Every row becomes the predecessor of the next, which is what makes
-			// the result one chain rather than a fan-out.
-			$previousHash = $hash;
-			$rechained++;
-		}//end foreach
-
-		return [
-			'previousHash' => $previousHash,
-			'rechained' => $rechained,
-			'tombstonesPreserved' => $tombstonesPreserved,
-			'lastId' => $lastId,
-		];
-
+		return $window;
 	}//end rechainWindow()
+
+
+	/**
+	 * The link a retention tombstone hands to the next row: its stored hash, if it has one.
+	 *
+	 * A retention tombstone must NOT be re-chained. Its payload was lawfully
+	 * destroyed, so recomputing its hash would hash the emptied row and
+	 * silently replace the one piece of evidence the tombstone still carries —
+	 * under a banner reading "repair". Its stored hash is also the link the
+	 * next row committed to, so carrying it forward keeps the chain continuous:
+	 * verifyChain() treats a tombstone exactly this way, and the two must agree
+	 * or a re-chain would manufacture the break it was run to fix.
+	 *
+	 * @param array<string, mixed> $row          The tombstone row.
+	 * @param string               $previousHash Hash of the row before it.
+	 *
+	 * @return string The hash the next row chains onto.
+	 */
+	private function tombstoneLink(array $row, string $previousHash): string {
+		$storedHash = ($row['hash'] ?? null);
+		if ($storedHash !== null && $storedHash !== '') {
+			return $storedHash;
+		}
+
+		return $previousHash;
+	}//end tombstoneLink()
+
+	/**
+	 * Recompute one row's hash on its predecessor and store both.
+	 *
+	 * @param array<string, mixed> $row          The row.
+	 * @param string               $previousHash Hash of the row before it.
+	 *
+	 * @return string The row's new hash, which the next row chains onto.
+	 */
+	private function rechainRow(array $row, string $previousHash): string {
+		$entry = new AuditTrail();
+		$entry->hydrate(object: $this->mapRowToEntity(row: $row));
+
+		$row['hash'] = $this->computeHash(entry: $entry, previousHash: $previousHash);
+		$row['previous_hash'] = $previousHash;
+		$this->storeChainLink(row: $row);
+
+		// Every row becomes the predecessor of the next, which is what makes
+		// the result one chain rather than a fan-out.
+		return $row['hash'];
+	}//end rechainRow()
+
+	/**
+	 * Write a row's hash and previous hash.
+	 *
+	 * @param array<string, mixed> $row The row, carrying its new `hash` and `previous_hash`.
+	 *
+	 * @return void
+	 */
+	private function storeChainLink(array $row): void {
+		$update = $this->db->getQueryBuilder();
+		$update->update('openregister_audit_trails')
+			->set('hash', $update->createNamedParameter($row['hash']))
+			->set('previous_hash', $update->createNamedParameter($row['previous_hash']))
+			->where(
+				$update->expr()->eq(
+					'id',
+					$update->createNamedParameter((int)$row['id'], IQueryBuilder::PARAM_INT)
+				)
+			);
+		$update->executeStatement();
+	}//end storeChainLink()
 
 	/**
 	 * Seal a batch of rows — body of {@see sealRows()}, caller holds the
@@ -995,16 +1112,43 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			return false;
 		}
 
+		$this->logBreakingStaleLock(heldFor: (time() - $since));
+		if ($this->retakeSealLock() === false) {
+			return false;
+		}
+
+		$this->holdsSealLock = true;
+		$this->appConfig->setValueInt('openregister', self::SEAL_LOCK_SINCE_KEY, time());
+
+		return true;
+	}//end breakStaleSealLock()
+
+
+	/**
+	 * Announce, at warning level, that an abandoned seal lock is being broken.
+	 *
+	 * @param int $heldFor Seconds since the holder last took the lock.
+	 *
+	 * @return void
+	 */
+	private function logBreakingStaleLock(int $heldFor): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[AuditHashService] Seal lock has been held for %d seconds, longer than any real seal pass '
 				. 'can run. Treating it as abandoned by a process that died inside its critical section, '
 				. 'and breaking it so sealing resumes.',
-				(time() - $since)
+				$heldFor
 			),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
 		);
+	}//end logBreakingStaleLock()
 
+	/**
+	 * Release the abandoned seal lock and take it for this process.
+	 *
+	 * @return bool False when the lock could not be broken (logged).
+	 */
+	private function retakeSealLock(): bool {
 		try {
 			$this->lockingProvider->releaseLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
 			$this->lockingProvider->acquireLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
@@ -1017,11 +1161,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			return false;
 		}
 
-		$this->holdsSealLock = true;
-		$this->appConfig->setValueInt('openregister', self::SEAL_LOCK_SINCE_KEY, time());
-
 		return true;
-	}//end breakStaleSealLock()
+	}//end retakeSealLock()
 
 	/**
 	 * Release the exclusive seal lock acquired by {@see acquireSealLock()}.
