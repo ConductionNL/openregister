@@ -143,11 +143,7 @@ final class ScheduleDescriptor {
 	public static function fromArray(array $raw, int $index): self {
 		$id = self::requiredId(raw: $raw, index: $index);
 
-		$action = $raw['action'] ?? null;
-		if (is_string($action) === false || trim($action) === '') {
-			throw new ScheduleValidationException(sprintf('Schedule "%s" is missing a non-empty "action".', $id));
-		}
-
+		$action  = self::requiredAction(raw: $raw, id: $id);
 		$cadence = self::parseCadence(raw: $raw, id: $id);
 
 		$arguments = $raw['arguments'] ?? [];
@@ -162,6 +158,25 @@ final class ScheduleDescriptor {
 			enabled: (($raw['enabled'] ?? true) !== false)
 		);
 	}//end fromArray()
+
+	/**
+	 * The action the schedule calls.
+	 *
+	 * @param array<string, mixed> $raw The raw schedule entry.
+	 * @param string               $id  The schedule id (for messages).
+	 *
+	 * @return string
+	 *
+	 * @throws ScheduleValidationException When the action is missing or empty.
+	 */
+	private static function requiredAction(array $raw, string $id): string {
+		$action = $raw['action'] ?? null;
+		if (is_string($action) === false || trim($action) === '') {
+			throw new ScheduleValidationException(sprintf('Schedule "%s" is missing a non-empty "action".', $id));
+		}
+
+		return $action;
+	}//end requiredAction()
 
 	/**
 	 * The schedule's id.
