@@ -121,11 +121,27 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function issue(string $formId, string $property, array $rule, array $file): array {
-		$fileConfig = $this->fileConfigFor(property: $property, rule: $rule);
-		$path = $this->arrivedPath(property: $property, file: $file);
+		return $this->issueFor(target: new FormUploadTarget(formId: $formId, property: $property, rule: $rule), file: $file);
+	}//end issue()
+
+	/**
+	 * Hold one uploaded file for its target property and return its token.
+	 *
+	 * @param FormUploadTarget                                                               $target The form, property and that property's rules.
+	 * @param array{name?: mixed, type?: mixed, tmp_name?: mixed, error?: mixed, size?: mixed} $file   The PHP upload array.
+	 *
+	 * @return array{token: string, expiresAt: int} The token and its expiry (unix seconds).
+	 *
+	 * @throws FormSubmitRefusedException 422 when the file breaks the property's rules or did not arrive.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function issueFor(FormUploadTarget $target, array $file): array {
+		$fileConfig = $this->fileConfigFor(property: $target->property, rule: $target->rule);
+		$path = $this->arrivedPath(property: $target->property, file: $file);
 		$meta = [
-			'formId' => $formId,
-			'property' => $property,
+			'formId' => $target->formId,
+			'property' => $target->property,
 			'name' => basename((string)($file['name'] ?? 'upload')),
 			'type' => (string)($file['type'] ?? 'application/octet-stream'),
 			'size' => (int)($file['size'] ?? filesize($path)),
@@ -134,7 +150,7 @@ class FormUploadStore implements FormUploadStoreInterface {
 		$this->assertType(meta: $meta, fileConfig: $fileConfig);
 
 		return $this->hold(path: $path, meta: $meta);
-	}//end issue()
+	}//end issueFor()
 
 	/**
 	 * The file rules of the property an upload is for.
@@ -330,14 +346,29 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function redeem(string $formId, string $property, string $token, ?string $draftId = null): ?array {
+		return $this->redeemClaim(claim: new FormUploadClaim(formId: $formId, property: $property, draftId: $draftId), token: $token);
+	}//end redeem()
+
+	/**
+	 * A token as the upload for the claim's property, or null when the claim's draft already holds that file.
+	 *
+	 * @param FormUploadClaim $claim The form, destination property and draft redeeming it.
+	 * @param string          $token The token.
+	 *
+	 * @return array{name: string, type: string, tmp_name: string, error: int, size: int}|null The upload, null when satisfied.
+	 *
+	 * @throws FormSubmitRefusedException 422 when the token is unknown, expired, another form's or issued for another property.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function redeemClaim(FormUploadClaim $claim, string $token): ?array {
 		$claims = new FormUploadClaims(time: $this->time, folder: $this->folder(create: false));
-		$claim = new FormUploadClaim(formId: $formId, property: $property, draftId: $draftId);
 		if ($claims->isClaimedBy(token: $token, claim: $claim) === true) {
 			return null;
 		}
 
-		return $this->forProperty(file: $this->materialise(formId: $formId, token: $token), property: $property);
-	}//end redeem()
+		return $this->forProperty(file: $this->materialise(formId: $claim->formId, token: $token), property: $claim->property);
+	}//end redeemClaim()
 
 	/**
 	 * A materialised upload for the property it was issued for, without that property.

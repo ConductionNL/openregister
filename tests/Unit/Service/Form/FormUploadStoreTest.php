@@ -16,7 +16,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
 use OCA\OpenRegister\Service\Form\FormFileStorage;
+use OCA\OpenRegister\Service\Form\FormUploadClaim;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormUploadTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IL10N;
@@ -252,6 +254,23 @@ class FormUploadStoreTest extends TestCase {
 		$this->assertSame(1, $this->store->purge(), 'The expired record is removed.');
 		$this->assertSame(0, $this->store->purge());
 	}//end testAClaimedTokenIsSatisfiedForItsDraftOnly()
+
+	/**
+	 * The target and claim forms issue and redeem exactly as the identifier forms do.
+	 */
+	public function testATargetIssuesAndAClaimRedeemsLikeTheIdentifierForms(): void {
+		$target = new FormUploadTarget(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024]);
+		$token = $this->store->issueFor(target: $target, file: $this->upload('%PDF-1.7'))['token'];
+
+		$file = $this->store->redeemClaim(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: null), token: $token);
+		$this->assertSame('bewijs.pdf', $file['name']);
+
+		$this->store->claim(tokens: [$token], draftId: 'draft-1');
+		$this->assertNull($this->store->redeemClaim(claim: new FormUploadClaim(formId: 'form-1', property: 'bijlage', draftId: 'draft-1'), token: $token));
+
+		$this->expectException(FormSubmitRefusedException::class);
+		$this->store->issueFor(target: new FormUploadTarget(formId: 'form-1', property: 'title', rule: ['type' => 'string']), file: $this->upload('x'));
+	}//end testATargetIssuesAndAClaimRedeemsLikeTheIdentifierForms()
 
 	/**
 	 * A final submit (no draft) leaves no record behind.
