@@ -103,7 +103,7 @@ class AnEmptyRuleListMeansOneThingTest extends TestCase {
 	 */
 	public function testANamedActionStillRefusesSomebodyOutsideIt(): void {
 		$this->assertFalse(
-			$this->handler()->canReadProperty($this->schemaWith(['read' => ['hr']]), 'salaris', [])
+			$this->handler()->canReadProperty(new SchemaProperty($this->schemaWith(['read' => ['hr']]), 'salaris'), new PropertyAccessRequest([]))
 		);
 	}//end testANamedActionStillRefusesSomebodyOutsideIt()
 
@@ -147,6 +147,6 @@ class AnEmptyRuleListMeansOneThingTest extends TestCase {
 		$schema = new Schema();
 		$schema->setProperties(['naam' => ['type' => 'string']]);
 
-		$this->assertTrue($this->handler()->canReadProperty($schema, 'naam', []));
+		$this->assertTrue($this->handler()->canReadProperty(new SchemaProperty($schema, 'naam'), new PropertyAccessRequest([])));
 	}//end testAPropertyWithNoBlockIsUntouched()
 }//end class

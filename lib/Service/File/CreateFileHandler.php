@@ -206,7 +206,9 @@ class CreateFileHandler {
 			}
 
 			// Update the existing file - pass the object so updateFile can find it in the object folder.
-			return $this->fileService->updateFile(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity);
+			return $this->fileService->overwriteFile(
+				overwrite: new FileOverwrite(filePath: $existingFile->getId(), content: $upload->content, tags: $upload->tags, object: $objectEntity)
+			);
 		} catch (Exception $e) {
 			throw $this->failure(error: $e, run: $run);
 		}
