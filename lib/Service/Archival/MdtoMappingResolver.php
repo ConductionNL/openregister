@@ -112,6 +112,18 @@ class MdtoMappingResolver {
 			return [];
 		}
 
+		return $this->unfilledOf(mapping: $mapping, object: $object);
+	}//end unfilledMandatoryElements()
+
+	/**
+	 * The mandatory elements a mapping leaves empty for a record; none when the catalogue cannot say.
+	 *
+	 * @param array<string, mixed> $mapping The schema's MDTO mapping.
+	 * @param ObjectEntity         $object  The record.
+	 *
+	 * @return array<int, string> The unfilled element names.
+	 */
+	private function unfilledOf(array $mapping, ObjectEntity $object): array {
 		$mandatory = $this->mandatoryElements();
 		if ($mandatory === null) {
 			return [];
@@ -125,7 +137,7 @@ class MdtoMappingResolver {
 				fn (string|int $element): bool => $this->isFilled(entry: ($mapping[$element] ?? null), row: $row) === false
 			)
 		);
-	}//end unfilledMandatoryElements()
+	}//end unfilledOf()
 
 	/**
 	 * The elements MDTO demands, or null (logged) when the catalogue cannot establish them.
