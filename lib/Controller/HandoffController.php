@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Handoff\HandoffSourceRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -133,7 +134,9 @@ class HandoffController extends Controller {
 	 */
 	private function availabilityForObject(ObjectRef $ref): JSONResponse {
 		try {
-			$handoffs = $this->handoffService->listAvailability(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+			$handoffs = $this->handoffService->listAvailability(
+				ref: new HandoffSourceRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id)
+			);
 			return new JSONResponse(data: ['handoffs' => $handoffs]);
 		} catch (HandoffException $e) {
 			return $this->objectNotFound();

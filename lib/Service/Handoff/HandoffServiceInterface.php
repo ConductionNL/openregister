@@ -37,9 +37,7 @@ interface HandoffServiceInterface {
 	/**
 	 * Report, per declared handoff on the object's schema, whether it can run.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object id/uuid.
+	 * @param HandoffSourceRef $ref The register and schema (slug or id) and the object id/uuid.
 	 *
 	 * @return array<int, array<string, mixed>> One availability record per declared handoff.
 	 *
@@ -47,7 +45,7 @@ interface HandoffServiceInterface {
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 */
-	public function listAvailability(string $register, string $schema, string $id): array;
+	public function listAvailability(HandoffSourceRef $ref): array;
 
 	/**
 	 * Execute one declared handoff on a source object, or park it in queue mode.
