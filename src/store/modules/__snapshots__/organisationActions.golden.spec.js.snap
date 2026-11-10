@@ -1,5 +1,61 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from a null slug and a falsy active flag 1`] = `
+{
+  "cleaned": {
+    "active": false,
+    "name": "N",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+    "active",
+  ],
+}
+`;
+
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from an empty slug and an empty active flag 1`] = `
+{
+  "cleaned": {
+    "active": true,
+    "name": "N",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+    "active",
+  ],
+}
+`;
+
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from every read-only field 1`] = `
+{
+  "cleaned": {
+    "active": true,
+    "name": "N",
+    "slug": "s",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+    "slug",
+    "active",
+  ],
+}
+`;
+
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from no active flag 1`] = `
+{
+  "cleaned": {
+    "name": "N",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+  ],
+}
+`;
+
 exports[`organisation.createOrganisation on a network failure 1`] = `
 {
   "activeOrganisation": null,

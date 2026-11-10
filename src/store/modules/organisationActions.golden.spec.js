@@ -85,3 +85,18 @@ describe.each(Object.keys(ACTIONS))('organisation.%s', (action) => {
 		})).toMatchSnapshot()
 	})
 })
+
+describe('organisation.cleanOrganisationForSave', () => {
+	it.each([
+		['every read-only field', { id: 1, uuid: 'u', users: [], userCount: 2, groupCount: 3, usage: {}, owner: 'o', created: 'c', updated: 'd', isDefault: true, name: 'N', slug: 's', active: true }],
+		['an empty slug and an empty active flag', { name: 'N', slug: '', active: '' }],
+		['a null slug and a falsy active flag', { name: 'N', slug: null, active: 0 }],
+		['no active flag', { name: 'N' }],
+	])('keeps only what may be saved, from %s', (label, organisation) => {
+		setActivePinia(createPinia())
+		const store = useOrganisationStore()
+		const input = { ...organisation }
+		const cleaned = store.cleanOrganisationForSave(input)
+		expect({ cleaned, keys: Object.keys(cleaned), inputUntouched: JSON.stringify(input) === JSON.stringify(organisation) }).toMatchSnapshot()
+	})
+})
