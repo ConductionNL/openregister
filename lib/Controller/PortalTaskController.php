@@ -203,12 +203,8 @@ class PortalTaskController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function complete(string $uuid, string $outcome = PortalTaskServiceInterface::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
-		return $this->asSubject(
-			action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(
-				subject: $subject,
-				completion: ['uuid' => $uuid, 'outcome' => $outcome, 'comment' => $comment]
-			)
-		);
+		$completion = ['uuid' => $uuid, 'outcome' => $outcome, 'comment' => $comment];
+		return $this->asSubject(action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(subject: $subject, completion: $completion));
 	}//end complete()
 
 	/**
