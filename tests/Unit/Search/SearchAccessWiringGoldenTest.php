@@ -165,10 +165,12 @@ class SearchAccessWiringGoldenTest extends TestCase {
 		return new ViewMapper(
 			$this->createMock(IDBConnection::class),
 			new ViewMapperAccess(
-				$organisations,
-				$this->createMock(IAppConfig::class),
-				$this->session($uid),
-				$this->groupManager($groups)
+				new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+					$organisations,
+					$this->session($uid),
+					$this->groupManager($groups)
+				),
+				$this->createMock(IAppConfig::class)
 			),
 			$this->createMock(IEventDispatcher::class)
 		);
