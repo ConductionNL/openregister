@@ -133,7 +133,7 @@ abstract class MessagingNodeBase {
 	 */
 	public function preview(array $items, array $config, array $context): array {
 		return $this->previewOf(
-			messages: $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context)
+			messages: $this->messaging->preview(channel: $this->channel(), step: new MessageSend(config: $config, items: $items, context: $context))
 		);
 	}//end preview()
 
