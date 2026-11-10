@@ -78,37 +78,6 @@ class CasePlanStateMachine {
 	}//end __construct()
 
 	/**
-	 * Move one item, with everything that entails, in one transaction.
-	 *
-	 * @param CaseItem $item The item, as read.
-	 * @param string $to The target state.
-	 * @param string $cause sentry | user | realisation | cascade | import.
-	 * @param string|null $causeRef The sentry id, task/run uuid or parent uuid.
-	 * @param string|null $actor The acting identity, or null for the system.
-	 * @param string|null $reason Free text; becomes `terminated_reason` on a termination.
-	 * @param CasePlanTree|null $tree The plan, when the caller has it (for the cascade).
-	 *
-	 * @return CaseItem The item as persisted.
-	 *
-	 * @throws CaseTransitionException When illegal, or when another mover won.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
-	 */
-	public function transition(
-		CaseItem $item,
-		string $to,
-		string $cause,
-		?string $causeRef,
-		?string $actor,
-		?string $reason = null,
-		?CasePlanTree $tree = null,
-	): CaseItem {
-		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: $actor, reason: $reason);
-
-		return $this->commit(move: new CasePlanMove(item: $item, to: $to, why: $why, tree: $tree));
-	}//end transition()
-
-	/**
 	 * Move one item, with everything that entails, in one transaction: the
 	 * move as one value. A cause without an actor is recorded as the system
 	 * ({@see SYSTEM_ACTOR}).
@@ -169,24 +138,7 @@ class CasePlanStateMachine {
 
 	/**
 	 * Record a refused attempt. Mutates nothing; appended outside any verb
-	 * transaction, and a failure to record it is logged, not converted.
-	 *
-	 * @param CaseItem $item The item acted on.
-	 * @param string $to The requested state (or the verb, for enable/attach).
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The denial message.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
-	 */
-	public function recordDenial(CaseItem $item, string $to, ?string $actor, string $reason): void {
-		$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
-		$this->recordRefusal(attempt: new CasePlanMove(item: $item, to: $to, why: $denial, tree: null));
-	}//end recordDenial()
-
-	/**
-	 * Record a refused attempt as one value: see {@see recordDenial()}. An
+	 * transaction, and a failure to record it is logged, not converted. An
 	 * unsaved item is ignored.
 	 *
 	 * @param CasePlanMove $attempt The item acted on, the requested state (or the verb) and the denial's cause.
@@ -243,24 +195,8 @@ class CasePlanStateMachine {
 
 	/**
 	 * Audit a row's creation: `from_state` null, `to_state` its initial state.
-	 * Called inside the creator's transaction, right after the insert.
-	 *
-	 * @param CaseItem $item The inserted item.
-	 * @param string $cause import | user | realisation (a repetition).
-	 * @param string|null $causeRef The definition, the actor's verb, or the previous realisation.
-	 * @param string|null $actor The acting identity.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
-	 */
-	public function recordCreation(CaseItem $item, string $cause, ?string $causeRef, ?string $actor): void {
-		$this->recordCreationOf(item: $item, why: new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: $actor, reason: null));
-	}//end recordCreation()
-
-	/**
-	 * Audit a row's creation with its cause as one value: see {@see recordCreation()}.
-	 * A cause without an actor is recorded as the system.
+	 * Called inside the creator's transaction, right after the insert. A cause
+	 * without an actor is recorded as the system.
 	 *
 	 * @param CaseItem            $item The inserted item.
 	 * @param CaseTransitionCause $why  The cause, its reference and the acting identity.
