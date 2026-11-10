@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention; mirroring XwikiProviderTest in this repo.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -125,10 +126,13 @@ class KvkProviderTest extends TestCase {
 			->method('call')
 			->with(
 				$this->provider,
-				'GET',
-				'zoeken',
 				$this->callback(
-					static function (array $opts): bool {
+					static function (UpstreamRequest $request): bool {
+						if ($request->method !== 'GET' || $request->path !== 'zoeken') {
+							return false;
+						}
+
+						$opts = $request->options;
 						return ($opts['query']['naam'] ?? null) === 'Acme'
 							&& ($opts['query']['aantal'] ?? null) === '10';
 					}
@@ -146,10 +150,9 @@ class KvkProviderTest extends TestCase {
 			->method('call')
 			->with(
 				$this->provider,
-				'GET',
-				'zoeken',
 				$this->callback(
-					static fn (array $opts): bool => ($opts['query']['kvkNummer'] ?? null) === '69599084'
+					static fn (UpstreamRequest $request): bool => $request->method === 'GET' && $request->path === 'zoeken'
+						&& (static fn (array $opts): bool => ($opts['query']['kvkNummer'] ?? null) === '69599084')($request->options)
 				)
 			)
 			->willReturn(['resultaten' => [['kvkNummer' => '69599084', 'naam' => 'Conduction BV']]]);
@@ -200,10 +203,13 @@ class KvkProviderTest extends TestCase {
 			->method('call')
 			->with(
 				$this->provider,
-				'GET',
-				'zoeken',
 				$this->callback(
-					static function (array $opts): bool {
+					static function (UpstreamRequest $request): bool {
+						if ($request->method !== 'GET' || $request->path !== 'zoeken') {
+							return false;
+						}
+
+						$opts = $request->options;
 						return ($opts['query']['aantal'] ?? null) === '100'
 							&& ($opts['query']['plaats'] ?? null) === 'Utrecht'
 							&& ($opts['query']['naam'] ?? null) === 'Bakery';

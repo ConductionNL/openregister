@@ -28,11 +28,13 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
@@ -407,7 +409,8 @@ class ExportHandler {
 	private function registerObjects(Register $register): array {
 		$objects = [];
 		foreach ($this->registerMapper->getSchemasByRegisterId($register->getId()) as $schema) {
-			$objects = array_merge($objects, $this->objectEntityMapper->findAllInRegisterSchemaTable(register: $register, schema: $schema));
+			$table   = new RegisterSchema(register: $register, schema: $schema);
+			$objects = array_merge($objects, $this->objectEntityMapper->findAllInRegisterSchemaTable(table: $table));
 		}
 
 		return $objects;

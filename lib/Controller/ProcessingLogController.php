@@ -44,7 +44,7 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
 use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;

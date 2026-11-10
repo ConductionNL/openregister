@@ -65,7 +65,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -102,8 +102,8 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
-use OCA\OpenRegister\Service\Object\RenderSelection;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
@@ -6429,6 +6429,7 @@ class ObjectsController extends Controller {
 	private static function takeZipContent(string $path): string {
 		$zipContent = file_get_contents($path);
 		if (file_exists($path) === true) {
+			// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the temporary zip this endpoint built itself.
 			unlink($path);
 		}
 

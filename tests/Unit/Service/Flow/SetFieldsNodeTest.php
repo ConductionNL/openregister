@@ -11,6 +11,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -37,11 +38,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * every item, with no loop drawn by the author.
 	 */
 	public function testOneConfigurationIsAppliedToEveryItem(): void {
-		$out = $this->node->execute(
-			$this->items([['name' => 'a'], ['name' => 'b'], ['name' => 'c']]),
-			['set' => ['status' => 'reviewed']],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['name' => 'a'], ['name' => 'b'], ['name' => 'c']]),
+			config: ['set' => ['status' => 'reviewed']],
+			context: []
+		));
 
 		$this->assertCount(3, $out);
 		$this->assertSame(['reviewed', 'reviewed', 'reviewed'], array_column(array_column($out, 'json'), 'status'));
@@ -49,18 +50,18 @@ class SetFieldsNodeTest extends TestCase {
 	}
 
 	public function testEveryOutputItemPointsBackAtItsOwnInput(): void {
-		$out = $this->node->execute($this->items([['n' => 1], ['n' => 2]]), ['set' => ['x' => 1]], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([['n' => 1], ['n' => 2]]), config: ['set' => ['x' => 1]], context: []));
 
 		$this->assertSame(['item' => 0], $out[0]['pairedItem']);
 		$this->assertSame(['item' => 1], $out[1]['pairedItem']);
 	}
 
 	public function testFieldsAreRemovedRenamedAndSet(): void {
-		$out = $this->node->execute(
-			$this->items([['drop' => 1, 'old' => 'v', 'keep' => 'k']]),
-			['remove' => ['drop'], 'rename' => ['old' => 'new'], 'set' => ['added' => true]],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['drop' => 1, 'old' => 'v', 'keep' => 'k']]),
+			config: ['remove' => ['drop'], 'rename' => ['old' => 'new'], 'set' => ['added' => true]],
+			context: []
+		));
 
 		$this->assertSame(['keep' => 'k', 'new' => 'v', 'added' => true], $out[0]['json']);
 	}
@@ -70,21 +71,21 @@ class SetFieldsNodeTest extends TestCase {
 	 * same step removed.
 	 */
 	public function testARenameCanReuseAJustRemovedName(): void {
-		$out = $this->node->execute(
-			$this->items([['a' => 'old-a', 'b' => 'b-value']]),
-			['remove' => ['a'], 'rename' => ['b' => 'a']],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['a' => 'old-a', 'b' => 'b-value']]),
+			config: ['remove' => ['a'], 'rename' => ['b' => 'a']],
+			context: []
+		));
 
 		$this->assertSame(['a' => 'b-value'], $out[0]['json']);
 	}
 
 	public function testKeepOnlySetDropsEverythingElse(): void {
-		$out = $this->node->execute(
-			$this->items([['noise' => 1, 'more' => 2]]),
-			['set' => ['only' => 'this'], 'keepOnlySet' => true],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['noise' => 1, 'more' => 2]]),
+			config: ['set' => ['only' => 'this'], 'keepOnlySet' => true],
+			context: []
+		));
 
 		$this->assertSame(['only' => 'this'], $out[0]['json']);
 	}
@@ -92,13 +93,13 @@ class SetFieldsNodeTest extends TestCase {
 	public function testBinaryAttachmentsSurviveTheStep(): void {
 		$item = FlowItems::item(json: ['a' => 1], options: new FlowItemOptions(binary: ['file' => ['mimeType' => 'text/plain']]));
 
-		$out = $this->node->execute([$item], ['set' => ['b' => 2]], []);
+		$out = $this->node->execute(new FlowNodeCall(items: [$item], config: ['set' => ['b' => 2]], context: []));
 
 		$this->assertSame(['file' => ['mimeType' => 'text/plain']], $out[0]['binary']);
 	}
 
 	public function testNoItemsInMeansNoItemsOut(): void {
-		$this->assertSame([], $this->node->execute([], ['set' => ['a' => 1]], []));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: ['set' => ['a' => 1]], context: [])));
 	}
 
 	/**
@@ -125,11 +126,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testSetValuesAreRenderedFromTheItem(): void {
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['repo' => 'ConductionNL/hydra', 'retries' => 2])],
-			['set' => ['label' => 'retry {{retries}} on {{repo}}', 'count' => '{{retries}}']],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['repo' => 'ConductionNL/hydra', 'retries' => 2])],
+			config: ['set' => ['label' => 'retry {{retries}} on {{repo}}', 'count' => '{{retries}}']],
+			context: []
+		));
 
 		$this->assertSame('retry 2 on ConductionNL/hydra', $out[0]['json']['label']);
 
@@ -144,11 +145,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testALiteralValueIsUnchanged(): void {
-		$out = $this->node->execute(
-			[FlowItems::item(json: [])],
-			['set' => ['stage' => 'builder', 'max' => 3]],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: ['set' => ['stage' => 'builder', 'max' => 3]],
+			context: []
+		));
 
 		$this->assertSame('builder', $out[0]['json']['stage']);
 		$this->assertSame(3, $out[0]['json']['max']);
@@ -166,11 +167,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testComputeDerivesAValue(): void {
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['retries' => 2])],
-			['compute' => ['next' => ['+' => [['var' => 'json.retries'], 1]]]],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['retries' => 2])],
+			config: ['compute' => ['next' => ['+' => [['var' => 'json.retries'], 1]]]],
+			context: []
+		));
 
 		$this->assertSame(3, $out[0]['json']['next']);
 	}
@@ -181,14 +182,14 @@ class SetFieldsNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testComputeSeesWhatSetJustWrote(): void {
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['retries' => 1])],
-			[
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['retries' => 1])],
+			config: [
 				'set' => ['base' => '{{retries}}'],
 				'compute' => ['next' => ['+' => [['var' => 'json.base'], 10]]],
 			],
-			[]
-		);
+			context: []
+		));
 
 		$this->assertSame(11, $out[0]['json']['next']);
 	}
@@ -230,11 +231,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * and finds it empty.
 	 */
 	public function testADottedKeyWritesANestedStructure(): void {
-		$out = $this->node->execute(
-			$this->items([['who' => 'ruben', 'code' => 0]]),
-			['set' => ['entry.owner' => '{{who}}', 'entry.exit_code' => '{{code}}']],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['who' => 'ruben', 'code' => 0]]),
+			config: ['set' => ['entry.owner' => '{{who}}', 'entry.exit_code' => '{{code}}']],
+			context: []
+		));
 
 		$this->assertSame('ruben', $out[0]['json']['entry']['owner']);
 		// The whole-placeholder type rule still holds through a nested write.
@@ -246,11 +247,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * Several dotted keys build ONE object rather than clobbering each other.
 	 */
 	public function testSiblingDottedKeysShareTheirContainer(): void {
-		$out = $this->node->execute(
-			$this->items([[]]),
-			['set' => ['e.a' => '1', 'e.b' => '2', 'e.c' => '3']],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([[]]),
+			config: ['set' => ['e.a' => '1', 'e.b' => '2', 'e.c' => '3']],
+			context: []
+		));
 
 		$this->assertSame(['a' => '1', 'b' => '2', 'c' => '3'], $out[0]['json']['e']);
 	}
@@ -262,11 +263,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * write that replaced the container would silently drop them.
 	 */
 	public function testADottedWriteMergesIntoAnExistingObject(): void {
-		$out = $this->node->execute(
-			$this->items([['entry' => ['kept' => 'yes']]]),
-			['set' => ['entry.added' => 'also']],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['entry' => ['kept' => 'yes']]]),
+			config: ['set' => ['entry.added' => 'also']],
+			context: []
+		));
 
 		$this->assertSame('yes', $out[0]['json']['entry']['kept']);
 		$this->assertSame('also', $out[0]['json']['entry']['added']);
@@ -276,7 +277,7 @@ class SetFieldsNodeTest extends TestCase {
 	 * Deep paths create every level they need.
 	 */
 	public function testADeepPathCreatesEveryLevel(): void {
-		$out = $this->node->execute($this->items([[]]), ['set' => ['a.b.c.d' => 'deep']], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([[]]), config: ['set' => ['a.b.c.d' => 'deep']], context: []));
 
 		$this->assertSame('deep', $out[0]['json']['a']['b']['c']['d']);
 	}
@@ -288,11 +289,11 @@ class SetFieldsNodeTest extends TestCase {
 	 * reintroduce the invisible no-op this fixes.
 	 */
 	public function testAScalarInThePathBecomesAContainer(): void {
-		$out = $this->node->execute(
-			$this->items([['entry' => 'i am a string']]),
-			['set' => ['entry.owner' => 'ruben']],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['entry' => 'i am a string']]),
+			config: ['set' => ['entry.owner' => 'ruben']],
+			context: []
+		));
 
 		$this->assertSame(['owner' => 'ruben'], $out[0]['json']['entry']);
 	}
@@ -301,7 +302,7 @@ class SetFieldsNodeTest extends TestCase {
 	 * An undotted key is untouched by any of this.
 	 */
 	public function testAnUndottedKeyStillWritesFlat(): void {
-		$out = $this->node->execute($this->items([[]]), ['set' => ['plain' => 'value']], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([[]]), config: ['set' => ['plain' => 'value']], context: []));
 
 		$this->assertSame('value', $out[0]['json']['plain']);
 	}

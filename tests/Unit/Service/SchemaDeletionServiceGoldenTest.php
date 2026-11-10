@@ -27,10 +27,12 @@ use OCA\OpenRegister\Service\TableDeletionOptions;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -140,7 +142,8 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 		$magic->method('tableExistsForRegisterSchema')->willReturnCallback(
 			fn (Register $r, Schema $s): bool => isset($this->rows[$r->getId() . '_' . $s->getId()])
 		);
-		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(function (Register $register, Schema $schema, $limit, $offset, $filters) {
+		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(function (RegisterSchema $table, ListQuery $listing) {
+			[$register, $schema, $limit, $offset, $filters] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters)];
 			$this->trace[] = 'findAll ' . $register->getId() . '_' . $schema->getId() . ' ' . $offset . ' ' . json_encode($filters);
 			return ($offset === 0 ? ($this->rows[$register->getId() . '_' . $schema->getId()] ?? []) : []);
 		});

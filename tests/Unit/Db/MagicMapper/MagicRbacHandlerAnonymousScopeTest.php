@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
@@ -110,7 +111,7 @@ class MagicRbacHandlerAnonymousScopeTest extends TestCase {
 	 */
 	public function testInsideTheScopeAnAnonymousCallerStillHoldsNoStaffPermission(): void {
 		$granted = AnonymousEvaluationContext::run(
-			fn (): bool => $this->handler->hasPermission(schema: $this->staffOnlySchema(), action: 'read')
+			fn (): bool => $this->handler->hasPermission(ask: new RbacPermissionAsk(schema: $this->staffOnlySchema(), action: 'read'))
 		);
 		$this->assertFalse($granted);
 	}//end testInsideTheScopeAnAnonymousCallerHoldsNoStaffPermission()

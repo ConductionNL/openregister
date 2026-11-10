@@ -33,7 +33,7 @@ use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;

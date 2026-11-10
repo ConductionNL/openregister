@@ -45,7 +45,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -278,6 +278,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			return;
 		}
 
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a copy this app staged in the temp dir; only a staged path is removed.
 		if (is_file((string)$path) === true && unlink((string)$path) === false) {
 			$this->store->logger->warning(
 				message: '[ImportPreviewService] The staged source could not be removed',

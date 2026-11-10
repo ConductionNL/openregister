@@ -310,27 +310,8 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 		// TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
 		// Disabled: $this->verifyRbacPermission(action: 'create', entityType: 'configuration').
 		if ($entity instanceof Configuration) {
-			// Generate UUID if not set.
-			if (empty($entity->getUuid()) === true) {
-				$entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
-			}
-
-			// Set default type if not provided (required by database).
-			if (empty($entity->getType()) === true) {
-				$entity->setType('default');
-			}
-
-			// Auto-set owner to current user if not already set.
-			if (empty($entity->getOwner()) === true) {
-				$currentUserId = $this->getCurrentUserId();
-				if ($currentUserId !== null) {
-					$entity->setOwner($currentUserId);
-				}
-			}
-
-			$entity->setCreated(new DateTime());
-			$entity->setUpdated(new DateTime());
-		}//end if
+			$this->fillCreateDefaults(configuration: $entity);
+		}
 
 		// Auto-set organisation from active session.
 		$this->setOrganisationOnCreate(entity: $entity);
@@ -345,6 +326,50 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 
 		return $result;
 	}//end insert()
+
+	/**
+	 * Fill what a new configuration needs and does not carry: a uuid, the
+	 * `default` type (required by the database), the caller as owner, and the
+	 * created and updated stamps.
+	 *
+	 * @param Configuration $configuration The configuration about to be inserted.
+	 *
+	 * @return void
+	 */
+	private function fillCreateDefaults(Configuration $configuration): void {
+		// Generate UUID if not set.
+		if (empty($configuration->getUuid()) === true) {
+			$configuration->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+		}
+
+		// Set default type if not provided (required by database).
+		if (empty($configuration->getType()) === true) {
+			$configuration->setType('default');
+		}
+
+		$this->assignCallerAsOwner(configuration: $configuration);
+
+		$configuration->setCreated(new DateTime());
+		$configuration->setUpdated(new DateTime());
+	}//end fillCreateDefaults()
+
+	/**
+	 * Auto-set the owner to the current user when none is set and a user is signed in.
+	 *
+	 * @param Configuration $configuration The configuration about to be inserted.
+	 *
+	 * @return void
+	 */
+	private function assignCallerAsOwner(Configuration $configuration): void {
+		if (empty($configuration->getOwner()) === false) {
+			return;
+		}
+
+		$currentUserId = $this->getCurrentUserId();
+		if ($currentUserId !== null) {
+			$configuration->setOwner($currentUserId);
+		}
+	}//end assignCallerAsOwner()
 
 	/**
 	 * Update an existing configuration

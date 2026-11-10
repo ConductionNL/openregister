@@ -21,9 +21,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;

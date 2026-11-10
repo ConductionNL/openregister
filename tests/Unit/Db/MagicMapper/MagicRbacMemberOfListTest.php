@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -334,7 +335,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 
 		$admitted = [];
 		foreach (self::BOOKINGS as $uuid => $administration) {
-			if ($rbac->hasPermission(schema: $schema, action: 'read', objectOwner: 'importer', objectData: ['administrationId' => $administration]) === true) {
+			if ($rbac->hasPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'read', objectOwner: 'importer', objectData: ['administrationId' => $administration])) === true) {
 				$admitted[] = $uuid;
 			}
 		}

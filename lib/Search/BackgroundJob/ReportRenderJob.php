@@ -33,9 +33,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Search\BackgroundJob\Support\DashboardRenderRun;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderDelivery;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderPlatform;
@@ -442,15 +444,13 @@ class ReportRenderJob extends TimedJob {
 		foreach ($schemas as $schema) {
 			try {
 				$found = $this->objectMapper->findAllInRegisterSchemaTable(
-					register: $register,
-					schema: $schema,
-					limit: self::DASHBOARD_SCAN_LIMIT,
-					offset: 0,
-					filters: [
+					table: new RegisterSchema(register: $register, schema: $schema),
+					listing: new ListQuery(
+						limit: self::DASHBOARD_SCAN_LIMIT,
+						offset: 0,
 						// Reserved query params — see the class docblock.
-						'_rbac' => false,
-						'_multitenancy' => false,
-					]
+						filters: ['_rbac' => false, '_multitenancy' => false]
+					)
 				);
 			} catch (\Throwable $e) {
 				$this->platform->logger->warning(

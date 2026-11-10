@@ -8,7 +8,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\DAV\CalDAV\CalDavBackend;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IURLGenerator;
 use OCP\IUser;

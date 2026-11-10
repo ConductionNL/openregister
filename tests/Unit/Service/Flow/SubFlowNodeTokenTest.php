@@ -13,6 +13,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowToken;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
@@ -104,11 +105,11 @@ class SubFlowNodeTokenTest extends TestCase {
 
 		$parentToken = new FlowToken(['resolvedRef' => 'source-7']);
 
-		$this->node->execute(
-			[],
-			['flow' => 'child'],
-			[FlowToken::CONTEXT_KEY => $parentToken]
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [],
+			config: ['flow' => 'child'],
+			context: [FlowToken::CONTEXT_KEY => $parentToken]
+		));
 
 		$this->assertIsArray($seenChildContext);
 		$this->assertSame(
@@ -141,11 +142,11 @@ class SubFlowNodeTokenTest extends TestCase {
 
 		$parentToken = new FlowToken(['mine' => 'parent']);
 
-		$this->node->execute(
-			[],
-			['flow' => 'child', 'wait' => false],
-			[FlowToken::CONTEXT_KEY => $parentToken]
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [],
+			config: ['flow' => 'child', 'wait' => false],
+			context: [FlowToken::CONTEXT_KEY => $parentToken]
+		));
 
 		// What the child received is a value bag, not the parent's object.
 		$this->assertIsArray($seenChildContext[FlowToken::CONTEXT_KEY]);
@@ -168,7 +169,7 @@ class SubFlowNodeTokenTest extends TestCase {
 
 		$parentToken = new FlowToken(['keep' => 'mine']);
 
-		$this->node->execute([], ['flow' => 'child'], [FlowToken::CONTEXT_KEY => $parentToken]);
+		$this->node->execute(new FlowNodeCall(items: [], config: ['flow' => 'child'], context: [FlowToken::CONTEXT_KEY => $parentToken]));
 
 		$this->assertSame('yes', $parentToken->get('resolvedByChild'), 'the child value reaches the parent');
 		$this->assertSame('mine', $parentToken->get('keep'), 'the parent keeps what the child did not touch');
@@ -189,7 +190,7 @@ class SubFlowNodeTokenTest extends TestCase {
 
 		$parentToken = new FlowToken(['shared' => 'parent']);
 
-		$this->node->execute([], ['flow' => 'child'], [FlowToken::CONTEXT_KEY => $parentToken]);
+		$this->node->execute(new FlowNodeCall(items: [], config: ['flow' => 'child'], context: [FlowToken::CONTEXT_KEY => $parentToken]));
 
 		$this->assertSame('child', $parentToken->get('shared'));
 
@@ -205,7 +206,7 @@ class SubFlowNodeTokenTest extends TestCase {
 		$this->runs->method('queueRun')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
 		$this->runs->expects($this->once())->method('executePass')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
 
-		$items = $this->node->execute([], ['flow' => 'child'], []);
+		$items = $this->node->execute(new FlowNodeCall(items: [], config: ['flow' => 'child'], context: []));
 
 		$this->assertSame([], $items);
 

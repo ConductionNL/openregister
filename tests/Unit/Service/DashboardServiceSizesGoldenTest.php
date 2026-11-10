@@ -27,11 +27,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -164,7 +166,8 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (mixed ...$args): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				$args = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				$this->note('objects.findAllInRegisterSchemaTable', $args);
 				return [$this->entity(ObjectEntity::class, 100), $this->entity(ObjectEntity::class, 666)];
 			}

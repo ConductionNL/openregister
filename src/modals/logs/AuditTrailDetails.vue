@@ -132,6 +132,7 @@ import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import AuditActionBadge from './AuditActionBadge.vue'
 import auditTrailModal from '../../services/auditTrailModal.js'
+import { printableValue } from './auditValues.js'
 
 export default {
 	name: 'AuditTrailDetails',
@@ -236,15 +237,7 @@ export default {
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
 
-			if (typeof value === 'object') {
-				try {
-					return JSON.stringify(value, null, 2)
-				} catch {
-					return String(value)
-				}
-			}
-
-			return String(value)
+			return printableValue(value)
 		},
 
 		/**
