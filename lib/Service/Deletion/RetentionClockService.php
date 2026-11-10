@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Deletion;
 use DateInterval;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -173,54 +174,15 @@ class RetentionClockService {
 	 * @return array{date: string|null, rule: string} The clock.
 	 */
 	private function avgClock(ObjectEntity $object): array {
-		$reference = ($object->getProcessingActivityId() ?? '');
-		if ($reference === '') {
-			return [
-				'date' => null,
-				'rule' => self::RULE_NO_AVG,
-			];
+		$activity = $this->retainingActivity(reference: ($object->getProcessingActivityId() ?? ''));
+		if ($activity === null) {
+			return self::noAvgClock();
 		}
 
-		$activity = null;
-		try {
-			$activity = $this->activityMapper->resolveReference($reference);
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				message: '[RetentionClocks] Could not resolve the processing activity',
-				context: ['reference' => $reference, 'error' => $e->getMessage()]
-			);
-		}
-
-		$period = (string)($activity?->getRetentionPeriod() ?? '');
-		if ($activity === null || $period === '') {
-			return [
-				'date' => null,
-				'rule' => self::RULE_NO_AVG,
-			];
-		}
-
-		// The bewaartermijn clock resets on every write, which is how the AVG
-		// sweep already reads it. Counting from creation would erase objects
-		// that are still actively in use.
-		$base = ($object->getUpdated() ?? $object->getCreated());
-		if ($base === null) {
-			return [
-				'date' => null,
-				'rule' => self::RULE_NO_AVG,
-			];
-		}
-
-		try {
-			$due = DateTimeImmutable::createFromInterface($base)->add(new DateInterval($period));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[RetentionClocks] Unparseable retentionPeriod on a processing activity',
-				context: ['reference' => $reference, 'retentionPeriod' => $period],
-			);
-			return [
-				'date' => null,
-				'rule' => self::RULE_NO_AVG,
-			];
+		$period = (string)($activity->getRetentionPeriod() ?? '');
+		$due    = $this->dueAfterLastWrite(object: $object, period: $period);
+		if ($due === null) {
+			return self::noAvgClock();
 		}
 
 		return [
@@ -229,6 +191,89 @@ class RetentionClockService {
 				. ' keeps this data for ' . $period . ' after the last processing',
 		];
 	}//end avgClock()
+
+	/**
+	 * The processing activity that keeps the object's data for a stated period.
+	 *
+	 * @param string $reference The object's processing activity reference.
+	 *
+	 * @return Verwerkingsactiviteit|null The activity, or null when none is linked,
+	 *                                    resolvable or keeping a period.
+	 */
+	private function retainingActivity(string $reference): ?Verwerkingsactiviteit {
+		if ($reference === '') {
+			return null;
+		}
+
+		$activity = $this->resolveActivity(reference: $reference);
+		if ($activity === null || (string)($activity->getRetentionPeriod() ?? '') === '') {
+			return null;
+		}
+
+		return $activity;
+	}//end retainingActivity()
+
+	/**
+	 * Resolve a processing activity reference, logging a reference that cannot be resolved.
+	 *
+	 * @param string $reference The processing activity reference.
+	 *
+	 * @return Verwerkingsactiviteit|null The activity, or null when it cannot be resolved.
+	 */
+	private function resolveActivity(string $reference): ?Verwerkingsactiviteit {
+		try {
+			return $this->activityMapper->resolveReference($reference);
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				message: '[RetentionClocks] Could not resolve the processing activity',
+				context: ['reference' => $reference, 'error' => $e->getMessage()]
+			);
+		}
+
+		return null;
+	}//end resolveActivity()
+
+	/**
+	 * The moment the retention period runs out, counted from the object's last write.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $period The ISO 8601 retention period.
+	 *
+	 * @return DateTimeImmutable|null The due date, or null when the object has no
+	 *                                write date or the period cannot be parsed.
+	 */
+	private function dueAfterLastWrite(ObjectEntity $object, string $period): ?DateTimeImmutable {
+		// The bewaartermijn clock resets on every write, which is how the AVG
+		// sweep already reads it. Counting from creation would erase objects
+		// that are still actively in use.
+		$base = ($object->getUpdated() ?? $object->getCreated());
+		if ($base === null) {
+			return null;
+		}
+
+		try {
+			return DateTimeImmutable::createFromInterface($base)->add(new DateInterval($period));
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[RetentionClocks] Unparseable retentionPeriod on a processing activity',
+				context: ['reference' => ($object->getProcessingActivityId() ?? ''), 'retentionPeriod' => $period],
+			);
+		}
+
+		return null;
+	}//end dueAfterLastWrite()
+
+	/**
+	 * The AVG clock when no processing activity gives a date.
+	 *
+	 * @return array{date: null, rule: string} The clock.
+	 */
+	private static function noAvgClock(): array {
+		return [
+			'date' => null,
+			'rule' => self::RULE_NO_AVG,
+		];
+	}//end noAvgClock()
 
 	/**
 	 * The Archiefwet date and the rule that produced it.
