@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Throwable;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -285,15 +286,7 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	 */
 	private function queryRows(ActivityFilter $filter, int $limit): array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('activity_id', 'subject', 'type', 'affecteduser', 'timestamp', 'object_id')
-				->from('activity');
-			$this->applyFilters(qb: $qb, filter: $filter);
-			$qb->orderBy('timestamp', 'DESC')
-				->addOrderBy('activity_id', 'DESC')
-				->setMaxResults($limit);
-
-			$result = $qb->executeQuery();
+			$result = $this->rowsQuery(filter: $filter, limit: $limit)->executeQuery();
 			$rows = $this->fetchRows(result: $result);
 			$result->closeCursor();
 
@@ -303,6 +296,26 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 			return [];
 		}//end try
 	}//end queryRows()
+
+	/**
+	 * The query for an object's activity rows, newest first, capped.
+	 *
+	 * @param ActivityFilter $filter The object and the filters.
+	 * @param int            $limit  The most rows to read.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function rowsQuery(ActivityFilter $filter, int $limit): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('activity_id', 'subject', 'type', 'affecteduser', 'timestamp', 'object_id')
+			->from('activity');
+		$this->applyFilters(qb: $qb, filter: $filter);
+		$qb->orderBy('timestamp', 'DESC')
+			->addOrderBy('activity_id', 'DESC')
+			->setMaxResults($limit);
+
+		return $qb;
+	}//end rowsQuery()
 
 	/**
 	 * Every remaining row of a query result.
@@ -360,22 +373,8 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 		}
 
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->selectDistinct($column)->from('activity');
-			$this->applyFilters(qb: $qb, filter: new ActivityFilter(objectUuid: $objectUuid, type: null, actor: null, after: null));
-			$qb->orderBy($column, 'ASC');
-
-			$result = $qb->executeQuery();
-			$values = [];
-			$row = $result->fetch();
-			while ($row !== false) {
-				$value = (string)($row[$column] ?? '');
-				if ($value !== '') {
-					$values[] = $value;
-				}
-
-				$row = $result->fetch();
-			}
+			$result = $this->distinctQuery(objectUuid: $objectUuid, column: $column)->executeQuery();
+			$values = self::nonEmptyValues(result: $result, column: $column);
 
 			$result->closeCursor();
 			return array_values(array_unique($values));
@@ -384,6 +383,46 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 			return [];
 		}//end try
 	}//end distinctColumn()
+
+	/**
+	 * The query for the distinct values of one activity column on an object, in ascending order.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $column     The column.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function distinctQuery(string $objectUuid, string $column): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct($column)->from('activity');
+		$this->applyFilters(qb: $qb, filter: new ActivityFilter(objectUuid: $objectUuid, type: null, actor: null, after: null));
+		$qb->orderBy($column, 'ASC');
+
+		return $qb;
+	}//end distinctQuery()
+
+	/**
+	 * The non-empty values of one column of a result, in row order.
+	 *
+	 * @param IResult $result The query result.
+	 * @param string  $column The column.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function nonEmptyValues(IResult $result, string $column): array {
+		$values = [];
+		$row = $result->fetch();
+		while ($row !== false) {
+			$value = (string)($row[$column] ?? '');
+			if ($value !== '') {
+				$values[] = $value;
+			}
+
+			$row = $result->fetch();
+		}
+
+		return $values;
+	}//end nonEmptyValues()
 
 	/**
 	 * Normalise an upstream activity row into the registry leaf row shape.
