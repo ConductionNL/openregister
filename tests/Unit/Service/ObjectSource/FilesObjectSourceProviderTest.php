@@ -83,7 +83,7 @@ class FilesObjectSourceProviderTest extends TestCase {
 			$rootFolder->method('getUserFolder')->willReturn($userFolder);
 		}
 
-		return new FilesObjectSourceProvider($rootFolder, $session, new NullLogger());
+		return new FilesObjectSourceProvider(rootFolder: $rootFolder, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: new NullLogger()));
 	}//end provider()
 
 	/**
