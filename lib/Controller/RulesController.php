@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\RuleReplayRequest;
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaRule;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -274,17 +276,14 @@ class RulesController extends Controller {
 		$objectId = $this->request->getParam('objectId');
 		if ($this->isFilled(value: $register) === true && $this->isFilled(value: $objectId) === true) {
 			return $this->trials->tryObject(
-				schema: $rule->schema,
-				ruleId: $rule->ruleId,
-				register: $register,
-				objectId: $objectId,
-				override: $override
+				request: new RuleTrialRequest(schema: $rule->schema, ruleId: $rule->ruleId, override: $override),
+				ref: new ObjectRef(register: $register, schema: (string)$rule->schema->getId(), id: $objectId)
 			);
 		}
 
 		$sample = $this->arrayParam(name: 'object');
 
-		return $this->trials->trySample(schema: $rule->schema, ruleId: $rule->ruleId, sample: $sample, override: $override);
+		return $this->trials->trySample(request: new RuleTrialRequest(schema: $rule->schema, ruleId: $rule->ruleId, override: $override), sample: $sample);
 	}//end trial()
 
 	/**
