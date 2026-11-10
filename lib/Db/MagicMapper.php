@@ -1980,10 +1980,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 		}
 
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query, isPostgres: $isPostgres);
+		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-batch union search merged',
@@ -2233,14 +2230,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the merged set, which is the whole point of the batching: the page has
 	 * to be the search's page, not the first batch's.
 	 *
-	 * @param array $rows       Rows from every batch, in batch order.
-	 * @param array $query      The caller's search parameters (offset and limit).
-	 * @param bool  $isPostgres Whether the platform is PostgreSQL.
+	 * @param array $rows  Rows from every batch, in batch order.
+	 * @param array $query The caller's search parameters (offset and limit).
 	 *
 	 * @return array The merged page.
 	 */
-	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
-		$order = new MagicUnionOrder(isPostgres: $isPostgres);
+	private function mergeUnionBatchRows(array $rows, array $query): array {
+		$order = new MagicUnionOrder(isPostgres: $this->isPostgresPlatform());
 
 		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
