@@ -76,13 +76,38 @@
                 "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
             },
             {
+                "logger.debug": [
+                    "[HybridSearchDiagnostics] ANN sidecar not readable",
+                    {
+                        "sidecar": "openregister_vec_ann",
+                        "exception": "a"
+                    }
+                ]
+            },
+            {
                 "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "logger.debug": [
+                    "[HybridSearchDiagnostics] Could not read the search indexes",
+                    {
+                        "exception": "b"
+                    }
+                ]
             },
             {
                 "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
             },
             {
                 "db.executeQuery": "SELECT COUNT(*) AS total FROM *PREFIX*openregister_vectors"
+            },
+            {
+                "logger.debug": [
+                    "[HybridSearchDiagnostics] Could not count plain vectors",
+                    {
+                        "exception": "d"
+                    }
+                ]
             },
             {
                 "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
@@ -178,6 +203,14 @@
             },
             {
                 "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"
+            },
+            {
+                "logger.debug": [
+                    "[HybridSearchDiagnostics] Could not read the search indexes",
+                    {
+                        "exception": "no catalog"
+                    }
+                ]
             },
             {
                 "db.executeQuery": "SELECT COUNT(*) AS total, COUNT(a.vector_id) AS populated FROM *PREFIX*openregister_vectors v LEFT JOIN openregister_vec_ann a ON a.vector_id = v.id"
@@ -370,6 +403,15 @@
         "calls": [
             {
                 "db.executeQuery": "SELECT a.atttypmod FROM pg_attribute a WHERE a.attrelid = 'openregister_vec_ann'::regclass AND a.attname = 'embedding' AND NOT a.attisdropped"
+            },
+            {
+                "logger.debug": [
+                    "[HybridSearchDiagnostics] ANN sidecar not readable",
+                    {
+                        "sidecar": "openregister_vec_ann",
+                        "exception": "no sidecar"
+                    }
+                ]
             },
             {
                 "db.executeQuery": "SELECT indexname FROM pg_indexes WHERE indexname IN ('idx_or_vec_ann_hnsw', 'idx_or_chunks_text_search_gin')"

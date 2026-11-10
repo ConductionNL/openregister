@@ -64,8 +64,6 @@ class RuleInventoryServiceTest extends TestCase {
 
 		return new RuleInventoryService(
 			summaries: $summaryMapper,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: $published)
 		);
 

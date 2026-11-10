@@ -68,6 +68,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 
 /**
@@ -503,10 +504,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function cachedNamedResult(NamedAggregationRun $run): ?array {
 		$cached = $this->cache->get(
-			registerSlug: (string)$run->register->getSlug(),
-			schemaSlug: (string)$run->schema->getSlug(),
-			name: $run->name,
-			filter: $run->cacheKey
+			slot: new AggregationSlot(
+				registerSlug: (string)$run->register->getSlug(),
+				schemaSlug: (string)$run->schema->getSlug(),
+				name: $run->name,
+				filter: $run->cacheKey
+			)
 		);
 		if ($cached === null) {
 			return null;
@@ -528,10 +531,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function storeNamedResult(NamedAggregationRun $run, array $result): array {
 		$this->cache->set(
-			registerSlug: (string)$run->register->getSlug(),
-			schemaSlug: (string)$run->schema->getSlug(),
-			name: $run->name,
-			filter: $run->cacheKey,
+			slot: new AggregationSlot(
+				registerSlug: (string)$run->register->getSlug(),
+				schemaSlug: (string)$run->schema->getSlug(),
+				name: $run->name,
+				filter: $run->cacheKey
+			),
 			result: $result
 		);
 		return $this->projectNamedGroupKeys(run: $run, envelope: $result);
@@ -4735,10 +4740,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function cachedCrossResult(CrossSchemaAggregationRun $cross): ?array {
 		$cached = $this->cache->get(
-			registerSlug: (string)$cross->parent->register->getSlug(),
-			schemaSlug: (string)$cross->parent->schema->getSlug(),
-			name: $cross->parent->name,
-			filter: $cross->cacheKey
+			slot: new AggregationSlot(
+				registerSlug: (string)$cross->parent->register->getSlug(),
+				schemaSlug: (string)$cross->parent->schema->getSlug(),
+				name: $cross->parent->name,
+				filter: $cross->cacheKey
+			)
 		);
 		if ($cached !== null) {
 			$cached['cached'] = true;
@@ -4757,10 +4764,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function storeCrossResult(CrossSchemaAggregationRun $cross, array $result): array {
 		$this->cache->set(
-			registerSlug: (string)$cross->parent->register->getSlug(),
-			schemaSlug: (string)$cross->parent->schema->getSlug(),
-			name: $cross->parent->name,
-			filter: $cross->cacheKey,
+			slot: new AggregationSlot(
+				registerSlug: (string)$cross->parent->register->getSlug(),
+				schemaSlug: (string)$cross->parent->schema->getSlug(),
+				name: $cross->parent->name,
+				filter: $cross->cacheKey
+			),
 			result: $result
 		);
 		return $result;

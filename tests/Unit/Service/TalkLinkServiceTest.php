@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Service\TalkLink\LinkedObject;
+use OCA\OpenRegister\Service\TalkLink\RoomCreation;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -169,7 +171,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->linkRoom('abc-123', 1, 2, 'room-tok');
+		$this->service->linkRoom(new LinkedObject('abc-123', 1, 2), 'room-tok');
 	}
 
 	public function testLinkRoomThrowsOnDuplicate(): void {
@@ -181,7 +183,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Room already linked to this object');
 
-		$this->service->linkRoom('abc-123', 1, 2, 'room-tok');
+		$this->service->linkRoom(new LinkedObject('abc-123', 1, 2), 'room-tok');
 	}
 
 	public function testLinkRoomThrowsWhenTalkUnavailable(): void {
@@ -197,7 +199,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 
 		try {
-			$this->service->linkRoom('abc-123', 1, 2, 'room-tok');
+			$this->service->linkRoom(new LinkedObject('abc-123', 1, 2), 'room-tok');
 			$this->fail('Expected exception was not thrown');
 		} catch (Exception $exception) {
 			$this->assertContains($exception->getCode(), [404, 503]);
@@ -265,7 +267,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
 
-		$this->service->createAndLinkRoom('abc-123', 1, 2, 'Test', null, 2);
+		$this->service->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-123', 1, 2), 'Test', null, 2));
 	}
 
 	public function testCreateAndLinkRoomRejectsOneToOneType(): void {
@@ -275,7 +277,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(400);
 		$this->expectExceptionMessage('Invalid room type');
 
-		$this->service->createAndLinkRoom('abc-123', 1, 2, 'Test', null, 1);
+		$this->service->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-123', 1, 2), 'Test', null, 1));
 	}
 
 	public function testCreateAndLinkRoomThrowsWhenTalkUnavailable(): void {
@@ -286,7 +288,7 @@ class TalkLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 
 		try {
-			$this->service->createAndLinkRoom('abc-123', 1, 2, 'Test', null, 2);
+			$this->service->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-123', 1, 2), 'Test', null, 2));
 			$this->fail('Expected exception was not thrown');
 		} catch (Exception $exception) {
 			$this->assertContains($exception->getCode(), [500, 503]);
