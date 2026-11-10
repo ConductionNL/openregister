@@ -209,14 +209,7 @@ class FileSettingsHandler {
 	public function updateFileSettingsOnly(array $fileData): array {
 		try {
 			$fileConfig = $this->submittedFileSettings(fileData: $fileData);
-
-			$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
-			$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
-			$this->appConfig->setValueString(Application::APP_ID, 'fileManagement', json_encode($fileConfig));
-			$this->storeOpenAnonymiserPassword(fileData: $fileData);
-			if ($before !== null) {
-				$this->changeRecorder?->record(before: $before, keys: $auditKeys);
-			}
+			$this->storeRecorded(fileConfig: $fileConfig, fileData: $fileData);
 
 			$fileConfig['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
@@ -225,6 +218,27 @@ class FileSettingsHandler {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
 	}//end updateFileSettingsOnly()
+
+	/**
+	 * Store the file settings and the anonymiser password, recording the change.
+	 *
+	 * The snapshot is taken before either write and the change is recorded after
+	 * both, so one audit entry covers the whole save.
+	 *
+	 * @param array<string, mixed> $fileConfig The file settings to store.
+	 * @param array<string, mixed> $fileData   The settings being written, for the password.
+	 *
+	 * @return void
+	 */
+	private function storeRecorded(array $fileConfig, array $fileData): void {
+		$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
+		$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
+		$this->appConfig->setValueString(Application::APP_ID, 'fileManagement', json_encode($fileConfig));
+		$this->storeOpenAnonymiserPassword(fileData: $fileData);
+		if ($before !== null) {
+			$this->changeRecorder?->record(before: $before, keys: $auditKeys);
+		}
+	}//end storeRecorded()
 
 	/**
 	 * The file settings to store: every default key from the submitted values or
