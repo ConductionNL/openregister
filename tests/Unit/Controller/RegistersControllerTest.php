@@ -655,6 +655,8 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->export(1);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-register_\d{4}-\d{2}-\d{2}_\d{6}\.json$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/json', $result->getHeaders()['Content-Type']);
 	}
 
 	public function testExportCsvMissingSchemaReturns400(): void {
@@ -1106,6 +1108,8 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->export(1);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-register_test-schema_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('text/csv', $result->getHeaders()['Content-Type']);
 	}
 
 	public function testExportExcelSuccess(): void {
@@ -1126,6 +1130,8 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->export(1);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-register_\d{4}-\d{2}-\d{2}_\d{6}\.xlsx$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->getHeaders()['Content-Type']);
 	}
 
 	public function testExportPdfWithSchemaSuccess(): void {
