@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCA\OpenRegister\Service\Rbac\RevealRecording;
@@ -357,7 +358,7 @@ class ExplicitRevealTest extends TestCase {
 	public function testAWriteSendingTheMaskKeepsTheValue(): void {
 		$stored = ['citizenServiceNumber' => self::BSN];
 
-		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored)['citizenServiceNumber']);
-		$this->assertSame('999990000', ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored)['citizenServiceNumber']);
+		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored))['citizenServiceNumber']);
+		$this->assertSame('999990000', ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored))['citizenServiceNumber']);
 	}//end testAWriteSendingTheMaskKeepsTheValue()
 }//end class
