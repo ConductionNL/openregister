@@ -204,7 +204,7 @@ class InheritedGeoCollector implements InheritedGeoCollectorInterface {
 
 			$provenance = $this->provenance(source: $reference->source, referenced: $referenced);
 			foreach ($this->featuresOf(source: $referenced->getGeo()) as $feature) {
-				$feature['properties'] = array_merge($feature['properties'], $provenance);
+				$feature['properties'] = array_replace($feature['properties'], $provenance);
 				$features[] = $feature;
 			}
 		}
