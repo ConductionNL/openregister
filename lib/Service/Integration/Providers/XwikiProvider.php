@@ -261,7 +261,10 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	private function linkedPageRow(XwikiLink $link, array $scope): array {
 		$row = $this->cachedLinkRow(link: $link);
 		try {
-			$enriched = $this->get(ref: new ObjectRef(register: $scope['register'], schema: $scope['schema'], id: $scope['object']), entityId: $row['reference']);
+			$enriched = $this->get(
+				ref: new ObjectRef(register: $scope['register'], schema: $scope['schema'], id: $scope['object']),
+				entityId: $row['reference']
+			);
 		} catch (Throwable $e) {
 			// Upstream unreachable — fall back to the cached row.
 			return $this->normalizeRow(row: $row);

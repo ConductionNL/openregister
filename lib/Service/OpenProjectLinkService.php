@@ -512,7 +512,10 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		}
 
 		try {
-			$row = $this->provider->get(ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id), entityId: (string)$workPackageId);
+			$row = $this->provider->get(
+				ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				entityId: (string)$workPackageId
+			);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('OpenProjectLinkService::fetchWorkPackage failed: ' . $e->getMessage());
 			return null;

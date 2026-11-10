@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -302,7 +303,7 @@ class FileRestrictionPathsTest extends TestCase {
 		$this->fileService->method('getFilesForEntity')->willReturn([$this->restricted, $this->open]);
 
 		$rows = (new FilesProvider($this->fileService, $container, $this->createMock(IL10N::class)))
-			->list('7', '42', self::OBJECT_UUID);
+			->list(new ObjectRef(register: '7', schema: '42', id: self::OBJECT_UUID));
 
 		$this->assertSame([self::OPEN], array_column($rows, 'id'));
 	}//end testTheIntegrationFilesLeafLeavesTheRestrictedFileOut()

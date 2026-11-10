@@ -414,7 +414,10 @@ class ObjectIntegrationsController extends Controller {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? self::created(
 			response: $this->dispatch(
 				integrationId: $integrationId,
-				callback: fn ($provider) => $provider->create(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $this->collectPayload())
+				callback: fn ($provider) => $provider->create(
+					new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+					$this->collectPayload()
+				)
 			)
 		);
 	}//end create()
@@ -438,7 +441,11 @@ class ObjectIntegrationsController extends Controller {
 	public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->update(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $entityId, $this->collectPayload())
+			callback: fn ($provider) => $provider->update(
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId,
+				$this->collectPayload()
+			)
 		);
 	}//end update()
 

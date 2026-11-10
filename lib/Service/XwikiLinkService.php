@@ -300,7 +300,10 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 			// The OpenConnector source resolves `{ space, title }` to a new
 			// remote xWiki page and returns the normalised row.
 			$page = ['space' => $draft->space, 'title' => $draft->title];
-			$row  = $provider->create(new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid), $page);
+			$row  = $provider->create(
+				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
+				$page
+			);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
@@ -567,7 +570,10 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	private function resolveRemotePage(string $pageReference, LinkTarget $target): array {
 		$provider = $this->requireProvider();
 		try {
-			$row = $provider->get(new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid), $pageReference);
+			$row = $provider->get(
+				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
+				$pageReference
+			);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
