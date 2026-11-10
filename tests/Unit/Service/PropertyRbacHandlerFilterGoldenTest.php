@@ -27,12 +27,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ProtectedCarryForward;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -129,13 +133,17 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 		$log = [];
 		$actual['strip'] = [$handler->stripWriteOnlyProperties(schema: $schema, object: $object), $log];
 		$log = [];
-		$actual['unauthorizedUpdate'] = [$handler->getUnauthorizedProperties(schema: $schema, object: $object, incomingData: $incoming), $log];
+		$actual['unauthorizedUpdate'] = [$handler->getUnauthorizedProperties(
+			write: new PropertyWriteCheck(schema: $schema, request: new PropertyAccessRequest(object: $object), incoming: $incoming)
+		), $log];
 		$log = [];
-		$actual['unauthorizedCreate'] = [$handler->getUnauthorizedProperties(schema: $schema, object: [], incomingData: $incoming, isCreate: true), $log];
+		$actual['unauthorizedCreate'] = [$handler->getUnauthorizedProperties(
+			write: new PropertyWriteCheck(schema: $schema, request: new PropertyAccessRequest(object: [], isCreate: true), incoming: $incoming)
+		), $log];
 		$log = [];
 		$omitted = $handler->collectOmittedWriteOnlyPaths(schema: $schema, incoming: $incoming);
 		$actual['omittedWriteOnly'] = $omitted;
-		$actual['omittedProtected'] = [$handler->collectOmittedProtectedProperties(schema: $schema, incoming: ['status' => $status], stored: $object), $log];
+		$actual['omittedProtected'] = [$handler->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['status' => $status], stored: $object)), $log];
 		$log = [];
 		$actual['restore'] = $handler->restoreWriteOnlyValues(prepared: $incoming, stored: $object, omittedPaths: [...$omitted, 'nowhere.at.all']);
 		$actual['restoreScalar'] = $handler->restoreWriteOnlyValues(prepared: ['cfg' => 'flat'], stored: $object, omittedPaths: ['cfg.auth.secret']);
@@ -206,9 +214,9 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 
 		$reveals = $this->createMock(RevealCollector::class);
 		$reveals->method('isAudited')->willReturnCallback(fn (?array $rules): bool => ($rules['audit'] ?? false) === true);
-		$reveals->method('record')->willReturnCallback(
-			function (string $userId, string $objectUuid, string $property, $schemaId) use (&$log): void {
-				$log[] = ['reveal', $userId, $objectUuid, $property, $schemaId];
+		$reveals->method('recordReveal')->willReturnCallback(
+			function (PropertyReveal $reveal) use (&$log): void {
+				$log[] = ['reveal', $reveal->userId, $reveal->objectUuid, $reveal->property, $reveal->schemaId];
 			}
 		);
 

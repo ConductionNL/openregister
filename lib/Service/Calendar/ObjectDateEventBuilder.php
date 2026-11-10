@@ -66,18 +66,23 @@ class ObjectDateEventBuilder {
 	private const DATE_ONLY = '/^\d{4}-\d{2}-\d{2}$/';
 
 	/**
+	 * The iCalendar text writer.
+	 *
+	 * @var IcalendarWriter
+	 */
+	private readonly IcalendarWriter $writer;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IcalendarWriter $writer The iCalendar text writer.
 	 * @param DeadlineDateResolver $deadlines The term-engine date resolver.
 	 * @param AppointmentAttendeeService $attendees The attendee-response store.
 	 */
 	public function __construct(
-		private readonly IcalendarWriter $writer,
 		private readonly DeadlineDateResolver $deadlines,
 		private readonly AppointmentAttendeeService $attendees,
 	) {
-
+		$this->writer = new IcalendarWriter();
 	}//end __construct()
 
 	/**

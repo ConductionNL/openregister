@@ -91,6 +91,7 @@ final class NotificationBroadcastReceiptMapperTest extends TestCase {
 		$receipt = (new NotificationBroadcastReceiptMapper($this->database()))->acknowledge('b-1', 'alice');
 
 		$this->assertInstanceOf(DateTime::class, $receipt->getSeenAt());
+		$this->assertEqualsWithDelta(time(), $receipt->getSeenAt()->getTimestamp(), 5);
 	}
 
 	public function testAcknowledgeRaceReturnsTheWinner(): void {

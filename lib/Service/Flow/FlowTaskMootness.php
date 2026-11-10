@@ -76,22 +76,21 @@ class FlowTaskMootness {
 	 * of whose join places, was just cleared.
 	 *
 	 * @param array<string, mixed> $context The run context, carrying the resume state.
-	 * @param array<int, string> $places The place names the pruning cleared.
-	 * @param string $byTransition The transition whose exit decision did it.
+	 * @param PlacesPruning $pruning The place names the pruning cleared and the transition whose exit decision did it.
 	 *
 	 * @return int How many tasks were terminated.
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
 	 */
-	public function placesPruned(array $context, array $places, string $byTransition): int {
+	public function placesPruned(array $context, PlacesPruning $pruning): int {
 		$state = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
-		if ($state instanceof FlowResumeState === false || $places === []) {
+		if ($state instanceof FlowResumeState === false || $pruning->places === []) {
 			return 0;
 		}
 
-		$run = new FlowPruningRun(state: $state, runUuid: $this->runUuidOf(context: $context), byTransition: $byTransition);
+		$run = new FlowPruningRun(state: $state, runUuid: $this->runUuidOf(context: $context), byTransition: $pruning->byTransition);
 
-		return $this->pruned(run: $run, places: $places);
+		return $this->pruned(run: $run, places: $pruning->places);
 	}//end placesPruned()
 
 	/**

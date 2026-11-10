@@ -178,29 +178,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	}//end stampLinkedBy()
 
 	/**
-	 * Create a new VEVENT through CalendarEventService and record a link-table row.
-	 *
-	 * Delegates the VEVENT write (which adds X-OPENREGISTER-* properties)
-	 * to {@see CalendarEventService::createEvent()} then mirrors the
-	 * linkage in the link table with `taggedWithXor=true`.
-	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception On creation failure.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function createAndLinkEvent(string $objectUuid, int $registerId, int $schemaId, array $eventData): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->createLinkedEvent(target: $target, eventData: $eventData);
-	}//end createAndLinkEvent()
-
-	/**
 	 * Create a VEVENT through CalendarEventService and insert its link-table mirror row.
 	 *
 	 * @param LinkTarget          $target    The object, register and schema to link to.
@@ -576,9 +553,8 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
 	 * List recent events on a named calendar — picker step 2.
 	 *
-	 * @param string $calendarUri Calendar URI.
-	 * @param int|null $limit Max rows (default 100).
-	 * @param DateTimeInterface|null $after Only include events with dtstart >= $after.
+	 * @param string               $calendarUri Calendar URI.
+	 * @param CalendarPickerWindow $window      The earliest start and the row cap.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
@@ -586,10 +562,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array {
-		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $after));
+	public function getEventsForCalendar(string $calendarUri, CalendarPickerWindow $window): array {
+		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $window->after));
 
-		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $limit ?? 0);
+		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $window->limit ?? 0);
 	}//end getEventsForCalendar()
 
 	/**

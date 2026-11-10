@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -92,9 +93,7 @@ class LogServiceAccessGoldenTest extends TestCase {
 		$this->calls = [];
 		$this->service = new LogService(
 			$this->auditTrailMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$this->schemaMapper
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)
 		);
 	}//end setUp()
 

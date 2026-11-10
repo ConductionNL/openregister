@@ -32,6 +32,8 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Register;
@@ -167,7 +169,8 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 		$rule = ($world['rule'] ?? []);
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			function (Schema $schema, string $property, array $object) use ($rule): bool {
+			function (SchemaProperty $read, PropertyAccessRequest $request) use ($rule): bool {
+				[$schema, $property, $object] = [$read->schema, $read->name, $request->object];
 				$this->events[] = ['ask', $property, $object];
 				if (($rule[$property] ?? true) === 'throw') {
 					throw new RuntimeException('rule unavailable');
@@ -224,7 +227,7 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 			$search = $this->searchHandler(world: $world);
 		}
 
-		return new MagicFacetHandler($db, new NullLogger(), null, null, $search, $container, null);
+		return new MagicFacetHandler($db, new NullLogger(), $search, $container);
 	}//end handler()
 
 	/**

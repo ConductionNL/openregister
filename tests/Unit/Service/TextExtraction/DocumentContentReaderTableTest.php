@@ -3,7 +3,7 @@
 /**
  * DocumentContentReaderTableTest
  *
- * Characterisation of DocumentContentReader::tableRows(): cell text, text
+ * Characterisation of DocumentContentReader::table(): cell text, text
  * boxes, wrappers, pictures collected across cells, and the depth bound.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,7 +31,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\DocumentContentReader;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tables read by {@see DocumentContentReader::tableRows()}.
+ * Tables read by {@see DocumentContentReader::table()}.
  */
 class DocumentContentReaderTableTest extends TestCase {
 
@@ -92,22 +92,20 @@ class DocumentContentReaderTableTest extends TestCase {
 			. '<w:tr><w:tc><w:sdt><w:sdtContent>' . $this->p('Veld') . $this->picture('rId2') . '</w:sdtContent></w:sdt></w:tc>'
 			. '<w:tc><w:tbl><w:tr><w:tc>' . $this->p('Binnen') . '</w:tc></w:tr></w:tbl></w:tc></w:tr></w:tbl>'
 		);
-		$images = [['type' => 'image', 'target' => 'eerder', 'external' => false, 'name' => '', 'description' => '']];
 		$relationships = [
 			'rId1' => ['target' => 'word/media/1.png', 'external' => false],
 			'rId2' => ['target' => 'https://example.org/2.png', 'external' => true],
 		];
 
-		$rows = (new DocumentContentReader())->tableRows(table: $table, relationships: $relationships, depth: 1, images: $images);
+		$read = (new DocumentContentReader())->table(table: $table, relationships: $relationships, depth: 1);
 
-		self::assertSame([['A', "Voor\nIn kader"], ['Veld', 'Binnen']], $rows);
+		self::assertSame([['A', "Voor\nIn kader"], ['Veld', 'Binnen']], $read->rows);
 		self::assertSame(
 			[
-				['type' => 'image', 'target' => 'eerder', 'external' => false, 'name' => '', 'description' => ''],
 				['type' => 'image', 'target' => 'word/media/1.png', 'external' => false, 'name' => 'Foto rId1', 'description' => 'Alt rId1'],
 				['type' => 'image', 'target' => 'https://example.org/2.png', 'external' => true, 'name' => 'Foto rId2', 'description' => 'Alt rId2'],
 			],
-			$images
+			$read->images
 		);
 	}//end testCellsAndPictures()
 
@@ -124,13 +122,11 @@ class DocumentContentReaderTableTest extends TestCase {
 
 		$cell .= str_repeat('</w:sdtContent></w:sdt>', 6);
 		$table = $this->table('<w:tbl><w:tr><w:tc>' . $cell . '</w:tc></w:tr></w:tbl>');
-		$images = [];
-
 		$start = (DocumentContentReader::MAX_DEPTH - 3);
-		$rows = (new DocumentContentReader())->tableRows(table: $table, relationships: [], depth: $start, images: $images);
+		$read = (new DocumentContentReader())->table(table: $table, relationships: [], depth: $start);
 
-		self::assertSame([["Niveau 1\nNiveau 2\nNiveau 3"]], $rows);
-		$tooDeep = (new DocumentContentReader())->tableRows(table: $table, relationships: [], depth: (DocumentContentReader::MAX_DEPTH + 1), images: $images);
-		self::assertSame([['']], $tooDeep);
+		self::assertSame([["Niveau 1\nNiveau 2\nNiveau 3"]], $read->rows);
+		$tooDeep = (new DocumentContentReader())->table(table: $table, relationships: [], depth: (DocumentContentReader::MAX_DEPTH + 1));
+		self::assertSame([['']], $tooDeep->rows);
 	}//end testDepthBoundInsideACell()
 }//end class

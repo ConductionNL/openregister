@@ -31,6 +31,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 use OCA\OpenRegister\Service\Sync\SyncScheduleInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -165,10 +166,7 @@ class SyncDataJob extends TimedJob {
 			}
 
 			$summary = $this->pipeline->run(
-				source: $source,
-				fetcher: $fetcher,
-				executionId: $executionId,
-				since: $since
+				new HarvestRun(source: $source, fetcher: $fetcher, executionId: $executionId, since: $since)
 			);
 
 			$source->setLastSyncStatus((string)($summary['status'] ?? 'success'));

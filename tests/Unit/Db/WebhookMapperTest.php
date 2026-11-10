@@ -45,10 +45,6 @@ class WebhookMapperTest extends TestCase {
 	// Construction
 	// -------------------------------------------------------------------------
 
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(WebhookMapper::class, $this->mapper);
-	}
-
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_webhooks', $this->mapper->getTableName());
 	}
