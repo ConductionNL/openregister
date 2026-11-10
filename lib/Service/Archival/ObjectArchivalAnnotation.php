@@ -29,8 +29,6 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -75,14 +73,12 @@ class ObjectArchivalAnnotation {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Source of the object's schema.
-	 * @param RetentionEvaluator $evaluator The one evaluator both paths use.
-	 * @param LoggerInterface $logger Logger for a lookup that fails.
+	 * @param ArchivalSchemaLookup $lookup    Source of the object's schema; logs a lookup that fails.
+	 * @param RetentionEvaluator   $evaluator The one evaluator both paths use.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ArchivalSchemaLookup $lookup,
 		private readonly RetentionEvaluator $evaluator,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -133,7 +129,7 @@ class ObjectArchivalAnnotation {
 		}
 
 		try {
-			$configuration = $this->schemaMapper->find($schemaId)->getConfiguration();
+			$configuration = $this->lookup->schemaMapper->find($schemaId)->getConfiguration();
 			$annotation = ($configuration['x-openregister-archival'] ?? null);
 			if (is_array($annotation) === false) {
 				return [];
@@ -150,7 +146,7 @@ class ObjectArchivalAnnotation {
 				createdAt: ($object->getCreated() ?? new DateTimeImmutable())
 			);
 		} catch (Throwable $e) {
-			$this->logger->debug(
+			$this->lookup->logger->debug(
 				sprintf(
 					'[ObjectArchivalAnnotation] could not evaluate the archival annotation for %s: %s',
 					(string)$object->getUuid(),
