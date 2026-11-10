@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCP\IRequest;
 use OCP\IUser;
@@ -187,7 +188,7 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 		$this->findYields($this->object(['a' => 1]));
 		$this->schemaConfig(['x-openregister-survivorship' => ['sourceLink' => ['mode' => 'reverseFk']]]);
 		$this->resolver->expects($this->once())->method('resolveSources')
-			->with(['id' => 'm-1', 'a' => 1], 'm-1', ['sourceLink' => ['mode' => 'reverseFk']], 'reg')
+			->with(new MasterRecord(data: ['id' => 'm-1', 'a' => 1], uuid: 'm-1', register: 'reg'), ['sourceLink' => ['mode' => 'reverseFk']])
 			->willReturn([['uuid' => 's-1']]);
 		$r = $this->controller()->sources('m-1');
 		$this->assertSame([200, ['sources' => [['uuid' => 's-1']]]], [$r->getStatus(), $r->getData()]);
@@ -297,7 +298,7 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 		$object = $this->object(['attributeOverrides' => 'junk']);
 		$this->findYields($object);
 		$this->schemaConfig(null);
-		$this->resolver->expects($this->once())->method('resolveSources')->with($this->anything(), 'm-1', [], 'reg')->willReturn([]);
+		$this->resolver->expects($this->once())->method('resolveSources')->with($this->callback(fn (MasterRecord $master): bool => $master->uuid === 'm-1' && $master->register === 'reg'), [])->willReturn([]);
 		$this->objects->method('saveObject')->willReturnArgument(0);
 		$r = $this->controller(['attribute' => 'a', 'value' => 0])->override('m-1');
 		$this->assertSame(

@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -237,10 +238,8 @@ class SurvivorshipController extends Controller {
 	 */
 	private function resolveSourcesOf(ObjectEntity $object): array {
 		return $this->sourceRecordResolver->resolveSources(
-			masterData: ($object->getObject() ?? []),
-			masterUuid: (string)$object->getUuid(),
-			config: $this->survivorshipConfigFor(object: $object),
-			masterRegister: (string)$object->getRegister()
+			master: new MasterRecord(data: ($object->getObject() ?? []), uuid: (string)$object->getUuid(), register: (string)$object->getRegister()),
+			config: $this->survivorshipConfigFor(object: $object)
 		);
 	}//end resolveSourcesOf()
 

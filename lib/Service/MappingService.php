@@ -760,11 +760,15 @@ class MappingService implements MappingServiceInterface {
 	 *
 	 * @param string $coordinates A string containing coordinates.
 	 *
-	 * @return array An array of coordinates.
+	 * @return array An array of coordinates; empty for a blank string.
 	 *
 	 * @spec exclude Pure coordinate-string parsing helper; no orchestration or persisted state.
 	 */
 	public function coordinateStringToArray(string $coordinates): array {
+		if (trim($coordinates) === '') {
+			return [];
+		}
+
 		// Pairs of space-separated values; an odd value out ends as a pair of one.
 		$coordinateArray = array_chunk(explode(' ', $coordinates), 2);
 		if (count($coordinateArray) === 1) {

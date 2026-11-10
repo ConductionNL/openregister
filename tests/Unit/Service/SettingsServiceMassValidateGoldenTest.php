@@ -9,7 +9,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -55,9 +54,9 @@ class SettingsServiceMassValidateGoldenTest extends TestCase {
 			$this->calls[] = ['count', $args];
 			return $s['total'];
 		});
-		$mapper->method('findAllListed')->willReturnCallback(function (MagicListRequest $request) use ($s) {
-			$q = $request->query;
-			$this->calls[] = ['findAll', [$q->limitOrNull(), $q->offset, ($q->filters ?: null), null, null, $q->sort, $q->search, $request->ids, $request->uses, false, null, null]];
+		$mapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$mapper->method('searchObjects')->willReturnCallback(function (...$args) use ($s) {
+			$this->calls[] = ['searchObjects', $args];
 			$objects = [];
 			for ($i = 0; $i < $s['perBatch']; $i++) {
 				$object = new ObjectEntity();

@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
@@ -436,10 +437,8 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 */
 	private function findTrails(array $query): array {
 		return $this->searchTrailMapper->findAll(
-			criteria: $this->criteria(query: $query),
-			limit: $query['limit'],
-			offset: $query['offset'],
-			sort: $query['sort']
+			query: new ListQuery(limit: ($query['limit'] ?? ListQuery::UNBOUNDED), offset: $query['offset'], sort: $query['sort']),
+			criteria: $this->criteria(query: $query)
 		);
 	}//end findTrails()
 

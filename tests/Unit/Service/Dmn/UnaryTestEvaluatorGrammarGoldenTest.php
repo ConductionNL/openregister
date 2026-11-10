@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
 use OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Dmn\UnaryTestValue;
 
 /**
  * Golden pins for the DMN cell grammar.
@@ -113,7 +114,7 @@ class UnaryTestEvaluatorGrammarGoldenTest extends TestCase {
 		}
 
 		try {
-			$actual = $evaluator->matches(expression: $expression, value: $value, type: $type);
+			$actual = $evaluator->matchesValue(expression: $expression, subject: new UnaryTestValue(value: $value, type: $type));
 		} catch (DecisionEvaluationException $exception) {
 			$actual = $exception->getErrorCode() . '|' . json_encode($exception->getDetails());
 		}

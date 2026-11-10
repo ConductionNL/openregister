@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
@@ -380,9 +381,11 @@ class ArchivalController extends Controller {
 
 			$result = $this->destructionService->approveList(
 				destructionList: $destructionList,
-				choice: $this->destructionService->approvalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons),
-				requiresDual: $requiresDual,
-				listUuid: $id
+				request: new ApprovalRequest(
+					choice: $this->destructionService->approvalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons),
+					requiresDual: $requiresDual,
+					listUuid: $id
+				)
 			);
 
 			// Check if dual approval was rejected (same user).

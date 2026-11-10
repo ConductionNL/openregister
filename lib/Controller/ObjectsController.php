@@ -111,6 +111,8 @@ use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
+use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -2307,9 +2309,7 @@ class ObjectsController extends Controller {
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
-			geoProperty: $this->geoPropertyParam(params: $params),
-			fields: $this->parseFieldsParam(params: $params),
-			includeArea: true
+			shape: new FeatureShape(geoProperty: $this->geoPropertyParam(params: $params), fields: $this->parseFieldsParam(params: $params), includeArea: true)
 		);
 
 		// Body is a valid GeoJSON FeatureCollection. The default
@@ -2376,8 +2376,7 @@ class ObjectsController extends Controller {
 
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
-			geoProperty: $this->geoPropertyParam(params: $params),
-			maxFeatures: $this->wfsMaxFeatures(params: $params)
+			request: new GetFeatureRequest(geoProperty: $this->geoPropertyParam(params: $params), maxFeatures: $this->wfsMaxFeatures(params: $params))
 		);
 
 		return $this->geoCollectionResponse(collection: $response, crs: $crs);

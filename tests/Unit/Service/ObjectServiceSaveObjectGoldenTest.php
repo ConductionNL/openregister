@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -73,6 +74,7 @@ use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\Object\SaveActor;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Golden test for ObjectService::saveObject().
@@ -407,8 +409,17 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 	}//end recorder()
 
 	public function record(string $method, array $args): void {
+		if ($method === 'permissions.checkPermission' && ($args[2] ?? null) instanceof PermissionCheckOptions) {
+			$options = $args[2];
+			$args    = [$args[0], $args[1], $options->userId, $options->objectOwner, $args[3], $options->object, $options->register];
+		}
+
 		if (in_array($method, ['logger.debug', 'logger.info', 'logger.warning', 'logger.error'], true) === true && is_array($args[1] ?? null) === true) {
 			unset($args[1]['file'], $args[1]['line']);
+		}
+
+		if (($args[0] ?? null) instanceof WriteConstraintCheck) {
+			$args = [$args[0]->incoming, $args[0]->stored, ...array_slice($args, 1)];
 		}
 
 		$this->calls[] = [$method, $this->describe($args)];

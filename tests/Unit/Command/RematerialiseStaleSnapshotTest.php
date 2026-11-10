@@ -50,6 +50,7 @@ use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Two learniq enrolments of one course. Saving the first re-saves its sibling
@@ -158,7 +159,7 @@ class RematerialiseStaleSnapshotTest extends TestCase {
 			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($rules, $schema): ObjectEntity {
 				$uuid = $options->uuid;
 				$this->saves[] = (string) $uuid;
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $this->store[$uuid], schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $this->store[$uuid]), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -449,7 +450,7 @@ class ImportHandlerTest extends TestCase {
 			->willReturn($schema);
 
 		$result = $this->handler->importSchema(
-			data:           ['slug' => 'person-schema', 'version' => '1.0.0', 'title' => 'Person'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'person-schema', 'version' => '1.0.0', 'title' => 'Person']),
 			slugsAndIdsMap: []
 		);
 
@@ -479,10 +480,11 @@ class ImportHandlerTest extends TestCase {
 			->willReturnArgument(0);
 
 		$result = $this->handler->importSchema(
-			data:           ['slug' => 'person-schema', 'version' => '1.0.0', 'title' => 'Person'],
-			slugsAndIdsMap: [],
-			owner:          'app-owner',
-			appId:          'myapp'
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'person-schema', 'version' => '1.0.0', 'title' => 'Person'],
+				options: new SchemaImportOptions(owner: 'app-owner', appId: 'myapp')
+			),
+			slugsAndIdsMap: []
 		);
 
 		$this->assertSame('app-owner', $result->getOwner());
@@ -502,9 +504,11 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->expects($this->never())->method('update');
 
 		$result = $this->handler->importSchema(
-			data:           ['slug' => 'person-schema', 'version' => '1.0.0', 'title' => 'Person'],
-			slugsAndIdsMap: [],
-			force:          false
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'person-schema', 'version' => '1.0.0', 'title' => 'Person'],
+				options: new SchemaImportOptions(force: false)
+			),
+			slugsAndIdsMap: []
 		);
 
 		$this->assertSame(10, $result->getId());
@@ -529,7 +533,7 @@ class ImportHandlerTest extends TestCase {
 			->willReturn($updated);
 
 		$result = $this->handler->importSchema(
-			data:           ['slug' => 'person-schema', 'version' => '2.0.0', 'title' => 'Person v2'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'person-schema', 'version' => '2.0.0', 'title' => 'Person v2']),
 			slugsAndIdsMap: []
 		);
 
@@ -557,7 +561,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'typed-schema',
 				'version' => '1.0.0',
 				'title' => 'Typed',
@@ -565,7 +570,8 @@ class ImportHandlerTest extends TestCase {
 					'name' => ['title' => 'Name'],
 					// 'type' is intentionally absent.
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -593,14 +599,16 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'fmt-schema',
 				'version' => '1.0.0',
 				'title' => 'Formats',
 				'properties' => [
 					'field' => ['type' => 'string', 'format' => 'string'],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -628,14 +636,16 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'ref-schema',
 				'version' => '1.0.0',
 				'title' => 'Ref Schema',
 				'properties' => [
 					'address' => ['type' => 'object', '$ref' => 'address-schema'],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: ['address-schema' => 42]
 		);
 
@@ -657,7 +667,7 @@ class ImportHandlerTest extends TestCase {
 		$this->expectExceptionMessageMatches('/Failed to import schema/');
 
 		$this->handler->importSchema(
-			data:           ['slug' => 'broken-schema', 'version' => '1.0.0', 'title' => 'Broken'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'broken-schema', 'version' => '1.0.0', 'title' => 'Broken']),
 			slugsAndIdsMap: []
 		);
 
@@ -1983,7 +1993,7 @@ class ImportHandlerTest extends TestCase {
 		$this->expectExceptionMessageMatches('/Duplicate schema detected/');
 
 		$this->handler->importSchema(
-			data:           ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup']),
 			slugsAndIdsMap: []
 		);
 
@@ -2005,7 +2015,7 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$result = $this->handler->importSchema(
-			data:           ['slug' => 'val-schema', 'version' => '1.0.0', 'title' => 'Val'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'val-schema', 'version' => '1.0.0', 'title' => 'Val']),
 			slugsAndIdsMap: []
 		);
 
@@ -2034,7 +2044,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'items-fmt-schema',
 				'version' => '1.0.0',
 				'title' => 'Items Format',
@@ -2044,7 +2055,8 @@ class ImportHandlerTest extends TestCase {
 						'items' => ['type' => 'string', 'format' => 'binary'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -2072,7 +2084,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'notitle-schema',
 				'version' => '1.0.0',
 				'title' => 'NoTitle',
@@ -2080,7 +2093,8 @@ class ImportHandlerTest extends TestCase {
 					'myProp' => ['type' => 'string'],
 					// 'title' is intentionally absent.
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -2112,14 +2126,16 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'ref-schema',
 				'version' => '1.0.0',
 				'title' => 'Ref Schema',
 				'properties' => [
 					'address' => ['type' => 'object', '$ref' => 'linked-schema'],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 			// $ref not in slugsAndIdsMap — must resolve from schemasMap.
 		);
@@ -2148,7 +2164,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'items-ref-schema',
 				'version' => '1.0.0',
 				'title' => 'Items Ref',
@@ -2158,7 +2175,8 @@ class ImportHandlerTest extends TestCase {
 						'items' => ['$ref' => 'tag-schema'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: ['tag-schema' => 77]
 		);
 
@@ -2190,7 +2208,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'objcfg-schema',
 				'version' => '1.0.0',
 				'title' => 'ObjCfg',
@@ -2200,7 +2219,8 @@ class ImportHandlerTest extends TestCase {
 						'objectConfiguration' => ['register' => 'my-register'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -2233,7 +2253,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'dbcfg-schema',
 				'version' => '1.0.0',
 				'title' => 'DbCfg',
@@ -2243,7 +2264,8 @@ class ImportHandlerTest extends TestCase {
 						'objectConfiguration' => ['register' => 'db-register'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -2274,7 +2296,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'missing-reg-schema',
 				'version' => '1.0.0',
 				'title' => 'Missing Reg',
@@ -2284,7 +2307,8 @@ class ImportHandlerTest extends TestCase {
 						'objectConfiguration' => ['register' => 'nonexistent-register'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -2315,7 +2339,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'cfgschema',
 				'version' => '1.0.0',
 				'title' => 'CfgSchema',
@@ -2325,7 +2350,8 @@ class ImportHandlerTest extends TestCase {
 						'objectConfiguration' => ['schema' => 'linked-schema'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -2358,7 +2384,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'empty-objcfg-schema',
 				'version' => '1.0.0',
 				'title' => 'EmptyObjCfg',
@@ -2369,7 +2396,8 @@ class ImportHandlerTest extends TestCase {
 						// empty array — normalised to stdClass then back to array.
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -2399,7 +2427,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'legacy-schema',
 				'version' => '1.0.0',
 				'title' => 'Legacy',
@@ -2410,7 +2439,8 @@ class ImportHandlerTest extends TestCase {
 						// Legacy: register as a direct property.
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: ['legacy-register' => 88]
 		);
 
@@ -2441,7 +2471,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'legacy-items-schema',
 				'version' => '1.0.0',
 				'title' => 'LegacyItems',
@@ -2451,7 +2482,8 @@ class ImportHandlerTest extends TestCase {
 						'items' => ['register' => 'items-register'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -3509,9 +3541,11 @@ class ImportHandlerTest extends TestCase {
 			->willReturn($updated);
 
 		$result = $this->handler->importSchema(
-			data:           ['slug' => 'force-schema', 'version' => '1.0.0', 'title' => 'Forced'],
-			slugsAndIdsMap: [],
-			force:          true
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'force-schema', 'version' => '1.0.0', 'title' => 'Forced'],
+				options: new SchemaImportOptions(force: true)
+			),
+			slugsAndIdsMap: []
 		);
 
 		$this->assertSame(10, $result->getId());
@@ -3530,9 +3564,11 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->expects($this->never())->method('updateFromArray');
 
 		$result = $this->handler->importSchema(
-			data:           ['slug' => 'old-schema', 'version' => '1.0.0', 'title' => 'Old'],
-			slugsAndIdsMap: [],
-			force:          false
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'old-schema', 'version' => '1.0.0', 'title' => 'Old'],
+				options: new SchemaImportOptions(force: false)
+			),
+			slugsAndIdsMap: []
 		);
 
 		$this->assertSame(10, $result->getId());
@@ -3790,7 +3826,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'filecfg-schema',
 				'version' => '1.0.0',
 				'title' => 'FileCfg',
@@ -3801,7 +3838,8 @@ class ImportHandlerTest extends TestCase {
 						// Empty array — normalised to stdClass.
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -3833,7 +3871,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'items-objcfg-schema',
 				'version' => '1.0.0',
 				'title' => 'ItemsObjCfg',
@@ -3845,7 +3884,8 @@ class ImportHandlerTest extends TestCase {
 						],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -3876,7 +3916,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'items-filecfg-schema',
 				'version' => '1.0.0',
 				'title' => 'ItemsFileCfg',
@@ -3888,7 +3929,8 @@ class ImportHandlerTest extends TestCase {
 						],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -3922,14 +3964,16 @@ class ImportHandlerTest extends TestCase {
 		$prop->title = 'Age';
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'stdclass-prop-schema',
 				'version' => '1.0.0',
 				'title' => 'StdClass Prop',
 				'properties' => [
 					'age' => $prop,
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -3962,7 +4006,8 @@ class ImportHandlerTest extends TestCase {
 		$items->type = 'string';
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'stdclass-items-schema',
 				'version' => '1.0.0',
 				'title' => 'StdClass Items',
@@ -3972,7 +4017,8 @@ class ImportHandlerTest extends TestCase {
 						'items' => $items,
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -4010,7 +4056,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'dbschema-schema',
 				'version' => '1.0.0',
 				'title' => 'DbSchema',
@@ -4020,7 +4067,8 @@ class ImportHandlerTest extends TestCase {
 						'objectConfiguration' => ['schema' => 'db-linked-schema'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -4048,7 +4096,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'missing-schema-cfg',
 				'version' => '1.0.0',
 				'title' => 'MissingSchema',
@@ -4058,7 +4107,8 @@ class ImportHandlerTest extends TestCase {
 						'objectConfiguration' => ['schema' => 'nonexistent-schema'],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -4089,7 +4139,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'items-reg-schema',
 				'version' => '1.0.0',
 				'title' => 'ItemsReg',
@@ -4101,7 +4152,8 @@ class ImportHandlerTest extends TestCase {
 						],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -4132,7 +4184,8 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'items-sch-schema',
 				'version' => '1.0.0',
 				'title' => 'ItemsSch',
@@ -4144,7 +4197,8 @@ class ImportHandlerTest extends TestCase {
 						],
 					],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -4172,14 +4226,16 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('update')->willReturn($schema);
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'byte-fmt-schema',
 				'version' => '1.0.0',
 				'title' => 'ByteFmt',
 				'properties' => [
 					'data' => ['type' => 'string', 'format' => 'byte'],
 				],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -4261,7 +4317,10 @@ class ImportHandlerTest extends TestCase {
 			. 'You can identify duplicates by checking schemas with the same slug, uuid, or id.';
 
 		$this->expectExceptionMessage($message);
-		$this->handler->importSchema(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'], slugsAndIdsMap: []);
+		$this->handler->importSchema(
+			definition: new ImportedSchemaLookup(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup']),
+			slugsAndIdsMap: []
+		);
 	}
 
 	/**
@@ -4273,7 +4332,10 @@ class ImportHandlerTest extends TestCase {
 		$this->schemaMapper->method('findAll')->willReturn([$this->duplicateRow(new Schema(), 'dup-schema', 1)]);
 
 		$this->expectExceptionMessage('multiple entries in the database: Unable to retrieve detailed duplicate information.');
-		$this->handler->importSchema(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'], slugsAndIdsMap: []);
+		$this->handler->importSchema(
+			definition: new ImportedSchemaLookup(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup']),
+			slugsAndIdsMap: []
+		);
 	}
 
 	/**
@@ -4290,7 +4352,7 @@ class ImportHandlerTest extends TestCase {
 		$this->expectExceptionMessageMatches('/Duplicate schema detected/');
 
 		$this->handler->importSchema(
-			data:           ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup']),
 			slugsAndIdsMap: []
 		);
 
@@ -4310,7 +4372,7 @@ class ImportHandlerTest extends TestCase {
 		$this->expectExceptionMessageMatches('/Duplicate schema detected/');
 
 		$this->handler->importSchema(
-			data:           ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup']),
 			slugsAndIdsMap: []
 		);
 

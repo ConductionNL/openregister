@@ -149,9 +149,9 @@ class PortalTaskServiceTest extends TestCase {
 	private function openForRuns(Task $task): void {
 		$authorization = new TaskAuthorizationService();
 		$this->tasks->method('openFor')->willReturnCallback(
-			function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$this->trace[] = 'authorize:' . $actor;
-				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
+			function (TaskAct $act) use ($task, $authorization): Task {
+				$this->trace[] = 'authorize:' . $act->actor;
+				$authorization->assertMay(act: $act, task: $task);
 
 				return $task;
 			}
@@ -285,8 +285,8 @@ class PortalTaskServiceTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(true);
 		$authorization = new TaskAuthorizationService(groupManager: $groups);
 		$this->tasks->method('openFor')->willReturnCallback(
-			static function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
+			static function (TaskAct $act) use ($task, $authorization): Task {
+				$authorization->assertMay(act: $act, task: $task);
 
 				return $task;
 			}

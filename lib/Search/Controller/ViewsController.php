@@ -453,19 +453,21 @@ class ViewsController extends Controller {
 			data: $data
 		);
 		$view = $this->viewService->create(
-			definition: new ViewDefinition(
-				name: $data['name'],
-				description: $data['description'] ?? '',
-				query: $write->query(),
-				presentation: $write->presentation()
-			),
-			audience: new ViewAudience(
-				owner: $userId,
-				isPublic: $data['isPublic'] ?? false,
-				isDefault: $data['isDefault'] ?? false,
-				sharedWith: $write->shares()
-			),
-			alert: ViewAlert::declaredIn(body: $data)
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'],
+					description: $data['description'] ?? '',
+					query: $write->query(),
+					presentation: $write->presentation()
+				),
+				audience: new ViewAudience(
+					owner: $userId,
+					isPublic: $data['isPublic'] ?? false,
+					isDefault: $data['isDefault'] ?? false,
+					sharedWith: $write->shares()
+				),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
 		);
 		return new JSONResponse(data: ['view' => $view->jsonSerialize()], statusCode: 201);
 	}//end saveNew()

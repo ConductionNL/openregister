@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -292,10 +293,8 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 
 		// Should not throw
 		$this->service->logRestrictBlock(
-			'test-object-uuid',
-			'1',
-			$analysis,
-			'admin'
+			new RefusedDeletion(objectUuid: 'test-object-uuid', schemaId: '1', userId: 'admin'),
+			$analysis
 		);
 
 		$this->assertTrue(true);

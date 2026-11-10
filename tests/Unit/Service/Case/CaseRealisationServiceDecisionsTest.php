@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseRealisationTasks;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -229,7 +230,7 @@ class CaseRealisationServiceDecisionsTest extends TestCase {
 		$item->setRealisationKind(CaseItem::REALISATION_TASK);
 		$item->setRealisationUuid('task-1');
 		$this->tasks->expects($this->once())->method('terminateAsMoot')
-			->with('task-1', 'stage exited', 'case-item:item-1')
+			->with('task-1', new TaskTrigger(source: 'case-item:item-1', reason: 'stage exited'))
 			->willReturn($this->task('task-1', Task::STATE_TERMINATED));
 
 		$this->service->terminate($item, 'stage exited');
