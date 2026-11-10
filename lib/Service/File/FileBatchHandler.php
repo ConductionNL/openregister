@@ -109,8 +109,23 @@ class FileBatchHandler {
 		array $fileIds,
 		array $params = [],
 	): array {
-		$this->assertValidBatch(action: $action, fileIds: $fileIds);
-		$request = new FileBatchRequest(object: $object, action: $action, params: $params);
+		return $this->runBatch(request: new FileBatchRequest(object: $object, action: $action, params: $params), fileIds: $fileIds);
+	}//end executeBatch()
+
+	/**
+	 * Validate the batch, then run the action on every file.
+	 *
+	 * @param FileBatchRequest $request The object, action and parameters.
+	 * @param array<int>       $fileIds The file IDs to operate on.
+	 *
+	 * @return array{results: array, summary: array{total: int, succeeded: int, failed: int}} Batch results.
+	 *
+	 * @throws Exception If validation fails.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function runBatch(FileBatchRequest $request, array $fileIds): array {
+		$this->assertValidBatch(action: $request->action, fileIds: $fileIds);
 
 		$results = [];
 		foreach ($fileIds as $fileId) {
@@ -118,7 +133,7 @@ class FileBatchHandler {
 		}
 
 		return ['results' => $results, 'summary' => $this->summary(results: $results)];
-	}//end executeBatch()
+	}//end runBatch()
 
 	/**
 	 * Refuse an unknown action, an oversized batch or an empty one.

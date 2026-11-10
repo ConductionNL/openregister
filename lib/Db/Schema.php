@@ -1095,15 +1095,10 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		?string $objectOrganisation = null,
 		?string $activeOrganisation = null,
 	): bool {
-		return (new SchemaGrantEvaluator())->allows(
-			authorization: $this->authorization,
-			query: new GrantQuery(
-				groupId: $groupId,
-				action: $action,
-				actor: new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation),
-				object: new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation)
-			)
-		);
+		$actor = new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation);
+		$object = new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation);
+		$query = new GrantQuery(groupId: $groupId, action: $action, actor: $actor, object: $object);
+		return (new SchemaGrantEvaluator())->allows(authorization: $this->authorization, query: $query);
 	}//end hasPermission()
 
 	/**

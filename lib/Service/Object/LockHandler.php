@@ -206,7 +206,12 @@ class LockHandler {
 			process: $request->process,
 			runUuid: $request->runUuid
 		);
-		$this->recordLock(before: $context['object'], after: $objectAfter, request: $request);
+		// The run bookkeeping lets the terminal listener and the sweep find a run's
+		// lock without reading objects; the payload on the object stays the sole
+		// authority for the write guard.
+		$this->runLocks?->record(object: $objectAfter, step: new LockRunStep($request->runUuid, $request->nodeId));
+		$this->auditTrailMapper->createAuditTrail(old: $context['object'], new: $objectAfter, action: 'lock');
+		$this->logLocked(after: $objectAfter, request: $request);
 
 		// `held` is read back off the entity rather than assumed from the fact that
 		// the write did not throw, so an already-expired lock is not reported as held.
@@ -482,30 +487,23 @@ class LockHandler {
 	 * @throws LockedException If the advisory lock is held.
 	 */
 	private function acquireAdvisory(LockRequest $request): array {
-		return $this->advisory->acquire(identifier: $request->identifier, process: $request->process, duration: $request->duration);
+		return $this->advisory->acquire(request: $request);
 	}//end acquireAdvisory()
 
 	/**
-	 * Record a lock that was taken: the run bookkeeping, the audit trail and the log.
+	 * Log a lock that was taken. The run bookkeeping and the audit row are written before it.
 	 *
-	 * The run bookkeeping lets the terminal listener and the sweep find a run's
-	 * lock without reading objects. The payload on the object stays the sole
-	 * authority for the write guard.
-	 *
-	 * @param ObjectEntity $before  The object before the lock.
-	 * @param ObjectEntity $after   The locked object.
-	 * @param LockRequest  $request What the caller asked for.
+	 * @param ObjectEntity $after   The object as locked.
+	 * @param LockRequest  $request The process that asked for it.
 	 *
 	 * @return void
 	 */
-	private function recordLock(ObjectEntity $before, ObjectEntity $after, LockRequest $request): void {
-		$this->runLocks?->record(object: $after, runUuid: $request->runUuid, nodeId: $request->nodeId);
-		$this->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'lock');
+	private function logLocked(ObjectEntity $after, LockRequest $request): void {
 		$this->logger->info(
 			message: '[LockHandler] Object locked successfully',
 			context: $this->logContext(fields: ['uuid' => $after->getUuid(), 'process' => $request->process])
 		);
-	}//end recordLock()
+	}//end logLocked()
 
 	/**
 	 * Release the lock on a stored object, logging a failure before it is rethrown.
