@@ -161,7 +161,7 @@ class DestructionCheckJob extends TimedJob {
 			);
 
 			// Step 4: Notify archivaris group.
-			$this->sendReviewNotification(listUuid: $savedList->getUuid(), objectCount: count($eligible), logger: $logger);
+			$this->sendReviewNotification(listUuid: $savedList->getUuid(), objectCount: count($eligible));
 		} catch (Exception $e) {
 			$logger->error('[DestructionCheckJob] Error: ' . $e->getMessage(), ['exception' => $e]);
 		}//end try
@@ -362,19 +362,16 @@ class DestructionCheckJob extends TimedJob {
 	/**
 	 * Send review notification for new destruction list.
 	 *
+	 * A failure is logged as a warning on the app logger and never fails the run.
+	 *
 	 * @param string $listUuid Destruction list UUID
 	 * @param int $objectCount Number of objects
-	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function sendReviewNotification(
-		string $listUuid,
-		int $objectCount,
-		LoggerInterface $logger,
-	): void {
+	private function sendReviewNotification(string $listUuid, int $objectCount): void {
 		try {
 			$notificationManager = $this->container->get(INotificationManager::class);
 			$groupManager = $this->container->get(IGroupManager::class);
@@ -400,7 +397,7 @@ class DestructionCheckJob extends TimedJob {
 				$notificationManager->notify($notification);
 			}
 		} catch (Exception $e) {
-			$logger->warning('[DestructionCheckJob] Review notification error: ' . $e->getMessage());
+			$this->container->get(LoggerInterface::class)->warning('[DestructionCheckJob] Review notification error: ' . $e->getMessage());
 		}//end try
 	}//end sendReviewNotification()
 }//end class
