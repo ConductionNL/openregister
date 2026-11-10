@@ -251,17 +251,32 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
 	 */
 	public function decryptProperties(array $data, Schema $schema, bool $throwOnFailure = false): array {
-		if ($schema->hasEncryptedProperties() === false) {
+		return $this->decryptInScope(data: $data, scope: new FieldDecryptionScope(schema: $schema, throwOnFailure: $throwOnFailure));
+	}//end decryptProperties()
+
+	/**
+	 * Decrypt the encryption-flagged properties of one object's data, in a decryption scope.
+	 *
+	 * @param array                $data  The object data, possibly holding ciphertext.
+	 * @param FieldDecryptionScope $scope The object's schema and whether a failure is rethrown.
+	 *
+	 * @return array The data with flagged properties decrypted where possible.
+	 *
+	 * @throws FieldDecryptionException When the scope rethrows and decryption fails.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
+	 */
+	public function decryptInScope(array $data, FieldDecryptionScope $scope): array {
+		if ($scope->schema->hasEncryptedProperties() === false) {
 			return $data;
 		}
 
-		$scope = new FieldDecryptionScope(schema: $schema, throwOnFailure: $throwOnFailure);
-		foreach ($schema->getEncryptedProperties() as $property) {
+		foreach ($scope->schema->getEncryptedProperties() as $property) {
 			$data = $this->decryptPresent(data: $data, scope: $scope->forProperty(property: $property));
 		}
 
 		return $data;
-	}//end decryptProperties()
+	}//end decryptInScope()
 
 	/**
 	 * Decrypt the scope's property, when it is present and an envelope.

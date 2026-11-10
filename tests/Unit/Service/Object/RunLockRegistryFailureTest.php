@@ -74,12 +74,7 @@ class RunLockRegistryFailureTest extends TestCase {
 	 * @return RunLockRegistry
 	 */
 	private function locks(): RunLockRegistry {
-		return new RunLockRegistry(
-			registry: $this->registry,
-			magicMapper: $this->magic,
-			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
-			logger: $this->logger
-		);
+		return new RunLockRegistry(registry: $this->registry, recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->magic, $this->createMock(AuditTrailMapperInterface::class), $this->logger, $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end locks()
 
 	/**

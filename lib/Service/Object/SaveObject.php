@@ -84,6 +84,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
+use OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
 use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
@@ -625,8 +626,7 @@ class SaveObject implements SaveObjectInterface {
 		} catch (SharedMasterDataWriteException $refusal) {
 			$this->recordSharedMasterDataRefusal(
 				refusal: $refusal,
-				target: $target,
-				activeOrgUuid: ($activeOrgUuids[0] ?? null)
+				attempt: new SharedWriteAttempt(target: $target, sourceOrganisation: ($activeOrgUuids[0] ?? null))
 			);
 
 			throw $refusal;
@@ -637,8 +637,7 @@ class SaveObject implements SaveObjectInterface {
 	 * Record one refused cross-entity write, on the audit trail and in the log.
 	 *
 	 * @param SharedMasterDataWriteException $refusal The refusal.
-	 * @param ObjectWriteTarget $target The register and schema being written, and the object uuid when named.
-	 * @param string|null $activeOrgUuid The organisation that attempted the write.
+	 * @param SharedWriteAttempt             $attempt Where the write was aimed, and the organisation that attempted it.
 	 *
 	 * @return void
 	 *
@@ -646,9 +645,10 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function recordSharedMasterDataRefusal(
 		SharedMasterDataWriteException $refusal,
-		ObjectWriteTarget $target,
-		?string $activeOrgUuid,
+		SharedWriteAttempt $attempt,
 	): void {
+		$target        = $attempt->target;
+		$activeOrgUuid = $attempt->sourceOrganisation;
 		$registerId = $target->registerId;
 		$schemaId   = $target->schemaId;
 		$uuid       = $target->uuid;

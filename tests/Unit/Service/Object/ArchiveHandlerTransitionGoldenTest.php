@@ -22,7 +22,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
-use OCA\OpenRegister\Service\Object\ObjectStateRecording;
 use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -97,7 +96,7 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 			}
 		);
 
-		return new ArchiveHandler($magic, $permissions, $session, new ObjectStateRecording($audit, $logger));
+		return new ArchiveHandler($permissions, $session, new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($magic, $audit, $logger, $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end handler()
 
 	public function testArchiveThenUnarchive(): void {

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Task\VtodoReader;
 use Sabre\VObject\Reader;
 
@@ -93,14 +94,32 @@ final class TaskVtodoDocument {
 	 * @throws Exception When the due date cannot be parsed.
 	 */
 	public function compose(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): array {
-		$uid = strtoupper(bin2hex(random_bytes(16)));
-		return ['uri' => $uid . '.ics', 'calendarData' => implode("\r\n", [
-			...$this->openingLines(uid: $uid, summary: ($data['summary'] ?? 'Untitled task')),
-			...$this->detailLines(data: $data),
-			...$this->propertyLines(link: [$registerId, $schemaId, $objectUuid], fields: ($data['fields'] ?? null)),
-			...$this->closingLines(link: [$registerId, $schemaId, $objectUuid], objectTitle: $objectTitle),
-		]) . "\r\n"];
+		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
+		return $this->composeFor(ref: $ref, draft: new LinkedTaskDraft(objectTitle: $objectTitle, data: $data));
 	}//end compose()
+
+	/**
+	 * The document of a new standalone task linked to an object.
+	 *
+	 * @param ObjectRef       $ref   The register ID, schema ID and UUID of the object to link.
+	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data.
+	 *
+	 * @return array{uri: string, calendarData: string} The object URI and the iCalendar document.
+	 *
+	 * @throws Exception When the due date cannot be parsed.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	public function composeFor(ObjectRef $ref, LinkedTaskDraft $draft): array {
+		$uid = strtoupper(bin2hex(random_bytes(16)));
+		$link = [$ref->register, $ref->schema, $ref->id];
+		return ['uri' => $uid . '.ics', 'calendarData' => implode("\r\n", [
+			...$this->openingLines(uid: $uid, summary: ($draft->data['summary'] ?? 'Untitled task')),
+			...$this->detailLines(data: $draft->data),
+			...$this->propertyLines(link: $link, fields: ($draft->data['fields'] ?? null)),
+			...$this->closingLines(link: $link, objectTitle: $draft->objectTitle),
+		]) . "\r\n"];
+	}//end composeFor()
 
 	/**
 	 * A standalone VTODO's stored document with the provided fields applied.
