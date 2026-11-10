@@ -53,10 +53,7 @@ interface EmailServiceInterface {
 	/**
 	 * Link an existing email to an object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param int $mailAccountId The mail account ID.
-	 * @param int $mailMessageId The mail message ID.
+	 * @param EmailLinkRequest $request The object uuid, its register id, and the mail account and message ids.
 	 *
 	 * @return EmailLink The created link.
 	 *
@@ -64,7 +61,7 @@ interface EmailServiceInterface {
 	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
-	public function linkEmail(string $objectUuid, int $registerId, int $mailAccountId, int $mailMessageId): EmailLink;
+	public function linkEmail(EmailLinkRequest $request): EmailLink;
 
 	/**
 	 * Remove an email link.

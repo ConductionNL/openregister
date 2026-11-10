@@ -56,6 +56,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper
@@ -205,8 +206,8 @@ class A26NotificationMappersGoldenTest extends TestCase {
 					),
 				], [], false,
 			],
-			'history findFiltered'           => [$history, 'findFiltered', [$filters, 10, 5, $at], [[self::ROW]], false],
-			'history findFiltered snoozed'   => [$history, 'findFiltered', [$snoozed], [[]], false],
+			'history findFiltered'           => [$history, 'findFiltered', [new ListQuery(limit: 10, offset: 5, filters: $filters), $at], [[self::ROW]], false],
+			'history findFiltered snoozed'   => [$history, 'findFiltered', [ListQuery::unbounded(filters: $snoozed)], [[]], false],
 			'history countByStatus'          => [$history, 'countByStatus', [], [self::ROWS_TWO], false],
 			'history countByStatus since'    => [$history, 'countByStatus', [$at], [[]], false],
 			'history countFiltered'          => [$history, 'countFiltered', [$filters, $at], [[['c' => 6]]], false],

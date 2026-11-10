@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -143,21 +144,19 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * `schemaId`, `registerId`, `status`, `subjectType` and `subjectId`.
 	 * Unknown keys are silently ignored. All filters are AND-combined.
 	 *
-	 * @param array<string, string|null> $filters Filter map.
-	 * @param int|null $limit Result limit.
-	 * @param int|null $offset Result offset.
-	 * @param DateTime|null $asOf The moment a snooze is measured against, defaulting to now.
+	 * @param ListQuery     $query The filter map, the result limit (unbounded for none) and the offset.
+	 * @param DateTime|null $asOf  The moment a snooze is measured against, defaulting to now.
 	 *
 	 * @return array<int, NotificationHistory>
 	 */
-	public function findFiltered(array $filters = [], ?int $limit = null, ?int $offset = null, ?DateTime $asOf = null): array {
+	public function findFiltered(ListQuery $query, ?DateTime $asOf = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
 
-		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $filters, asOf: ($asOf ?? new DateTime())));
+		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $query->filters, asOf: ($asOf ?? new DateTime())));
 		$qb->orderBy('dispatched_at', 'DESC');
-		$this->page(qb: $qb, limit: $limit, offset: $offset);
+		$this->page(qb: $qb, limit: $query->limitOrNull(), offset: $query->offset);
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()
