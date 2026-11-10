@@ -277,27 +277,50 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 			return;
 		}
 
-		$ids = [];
-		foreach ($registers as $register) {
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				if (is_numeric($schemaId) === false) {
-					continue;
-				}
-
-				if (isset($this->schemaCache[(string)$schemaId]) === true) {
-					continue;
-				}
-
-				$ids[(int)$schemaId] = true;
-			}
-		}
-
+		$ids = $this->uncachedSchemaIds(registers: $registers);
 		if (empty($ids) === true) {
 			return;
 		}
 
-		foreach ($this->schemaMapper->findMultipleOptimized(ids: array_keys($ids)) as $id => $schema) {
+		foreach ($this->schemaMapper->findMultipleOptimized(ids: $ids) as $id => $schema) {
 			$this->schemaCache[(string)$id] = $schema;
 		}
 	}//end warmSchemaCache()
+
+	/**
+	 * The numeric schema ids of a page that are not cached yet, each once, in first-seen order.
+	 *
+	 * @param Register[] $registers The registers about to be serialized.
+	 *
+	 * @return int[] The ids to fetch.
+	 *
+	 * @spec exclude batched warm-up of the request-scoped cache; no behaviour change
+	 */
+	private function uncachedSchemaIds(array $registers): array {
+		$ids = [];
+		foreach ($registers as $register) {
+			foreach (($register->getSchemas() ?? []) as $schemaId) {
+				if ($this->needsSchemaFetch(schemaId: $schemaId) === true) {
+					$ids[(int)$schemaId] = true;
+				}
+			}
+		}
+
+		return array_keys($ids);
+	}//end uncachedSchemaIds()
+
+	/**
+	 * Whether a schema id is one the warm-up fetches: numeric and not cached yet.
+	 *
+	 * A uuid or slug is left to findSchemaCached(), which falls back to find().
+	 *
+	 * @param mixed $schemaId The schema id as the register lists it.
+	 *
+	 * @return bool True when the id is fetched in the batch.
+	 *
+	 * @spec exclude batched warm-up of the request-scoped cache; no behaviour change
+	 */
+	private function needsSchemaFetch(mixed $schemaId): bool {
+		return is_numeric($schemaId) === true && isset($this->schemaCache[(string)$schemaId]) === false;
+	}//end needsSchemaFetch()
 }//end class
