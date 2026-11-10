@@ -105,16 +105,6 @@ class SharesProvider extends AbstractIntegrationProvider {
 	private const MAX_NODES = 50;
 
 	/**
-	 * Optional server container override. Defaults to NC's global
-	 * `\OCP\Server` container; tests inject a mock so the IManager /
-	 * FileService / IUserSession lookups are exerciseable
-	 * without spinning up the full container.
-	 *
-	 * @var ContainerInterface|null
-	 */
-	private ?ContainerInterface $container;
-
-	/**
 	 * Constructor.
 	 *
 	 * Required args mirror the registration block in `Application.php`
@@ -138,9 +128,8 @@ class SharesProvider extends AbstractIntegrationProvider {
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		?ContainerInterface $container = null,
+		private ?ContainerInterface $container = null,
 	) {
-		$this->container = $container;
 	}//end __construct()
 
 	public function getId(): string {
