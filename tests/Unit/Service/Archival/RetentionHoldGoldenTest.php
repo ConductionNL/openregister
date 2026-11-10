@@ -41,6 +41,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Archival\AnnotatedRow;
 
 /**
  * Golden outcomes of legal holds, the retention guard and retention evaluation.
@@ -392,23 +393,23 @@ class RetentionHoldGoldenTest extends TestCase {
 				'useRestriction' => ['type' => 'none'],
 				'temporalCoverage' => ['type' => 'period', 'start' => '2019', 'end' => '2019-03-04'],
 			],
-			$evaluator->evaluate($annotation, ['kind' => 'a', 'age' => 20, 'from' => '2019xyz', 'to' => '2019-03-04T00:00:00Z'], $created)
+			$evaluator->evaluate(subject: new AnnotatedRow(annotation: $annotation, row: ['kind' => 'a', 'age' => 20, 'from' => '2019xyz', 'to' => '2019-03-04T00:00:00Z'], createdAt: $created))
 		);
 		$this->assertSame([['Skipping malformed retention condition: Malformed retention condition: "kind = 1". Expected "<field> <op> <literal>".', ['rule_index' => 2]]], $warnings);
 
 		$this->assertSame(
 			['effectiveRetention' => 'P1M', 'matchedRule' => 3, 'expiresAt' => '2020-03-02T12:00:00+00:00', 'aggregationLevel' => 'dossier', 'useRestriction' => ['type' => 'none']],
-			$evaluator->evaluate($annotation, ['kind' => 'b', 'from' => ''], $created)
+			$evaluator->evaluate(subject: new AnnotatedRow(annotation: $annotation, row: ['kind' => 'b', 'from' => ''], createdAt: $created))
 		);
 
 		$bare = ['retention' => ['default' => 'P1D', 'rules' => 'none'], 'aggregationLevel' => '', 'useRestriction' => ['type' => 'x', 'description' => 'why'], 'temporalCoverage' => ['type' => '', 'startProperty' => 'from']];
 		$this->assertSame(
 			['effectiveRetention' => 'P1D', 'matchedRule' => null, 'expiresAt' => '2020-02-01T12:00:00+00:00', 'useRestriction' => ['type' => 'x', 'description' => 'why']],
-			$evaluator->evaluate($bare, ['from' => '2019'], $created)
+			$evaluator->evaluate(subject: new AnnotatedRow(annotation: $bare, row: ['from' => '2019'], createdAt: $created))
 		);
 		$this->assertSame(
 			['effectiveRetention' => 'P1D', 'matchedRule' => null, 'expiresAt' => '2020-02-01T12:00:00+00:00'],
-			$evaluator->evaluate(['retention' => ['default' => 'P1D'], 'useRestriction' => ['type' => 3], 'temporalCoverage' => ['type' => 't', 'startProperty' => 'from']], ['from' => 'no date'], $created)
+			$evaluator->evaluate(subject: new AnnotatedRow(annotation: ['retention' => ['default' => 'P1D'], 'useRestriction' => ['type' => 3], 'temporalCoverage' => ['type' => 't', 'startProperty' => 'from']], row: ['from' => 'no date'], createdAt: $created))
 		);
 	}//end testEvaluationPicksTheFirstMatchingRuleAndTheDeclaredFacts()
 
@@ -433,7 +434,7 @@ class RetentionHoldGoldenTest extends TestCase {
 	 */
 	public function testEvaluationRefuses(array $annotation, string $message): void {
 		try {
-			(new RetentionEvaluator())->evaluate($annotation, [], new DateTimeImmutable('2020-01-01T00:00:00+00:00'));
+			(new RetentionEvaluator())->evaluate(subject: new AnnotatedRow(annotation: $annotation, row: [], createdAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00')));
 			$this->fail('expected a refusal');
 		} catch (InvalidArgumentException $e) {
 			$this->assertStringStartsWith($message, $e->getMessage());

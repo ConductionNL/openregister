@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use DateTimeInterface;
 use InvalidArgumentException;
 
 /**
@@ -36,9 +35,7 @@ interface RetentionEvaluatorInterface {
 	/**
 	 * Compute the effective retention for a row.
 	 *
-	 * @param array<string, mixed> $annotation Full `x-openregister-archival` block from the schema's configuration.
-	 * @param array<string, mixed> $row        Row data keyed by field name.
-	 * @param DateTimeInterface    $createdAt  The row's `_created` timestamp.
+	 * @param AnnotatedRow $subject The archival annotation, the row it is evaluated against and when the row was created.
 	 *
 	 * @return array{
 	 *     effectiveRetention: string,
@@ -53,5 +50,5 @@ interface RetentionEvaluatorInterface {
 	 *
 	 * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-4
 	 */
-	public function evaluate(array $annotation, array $row, DateTimeInterface $createdAt): array;
+	public function evaluate(AnnotatedRow $subject): array;
 }//end interface
