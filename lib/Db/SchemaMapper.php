@@ -1744,26 +1744,24 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * Returns the uuids of the schemas that reference the given schema in their
 	 * allOf, oneOf or anyOf composition patterns.
 	 *
-	 * @param int|string  $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid        Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug        Pre-known slug to avoid redundant lookups.
+	 * @param Schema|int|string $schema The schema, or its ID, UUID or slug to look it up by.
 	 *
 	 * @return array Array of schema UUIDs that compose with this schema
 	 *
 	 * @psalm-return list{0?: mixed,...}
+	 *
+	 * @spec exclude schema composition lookup, no OpenSpec capability of its own yet
 	 */
-	public function findExtendedBy(int|string $schemaIdentifier, string|null $knownUuid = null, string|null $knownSlug = null): array {
-		$identifiers = [(string)$schemaIdentifier, $knownUuid, $knownSlug];
-		if ($knownUuid === null && $knownSlug === null) {
+	public function findExtendedBy(Schema|int|string $schema): array {
+		if ($schema instanceof Schema === false) {
 			try {
-				$targetSchema = $this->find(id: $schemaIdentifier);
+				$schema = $this->find(id: $schema);
 			} catch (Exception $e) {
 				return [];
 			}
-
-			$identifiers = [(string)$targetSchema->getId(), $targetSchema->getUuid(), $targetSchema->getSlug()];
 		}
 
+		$identifiers = [(string)$schema->getId(), $schema->getUuid(), $schema->getSlug()];
 		return (new ExtendedByReads(db: $this->db, tableName: $this->getTableName()))->referencing(identifiers: $identifiers);
 	}//end findExtendedBy()
 
