@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use PHPUnit\Framework\TestCase;
@@ -53,20 +54,20 @@ class ExampleSetRewriterGoldenTest extends TestCase {
 			$this->calls[] = 'writeRules '.$register.' '.$schema;
 			return $answers['rules'];
 		});
-		$store->method('update')->willReturnCallback(function (string $register, string $schema, string $id, array $data) use ($answers): string {
-			$this->calls[] = 'update '.$register.' '.$schema.' '.$id.' '.json_encode($data);
+		$store->method('update')->willReturnCallback(function (ObjectRef $ref, array $data) use ($answers): string {
+			$this->calls[] = 'update '.$ref->register.' '.$ref->schema.' '.$ref->id.' '.json_encode($data);
 			return ($answers['update'] ?? '');
 		});
-		$store->method('ownerOf')->willReturnCallback(function (string $register, string $schema, string $id) use ($answers): ?string {
-			$this->calls[] = 'ownerOf '.$id;
+		$store->method('ownerOf')->willReturnCallback(function (ObjectRef $ref) use ($answers): ?string {
+			$this->calls[] = 'ownerOf '.$ref->id;
 			return ($answers['ownerOf'] ?? null);
 		});
 		$store->method('assignOwner')->willReturnCallback(function (string $id, string $owner) use ($answers): string {
 			$this->calls[] = 'assignOwner '.$id.' '.$owner;
 			return ($answers['assignOwner'] ?? '');
 		});
-		$store->method('get')->willReturnCallback(function (string $register, string $schema, string $id) use ($answers): ?array {
-			$this->calls[] = 'get '.$id;
+		$store->method('row')->willReturnCallback(function (ObjectRef $ref) use ($answers): ?array {
+			$this->calls[] = 'get '.$ref->id;
 			return ($answers['get'] ?? null);
 		});
 		return $store;

@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 
 /**
  * Unit tests for ImportHandler.
@@ -283,11 +284,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($register);
 
-		$result = $this->handler->importRegister(
-			data:    ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'My Register'],
-			owner:   'owner@test.nl',
-			appId:   'myapp'
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'My Register'], options: new SchemaImportOptions(owner: 'owner@test.nl', appId: 'myapp'));
 
 		$this->assertSame('owner@test.nl', $result->getOwner());
 		$this->assertSame('myapp', $result->getApplication());
@@ -307,10 +304,7 @@ class ImportHandlerTest extends TestCase {
 		$this->registerMapper->expects($this->never())->method('createFromArray');
 		$this->registerMapper->expects($this->never())->method('update');
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Stable'],
-			force: false
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Stable'], options: new SchemaImportOptions(force: false));
 
 		$this->assertSame(5, $result->getId());
 
@@ -328,10 +322,7 @@ class ImportHandlerTest extends TestCase {
 		$this->registerMapper->expects($this->never())->method('createFromArray');
 		$this->registerMapper->expects($this->never())->method('update');
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Old'],
-			force: false
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'stable-register', 'version' => '2.0.0', 'title' => 'Old'], options: new SchemaImportOptions(force: false));
 
 		$this->assertSame(5, $result->getId());
 
@@ -380,10 +371,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($existing);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'],
-			force: true
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'], options: new SchemaImportOptions(force: true));
 
 		$this->assertSame(5, $result->getId());
 
@@ -1953,10 +1941,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($register);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'owner-only-register', 'version' => '1.0.0', 'title' => 'Owner Only'],
-			owner: 'the-owner'
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'owner-only-register', 'version' => '1.0.0', 'title' => 'Owner Only'], options: new SchemaImportOptions(owner: 'the-owner'));
 
 		$this->assertSame('the-owner', $result->getOwner());
 
@@ -1979,12 +1964,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'],
-			owner: 'new-owner',
-			appId: 'new-app',
-			force: true
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'my-register', 'version' => '1.0.0', 'title' => 'Old'], options: new SchemaImportOptions(owner: 'new-owner', appId: 'new-app', force: true));
 
 		$this->assertSame('new-owner', $result->getOwner());
 		$this->assertSame('new-app', $result->getApplication());
@@ -3587,10 +3567,7 @@ class ImportHandlerTest extends TestCase {
 			->method('update')
 			->willReturn($register);
 
-		$result = $this->handler->importRegister(
-			data:  ['slug' => 'app-only-register', 'version' => '1.0.0', 'title' => 'App Only'],
-			appId: 'just-the-app'
-		);
+		$result = $this->handler->importRegister(data: ['slug' => 'app-only-register', 'version' => '1.0.0', 'title' => 'App Only'], options: new SchemaImportOptions(appId: 'just-the-app'));
 
 		$this->assertSame('just-the-app', $result->getApplication());
 
