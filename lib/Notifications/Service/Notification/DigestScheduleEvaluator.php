@@ -158,6 +158,8 @@ class DigestScheduleEvaluator {
 	 * @param QueueWait            $wait   When the row was queued and the instant to evaluate from.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function isDue(array $digest, QueueWait $wait): bool {
 		if ($this->isValidDigestSpec(digest: $digest) === false) {

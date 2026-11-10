@@ -31,6 +31,8 @@ use DateTimeImmutable;
 
 /**
  * The wait of one queued row, checked against a digest schedule.
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class QueueWait {
 	/**

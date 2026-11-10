@@ -225,13 +225,16 @@ class TaskScheduledNotificationJob extends TimedJob {
 		$adapter = new TaskObjectAdapter(task: $task, row: $this->candidates->inbox->enrich(task: $task));
 		$payload = ($adapter->getObject() ?? []);
 
-		if ($this->candidates->filters->matchesTarget(filter: $run->sweep->filter, target: new ScheduledFilterTarget(objectData: $payload, now: $run->nowDt)) === false) {
+		$target = new ScheduledFilterTarget(objectData: $payload, now: $run->nowDt);
+		if ($this->candidates->filters->matchesTarget(filter: $run->sweep->filter, target: $target) === false) {
 			return;
 		}
 
 		$run->matched++;
 		$fingerprint = $this->fingerprint(payload: $payload, watched: $run->sweep->watched);
-		$existing = $this->delivery->dedupe->findByKey(key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $run->sweep->name, objectUuid: (string)$task->getUuid()));
+		$existing = $this->delivery->dedupe->findByKey(
+			key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $run->sweep->name, objectUuid: (string)$task->getUuid())
+		);
 		if ($existing !== null && (string)$existing->getFingerprint() === $fingerprint) {
 			return;
 		}

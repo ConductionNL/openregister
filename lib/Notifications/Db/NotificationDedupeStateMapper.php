@@ -115,6 +115,8 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @param DedupeSighting        $sighting The fingerprint, the moment (UTC) and whether it dispatched.
 	 *
 	 * @return NotificationDedupeState The persisted entity.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function upsert(NotificationDedupeKey $key, DedupeSighting $sighting): NotificationDedupeState {
 		$existing = $this->findByKey(key: $key);

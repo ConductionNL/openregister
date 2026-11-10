@@ -444,7 +444,8 @@ final class ScheduledNotificationJob extends TimedJob {
 		}
 
 		$objectData = (array)($object->getObject() ?? []);
-		if ($this->sources->filterEvaluator->matchesTarget(filter: $fire->filter, target: new ScheduledFilterTarget(objectData: $objectData, now: $fire->nowDt)) === true) {
+		$target     = new ScheduledFilterTarget(objectData: $objectData, now: $fire->nowDt);
+		if ($this->sources->filterEvaluator->matchesTarget(filter: $fire->filter, target: $target) === true) {
 			$fire->matched++;
 			$this->fireOnMatch(fire: $fire, object: $object);
 		}
@@ -478,7 +479,8 @@ final class ScheduledNotificationJob extends TimedJob {
 	 * @return void
 	 */
 	private function dispatchUnlessUnchanged(ScheduledFire $fire, ObjectEntity $object): void {
-		$existing = $this->delivery->dedupeMapper->findByKey(key: new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid));
+		$key      = new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid);
+		$existing = $this->delivery->dedupeMapper->findByKey(key: $key);
 		if ($existing === null || (string)$existing->getFingerprint() !== $fire->fingerprint) {
 			$this->dispatch(fire: $fire, object: $object);
 			return;
