@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
@@ -136,12 +137,13 @@ class FlowService implements FlowServiceInterface {
 		}
 
 		return $this->definitions->mapper->findAllFlows(
-			app: $query->filters['app'] ?? null,
-			applicationSlug: $query->filters['applicationSlug'] ?? null,
-			organisation: $organisation,
-			enabled: $query->filters['enabled'] ?? null,
-			limit: $query->limit,
-			offset: ($query->offset ?? 0)
+			selection: new FlowSelection(
+				app: $query->filters['app'] ?? null,
+				applicationSlug: $query->filters['applicationSlug'] ?? null,
+				organisation: $organisation,
+				enabled: $query->filters['enabled'] ?? null
+			),
+			query: new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0))
 		);
 	}//end listFlows()
 

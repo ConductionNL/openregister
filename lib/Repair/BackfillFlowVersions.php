@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -193,7 +194,7 @@ class BackfillFlowVersions implements IRepairStep {
 		$all = [];
 
 		while (true) {
-			$batch = $mapper->findAllFlows(limit: $page, offset: $offset);
+			$batch = $mapper->findAllFlows(query: new ListQuery(limit: $page, offset: $offset));
 			$all = array_merge($all, $batch);
 
 			if (count($batch) < $page) {

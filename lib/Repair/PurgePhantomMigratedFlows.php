@@ -83,6 +83,8 @@ namespace OCA\OpenRegister\Repair;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -224,9 +226,8 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 
 		while (true) {
 			$page = $this->flowMapper->findAllFlows(
-				app: self::MIGRATED_APP,
-				limit: self::PAGE,
-				offset: $offset
+				selection: new FlowSelection(app: self::MIGRATED_APP),
+				query: new ListQuery(limit: self::PAGE, offset: $offset)
 			);
 
 			if (empty($page) === true) {

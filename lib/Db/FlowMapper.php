@@ -120,34 +120,14 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 * and `Entity`'s camelCase<->snake_case conversion only applies to
 	 * property access, never to a query builder's raw column literal.
 	 *
-	 * @param string|null $app Restrict to one owning app id.
-	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
-	 * @param string|null $organisation Restrict to one organisation uuid.
-	 * @param boolean|null $enabled Restrict to enabled or disabled flows.
-	 * @param integer $limit Page size.
-	 * @param integer $offset Page offset.
+	 * @param FlowSelection $selection Which flows: owning app id, OpenBuild virtual-app slug, organisation uuid and enabled state.
+	 * @param ListQuery     $query     The page size and offset.
 	 *
 	 * @return array<int, Flow> The flows.
 	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAllFlows(
-		?string $app = null, ?string $applicationSlug = null, ?string $organisation = null,
-		?bool $enabled = null, int $limit = 100, int $offset = 0,
-	): array {
-		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation, enabled: $enabled);
-		return $this->findSelected(selection: $selection, query: new ListQuery(limit: $limit, offset: $offset));
-	}//end findAllFlows()
-
-	/**
-	 * One page of the selected flows, newest first.
-	 *
-	 * @param FlowSelection $selection Which flows.
-	 * @param ListQuery     $query     The limit and offset.
-	 *
-	 * @return array<int, Flow> The flows.
-	 */
-	private function findSelected(FlowSelection $selection, ListQuery $query): array {
+	public function findAllFlows(FlowSelection $selection=new FlowSelection(), ListQuery $query=new ListQuery(limit: 100, offset: 0)): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -158,7 +138,7 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 		$this->applySelection(qb: $qb, selection: $selection);
 
 		return $this->findEntities(query: $qb);
-	}//end findSelected()
+	}//end findAllFlows()
 
 	/**
 	 * Restrict a query to the selected flows: app, slug and organisation, then enabled.
