@@ -1842,3 +1842,4 @@
 2026-11-10T10:20:13Z precheck-20261110T063123-21b4f66e RED tree 3c10e800da prs 1 front=skip: Tests: 54804, Assertions: 181030, Errors: 6, Failures: 13, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ContractIsALeafTest::testContractsNameOnlyKernelTypes;OCA\OpenRegister\Tests\Unit\Architecture\ContractIsALeafTest::testKernelContractsNameNoDbClassBeyondTheShrinki
 2026-11-10T10:20:32Z precheck-20261110T063008-5e5865e2 GREEN tree 499291c307 on dev c3cb81dae9 prs 1 front=skip: Tests: 54805, Assertions: 181025, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T10:20:57Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8705 8a6bcbc0
+2026-11-10T10:21:08Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8719 bc911156
