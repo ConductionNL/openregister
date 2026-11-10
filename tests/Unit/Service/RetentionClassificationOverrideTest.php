@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\CategoryDeclaration;
 use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
@@ -180,10 +181,20 @@ class RetentionClassificationOverrideTest extends TestCase {
 	public function testTheEffectiveCategoryIsTheOverrideOrTheSchemas(): void {
 		$archive = ['classification' => '1.1', 'classificationProperty' => 'selectielijstCategorie'];
 
-		$this->assertSame('2.3', (new ClassificationOverride())->effective(archive: $archive, data: ['selectielijstCategorie' => '2.3']));
-		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: $archive, data: []));
+		$this->assertSame('2.3', (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: $archive), data: ['selectielijstCategorie' => '2.3']));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: $archive), data: []));
 		// Without a declared property, a same-named field is plain data.
-		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: ['classification' => '1.1'], data: ['selectielijstCategorie' => '2.3']));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: ['classification' => '1.1']), data: ['selectielijstCategorie' => '2.3']));
+	}
+
+	public function testTheEffectiveCategoryFollowsTheAnnotationsCategoryProperty(): void {
+		$archive = ['classification' => '1.1'];
+		$configuration = ['x-openregister-archival' => ['categoryProperty' => 'categorie']];
+
+		$this->assertSame('2.3', (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: $archive, configuration: $configuration), data: ['categorie' => ' 2.3 ']));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: $archive, configuration: $configuration), data: ['categorie' => '']));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: $archive, configuration: $configuration), data: ['categorie' => 23]));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(declaration: new CategoryDeclaration(archive: $archive), data: ['categorie' => '2.3']));
 	}
 
 	public function testAnInvalidCategoryIsRefused(): void {
