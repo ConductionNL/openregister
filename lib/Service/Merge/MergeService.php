@@ -41,6 +41,8 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1243,7 +1245,7 @@ class MergeService implements ObjectMergerInterface {
 				continue;
 			}
 
-			if ($this->propertyRbac->canReadProperty(schema: $schema, property: $property, object: $record) === true) {
+			if ($this->propertyRbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: $record)) === true) {
 				continue;
 			}
 

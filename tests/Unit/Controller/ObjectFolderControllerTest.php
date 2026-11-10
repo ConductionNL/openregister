@@ -64,6 +64,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * List with read, change with update, never outside the object folder.
@@ -530,8 +531,8 @@ class ObjectFolderControllerTest extends TestCase {
 
 	public function testAFileInASubfolderIsRenamedThroughTheFilePipeline(): void {
 		$renamed = $this->file(id: 201, path: self::ROOT_PATH . '/Bijlagen/antwoord.txt', name: 'antwoord.txt');
-		$this->fileService->expects($this->once())->method('renameFile')
-			->with($this->object, 201, 'antwoord.txt')
+		$this->fileService->expects($this->once())->method('renameAttachedFile')
+			->with(new FileRename($this->object, 201, 'antwoord.txt'))
 			->willReturn($renamed);
 
 		$response = $this->asking(['name' => 'antwoord.txt'], $this->controllerAs('henk', ['behandelaars']))
@@ -542,7 +543,7 @@ class ObjectFolderControllerTest extends TestCase {
 	}//end testAFileInASubfolderIsRenamedThroughTheFilePipeline()
 
 	public function testRenamingToATakenNameIs409(): void {
-		$this->fileService->expects($this->never())->method('renameFile');
+		$this->fileService->expects($this->never())->method('renameAttachedFile');
 
 		$response = $this->asking(['name' => 'Bijlagen'], $this->controllerAs('henk', ['behandelaars']))
 			->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 101);
@@ -551,7 +552,7 @@ class ObjectFolderControllerTest extends TestCase {
 	}//end testRenamingToATakenNameIs409()
 
 	public function testANodeOfAnotherObjectIs404(): void {
-		$this->fileService->expects($this->never())->method('renameFile');
+		$this->fileService->expects($this->never())->method('renameAttachedFile');
 		$this->fileService->expects($this->never())->method('deleteFile');
 		$controller = $this->controllerAs('henk', ['behandelaars']);
 

@@ -33,6 +33,7 @@ use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * The object folder as a small tree the files browser can walk.
@@ -226,7 +227,9 @@ class ObjectFolderBrowser {
 		$this->assertFree(folder: $node->getParent(), name: $rename->name);
 		if ($node instanceof File === true) {
 			// A file keeps FileService's rename: its lock check and name rules.
-			return $this->fileService->renameFile(object: $rename->object, fileId: (int)$node->getId(), newName: $rename->name);
+			return $this->fileService->renameAttachedFile(
+				rename: new FileRename(object: $rename->object, fileId: (int)$node->getId(), newName: $rename->name)
+			);
 		}
 
 		$this->assertNothingLockedBelow(node: $node);
