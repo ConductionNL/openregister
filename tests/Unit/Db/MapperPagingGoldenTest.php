@@ -75,7 +75,7 @@ class MapperPagingGoldenTest extends TestCase {
 			'anonymisation log by object' => [AnonymisationLogMapper::class, 'findByObjectUuid', ['objectUuid' => 'o-1', 'query' => ListQuery::class]],
 			'audit trail all' => [AuditTrailMapper::class, 'findTrail', ['query' => ListQuery::class]],
 			'bulk job by actor' => [BulkJobMapper::class, 'findByActor', ['startedBy' => 'alice', 'state' => 'running']],
-			'bulk job all' => [BulkJobMapper::class, 'findAllJobs', ['state' => null]],
+			'bulk job all' => [BulkJobMapper::class, 'findJobs', ['query' => ListQuery::class]],
 			'email link by object' => [EmailLinkMapper::class, 'findByObjectUuid', ['objectUuid' => 'o-2']],
 			'endpoint log all (newest first trait)' => [EndpointLogMapper::class, 'findAll', []],
 			'import preview by actor' => [ImportPreviewMapper::class, 'findByActor', ['createdBy' => 'bob', 'query' => ListQuery::class]],
