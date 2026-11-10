@@ -1708,6 +1708,8 @@ class FilesControllerTest extends TestCase {
 	// -- validateUploadedFile --
 
 	public function testValidateUploadedFileSuccess(): void {
+		$this->expectNotToPerformAssertions();
+
 		$tmpFile = tempnam(sys_get_temp_dir(), 'test_');
 		file_put_contents($tmpFile, 'test content');
 
@@ -1719,7 +1721,6 @@ class FilesControllerTest extends TestCase {
 
 		// Should not throw
 		$this->invokePrivateMethod('validateUploadedFile', [$file]);
-		$this->assertTrue(true);
 
 		@unlink($tmpFile);
 	}
