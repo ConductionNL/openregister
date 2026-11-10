@@ -34,6 +34,7 @@ use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
@@ -42,7 +43,6 @@ use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
@@ -67,9 +67,6 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)  testChat() declares ($provider, $config, $_testMessage)
- * matching the public contract expected by callers and the backup implementation; the simplified stub
- * body doesn't use all three but changing the signature would break callers.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies
  * (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a
  * separate concern extracted per SOLID, and removing any would lose a capability.
@@ -103,21 +100,9 @@ class ChatService implements ChatServiceInterface {
 	 *
 	 * Main orchestration method that coordinates all handlers.
 	 *
-	 * @param int $conversationId Conversation ID.
-	 * @param string $userId User ID.
-	 * @param string $userMessage User message text.
-	 * @param array $selectedViews View filters for multitenancy (optional).
-	 * @param array $selectedTools Tool UUIDs to use (optional).
-	 * @param array $ragSettings RAG configuration overrides (optional).
-	 * @param array $context CnAiContext snapshot the frontend sent
-	 *                       (orchestrator §8). Persisted on the
-	 *                       user-authored Message row when non-empty.
-	 * @param ChatStreamChannelInterface|null $channel Streaming channel forwarded to the response
-	 *                                         handler so SSE consumers (ChatStreamController)
-	 *                                         can interleave `token` / `tool_call` /
-	 *                                         `tool_result` frames as the LLM yields. Null
-	 *                                         for blocking callers (POST /api/chat/send,
-	 *                                         background workers) — behaviour unchanged.
+	 * @param ChatMessageRequest $request The message, its conversation and user, and the options that
+	 *                                    shape the answer (views, tools, RAG settings, CnAiContext and
+	 *                                    the streaming channel, null for blocking callers).
 	 *
 	 * @return ((array|string)[]|string)[]
 	 *
@@ -129,37 +114,7 @@ class ChatService implements ChatServiceInterface {
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function processMessage(
-		int $conversationId,
-		string $userId,
-		string $userMessage,
-		array $selectedViews = [],
-		array $selectedTools = [],
-		array $ragSettings = [],
-		array $context = [],
-		?ChatStreamChannelInterface $channel = null,
-	): array {
-		$request = new ChatMessageRequest(conversationId: $conversationId, userId: $userId, userMessage: $userMessage);
-		$request->selectedViews = $selectedViews;
-		$request->selectedTools = $selectedTools;
-		$request->ragSettings = $ragSettings;
-		$request->cnAiContext = $context;
-		$request->channel = $channel;
-		return $this->handleMessage(request: $request);
-	}//end processMessage()
-
-	/**
-	 * Answer one chat message: store it, generate the reply, store that and title the conversation.
-	 *
-	 * @param ChatMessageRequest $request The message and its options.
-	 *
-	 * @return array The processMessage() result.
-	 *
-	 * @throws Exception If processing fails; the failure is logged first.
-	 *
-	 * @spec openspec/specs/chat-ai/spec.md
-	 */
-	private function handleMessage(ChatMessageRequest $request): array {
+	public function processMessage(ChatMessageRequest $request): array {
 		$this->logger->info(
 			message: '[ChatService] Processing message',
 			context: [
@@ -191,7 +146,7 @@ class ChatService implements ChatServiceInterface {
 			);
 			throw $e;
 		}//end try
-	}//end handleMessage()
+	}//end processMessage()
 
 	/**
 	 * Load the request's conversation, refusing one owned by another user.
@@ -359,18 +314,14 @@ class ChatService implements ChatServiceInterface {
 	 *
 	 * Delegates to ConversationManagementHandler.
 	 *
-	 * @param string $baseTitle Base title.
-	 * @param string $userId User ID.
-	 * @param int $agentId Agent ID.
+	 * @param TitleClaim $claim The wanted title and the user-agent pair it must be unique for.
 	 *
 	 * @return string Unique title
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string {
-		return $this->handlers->conversationHandler->ensureUniqueTitle(
-			claim: new TitleClaim(baseTitle: $baseTitle, userId: $userId, agentId: $agentId)
-		);
+	public function ensureUniqueTitle(TitleClaim $claim): string {
+		return $this->handlers->conversationHandler->ensureUniqueTitle(claim: $claim);
 	}//end ensureUniqueTitle()
 
 	/**
@@ -379,39 +330,32 @@ class ChatService implements ChatServiceInterface {
 	 * NOTE: This is a simplified version. The full testChat implementation
 	 * is preserved in ChatService_ORIGINAL_2156.php backup if needed.
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama').
-	 * @param array $config Provider-specific configuration.
-	 * @param string $_testMessage Optional test message to send.
+	 * @param ChatProbe $probe The provider, its configuration and the test message.
 	 *
 	 * @return array Test result with success status, message, and optional error.
 	 *
 	 * @spec exclude Facade plumbing: simplified stub returning a static result; real testing goes through
 	 *       ResponseGenerationHandler (chat-ai). No standalone contract.
 	 */
-	public function testChat(
-		string $provider,
-		array $config,
-		string $_testMessage = 'Hello! Please respond with a brief greeting.',
-	): array {
-		return $this->simplifiedChatTest(provider: $provider, config: $config);
+	public function testChat(ChatProbe $probe): array {
+		return $this->simplifiedChatTest(probe: $probe);
 	}//end testChat()
 
 	/**
 	 * The facade's simplified chat test: log the attempt and answer with the static result.
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama').
-	 * @param array  $config   Provider-specific configuration.
+	 * @param ChatProbe $probe The provider and its configuration.
 	 *
 	 * @return array Test result with success status, message, and optional error.
 	 */
-	private function simplifiedChatTest(string $provider, array $config): array {
+	private function simplifiedChatTest(ChatProbe $probe): array {
 		$this->logger->info(
 			message: '[ChatService] Testing chat functionality',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'provider' => $provider,
-				'model' => $config['chatModel'] ?? $config['model'] ?? 'unknown',
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
 			]
 		);
 

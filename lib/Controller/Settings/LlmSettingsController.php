@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
+use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices;
@@ -64,13 +65,6 @@ class LlmSettingsController extends Controller {
 	 * @var string
 	 */
 	private const DEFAULT_TEST_TEXT = 'This is a test embedding to verify the LLM configuration.';
-
-	/**
-	 * The message sent when the request names none.
-	 *
-	 * @var string
-	 */
-	private const DEFAULT_TEST_MESSAGE = 'Hello! Please respond with a brief greeting.';
 
 	/**
 	 * DI container.
@@ -257,13 +251,15 @@ class LlmSettingsController extends Controller {
 		try {
 			$provider = (string)$this->request->getParam('provider');
 			$config = $this->request->getParam('config', []);
-			$testMessage = (string)$this->request->getParam('testMessage', self::DEFAULT_TEST_MESSAGE);
+			$testMessage = (string)$this->request->getParam('testMessage', ChatProbe::DEFAULT_MESSAGE);
 			$invalid = $this->invalidTestRequest(provider: $provider, config: $config);
 			if ($invalid !== null) {
 				return $invalid;
 			}
 
-			$result = $this->chatService()->testChat(provider: $provider, config: $config, _testMessage: $testMessage);
+			$result = $this->chatService()->testChat(
+				probe: new ChatProbe(provider: $provider, config: $config, testMessage: $testMessage)
+			);
 			return $this->testResult(result: $result);
 		} catch (Exception $e) {
 			return $this->testFailure(prefix: 'Failed to test chat: ', e: $e);

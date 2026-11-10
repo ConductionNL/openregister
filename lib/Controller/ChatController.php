@@ -28,6 +28,8 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ChatControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
@@ -290,7 +292,9 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	private function createNewConversation(string $agentUuid): Conversation {
 		$organisation = $this->organisationService->getActiveOrganisation();
 		$agent        = $this->findAgent(agentUuid: $agentUuid);
-		$defaultTitle = $this->chatService->ensureUniqueTitle(baseTitle: 'New Conversation', userId: $this->userId, agentId: $agent->getId());
+		$defaultTitle = $this->chatService->ensureUniqueTitle(
+			claim: new TitleClaim(baseTitle: 'New Conversation', userId: $this->userId, agentId: $agent->getId())
+		);
 
 		$conversation = new Conversation();
 		$conversation->setUserId($this->userId);
@@ -438,15 +442,17 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 * @return array The ChatService result plus the conversation UUID
 	 */
 	private function processMessage(Conversation $conversation, array $params): array {
-		$result = $this->chatService->processMessage(
+		$request = new ChatMessageRequest(
 			conversationId: $conversation->getId(),
 			userId: $this->userId,
-			userMessage: $params['message'],
-			selectedViews: $params['selectedViews'],
-			selectedTools: $params['selectedTools'],
-			ragSettings: $params['ragSettings'],
-			context: $params['context']
+			userMessage: $params['message']
 		);
+		$request->selectedViews = $params['selectedViews'];
+		$request->selectedTools = $params['selectedTools'];
+		$request->ragSettings = $params['ragSettings'];
+		$request->cnAiContext = $params['context'];
+
+		$result = $this->chatService->processMessage(request: $request);
 		$result['conversation'] = $conversation->getUuid();
 
 		return $result;

@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -192,8 +193,8 @@ class LlmSettingsControllerActionsGoldenTest extends TestCase {
 
 	private function container(array $case): ContainerInterface {
 		$chat = $this->createMock(ChatServiceInterface::class);
-		$chat->method('testChat')->willReturnCallback(function (string $provider, array $config, string $message) use ($case) {
-			$this->calls[] = ['chat.testChat' => [$provider, $config, $message]];
+		$chat->method('testChat')->willReturnCallback(function (ChatProbe $probe) use ($case) {
+			$this->calls[] = ['chat.testChat' => [$probe->provider, $probe->config, $probe->testMessage]];
 			return $this->outcome($case, ['reply' => 'hello']);
 		});
 		$container = $this->createMock(ContainerInterface::class);

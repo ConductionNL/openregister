@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
 use Exception;
 use OCA\OpenRegister\Controller\ConversationController;
 use OCA\OpenRegister\Db\FeedbackMapper;
@@ -154,7 +155,7 @@ class ConversationControllerIndexCreateGoldenTest extends TestCase {
 		$agent->setId(9);
 		$this->agentMapper->method('findByUuid')->with('agent-uuid')->willReturn($agent);
 		$this->chatService->expects($this->once())->method('ensureUniqueTitle')
-			->with('New Conversation', 'alice', 9)->willReturn('New Conversation 3');
+			->with(new TitleClaim(baseTitle: 'New Conversation', userId: 'alice', agentId: 9))->willReturn('New Conversation 3');
 		$this->expectInsert(
 			fn (Conversation $c): bool => $c->getAgentId() === 9 && $c->getTitle() === 'New Conversation 3'
 				&& $c->getOrganisation() === null && $c->getMetadata() === []

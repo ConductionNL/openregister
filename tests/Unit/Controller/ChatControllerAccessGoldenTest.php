@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use Exception;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Db\FeedbackMapper;
@@ -111,7 +112,17 @@ class ChatControllerAccessGoldenTest extends TestCase {
 		$this->params(['conversation' => 'conv-uuid', 'message' => 'hi', 'views' => 'x', 'tools' => ['t'], 'context' => 'bad', 'numSourcesFiles' => 2]);
 		$this->conversationMapper->method('findByUuid')->willReturn($this->conversation('alice'));
 		$this->chatService->expects($this->once())->method('processMessage')
-			->with(11, 'alice', 'hi', [], ['t'], ['includeObjects' => true, 'includeFiles' => true, 'numSourcesFiles' => 2, 'numSourcesObjects' => 5], [])
+			->with($this->callback(
+				fn (ChatMessageRequest $request): bool => [
+					$request->conversationId,
+					$request->userId,
+					$request->userMessage,
+					$request->selectedViews,
+					$request->selectedTools,
+					$request->ragSettings,
+					$request->cnAiContext,
+				] === [11, 'alice', 'hi', [], ['t'], ['includeObjects' => true, 'includeFiles' => true, 'numSourcesFiles' => 2, 'numSourcesObjects' => 5], []]
+			))
 			->willReturn(['reply' => 'ok']);
 
 		$response = $this->controller->sendMessage();

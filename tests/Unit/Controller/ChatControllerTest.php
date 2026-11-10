@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Mcp\Db\Agent;
@@ -677,15 +678,15 @@ class ChatControllerTest extends TestCase {
 		$this->conversationMapper->method('findByUuid')->willReturn($conv);
 		$captured = null;
 		$this->chatService->method('processMessage')
-			->willReturnCallback(function (...$args) use (&$captured) {
-				$captured = $args;
+			->willReturnCallback(function (ChatMessageRequest $request) use (&$captured) {
+				$captured = $request->cnAiContext;
 				return ['response' => 'Hi'];
 			});
 
 		$result = $this->controller->sendMessage();
 
 		$this->assertEquals(200, $result->getStatus());
-		$this->assertSame(['register' => 'r1', 'objectId' => 'o1'], $captured[6] ?? ($captured['context'] ?? null));
+		$this->assertSame(['register' => 'r1', 'objectId' => 'o1'], $captured);
 	}
 
 	public function testSendMessageReportsAnUnconfiguredAiServiceAs503(): void {

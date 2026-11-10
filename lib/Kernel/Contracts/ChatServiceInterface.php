@@ -22,6 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+
 /**
  * Every public method of ChatService. Callers depend on this interface, not on the class.
  */
@@ -32,21 +36,9 @@ interface ChatServiceInterface {
 	 *
 	 * Main orchestration method that coordinates all handlers.
 	 *
-	 * @param int $conversationId Conversation ID.
-	 * @param string $userId User ID.
-	 * @param string $userMessage User message text.
-	 * @param array $selectedViews View filters for multitenancy (optional).
-	 * @param array $selectedTools Tool UUIDs to use (optional).
-	 * @param array $ragSettings RAG configuration overrides (optional).
-	 * @param array $context CnAiContext snapshot the frontend sent
-	 *                       (orchestrator §8). Persisted on the
-	 *                       user-authored Message row when non-empty.
-	 * @param ChatStreamChannelInterface|null $channel Streaming channel forwarded to the response
-	 *                                         handler so SSE consumers (ChatStreamController)
-	 *                                         can interleave `token` / `tool_call` /
-	 *                                         `tool_result` frames as the LLM yields. Null
-	 *                                         for blocking callers (POST /api/chat/send,
-	 *                                         background workers) — behaviour unchanged.
+	 * @param ChatMessageRequest $request The message, its conversation and user, and the options that
+	 *                                    shape the answer (views, tools, RAG settings, CnAiContext and
+	 *                                    the streaming channel, null for blocking callers).
 	 *
 	 * @return ((array|string)[]|string)[]
 	 *
@@ -58,31 +50,20 @@ interface ChatServiceInterface {
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function processMessage(
-		int $conversationId,
-		string $userId,
-		string $userMessage,
-		array $selectedViews = [],
-		array $selectedTools = [],
-		array $ragSettings = [],
-		array $context = [],
-		?ChatStreamChannelInterface $channel = null,
-	): array;
+	public function processMessage(ChatMessageRequest $request): array;
 
 	/**
 	 * Ensure conversation title is unique
 	 *
 	 * Delegates to ConversationManagementHandler.
 	 *
-	 * @param string $baseTitle Base title.
-	 * @param string $userId User ID.
-	 * @param int $agentId Agent ID.
+	 * @param TitleClaim $claim The wanted title and the user-agent pair it must be unique for.
 	 *
 	 * @return string Unique title
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string;
+	public function ensureUniqueTitle(TitleClaim $claim): string;
 
 	/**
 	 * Test chat functionality with custom configuration
@@ -90,18 +71,12 @@ interface ChatServiceInterface {
 	 * NOTE: This is a simplified version. The full testChat implementation
 	 * is preserved in ChatService_ORIGINAL_2156.php backup if needed.
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama').
-	 * @param array $config Provider-specific configuration.
-	 * @param string $_testMessage Optional test message to send.
+	 * @param ChatProbe $probe The provider, its configuration and the test message.
 	 *
 	 * @return array Test result with success status, message, and optional error.
 	 *
 	 * @spec exclude Facade plumbing: simplified stub returning a static result; real testing goes through
 	 *       ResponseGenerationHandler (chat-ai). No standalone contract.
 	 */
-	public function testChat(
-		string $provider,
-		array $config,
-		string $_testMessage = 'Hello! Please respond with a brief greeting.',
-	): array;
+	public function testChat(ChatProbe $probe): array;
 }//end interface

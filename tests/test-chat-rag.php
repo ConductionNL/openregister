@@ -60,9 +60,7 @@ try {
 	// 3. Send test message.
 	echo "Step 3: Sending message: 'Wat is de kleur van Mokum?'\n";
 	$result = $chatService->processMessage(
-		$conversation->getId(),
-		'admin',
-		'Wat is de kleur van Mokum?'
+		new \OCA\OpenRegister\Mcp\Service\ChatMessageRequest($conversation->getId(), 'admin', 'Wat is de kleur van Mokum?')
 	);
 
 	echo "✓ Response received:\n";

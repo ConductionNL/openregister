@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Controller\ChatStreamController;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -249,8 +250,17 @@ class ChatStreamControllerStreamGoldenTest extends TestCase {
 	private function chatService(array $case): ChatService {
 		$service = $this->createMock(ChatService::class);
 		$service->method('processMessage')->willReturnCallback(
-			function (...$args) use ($case): array {
-				$channel = array_pop($args);
+			function (ChatMessageRequest $request) use ($case): array {
+				$channel = $request->channel;
+				$args = [
+					$request->conversationId,
+					$request->userId,
+					$request->userMessage,
+					$request->selectedViews,
+					$request->selectedTools,
+					$request->ragSettings,
+					$request->cnAiContext,
+				];
 				$this->calls[] = ['processMessage' => $args, 'channel' => $channel instanceof StreamYieldChannel];
 				if (($case['processThrow'] ?? false) === true) {
 					throw new RuntimeException('llm down');

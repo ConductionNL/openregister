@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
@@ -230,14 +231,14 @@ class LlmSettingsControllerTest extends TestCase {
 	}
 
 	/**
-	 * The controller passes the request values to ChatService::testChat() by
-	 * the service's own parameter names, so the call reaches the service.
+	 * The controller passes the request values to ChatService::testChat() as
+	 * one ChatProbe, so the call reaches the service.
 	 */
 	public function testTestChatPassesTheRequestToChatService(): void {
 		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Mcp\Service\ChatService::class);
 		$chatServiceMock->expects($this->once())
 			->method('testChat')
-			->with('openai', ['apiKey' => 'key'], 'Hi')
+			->with(new ChatProbe(provider: 'openai', config: ['apiKey' => 'key'], testMessage: 'Hi'))
 			->willReturn(['success' => true, 'message' => 'ok']);
 
 		$this->request->method('getParam')
@@ -273,8 +274,8 @@ class LlmSettingsControllerTest extends TestCase {
 			/** @var list<bool> */
 			public array $answers = [true, false];
 
-			public function testChat(string $provider, array $config, string $_testMessage): array {
-				return ['success' => array_shift($this->answers), 'provider' => $provider, 'message' => $_testMessage];
+			public function testChat(ChatProbe $probe): array {
+				return ['success' => array_shift($this->answers), 'provider' => $probe->provider, 'message' => $probe->testMessage];
 			}
 		};
 		$this->container->method('get')->willReturn($chat);
