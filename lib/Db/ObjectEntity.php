@@ -2136,7 +2136,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * here now; the third still reads a raw retention array rather than a
 	 * record, so it cannot, and it drives no delete path.
 	 *
-	 * A RELEASED HOLD IS NOT A HOLD. `releaseLegalHold()` leaves the
+	 * A RELEASED HOLD IS NOT A HOLD. `releaseHold()` leaves the
 	 * `legalHold` key in place with `active: false` and the reason in
 	 * `history`, so "the key exists" is not the question and never was.
 	 *
