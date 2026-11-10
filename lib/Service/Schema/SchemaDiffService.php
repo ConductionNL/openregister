@@ -81,6 +81,18 @@ class SchemaDiffService {
 	public function diff(array $old, array $new, array $renames = []): SchemaChangeSet {
 		$run = new SchemaDiffRun(old: $old, new: $new);
 		$run->declareRenames(renames: $renames);
+
+		return $this->classified(run: $run);
+	}//end diff()
+
+	/**
+	 * Collect every change of one diff and classify the set.
+	 *
+	 * @param SchemaDiffRun $run The diff state, renames declared.
+	 *
+	 * @return SchemaChangeSet The typed, classified change set.
+	 */
+	private function classified(SchemaDiffRun $run): SchemaChangeSet {
 		$this->collectRemoved(run: $run);
 		$this->collectAdded(run: $run);
 		$this->collectChanged(run: $run);
@@ -88,7 +100,7 @@ class SchemaDiffService {
 		$this->collectNoLongerRequired(run: $run);
 
 		return $run->changeSet();
-	}//end diff()
+	}//end classified()
 
 	/**
 	 * Record properties of the old definition that the new one lacks, except declared renames.
