@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -165,10 +166,12 @@ class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface
 		$count = count($items);
 		$documents = [];
 		foreach ($items as $index => $item) {
-			$documents[$index] = FlowExpression::dataFor(
+			$documents[$index] = FlowExpression::documentFor(
 				item: (array)$item,
-				itemCount: $count,
-				context: $context
+				options: new FlowExpressionDataOptions(
+					itemCount: $count,
+					context: $context
+				)
 			);
 		}
 

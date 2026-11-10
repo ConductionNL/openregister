@@ -1540,7 +1540,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * re-reads the run row under its lock — sees the refreshed buffers too.
 	 *
 	 * A subjectless run, or one whose stored items never carried the subject,
-	 * is untouched: {@see FlowItems::refreshSubjectProjection()} matches by
+	 * is untouched: {@see FlowSubjectItems::refreshSubjectProjection()} matches by
 	 * identity and only ever touches the item that IS the subject.
 	 *
 	 * @param FlowRun $run The resumed run, mutated in place.
@@ -1548,7 +1548,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::refreshSubjectProjection
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowSubjectItems::refreshSubjectProjection
 	 * is a pure function on value shapes; a factory to call it would add a
 	 * dependency to say the same thing.
 	 *
@@ -1560,20 +1560,13 @@ class FlowRunService implements FlowRunServiceInterface {
 			return;
 		}
 
-		$run->setItems(FlowItems::refreshSubjectProjection(
-			items: ($run->getItems() ?? []),
-			subject: $subject,
-			subjectUuid: $subjectUuid
-		));
+		$live = new LiveSubject(subject: $subject, uuid: $subjectUuid);
+		$run->setItems(FlowSubjectItems::refreshSubjectProjection(items: ($run->getItems() ?? []), subject: $live));
 
 		$stored = $run->getPlaceItems();
 		if (is_array($stored) === true && $stored !== []) {
 			foreach ($stored as $place => $bucket) {
-				$stored[$place] = FlowItems::refreshSubjectProjection(
-					items: (array)$bucket,
-					subject: $subject,
-					subjectUuid: $subjectUuid
-				);
+				$stored[$place] = FlowSubjectItems::refreshSubjectProjection(items: (array)$bucket, subject: $live);
 			}
 
 			$run->setPlaceItems($stored);

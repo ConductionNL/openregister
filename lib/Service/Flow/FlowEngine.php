@@ -881,6 +881,9 @@ class FlowEngine {
 	private function conditionData(object $transition, FlowWalkPass|FlowStreamPass $pass): array {
 		$items = $this->services->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);
 
-		return FlowExpression::dataFor(item: ($items[0] ?? []), itemCount: count($items), context: $pass->context);
+		return FlowExpression::documentFor(
+			item: ($items[0] ?? []),
+			options: new FlowExpressionDataOptions(itemCount: count($items), context: $pass->context)
+		);
 	}//end conditionData()
 }//end class

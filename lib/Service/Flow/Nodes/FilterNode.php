@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -190,11 +191,13 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 		$count = count($items);
 		$documents = [];
 		foreach ($items as $index => $item) {
-			$documents[$index] = FlowExpression::dataFor(
+			$documents[$index] = FlowExpression::documentFor(
 				item: $item,
-				itemIndex: $index,
-				itemCount: $count,
-				context: $context
+				options: new FlowExpressionDataOptions(
+					itemIndex: $index,
+					itemCount: $count,
+					context: $context
+				)
 			);
 		}
 
