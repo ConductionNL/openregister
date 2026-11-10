@@ -49,6 +49,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Golden allowed / refused outcomes of ArchivalController.
@@ -265,7 +266,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 	public function testASchemaWideHoldIsQueuedWithItsIdsCast(): void {
 		$this->signIn('els', true);
 		$this->params = ['reason' => 'WOO', 'schemaId' => '7', 'registerId' => '3', 'objectId' => 'ignored'];
-		$this->holds->expects($this->once())->method('bulkPlaceHold')->with(7, 3, 'WOO');
+		$this->holds->expects($this->once())->method('bulkPlaceHold')->with($this->callback(static fn (\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef $ref): bool => $ref->register === 3 && $ref->schema === 7), 'WOO');
 		$this->holds->expects($this->never())->method('placeHold');
 
 		$response = $this->controller->createLegalHold();
@@ -303,7 +304,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$held->setUuid('o-1');
 		$held->setRetention(['legalHold' => ['active' => true]]);
 		$this->objectMapper->expects($this->once())->method('find')->with('o-1')->willReturn($object);
-		$this->holds->expects($this->once())->method('placeHold')->with($object, 'WOO', 'case-9')->willReturn($held);
+		$this->holds->expects($this->once())->method('placeHold')->with($object, new \OCA\OpenRegister\Service\HoldOrder('WOO', 'case-9'))->willReturn($held);
 
 		$response = $this->controller->createLegalHold();
 
@@ -493,7 +494,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 		$this->nominations->expects($this->once())->method('recompute')
-			->with($object, $this->isInstanceOf(Schema::class), 'els', 'new list')
+			->with($this->callback(static fn (NominationRecompute $request): bool => $request->object === $object && $request->schema instanceof Schema && $request->actor === 'els' && $request->reason === 'new list'))
 			->willReturn(['status' => 'nominated', 'rule' => 'r-1']);
 		$this->objectMapper->expects($this->once())->method('update')->with($object);
 		$this->audit->expects($this->once())->method('recordObjectEvent')

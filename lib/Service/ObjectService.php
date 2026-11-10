@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -77,6 +79,7 @@ use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectPatch;
@@ -90,6 +93,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -107,8 +111,11 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -516,6 +523,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function runAsSystem(callable $operation)
     {
+        // NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
         return SystemOperationContext::run($operation);
     }//end runAsSystem()
 
@@ -1395,10 +1403,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'read',
-            userId: null,
-            objectOwner: $object->getOwner(),
-            _rbac: $request->rbac,
-            object: $object
+            options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object),
+            _rbac: $request->rbac
         );
     }//end assertFindAllowed()
 
@@ -2844,11 +2850,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'create',
-            userId: null,
-            objectOwner: null,
-            _rbac: $request->rbac,
-            object: $request->incoming,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(object: $request->incoming, register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
     }//end assertMayCreate()
 
@@ -2869,10 +2872,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'update',
-            userId: null,
-            objectOwner: $stored->getOwner(),
-            _rbac: $_rbac,
-            object: $stored
+            options: new PermissionCheckOptions(objectOwner: $stored->getOwner(), object: $stored),
+            _rbac: $_rbac
         );
     }//end assertMayUpdate()
 
@@ -3234,7 +3235,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return $object;
         }
 
-        return ExplicitReveal::restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
+        return ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? [])));
     }//end restoreMaskedReveals()
 
     /**
@@ -3434,8 +3435,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         return $this->validateHandler->validateReadOnlyConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end readOnlyViolations()
@@ -3458,8 +3458,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function immutableViolations(array $candidate, array $existingData): array
     {
         return $this->validateHandler->validateImmutableConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end immutableViolations()
@@ -3697,7 +3696,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return void
      *
-     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder, or the check fails.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
@@ -3708,8 +3707,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
             // Propagate folder-access denials up to the controller.
             throw $e;
-        } catch (Exception $e) {
-            // A missing object or any other error: let SaveObject handle the creation.
+        } catch (OcpDoesNotExistException $e) {
+            // No stored object yet: let SaveObject handle the creation.
             $this->logger->debug(
                 message: '[ObjectService] Folder binding not re-validated, object not loadable',
                 context: [
@@ -3717,6 +3716,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                     'exception' => $e->getMessage(),
                 ]
             );
+        } catch (Exception $e) {
+            // The binding could not be checked, so the save is refused.
+            $this->logger->warning(
+                message: '[ObjectService] Folder binding re-check failed, save refused',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'exception' => $e]
+            );
+            throw new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '', previous: $e);
         }//end try
     }//end revalidateFolderBinding()
 
@@ -4148,8 +4154,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return;
         }
 
-        $shared->assertWritable(table: SharedMasterDataService::REGISTERS, id: $registerId, activeOrgUuids: $organisations);
-        $shared->assertWritable(table: SharedMasterDataService::SCHEMAS, id: $schemaId, activeOrgUuids: $organisations);
+        $shared->assertWritable(row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $registerId), activeOrgUuids: $organisations);
+        $shared->assertWritable(row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $schemaId), activeOrgUuids: $organisations);
     }//end rejectSharedMasterDataDelete()
 
     /**
@@ -4255,10 +4261,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: $row->getOwner(),
-            _rbac: $request->rbac,
-            object: $row
+            options: new PermissionCheckOptions(
+                userId: $request->actingUserId(),
+                objectOwner: $row->getOwner(),
+                object: $row
+            ),
+            _rbac: $request->rbac
         );
 
         \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
@@ -4358,10 +4366,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: null,
-            _rbac: $request->rbac,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(userId: $request->actingUserId(), register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
     }//end assertMayDeleteFromSchema()
 
@@ -4413,10 +4419,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: null,
-            _rbac: $request->rbac,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(userId: $request->actingUserId(), register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
 
         return $this->deleteHandler->deleteObject(
@@ -4834,10 +4838,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses,
-            views: $views,
-            _viewScopeRequired: $_viewScopeRequired
+            options: new SearchOptions(
+                selection: new ObjectSelection(ids: $ids, uses: $uses),
+                views: $views,
+                viewScopeRequired: $_viewScopeRequired
+            )
         );
     }//end searchObjects()
 
@@ -5018,8 +5023,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
+            selection: new ObjectSelection(ids: $ids, uses: $uses)
         );
     }//end countSearchObjects()
 
@@ -5488,8 +5492,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'read',
-            userId: null,
-            objectOwner: null,
             _rbac: $_rbac
         );
 
@@ -5823,14 +5825,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function lock(LockRequest $request, bool $advisory=false): array
     {
-        return $this->lockHandler->lock(
-            identifier: $request->identifier,
-            process: $request->process,
-            duration: $request->duration,
-            advisory: $advisory,
-            runUuid: $request->runUuid,
-            nodeId: $request->nodeId
-        );
+        return $this->lockHandler->lock(request: $request, advisory: $advisory);
     }//end lock()
 
     /**
@@ -5852,9 +5847,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool
     {
         return $this->lockHandler->unlock(
-            identifier: (string) $identifier,
-            advisory: $advisory,
-            runUuid: $runUuid
+            request: new UnlockRequest(identifier: (string) $identifier, advisory: $advisory, runUuid: $runUuid, break: false)
         );
     }//end unlockObject()
 
@@ -7311,10 +7304,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
-            registerId: (int) $table->register,
-            schemaId: (int) $table->schema,
-            hardDelete: $hardDelete,
-            triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE
+            table: new RegisterSchemaRef(register: (int) $table->register, schema: (int) $table->schema),
+            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE)
         );
     }//end deleteObjectsOfTable()
 
@@ -7350,7 +7341,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $schemaDeletionService->deleteObjectsByRegister(
             register: $register,
-            hardDelete: $hardDelete
+            options: new TableDeletionOptions(hardDelete: $hardDelete)
         );
     }//end deleteObjectsByRegister()
 
@@ -7871,11 +7862,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function validateAndSaveTable(RegisterSchemaRef $table, ListQuery $query): array
     {
         return $this->validationHandler->validateAndSaveObjectsBySchema(
-            registerId: (int) $table->register,
-            schemaId: (int) $table->schema,
-            saveCallback: [$this, 'saveObject'],
-            limit: $query->limitOrNull(),
-            offset: ($query->offset ?? 0)
+            revalidation: new SchemaRevalidation(table: $table, query: $query, saveCallback: [$this, 'saveObject'])
         );
     }//end validateAndSaveTable()
 

@@ -156,25 +156,17 @@ interface AuditTrailMapperInterface {
 	public function find(int $id): AuditTrail;
 
 	/**
-	 * Find all audit trails with filters and sorting
+	 * Audit trails matching a listing's filters, search and sort, from its offset.
 	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
-	 * @param array|null $filters The filters to apply
-	 * @param array|null $sort The sort to apply
-	 * @param string|null $search Optional search term to filter by ext fields
+	 * An unbounded listing ({@see ListQuery::unbounded()}) returns every match.
+	 *
+	 * @param ListQuery $query The limit, offset, filters, sort and search.
 	 *
 	 * @return AuditTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	public function findAll(
-		?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $sort = ['created' => 'DESC'], ?string $search = null
-	): array;
+	public function findTrail(ListQuery $query): array;
 
 	/**
 	 * Creates an audit trail for object changes
@@ -644,26 +636,13 @@ interface AuditTrailMapperInterface {
 	public function findByIdentifier(string $identifier): array;
 
 	/**
-	 * Find audit trail entries by the actor (user UID) that produced them.
+	 * One page of the entries one actor produced, with the unbounded total.
 	 *
-	 * Returns an associative array with `results` (array of AuditTrail entities)
-	 * and `total` (unbounded count matching the filters).
-	 *
-	 * @param string $userId The actor UID to filter on.
-	 * @param int $limit Maximum number of rows to return.
-	 * @param int $offset Row offset for pagination.
-	 * @param string|null $action Optional action filter (create|update|delete).
-	 * @param string|null $from Optional ISO-8601 start date (inclusive).
-	 * @param string|null $to Optional ISO-8601 end date (inclusive).
+	 * @param AuditTrail\ActorTrailQuery $query The actor, the page and the optional action and date range.
 	 *
 	 * @return array{results: array<int, AuditTrail>, total: int}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function findByActor(
-		string $userId, int $limit = 25, int $offset = 0, ?string $action = null, ?string $from = null, ?string $to = null
-	): array;
+	public function findActorTrail(AuditTrail\ActorTrailQuery $query): array;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a write that was

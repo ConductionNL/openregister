@@ -214,8 +214,7 @@ interface SchemaMapperInterface {
 	 * multi-tenancy and RBAC filtering.
 	 *
 	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param ListQuery $query The page: its limit and offset
 	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
 	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
 	 *
@@ -225,7 +224,7 @@ interface SchemaMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
 	 */
-	public function findBySlug(string $slug, int $limit = 10, int $offset = 0, bool $_rbac = true, bool $_multitenancy = true): array;
+	public function findBySlug(string $slug, ListQuery $query, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
 	 * Finds all schemas, files: with optional extension for statistics

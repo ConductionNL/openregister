@@ -105,8 +105,7 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 		}
 
 		$matches = $this->duplicates->checkCandidate(
-			register: $candidate->register,
-			schema: $candidate->schema,
+			request: new DedupRun(register: $candidate->register, schema: $candidate->schema),
 			candidate: $candidate->data
 		);
 		$overridden = count($matches) > 0 && $candidate->overrideRequested === true && $this->mayOverride(annotation: $annotation);

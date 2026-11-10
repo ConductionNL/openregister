@@ -122,22 +122,20 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	/**
 	 * The inventory as the API returns it: descriptors with their summaries.
 	 *
-	 * @param Schema $schema The schema to read.
-	 * @param int $idleDays How long a rule may go unevaluated before it is flagged.
-	 * @param DateTime|null $now The moment to measure the idle window from.
-	 * @param array<string, mixed> $scope Property => value: only the rules with that scope, plus those without one.
+	 * @param Schema               $schema  The schema to read.
+	 * @param RuleInventoryOptions $options The idle window, the moment it is measured from and the scope filter.
 	 *
 	 * @return array<int, array<string, mixed>> The inventory rows.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function inventory(Schema $schema, int $idleDays = self::DEFAULT_IDLE_DAYS, ?DateTime $now = null, array $scope = []): array {
+	public function inventory(Schema $schema, RuleInventoryOptions $options = new RuleInventoryOptions()): array {
 		$summaries = $this->summaries->findBySchema(schemaSlug: (string)($schema->getSlug() ?? ''));
-		$window = new RuleInventoryWindow(idleDays: $idleDays, now: ($now ?? new DateTime()));
+		$window = new RuleInventoryWindow(idleDays: $options->idleDays, now: ($options->now ?? new DateTime()));
 		$rowOf = static fn (RuleDescriptor $rule): array => $window->rowOf(descriptor: $rule, summary: ($summaries[$rule->getId()] ?? null));
 
-		return array_map($rowOf, $this->admitted(schema: $schema, filter: $scope));
+		return array_map($rowOf, $this->admitted(schema: $schema, filter: $options->scope));
 	}//end inventory()
 
 	/**
