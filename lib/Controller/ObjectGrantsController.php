@@ -120,7 +120,7 @@ class ObjectGrantsController extends Controller {
 	 * @return JSONResponse The rows, 404, 403 or 500.
 	 */
 	private function indexForObject(ObjectRef $ref, ?string $principalTypes = null): JSONResponse {
-		$object = $this->gate->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		$object = $this->gate->resolve(ref: $ref);
 		if ($object === null) {
 			return ObjectSharingEndpoint::notFound();
 		}
