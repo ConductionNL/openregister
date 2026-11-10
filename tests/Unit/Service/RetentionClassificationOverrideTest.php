@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -234,7 +235,7 @@ class RetentionClassificationOverrideTest extends TestCase {
 		$this->assertSame('1.1', $object->getRetention()['classification']);
 
 		$object->setObject(['selectielijstCategorie' => '2.3']);
-		$retention = $this->service->applyClassificationOnUpdate(object: $object, schema: $schema, previousData: [])->getRetention();
+		$retention = $this->service->applyClassification(update: new RecordUpdate(object: $object, schema: $schema, previousData: []))->getRetention();
 
 		$this->assertSame('2.3', $retention['classification']);
 		$this->assertSame('bewaren', $retention['archiefnominatie']);
@@ -255,7 +256,7 @@ class RetentionClassificationOverrideTest extends TestCase {
 		);
 
 		$before = $object->getRetention();
-		$this->assertSame($before, $this->service->applyClassificationOnUpdate(object: $object, schema: $schema, previousData: ['selectielijstCategorie' => '2.3'])->getRetention());
+		$this->assertSame($before, $this->service->applyClassification(update: new RecordUpdate(object: $object, schema: $schema, previousData: ['selectielijstCategorie' => '2.3']))->getRetention());
 	}
 
 	public function testChangingTheCategoryOfANominatedRecordIsRefused(): void {
@@ -273,7 +274,7 @@ class RetentionClassificationOverrideTest extends TestCase {
 		$this->expectException(ObjectStateWriteException::class);
 		$this->expectExceptionMessage('2.3');
 
-		$this->service->applyClassificationOnUpdate(object: $object, schema: $schema, previousData: []);
+		$this->service->applyClassification(update: new RecordUpdate(object: $object, schema: $schema, previousData: []));
 	}
 
 	public function testAnInvalidCategoryIsRefusedOnUpdate(): void {
@@ -283,7 +284,7 @@ class RetentionClassificationOverrideTest extends TestCase {
 		$this->expectException(ValidationException::class);
 		$this->expectExceptionMessage('9.9');
 
-		$this->service->applyClassificationOnUpdate(object: $object, schema: $this->schema(), previousData: []);
+		$this->service->applyClassification(update: new RecordUpdate(object: $object, schema: $this->schema(), previousData: []));
 	}
 
 	public function testAnEditThatLeavesTheOverrideAloneIsNotRefused(): void {
@@ -296,7 +297,7 @@ class RetentionClassificationOverrideTest extends TestCase {
 		$object->setRetention(['classification' => '1.1', 'archiefstatus' => RecordState::SEMI_STATIC, 'nomination' => ['status' => 'nominated']]);
 
 		$before = $object->getRetention();
-		$after  = $this->service->applyClassificationOnUpdate(object: $object, schema: $schema, previousData: ['titel' => 'oud'])->getRetention();
+		$after  = $this->service->applyClassification(update: new RecordUpdate(object: $object, schema: $schema, previousData: ['titel' => 'oud']))->getRetention();
 
 		$this->assertSame($before, $after);
 	}
