@@ -27,4 +27,20 @@ describe('ObjectReferenceWidget', () => {
 	])('renders a %s rich object', (name, richObject) => {
 		expect(mount(ObjectReferenceWidget, { props: { richObject } }).html()).toMatchSnapshot()
 	})
+
+	it('prints the updated date in the reader\'s locale, or nothing', () => {
+		const formattedDate = ObjectReferenceWidget.computed.formattedDate
+		const updated = '2024-03-05T10:20:00Z'
+		expect(formattedDate.call({ updated })).toBe(
+			new Date(updated).toLocaleDateString(undefined, {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			}),
+		)
+		expect(formattedDate.call({ updated: '' })).toBe('')
+		expect(formattedDate.call({ updated: null })).toBe('')
+	})
 })
