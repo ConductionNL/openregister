@@ -2806,13 +2806,9 @@ class SchemasController extends Controller {
 			return $document;
 		}
 
-		try {
-			$dialect = $this->schemaImportService->resolveUploadDialect(
-				document: $document,
-				explicitDialect: $this->explicitDialect()
-			);
-		} catch (SchemaImportException $e) {
-			return $this->schemaImportErrorResponse(e: $e);
+		$dialect = $this->uploadDialect(document: $document);
+		if ($dialect instanceof JSONResponse) {
+			return $dialect;
 		}
 
 		// Json-schema and openapi documents are ingested as-is (unchanged).
@@ -2822,6 +2818,24 @@ class SchemasController extends Controller {
 
 		return $this->mapStandardsDialect(dialect: $dialect, document: $document);
 	}//end applyDialect()
+
+	/**
+	 * The dialect of an uploaded document: the explicit `dialect` parameter, else sniffed.
+	 *
+	 * @param array<string, mixed> $document The decoded upload document.
+	 *
+	 * @return string|JSONResponse The dialect, or the error response when none applies.
+	 */
+	private function uploadDialect(array $document): string|JSONResponse {
+		try {
+			return $this->schemaImportService->resolveUploadDialect(
+				document: $document,
+				explicitDialect: $this->explicitDialect()
+			);
+		} catch (SchemaImportException $e) {
+			return $this->schemaImportErrorResponse(e: $e);
+		}
+	}//end uploadDialect()
 
 	/**
 	 * The `dialect` request parameter, or null when it is absent, empty or not a string.
