@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Event\PermissionsDeclaringEvent;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
+use OCA\OpenRegister\Service\Rbac\GrantDeclaration;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
@@ -113,11 +114,7 @@ class PermissionCatalogueTest extends TestCase {
 		$this->expectException(AuthorizationBlockException::class);
 		$this->expectExceptionMessageMatches('/"approve"/');
 
-		$catalogue->assertGrantable(
-			['read' => ['behandelaars'], 'approve' => ['managers']],
-			null,
-			'the register "zaken"'
-		);
+		$catalogue->assertGrantable(new GrantDeclaration(['read' => ['behandelaars'], 'approve' => ['managers']], null, 'the register "zaken"'));
 	}//end testAnUndeclaredVerbIsRefusedAndNamedInTheMessage()
 
 	/**
@@ -131,18 +128,14 @@ class PermissionCatalogueTest extends TestCase {
 	public function testABlockOfCanonicalVerbsIsStorable(): void {
 		$catalogue = $this->catalogueWith();
 
-		$catalogue->assertGrantable(
-			[
+		$catalogue->assertGrantable(new GrantDeclaration([
 				'read' => ['behandelaars'],
 				'update' => ['behandelaars'],
 				'roles' => ['waarnemer' => ['waarnemers']],
 				'public' => true,
 				'scope' => 'organisation',
 				'deny' => ['update' => ['waarnemers']],
-			],
-			null,
-			'the schema "zaak"'
-		);
+			], null, 'the schema "zaak"'));
 
 		$this->assertTrue(true, 'A block of declared verbs did not throw.');
 	}//end testABlockOfCanonicalVerbsIsStorable()
@@ -167,15 +160,11 @@ class PermissionCatalogueTest extends TestCase {
 			$catalogue->declarationFor('destroy')['app']
 		);
 
-		$catalogue->assertGrantable(
-			[
+		$catalogue->assertGrantable(new GrantDeclaration([
 				'delete' => ['behandelaars'],
 				'destroy' => ['archivarissen'],
 				'deny' => ['destroy' => ['behandelaars']],
-			],
-			[['name' => 'archivaris', 'actions' => ['read', 'delete', 'destroy']]],
-			'the register "zaken"'
-		);
+			], [['name' => 'archivaris', 'actions' => ['read', 'delete', 'destroy']]], 'the register "zaken"'));
 
 		$this->assertSame(
 			[],
@@ -194,11 +183,7 @@ class PermissionCatalogueTest extends TestCase {
 		$this->expectException(AuthorizationBlockException::class);
 		$this->expectExceptionMessageMatches('/"besluit_nemen"/');
 
-		$catalogue->assertGrantable(
-			['read' => ['behandelaars'], 'deny' => ['besluit_nemen' => ['waarnemers']]],
-			null,
-			'the schema "zaak"'
-		);
+		$catalogue->assertGrantable(new GrantDeclaration(['read' => ['behandelaars'], 'deny' => ['besluit_nemen' => ['waarnemers']]], null, 'the schema "zaak"'));
 	}//end testAnUndeclaredVerbInTheDenyBlockIsRefused()
 
 	/**
@@ -216,14 +201,10 @@ class PermissionCatalogueTest extends TestCase {
 		$this->expectException(AuthorizationBlockException::class);
 		$this->expectExceptionMessageMatches('/"senior behandelaar".*"approve"/s');
 
-		$catalogue->assertGrantable(
-			null,
-			[
+		$catalogue->assertGrantable(new GrantDeclaration(null, [
 				['name' => 'behandelaar', 'actions' => ['read', 'update']],
 				['name' => 'senior behandelaar', 'actions' => ['read', 'update', 'approve']],
-			],
-			'the register "zaken"'
-		);
+			], 'the register "zaken"'));
 	}//end testAnUnknownActionInARoleIsRefusedNamingTheRole()
 
 	/**
@@ -238,11 +219,7 @@ class PermissionCatalogueTest extends TestCase {
 			}
 		);
 
-		$catalogue->assertGrantable(
-			null,
-			[['name' => 'senior behandelaar', 'actions' => ['read', 'approve']]],
-			'the register "zaken"'
-		);
+		$catalogue->assertGrantable(new GrantDeclaration(null, [['name' => 'senior behandelaar', 'actions' => ['read', 'approve']]], 'the register "zaken"'));
 
 		$this->assertTrue($catalogue->isGrantable('approve'));
 	}//end testARoleMayNameADeclaredCustomVerb()

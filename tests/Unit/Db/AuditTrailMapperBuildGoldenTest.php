@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden record of AuditTrailMapper::buildAuditTrail() over the actions and states it distinguishes.
+ * Golden record of AuditTrailMapper::buildEntry() over the actions and states it distinguishes.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -136,12 +137,12 @@ class AuditTrailMapperBuildGoldenTest extends TestCase {
 
 	#[DataProvider('cases')]
 	public function testBuildMatchesGolden(array $case): void {
-		$trail = $this->mapper(uid: ($case['user'] ?? null))->buildAuditTrail(
+		$trail = $this->mapper(uid: ($case['user'] ?? null))->buildEntry(change: new AuditedChange(
 			old: (array_key_exists('old', $case) === true && $case['old'] !== null) ? self::object($case['old']) : null,
 			new: (array_key_exists('new', $case) === true && $case['new'] !== null) ? self::object($case['new']) : null,
 			action: ($case['action'] ?? null),
 			cascadeContext: ($case['cascade'] ?? null)
-		);
+		));
 
 		$row = $trail->jsonSerialize();
 		foreach (['id', 'uuid', 'created', 'session', 'expires', 'hash', 'previousHash'] as $volatile) {

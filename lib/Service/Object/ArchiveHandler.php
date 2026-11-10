@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -229,7 +230,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		}
 
 		$before = clone $object;
-		$object->freeze(userSession: $this->userSession, reason: $request->reason, state: $state);
+		$object->freezeWith(userSession: $this->userSession, terms: new FreezeTerms(reason: $request->reason, state: $state));
 
 		$saved = $this->persist(context: $context, transition: new ObjectStateTransition(action: 'freeze', before: $before));
 

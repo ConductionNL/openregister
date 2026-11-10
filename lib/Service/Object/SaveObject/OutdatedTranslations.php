@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\SourceLanguageLookup;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use Psr\Log\LoggerInterface;
@@ -101,10 +102,12 @@ final class OutdatedTranslations {
 	 */
 	private function flagProperty(ObjectUpdateRun $run, mixed $property): void {
 		$source = $this->projection->resolveSourceLanguage(
-			schema: $run->schema,
-			object: $run->updated,
-			property: $property,
-			registerDefault: $run->register->getDefaultLanguage()
+			lookup: new SourceLanguageLookup(
+				schema: $run->schema,
+				object: $run->updated,
+				property: $property,
+				registerDefault: $run->register->getDefaultLanguage()
+			)
 		);
 		$old = self::languageValue(value: ((array)($run->oldObject->getObject() ?? []))[$property] ?? null, language: $source);
 		$new = self::languageValue(value: ((array)($run->updated->getObject() ?? []))[$property] ?? null, language: $source);

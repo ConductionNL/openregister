@@ -213,7 +213,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @return bool True when they may use it.
 	 */
 	private function resolveUse(RecordTemplate $template, ViewerReach $reach): bool {
-		$access = $this->shares->accessFor(view: $template->jsonSerialize(), userId: $reach->userId, userGroups: $reach->groups);
+		$access = $this->shares->accessOf(view: $template->jsonSerialize(), reach: $reach);
 		if ($access === null && $reach->isAdmin === true) {
 			$access = ViewShareResolver::ACCESS_WRITE;
 		}
