@@ -25,6 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Service\Mcp;
 
+use Generator;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
@@ -46,6 +49,26 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class McpResourcesService {
+	/**
+	 * The resources listed whatever registers exist: all registers and all schemas.
+	 *
+	 * @var list<array<string, string>>
+	 */
+	private const STATIC_RESOURCES = [
+		[
+			'uri' => 'openregister://registers',
+			'name' => 'All Registers',
+			'description' => 'List of all registers (data containers)',
+			'mimeType' => 'application/json',
+		],
+		[
+			'uri' => 'openregister://schemas',
+			'name' => 'All Schemas',
+			'description' => 'List of all schemas (data definitions)',
+			'mimeType' => 'application/json',
+		],
+	];
+
 	/**
 	 * McpResourcesService constructor
 	 *
@@ -71,52 +94,86 @@ class McpResourcesService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
 	 */
 	public function listResources(): array {
-		$resources = [
-			[
-				'uri' => 'openregister://registers',
-				'name' => 'All Registers',
-				'description' => 'List of all registers (data containers)',
-				'mimeType' => 'application/json',
-			],
-			[
-				'uri' => 'openregister://schemas',
-				'name' => 'All Schemas',
-				'description' => 'List of all schemas (data definitions)',
-				'mimeType' => 'application/json',
-			],
-		];
+		$resources = self::STATIC_RESOURCES;
 
 		// Add one resource per register+schema combination for browsing objects.
 		try {
-			$registers = $this->catalog->registers()->findAll();
-			foreach ($registers as $register) {
-				$schemaIds = $register->getSchemas() ?? [];
-				foreach ($schemaIds as $schemaId) {
-					try {
-						$schema = $this->catalog->schemas()->find($schemaId);
-						$regTitle = $register->getTitle();
-						$schTitle = $schema->getTitle();
-						$resources[] = [
-							'uri' => 'openregister://objects/' . $register->getId() . '/' . $schema->getId(),
-							'name' => "$regTitle — $schTitle",
-							'description' => "Objects in register \"{$regTitle}\" with schema \"{$schTitle}\"",
-							'mimeType' => 'application/json',
-						];
-					} catch (DoesNotExistException $e) {
-						// Schema may have been deleted; skip.
-						continue;
-					}
+			foreach ($this->registerSchemaPairs() as [$register, $schemaId]) {
+				$resource = $this->pairResource(register: $register, schemaId: $schemaId);
+				if ($resource !== null) {
+					$resources[] = $resource;
 				}
 			}
 		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[MCP] Failed to list register/schema pairs for resources',
-				context: ['error' => $e->getMessage()]
-			);
-		}//end try
+			$this->logPairFailure(error: $e);
+		}
 
 		return ['resources' => $resources];
 	}//end listResources()
+
+	/**
+	 * Every register with each of its schema ids, read lazily so a failure keeps the pairs before it.
+	 *
+	 * @return Generator<int, array{0: Register, 1: int|string}>
+	 */
+	private function registerSchemaPairs(): Generator {
+		foreach ($this->catalog->registers()->findAll() as $register) {
+			$schemaIds = $register->getSchemas() ?? [];
+			foreach ($schemaIds as $schemaId) {
+				yield [$register, $schemaId];
+			}
+		}
+	}//end registerSchemaPairs()
+
+	/**
+	 * The objects resource of one register+schema pair; null when the schema was deleted.
+	 *
+	 * @param Register   $register The register.
+	 * @param int|string $schemaId The schema id.
+	 *
+	 * @return array<string, string>|null
+	 */
+	private function pairResource(Register $register, int|string $schemaId): ?array {
+		try {
+			return $this->objectsResource(register: $register, schema: $this->catalog->schemas()->find($schemaId));
+		} catch (DoesNotExistException $e) {
+			// Schema may have been deleted; skip.
+			return null;
+		}
+	}//end pairResource()
+
+	/**
+	 * The resource entry for browsing the objects of a register+schema pair.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<string, string>
+	 */
+	private function objectsResource(Register $register, Schema $schema): array {
+		$regTitle = $register->getTitle();
+		$schTitle = $schema->getTitle();
+		return [
+			'uri' => 'openregister://objects/' . $register->getId() . '/' . $schema->getId(),
+			'name' => "$regTitle — $schTitle",
+			'description' => "Objects in register \"{$regTitle}\" with schema \"{$schTitle}\"",
+			'mimeType' => 'application/json',
+		];
+	}//end objectsResource()
+
+	/**
+	 * Log that the register/schema pairs could not all be listed.
+	 *
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logPairFailure(\Exception $error): void {
+		$this->logger->warning(
+			message: '[MCP] Failed to list register/schema pairs for resources',
+			context: ['error' => $error->getMessage()]
+		);
+	}//end logPairFailure()
 
 	/**
 	 * List MCP resource URI templates
@@ -211,6 +268,35 @@ class McpResourcesService {
 	 * @throws InvalidArgumentException If URI format is invalid
 	 */
 	private function parseUri(string $uri): array {
+		$segments = $this->uriSegments(uri: $uri);
+		$type = $segments[0] ?? '';
+
+		if ($type === 'registers' || $type === 'schemas') {
+			return [
+				'type' => $type,
+				'id' => $this->itemId(segments: $segments),
+			];
+		}
+
+		if ($type === 'objects') {
+			return $this->objectsUri(segments: $segments);
+		}
+
+		throw new InvalidArgumentException(
+			message: 'Unknown resource type: ' . $type
+		);
+	}//end parseUri()
+
+	/**
+	 * The path segments of an openregister:// URI.
+	 *
+	 * @param string $uri The URI to parse
+	 *
+	 * @return list<string>
+	 *
+	 * @throws InvalidArgumentException If the URI is not under the openregister:// scheme
+	 */
+	private function uriSegments(string $uri): array {
 		if (str_starts_with(haystack: $uri, needle: 'openregister://') === false) {
 			throw new InvalidArgumentException(
 				message: 'Invalid URI scheme, expected openregister://'
@@ -218,41 +304,48 @@ class McpResourcesService {
 		}
 
 		$path = substr(string: $uri, offset: strlen('openregister://'));
-		$segments = explode(separator: '/', string: $path);
+		return explode(separator: '/', string: $path);
+	}//end uriSegments()
 
-		$type = $segments[0] ?? '';
-
-		if ($type === 'registers' || $type === 'schemas') {
-			$id = null;
-			if (isset($segments[1]) === true) {
-				$id = (int)$segments[1];
-			}
-
-			return [
-				'type' => $type,
-				'id' => $id,
-			];
+	/**
+	 * The optional numeric id after a registers or schemas segment.
+	 *
+	 * @param list<string> $segments The URI path segments.
+	 *
+	 * @return int|null
+	 */
+	private function itemId(array $segments): ?int {
+		$id = null;
+		if (isset($segments[1]) === true) {
+			$id = (int)$segments[1];
 		}
 
-		if ($type === 'objects') {
-			if (isset($segments[1], $segments[2]) === false) {
-				throw new InvalidArgumentException(
-					message: 'Objects URI requires register and schema IDs: openregister://objects/{registerId}/{schemaId}'
-				);
-			}
+		return $id;
+	}//end itemId()
 
-			return [
-				'type' => 'objects',
-				'registerId' => (int)$segments[1],
-				'schemaId' => (int)$segments[2],
-				'objectId' => $segments[3] ?? null,
-			];
+	/**
+	 * The register, schema and optional object id of an objects URI.
+	 *
+	 * @param list<string> $segments The URI path segments.
+	 *
+	 * @return array{type: string, registerId: int, schemaId: int, objectId: string|null}
+	 *
+	 * @throws InvalidArgumentException If the register or schema id is missing
+	 */
+	private function objectsUri(array $segments): array {
+		if (isset($segments[1], $segments[2]) === false) {
+			throw new InvalidArgumentException(
+				message: 'Objects URI requires register and schema IDs: openregister://objects/{registerId}/{schemaId}'
+			);
 		}
 
-		throw new InvalidArgumentException(
-			message: 'Unknown resource type: ' . $type
-		);
-	}//end parseUri()
+		return [
+			'type' => 'objects',
+			'registerId' => (int)$segments[1],
+			'schemaId' => (int)$segments[2],
+			'objectId' => $segments[3] ?? null,
+		];
+	}//end objectsUri()
 
 	/**
 	 * Read register data
