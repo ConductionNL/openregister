@@ -11,6 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -82,6 +83,6 @@ class NotificationHistoryMarkReadAccessTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
 
-		return (new NotificationHistoryMapper($db))->markRead($id, $recipient, new DateTime('2026-01-02T03:04:05+00:00'));
+		return (new NotificationHistoryMapper($db))->markRead(new RecipientNotice($id, $recipient), new DateTime('2026-01-02T03:04:05+00:00'));
 	}
 }

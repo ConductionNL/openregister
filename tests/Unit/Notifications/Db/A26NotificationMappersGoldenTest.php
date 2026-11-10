@@ -211,7 +211,7 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'history countByStatus since'    => [$history, 'countByStatus', [$at], [[]], false],
 			'history countFiltered'          => [$history, 'countFiltered', [$filters, $at], [[['c' => 6]]], false],
 			'history countFiltered snoozed'  => [$history, 'countFiltered', [$snoozed, $at], [[['c' => 0]]], false],
-			'history markRead'               => [$history, 'markRead', [7, 'alice', $at], [], false],
+			'history markRead'               => [$history, 'markRead', [new \OCA\OpenRegister\Notifications\Db\RecipientNotice(7, 'alice'), $at], [], false],
 			'history markReadForSubject'     => [$history, 'markReadForSubject', ['alice', 'o-1', 's-1', $at], [], false],
 			'history markReadForSubject all' => [$history, 'markReadForSubject', ['alice', 'o-1', '', $at], [], false],
 			'history snooze'                 => [$history, 'snooze', [7, 'alice', $at], [], false],
