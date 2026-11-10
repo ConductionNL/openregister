@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\ContactPlacement;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ContactsControllerFactory;
 use OCA\OpenRegister\Controller\ContactsController;
 use OCA\OpenRegister\Db\Schema;
@@ -328,14 +329,12 @@ class ContactsControllerTest extends TestCase {
 		$this->contactService->expects($this->once())
 			->method('createAndLinkContact')
 			->with(
-				'abc-123',
-				5,
+				$this->equalTo(new ContactPlacement('abc-123', 5, 7, 'applicant')),
 				$this->callback(static function (array $data): bool {
 					return $data['displayName'] === 'Jan de Vries'
 						&& $data['email'] === 'jan@example.nl'
 						&& $data['role'] === 'applicant';
-				}),
-				7
+				})
 			)
 			->willReturn($link);
 
