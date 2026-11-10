@@ -229,27 +229,9 @@ class DecisionTableValidator implements DecisionTableValidatorInterface {
 	private function validateRule(TableValidationRun $run, array $rule): void {
 		$inputEntries = $this->entriesOf(rule: $rule, key: 'inputEntries');
 		$outputEntries = $this->entriesOf(rule: $rule, key: 'outputEntries');
-		$columns = $run->columns;
 
-		if (count($inputEntries) !== count($columns->inputs)) {
-			// A short row would silently wildcard its missing tail: the
-			// evaluator reads an absent positional entry as `-`.
-			$run->problems[] = sprintf(
-				'rule %s has %d input entries for %d declared inputs; a short row would silently wildcard the missing columns',
-				$run->ruleId,
-				count($inputEntries),
-				count($columns->inputs)
-			);
-		}
-
-		if (count($outputEntries) !== $columns->outputCount) {
-			$run->problems[] = sprintf(
-				'rule %s has %d output entries for %d declared outputs',
-				$run->ruleId,
-				count($outputEntries),
-				$columns->outputCount
-			);
-		}
+		$this->checkInputCount(run: $run, inputEntries: $inputEntries);
+		$this->checkOutputCount(run: $run, outputEntries: $outputEntries);
 
 		if (array_key_exists('priority', $rule) === true && is_int($rule['priority']) === false) {
 			$run->problems[] = sprintf('rule %s has a non-integer priority', $run->ruleId);
@@ -258,6 +240,46 @@ class DecisionTableValidator implements DecisionTableValidatorInterface {
 		$this->probeInputs(run: $run, inputEntries: $inputEntries);
 
 	}//end validateRule()
+
+	/**
+	 * A rule must carry one input entry per declared input.
+	 *
+	 * @param TableValidationRun $run          The validation in progress, at this rule.
+	 * @param array<int, mixed>  $inputEntries The rule's input entries.
+	 *
+	 * @return void
+	 */
+	private function checkInputCount(TableValidationRun $run, array $inputEntries): void {
+		if (count($inputEntries) !== count($run->columns->inputs)) {
+			// A short row would silently wildcard its missing tail: the
+			// evaluator reads an absent positional entry as `-`.
+			$run->problems[] = sprintf(
+				'rule %s has %d input entries for %d declared inputs; a short row would silently wildcard the missing columns',
+				$run->ruleId,
+				count($inputEntries),
+				count($run->columns->inputs)
+			);
+		}
+	}//end checkInputCount()
+
+	/**
+	 * A rule must carry one output entry per declared output.
+	 *
+	 * @param TableValidationRun $run           The validation in progress, at this rule.
+	 * @param array<int, mixed>  $outputEntries The rule's output entries.
+	 *
+	 * @return void
+	 */
+	private function checkOutputCount(TableValidationRun $run, array $outputEntries): void {
+		if (count($outputEntries) !== $run->columns->outputCount) {
+			$run->problems[] = sprintf(
+				'rule %s has %d output entries for %d declared outputs',
+				$run->ruleId,
+				count($outputEntries),
+				$run->columns->outputCount
+			);
+		}
+	}//end checkOutputCount()
 
 	/**
 	 * A rule's positional entries under `$key`, or [] when that is not a list.
