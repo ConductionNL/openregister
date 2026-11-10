@@ -77,11 +77,12 @@ interface SearchTrailMapperInterface {
 	/**
 	 * Create a new search trail entry
 	 *
-	 * @param SearchTrailRecord $record The search query and its finished outcome values.
+	 * @param array              $searchQuery The search query parameters.
+	 * @param SearchTrailOutcome $outcome     The finished outcome values of the search.
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(SearchTrailRecord $record): SearchTrail;
+	public function createSearchTrail(array $searchQuery, SearchTrailOutcome $outcome): SearchTrail;
 
 	/**
 	 * Get search statistics for the given time period

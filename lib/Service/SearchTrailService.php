@@ -33,7 +33,7 @@ use Exception;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
-use OCA\OpenRegister\Db\SearchTrailRecord;
+use OCA\OpenRegister\Db\SearchTrailOutcome;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -142,7 +142,7 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	public function createSearchTrail(array $query, SearchMeasurement $measured): SearchTrail {
 		try {
 			// Mapper handles filtering of system parameters (starting with _).
-			$trail = $this->searchTrailMapper->createSearchTrail(record: $this->recordOf(query: $query, measured: $measured));
+			$trail = $this->searchTrailMapper->createSearchTrail(searchQuery: $query, outcome: $this->outcomeOf(measured: $measured));
 			return $this->selfCleared(trail: $trail);
 		} catch (Exception $e) {
 			// Wrap exception with more context for debugging.
@@ -151,22 +151,20 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	}//end createSearchTrail()
 
 	/**
-	 * The record the mapper stores for one executed search, its response time rounded to whole milliseconds.
+	 * The outcome the mapper stores for one executed search, its response time rounded to whole milliseconds.
 	 *
-	 * @param array             $query    The search query parameters.
 	 * @param SearchMeasurement $measured The result counts, response time and execution type.
 	 *
-	 * @return SearchTrailRecord
+	 * @return SearchTrailOutcome
 	 */
-	private function recordOf(array $query, SearchMeasurement $measured): SearchTrailRecord {
-		return new SearchTrailRecord(
-			searchQuery: $query,
+	private function outcomeOf(SearchMeasurement $measured): SearchTrailOutcome {
+		return new SearchTrailOutcome(
 			resultCount: $measured->resultCount,
 			totalResults: $measured->totalResults,
 			responseTime: (int)round($measured->responseTime),
 			executionType: $measured->executionType
 		);
-	}//end recordOf()
+	}//end outcomeOf()
 
 	/**
 	 * Run the self-clearing a new trail triggers, and hand the trail back.

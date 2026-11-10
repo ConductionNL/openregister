@@ -12,7 +12,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Db\SearchTrailRecord;
+use OCA\OpenRegister\Db\SearchTrailOutcome;
 use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SearchMeasurement;
 use OCA\OpenRegister\Service\SearchPeriod;
@@ -52,8 +52,8 @@ class SearchTrailServiceTest extends TestCase {
 	public function testCreateSearchTrailRoundsTheResponseTime(): void {
 		$stored = [];
 		$this->searchTrailMapper->method('createSearchTrail')->willReturnCallback(
-			function (SearchTrailRecord $record) use (&$stored): SearchTrail {
-				$stored[] = $record->responseTime;
+			function (array $query, SearchTrailOutcome $outcome) use (&$stored): SearchTrail {
+				$stored[] = $outcome->responseTime;
 				return new SearchTrail();
 			}
 		);

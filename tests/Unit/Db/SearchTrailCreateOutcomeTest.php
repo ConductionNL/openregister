@@ -13,7 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Db\SearchTrailRecord;
+use OCA\OpenRegister\Db\SearchTrailOutcome;
 use OCP\AppFramework\Db\Entity;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -72,7 +72,8 @@ final class SearchTrailCreateOutcomeTest extends TestCase {
 	 */
 	private function create(array $query, array $counts, int $responseTime, string $type): SearchTrail {
 		return $this->mapper()->createSearchTrail(
-			new SearchTrailRecord(searchQuery: $query, resultCount: $counts[0], totalResults: $counts[1], responseTime: $responseTime, executionType: $type)
+			$query,
+			new SearchTrailOutcome(resultCount: $counts[0], totalResults: $counts[1], responseTime: $responseTime, executionType: $type)
 		);
 	}//end create()
 }//end class
