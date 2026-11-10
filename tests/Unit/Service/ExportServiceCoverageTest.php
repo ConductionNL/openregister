@@ -236,6 +236,19 @@ class ExportServiceCoverageTest extends TestCase {
 		$this->assertSame(['Name 1', 'id2'], $decoded);
 	}
 
+	public function testResolveUuidsToNamesDropsEmptyStrings(): void {
+		$map = ['id1' => 'Name 1'];
+
+		$this->assertSame(
+			'["Name 1","id2"]',
+			$this->invokeMethod($this->service, 'resolveUuidsToNames', [['id1', '', 'id2', ''], $map])
+		);
+		$this->assertSame(
+			'["Name 1"]',
+			$this->invokeMethod($this->service, 'resolveUuidsToNames', [json_encode(['', 'id1']), $map])
+		);
+	}
+
 	// =========================================================================
 	// convertValueToString
 	// =========================================================================
