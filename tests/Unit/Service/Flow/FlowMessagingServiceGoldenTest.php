@@ -32,6 +32,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientRes
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
@@ -219,8 +220,8 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$policy = $this->createMock(NotificationChannelPolicy::class);
 		$policy->method('isChannelEnabled')->willReturn($enabled);
 		$templating = $this->createMock(NotificationTemplating::class);
-		$templating->method('interpolate')->willReturnCallback(
-			fn (string $template, array $data): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($data[$m[1]] ?? ''), $template)
+		$templating->method('render')->willReturnCallback(
+			fn (string $template, PlaceholderValues $values): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($values->data[$m[1]] ?? ''), $template)
 		);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturn($bound);
