@@ -40,10 +40,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ActionParameters;
 use OCA\OpenRegister\Controller\Support\CaseControllerServices;
 use OCA\OpenRegister\Controller\Support\CasePlanRequest;
 use OCA\OpenRegister\Controller\Support\CaseTransitionCommand;
 use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Exception\ActionParameterTypeException;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
@@ -270,55 +272,61 @@ class CaseController extends Controller {
 	/**
 	 * Attach an ad-hoc item.
 	 *
+	 * Reads the item fields from the request body: the strings `key`, `type`,
+	 * `name`, `description`, `parent` (a stage uuid or key, absent for the
+	 * root), `candidateRole`, `dueAt` (advisory deadline) and `expiresAt`
+	 * (enforcing deadline), the lists `entryCriteria`, `exitCriteria`,
+	 * `candidateUsers` and `candidateGroups`, and the boolean `required`
+	 * (whether the parent waits for it, default true). Absent fields are
+	 * not sent on.
+	 *
 	 * @param string $objectUuid The anchoring object.
-	 * @param string|null $key The item key.
-	 * @param string|null $type The plan-item type.
-	 * @param string|null $name Human name.
-	 * @param string|null $description Description.
-	 * @param string|null $parent Parent stage uuid or key, or null for the root.
-	 * @param array<int, mixed>|null $entryCriteria Entry sentries.
-	 * @param array<int, mixed>|null $exitCriteria Exit sentries.
-	 * @param array<int, string>|null $candidateUsers Candidate uids.
-	 * @param array<int, string>|null $candidateGroups Candidate group ids.
-	 * @param string|null $candidateRole Candidate role.
-	 * @param string|null $dueAt Advisory deadline.
-	 * @param string|null $expiresAt Enforcing deadline.
-	 * @param bool $required Whether the parent waits for it.
 	 *
-	 * @return JSONResponse The item, 201.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One parameter per
-	 * field the route accepts; Nextcloud binds them by name from the body.
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `required` is a stored
-	 * boolean field of the item, bound from the body like the others, not a
-	 * behaviour switch of this method.
+	 * @return JSONResponse The item, 201; 400 for a field of the wrong type.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function attach(
-		string $objectUuid,
-		?string $key = null,
-		?string $type = null,
-		?string $name = null,
-		?string $description = null,
-		?string $parent = null,
-		?array $entryCriteria = null,
-		?array $exitCriteria = null,
-		?array $candidateUsers = null,
-		?array $candidateGroups = null,
-		?string $candidateRole = null,
-		?string $dueAt = null,
-		?string $expiresAt = null,
-		bool $required = true,
-	): JSONResponse {
-		$criteria = compact('entryCriteria', 'exitCriteria', 'candidateUsers', 'candidateGroups', 'candidateRole', 'dueAt', 'expiresAt');
-		$fields = compact('key', 'type', 'name', 'description', 'parent') + $criteria;
+	public function attach(string $objectUuid): JSONResponse {
+		try {
+			$data = $this->adHocFields(read: new ActionParameters(params: $this->request->getParams()));
+		} catch (ActionParameterTypeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->attachItem(objectUuid: $objectUuid, data: $data);
+	}//end attach()
+
+	/**
+	 * The fields of an ad-hoc item that were sent, with `required` last.
+	 *
+	 * @param ActionParameters $read The request parameters.
+	 *
+	 * @return array<string, mixed> The fields that are not null, then `required`.
+	 *
+	 * @throws ActionParameterTypeException When a field has the wrong type.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function adHocFields(ActionParameters $read): array {
+		$fields = [];
+		foreach (['key', 'type', 'name', 'description', 'parent'] as $key) {
+			$fields[$key] = $read->string(key: $key);
+		}
+
+		foreach (['entryCriteria', 'exitCriteria', 'candidateUsers', 'candidateGroups'] as $key) {
+			$fields[$key] = $read->list(key: $key);
+		}
+
+		foreach (['candidateRole', 'dueAt', 'expiresAt'] as $key) {
+			$fields[$key] = $read->string(key: $key);
+		}
+
 		$data = array_filter($fields, static fn (mixed $value): bool => $value !== null);
 
-		return $this->attachItem(objectUuid: $objectUuid, data: $data + ['required' => $required]);
-	}//end attach()
+		return $data + ['required' => $read->bool(key: 'required', default: true)];
+	}//end adHocFields()
 
 	/**
 	 * Attach an ad-hoc item with the given fields to the plan of an object.
