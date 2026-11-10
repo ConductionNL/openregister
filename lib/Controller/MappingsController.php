@@ -377,22 +377,28 @@ class MappingsController extends Controller {
 			);
 		}
 
-		// Get input object and mapping configuration.
-		$inputObject = $data['inputObject'];
-		$mappingConfig = $data['mapping'];
-
 		// Create a new Mapping object and hydrate it with the provided mapping.
 		$mappingObject = new Mapping();
-		$mappingObject->hydrate(object: $mappingConfig);
+		$mappingObject->hydrate(object: $data['mapping']);
 
+		return $this->mappingTrial(mapping: $mappingObject, input: $data['inputObject']);
+	}//end test()
+
+	/**
+	 * Run a mapping on an input object and answer the result.
+	 *
+	 * @param Mapping $mapping The hydrated, unsaved mapping
+	 * @param mixed   $input   The input object as sent
+	 *
+	 * @return JSONResponse The result object, or a 400 naming why the mapping failed
+	 */
+	private function mappingTrial(Mapping $mapping, mixed $input): JSONResponse {
 		try {
-			// Perform the mapping operation.
 			$resultObject = $this->mappingService->executeMapping(
-				mapping: $mappingObject,
-				input: $inputObject
+				mapping: $mapping,
+				input: $input
 			);
 
-			// Return the result.
 			return new JSONResponse(
 				data: [
 					'resultObject' => $resultObject,
@@ -409,5 +415,5 @@ class MappingsController extends Controller {
 				statusCode: 400
 			);
 		}//end try
-	}//end test()
+	}//end mappingTrial()
 }//end class
