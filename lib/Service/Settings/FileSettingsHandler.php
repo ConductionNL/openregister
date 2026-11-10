@@ -264,12 +264,7 @@ class FileSettingsHandler {
 	 */
 	private function reviewDefault(array $fileData): ?array {
 		if (array_key_exists(ReviewPolicy::SETTINGS_KEY, $fileData) === false) {
-			$stored = ($this->getFileSettingsOnly()[ReviewPolicy::SETTINGS_KEY] ?? null);
-			if (is_array($stored) === true) {
-				return $stored;
-			}
-
-			return null;
+			return $this->storedReviewDefault();
 		}
 
 		$declaration = $fileData[ReviewPolicy::SETTINGS_KEY];
@@ -284,6 +279,20 @@ class FileSettingsHandler {
 
 		return ReviewPolicy::fromDeclaration(declaration: $declaration)->toArray();
 	}//end reviewDefault()
+
+	/**
+	 * The review default already stored, kept when a save does not name one.
+	 *
+	 * @return array<string, mixed>|null The stored policy, or null when none is stored.
+	 */
+	private function storedReviewDefault(): ?array {
+		$stored = ($this->getFileSettingsOnly()[ReviewPolicy::SETTINGS_KEY] ?? null);
+		if (is_array($stored) === true) {
+			return $stored;
+		}
+
+		return null;
+	}//end storedReviewDefault()
 
 	/**
 	 * The stored OpenAnonymiser password, for the outgoing request only.
@@ -325,7 +334,17 @@ class FileSettingsHandler {
 			return;
 		}
 
-		$password = $fileData[self::OPENANONYMISER_PASSWORD_KEY];
+		$this->writeOpenAnonymiserPassword(password: $fileData[self::OPENANONYMISER_PASSWORD_KEY]);
+	}//end storeOpenAnonymiserPassword()
+
+	/**
+	 * Store the OpenAnonymiser password as a sensitive value, or delete it when blank.
+	 *
+	 * @param string $password The submitted password; '' clears the stored one.
+	 *
+	 * @return void
+	 */
+	private function writeOpenAnonymiserPassword(string $password): void {
 		if ($password === '') {
 			$this->appConfig->deleteKey(Application::APP_ID, self::OPENANONYMISER_PASSWORD_KEY);
 			return;
@@ -337,5 +356,5 @@ class FileSettingsHandler {
 			$password,
 			sensitive: true
 		);
-	}//end storeOpenAnonymiserPassword()
+	}//end writeOpenAnonymiserPassword()
 }//end class
