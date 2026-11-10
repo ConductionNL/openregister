@@ -190,3 +190,4 @@ shillinq	2332	d2048505dba7ad5c727c0226480313a2f17bc621	GREEN	FV03:2	tree green (
 shillinq	2334	1474730f65d26c95a41a3c9a0aa7ab914cd6c26c	GREEN	FV03:2	tree green (phpunit 7278 ok, vitest 1111 ok), diff review clean
 shillinq	2336	42262c42a4e9d888e58e6248873216f79cd7ae07	GREEN	FV03:2	tree green (phpunit 7278 ok, vitest 1111 ok), diff review clean
 shillinq	2338	9446aa84cf0881d414e0794641ab854035db895d	GREEN	FV03:2	tree green (phpunit 7278 ok, vitest 1111 ok), diff review clean
+shillinq	2340	440d45459b345e69ec8db8a5bbf890b1a494c542	BLOCK	FV03:2	lib/Lifecycle/ComplianceValidator.php drops the non-array lookup guard and its warning log, so an unexpected lookup result now throws a TypeError that aborts all remaining rules instead of failing one rule
