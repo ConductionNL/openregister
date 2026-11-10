@@ -11,7 +11,7 @@
  * annotation. Every object read/write goes through `ObjectService` (RBAC +
  * tenant scoped, audited).
  *
- * `previewMerge` is side-effect-free. `executeMerge` is one server-authoritative
+ * `previewMerge` is side-effect-free. `merge` is one server-authoritative
  * unit of work: snapshot -> relink -> recompute -> status flip -> persist
  * mergeOperation -> dispatch event. `reverseMerge` restores the snapshot
  * within `reversalWindowDays`, best-effort per source-record link (an
@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -263,40 +264,6 @@ class MergeService implements ObjectMergerInterface {
 		];
 	}//end previewMerge()
 
-	/**
-	 * Execute a merge atomically (server-authoritative): snapshot both
-	 * objects, relink the losing object's source records onto the survivor,
-	 * recompute the survivor via `SurvivorshipResolver`, flip statuses,
-	 * persist a `mergeOperation` row, and dispatch `ObjectsMergedEvent`.
-	 *
-	 * @param string $from Uuid of the object being merged away.
-	 * @param string $into Uuid of the surviving object.
-	 * @param string $reason Steward-supplied merge reason.
-	 * @param string $mergedBy Acting user uid.
-	 * @param array<string, mixed>|null $decisions Per-property choices (`property => 'from' | 'into'`).
-	 *                                            Null keeps the pre-existing behaviour exactly: the
-	 *                                            resolver's proposal applies and no payload property
-	 *                                            is rewritten.
-	 *
-	 * @return array<string, mixed> The persisted `mergeOperation` row.
-	 *
-	 * @throws RuntimeException When self-merge, already-merged, or the survivor is not active.
-	 * @throws MergeDecisionException When the decision map does not describe the preview it approves.
-	 * @throws MergeNotFullyReadableException When either object carries a property the caller may not read.
-	 *
-	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
-	 */
-	public function executeMerge(
-		string $from,
-		string $into,
-		string $reason,
-		string $mergedBy,
-		?array $decisions = null,
-	): array {
-		$instruction = new MergeInstruction(from: $from, into: $into, reason: $reason, mergedBy: $mergedBy);
-
-		return $this->merge(instruction: $instruction, decisions: $decisions);
-	}//end executeMerge()
 
 	/**
 	 * Execute a merge (server-authoritative), in order: snapshot both objects,

@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\Merge
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,14 +20,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Merge;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * One steward's instruction to merge an object into a survivor.
  *
  * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
  */
-final readonly class MergeInstruction {
+final class MergeInstruction {
 
 	/**
 	 * Bundle the instruction.
@@ -40,10 +40,10 @@ final readonly class MergeInstruction {
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
 	 */
 	public function __construct(
-		public string $from,
-		public string $into,
-		public string $reason,
-		public string $mergedBy,
+		public readonly string $from,
+		public readonly string $into,
+		public readonly string $reason,
+		public readonly string $mergedBy,
 	) {
 	}//end __construct()
 }//end class

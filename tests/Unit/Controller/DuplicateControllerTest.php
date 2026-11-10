@@ -366,7 +366,7 @@ class DuplicateControllerTest extends TestCase {
 		}
 
 		$source = (string)file_get_contents((string)$reflection->getFileName());
-		$this->assertStringNotContainsString('executeMerge', $source);
+		$this->assertStringNotContainsString('->merge(', $source);
 		$this->assertStringNotContainsString('previewMerge', $source);
 	}//end testControllerCanNeverMerge()
 }//end class
