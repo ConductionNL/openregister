@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -299,9 +300,7 @@ class RateLimitMiddleware extends Middleware {
 		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->call->request);
 		$identity = $this->resolveIdentity();
 		$this->securityService->recordFailedAuthAttempt(
-			identity: $identity,
-			ipAddress: $ipAddress,
-			reason: 'inbound_auth_failed'
+			new FailedAttempt(subject: $identity, ipAddress: $ipAddress, reason: 'inbound_auth_failed')
 		);
 	}//end countFailure()
 
