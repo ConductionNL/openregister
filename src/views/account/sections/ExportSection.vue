@@ -29,6 +29,26 @@ import { NcButton } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
 
+/**
+ * Let the browser save the export as `openregister-export-<today>.json`.
+ *
+ * @param {BlobPart} data The export
+ * @return {void}
+ */
+function saveExportFile(data) {
+	const url = window.URL.createObjectURL(new Blob([data]))
+	const link = document.createElement('a')
+	link.href = url
+	link.setAttribute(
+		'download',
+		`openregister-export-${new Date().toISOString().slice(0, 10)}.json`,
+	)
+	document.body.appendChild(link)
+	link.click()
+	link.remove()
+	window.URL.revokeObjectURL(url)
+}
+
 export default {
 	name: 'ExportSection',
 	components: { NcButton, SectionStatus },
@@ -58,31 +78,32 @@ export default {
 					generateUrl('/apps/openregister/api/user/me/export'),
 					{ responseType: 'blob' },
 				)
-				const url = window.URL.createObjectURL(new Blob([response.data]))
-				const link = document.createElement('a')
-				link.href = url
-				link.setAttribute(
-					'download',
-					`openregister-export-${new Date().toISOString().slice(0, 10)}.json`,
-				)
-				document.body.appendChild(link)
-				link.click()
-				link.remove()
-				window.URL.revokeObjectURL(url)
+				saveExportFile(response.data)
 				this.setStatus(t('openregister', 'Export downloaded successfully'))
 			} catch (e) {
-				if (e.response?.status === 429) {
-					this.message = t(
-						'openregister',
-						'Export is rate limited. Please try again later.',
-					)
-				} else {
-					this.message = t('openregister', 'Failed to export data')
-				}
-				this.isError = true
+				this.showExportFailure(e)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Show why the export failed: a rate limit asks to try later.
+		 *
+		 * @spec exclude UI plumbing — sets the section status message
+		 * @param {object} e The failed request
+		 * @return {void}
+		 */
+		showExportFailure(e) {
+			if (e.response?.status === 429) {
+				this.message = t(
+					'openregister',
+					'Export is rate limited. Please try again later.',
+				)
+			} else {
+				this.message = t('openregister', 'Failed to export data')
+			}
+			this.isError = true
 		},
 	},
 }
