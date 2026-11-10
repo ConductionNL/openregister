@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
@@ -245,8 +246,12 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 					]
 				)
 			),
-			userId: 'alice',
-			cascadeSource: '22222222-2222-4222-8222-222222222222'
+			origin: new CascadeDeleteOrigin(
+				userId: 'alice',
+				cascadeSource: '22222222-2222-4222-8222-222222222222',
+				triggerSchemaSlug: null,
+				organisationId: null
+			)
 		);
 
 		$this->assertCount(1, $this->inserted);

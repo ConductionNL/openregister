@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -398,7 +399,10 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('findAcrossAllSources');
 		$this->objectMapper->expects($this->never())->method('deleteObjects');
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
