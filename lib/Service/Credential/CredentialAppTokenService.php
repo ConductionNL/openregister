@@ -150,10 +150,9 @@ class CredentialAppTokenService implements CredentialAppTokenServiceInterface {
 	 *    implementation of the token format that {@see verify()} accepts, and the
 	 *    issue→verify round-trip tests are what guard that format from drifting.
 	 *
-	 * @param string $appId The consuming app's id (must be registered).
-	 * @param string $credentialId The credential UUID the app intends to use.
-	 * @param string|null $method Optional HTTP method to bind the token to a single request.
-	 * @param string|null $path Optional request path to bind the token to a single request.
+	 * @param string             $appId        The consuming app's id (must be registered).
+	 * @param string             $credentialId The credential UUID the app intends to use.
+	 * @param BrokerTokenBinding $binding      Optional HTTP method and request path to bind the token to a single request.
 	 *
 	 * @return string A `payload.signature` token (base64url parts).
 	 *
@@ -165,8 +164,7 @@ class CredentialAppTokenService implements CredentialAppTokenServiceInterface {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	public function issueToken(string $appId, string $credentialId, ?string $method = null, ?string $path = null): string {
-		$binding = new BrokerTokenBinding(method: $method, path: $path);
+	public function issueToken(string $appId, string $credentialId, BrokerTokenBinding $binding = new BrokerTokenBinding()): string {
 		$claims  = $this->boundClaims(claims: $this->claimsFor(appId: $appId, credentialId: $credentialId), binding: $binding);
 
 		return $this->signedToken(appId: $appId, claims: $claims);
@@ -210,9 +208,8 @@ class CredentialAppTokenService implements CredentialAppTokenServiceInterface {
 	 * enforced. Any structural, signature, or expiry failure throws (fail-closed);
 	 * the caller maps every failure to a single static 403.
 	 *
-	 * @param string $token The `payload.signature` token to verify.
-	 * @param string|null $method The actual request HTTP method, matched against a request-bound token.
-	 * @param string|null $path The actual request path, matched against a request-bound token.
+	 * @param string             $token   The `payload.signature` token to verify.
+	 * @param BrokerTokenBinding $request The actual request's HTTP method and path, matched against a request-bound token.
 	 *
 	 * @return array{appId: string, credentialId: string} The authenticated claims.
 	 *
@@ -220,9 +217,9 @@ class CredentialAppTokenService implements CredentialAppTokenServiceInterface {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	public function verify(string $token, ?string $method = null, ?string $path = null): array {
+	public function verify(string $token, BrokerTokenBinding $request = new BrokerTokenBinding()): array {
 		$payload = $this->verifiedClaims(token: $token);
-		$this->assertRequestBinding(payload: $payload, binding: new BrokerTokenBinding(method: $method, path: $path));
+		$this->assertRequestBinding(payload: $payload, binding: $request);
 
 		return ['appId' => (string)$payload['appId'], 'credentialId' => (string)$payload['credentialId']];
 	}//end verify()

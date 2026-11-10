@@ -82,27 +82,25 @@ class ArrayElementFilter {
 	/**
 	 * The EXISTS condition of one block, or null when a field name is not a plain name.
 	 *
-	 * @param string              $column     The quoted, qualified array column.
-	 * @param array<string,mixed> $fields     The block's fields.
-	 * @param callable            $bind       Value to SQL: fn(string $value): string.
-	 * @param bool                $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget    $column The quoted, qualified array column, its binder (value to SQL) and the platform.
+	 * @param array<string,mixed> $fields The block's fields.
 	 *
 	 * @return string|null The condition.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
 	 */
-	public function condition(string $column, array $fields, callable $bind, bool $isPostgres): ?string {
-		$element = new NestedPathTarget(expression: self::ALIAS.'.e', bind: $bind, isPostgres: $isPostgres);
+	public function condition(NestedPathTarget $column, array $fields): ?string {
+		$element = new NestedPathTarget(expression: self::ALIAS.'.e', bind: $column->bind(...), isPostgres: $column->isPostgres);
 		$where   = self::where(fields: $fields, element: $element);
 		if ($where === null) {
 			return null;
 		}
 
-		if ($isPostgres === true) {
-			return self::postgresExists(column: $column, where: $where);
+		if ($column->isPostgres === true) {
+			return self::postgresExists(column: $column->expression, where: $where);
 		}
 
-		return self::mysqlExists(column: $column, where: $where);
+		return self::mysqlExists(column: $column->expression, where: $where);
 	}//end condition()
 
 	/**

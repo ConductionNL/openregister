@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\AnalyticsReportDraft;
 use DateTime;
 use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapper;
@@ -192,7 +193,7 @@ class AnalyticsLinkServiceGoldenTest extends TestCase {
 		try {
 			$result = match ($call[0]) {
 				'linkReport' => $service->linkReport($target, $call[1]),
-				'create' => $service->createAndLinkReport($target, $call[1], $call[2]),
+				'create' => $service->createAndLinkReport($target, new AnalyticsReportDraft($call[1], $call[2])),
 				'unlink' => $service->unlinkReport($call[1], $call[2]),
 				'linked' => $service->getLinkedReports($call[1]),
 				'available' => $service->getAvailableReports($call[1]),

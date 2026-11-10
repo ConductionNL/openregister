@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -51,9 +52,7 @@ class RegisterMapperTest extends TestCase {
 			$this->schemaMapper,
 			$this->eventDispatcher,
 			$this->container,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->appConfig,
 			$this->logger
 		);
@@ -62,10 +61,6 @@ class RegisterMapperTest extends TestCase {
 	// -------------------------------------------------------------------------
 	// Construction
 	// -------------------------------------------------------------------------
-
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(RegisterMapper::class, $this->mapper);
-	}
 
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_registers', $this->mapper->getTableName());

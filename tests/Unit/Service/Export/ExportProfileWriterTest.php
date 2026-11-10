@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportValueRenderer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Export\ProfileProjection;
 
 final class ExportProfileWriterTest extends TestCase {
 	private const RELATED_UUID = '2f1c1b2e-6a0a-4b8e-9f1a-1d2c3b4a5e6f';
@@ -91,11 +92,7 @@ final class ExportProfileWriterTest extends TestCase {
 	public function testTheMonthlyAanleveringHasTheProfilesShapeNotTheSchemas(): void {
 		// The profile names four fields in an order the schema does not use, and
 		// omits two the object carries. The file follows the profile.
-		$written = $this->writer()->write(
-			$this->profile(ExportProfile::MODE_STORED, ['geopend', 'zaaknummer', 'status', 'spoed']),
-			[$this->object()],
-			$this->schema()
-		);
+		$written = $this->writer()->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_STORED, ['geopend', 'zaaknummer', 'status', 'spoed']), schema: $this->schema()), objects: [$this->object()]);
 
 		$lines = explode("\n", $written['bytes']);
 
@@ -105,11 +102,7 @@ final class ExportProfileWriterTest extends TestCase {
 	}//end testTheMonthlyAanleveringHasTheProfilesShapeNotTheSchemas()
 
 	public function testAStoredExportKeepsTheCodesAndTheRawTimestamp(): void {
-		$written = $this->writer(['x' => 'y'])->write(
-			$this->profile(ExportProfile::MODE_STORED, ['status', 'behandelaar', 'geopend']),
-			[$this->object()],
-			$this->schema()
-		);
+		$written = $this->writer(['x' => 'y'])->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_STORED, ['status', 'behandelaar', 'geopend']), schema: $this->schema()), objects: [$this->object()]);
 
 		$row = explode("\n", $written['bytes'])[2];
 
@@ -119,11 +112,7 @@ final class ExportProfileWriterTest extends TestCase {
 	}//end testAStoredExportKeepsTheCodesAndTheRawTimestamp()
 
 	public function testARenderedExportResolvesRelationsLabelsAndDates(): void {
-		$written = $this->writer([self::RELATED_UUID => 'Ayse Demir'])->write(
-			$this->profile(ExportProfile::MODE_RENDERED, ['status', 'behandelaar', 'geopend', 'spoed']),
-			[$this->object()],
-			$this->schema()
-		);
+		$written = $this->writer([self::RELATED_UUID => 'Ayse Demir'])->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_RENDERED, ['status', 'behandelaar', 'geopend', 'spoed']), schema: $this->schema()), objects: [$this->object()]);
 
 		$row = explode("\n", $written['bytes'])[2];
 
@@ -135,11 +124,7 @@ final class ExportProfileWriterTest extends TestCase {
 	}//end testARenderedExportResolvesRelationsLabelsAndDates()
 
 	public function testTheCsvFileNamesItsValueMode(): void {
-		$written = $this->writer()->write(
-			$this->profile(ExportProfile::MODE_RENDERED, ['zaaknummer']),
-			[$this->object()],
-			$this->schema()
-		);
+		$written = $this->writer()->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_RENDERED, ['zaaknummer']), schema: $this->schema()), objects: [$this->object()]);
 
 		$first = explode("\n", $written['bytes'])[0];
 
@@ -150,11 +135,7 @@ final class ExportProfileWriterTest extends TestCase {
 	}//end testTheCsvFileNamesItsValueMode()
 
 	public function testTheJsonFileNamesItsValueModeInTheEnvelope(): void {
-		$written = $this->writer()->write(
-			$this->profile(ExportProfile::MODE_STORED, ['zaaknummer', 'status'], 'json'),
-			[$this->object()],
-			$this->schema()
-		);
+		$written = $this->writer()->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_STORED, ['zaaknummer', 'status'], 'json'), schema: $this->schema()), objects: [$this->object()]);
 
 		$decoded = json_decode($written['bytes'], true);
 
@@ -166,21 +147,13 @@ final class ExportProfileWriterTest extends TestCase {
 	public function testAFieldTheObjectDoesNotCarryIsAnEmptyCellNotAMissingColumn(): void {
 		// A column that disappears when one row lacks a value is what breaks a
 		// receiving system that reads by position.
-		$written = $this->writer()->write(
-			$this->profile(ExportProfile::MODE_STORED, ['zaaknummer', 'nietbestaand', 'status']),
-			[$this->object()],
-			$this->schema()
-		);
+		$written = $this->writer()->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_STORED, ['zaaknummer', 'nietbestaand', 'status']), schema: $this->schema()), objects: [$this->object()]);
 
 		self::assertSame('"Z-001","","afgerond"', explode("\n", $written['bytes'])[2]);
 	}//end testAFieldTheObjectDoesNotCarryIsAnEmptyCellNotAMissingColumn()
 
 	public function testMetadataFieldsAreAddressedWithTheSelfPrefix(): void {
-		$written = $this->writer()->write(
-			$this->profile(ExportProfile::MODE_STORED, ['@self.name', 'zaaknummer']),
-			[$this->object()],
-			$this->schema()
-		);
+		$written = $this->writer()->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_STORED, ['@self.name', 'zaaknummer']), schema: $this->schema()), objects: [$this->object()]);
 
 		self::assertSame('"Zaak 1","Z-001"', explode("\n", $written['bytes'])[2]);
 	}//end testMetadataFieldsAreAddressedWithTheSelfPrefix()
@@ -194,11 +167,7 @@ final class ExportProfileWriterTest extends TestCase {
 	}//end testTheWholeSetOpeningCarriesTheMetadataAndTheHeader()
 
 	public function testTheWholeSetLineIsTheRowAloneSoItCanBeAppended(): void {
-		$line = $this->writer()->csvLineFor(
-			$this->profile(ExportProfile::MODE_STORED, ['zaaknummer', 'status']),
-			$this->object(),
-			$this->schema()
-		);
+		$line = $this->writer()->csvLineFor(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_STORED, ['zaaknummer', 'status']), schema: $this->schema()), object: $this->object());
 
 		self::assertSame("\"Z-001\",\"afgerond\"\n", $line);
 	}//end testTheWholeSetLineIsTheRowAloneSoItCanBeAppended()
@@ -207,11 +176,7 @@ final class ExportProfileWriterTest extends TestCase {
 		$object = $this->object();
 		$object->setObject(['zaaknummer' => 'Z-"001"', 'status' => 'open']);
 
-		$written = $this->writer()->write(
-			$this->profile(ExportProfile::MODE_STORED, ['zaaknummer']),
-			[$object],
-			$this->schema()
-		);
+		$written = $this->writer()->write(projection: new ProfileProjection(profile: $this->profile(ExportProfile::MODE_STORED, ['zaaknummer']), schema: $this->schema()), objects: [$object]);
 
 		self::assertSame('"Z-""001"""', explode("\n", $written['bytes'])[2]);
 	}//end testACellContainingAQuoteIsEscapedRatherThanBreakingTheRow()

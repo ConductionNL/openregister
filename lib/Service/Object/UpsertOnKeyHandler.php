@@ -36,10 +36,12 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
 use OCA\OpenRegister\Service\Import\MatchLookupFailedException;
+use OCA\OpenRegister\Service\Import\MatchQuery;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\Lock\ILockingProvider;
@@ -79,11 +81,8 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	/**
 	 * Create or update the record the key names, or refuse.
 	 *
-	 * @param string                      $constraintName The `_upsertOn` value: a refuse constraint's name.
-	 * @param array<string, mixed>        $object         The request body, control keys stripped.
-	 * @param Register                    $register       The register.
-	 * @param Schema                      $schema         The schema.
-	 * @param callable(?string): ObjectEntity $save       Saves the body; null creates, a uuid updates that record.
+	 * @param UpsertOnKeyRequest              $request The key's name, the body (control keys stripped) and where it goes.
+	 * @param callable(?string): ObjectEntity $save    Saves the body; null creates, a uuid updates that record.
 	 *
 	 * @return array{created: bool, object: ObjectEntity} Whether a record was created, and the saved record.
 	 *
@@ -91,9 +90,7 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	 *
 	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
 	 */
-	public function upsert(string $constraintName, array $object, Register $register, Schema $schema, callable $save): array {
-		$request = new UpsertOnKeyRequest(constraintName: $constraintName, object: $object, register: $register, schema: $schema);
-
+	public function upsert(UpsertOnKeyRequest $request, callable $save): array {
 		return $this->upsertLocked(request: $request, save: $save);
 	}//end upsert()
 
@@ -162,11 +159,12 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	 */
 	private function lookup(UpsertOnKeyRequest $request, array $constraint): array {
 		try {
-			return $this->matchResolver->resolve(
-				object: $request->object,
-				matchKey: $constraint['properties'],
-				register: $request->register,
-				schema: $request->schema
+			return $this->matchResolver->matchesOf(
+				query: new MatchQuery(
+					object: $request->object,
+					matchKey: $constraint['properties'],
+					table: new RegisterSchema(register: $request->register, schema: $request->schema)
+				)
 			);
 		} catch (MatchLookupFailedException $exception) {
 			// A lookup that could not run is not "no match": creating now

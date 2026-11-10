@@ -52,6 +52,10 @@ final class FlowRunSignals {
 	 * @return FlowRunSignalInterface The guarded seam.
 	 */
 	public function seam(): FlowRunSignalInterface {
-		return new FlowRunSignalService(mapper: $this->mapper, runner: $this->runner, groupManager: $this->groupManager);
+		return new FlowRunSignalService(
+			mapper: $this->mapper,
+			runner: $this->runner,
+			assignees: new FlowRunAssignee(groupManager: $this->groupManager)
+		);
 	}//end seam()
 }//end class
