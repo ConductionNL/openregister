@@ -60,6 +60,7 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -210,7 +211,7 @@ class HandoffServiceTest extends TestCase {
 		);
 
 		$auditActions = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) use (&$auditActions) {
 				$auditActions[] = [
 					'uuid' => (string)$object->getUuid(),
@@ -219,7 +220,7 @@ class HandoffServiceTest extends TestCase {
 				];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->db->expects($this->once())->method('beginTransaction');
 		$this->db->expects($this->once())->method('commit');
@@ -337,12 +338,12 @@ class HandoffServiceTest extends TestCase {
 		);
 
 		$auditActions = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) use (&$auditActions) {
 				$auditActions[] = $action;
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->db->expects($this->never())->method('beginTransaction');
 
@@ -403,7 +404,7 @@ class HandoffServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 		$this->objectMapper->expects($this->never())->method('update');
 		$this->objectMapper->expects($this->never())->method('delete');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 		$this->eventDispatcher->expects($this->never())->method('dispatchTyped');
 
 		$this->expectException(ValidationException::class);
@@ -570,9 +571,9 @@ class HandoffServiceTest extends TestCase {
 			static fn ($identifier) => $rawEntities[$identifier]
 		);
 		$this->objectMapper->method('update')->willReturnArgument(0);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			fn () => $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class)
-		);
+		));
 
 		$entry = $this->queueEntry();
 		$this->queueMapper->method('findParked')->willReturn([$entry]);
@@ -842,9 +843,9 @@ class HandoffServiceTest extends TestCase {
 			static fn ($identifier) => $rawEntities[$identifier]
 		);
 		$this->objectMapper->method('update')->willReturnArgument(0);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			fn () => $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class)
-		);
+		));
 
 		$result = $this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'request-to-case', correlationId: 'corr-fixed');
 
@@ -916,12 +917,12 @@ class HandoffServiceTest extends TestCase {
 		);
 
 		$audits = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) use (&$audits) {
 				$audits[] = [(string)$object->getUuid(), $action, array_keys($context), $context['deferred'], $context['handoffId']];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$result = $this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'request-to-case', correlationId: 'ignored-on-park');
 

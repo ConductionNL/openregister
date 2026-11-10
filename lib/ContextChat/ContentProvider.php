@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\ContextChat;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
@@ -195,10 +197,8 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 			$offset = 0;
 			do {
 				$batch = $this->catalog->tables()->findAllInRegisterSchemaTable(
-					register: $register,
-					schema: $schema,
-					limit: self::BATCH_SIZE,
-					offset: $offset
+					table: new RegisterSchema(register: $register, schema: $schema),
+					listing: new ListQuery(limit: self::BATCH_SIZE, offset: $offset)
 				);
 
 				// Counted once per page, not re-counted by the loop condition.

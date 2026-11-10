@@ -25,7 +25,9 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -66,7 +68,9 @@ final class ConflictTrail {
 			return [];
 		}
 
-		$entries = $this->auditTrail->findAll(filters: ['object_uuid' => $mismatch->stored->getUuid()], limit: 25);
+		$entries = $this->auditTrail->findTrail(
+			query: new ListQuery(limit: 25, filters: ['object_uuid' => $mismatch->stored->getUuid()], sort: ['created' => 'DESC'])
+		);
 
 		return array_values(array_filter($entries, fn ($entry): bool => $this->isAfter(entry: $entry, read: $read)));
 	}//end interveningChanges()
@@ -106,10 +110,12 @@ final class ConflictTrail {
 	 */
 	public function recordRefusal(VersionMismatch $mismatch, array $body): void {
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $mismatch->stored,
-				action: 'refused',
-				context: $this->refusalContext(mismatch: $mismatch, body: $body)
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $mismatch->stored,
+					action: 'refused',
+					context: $this->refusalContext(mismatch: $mismatch, body: $body)
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->warn(message: 'a refused write could not be recorded: ' . $e->getMessage());

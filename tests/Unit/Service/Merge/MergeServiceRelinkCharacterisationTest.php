@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
@@ -165,7 +166,7 @@ class MergeServiceRelinkCharacterisationTest extends TestCase {
 			}
 		);
 
-		$operation = $this->service->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+		$operation = $this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertSame(['schema' => '42', 'master' => 'from-uuid', 'register' => 'organisations'], $queries[0]);
 		$this->assertSame('into-uuid', $saved[0]->getObject()['master']);
@@ -183,7 +184,7 @@ class MergeServiceRelinkCharacterisationTest extends TestCase {
 		$saved = $this->wire(from: $this->master('from-uuid', []), into: $this->master('into-uuid', []));
 		$this->objectService->method('findAll')->willReturn([]);
 
-		$operation = $this->service->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+		$operation = $this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertArrayNotHasKey('reverseFkMoves', $operation['preMergeSnapshot']);
 		$this->assertCount(3, $saved);
@@ -198,7 +199,7 @@ class MergeServiceRelinkCharacterisationTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 
-		$this->service->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertSame(
 			[$shared, ['sourceSystem' => 'crm', 'values' => []]],
@@ -214,7 +215,7 @@ class MergeServiceRelinkCharacterisationTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 
-		$this->service->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertSame('also-not', $saved[1]->getObject()['sources']);
 	}//end testEmbeddedRelinkIgnoresANonArraySourceField()

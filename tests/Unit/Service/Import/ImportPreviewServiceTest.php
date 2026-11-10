@@ -32,7 +32,9 @@ namespace Unit\Service\Import;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
@@ -152,7 +154,8 @@ final class ImportPreviewServiceTest extends TestCase {
 			}
 		);
 		$rowMapper->method('findByPreview')->willReturnCallback(
-			function (int $previewId, ?string $decision = null): array {
+			function (int $previewId, ListQuery $query): array {
+				$decision = ($query->filters['decision'] ?? null);
 				if ($decision === null) {
 					return $this->rows;
 				}
@@ -402,7 +405,7 @@ final class ImportPreviewServiceTest extends TestCase {
 
 		$committed = $this->service->commit(
 			$preview,
-			hash_file('sha256', $path)
+			new ImportCommit(hash_file('sha256', $path))
 		);
 
 		$this->assertSame(ImportPreview::STATE_COMMITTED, $committed->getState());
@@ -437,7 +440,7 @@ final class ImportPreviewServiceTest extends TestCase {
 		$this->expectException(ImportPreviewRefusedException::class);
 		$this->expectExceptionMessageMatches('/changed since it was previewed/');
 
-		$this->service->commit($preview, hash_file('sha256', $changed));
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $changed)));
 	}
 
 	/**
@@ -457,7 +460,7 @@ final class ImportPreviewServiceTest extends TestCase {
 
 		$this->expectException(ImportPreviewRefusedException::class);
 
-		$this->service->commit($preview, null);
+		$this->service->commit($preview, new ImportCommit(null));
 	}
 
 	/**
@@ -477,7 +480,7 @@ final class ImportPreviewServiceTest extends TestCase {
 			->willReturn(['saved' => [], 'updated' => []]);
 
 		$hash = hash_file('sha256', $path);
-		$this->service->commit($preview, $hash);
+		$this->service->commit($preview, new ImportCommit($hash));
 
 		// The preview is committed now, so a second commit is refused on state
 		// before it reaches the rows; and the rows are stamped, so even a
@@ -488,7 +491,7 @@ final class ImportPreviewServiceTest extends TestCase {
 		));
 
 		$this->expectException(ImportPreviewRefusedException::class);
-		$this->service->commit($preview, $hash);
+		$this->service->commit($preview, new ImportCommit($hash));
 	}
 
 	public function testARowTheBulkSaveRefusedIsReportedAndNotStampedAsWritten(): void {
@@ -503,7 +506,7 @@ final class ImportPreviewServiceTest extends TestCase {
 			->willReturn(['invalid' => [['object' => ['@self' => ['id' => $kept->getPayload()['@self']['id']]], 'error' => 'Object is locked by bob']]]);
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$this->service->commit($preview, hash_file('sha256', $path));
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
 
 		$this->assertSame(1, $preview->getApplied());
 		$this->assertSame(1, $preview->getFailed());
@@ -533,7 +536,7 @@ final class ImportPreviewServiceTest extends TestCase {
 				}
 			);
 
-		$this->service->commit($preview, hash_file('sha256', $path));
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
 
 		$this->assertSame(1, $preview->getApplied());
 		$this->assertSame(1, $preview->getFailed());

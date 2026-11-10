@@ -111,6 +111,8 @@ use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
+use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -145,6 +147,7 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Objects controller for OpenRegister
@@ -993,30 +996,6 @@ class ObjectsController extends Controller {
 	}//end purposeRefusal()
 
 	/**
-	 * Resolve a register/schema path pair to numeric ids.
-	 *
-	 * Delegates to ResolvesRegisterAndSchemaTrait so this controller and
-	 * BulkController share ONE implementation. They previously each held a
-	 * private copy; #2858 and #2860 fixed this one and the bulk copy kept the
-	 * bug, so `GET /api/objects/19/9476` worked while
-	 * `POST /api/bulk/19/9475/save` still 404'd on the same register.
-	 *
-	 * @param string $register Register slug, uuid or numeric id.
-	 * @param string $schema Schema slug, uuid or numeric id.
-	 * @param ObjectOperationsInterface $objectService The request's object service.
-	 *
-	 * @return array The resolved ids and entities.
-	 *
-	 * @throws RegisterNotFoundException When the register does not resolve.
-	 * @throws SchemaNotFoundException When the schema does not resolve.
-	 *
-	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
-	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		return $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
-	}//end resolveRegisterSchemaIds()
-
-	/**
 	 * Log one warning for the filter keys that name no property of the schema.
 	 *
 	 * Such a filter answers `1 = 0`, so the caller gets an empty list that is
@@ -1241,7 +1220,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -2099,9 +2078,8 @@ class ObjectsController extends Controller {
 	private function countPairScoped(array $entry, ObjectCountScope $scope): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
-			$resolved = $this->resolveRegisterSchemaIds(
-				register: (string)$entry['register'],
-				schema: (string)$entry['schema'],
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: (string)$entry['register'], schema: (string)$entry['schema']),
 				objectService: $scope->objectService
 			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -2307,9 +2285,7 @@ class ObjectsController extends Controller {
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
-			geoProperty: $this->geoPropertyParam(params: $params),
-			fields: $this->parseFieldsParam(params: $params),
-			includeArea: true
+			shape: new FeatureShape(geoProperty: $this->geoPropertyParam(params: $params), fields: $this->parseFieldsParam(params: $params), includeArea: true)
 		);
 
 		// Body is a valid GeoJSON FeatureCollection. The default
@@ -2376,8 +2352,7 @@ class ObjectsController extends Controller {
 
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
-			geoProperty: $this->geoPropertyParam(params: $params),
-			maxFeatures: $this->wfsMaxFeatures(params: $params)
+			request: new GetFeatureRequest(geoProperty: $this->geoPropertyParam(params: $params), maxFeatures: $this->wfsMaxFeatures(params: $params))
 		);
 
 		return $this->geoCollectionResponse(collection: $response, crs: $crs);
@@ -2730,7 +2705,10 @@ class ObjectsController extends Controller {
 	 */
 	private function oneTableListing(ObjectsRouteScope $scope, ObjectOperationsInterface $objectService): array|JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $scope->register, schema: $scope->schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: $scope->register, schema: $scope->schema),
+				objectService: $objectService
+			);
 
 			$answer = $this->refuseUnboundPurpose(resolved: $resolved);
 			if ($answer === null && (new MagicMappedTable(resolved: $resolved))->isMapped() === true) {
@@ -2965,7 +2943,10 @@ class ObjectsController extends Controller {
 	 */
 	private function optionsSchema(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): Schema|JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $ask->register, schema: $ask->schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: $ask->register, schema: $ask->schema),
+				objectService: $objectService
+			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3009,7 +2990,7 @@ class ObjectsController extends Controller {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.show.in');
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3379,7 +3360,7 @@ class ObjectsController extends Controller {
 	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.create.in');
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3757,7 +3738,7 @@ class ObjectsController extends Controller {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.in');
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -4003,7 +3984,7 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function patch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
@@ -4183,7 +4164,7 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function postPatch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
@@ -4801,7 +4782,7 @@ class ObjectsController extends Controller {
 		// (404 when the object GET would be, the doelbinding guard, and no
 		// `session`, `request`, `ipAddress` or property the caller may not see).
 		if ($this->isCurrentUserAdmin() === false) {
-			return $this->logsForReader(register: $register, schema: $schema, id: $id);
+			return $this->logsForReader(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 		}
 
 		// Set the register and schema context first.
@@ -4909,16 +4890,14 @@ class ObjectsController extends Controller {
 	/**
 	 * One object's history for a non-admin, when they may read the object.
 	 *
-	 * @param string $register The register slug or identifier
-	 * @param string $schema The schema slug or identifier
-	 * @param string $id The object ID or UUID
+	 * @param ObjectRef $ref The register, the schema and the object ID or UUID, as the route names them.
 	 *
 	 * @return JSONResponse 200 with the redacted page, 404 when the object is not readable to this caller,
 	 *                      or the doelbinding refusal.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
-	private function logsForReader(string $register, string $schema, string $id): JSONResponse {
+	private function logsForReader(ObjectRef $ref): JSONResponse {
 		$config = $this->getConfig();
 		$search = null;
 		if ($config['_search'] !== null) {
@@ -4927,7 +4906,7 @@ class ObjectsController extends Controller {
 
 		try {
 			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
-				ref: new ObjectRef(register: $register, schema: $schema, id: $id),
+				ref: $ref,
 				params: [
 					'limit' => $config['limit'],
 					'offset' => $config['offset'],
@@ -4941,7 +4920,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 		} catch (MultipleObjectsReturnedException $e) {
 			// The 409 an administrator gets on this route (#4037), not a 500.
-			return $this->ambiguousIdentifierResponse(id: $id);
+			return $this->ambiguousIdentifierResponse(id: $ref->id);
 		}
 
 		if ($page === null) {
@@ -5781,10 +5760,12 @@ class ObjectsController extends Controller {
 	 */
 	private function csvExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToCsv(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters,
-			currentUser: $this->userSession->getUser()
+			request: new ObjectExportRequest(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser(),
+			),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'csv', rowCount: $this->countCsvExportRows(csv: $content)));
@@ -5803,9 +5784,7 @@ class ObjectsController extends Controller {
 	 */
 	private function jsonExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToJson(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters
+			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'json', rowCount: $this->countJsonExportRows(json: $content)));
@@ -5825,10 +5804,12 @@ class ObjectsController extends Controller {
 	private function pdfExport(ObjectExport $export): DataDownloadResponse|JSONResponse {
 		try {
 			$content = $this->services->transfer->exportService->exportToPdf(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: $this->userSession->getUser()
+				request: new ObjectExportRequest(
+					register: $export->register,
+					schema: $export->schema,
+					filters: $export->filters,
+					currentUser: $this->userSession->getUser(),
+				),
 			);
 		} catch (ExportTooLargeException $e) {
 			return self::exportTooLargeResponse(exception: $e);
@@ -5852,9 +5833,7 @@ class ObjectsController extends Controller {
 	 */
 	private function recordPdfExport(ObjectExport $export): void {
 		$rowCount = $this->services->transfer->exportService->countExportRows(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters
+			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
 		);
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'pdf', rowCount: $rowCount));
 	}//end recordPdfExport()
@@ -5891,10 +5870,12 @@ class ObjectsController extends Controller {
 	 */
 	private function excelExport(ObjectExport $export): DataDownloadResponse {
 		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters,
-			currentUser: $this->userSession->getUser()
+			request: new ObjectExportRequest(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser(),
+			),
 		);
 
 		// Create Excel writer and get content.

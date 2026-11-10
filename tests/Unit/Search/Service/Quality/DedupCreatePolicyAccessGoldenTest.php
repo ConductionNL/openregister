@@ -90,7 +90,7 @@ class DedupCreatePolicyAccessGoldenTest extends TestCase {
 	 */
 	public function testOverrideAuditOutcome(): void {
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->expects($this->once())->method('createAuditTrailEntry');
+		$audit->expects($this->once())->method('recordObjectEvent');
 		$policy = $this->policy([], 0, 'bob', [], $audit);
 
 		$policy->recordOverride(new ObjectEntity(), []);

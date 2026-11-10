@@ -45,6 +45,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -315,8 +316,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 * written (D-1).
 	 *
 	 * @param ImportPreview $preview The previewed preview.
-	 * @param string|null $sourceHash The sha256 of the file being committed.
-	 * @param IUser|null $currentUser The actor.
+	 * @param ImportCommit  $commit  The sha256 of the file being committed, and the actor.
 	 *
 	 * @return ImportPreview The preview, in state committed.
 	 *
@@ -324,9 +324,9 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function commit(ImportPreview $preview, ?string $sourceHash, ?IUser $currentUser = null): ImportPreview {
-		$this->assertCommittable(preview: $preview, sourceHash: $sourceHash);
-		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $currentUser));
+	public function commit(ImportPreview $preview, ImportCommit $commit): ImportPreview {
+		$this->assertCommittable(preview: $preview, sourceHash: $commit->sourceHash);
+		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $commit->currentUser));
 	}//end commit()
 
 	/**
@@ -739,7 +739,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($this->store->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: ImportPreviewRow::DECISION_REFUSE
+			query: ListQuery::unbounded(filters: ['decision' => ImportPreviewRow::DECISION_REFUSE])
 		) as $row) {
 			$refusals[] = [
 				'row' => $row->getSourceRow(),

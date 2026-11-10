@@ -23,8 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use RuntimeException;
 
@@ -59,20 +61,14 @@ interface MagicTableRowReaderInterface {
 	/**
 	 * Find all objects in register+schema table with filtering and pagination.
 	 *
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
-	 * @param int|null $limit Maximum number of results.
-	 * @param int|null $offset Offset for pagination.
-	 * @param array|null $filters Filters to apply.
-	 * @param array $sort Sort order.
+	 * @param RegisterSchema $table   The register and schema whose table to use.
+	 * @param ListQuery      $listing The limit (unbounded, the default, for all rows), offset, filters and sort.
 	 *
 	 * @return ObjectEntity[]
 	 *
 	 * @psalm-return list<ObjectEntity>
 	 */
-	public function findAllInRegisterSchemaTable(
-		Register $register, Schema $schema, ?int $limit = null, ?int $offset = null, ?array $filters = null, array $sort = []
-	): array;
+	public function findAllInRegisterSchemaTable(RegisterSchema $table, ListQuery $listing=new ListQuery(limit: ListQuery::UNBOUNDED)): array;
 
 	/**
 	 * Find objects by a list of uuids within ONE register+schema table.

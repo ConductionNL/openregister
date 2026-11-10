@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
@@ -97,7 +98,7 @@ class TransitionAndLinkObjectNodeTest extends TestCase {
 			->with('req-1', 'fulfil', ['grond' => 'complete'])
 			->willReturn($this->object('req-1', ['status' => 'fulfilled']));
 
-		$out = $this->transition()->execute([$this->item()], ['action' => 'fulfil', 'data' => ['grond' => '{{reason}}']], []);
+		$out = $this->transition()->execute(new FlowNodeCall(items: [$this->item()], config: ['action' => 'fulfil', 'data' => ['grond' => '{{reason}}']], context: []));
 
 		$this->assertCount(1, $out);
 	}//end testATransitionMovesTheItemsObjectWithRenderedData()
@@ -108,7 +109,7 @@ class TransitionAndLinkObjectNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Guard "signed" refused the move.');
 
-		$this->transition()->execute([$this->item()], ['action' => 'fulfil'], []);
+		$this->transition()->execute(new FlowNodeCall(items: [$this->item()], config: ['action' => 'fulfil'], context: []));
 	}//end testARefusedTransitionFailsTheStepWithTheEnginesMessage()
 
 	public function testATransitionStepMustNameItsAction(): void {
@@ -120,7 +121,7 @@ class TransitionAndLinkObjectNodeTest extends TestCase {
 	public function testATransitionMayMoveAnotherObject(): void {
 		$this->engine->expects($this->once())->method('transition')->with('case-9', 'open', [])->willReturn($this->object('case-9'));
 
-		$this->transition()->execute([FlowItems::item(json: ['uuid' => 'req-1', 'case' => 'case-9'])], ['action' => 'open', 'object' => '{{case}}'], []);
+		$this->transition()->execute(new FlowNodeCall(items: [FlowItems::item(json: ['uuid' => 'req-1', 'case' => 'case-9'])], config: ['action' => 'open', 'object' => '{{case}}'], context: []));
 	}//end testATransitionMayMoveAnotherObject()
 
 	public function testAHandOverWithoutItsTargetAppFailsVisibly(): void {
@@ -130,13 +131,13 @@ class TransitionAndLinkObjectNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('not-available: No app implements Case.');
 
-		$this->link()->execute([$this->item()], ['handoff' => 'convert-to-case'], []);
+		$this->link()->execute(new FlowNodeCall(items: [$this->item()], config: ['handoff' => 'convert-to-case'], context: []));
 	}//end testAHandOverWithoutItsTargetAppFailsVisibly()
 
 	public function testAHandOverCarriesTheHandoffsAnswer(): void {
 		$this->handoffs->method('execute')->willReturn(['status' => 'executed', 'target' => ['uuid' => 'case-1']]);
 
-		$out = $this->link()->execute([$this->item()], ['handoff' => 'convert-to-case'], []);
+		$out = $this->link()->execute(new FlowNodeCall(items: [$this->item()], config: ['handoff' => 'convert-to-case'], context: []));
 
 		$this->assertSame('case-1', $out[0][FlowItems::JSON]['linked']['target']['uuid']);
 	}//end testAHandOverCarriesTheHandoffsAnswer()
@@ -152,7 +153,7 @@ class TransitionAndLinkObjectNodeTest extends TestCase {
 			}
 		);
 
-		$this->link()->execute([$this->item()], ['register' => 'notes', 'schema' => 'note', 'data' => ['text' => '{{title}}'], 'relation' => 'notes'], []);
+		$this->link()->execute(new FlowNodeCall(items: [$this->item()], config: ['register' => 'notes', 'schema' => 'note', 'data' => ['text' => '{{title}}'], 'relation' => 'notes'], context: []));
 
 		// saveObject(object, extend, register, schema, uuid): the mock sees them by position.
 		$this->assertSame(['text' => 'Aanvraag'], $saved[0][0]);
