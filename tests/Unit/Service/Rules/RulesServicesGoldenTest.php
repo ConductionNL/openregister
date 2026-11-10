@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
@@ -427,8 +428,8 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		$summaries = $this->createMock(RuleRunSummaryMapper::class);
 		$summaries->method('record')->willReturnCallback(
-			function (...$args) use ($failSummary): RuleRunSummary {
-				$args[3] = $args[3]->format(DATE_ATOM);
+			function (RuleRun $run, RuleEvaluation $evaluation) use ($failSummary): RuleRunSummary {
+				$args = [$run->getRuleId(), $run->getSchemaSlug(), $evaluation->verdict, $evaluation->moment->format(DATE_ATOM), $evaluation->error];
 				$this->calls[] = ['summary', $args];
 				if ($failSummary === true) {
 					throw new RuntimeException('summary failed');

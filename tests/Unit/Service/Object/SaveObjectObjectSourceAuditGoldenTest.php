@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -84,7 +85,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 			 *
 			 * @return ObjectEntity|null Always null.
 			 */
-			public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+			public function find(SourcedTable $source, string $id): ?ObjectEntity {
 				$this->calls[] = 'find';
 				return null;
 			}//end find()
@@ -99,7 +100,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 			 *
 			 * @return array Always empty.
 			 */
-			public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+			public function findAll(SourcedTable $source, array $query = []): array {
 				return [];
 			}//end findAll()
 
@@ -113,7 +114,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 			 *
 			 * @return int Zero.
 			 */
-			public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+			public function count(SourcedTable $source, array $query = []): int {
 				return 0;
 			}//end count()
 
@@ -127,7 +128,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 			 *
 			 * @return ObjectEntity The created stub entity.
 			 */
-			public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
+			public function insert(SourcedTable $source, array $data): ObjectEntity {
 				$this->calls[] = 'insert';
 				$entity = new ObjectEntity();
 				$entity->setUuid('101');
@@ -146,7 +147,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 			 *
 			 * @return ObjectEntity The updated stub entity.
 			 */
-			public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
+			public function update(SourcedTable $source, string $id, array $data): ObjectEntity {
 				$this->calls[] = 'update';
 				$entity = new ObjectEntity();
 				$entity->setUuid($id);
@@ -164,7 +165,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 			 *
 			 * @return bool True.
 			 */
-			public function remove(Register $register, Schema $schema, string $id, array $config = []): bool {
+			public function remove(SourcedTable $source, string $id): bool {
 				$this->calls[] = 'remove';
 				return true;
 			}//end remove()
