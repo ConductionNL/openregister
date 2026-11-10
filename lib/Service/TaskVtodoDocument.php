@@ -64,19 +64,18 @@ final class TaskVtodoDocument {
 	/**
 	 * Parse a VTODO iCalendar string into a JSON-friendly array.
 	 *
-	 * @param string $calendarData The raw iCalendar string
-	 * @param string $calendarId   The calendar ID
-	 * @param string $uri          The calendar object URI
+	 * @param string       $calendarData The raw iCalendar string
+	 * @param TaskLocation $at           The calendar and URI of the calendar object
 	 *
 	 * @return array|null Task array or null if not a VTODO
 	 */
-	public function taskOf(string $calendarData, string $calendarId, string $uri): ?array {
+	public function taskOf(string $calendarData, TaskLocation $at): ?array {
 		$vtodo = Reader::read($calendarData)->VTODO;
 		if ($vtodo === null) {
 			return null;
 		}
 
-		return $this->reader->taskArray(vtodo: $vtodo, calendarId: $calendarId, uri: $uri);
+		return $this->reader->taskArray(vtodo: $vtodo, calendarId: (string)$at->calendarId, uri: $at->uri);
 	}//end taskOf()
 
 	/**

@@ -734,6 +734,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @return array|null Task array or null if not a VTODO
 	 */
 	private function vtodoToArray(string $calendarData, TaskLocation $at): ?array {
-		return $this->documents->taskOf(calendarData: $calendarData, calendarId: (string)$at->calendarId, uri: $at->uri);
+		return $this->documents->taskOf(calendarData: $calendarData, at: $at);
 	}//end vtodoToArray()
 }//end class
