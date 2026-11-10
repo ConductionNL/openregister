@@ -115,4 +115,29 @@ class HierarchyParentPropertyGoldenTest extends TestCase {
 			)
 		);
 	}//end testASchemaWithoutIdentitiesAcceptsAnyReference()
+
+	public function testTheAnnotationLevelFindingsAndTheirOrderArePinned(): void {
+		$validator = new HierarchyAnnotationValidator();
+
+		$this->assertSame([], $validator->validate(['properties' => []]));
+		$this->assertSame(
+			self::refusal('hierarchy.not-object', HierarchyGrantExpander::ANNOTATION . ' must be an object.'),
+			$validator->validate([HierarchyGrantExpander::ANNOTATION => 'parent'])
+		);
+		$this->assertSame(
+			[
+				['code' => 'hierarchy.unknown-key', 'message' => 'Unknown key "typo" was ignored.', 'severity' => 'warning'],
+				['code' => 'hierarchy.no-parent', 'message' => 'A hierarchy must name the property that points at the parent.', 'severity' => 'error'],
+			],
+			$validator->validate([HierarchyGrantExpander::ANNOTATION => ['typo' => 1, 'parent' => '  ', 'maxDepth' => 0]])
+		);
+		$this->assertSame(
+			[
+				['code' => 'hierarchy.unknown-key', 'message' => 'Unknown key "typo" was ignored.', 'severity' => 'warning'],
+				['code' => 'hierarchy.unknown-property', 'message' => 'The parent property "up" is not a property of this schema.', 'severity' => 'error'],
+				['code' => 'hierarchy.bad-depth', 'message' => 'maxDepth must be a positive integer.', 'severity' => 'error'],
+			],
+			$validator->validate([HierarchyGrantExpander::ANNOTATION => ['typo' => 1, 'parentField' => ' up ', 'maxDepth' => 0]])
+		);
+	}//end testTheAnnotationLevelFindingsAndTheirOrderArePinned()
 }//end class
