@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\AvgRetentionJob;
 use OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob;
 use OCA\OpenRegister\Service\AvgRetentionService;
@@ -77,11 +78,11 @@ class RetentionJobsGoldenTest extends TestCase {
 	}//end setUp()
 
 	private function avg(): AvgRetentionJob {
-		return new AvgRetentionJob($this->createMock(ITimeFactory::class), $this->appConfig, $this->retention, $this->logger);
+		return new AvgRetentionJob(new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $this->appConfig, $this->logger), $this->retention);
 	}//end avg()
 
 	private function dsar(): DsarRetentionSweepJob {
-		return new DsarRetentionSweepJob($this->createMock(ITimeFactory::class), $this->appConfig, $this->sweep, $this->logger);
+		return new DsarRetentionSweepJob(new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $this->appConfig, $this->logger), $this->sweep);
 	}//end dsar()
 
 	private function runJob(TimedJob $job): void {

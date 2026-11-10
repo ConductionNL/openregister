@@ -38,7 +38,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
@@ -223,9 +222,9 @@ class LinkRowsListGoldenTest extends TestCase {
 			return new Providers\BookmarksProvider($this->mapper(Db\BookmarkLinkMapper::class, $links), $apps, $l10n);
 		}
 		if ($name === 'flow') {
-			return new Providers\FlowProvider($this->mapper(Db\FlowLinkMapper::class, $links), $this->db(), $apps, $l10n);
+			return new Providers\FlowProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\FlowLinkMapper::class, $links));
 		}
-		return new Providers\PollsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\PollLinkMapper::class, $links), $this->createMock(IUserSession::class));
+		return new Providers\PollsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\PollLinkMapper::class, $links));
 	}//end provider()
 
 	/**

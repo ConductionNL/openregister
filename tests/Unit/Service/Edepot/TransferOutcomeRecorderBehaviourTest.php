@@ -63,12 +63,7 @@ class TransferOutcomeRecorderBehaviourTest extends TestCase {
 	}//end setUp()
 
 	private function recorder(): TransferOutcomeRecorder {
-		$auditLog = new TransferAuditLog(
-			$this->auditTrail,
-			new TransferSettings($this->createMock(IAppConfig::class), $this->logger),
-			$this->createMock(INotificationManager::class),
-			$this->logger
-		);
+		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->auditTrail, $this->logger), new TransferSettings($this->createMock(IAppConfig::class), $this->logger), $this->createMock(INotificationManager::class));
 		return new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->mapper, records: $this->records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), $auditLog);
 	}//end recorder()
 

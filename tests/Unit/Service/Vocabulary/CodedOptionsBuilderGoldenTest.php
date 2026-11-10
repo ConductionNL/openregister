@@ -67,7 +67,7 @@ class CodedOptionsBuilderGoldenTest extends TestCase {
 		);
 
 		$lifecycle = new ConceptLifecycle();
-		$this->builder = new CodedOptionsBuilder($concepts, new ConceptHierarchy($lifecycle), $lifecycle);
+		$this->builder = new CodedOptionsBuilder(new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess($concepts, new ConceptHierarchy($lifecycle), $lifecycle));
 	}//end setUp()
 
 	/**
