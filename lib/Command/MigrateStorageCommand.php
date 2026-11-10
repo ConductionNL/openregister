@@ -336,26 +336,39 @@ class MigrateStorageCommand extends Command {
 	 * @throws \Exception When the migration fails.
 	 */
 	private function migrate(InputInterface $input, array $resolved): array {
-		$batchSize = (int)$input->getOption('batch-size');
-		$dryRun = $input->getOption('dry-run');
-
 		$report = $this->migrationService->migrateToBlobStorage(
 			register: $resolved['register'],
 			schema: $resolved['schema'],
-			batchSize: $batchSize,
-			dryRun: $dryRun
+			batchSize: (int)$input->getOption('batch-size'),
+			dryRun: $input->getOption('dry-run')
 		);
 		if ($input->getArgument('direction') === 'to-magic') {
-			$report = $this->migrationService->migrateToMagicTable(
-				register: $resolved['register'],
-				schema: $resolved['schema'],
-				batchSize: $batchSize,
-				dryRun: $dryRun
-			);
+			$report = $this->migrateToMagicTable(input: $input, resolved: $resolved);
 		}
 
 		return $report;
 	}//end migrate()
+
+	/**
+	 * Run the magic-table migration for the `to-magic` direction.
+	 *
+	 * @param InputInterface                            $input    Input interface.
+	 * @param array{register: Register, schema: Schema} $resolved The resolved register and schema.
+	 *
+	 * @return array{total: int, migrated: int, skipped: int, failed: int, errors: array} The migration report.
+	 *
+	 * @throws \Exception When the migration fails.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function migrateToMagicTable(InputInterface $input, array $resolved): array {
+		return $this->migrationService->migrateToMagicTable(
+			register: $resolved['register'],
+			schema: $resolved['schema'],
+			batchSize: (int)$input->getOption('batch-size'),
+			dryRun: $input->getOption('dry-run')
+		);
+	}//end migrateToMagicTable()
 
 	/**
 	 * Write the migration report and pick the exit code.
