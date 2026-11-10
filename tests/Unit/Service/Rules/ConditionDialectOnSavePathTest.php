@@ -83,12 +83,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 	 * @return LifecycleConditionEvaluator The evaluator.
 	 */
 	private function evaluator(): LifecycleConditionEvaluator {
-		return new LifecycleConditionEvaluator(
-			$this->createMock(originalClassName: IUserSession::class),
-			$this->createMock(originalClassName: IGroupManager::class),
-			new LifecycleConditionReporting($this->createMock(originalClassName: IL10N::class), $this->createMock(originalClassName: LoggerInterface::class)),
-			$this->dialect()
-		);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->createMock(originalClassName: IL10N::class), $this->createMock(originalClassName: LoggerInterface::class)), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->dialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(originalClassName: IUserSession::class), $this->createMock(originalClassName: IGroupManager::class))));
 
 	}//end evaluator()
 

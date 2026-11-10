@@ -115,7 +115,9 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
@@ -152,6 +154,7 @@ use OCA\OpenRegister\Service\Object\SearchTrailRecorder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
+use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
@@ -1899,35 +1902,35 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function loadFindAllRows(array $config, AccessFlags $access): array
     {
         return $this->getHandler->findAll(
-            ...$this->findAllSelection(config: $config),
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
+            request: $this->findAllSelection(config: $config),
             _rbac: $access->rbac,
             _multitenancy: $access->multitenancy
         );
     }//end loadFindAllRows()
 
     /**
-     * The selection arguments of a findAll() configuration, by handler parameter name.
+     * The listing a findAll() configuration asks for, scoped to the current register and schema.
      *
      * @param array $config The prepared findAll() configuration.
      *
-     * @return array<string, mixed> The handler arguments.
+     * @return ObjectListRequest The handler request.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function findAllSelection(array $config): array
+    private function findAllSelection(array $config): ObjectListRequest
     {
-        return [
-            'limit'   => ($config['limit'] ?? null),
-            'offset'  => ($config['offset'] ?? null),
-            'filters' => ($config['filters'] ?? []),
-            'sort'    => ($config['sort'] ?? []),
-            'search'  => ($config['search'] ?? null),
-            'files'   => ($config['files'] ?? false),
-            'uses'    => ($config['uses'] ?? null),
-            'ids'     => ($config['ids'] ?? null),
-        ];
+        return new ObjectListRequest(
+            query: new ListQuery(
+                limit: ($config['limit'] ?? ListQuery::UNBOUNDED),
+                offset: ($config['offset'] ?? null),
+                filters: ($config['filters'] ?? []),
+                sort: ($config['sort'] ?? []),
+                search: ($config['search'] ?? null)
+            ),
+            scope: new ReadScope(register: $this->currentRegister, schema: $this->currentSchema),
+            selection: new ObjectSelection(ids: ($config['ids'] ?? null), uses: ($config['uses'] ?? null)),
+            files: ($config['files'] ?? false)
+        );
     }//end findAllSelection()
 
     /**
@@ -3039,8 +3042,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $user = $this->userSession->getUser();
         $kept = (new DraftCallerRule())->keptFromCaller(
-            object: $stored,
-            schema: $this->currentSchema,
+            subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
                 isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
@@ -4398,8 +4400,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $deleter = ($request->currentUser ?? $this->userSession->getUser());
         if ($request->rbac === true && $object !== null && $this->currentSchema !== null
             && (new DraftCallerRule())->keptFromCaller(
-                object: $object,
-                schema: $this->currentSchema,
+                subject: new DraftSubject(object: $object, schema: $this->currentSchema),
                 caller: $this->draftCaller(user: $deleter)
             ) === true
         ) {
@@ -6908,8 +6909,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         if ($scope['draft'] === true && $run['_rbac'] === true
             && (new DraftCallerRule())->keptFromCaller(
-                object: $scope['row'],
-                schema: $scope['gateSchema'],
+                subject: new DraftSubject(object: $scope['row'], schema: $scope['gateSchema']),
                 caller: $this->draftCaller(user: $this->userSession->getUser())
             ) === true
         ) {

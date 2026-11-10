@@ -187,7 +187,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 		);
 		$this->listener = new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new LifecycleTransitionResolver($this->actions)), $this->userSession, $this->permission),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer, $serverContainer, $this->logger)), new LifecycleConditionEvaluator($this->userSession, $groupManager, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer, $serverContainer, $this->logger)), new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $groupManager))), new ConditionTracer(dialect: $dialect)),
 			$this->createMock(RuleRunRecorder::class)
 		);
 

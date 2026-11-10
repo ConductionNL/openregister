@@ -6416,6 +6416,7 @@ class ObjectsController extends Controller {
 	private static function takeZipContent(string $path): string {
 		$zipContent = file_get_contents($path);
 		if (file_exists($path) === true) {
+			// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the temporary zip this endpoint built itself.
 			unlink($path);
 		}
 

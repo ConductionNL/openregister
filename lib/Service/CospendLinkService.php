@@ -169,7 +169,32 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 */
 	public function linkProject(LinkTarget $target, string $projectId): CospendLink {
 		$uid = $this->requireUid();
+		$this->assertProjectLinkable(target: $target, projectId: $projectId);
 
+		$project = $this->fetchProject(projectId: $projectId);
+		if ($project === null) {
+			throw new Exception('Cospend project not found', 404);
+		}
+
+		$link = $this->hydrateLink(
+			target: $target,
+			opts: $this->projectLinkFields(projectId: $projectId, project: $project) + ['uid' => $uid]
+		);
+
+		return $this->cospendLinkMapper->insert($link);
+	}//end linkProject()
+
+	/**
+	 * Refuse a project link while Cospend is unavailable, without a project id, or when the object already links the project.
+	 *
+	 * @param LinkTarget $target    The object to link to.
+	 * @param string     $projectId The Cospend project id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 503 when Cospend is unavailable, 400 without a project id, 409 on a duplicate.
+	 */
+	private function assertProjectLinkable(LinkTarget $target, string $projectId): void {
 		if ($this->isCospendAvailable() === false) {
 			throw new Exception('NC Cospend is not available', 503);
 		}
@@ -185,27 +210,26 @@ class CospendLinkService implements CospendLinkServiceInterface {
 		if ($existing !== null) {
 			throw new Exception('Project already linked to this object', 409);
 		}
+	}//end assertProjectLinkable()
 
-		$project = $this->fetchProject(projectId: $projectId);
-		if ($project === null) {
-			throw new Exception('Cospend project not found', 404);
-		}
-
-		$link = $this->hydrateLink(
-			target: $target,
-			opts: [
-				'entryType' => self::ENTRY_PROJECT,
-				'projectId' => $projectId,
-				'billId' => null,
-				'name' => (string)($project['name'] ?? $projectId),
-				'amount' => null,
-				'currency' => ($project['currency'] ?? null),
-				'uid' => $uid,
-			]
-		);
-
-		return $this->cospendLinkMapper->insert($link);
-	}//end linkProject()
+	/**
+	 * The link fields of a whole-project link, before its owner.
+	 *
+	 * @param string               $projectId The Cospend project id.
+	 * @param array<string, mixed> $project   The project row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function projectLinkFields(string $projectId, array $project): array {
+		return [
+			'entryType' => self::ENTRY_PROJECT,
+			'projectId' => $projectId,
+			'billId' => null,
+			'name' => (string)($project['name'] ?? $projectId),
+			'amount' => null,
+			'currency' => ($project['currency'] ?? null),
+		];
+	}//end projectLinkFields()
 
 	/**
 	 * Link a specific NC Cospend bill (under a project) to an OR object.

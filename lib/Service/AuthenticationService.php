@@ -366,17 +366,12 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function getRSJWK(array $configuration): JWK {
-		$stamp = microtime() . getmypid();
-		$filename = "/var/tmp/privatekey-$stamp";
-		file_put_contents(filename: $filename, data: base64_decode(string: $configuration['secret']));
-
-		try {
-			$jwk = JWKFactory::createFromKeyFile($filename, null, ['use' => 'sig']);
-		} finally {
-			unlink(filename: $filename);
-		}
-
-		return $jwk;
+		// The key is read from memory: written to a file, it would sit on disk for the length of the call.
+		return JWKFactory::createFromKey(
+			key: (string)base64_decode(string: $configuration['secret']),
+			password: null,
+			additional_values: ['use' => 'sig']
+		);
 	}//end getRSJWK()
 
 	/**

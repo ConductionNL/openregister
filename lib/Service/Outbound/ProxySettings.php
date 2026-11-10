@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Outbound;
 
+use OCA\OpenRegister\Support\AppConfigValue;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use Throwable;
@@ -49,13 +50,6 @@ use Throwable;
  * @package  OCA\OpenRegister\Service\Outbound
  */
 class ProxySettings implements ProxySettingsInterface {
-
-	/**
-	 * The app the setting lives under.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'openregister';
 
 	/**
 	 * Configuration key holding the proxy URL.
@@ -277,17 +271,7 @@ class ProxySettings implements ProxySettingsInterface {
 	 * @return string|null The value, or null.
 	 */
 	private function readAppValue(string $key): ?string {
-		try {
-			$value = trim((string)$this->appConfig->getValueString(self::APP_ID, $key, ''));
-		} catch (Throwable) {
-			return null;
-		}
-
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
+		return AppConfigValue::nonEmpty(appConfig: $this->appConfig, key: $key);
 
 	}//end readAppValue()
 }//end class

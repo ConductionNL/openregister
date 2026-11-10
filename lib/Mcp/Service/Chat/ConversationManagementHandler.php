@@ -288,12 +288,7 @@ class ConversationManagementHandler {
 		$config = new OpenAIConfig();
 		$config->apiKey = $fireworksConfig['apiKey'];
 		$config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-		$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-		if (str_ends_with($baseUrl, '/v1') === false) {
-			$baseUrl .= '/v1';
-		}
-
-		$config->url = $baseUrl;
+		$config->url = FireworksBaseUrl::of(fireworksConfig: $fireworksConfig);
 
 		return $config;
 	}//end buildFireworksConfig()

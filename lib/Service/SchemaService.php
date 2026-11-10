@@ -57,6 +57,37 @@ class SchemaService implements SchemaExplorationInterface {
 	private const SCHEMA_EXPLORE_SAMPLE_SIZE = 1000;
 
 	/**
+	 * The JSON Schema type of each non-string PHP type, by lower-case name.
+	 *
+	 * JSON Schema standard types are preserved as-is.
+	 *
+	 * @var array<string, string>
+	 */
+	private const JSON_TYPE_OF_PHP_TYPE = [
+		'integer' => 'integer',
+		'double' => 'number',
+		'float' => 'number',
+		'boolean' => 'boolean',
+		'array' => 'array',
+		'object' => 'object',
+		'null' => 'null',
+		'number' => 'number',
+	];
+
+	/**
+	 * The suggestion for a required property whose data contains null values.
+	 *
+	 * @var array<string, string>
+	 */
+	private const REQUIRED_WITH_NULLS_SUGGESTION = [
+		'type' => 'behavior',
+		'field' => 'required',
+		'current' => 'true',
+		'recommended' => 'false',
+		'description' => 'Some objects have null values for this property',
+	];
+
+	/**
 	 * gettype() names that carry a numeric range, and the range type they get.
 	 *
 	 * @var array<string, string>
@@ -134,6 +165,32 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @spec openspec/specs/schema-property-exploration/spec.md
 	 */
 	public function exploreSchemaProperties(int $schemaId): array {
+		$schema = $this->findSchemaToExplore(schemaId: $schemaId);
+		$objects = $this->sampleObjectsToExplore(schemaId: $schemaId);
+
+		$result = [
+			'schema_id' => $schemaId,
+			'schema_title' => $schema->getTitle(),
+			'total_objects' => count($objects),
+		];
+		if (empty($objects) === true) {
+			return $result + $this->emptyExploration(schema: $schema);
+		}
+
+		return $result + $this->exploreSample(schema: $schema, objects: $objects);
+	}//end exploreSchemaProperties()
+
+
+	/**
+	 * Log the start of an exploration and load the schema it explores.
+	 *
+	 * @param int $schemaId The ID of the schema to explore
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \Exception If the schema is not found
+	 */
+	private function findSchemaToExplore(int $schemaId): Schema {
 		$this->logger->info(
 			message: '[SchemaService] Starting schema exploration for schema ID: ' . $schemaId,
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -141,14 +198,23 @@ class SchemaService implements SchemaExplorationInterface {
 
 		// Get the schema to validate it exists.
 		try {
-			$schema = $this->catalog->schemas()->find($schemaId);
+			return $this->catalog->schemas()->find($schemaId);
 		} catch (\Exception $e) {
 			throw new Exception('Schema not found with ID: ' . $schemaId);
 		}
+	}//end findSchemaToExplore()
 
-		// Sample a bounded set of objects for this schema. Exploration is
-		// statistical, so a capped sample avoids loading the full (potentially
-		// huge) object set into memory (bound-unbounded-query-memory).
+	/**
+	 * Sample a bounded set of objects for a schema.
+	 *
+	 * Exploration is statistical, so a capped sample avoids loading the full
+	 * (potentially huge) object set into memory (bound-unbounded-query-memory).
+	 *
+	 * @param int $schemaId The ID of the schema to explore
+	 *
+	 * @return array The sampled objects.
+	 */
+	private function sampleObjectsToExplore(int $schemaId): array {
 		$objects = $this->catalog->tables()->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
 
 		$this->logger->info(
@@ -156,49 +222,84 @@ class SchemaService implements SchemaExplorationInterface {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		if (empty($objects) === true) {
-			return [
-				'schema_id' => $schemaId,
-				'schema_title' => $schema->getTitle(),
-				'total_objects' => 0,
-				'discovered_properties' => [],
-				'existing_properties' => $schema->getProperties(),
-				'suggestions' => [],
-				'analysis_date' => (new DateTime('now'))->format(format: 'c'),
-				'message' => 'No objects found for analysis',
-			];
-		}
+		return $objects;
+	}//end sampleObjectsToExplore()
 
-		// Analyze all object data.
+	/**
+	 * The rest of the exploration result when the schema has no objects.
+	 *
+	 * @param Schema $schema The explored schema.
+	 *
+	 * @return array The result after its schema id, title and object count.
+	 */
+	private function emptyExploration(Schema $schema): array {
+		return [
+			'discovered_properties' => [],
+			'existing_properties' => $schema->getProperties(),
+			'suggestions' => [],
+			'analysis_date' => (new DateTime('now'))->format(format: 'c'),
+			'message' => 'No objects found for analysis',
+		];
+	}//end emptyExploration()
+
+	/**
+	 * Analyse the sampled objects and suggest changes for new and existing properties.
+	 *
+	 * @param Schema $schema  The explored schema.
+	 * @param array  $objects The sampled objects.
+	 *
+	 * @return array The rest of the exploration result after its schema id, title and object count.
+	 */
+	private function exploreSample(Schema $schema, array $objects): array {
 		$propertyAnalysis = $this->analyzeObjectProperties(objects: $objects, _existingProperties: $schema->getProperties());
-
-		// Generate suggestions for both new and existing properties.
-		$newPropSuggestions = $this->generateSuggestions(
-			discoveredProperties: $propertyAnalysis['discovered'],
-			existingProperties: $schema->getProperties()
-		);
-		$existPropSuggestions = $this->analyzeExistingProperties(
-			existingProperties: $schema->getProperties(),
-			discoveredProperties: $propertyAnalysis['discovered']
-		);
+		$suggestions = $this->explorationSuggestions(schema: $schema, discovered: $propertyAnalysis['discovered']);
 
 		return [
-			'schema_id' => $schemaId,
-			'schema_title' => $schema->getTitle(),
-			'total_objects' => count($objects),
 			'discovered_properties' => $propertyAnalysis['discovered'],
 			'existing_properties' => $schema->getProperties(),
 			'property_usage_stats' => $propertyAnalysis['usage_stats'],
-			'suggestions' => array_merge($newPropSuggestions, $existPropSuggestions),
+			'suggestions' => array_merge($suggestions['new'], $suggestions['existing']),
 			'analysis_date' => (new DateTime())->format('c'),
 			'data_types' => $propertyAnalysis['data_types'],
-			'analysis_summary' => [
-				'new_properties_count' => count($newPropSuggestions),
-				'existing_properties_improvements' => count($existPropSuggestions),
-				'total_recommendations' => count($newPropSuggestions) + count($existPropSuggestions),
-			],
+			'analysis_summary' => $this->explorationSummary(suggestions: $suggestions),
 		];
-	}//end exploreSchemaProperties()
+	}//end exploreSample()
+
+	/**
+	 * Suggestions for the discovered properties the schema lacks, then for the ones it has.
+	 *
+	 * @param Schema $schema     The explored schema.
+	 * @param array  $discovered The discovered properties.
+	 *
+	 * @return array{new: array, existing: array} The suggestions.
+	 */
+	private function explorationSuggestions(Schema $schema, array $discovered): array {
+		return [
+			'new' => $this->generateSuggestions(
+				discoveredProperties: $discovered,
+				existingProperties: $schema->getProperties()
+			),
+			'existing' => $this->analyzeExistingProperties(
+				existingProperties: $schema->getProperties(),
+				discoveredProperties: $discovered
+			),
+		];
+	}//end explorationSuggestions()
+
+	/**
+	 * Count the suggestions of an exploration.
+	 *
+	 * @param array{new: array, existing: array} $suggestions The suggestions.
+	 *
+	 * @return array The counts.
+	 */
+	private function explorationSummary(array $suggestions): array {
+		return [
+			'new_properties_count' => count($suggestions['new']),
+			'existing_properties_improvements' => count($suggestions['existing']),
+			'total_recommendations' => count($suggestions['new']) + count($suggestions['existing']),
+		];
+	}//end explorationSummary()
 
 	/**
 	 * Analyze object properties from a collection of objects
@@ -1223,42 +1324,97 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array Type comparison results
 	 */
 	private function compareType(array $currentConfig, string $recommendedType): array {
-		$issues = [];
-		$suggestions = [];
 		$currentType = $currentConfig['type'] ?? null;
-		$typeLabel = $currentType;
-		if (is_array($currentType) === true) {
-			$typeLabel = implode(', ', $currentType);
-		}
 
 		// Check if type is missing.
 		if ($currentType === null) {
-			$suggestions[] = [
-				'type' => 'type',
-				'field' => 'type',
-				'current' => null,
-				'recommended' => $recommendedType,
-				'description' => "Consider adding type '{$recommendedType}' based on analysis",
-			];
-		} elseif ($currentType !== $recommendedType
-			&& (is_array($currentType) === false || in_array($recommendedType, $currentType, true) === false)
-		) {
-			// Types don't match; a union type matches when it lists the recommended type.
-			$issues[] = "Type mismatch: current type is '{$typeLabel}', recommended type is '{$recommendedType}'";
-			$suggestions[] = [
-				'type' => 'type',
-				'field' => 'type',
-				'current' => $currentType,
-				'recommended' => $recommendedType,
-				'description' => "Analysis suggests type '{$recommendedType}' but schema defines '{$typeLabel}'",
+			return [
+				'issues' => [],
+				'suggestions' => [$this->missingTypeSuggestion(recommendedType: $recommendedType)],
 			];
 		}
 
-		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
-		];
+		if ($this->typeAllows(currentType: $currentType, recommendedType: $recommendedType) === true) {
+			return ['issues' => [], 'suggestions' => []];
+		}
+
+		return $this->typeMismatch(currentType: $currentType, recommendedType: $recommendedType);
 	}//end compareType()
+
+
+	/**
+	 * The suggestion to add the recommended type to a property that has none.
+	 *
+	 * @param string $recommendedType Recommended type from analysis
+	 *
+	 * @return array The suggestion.
+	 */
+	private function missingTypeSuggestion(string $recommendedType): array {
+		return [
+			'type' => 'type',
+			'field' => 'type',
+			'current' => null,
+			'recommended' => $recommendedType,
+			'description' => "Consider adding type '{$recommendedType}' based on analysis",
+		];
+	}//end missingTypeSuggestion()
+
+	/**
+	 * Whether the current type is the recommended type, or a union type that lists it.
+	 *
+	 * @param mixed  $currentType     The current type, a name or a list of names.
+	 * @param string $recommendedType Recommended type from analysis
+	 *
+	 * @return bool True when the types match.
+	 */
+	private function typeAllows(mixed $currentType, string $recommendedType): bool {
+		if ($currentType === $recommendedType) {
+			return true;
+		}
+
+		return is_array($currentType) === true && in_array($recommendedType, $currentType, true) === true;
+	}//end typeAllows()
+
+	/**
+	 * The issue and suggestion for a type that does not match the recommended type.
+	 *
+	 * @param mixed  $currentType     The current type, a name or a list of names.
+	 * @param string $recommendedType Recommended type from analysis
+	 *
+	 * @return array Type comparison results
+	 */
+	private function typeMismatch(mixed $currentType, string $recommendedType): array {
+		$typeLabel = $this->typeLabel(currentType: $currentType);
+
+		return [
+			'issues' => ["Type mismatch: current type is '{$typeLabel}', recommended type is '{$recommendedType}'"],
+			'suggestions' => [
+				[
+					'type' => 'type',
+					'field' => 'type',
+					'current' => $currentType,
+					'recommended' => $recommendedType,
+					'description' => "Analysis suggests type '{$recommendedType}' but schema defines '{$typeLabel}'",
+				],
+			],
+		];
+	}//end typeMismatch()
+
+
+	/**
+	 * A type for display: a union type as its names joined by commas.
+	 *
+	 * @param mixed $currentType The current type, a name or a list of names.
+	 *
+	 * @return mixed The label.
+	 */
+	private function typeLabel(mixed $currentType): mixed {
+		if (is_array($currentType) === true) {
+			return implode(', ', $currentType);
+		}
+
+		return $currentType;
+	}//end typeLabel()
 
 	/**
 	 * Compare string constraints (maxLength, format, pattern).
@@ -1313,22 +1469,46 @@ class SchemaService implements SchemaExplorationInterface {
 		$observedMax = $analysis['max_length'];
 		$currentMaxLength = $currentConfig['maxLength'] ?? null;
 		if ($currentMaxLength === null || $currentMaxLength === 0) {
-			return [
-				'missing_max_length',
-				[
-					'type' => 'constraint',
-					'field' => 'maxLength',
-					'current' => 'unlimited',
-					'recommended' => min($observedMax * 2, 1000),
-					'description' => "Objects have max length of {$observedMax} characters",
-				],
-			];
+			return $this->missingMaxLengthFinding(observedMax: $observedMax);
 		}
 
 		if (($currentMaxLength < $observedMax) === false) {
 			return null;
 		}
 
+		return $this->maxLengthTooSmallFinding(currentMaxLength: $currentMaxLength, observedMax: $observedMax);
+	}//end maxLengthFinding()
+
+
+	/**
+	 * The finding for a property without a maxLength.
+	 *
+	 * @param mixed $observedMax The observed maximum length.
+	 *
+	 * @return array{0: string, 1: array} The issue and suggestion.
+	 */
+	private function missingMaxLengthFinding(mixed $observedMax): array {
+		return [
+			'missing_max_length',
+			[
+				'type' => 'constraint',
+				'field' => 'maxLength',
+				'current' => 'unlimited',
+				'recommended' => min($observedMax * 2, 1000),
+				'description' => "Objects have max length of {$observedMax} characters",
+			],
+		];
+	}//end missingMaxLengthFinding()
+
+	/**
+	 * The finding for a maxLength below the observed maximum length.
+	 *
+	 * @param mixed $currentMaxLength The schema's maxLength.
+	 * @param mixed $observedMax      The observed maximum length.
+	 *
+	 * @return array{0: string, 1: array} The issue and suggestion.
+	 */
+	private function maxLengthTooSmallFinding(mixed $currentMaxLength, mixed $observedMax): array {
 		return [
 			'max_length_too_small',
 			[
@@ -1339,7 +1519,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$observedMax})",
 			],
 		];
-	}//end maxLengthFinding()
+	}//end maxLengthTooSmallFinding()
 
 	/**
 	 * A missing format when the analysis detected one.
@@ -1506,44 +1686,63 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array Nullable constraint comparison results
 	 */
 	private function compareNullableConstraint(array $currentConfig, array $analysis): array {
-		$issues = [];
-		$suggestions = [];
-
 		// Check if property should be nullable based on analysis.
 		$isNullable = ($analysis['nullable'] ?? false) === true
 					 || (isset($analysis['nullable_variation']) && $analysis['nullable_variation'] === true);
 
-		if ($isNullable === true) {
-			$currentRequired = isset($currentConfig['required']) && $currentConfig['required'] === true;
-			if ($currentRequired === true) {
-				$issues[] = 'Property contains null values but is marked as required';
-				$suggestions[] = [
-					'type' => 'behavior',
-					'field' => 'required',
-					'current' => 'true',
-					'recommended' => 'false',
-					'description' => 'Some objects have null values for this property',
-				];
-			}
+		if ($isNullable === false) {
+			return [
+				'issues' => [],
+				'suggestions' => [],
+			];
+		}
 
-			// Check if schema doesn't allow null type.
-			$currentType = $currentConfig['type'] ?? null;
-			if ($currentType !== null && $currentType !== 'null') {
-				$suggestions[] = [
-					'type' => 'type',
-					'field' => 'type',
-					'current' => $currentType,
-					'recommended' => [$currentType, 'null'],
-					'description' => 'Consider making this property nullable since data contains null values',
-				];
-			}
-		}//end if
-
-		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
-		];
+		return $this->nullableFindings(currentConfig: $currentConfig);
 	}//end compareNullableConstraint()
+
+
+	/**
+	 * The issues and suggestions for a property whose data contains null values.
+	 *
+	 * @param array $currentConfig Current property configuration
+	 *
+	 * @return array Nullable constraint comparison results
+	 */
+	private function nullableFindings(array $currentConfig): array {
+		$issues = [];
+		$suggestions = [];
+
+		$currentRequired = isset($currentConfig['required']) && $currentConfig['required'] === true;
+		if ($currentRequired === true) {
+			$issues[] = 'Property contains null values but is marked as required';
+			$suggestions[] = self::REQUIRED_WITH_NULLS_SUGGESTION;
+		}
+
+		// Check if schema doesn't allow null type.
+		$currentType = $currentConfig['type'] ?? null;
+		if ($currentType !== null && $currentType !== 'null') {
+			$suggestions[] = $this->nullableTypeSuggestion(currentType: $currentType);
+		}
+
+		return ['issues' => $issues, 'suggestions' => $suggestions];
+	}//end nullableFindings()
+
+	/**
+	 * The suggestion to add null to a property's type.
+	 *
+	 * @param mixed $currentType The current type.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function nullableTypeSuggestion(mixed $currentType): array {
+		return [
+			'type' => 'type',
+			'field' => 'type',
+			'current' => $currentType,
+			'recommended' => [$currentType, 'null'],
+			'description' => 'Consider making this property nullable since data contains null values',
+		];
+	}//end nullableTypeSuggestion()
 
 	/**
 	 * Compare enum constraint.
@@ -1556,54 +1755,82 @@ class SchemaService implements SchemaExplorationInterface {
 	 * Enum comparison requires else for value difference detection
 	 */
 	private function compareEnumConstraint(array $currentConfig, array $analysis): array {
-		$issues = [];
-		$suggestions = [];
-
-		// Check if analysis suggests enum values.
+		// Check if analysis suggests enum values; limit enum suggestions to reasonable number (e.g., 20).
 		$enumValues = $analysis['enum_values'] ?? null;
+		if ($enumValues === null || is_array($enumValues) === false || count($enumValues) > 20) {
+			return ['issues' => [], 'suggestions' => []];
+		}
 
-		if ($enumValues !== null && is_array($enumValues) === true) {
-			$currentEnum = $currentConfig['enum'] ?? null;
+		$currentEnum = $currentConfig['enum'] ?? null;
+		if ($currentEnum === null || empty($currentEnum) === true) {
+			return [
+				'issues' => [],
+				'suggestions' => [$this->addEnumSuggestion(enumValues: $enumValues)],
+			];
+		}
 
-			// Limit enum suggestions to reasonable number (e.g., 20).
-			if (count($enumValues) <= 20) {
-				if ($currentEnum === null || empty($currentEnum) === true) {
-					// Suggest adding enum.
-					$suggestions[] = [
-						'type' => 'enum',
-						'field' => 'enum',
-						'current' => 'unlimited',
-						'recommended' => implode(', ', $enumValues),
-						'description' => 'Property appears to have predefined values: ' . implode(', ', $enumValues),
-					];
-				}
+		return $this->enumDifference(currentEnum: $currentEnum, enumValues: $enumValues);
+	}//end compareEnumConstraint()
 
-				if ($currentEnum !== null && empty($currentEnum) !== true) {
-					// Check if current enum differs from analysis.
-					$currentEnumSorted = $currentEnum;
-					$analysisEnumSorted = $enumValues;
-					sort($currentEnumSorted);
-					sort($analysisEnumSorted);
 
-					if ($currentEnumSorted !== $analysisEnumSorted) {
-						$issues[] = 'Enum values in schema differ from values found in data';
-						$suggestions[] = [
-							'type' => 'enum',
-							'field' => 'enum',
-							'current' => implode(', ', $currentEnum),
-							'recommended' => implode(', ', $enumValues),
-							'description' => 'Data contains enum values not defined in schema',
-						];
-					}
-				}//end if
-			}//end if
-		}//end if
+	/**
+	 * The suggestion to add the observed values as an enum.
+	 *
+	 * @param array $enumValues The observed values.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function addEnumSuggestion(array $enumValues): array {
+		return [
+			'type' => 'enum',
+			'field' => 'enum',
+			'current' => 'unlimited',
+			'recommended' => implode(', ', $enumValues),
+			'description' => 'Property appears to have predefined values: ' . implode(', ', $enumValues),
+		];
+	}//end addEnumSuggestion()
+
+	/**
+	 * Compare the schema's enum with the observed values, ignoring order.
+	 *
+	 * @param mixed $currentEnum The schema's enum.
+	 * @param array $enumValues  The observed values.
+	 *
+	 * @return array Enum constraint comparison results
+	 */
+	private function enumDifference(mixed $currentEnum, array $enumValues): array {
+		$currentEnumSorted = $currentEnum;
+		$analysisEnumSorted = $enumValues;
+		sort($currentEnumSorted);
+		sort($analysisEnumSorted);
+
+		if ($currentEnumSorted === $analysisEnumSorted) {
+			return ['issues' => [], 'suggestions' => []];
+		}
 
 		return [
-			'issues' => $issues,
-			'suggestions' => $suggestions,
+			'issues' => ['Enum values in schema differ from values found in data'],
+			'suggestions' => [$this->changeEnumSuggestion(currentEnum: $currentEnum, enumValues: $enumValues)],
 		];
-	}//end compareEnumConstraint()
+	}//end enumDifference()
+
+	/**
+	 * The suggestion to replace the schema's enum with the observed values.
+	 *
+	 * @param mixed $currentEnum The schema's enum.
+	 * @param array $enumValues  The observed values.
+	 *
+	 * @return array The suggestion.
+	 */
+	private function changeEnumSuggestion(mixed $currentEnum, array $enumValues): array {
+		return [
+			'type' => 'enum',
+			'field' => 'enum',
+			'current' => implode(', ', $currentEnum),
+			'recommended' => implode(', ', $enumValues),
+			'description' => 'Data contains enum values not defined in schema',
+		];
+	}//end changeEnumSuggestion()
 
 	/**
 	 * Check if a property name should be treated as internal
@@ -1739,50 +1966,45 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @param array $patterns String patterns if type is string
 	 *
 	 * @return string JSON Schema type
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type normalization requires handling many PHP types
 	 */
 	private function normalizeSingleType(string $phpType, array $patterns): string {
 		// Normalize type string to lowercase.
 		$phpType = strtolower($phpType);
 
-		switch ($phpType) {
-			case 'string':
-				// Check if it's a numeric string that should be a number.
-				if (in_array('integer_string', $patterns, true) === true) {
-					return 'integer';
-				}
+		if ($phpType === 'string') {
+			return $this->stringTypeFromPatterns(patterns: $patterns);
+		}
 
-				if (in_array('float_string', $patterns, true) === true) {
-					return 'number';
-				}
-
-				// Check if it's a boolean string.
-				if (in_array('boolean_string', $patterns, true) === true) {
-					return 'boolean';
-				}
-				return 'string';
-			case 'integer':
-				return 'integer';
-			case 'double':
-			case 'float':
-				return 'number';
-			case 'boolean':
-				return 'boolean';
-			case 'array':
-				return 'array';
-			case 'object':
-				return 'object';
-			case 'null':
-				return 'null';
-				// JSON Schema standard types - preserve as-is.
-			case 'number':
-				return 'number';
-			default:
-				return 'string';
-				// Safe fallback.
-		}//end switch
+		// Unknown types fall back to string.
+		return self::JSON_TYPE_OF_PHP_TYPE[$phpType] ?? 'string';
 	}//end normalizeSingleType()
+
+
+	/**
+	 * The JSON Schema type of a string property: a number, integer or boolean
+	 * when its values are numeric or boolean strings.
+	 *
+	 * @param array $patterns String patterns from analysis
+	 *
+	 * @return string JSON Schema type
+	 */
+	private function stringTypeFromPatterns(array $patterns): string {
+		// Check if it's a numeric string that should be a number.
+		if (in_array('integer_string', $patterns, true) === true) {
+			return 'integer';
+		}
+
+		if (in_array('float_string', $patterns, true) === true) {
+			return 'number';
+		}
+
+		// Check if it's a boolean string.
+		if (in_array('boolean_string', $patterns, true) === true) {
+			return 'boolean';
+		}
+
+		return 'string';
+	}//end stringTypeFromPatterns()
 
 	/**
 	 * Determine dominant type when multiple types are present.
