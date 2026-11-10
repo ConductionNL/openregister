@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
@@ -327,7 +328,9 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 
 		$permissionHandler = $this->createMock(PermissionHandler::class);
 		$permissionHandler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, $object = null) use ($userSession): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use ($userSession): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
 				$acting = ($userId ?? $userSession->getUser()?->getUID());
 				$this->calls[] = ['checkPermission' => $action, 'schema' => $schema->getId(), 'userId' => $userId, 'acting' => $acting, 'owner' => $objectOwner, 'rbac' => $_rbac];
 				if ($_rbac === true && $acting !== 'alice') {
