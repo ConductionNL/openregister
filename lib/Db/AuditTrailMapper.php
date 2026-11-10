@@ -2119,12 +2119,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end bumpPatchVersion()
 
 	/**
-	 * Get statistics for audit trails with optional filtering
+	 * The number and total size of the audit trails in a scope.
 	 *
-	 * @param int|null $registerId The register ID (null for all registers)
-	 * @param int|null $schemaId The schema ID (null for all schemas)
-	 * @param array $exclude Array of register/schema combinations to exclude,
-	 *                       format: [['register' => id, 'schema' => id], ...]
+	 * @param AuditStatisticsScope $scope The register and schema (null for all) and the combinations to leave out.
 	 *
 	 * @return int[] Array containing total count and size of audit trails:
 	 *               - total: Total number of audit trails
@@ -2132,12 +2129,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @psalm-return array{total: int, size: int}
 	 */
-	public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array {
-		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
-		$scope->exclude = $exclude;
-
+	public function statisticsTotals(AuditStatisticsScope $scope): array {
 		return $this->statistics()->totals(scope: $scope);
-	}//end getStatistics()
+	}//end statisticsTotals()
 
 	/**
 	 * Updates an entity in the database
@@ -2160,30 +2154,18 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end update()
 
 	/**
-	 * Get chart data for audit trail actions over time
+	 * Chart data for audit trail actions over time
 	 *
-	 * @param DateTime|null $from Start date for the chart data
-	 * @param DateTime|null $till End date for the chart data
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
+	 * @param AuditStatisticsScope $scope The register and schema (null for all) and the `from`/`till` dates.
 	 *
 	 * @return ((int[]|string)[]|(int|string))[][]
 	 *
 	 * @psalm-return array{labels: list<array-key>,
 	 *     series: list<array{data: list<int>, name: string}>}
 	 */
-	public function getActionChartData(
-		?\DateTime $from = null,
-		?\DateTime $till = null,
-		?int $registerId = null,
-		?int $schemaId = null,
-	): array {
-		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
-		$scope->from = $from;
-		$scope->till = $till;
-
+	public function actionChartData(AuditStatisticsScope $scope): array {
 		return $this->actionStatistics()->actionChart(scope: $scope);
-	}//end getActionChartData()
+	}//end actionChartData()
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
@@ -2197,7 +2179,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *     deletes: int, reads: int}
 	 */
 	public function detailedStatistics(AuditStatisticsScope $scope): array {
-		$total = $this->getStatistics(registerId: $scope->registerId, schemaId: $scope->schemaId)['total'];
+		$total = $this->statisticsTotals(scope: new AuditStatisticsScope(registerId: $scope->registerId, schemaId: $scope->schemaId))['total'];
 
 		return $this->actionStatistics()->windowedActions(scope: $scope, total: $total);
 	}//end detailedStatistics()
@@ -2589,7 +2571,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * Get audit trail statistics grouped by schema for multiple schemas in a single query
 	 *
 	 * Returns per-schema statistics using GROUP BY instead of one query per schema.
-	 * This replaces N individual getStatistics() calls with 1 query.
+	 * This replaces N individual statisticsTotals() calls with 1 query.
 	 *
 	 * @param int[] $schemaIds Array of schema IDs to get statistics for
 	 *
