@@ -709,60 +709,6 @@ function incomingReference(obj) {
 	}
 }
 
-/**
- * The file type named for each extension.
- */
-const FILE_TYPES = {
-	pdf: 'PDF',
-	doc: 'Word',
-	docx: 'Word',
-	xls: 'Excel',
-	xlsx: 'Excel',
-	ppt: 'PowerPoint',
-	pptx: 'PowerPoint',
-	txt: 'Text',
-	jpg: 'Image',
-	jpeg: 'Image',
-	png: 'Image',
-	gif: 'Image',
-	zip: 'Archive',
-	rar: 'Archive',
-}
-
-/**
- * The dropdown option for a custom value.
- *
- * @return {{label: string, value: string}} The option
- */
-function customOption() {
-	return {
-		label: 'Other/Custom',
-		value: 'custom',
-	}
-}
-
-/**
- * The objects that refer to the source object, as the merge lists them.
- *
- * @param {string} url The used-by endpoint
- * @return {Promise<Array<object>>} The references
- */
-async function fetchIncomingReferences(url) {
-	const response = await fetch(url)
-	const data = await response.json()
-	return (data.results || []).map(incomingReference)
-}
-
-/**
- * Whether a value is filled in: not undefined, null or empty.
- *
- * @param {unknown} value The value
- * @return {boolean} True when filled in
- */
-function isFilled(value) {
-	return value !== undefined && value !== null && value !== ''
-}
-
 export default {
 	name: 'MergeObject',
 	components: {
@@ -1190,7 +1136,7 @@ export default {
 		getFileType(filename) {
 			if (!filename) return 'Unknown'
 			const ext = filename.split('.').pop()?.toLowerCase()
-			return FILE_TYPES[ext] || ext?.toUpperCase() || 'Unknown'
+			return fileTypeNames()[ext] || ext?.toUpperCase() || 'Unknown'
 		},
 
 		/**
@@ -1257,6 +1203,64 @@ export default {
 			navigationStore.setModal(false)
 		},
 	},
+}
+
+/**
+ * The file type named for each extension.
+ *
+ * @return {object} The type per extension
+ */
+function fileTypeNames() {
+	return {
+		pdf: 'PDF',
+		doc: 'Word',
+		docx: 'Word',
+		xls: 'Excel',
+		xlsx: 'Excel',
+		ppt: 'PowerPoint',
+		pptx: 'PowerPoint',
+		txt: 'Text',
+		jpg: 'Image',
+		jpeg: 'Image',
+		png: 'Image',
+		gif: 'Image',
+		zip: 'Archive',
+		rar: 'Archive',
+}
+}
+
+/**
+ * The dropdown option for a custom value.
+ *
+ * @return {{label: string, value: string}} The option
+ */
+function customOption() {
+	return {
+		label: 'Other/Custom',
+		value: 'custom',
+	}
+}
+
+/**
+ * The objects that refer to the source object, as the merge lists them.
+ *
+ * @param {string} url The used-by endpoint
+ * @return {Promise<Array<object>>} The references
+ */
+async function fetchIncomingReferences(url) {
+	const response = await fetch(url)
+	const data = await response.json()
+	return (data.results || []).map(incomingReference)
+}
+
+/**
+ * Whether a value is filled in: not undefined, null or empty.
+ *
+ * @param {unknown} value The value
+ * @return {boolean} True when filled in
+ */
+function isFilled(value) {
+	return value !== undefined && value !== null && value !== ''
 }
 </script>
 
