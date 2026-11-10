@@ -160,21 +160,21 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Register 4 is not part of this plan.');
-		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 4, false);
+		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 4);
 	}//end testApplySplitRefusesRegisterOutsideThePlan()
 
 	public function testApplySplitRefusesUnattributedPlan(): void {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Schema 5 is unattributed; pass --keep to name the owner.');
-		$this->service->applySplit(['schemaId' => '5', 'owner' => null, 'splits' => [2 => []]], 2, false);
+		$this->service->applySplit(['schemaId' => '5', 'owner' => null, 'splits' => [2 => []]], 2);
 	}//end testApplySplitRefusesUnattributedPlan()
 
 	public function testApplySplitStrictRefusesUnmappedColumns(): void {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Strict mode: 2 source column(s) have no destination (a, b).');
-		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['a', 'b']]]], 2, true);
+		$this->service->applySplitStrictly(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['a', 'b']]]], 2);
 	}//end testApplySplitStrictRefusesUnmappedColumns()
 
 	public function testApplySplitClonePathRelinksMovesAndLogs(): void {
@@ -200,7 +200,7 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 		$this->db->expects($this->never())->method('rollBack');
 
-		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['q']]]], 2, false);
+		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['q']]]], 2);
 		$this->assertSame(['newSchemaId' => 11, 'rows' => 3, 'unmapped' => ['q'], 'backup' => 'bk'], $outcome);
 		$this->assertSame([11, 6], $register->getSchemas());
 	}//end testApplySplitClonePathRelinksMovesAndLogs()
@@ -218,7 +218,7 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->attribution->method('replaceSchemaId')->willReturn([12]);
 		$this->migrator->method('migrate')->willReturn(['rows' => 0, 'unmapped' => [], 'backup' => null]);
 
-		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => $definition]]], 2, false);
+		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => $definition]]], 2);
 		$this->assertSame(['newSchemaId' => 12, 'rows' => 0, 'unmapped' => [], 'backup' => null], $outcome);
 	}//end testApplySplitConfigurationPathUsesImportHandler()
 
@@ -234,7 +234,7 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->attribution->method('replaceSchemaId')->willReturn([13]);
 		$this->migrator->method('migrate')->willReturn(['rows' => 0, 'unmapped' => [], 'backup' => null]);
 
-		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => ['slug' => 'p']]]], 2, false);
+		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => ['slug' => 'p']]]], 2);
 		$this->assertSame(13, $outcome['newSchemaId']);
 	}//end testApplySplitUnsavedImportFallsBackToCloneWithDefaultVersion()
 
@@ -245,6 +245,6 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('db down');
-		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 2, false);
+		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 2);
 	}//end testApplySplitRollsBackAndRethrows()
 }//end class

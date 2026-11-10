@@ -139,9 +139,10 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 	 * half-applied split leaves a register pointing at an entity whose table holds
 	 * no rows, which is worse than the shared state it started from.
 	 *
+	 * Unmapped columns are moved without them; {@see self::applySplitStrictly()} refuses instead.
+	 *
 	 * @param array<string, mixed> $entry  One {@see self::inspect()} plan entry.
 	 * @param int                  $target The non-canonical register id to split off.
-	 * @param bool                 $strict Whether unmapped columns must refuse the move.
 	 *
 	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
 	 *
@@ -149,9 +150,25 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function applySplit(array $entry, int $target, bool $strict): array {
-		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: $strict);
+	public function applySplit(array $entry, int $target): array {
+		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: false);
 	}//end applySplit()
+
+	/**
+	 * Execute one planned split, refused when any source column has no destination.
+	 *
+	 * @param array<string, mixed> $entry  One {@see self::inspect()} plan entry.
+	 * @param int                  $target The non-canonical register id to split off.
+	 *
+	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
+	 *
+	 * @throws RuntimeException When the split is refused or fails; nothing is committed.
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
+	 */
+	public function applySplitStrictly(array $entry, int $target): array {
+		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: true);
+	}//end applySplitStrictly()
 
 	/**
 	 * Check one split run, then execute it in a single transaction.
