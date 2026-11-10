@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCP\App\IAppManager;
-use OCP\Files\File;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IURLGenerator;
@@ -86,26 +85,6 @@ class OfficeSessionService {
 		private readonly OfficeSessionSettings $settings,
 	) {
 	}//end __construct()
-
-	/**
-	 * Issue an Office session for one file.
-	 *
-	 * @param File   $file        The object's file, already known to belong to a readable object.
-	 * @param string $editorUid   The acting person.
-	 * @param string $displayName Their display name, shown in Office.
-	 * @param bool   $canWrite    Whether the object rule lets them change the file.
-	 *
-	 * @return OfficeSession The session the browser posts into the Office frame.
-	 *
-	 * @throws OfficeOpenRefusedException 409, 415 or 403 when the document cannot be opened.
-	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
-	 */
-	public function open(File $file, string $editorUid, string $displayName, bool $canWrite): OfficeSession {
-		return $this->openSession(
-			request: new OfficeOpenRequest(file: $file, editorUid: $editorUid, displayName: $displayName, canWrite: $canWrite)
-		);
-	}//end open()
 
 	/**
 	 * Issue an Office session for one open request.
