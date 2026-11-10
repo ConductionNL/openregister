@@ -95,6 +95,8 @@ use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Service\Object\MoveAddress;
+use OCA\OpenRegister\Service\Object\ObjectMove;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
@@ -5079,13 +5081,13 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
 		}
 
-		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->move(
-			object: $object,
-			sourceRegister: $ends['from']['register'],
-			sourceSchema: $ends['from']['schema'],
-			targetRegister: $ends['to']['register'],
-			targetSchema: $ends['to']['schema'],
-			actor: $this->userSession->getUser()->getUID(),
+		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->perform(
+			move: new ObjectMove(
+				object: $object,
+				source: new MoveAddress(register: $ends['from']['register'], schema: $ends['from']['schema']),
+				target: new MoveAddress(register: $ends['to']['register'], schema: $ends['to']['schema']),
+				actor: $this->userSession->getUser()->getUID()
+			)
 		);
 
 		return self::moveResponse(outcome: $outcome);
