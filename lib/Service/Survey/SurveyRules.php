@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Survey;
 
 use DateTimeImmutable;
+use DateTimeInterface;
 
 /**
  * The survey vocabulary and the refusals that go with it.
@@ -202,11 +203,11 @@ class SurveyRules {
 	 * Whether the invitation's expiry has passed, or will not parse.
 	 *
 	 * @param array<string, mixed> $invitation The invitation.
-	 * @param DateTimeImmutable    $moment     The moment it is followed.
+	 * @param DateTimeInterface    $moment     The moment it is followed.
 	 *
 	 * @return bool True when the link no longer works.
 	 */
-	private static function hasExpired(array $invitation, DateTimeImmutable $moment): bool {
+	private static function hasExpired(array $invitation, DateTimeInterface $moment): bool {
 		$expiresAt = trim((string)($invitation['expiresAt'] ?? ''));
 		if ($expiresAt === '') {
 			return false;
