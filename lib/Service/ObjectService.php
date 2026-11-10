@@ -4384,7 +4384,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $deleter = ($request->currentUser ?? $this->userSession->getUser());
         if ($request->rbac === true && $object !== null && $this->currentSchema !== null
-            && (new DraftCallerRule())->keptFromCaller(object: $object, schema: $this->currentSchema, caller: $this->draftCaller(user: $deleter)) === true
+            && (new DraftCallerRule())->keptFromCaller(
+                object: $object,
+                schema: $this->currentSchema,
+                caller: $this->draftCaller(user: $deleter)
+            ) === true
         ) {
             throw new OcpDoesNotExistException('Object not found');
         }
