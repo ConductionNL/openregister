@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notification;
 
 use OCA\OpenRegister\Notification\AnnotationNotifier;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -160,7 +161,7 @@ class AnnotationNotifierBehaviourTest extends TestCase
         $urls->method('getAbsoluteURL')->willReturnCallback(static fn (string $url): string => self::BASE.$url);
         $urls->method('linkToRouteAbsolute')->willReturn(self::BASE.'/index.php/apps/openregister/');
 
-        return new AnnotationNotifier($factory, $urls, $deepLinks);
+        return new AnnotationNotifier($factory, new ObjectDeepLinks($urls, $deepLinks));
 
     }//end notifier()
 

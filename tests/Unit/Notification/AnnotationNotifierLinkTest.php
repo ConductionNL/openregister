@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -130,7 +131,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 				: self::BASE . '/index.php/apps/openregister/route/' . $route
 		);
 
-		return new AnnotationNotifier($factory, $urlGenerator, $registry);
+		return new AnnotationNotifier($factory, new ObjectDeepLinks($urlGenerator, $registry));
 	}//end makeNotifier()
 
 	/**
