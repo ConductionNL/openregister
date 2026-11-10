@@ -182,14 +182,7 @@ export default {
 			try {
 				this.showRuleContext(await fetchRuleContext(this.schemaReference))
 			} catch (failure) {
-				this.error = messageFor(
-					failure,
-					t(
-						'openregister',
-						'The rules for this schema could not be read.',
-					),
-				)
-				this.rules = []
+				this.showUnreadableRules(failure)
 			} finally {
 				this.loading = false
 			}
@@ -213,6 +206,23 @@ export default {
 			}
 			this.rules = inventory.rules ?? []
 			this.operators = operators
+		},
+
+		/**
+		 * Say why the rules could not be read, and show none.
+		 *
+		 * @param {Error} failure The failed read.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		showUnreadableRules(failure) {
+			this.error = messageFor(
+				failure,
+				t('openregister', 'The rules for this schema could not be read.'),
+			)
+			this.rules = []
 		},
 
 		/**
