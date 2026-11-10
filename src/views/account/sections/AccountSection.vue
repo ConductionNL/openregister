@@ -49,6 +49,7 @@ import { NcButton } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
+import { fetchSignedInUser } from './signedInUser.js'
 
 export default {
 	name: 'AccountSection',
@@ -76,7 +77,7 @@ export default {
 	async mounted() {
 		try {
 			const [userRes, statusRes] = await Promise.all([
-				axios.get(generateUrl('/apps/openregister/api/user/me')),
+				fetchSignedInUser(),
 				axios.get(
 					generateUrl(
 						'/apps/openregister/api/user/me/deactivation-status',

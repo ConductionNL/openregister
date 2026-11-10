@@ -37,6 +37,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcAvatar, NcButton } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
+import { fetchSignedInUser } from './signedInUser.js'
 
 export default {
 	name: 'AvatarSection',
@@ -59,9 +60,7 @@ export default {
 	 */
 	async mounted() {
 		try {
-			const { data } = await axios.get(
-				generateUrl('/apps/openregister/api/user/me'),
-			)
+			const { data } = await fetchSignedInUser()
 			this.userId = data?.uid || ''
 			this.canChangeAvatar = data?.backendCapabilities?.avatar ?? true
 		} catch {

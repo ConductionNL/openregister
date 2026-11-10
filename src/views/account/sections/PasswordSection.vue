@@ -50,6 +50,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcTextField } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
+import { fetchSignedInUser } from './signedInUser.js'
 
 export default {
 	name: 'PasswordSection',
@@ -74,9 +75,7 @@ export default {
 	 */
 	async mounted() {
 		try {
-			const { data } = await axios.get(
-				generateUrl('/apps/openregister/api/user/me'),
-			)
+			const { data } = await fetchSignedInUser()
 			this.canChangePassword = data?.backendCapabilities?.password ?? true
 		} catch {
 			// Default to showing the form.
@@ -103,12 +102,7 @@ export default {
 						newPassword: this.newPassword,
 					},
 				)
-				this.setStatus(
-					data.message
-						|| t('openregister', 'Password updated successfully'),
-				)
-				this.currentPassword = ''
-				this.newPassword = ''
+				this.passwordChanged(data)
 			} catch (e) {
 				this.setStatusError(
 					e,
@@ -117,6 +111,23 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Report the changed password in the API's words or the default ones,
+		 * and empty the form.
+		 *
+		 * @spec openspec/specs/account-self-service/spec.md
+		 * @param {object} data The API's answer
+		 * @return {void}
+		 */
+		passwordChanged(data) {
+			this.setStatus(
+				data.message
+					|| t('openregister', 'Password updated successfully'),
+			)
+			this.currentPassword = ''
+			this.newPassword = ''
 		},
 	},
 }
