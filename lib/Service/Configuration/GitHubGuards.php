@@ -143,19 +143,13 @@ class GitHubGuards implements GitHubGuardsInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-14
 	 */
 	public function enforceRepoAllowlist(string $repo, bool $isRead): ?JSONResponse {
-		$rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
-		$allowed = array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn ($ownerStr) => $ownerStr !== ''));
-
+		$allowed = $this->allowedOwners();
 		if ($allowed === []) {
-			if ($isRead === true) {
-				return new JSONResponse(['items' => [], 'hint' => 'github_repo_not_configured']);
-			}
-
-			return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
+			return $this->notConfigured(isRead: $isRead);
 		}
 
-		$owner = explode('/', $repo, 2)[0];
-		$ownerLower = strtolower($owner);
+		$owner        = explode('/', $repo, 2)[0];
+		$ownerLower   = strtolower($owner);
 		$allowedLower = array_map('strtolower', $allowed);
 		if (in_array($ownerLower, $allowedLower, true) === true) {
 			return null;
@@ -163,6 +157,32 @@ class GitHubGuards implements GitHubGuardsInterface {
 
 		return new JSONResponse(['error' => 'repo_not_allowed'], Http::STATUS_FORBIDDEN);
 	}//end enforceRepoAllowlist()
+
+	/**
+	 * The repository owners this instance may reach, as configured.
+	 *
+	 * @return array<int, string> The owners, trimmed, without blanks.
+	 */
+	private function allowedOwners(): array {
+		$rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
+
+		return array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn ($ownerStr) => $ownerStr !== ''));
+	}//end allowedOwners()
+
+	/**
+	 * The answer when no repository owner is configured: an empty list for a read, else 503.
+	 *
+	 * @param bool $isRead Whether the call only reads.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function notConfigured(bool $isRead): JSONResponse {
+		if ($isRead === true) {
+			return new JSONResponse(['items' => [], 'hint' => 'github_repo_not_configured']);
+		}
+
+		return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
+	}//end notConfigured()
 
 	/**
 	 * Enforce per-user GET cache-miss rate limit (tasks 1.19 + 1.18). Counts distinct cache-key
