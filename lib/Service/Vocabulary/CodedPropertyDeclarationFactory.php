@@ -57,27 +57,49 @@ class CodedPropertyDeclarationFactory {
 			return null;
 		}
 
+		return new CodedPropertyDeclaration(
+			scheme: $scheme,
+			rules: self::valueRules(raw: $raw),
+			narrowing: $this->narrowing(raw: $raw),
+			scoreProperty: $this->parseScoreProperty(raw: $raw)
+		);
+	}//end fromProperty()
+
+	/**
+	 * How a coded value is stored and which concepts it may hold.
+	 *
+	 * @param array<string,mixed> $raw The annotation.
+	 *
+	 * @return CodedValueRules The rules.
+	 */
+	private static function valueRules(array $raw): CodedValueRules {
 		$store = 'uri';
 		if (trim((string)($raw['store'] ?? 'uri')) === 'notation') {
 			$store = 'notation';
 		}
 
-		return new CodedPropertyDeclaration(
-			scheme: $scheme,
-			rules: new CodedValueRules(
-				store: $store,
-				allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
-				leafOnly: (($raw['leafOnly'] ?? false) === true)
-			),
-			narrowing: new CodedNarrowing(
-				branch: $this->nonEmpty(value: ($raw['branch'] ?? null)),
-				maxDepth: $this->parseMaxDepth(raw: $raw),
-				contextProperty: $this->nonEmpty(value: ($raw['contextProperty'] ?? null)),
-				contextKey: $this->nonEmpty(value: ($raw['contextKey'] ?? null))
-			),
-			scoreProperty: $this->parseScoreProperty(raw: $raw)
+		return new CodedValueRules(
+			store: $store,
+			allowDeprecated: (($raw['allowDeprecated'] ?? false) === true),
+			leafOnly: (($raw['leafOnly'] ?? false) === true)
 		);
-	}//end fromProperty()
+	}//end valueRules()
+
+	/**
+	 * Which part of the scheme the property offers: its branch, its depth and its context.
+	 *
+	 * @param array<string,mixed> $raw The annotation.
+	 *
+	 * @return CodedNarrowing The narrowing.
+	 */
+	private function narrowing(array $raw): CodedNarrowing {
+		return new CodedNarrowing(
+			branch: $this->nonEmpty(value: ($raw['branch'] ?? null)),
+			maxDepth: $this->parseMaxDepth(raw: $raw),
+			contextProperty: $this->nonEmpty(value: ($raw['contextProperty'] ?? null)),
+			contextKey: $this->nonEmpty(value: ($raw['contextKey'] ?? null))
+		);
+	}//end narrowing()
 
 	/**
 	 * Every coded declaration on a schema's properties, keyed by property name.
