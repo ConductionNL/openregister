@@ -154,6 +154,19 @@ async function fetchGroupIds() {
 }
 
 /**
+ * The group picker's options: each group id as its own display name.
+ *
+ * @param {Array<string>} ids The group ids
+ * @return {Array<object>} The options
+ */
+function groupOptions(ids) {
+	return ids.map((groupId) => ({
+		id: groupId,
+		displayname: groupId,
+	}))
+}
+
+/**
  * Why a draft save failed: the API's error, the request's message, or the
  * default.
  *
@@ -277,10 +290,7 @@ export default {
 			try {
 				const groups = await fetchGroupIds()
 				if (groups) {
-					this.userGroups = groups.map((groupId) => ({
-						id: groupId,
-						displayname: groupId,
-					}))
+					this.userGroups = groupOptions(groups)
 				} else {
 					this.setFallbackGroups()
 				}
@@ -342,14 +352,26 @@ export default {
 				const { response } = await schemaStore.saveSchema(schemaData, {
 					acknowledgeBreaking,
 				})
-				this.pendingBreaking = null
-				this.$refs.schemaFormDialog.setResult({
-					success: response.ok,
-					error: response.ok ? undefined : 'Failed to save schema',
-				})
+				this.showSaveResult(response)
 			} catch (error) {
 				this.showSaveRefusal(schemaData, error)
 			}
+		},
+
+		/**
+		 * Close any breaking-change question and tell the dialog whether the
+		 * server accepted the save.
+		 *
+		 * @param {Response} response - The save's response.
+		 * @return {void}
+		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
+		 */
+		showSaveResult(response) {
+			this.pendingBreaking = null
+			this.$refs.schemaFormDialog.setResult({
+				success: response.ok,
+				error: response.ok ? undefined : 'Failed to save schema',
+			})
 		},
 
 		/**
