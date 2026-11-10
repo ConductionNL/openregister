@@ -1826,6 +1826,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        return $this->findAllRendered(config: $config, access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy));
+    }//end findAll()
+
+    /**
+     * Load the rows of one findAll() call and render them.
+     *
+     * @param array       $config The findAll() configuration (filters, limit, offset, extend, ...).
+     * @param AccessFlags $access The caller's RBAC and multitenancy flags.
+     *
+     * @return array The rendered objects.
+     *
+     * @spec exclude Private step of findAll(); list/render behaviour owned by the render handler.
+     */
+    private function findAllRendered(array $config, AccessFlags $access): array
+    {
         $this->discardPendingSchemaRef();
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig(config: $config);
@@ -1838,17 +1853,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // only with the relation/file caches pre-warmed, so output is unchanged;
         // registers/schemas were a pre-resolution optimization renderEntity()
         // reproduces internally, not a correctness input.
-        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
-
         return $this->renderHandler->renderEntities(
             entities: $this->loadFindAllRows(config: $config, access: $access),
             _extend: ($config['extend'] ?? []),
             _filter: ($config['unset'] ?? null),
             _fields: ($config['fields'] ?? null),
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _rbac: $access->rbac,
+            _multitenancy: $access->multitenancy
         );
-    }//end findAll()
+    }//end findAllRendered()
 
     /**
      * Load the rows of a findAll() call through the handler.
@@ -6031,15 +6044,28 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null
     ): BatchOperationStatus {
-        // A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
-        // Same contract as saveObject(); see restoreScopeContext().
-        return $this->preservingScope(
-            operation: function () use ($objects, $register, $schema): BatchOperationStatus {
-                $this->applyScope(register: $register, schema: $schema);
-                return $this->streamIntoContext(objects: $objects);
-            }
-        );
+        $target = new ObjectFindTarget(register: $register, schema: $schema);
+        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $objects, target: $target));
     }//end saveObjectsStreaming()
+
+    /**
+     * Apply the streaming save's register and schema, then stream the rows into them.
+     *
+     * A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. saveObjectsStreaming()
+     * runs this inside preservingScope(), the same contract as saveObject(); see restoreScopeContext().
+     *
+     * @param array            $objects The rows to stream.
+     * @param ObjectFindTarget $target  The register and schema the caller named.
+     *
+     * @return BatchOperationStatus The status of the streamed batch.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function streamIntoTarget(array $objects, ObjectFindTarget $target): BatchOperationStatus
+    {
+        $this->applyScope(register: $target->register, schema: $target->schema);
+        return $this->streamIntoContext(objects: $objects);
+    }//end streamIntoTarget()
 
     /**
      * Stream rows into the current register and schema.
@@ -6490,12 +6516,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        return $this->deleteUuids(uuids: $uuids, flags: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy));
+    }//end deleteObjects()
+
+    /**
+     * Delete each permitted object of a bulk delete on its own, and report what was deleted and skipped.
+     *
+     * @param array       $uuids The UUIDs of the objects to delete.
+     * @param AccessFlags $flags The caller's RBAC and multitenancy flags.
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param   array<int, string> $uuids
+     *
+     * @return array The bulk delete report (see deleteObjects()).
+     *
+     * @spec exclude Private step of deleteObjects(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function deleteUuids(array $uuids, AccessFlags $flags): array
+    {
         $this->discardPendingSchemaRef();
         if (empty($uuids) === true) {
             return $this->bulkDeleteReport(run: ['deleted' => [], 'skipped' => [], 'skippedReasons' => [], 'cascadeCount' => 0]);
         }
 
-        $flags         = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
         $filteredUuids = $this->uuidsPermittedForDelete(uuids: $uuids, flags: $flags);
         $run           = $this->openBulkDelete(uuids: $filteredUuids, flags: $flags);
         $this->skipRefusedUuids(refused: array_diff($uuids, $filteredUuids), run: $run);
@@ -6510,7 +6553,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->bulkCacheInvalidator()->afterBulkDelete(run: $run);
 
         return $this->bulkDeleteReport(run: $run);
-    }//end deleteObjects()
+    }//end deleteUuids()
 
     /**
      * Keeps the uuids this caller may delete, when RBAC or multi-organization filtering is on.
