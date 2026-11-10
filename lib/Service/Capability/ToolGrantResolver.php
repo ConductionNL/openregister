@@ -678,22 +678,21 @@ class ToolGrantResolver {
 	 * a per-grant opt-in and start being the default. The two questions share a
 	 * return value and mean opposite things; this guard is where they separate.
 	 *
-	 * @param array<string, array<int, array<string, array>>> $waivedSets From `waivedConstraintSets()`.
-	 * @param string $toolId The invoked tool id.
-	 * @param array<string, mixed> $arguments The decoded tool-call arguments.
+	 * @param array<int, array<string, array>> $alternatives The invoked tool's entry in `waivedConstraintSets()`,
+	 *                                                       or `[]` when the tool has none.
+	 * @param array<string, mixed>             $arguments    The decoded tool-call arguments.
 	 *
 	 * @return bool True when a waived entry covers this exact invocation.
 	 *
 	 * @spec openspec/specs/agent-capability-reach/spec.md#scenario-a-waived-granted-conforming-invocation-runs-without-an-approval
 	 */
-	public static function waives(array $waivedSets, string $toolId, array $arguments): bool {
-		$alternatives = ($waivedSets[$toolId] ?? []);
+	public static function waivedBy(array $alternatives, array $arguments): bool {
 		if ($alternatives === []) {
 			return false;
 		}
 
 		return (self::violationFor(constraintSets: $alternatives, arguments: $arguments) === null);
-	}//end waives()
+	}//end waivedBy()
 
 	/**
 	 * Parse a grant's raw constraint query into an `argument => constraint` map.

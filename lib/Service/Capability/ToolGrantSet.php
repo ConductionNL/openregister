@@ -249,41 +249,36 @@ final class ToolGrantSet {
 	/**
 	 * Whether one tool id is granted, without re-deriving anything.
 	 *
-	 * @param string $app     The owning app.
-	 * @param string $subject The thing acted on.
-	 * @param string $action  The verb.
+	 * @param ToolGrantCoordinates $at The app, subject and action.
 	 *
 	 * @return bool True when granted.
 	 *
 	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
-	public function has(string $app, string $subject, string $action): bool {
-		return isset($this->grants[$app][$subject][$action]);
+	public function has(ToolGrantCoordinates $at): bool {
+		return isset($this->grants[$at->app][$at->subject][$at->action]);
 	}//end has()
 
 	/**
-	 * Add one grant at explicit coordinates.
+	 * Add one unconstrained grant at explicit coordinates.
 	 *
-	 * @param string $app     The owning app.
-	 * @param string $subject The thing acted on.
-	 * @param string $action  The verb.
-	 * @param string $toolId  The tool id dispatch uses.
-	 * @param array<string, mixed> $args Optional argument constraints.
+	 * @param ToolGrantCoordinates $at     The app, subject and action.
+	 * @param string               $toolId The tool id dispatch uses.
 	 *
 	 * @return self A new set including this grant.
 	 *
 	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
 	 */
-	public function with(string $app, string $subject, string $action, string $toolId, array $args = []): self {
+	public function with(ToolGrantCoordinates $at, string $toolId): self {
 		$grants = $this->grants;
-		$entry = ToolGrantCodec::entryFor(id: $toolId, args: $args);
+		$entry = ToolGrantCodec::entryFor(id: $toolId, args: []);
 
-		$existing = ($grants[$app][$subject][$action] ?? []);
+		$existing = ($grants[$at->app][$at->subject][$at->action] ?? []);
 		if (in_array($entry, $existing, true) === false) {
 			$existing[] = $entry;
 		}
 
-		$grants[$app][$subject][$action] = $existing;
+		$grants[$at->app][$at->subject][$at->action] = $existing;
 
 		return new self($grants);
 	}//end with()
@@ -291,23 +286,22 @@ final class ToolGrantSet {
 	/**
 	 * Remove one grant.
 	 *
-	 * @param string $app     The owning app.
-	 * @param string $subject The thing acted on.
-	 * @param string $action  The verb.
+	 * @param ToolGrantCoordinates $at The app, subject and action.
 	 *
 	 * @return self A new set without this grant.
 	 *
 	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
-	public function without(string $app, string $subject, string $action): self {
+	public function without(ToolGrantCoordinates $at): self {
 		$grants = $this->grants;
-		unset($grants[$app][$subject][$action]);
+		$app = $at->app;
+		unset($grants[$app][$at->subject][$at->action]);
 
 		// Prune empties, so an agent that had its last grant removed reads as
 		// unconfigured rather than as a map of empty maps — which `isEmpty()`
 		// would otherwise report as configured-with-nothing.
-		if (($grants[$app][$subject] ?? null) === []) {
-			unset($grants[$app][$subject]);
+		if (($grants[$app][$at->subject] ?? null) === []) {
+			unset($grants[$app][$at->subject]);
 		}
 
 		if (($grants[$app] ?? null) === []) {

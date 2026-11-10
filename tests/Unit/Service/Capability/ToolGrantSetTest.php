@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Capability;
 
+use OCA\OpenRegister\Service\Capability\ToolGrantCoordinates;
 use OCA\OpenRegister\Service\Capability\ToolGrantSet;
 use PHPUnit\Framework\TestCase;
 
@@ -84,9 +85,9 @@ class ToolGrantSetTest extends TestCase {
 			'hermiq' => ['file' => ['list' => 'hermiq.listFiles']],
 		]);
 
-		$this->assertTrue($set->has('pipelinq', 'lead', 'search'));
-		$this->assertTrue($set->has('hermiq', 'file', 'list'));
-		$this->assertFalse($set->has('pipelinq', 'lead', 'delete'));
+		$this->assertTrue($set->has(new ToolGrantCoordinates('pipelinq', 'lead', 'search')));
+		$this->assertTrue($set->has(new ToolGrantCoordinates('hermiq', 'file', 'list')));
+		$this->assertFalse($set->has(new ToolGrantCoordinates('pipelinq', 'lead', 'delete')));
 
 		$resolved = $set->toGrantStrings();
 		sort($resolved);
@@ -186,20 +187,20 @@ class ToolGrantSetTest extends TestCase {
 	 */
 	public function testGrantsCanBeAddedAndRemovedByCoordinate(): void {
 		$set = ToolGrantSet::fromStored([])
-			->with('hermiq', 'file', 'list', 'hermiq.listFiles')
-			->with('hermiq', 'file', 'read', 'hermiq.readFile');
+			->with(new ToolGrantCoordinates('hermiq', 'file', 'list'), 'hermiq.listFiles')
+			->with(new ToolGrantCoordinates('hermiq', 'file', 'read'), 'hermiq.readFile');
 
-		$this->assertTrue($set->has('hermiq', 'file', 'list'));
+		$this->assertTrue($set->has(new ToolGrantCoordinates('hermiq', 'file', 'list')));
 		$this->assertCount(2, $set->toolIds());
 
-		$set = $set->without('hermiq', 'file', 'list');
-		$this->assertFalse($set->has('hermiq', 'file', 'list'));
-		$this->assertTrue($set->has('hermiq', 'file', 'read'));
+		$set = $set->without(new ToolGrantCoordinates('hermiq', 'file', 'list'));
+		$this->assertFalse($set->has(new ToolGrantCoordinates('hermiq', 'file', 'list')));
+		$this->assertTrue($set->has(new ToolGrantCoordinates('hermiq', 'file', 'read')));
 
 		// ⚠️ Removing the LAST grant must leave the set empty, not a map of empty
 		// maps — `isEmpty()` drives default-deny, and "configured with nothing" and
 		// "unconfigured" must not be told apart by leftover scaffolding.
-		$set = $set->without('hermiq', 'file', 'read');
+		$set = $set->without(new ToolGrantCoordinates('hermiq', 'file', 'read'));
 		$this->assertTrue($set->isEmpty(), 'removing the last grant must leave no empty app or subject behind');
 		$this->assertSame([], $set->toStored());
 	}//end testGrantsCanBeAddedAndRemovedByCoordinate()
@@ -333,6 +334,6 @@ class ToolGrantSetTest extends TestCase {
 		$this->assertTrue($set->isEmpty());
 		$this->assertSame([], $set->toGrantStrings());
 		$this->assertSame([], $set->toolIds());
-		$this->assertFalse($set->has(app: 'hermiq', subject: 'listFiles', action: 'listFiles'));
+		$this->assertFalse($set->has(new ToolGrantCoordinates(app: 'hermiq', subject: 'listFiles', action: 'listFiles')));
 	}//end testAnEmptyListGrantsNothing()
 }//end class
