@@ -306,7 +306,9 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			throw new Exception('Deck is not available', 503);
 		}
 
-		$run = new DeckCardRun(cardService: $cardService, target: $target, card: $card, ownerUid: $user->getUID());
+		$run = new DeckCardRun(target: $target, card: $card);
+		$run->cardService = $cardService;
+		$run->ownerUid = $user->getUID();
 		$cardId = (int)$this->writeCard(run: $run)->getId();
 
 		return $this->deckLinkMapper->insert($this->newCardLink(run: $run, cardId: $cardId));

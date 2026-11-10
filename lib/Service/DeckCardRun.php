@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 /**
- * Deck's card service, the object, the card and its owner for one card creation.
+ * The object, the card, Deck's card service and the card's owner for one card creation.
  *
  * Built by DeckLinkService::createAndLinkCard once the user and Deck are
  * known; it never leaves that class.
@@ -35,18 +35,28 @@ namespace OCA\OpenRegister\Service;
 final class DeckCardRun {
 
 	/**
+	 * Deck's CardService, set once Deck is known to be available.
+	 *
+	 * @var object
+	 */
+	public object $cardService;
+
+	/**
+	 * The UID of the user who creates and owns the card.
+	 *
+	 * @var string
+	 */
+	public string $ownerUid = '';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param object     $cardService Deck's CardService.
-	 * @param LinkTarget $target      The object the card is linked to.
-	 * @param CardDraft  $card        The card to create.
-	 * @param string     $ownerUid    The UID of the user who creates and owns the card.
+	 * @param LinkTarget $target The object the card is linked to.
+	 * @param CardDraft  $card   The card to create.
 	 */
 	public function __construct(
-		public readonly object $cardService,
 		public readonly LinkTarget $target,
 		public readonly CardDraft $card,
-		public readonly string $ownerUid,
 	) {
 	}//end __construct()
 }//end class
