@@ -118,7 +118,11 @@ class ImportHandlerComponentStepsGoldenTest extends TestCase {
 					throw new \Exception('ids lookup failed');
 				}
 
-				return ($schemaId === 41 ? [7, '66', 8] : []);
+				if ($schemaId === 41) {
+					return [7, '66', 8];
+				}
+
+				return [];
 			}
 		);
 		$schemaMapper->method('getSlugToIdMap')->willReturn([]);
@@ -173,9 +177,17 @@ class ImportHandlerComponentStepsGoldenTest extends TestCase {
 		return (new ReflectionMethod(ImportHandler::class, $method))->invokeArgs($this->handler, $args);
 	}//end call()
 
+	private function entityLabel(mixed $entity): mixed {
+		if ($entity instanceof Register || $entity instanceof Schema) {
+			return get_class($entity) . '#' . $entity->getId();
+		}
+
+		return $entity;
+	}//end entityLabel()
+
 	private function maps(): array {
 		$read = fn (string $name): array => array_map(
-			fn ($entity) => ($entity instanceof Register || $entity instanceof Schema) ? get_class($entity) . '#' . $entity->getId() : $entity,
+			fn ($entity) => $this->entityLabel($entity),
 			(new ReflectionProperty(ImportHandler::class, $name))->getValue($this->handler)
 		);
 		return ['registersMap' => $read('registersMap'), 'schemasMap' => $read('schemasMap')];
@@ -189,7 +201,11 @@ class ImportHandlerComponentStepsGoldenTest extends TestCase {
 		);
 		$run = new ImportRun(data: $data, configuration: new Configuration());
 		$run->appId = 'app';
-		$run->result = ['registers' => [], 'skipped' => ['registers' => 0], 'failed' => ['schemas' => [['slug' => 'gone', 'key' => 'gone', 'error' => 'bad shape']]]];
+		$run->result = [
+			'registers' => [],
+			'skipped' => ['registers' => 0],
+			'failed' => ['schemas' => [['slug' => 'gone', 'key' => 'gone', 'error' => 'bad shape']]],
+		];
 		$this->call('importRegisterComponents', [$run]);
 		return [
 			'registers' => array_map(fn (Register $r) => $r->getSlug(), $run->result['registers']),
@@ -237,7 +253,8 @@ class ImportHandlerComponentStepsGoldenTest extends TestCase {
 		$out = [];
 		foreach ($cases as $name => $property) {
 			$this->calls = [];
-			$out[$name] = ['result' => json_decode(json_encode($this->call('resolveImportedObjectConfigurations', [$property])), true), 'calls' => $this->calls];
+			$result = $this->call('resolveImportedObjectConfigurations', [$property]);
+			$out[$name] = ['result' => json_decode(json_encode($result), true), 'calls' => $this->calls];
 		}
 
 		return $out;
