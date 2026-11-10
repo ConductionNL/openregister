@@ -158,7 +158,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 		}
 
 		// Fallback: query the external source through OpenConnector.
-		$query = $this->contextQuery(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, filters: $filters);
+		$query = $this->contextQuery(ref: $ref, filters: $filters);
 		return $this->listFromSource(query: $query);
 	}//end linkedOrSourced()
 
