@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -201,7 +202,10 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		];
 		foreach ($cases as $label => $case) {
 			$case += ['user' => 'anna', 'schema' => $plain, 'row' => $row, 'holds' => true, 'shared' => true, 'permission' => true, 'deletable' => true, 'dependants' => false, 'assertDeletable' => true];
-			$this->assertSame($case['expected'], $this->orphanGuard($case)->allows(row: $case['row'], register: $register, schema: $case['schema']), $label);
+			$this->assertSame($case['expected'], $this->orphanGuard($case)->allows(
+				row: $case['row'],
+				table: new RegisterSchema(register: $register, schema: $case['schema'])
+			), $label);
 		}
 	}//end testOrphanDeletionGuard()
 
