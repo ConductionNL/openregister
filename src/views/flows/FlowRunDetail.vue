@@ -467,6 +467,23 @@ import {
 import { flowPageHelpers, flowVersionLabel } from './flowPageHelpers.js'
 import { flowPageMethods } from './flowPageMethods.js'
 
+/**
+ * The failure alert's title for the step a run stopped at: with its position
+ * when the flow still has the step.
+ *
+ * @param {{position: number|null, label: string}} step The failed step
+ * @return {string} The title
+ */
+function stoppedAtTitle(step) {
+	if (step.position === null) {
+		return t('openregister', 'Stopped at {step}', { step: step.label })
+	}
+	return t('openregister', 'Stopped at step {position}, {step}', {
+		position: step.position,
+		step: step.label,
+	})
+}
+
 export default {
 	name: 'FlowRunDetail',
 
@@ -586,21 +603,11 @@ export default {
 			if (!this.run) {
 				return null
 			}
-			const failed = RUN_FAILED_STATUSES.includes(this.run.status)
 			const step = failedStep(this.run, this.ordered, this.names)
 			if (step) {
-				const title =
-					step.position !== null
-						? t('openregister', 'Stopped at step {position}, {step}', {
-								position: step.position,
-								step: step.label,
-							})
-						: t('openregister', 'Stopped at {step}', {
-								step: step.label,
-							})
-				return { title, error: step.error }
+				return { title: stoppedAtTitle(step), error: step.error }
 			}
-			if (failed || this.run.error) {
+			if (RUN_FAILED_STATUSES.includes(this.run.status) || this.run.error) {
 				return {
 					title: t('openregister', 'This run failed'),
 					error: this.run.error || '',
@@ -733,12 +740,7 @@ export default {
 		 */
 		fetchRunPanels(flowId) {
 			return Promise.all([
-				flowId
-					? this.quietGet(`/apps/openregister/api/flows/${flowId}`)
-					: null,
-				flowId
-					? this.quietGet(`/apps/openregister/api/flows/${flowId}/versions`)
-					: null,
+				...this.fetchFlowPanels(flowId),
 				this.quietGet('/apps/openregister/api/flow/node-catalog'),
 				this.quietGet(`/apps/openregister/api/flow-runs/${this.uuid}/objects`),
 				this.quietGet('/apps/openregister/api/flow-tasks', {
@@ -746,6 +748,23 @@ export default {
 					scope: 'all',
 				}),
 			])
+		},
+
+		/**
+		 * Ask for the run's flow and its versions; nothing to ask without a flow.
+		 *
+		 * @param {string|undefined} flowId The run's flow, if any
+		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 * @return {Array} The flow and versions requests, or two nulls
+		 */
+		fetchFlowPanels(flowId) {
+			if (!flowId) {
+				return [null, null]
+			}
+			return [
+				this.quietGet(`/apps/openregister/api/flows/${flowId}`),
+				this.quietGet(`/apps/openregister/api/flows/${flowId}/versions`),
+			]
 		},
 
 		/**
