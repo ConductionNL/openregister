@@ -35,7 +35,7 @@ final class FilePropertyLogTest extends TestCase {
 			)
 		);
 
-		(new FilePropertyLog($logger))->write('warning', 'msg', ['k' => 'v']);
+		(new FilePropertyLog($logger))->warning('msg', ['k' => 'v']);
 	}//end testWritePrefixesFileLineAndApp()
 
 	/**
