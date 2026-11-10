@@ -119,7 +119,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		$party = $subject->partyReference();
 		$offset = (int)$query->offset;
 
-		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, limit: $query->limit, offset: $offset);
+		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, page: $query);
 		$total = $this->sources->mapper->countOpenExternalForParty(partyReference: $party);
 
 		return [
