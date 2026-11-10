@@ -133,19 +133,40 @@ class ProxySettings implements ProxySettingsInterface {
 	public function exceptions(): array {
 		$raw = $this->readAppValue(key: self::NO_PROXY_KEY);
 		if ($raw === null) {
-			try {
-				$system = $this->systemConfig->getSystemValue('proxyexclude', []);
-			} catch (Throwable) {
-				$system = [];
-			}
-
-			if (is_array($system) === false) {
-				return [];
-			}
-
-			return array_values(array_filter(array_map('strval', $system), static fn (string $host): bool => (trim($host) !== '')));
+			return $this->systemExceptions();
 		}
 
+		return self::listedHosts(raw: $raw);
+
+	}//end exceptions()
+
+	/**
+	 * The hosts Nextcloud's own `proxyexclude` system value names, blanks dropped.
+	 *
+	 * @return array<int, string> The hosts, or none when the value is unreadable or not a list.
+	 */
+	private function systemExceptions(): array {
+		try {
+			$system = $this->systemConfig->getSystemValue('proxyexclude', []);
+		} catch (Throwable) {
+			$system = [];
+		}
+
+		if (is_array($system) === false) {
+			return [];
+		}
+
+		return array_values(array_filter(array_map('strval', $system), static fn (string $host): bool => (trim($host) !== '')));
+	}//end systemExceptions()
+
+	/**
+	 * The trimmed, non-blank hosts of a comma-separated list.
+	 *
+	 * @param string $raw The administered list.
+	 *
+	 * @return array<int, string> The hosts, in list order.
+	 */
+	private static function listedHosts(string $raw): array {
 		$hosts = [];
 		foreach (explode(',', $raw) as $host) {
 			$trimmed = trim($host);
@@ -155,8 +176,7 @@ class ProxySettings implements ProxySettingsInterface {
 		}
 
 		return $hosts;
-
-	}//end exceptions()
+	}//end listedHosts()
 
 	/**
 	 * The request options every outbound call carries.
@@ -250,6 +270,23 @@ class ProxySettings implements ProxySettingsInterface {
 			return '(set)';
 		}
 
+		$rebuilt = self::schemeHostPort(parts: $parts);
+		if ($rebuilt === '') {
+			return '(set)';
+		}
+
+		return $rebuilt;
+
+	}//end withoutCredentials()
+
+	/**
+	 * A parsed URL put back together from its scheme, host and port only.
+	 *
+	 * @param array<string, mixed> $parts The parse_url() parts.
+	 *
+	 * @return string The scheme, host and port, each only when present; '' when none is.
+	 */
+	private static function schemeHostPort(array $parts): string {
 		$rebuilt = '';
 		if (isset($parts['scheme']) === true) {
 			$rebuilt .= ($parts['scheme'] . '://');
@@ -261,13 +298,8 @@ class ProxySettings implements ProxySettingsInterface {
 			$rebuilt .= (':' . $parts['port']);
 		}
 
-		if ($rebuilt === '') {
-			return '(set)';
-		}
-
 		return $rebuilt;
-
-	}//end withoutCredentials()
+	}//end schemeHostPort()
 
 	/**
 	 * Read one of this app's own values, or null when it is unset.
