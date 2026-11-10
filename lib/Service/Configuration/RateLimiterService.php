@@ -14,7 +14,7 @@
  * Two limiter shapes:
  *   - `consumeFixedWindow()` — "1 action per `$windowSeconds`" (used by the POST submission
  *     limiter, task 1.6).
- *   - `consumeDistinctKeyBudget()` — "at most `$maxKeys` distinct sub-keys per rolling
+ *   - `consumeFromBudget()` — "at most `$maxKeys` distinct sub-keys per rolling
  *     `$windowSeconds`" (used by the GET cache-miss limiter, task 1.19).
  *
  * Both return `null` when within budget and an `int` (whole seconds until the window
@@ -137,31 +137,13 @@ class RateLimiterService implements RateLimiterServiceInterface {
 	}//end markFixedWindow()
 
 	/**
-	 * Distinct-key-budget limiter: at most `$maxKeys` distinct `$distinctKey` values seen for
-	 * the given `$bucketKey` within a rolling `$windowSeconds`. Used by the GET cache-miss
+	 * Distinct-key-budget limiter: at most `maxKeys` distinct `$distinctKey` values seen for
+	 * the budget's `bucketKey` within a rolling `windowSeconds`. Used by the GET cache-miss
 	 * limiter — each distinct cache-key tuple counts once, repeats are free, and the window
 	 * rolls over once it expires.
 	 *
 	 * The caller does NOT need a separate "mark" step — this method records the key as part of
 	 * the same call when the budget is not yet exhausted.
-	 *
-	 * @param string $bucketKey Caller-namespaced bucket key (e.g. `getmiss:<uid>`).
-	 * @param string $distinctKey The value being counted (e.g. the read cache key).
-	 * @param int $maxKeys Maximum distinct values permitted within the window.
-	 * @param int $windowSeconds Rolling window length.
-	 *
-	 * @return int|null Null when within budget, retry-after seconds (≥ 1) when exhausted.
-	 *
-	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
-	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
-	 */
-	public function consumeDistinctKeyBudget(string $bucketKey, string $distinctKey, int $maxKeys, int $windowSeconds): ?int {
-		$budget = new DistinctKeyBudget(bucketKey: $bucketKey, maxKeys: $maxKeys, windowSeconds: $windowSeconds);
-		return $this->consumeFromBudget(budget: $budget, distinctKey: $distinctKey);
-	}//end consumeDistinctKeyBudget()
-
-	/**
-	 * Count `$distinctKey` against a distinct-key budget; see consumeDistinctKeyBudget().
 	 *
 	 * @param DistinctKeyBudget $budget      The bucket, its maximum and its window.
 	 * @param string            $distinctKey The value being counted (e.g. the read cache key).
@@ -169,6 +151,7 @@ class RateLimiterService implements RateLimiterServiceInterface {
 	 * @return int|null Null when within budget, retry-after seconds (≥ 1) when exhausted.
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-19
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
 	 */
 	public function consumeFromBudget(DistinctKeyBudget $budget, string $distinctKey): ?int {
 		[$bucket, $age] = $this->liveBucket(bucket: $this->cache->get($budget->bucketKey), windowSeconds: $budget->windowSeconds);
