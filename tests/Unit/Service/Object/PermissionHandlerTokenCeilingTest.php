@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
@@ -112,22 +113,18 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasGroupPermission(
-				authorization: $block,
-				groupId: 'admin',
-				action: 'update',
-				userId: 'beheerder',
-				userGroup: 'admin'
+				request: (new GroupRuleRequest(authorization: $block, action: 'update'))
+					->forGroup(groupId: 'admin', userGroup: 'admin')
+					->forUser(userId: 'beheerder', objectOwner: null)
 			),
 			'a grant that the admin group escapes is not a ceiling at all'
 		);
 
 		$this->assertTrue(
 			$handler->hasGroupPermission(
-				authorization: $block,
-				groupId: 'admin',
-				action: 'read',
-				userId: 'beheerder',
-				userGroup: 'admin'
+				request: (new GroupRuleRequest(authorization: $block, action: 'read'))
+					->forGroup(groupId: 'admin', userGroup: 'admin')
+					->forUser(userId: 'beheerder', objectOwner: null)
 			),
 			'and the verb the token DOES hold still works, so this is a narrowing and not a wall'
 		);
@@ -148,12 +145,9 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasGroupPermission(
-				authorization: $this->narrowedToReadOnly(),
-				groupId: 'leveranciers',
-				action: 'update',
-				userId: 'leverancier',
-				userGroup: 'leveranciers',
-				objectOwner: 'leverancier'
+				request: (new GroupRuleRequest(authorization: $this->narrowedToReadOnly(), action: 'update'))
+					->forGroup(groupId: 'leveranciers', userGroup: 'leveranciers')
+					->forUser(userId: 'leverancier', objectOwner: 'leverancier')
 			),
 			'the owner bypass must not hand a read-only token a write on its own rows'
 		);
@@ -173,23 +167,18 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasGroupPermission(
-				authorization: $block,
-				groupId: 'admin',
-				action: 'update',
-				userId: 'beheerder',
-				userGroup: 'admin'
+				request: (new GroupRuleRequest(authorization: $block, action: 'update'))
+					->forGroup(groupId: 'admin', userGroup: 'admin')
+					->forUser(userId: 'beheerder', objectOwner: null)
 			),
 			'a person with no token is not narrowed by a feature about tokens'
 		);
 
 		$this->assertTrue(
 			$handler->hasGroupPermission(
-				authorization: $block,
-				groupId: 'leveranciers',
-				action: 'update',
-				userId: 'anja',
-				userGroup: 'leveranciers',
-				objectOwner: 'anja'
+				request: (new GroupRuleRequest(authorization: $block, action: 'update'))
+					->forGroup(groupId: 'leveranciers', userGroup: 'leveranciers')
+					->forUser(userId: 'anja', objectOwner: 'anja')
 			),
 			'and neither is the owner of their own object'
 		);
@@ -209,11 +198,9 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler()->hasGroupPermission(
-				authorization: $block,
-				groupId: 'admin',
-				action: 'read',
-				userId: 'beheerder',
-				userGroup: 'admin'
+				request: (new GroupRuleRequest(authorization: $block, action: 'read'))
+					->forGroup(groupId: 'admin', userGroup: 'admin')
+					->forUser(userId: 'beheerder', objectOwner: null)
 			),
 			'a six-week migration token kept for six years reads nothing'
 		);
