@@ -217,13 +217,13 @@ class UserTaskNodeTest extends TestCase {
 			);
 
 		try {
-			$this->node->execute(
-				$this->items(),
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items(),
 				// Whitespace, not a missing key: a title of spaces is still no
 				// title, and trim() is what makes the two the same.
-				['title' => '   ', 'assignee' => 'alice', 'sla' => ['value' => 2, 'unit' => 'businessDays']],
-				$this->context($state)
-			);
+				config: ['title' => '   ', 'assignee' => 'alice', 'sla' => ['value' => 2, 'unit' => 'businessDays']],
+				context: $this->context($state)
+			));
 		} catch (FlowSuspension $suspension) {
 			// Suspension is the normal outcome; the arming is the subject here.
 		}
