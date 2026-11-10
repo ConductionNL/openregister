@@ -42,8 +42,8 @@ final readonly class CredentialPrincipals {
 	 *
 	 * @param IUserSession                 $userSession         Current session (owner guard identity).
 	 * @param OrganisationServiceInterface $organisationService Resolves organisation membership (organisation guard branch).
-	 * @param ?IGroupManager               $groupManager        Resolves group principals for the share guard; null admits no group share.
-	 * @param ?IUserManager                $userManager         Resolves the asserted uid's groups on the sessionless path; null means no groups.
+	 * @param IGroupManager|null           $groupManager        Resolves group principals for the share guard; null admits no group share.
+	 * @param IUserManager|null            $userManager         Resolves the asserted uid's groups on the sessionless path; null means no groups.
 	 */
 	public function __construct(
 		public IUserSession $userSession,

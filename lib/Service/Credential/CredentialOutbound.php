@@ -38,9 +38,9 @@ final readonly class CredentialOutbound {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param IClientService        $clientService NC HTTP client factory (the outbound call).
-	 * @param LoggerInterface       $logger        Logger for secret-free server-side diagnostics.
-	 * @param ?OAuth2RefreshService $oauth2Refresh Refreshes and rotates an oauth2-token-set credential; absent, that path denies.
+	 * @param IClientService            $clientService NC HTTP client factory (the outbound call).
+	 * @param LoggerInterface           $logger        Logger for secret-free server-side diagnostics.
+	 * @param OAuth2RefreshService|null $oauth2Refresh Refreshes and rotates an oauth2-token-set credential; absent, that path denies.
 	 */
 	public function __construct(
 		public IClientService $clientService,
