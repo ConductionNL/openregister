@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ScopeChange;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -1594,7 +1595,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function assertRawEmitterCarriesTheScopePredicate(Schema $schema): void {
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$joined = implode(' ', $result['conditions']);
 
 		$this->assertStringContainsString(

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -68,14 +69,14 @@ final class DestructionRecorderTest extends TestCase {
 		$captured = [];
 		$mapper = $this->createMock(AuditTrailMapper::class);
 		$mapper->expects(self::once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $object, string $action, array $context) use (&$captured): AuditTrail {
 					$captured = ['action' => $action, 'context' => $context];
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$recorder = new DestructionRecorder($mapper, $this->session('recordmanager-1'), new NullLogger());
 		$record = $recorder->recordDestruction(new RecordDestructionCommand($this->object(), [
@@ -100,7 +101,7 @@ final class DestructionRecorderTest extends TestCase {
 
 	public function testAnUnrecordableDestructionRefusesRatherThanProceeding(): void {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createAuditTrailEntry')->willThrowException(new \RuntimeException('ledger down'));
+		$mapper->method('recordObjectEvent')->willThrowException(new \RuntimeException('ledger down'));
 
 		$recorder = new DestructionRecorder($mapper, $this->session('recordmanager-1'), new NullLogger());
 
@@ -111,7 +112,7 @@ final class DestructionRecorderTest extends TestCase {
 
 	public function testASystemActorIsNamedRatherThanLeftBlank(): void {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$mapper->method('recordObjectEvent')->willReturn(new AuditTrail());
 
 		$recorder = new DestructionRecorder($mapper, $this->session(null), new NullLogger());
 		$record = $recorder->recordDestruction(new RecordDestructionCommand($this->object(), [], 'retention-sweep'));

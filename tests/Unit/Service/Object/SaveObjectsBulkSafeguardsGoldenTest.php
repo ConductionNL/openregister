@@ -572,7 +572,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 		);
 		$rbac->method('collectOmittedProtectedProperties')->willReturn(['secret']);
 		$rbac->method('restoreWriteOnlyValues')->willReturnCallback(
-			static fn (...$args): array => ($args[0] + ['secret' => $args[1]['secret']])
+			static fn (...$args): array => ($args[0] + ['secret' => $args[1]->stored['secret']])
 		);
 
 		return $rbac;
