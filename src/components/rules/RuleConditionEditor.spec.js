@@ -189,3 +189,35 @@ describe('RuleConditionEditor draft', () => {
 		)
 	})
 })
+
+describe('RuleConditionEditor operator walk', () => {
+	it.each([
+		['a scalar', 3],
+		['null', null],
+		['an empty list', []],
+		['a list of AST nodes', [{ eq: [{ var: 'a' }, 1] }, { and: [true] }]],
+		['a literal holding an unknown spelling', { lit: { nope: 1 } }],
+		['a nested AST tree', { and: [{ eq: [{ var: 'a' }, { lit: 2 }] }] }],
+		['a JSONLogic node', { '==': [{ nope: 1 }, 1] }],
+		['a node with two keys', { eq: 1, and: 2 }],
+		['an empty object', {}],
+	])('walks %s and finds no unknown operator', (name, node) => {
+		const wrapper = mountEditor()
+		expect(wrapper.vm.firstUnknownOperator(node)).toBe('')
+	})
+
+	it('emits exactly one draft per edit, valid or not', async () => {
+		const wrapper = mountEditor()
+		const before = wrapper.emitted('update:draft').length
+		await type(wrapper, '{nope')
+		await type(wrapper, '   ')
+		await type(wrapper, JSON.stringify([{ eq: [1, 2] }]))
+		expect(wrapper.emitted('update:draft').slice(before)).toEqual([
+			[null],
+			[null],
+			[[{ eq: [1, 2] }]],
+		])
+		expect(wrapper.vm.unknownOperator).toBe('')
+		expect(wrapper.vm.parseError).toBe('')
+	})
+})
