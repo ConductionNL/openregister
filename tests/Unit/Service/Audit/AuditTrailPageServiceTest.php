@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Audit;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
@@ -47,7 +48,7 @@ class AuditTrailPageServiceTest extends TestCase {
 		$this->pageQuery = $this->createMock(AuditTrailPageQueryInterface::class);
 		$this->logService = $this->createMock(LogService::class);
 		$this->jobList = $this->createMock(IJobList::class);
-		$this->service = new AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList);
+		$this->service = new AuditTrailPageService(new AuditExportSource($this->pageQuery, $this->logService), $this->jobList);
 	}//end setUp()
 
 	public function testAPageCarriesTheBoundedLimitAndBothCursors(): void {
