@@ -75,7 +75,7 @@ final class SessionBundlesWiringGoldenTest extends TestCase {
 		$groups  = $this->createMock(IGroupManager::class);
 
 		$args   = $factory::args(...$this->argumentsFor(factory: $factory, given: [IUserSession::class => $session, IGroupManager::class => $groups]));
-		$holder = $args[2];
+		$holder = $this->servicesBundleIn(args: $args);
 		if ($member !== null) {
 			$holder = $holder->{$member};
 		}
@@ -84,6 +84,23 @@ final class SessionBundlesWiringGoldenTest extends TestCase {
 		$this->assertSame($groups, $holder->groupManager);
 		// Mutation check: a different session is told apart.
 		$this->assertNotSame($this->createMock(IUserSession::class), $holder->userSession);
+	}
+
+	/**
+	 * The controller's services bundle among its constructor arguments, picked by type, not by position.
+	 *
+	 * @param array<int, mixed> $args The constructor arguments.
+	 *
+	 * @return object The bundle.
+	 */
+	private function servicesBundleIn(array $args): object {
+		foreach ($args as $arg) {
+			if (is_object($arg) === true && str_ends_with($arg::class, 'ControllerServices') === true) {
+				return $arg;
+			}
+		}
+
+		$this->fail('No *ControllerServices bundle among the constructor arguments');
 	}
 
 	/**
