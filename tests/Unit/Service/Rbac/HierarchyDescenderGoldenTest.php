@@ -38,6 +38,7 @@ use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
@@ -435,19 +436,19 @@ final class HierarchyDescenderGoldenTest extends TestCase {
 		);
 
 		// Allowed: the chain, bounded by maxDepth 3.
-		$this->assertSame(['mid', 'top', 'sky'], $descender->ancestorsOf(1, 10, 'leaf'));
-		$this->assertSame(['top', 'sky', 'space'], $descender->ancestorsOf(1, 10, 'mid'));
-		$this->assertSame(['loop2'], $descender->ancestorsOf(1, 10, 'loop1'));
-		$this->assertSame(['missing'], $descender->ancestorsOf(1, 10, 'dangling'));
+		$this->assertSame(['mid', 'top', 'sky'], $descender->ancestorsOf(new ObjectRef(1, 10, 'leaf')));
+		$this->assertSame(['top', 'sky', 'space'], $descender->ancestorsOf(new ObjectRef(1, 10, 'mid')));
+		$this->assertSame(['loop2'], $descender->ancestorsOf(new ObjectRef(1, 10, 'loop1')));
+		$this->assertSame(['missing'], $descender->ancestorsOf(new ObjectRef(1, 10, 'dangling')));
 
 		// Refused / stopped.
-		$this->assertSame([], $descender->ancestorsOf(1, 10, ''));
-		$this->assertSame([], $descender->ancestorsOf(1, 10, 'orphan'));
-		$this->assertSame([], $descender->ancestorsOf(1, 10, 'nulled'));
-		$this->assertSame([], $descender->ancestorsOf(1, 10, 'self'));
-		$this->assertSame([], $descender->ancestorsOf(1, 10, 'unknown'));
-		$this->assertSame([], $descender->ancestorsOf(2, 10, 'leaf'));
-		$this->assertSame([], $descender->ancestorsOf(1, 11, 'leaf'));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(1, 10, '')));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(1, 10, 'orphan')));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(1, 10, 'nulled')));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(1, 10, 'self')));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(1, 10, 'unknown')));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(2, 10, 'leaf')));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(1, 11, 'leaf')));
 		$this->assertSame([], $this->logs);
 	}//end testAncestorsOfGolden()
 
@@ -469,7 +470,7 @@ final class HierarchyDescenderGoldenTest extends TestCase {
 		$registerMapper->method('findAll')->willReturn([$this->register(1, [10])]);
 
 		$descender = new HierarchyDescender($db, $schemaMapper, $registerMapper, $this->logger());
-		$this->assertSame([], $descender->ancestorsOf(1, 10, 'leaf'));
+		$this->assertSame([], $descender->ancestorsOf(new ObjectRef(1, 10, 'leaf')));
 		$this->assertSame(
 			[['warning', '[HierarchyDescender] Could not read an object\'s parent; the walk up stops here', ['table' => 'openregister_table_1_10', 'object' => 'leaf']]],
 			$this->logs
