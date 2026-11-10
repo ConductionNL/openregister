@@ -61,17 +61,15 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * Whether the current user can update a property of this object.
 	 *
-	 * @param Schema $schema   Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array  $object   Object data (for conditional matching)
-	 * @param bool   $isCreate Whether this is a create operation
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching) and whether this is a create
 	 *
 	 * @return bool True if user can update the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level update authorization,
 	 *       with create-mode organisation-match skipping per the FLS-on-create requirement)
 	 */
-	public function canUpdateProperty(Schema $schema, string $property, array $object, bool $isCreate = false): bool;
+	public function canUpdateProperty(SchemaProperty $property, PropertyAccessRequest $request): bool;
 
 	/**
 	 * The object with only the properties the current user may read.

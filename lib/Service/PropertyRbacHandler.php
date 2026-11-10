@@ -159,25 +159,18 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * Check if the current user can update a specific property
 	 *
-	 * @param Schema $schema Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array $object Object data (for conditional matching)
-	 * @param bool $isCreate Whether this is a create operation
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching) and whether this is a create
 	 *
 	 * @return bool True if user can update the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level update authorization,
 	 *       with create-mode organisation-match skipping per the FLS-on-create requirement)
 	 */
-	public function canUpdateProperty(
-		Schema $schema,
-		string $property,
-		array $object,
-		bool $isCreate = false,
-	): bool {
+	public function canUpdateProperty(SchemaProperty $property, PropertyAccessRequest $request): bool {
 		return $this->checkPropertyAccess(
-			rules: $this->actionRules(schema: $schema, property: $property)['update'] ?? [],
-			request: new PropertyAccessRequest(object: $object, isCreate: $isCreate)
+			rules: $this->actionRules(schema: $property->schema, property: $property->name)['update'] ?? [],
+			request: $request
 		);
 	}//end canUpdateProperty()
 
@@ -522,7 +515,10 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		}
 
 		return $this->canReadProperty(schema: $update->schema, property: $property, object: $stored) === false
-			|| $this->canUpdateProperty(schema: $update->schema, property: $property, object: $stored) === false;
+			|| $this->canUpdateProperty(
+				property: new SchemaProperty(schema: $update->schema, name: $property),
+				request: new PropertyAccessRequest(object: $stored)
+			) === false;
 	}//end carriesForward()
 
 	/**
@@ -671,10 +667,8 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		}
 
 		return $this->canUpdateProperty(
-			schema: $write->schema,
-			property: $property,
-			object: $request->object,
-			isCreate: $request->isCreate
+			property: new SchemaProperty(schema: $write->schema, name: $property),
+			request: new PropertyAccessRequest(object: $request->object, isCreate: $request->isCreate)
 		) === false;
 	}//end refusesChange()
 
