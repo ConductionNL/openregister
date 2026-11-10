@@ -519,11 +519,12 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function generateJWT(array $payload, array $configuration): string {
+		$jwk = $this->getJWK(configuration: $configuration);
 		$header = $this->jwtHeader(algorithm: $configuration['algorithm'], x5t: ($configuration['x5t'] ?? null));
 		$jws = $this->jwsBuilder()
 			->create()
 			->withPayload(json_encode(value: $payload))
-			->addSignature($this->getJWK(configuration: $configuration), $header)
+			->addSignature($jwk, $header)
 			->build();
 
 		return (new CompactSerializer())->serialize($jws, 0);
