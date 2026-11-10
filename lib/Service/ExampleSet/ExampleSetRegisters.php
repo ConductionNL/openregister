@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Imports and removes the registers a set requires.
@@ -211,7 +212,7 @@ class ExampleSetRegisters {
 		$clean = true;
 		foreach ($uuids as $uuid) {
 			try {
-				$objects->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+				$objects->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (Throwable) {
 				$clean = false;
 			}

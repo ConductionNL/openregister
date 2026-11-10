@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Every case read is RBAC- and tenant-scoped; a listed row without uuid, or one the caller
@@ -94,9 +95,7 @@ final class CaseObjectAccessorTest extends TestCase {
 	 */
 	public function testTheSweepDeletesWithTheRetentionFlag(): void {
 		$this->objects->expects($this->once())->method('deleteObject')->with(
-			'case-1',
-			CaseObjectAccessorInterface::REGISTER_SLUG,
-			CaseObjectAccessorInterface::SCHEMA_SLUG,
+			$this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'case-1' && $deletion->target->register == CaseObjectAccessorInterface::REGISTER_SLUG && $deletion->target->schema == CaseObjectAccessorInterface::SCHEMA_SLUG),
 			true,
 			true,
 			true

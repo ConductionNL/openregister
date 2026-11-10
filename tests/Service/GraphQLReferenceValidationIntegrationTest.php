@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * @group DB
@@ -125,7 +126,7 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Throwable $e) {
 				// best effort
 			}

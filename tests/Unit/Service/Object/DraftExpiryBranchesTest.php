@@ -37,6 +37,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Branch coverage for the draft-lifetime sweep.
@@ -281,7 +282,7 @@ class DraftExpiryBranchesTest extends TestCase {
 			->with('old', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false, false, false)
 			->willReturn($old);
 		$this->objects->expects($this->once())->method('deleteObject')
-			->with('old', $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'old' && $deletion->target->register instanceof Register && $deletion->target->schema instanceof Schema), false, false)
 			->willReturn(true);
 
 		$counts = $this->expiry()->sweep(now: $this->now);
@@ -318,7 +319,8 @@ class DraftExpiryBranchesTest extends TestCase {
 			}
 		);
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				if ($uuid === 'c') {
 					throw new RuntimeException('append-only');
 				}

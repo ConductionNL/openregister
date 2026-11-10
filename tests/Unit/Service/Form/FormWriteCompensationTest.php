@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Form\FormWriteCompensation;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Undo order, the permanent delete without RBAC, and a failed undo.
@@ -47,7 +48,8 @@ class FormWriteCompensationTest extends TestCase {
 		$deleted = [];
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('deleteObject')->willReturnCallback(
-			static function (...$args) use (&$deleted): bool {
+			static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted): bool {
+				$args = [$deletion->uuid, $deletion->target->register, $deletion->target->schema, $_rbac, $_multitenancy, $_retentionSweep, $deletion->currentUser, $deletion->permanent];
 				$deleted[] = [$args[0], $args[3], $args[4], $args[7]];
 				return true;
 			}
@@ -64,7 +66,8 @@ class FormWriteCompensationTest extends TestCase {
 	public function testAFailedUndoIsLoggedAndTheOthersStillRun(): void {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->exactly(2))->method('deleteObject')->willReturnCallback(
-			static function (...$args): bool {
+			static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$args = [$deletion->uuid, $deletion->target->register, $deletion->target->schema, $_rbac, $_multitenancy, $_retentionSweep, $deletion->currentUser, $deletion->permanent];
 				if ($args[0] === 'u-2') {
 					throw new RuntimeException('gone');
 				}

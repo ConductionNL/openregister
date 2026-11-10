@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * ObjectsToolProvider
@@ -223,7 +224,7 @@ class ObjectsToolProvider extends AbstractBuiltInToolProvider {
 	 */
 	private function deleteObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$this->objectService->deleteObject(uuid: $arguments['id']);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $arguments['id']));
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteObject()
 }//end class

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * The pair a pass builds names the register, the schema and the cutoff the lists are asked with;
@@ -74,7 +75,8 @@ class DraftExpiryCutoffTest extends TestCase {
 		);
 		$objects->method('find')->willReturn($stale);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				$this->deleted[] = $uuid;
 				return true;
 			}

@@ -21,6 +21,8 @@ use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
@@ -327,9 +329,10 @@ class ObjectServiceMapperAdapter {
 		}
 
 		return $this->objectService->deleteObject(
-			uuid: (string)$id,
-			register: $this->register,
-			schema: $this->schema
+			deletion: new ObjectDeletion(
+				uuid: (string)$id,
+				target: new ObjectFindTarget(register: $this->register, schema: $this->schema)
+			)
 		);
 	}//end delete()
 

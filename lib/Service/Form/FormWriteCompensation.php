@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Undoes the writes a submit made before a later write was refused.
@@ -125,12 +127,13 @@ final readonly class FormWriteCompensation {
 	 */
 	private function deleteWrite(array $done, string $uuid): void {
 		$this->objects->deleteObject(
-			uuid: $uuid,
-			register: $done['plan']['register'],
-			schema: $done['plan']['schema'],
+			deletion: new ObjectDeletion(
+				uuid: $uuid,
+				target: new ObjectFindTarget(register: $done['plan']['register'], schema: $done['plan']['schema']),
+				permanent: true
+			),
 			_rbac: false,
-			_multitenancy: false,
-			permanent: true
+			_multitenancy: false
 		);
 	}//end deleteWrite()
 }//end class

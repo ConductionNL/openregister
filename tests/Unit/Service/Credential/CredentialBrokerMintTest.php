@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -252,7 +253,7 @@ class CredentialBrokerMintTest extends TestCase {
 
 		// The metadata object must not survive a vault write it has no secret for.
 		$this->objectService->expects($this->once())->method('deleteObject')
-			->with('doomed-uuid', CredentialBrokerService::REGISTER, CredentialBrokerService::SCHEMA)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'doomed-uuid' && $deletion->target->register == CredentialBrokerService::REGISTER && $deletion->target->schema == CredentialBrokerService::SCHEMA))
 			->willReturn(true);
 
 		$this->expectException(RuntimeException::class);

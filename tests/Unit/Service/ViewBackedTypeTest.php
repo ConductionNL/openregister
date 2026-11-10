@@ -71,6 +71,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * The Schema, View, Register entities and the provider are real. MagicMapper
@@ -286,6 +287,6 @@ class ViewBackedTypeTest extends TestCase {
 
 		$this->expectException(ReadOnlyTypeException::class);
 
-		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(uuid: 'p-1');
+		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(deletion: new ObjectDeletion(uuid: 'p-1'));
 	}//end testDeletingAnObjectOfTheTypeIsRefused()
 }//end class

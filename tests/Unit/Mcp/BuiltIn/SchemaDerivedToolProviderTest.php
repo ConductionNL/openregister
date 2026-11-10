@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Unit tests for SchemaDerivedToolProvider.
@@ -488,7 +489,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		// by the name used at the call site, so named args here would
 		// silently compare against the wrong position for a signature whose
 		// constrained params are not its first N (see testGetReturnsSerializedObject).
-		$this->objectService->expects($this->once())->method('deleteObject')->with('uuid-3', null, $entry['schema'], true, true, false);
+		$this->objectService->expects($this->once())->method('deleteObject')->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'uuid-3' && $deletion->target->register === null && $deletion->target->schema == $entry['schema']), true, true, false);
 
 		$result = $provider->invokeTool('pipelinq.lead.delete', ['id' => 'uuid-3']);
 		$this->assertSame(['deleted' => true, 'id' => 'uuid-3'], $result);

@@ -150,6 +150,7 @@ use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -3812,40 +3813,28 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * call sites so the storage layer can refuse cross-scope deletes by
      * construction.
      *
-     * @param string                   $uuid            The UUID of the object to delete.
-     * @param Register|string|int|null $register        Optional register scope (object, ID, UUID, or slug).
-     *                                                  When non-null AND `$schema` is non-null, the lookup
-     *                                                  targets exactly that magic table.
-     * @param Schema|string|int|null   $schema          Optional schema scope (object, ID, UUID, or slug).
-     *                                                  See `$register` — both must be supplied for the
-     *                                                  scoped path.
-     * @param bool                     $_rbac           Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy   Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_retentionSweep Internal flag set by ArchivalRetentionTask
-     *                                                  to bypass the archival-immutability gate.
-     *                                                  Reachable only via PHP DI; no HTTP surface
-     *                                                  exposes it. Defaults to false.
-     * @param IUser|null               $currentUser     Explicit acting user for the RBAC `delete`
-     *                                                  check. Defaults to null → the permission
-     *                                                  subject is resolved from `IUserSession`,
-     *                                                  which is today's behaviour for every HTTP
-     *                                                  caller. A sessionless caller (flow run, cron,
-     *                                                  import pipeline) MUST pass one: anonymous is
-     *                                                  default-deny, so without it the delete is
-     *                                                  neither attributable nor permitted.
-     * @param bool                     $permanent       Destroy the row rather than tombstone it, so
-     *                                                  its identifier becomes reusable. Defaults to
-     *                                                  false — the soft delete every existing caller
-     *                                                  already gets, and the thing that makes a
-     *                                                  mistaken delete recoverable. Reserve it for
-     *                                                  rows that are a CLAIM rather than a record;
-     *                                                  see the parameter's full note on
-     *                                                  `DeleteObject::deleteObject()` and
-     *                                                  openregister#2459.
+     * @param ObjectDeletion $deletion        The UUID of the object to delete; the optional register and
+     *                                        schema scope (object, ID, UUID, or slug; when both are set
+     *                                        the lookup targets exactly that magic table); the explicit
+     *                                        acting user for the RBAC `delete` check (null resolves the
+     *                                        subject from `IUserSession`, today's behaviour for every
+     *                                        HTTP caller; a sessionless caller such as a flow run, cron
+     *                                        or import pipeline MUST set one, because anonymous is
+     *                                        default-deny); and `permanent`, which destroys the row
+     *                                        rather than tombstoning it. Soft delete stays the default;
+     *                                        reserve `permanent` for rows that are a CLAIM rather than a
+     *                                        record, see `DeleteObject::deleteObject()` and
+     *                                        openregister#2459.
+     * @param bool           $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool           $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool           $_retentionSweep Internal flag set by ArchivalRetentionTask
+     *                                        to bypass the archival-immutability gate.
+     *                                        Reachable only via PHP DI; no HTTP surface
+     *                                        exposes it. Defaults to false.
      *
      * @return bool Whether the deletion was successful
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If `$register` and `$schema` are both supplied
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If the register and schema are both supplied
      *                                                    and the UUID is not present in that scope (even
      *                                                    if it exists in another magic table).
      * @throws \Exception If user does not have delete permission.
@@ -3856,26 +3845,22 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function deleteObject(
-        string $uuid,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ObjectDeletion $deletion,
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $_retentionSweep=false,
-        ?IUser $currentUser=null,
-        bool $permanent=false
+        bool $_retentionSweep=false
     ): bool {
         $request = new ObjectDeleteRequest(
-            uuid: $uuid,
+            uuid: $deletion->uuid,
             rbac: $_rbac,
             multitenancy: $_multitenancy,
             retentionSweep: $_retentionSweep,
-            currentUser: $currentUser,
-            scoped: ($register !== null && $schema !== null)
+            currentUser: $deletion->currentUser,
+            scoped: $deletion->isScoped()
         );
-        return $this->preservingScope(operation: function () use ($request, $register, $schema, $permanent): bool {
-            $this->enterDeleteScope(register: $register, schema: $schema);
-            return $this->deleteRequested(request: $request, permanent: $permanent);
+        return $this->preservingScope(operation: function () use ($request, $deletion): bool {
+            $this->enterDeleteScope(register: $deletion->target->register, schema: $deletion->target->schema);
+            return $this->deleteRequested(request: $request, permanent: $deletion->permanent);
         });
     }//end deleteObject()
 

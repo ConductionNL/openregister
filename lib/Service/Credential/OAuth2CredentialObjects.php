@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Loads a brokered credential object by id.
@@ -121,9 +123,10 @@ final readonly class OAuth2CredentialObjects {
 	 */
 	public function delete(string $credentialId): void {
 		$this->objectService->deleteObject(
-			uuid: $credentialId,
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
+			deletion: new ObjectDeletion(
+				uuid: $credentialId,
+				target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Objects Tool
@@ -426,7 +427,7 @@ class ObjectsTool extends AbstractTool {
 		}
 
 		$uuid = $object->getUuid() ?? (string)$object->getId();
-		$this->objectService->deleteObject(uuid: $uuid);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid));
 
 		return $this->formatSuccess(
 			data: ['id' => $id],

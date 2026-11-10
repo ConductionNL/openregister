@@ -75,6 +75,7 @@ use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Background job that enforces `x-openregister-archival` retention rules.
@@ -449,7 +450,12 @@ class ArchivalRetentionTask extends TimedJob {
 			$this->objectService->setRegister(register: $sweep->register);
 			$this->objectService->setSchema(schema: $sweep->schema);
 
-			$deleteOk = $this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false, _retentionSweep: true);
+			$deleteOk = $this->objectService->deleteObject(
+				deletion: new ObjectDeletion(uuid: $uuid),
+				_rbac: false,
+				_multitenancy: false,
+				_retentionSweep: true
+			);
 			if ($deleteOk === true) {
 				$sweep->deleted++;
 			}

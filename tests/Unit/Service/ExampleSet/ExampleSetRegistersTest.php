@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\RegisterDescriptorService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters
@@ -96,7 +97,8 @@ class ExampleSetRegistersTest extends TestCase {
 		$audit->method('objectUuidsByImportJobId')->willReturn(['u1', 'u2']);
 		$refuse  = true;
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('deleteObject')->willReturnCallback(static function (string $uuid) use (&$refuse): bool {
+		$objects->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$refuse): bool {
+			$uuid = $deletion->uuid;
 			if ($uuid === 'u2' && $refuse === true) {
 				throw new RuntimeException('refused');
 			}

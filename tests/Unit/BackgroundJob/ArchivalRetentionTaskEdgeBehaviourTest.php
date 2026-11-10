@@ -50,6 +50,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 class ArchivalRetentionTaskEdgeBehaviourTest extends TestCase {
 
@@ -244,7 +245,8 @@ class ArchivalRetentionTaskEdgeBehaviourTest extends TestCase {
 		$this->rows([self::expiredRow('u1'), self::expiredRow('u2')]);
 		$this->magic->method('find')->willReturn(new ObjectEntity());
 		$this->holds->method('hasActiveLegalHold')->willReturn(false);
-		$this->objects->method('deleteObject')->willReturnCallback(static function (string $uuid): bool {
+		$this->objects->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+			$uuid = $deletion->uuid;
 			if ($uuid === 'u2') {
 				throw new Exception('locked');
 			}

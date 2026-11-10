@@ -46,6 +46,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Resolves GraphQL queries, mutations, and fields by delegating to OpenRegister services.
@@ -309,7 +310,7 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'delete');
 
 		try {
-			return $this->objects->objectService->deleteObject($args['id']);
+			return $this->objects->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $args['id']));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $args['id']);
 		}

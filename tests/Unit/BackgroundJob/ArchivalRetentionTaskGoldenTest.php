@@ -33,6 +33,7 @@ use ReflectionMethod;
 use RuntimeException;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Golden test for ArchivalRetentionTask::run().
@@ -266,7 +267,8 @@ class ArchivalRetentionTaskGoldenTest extends TestCase
             }
         );
         $service->method('deleteObject')->willReturnCallback(
-            function (...$args): bool {
+            function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+                $args = [$deletion->uuid, $deletion->target->register, $deletion->target->schema, $_rbac, $_multitenancy, $_retentionSweep, $deletion->currentUser, $deletion->permanent];
                 $this->record('deleteObject', array_slice($args, 0, 6));
                 if ($args[0] === 'broken') {
                     throw new RuntimeException('delete failed');

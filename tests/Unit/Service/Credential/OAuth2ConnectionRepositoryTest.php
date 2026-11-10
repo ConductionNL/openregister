@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository
@@ -133,7 +134,10 @@ class OAuth2ConnectionRepositoryTest extends TestCase {
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register, $schema): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
 				$this->assertSame(CredentialBrokerService::REGISTER, $register);
 				$this->assertSame(CredentialBrokerService::SCHEMA, $schema);
 				$this->calls[] = 'object:' . $uuid;

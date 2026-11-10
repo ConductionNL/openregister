@@ -50,6 +50,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -401,7 +402,11 @@ final class ObjectWriteAccessGoldenTest extends TestCase {
 			}
 		);
 		$store->method('deleteObject')->willReturnCallback(
-			function (string $uuid, mixed $register, mixed $schema, bool $_rbac, bool $_multitenancy, bool $sweep, ?IUser $currentUser, bool $permanent): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$sweep = $_retentionSweep;
+				$currentUser = $deletion->currentUser;
+				$permanent = $deletion->permanent;
 				$this->calls[] = [
 					'deleteObject' => $uuid, 'as' => $this->acting, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy,
 					'sweep' => $sweep, 'currentUser' => $currentUser?->getUID(), 'permanent' => $permanent,

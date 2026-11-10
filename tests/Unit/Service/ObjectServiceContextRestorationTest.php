@@ -71,6 +71,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * A WRITE MUST NOT SCOPE THE NEXT READ.
@@ -551,9 +553,10 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		$this->deleteHandler->method('deleteObject')->willReturn(true);
 
 		$this->service->deleteObject(
-			uuid: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			deletion: new ObjectDeletion(
+				uuid: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
+				target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

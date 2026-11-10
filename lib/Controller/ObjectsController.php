@@ -143,6 +143,8 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Objects controller for OpenRegister
@@ -4212,9 +4214,10 @@ class ObjectsController extends Controller {
 			// It also meant the URL's scope was never enforced: an object could
 			// be deleted through a register/schema it does not belong to.
 			$deleteResult = $objectService->deleteObject(
-				uuid: $id,
-				register: $register,
-				schema: $schema,
+				deletion: new ObjectDeletion(
+					uuid: $id,
+					target: new ObjectFindTarget(register: $register, schema: $schema)
+				),
 				_rbac: $rbac,
 				_multitenancy: $multi
 			);

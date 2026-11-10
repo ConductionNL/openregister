@@ -15,6 +15,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 class ObjectsToolTest extends TestCase {
 	private IUserSession&MockObject $userSession;
@@ -324,7 +325,7 @@ class ObjectsToolTest extends TestCase {
 		$this->objectService->method('find')->willReturn($entity);
 		$this->objectService->expects($this->once())
 			->method('deleteObject')
-			->with('42');
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == '42'));
 
 		$this->tool->deleteObject('42');
 	}

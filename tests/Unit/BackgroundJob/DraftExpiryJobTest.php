@@ -37,6 +37,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Decision 216: declared, daily, counted, and a failure surfaces.
@@ -165,7 +166,8 @@ class DraftExpiryJobTest extends TestCase {
 			static fn (string|int $id): ?ObjectEntity => (array_values(array_filter([$expired, $fresh], static fn (ObjectEntity $entity): bool => $entity->getUuid() === (string)$id))[0] ?? null)
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use (&$deleted, &$actors): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted, &$actors): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);

@@ -59,6 +59,8 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Golden record of deleteObject() over every branch: the scope it resolves, every object lookup
@@ -211,14 +213,15 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 		$this->sweeping = ($call['sweep'] ?? false);
 		try {
 			$result = ['returned' => $service->deleteObject(
-				uuid: self::U1,
-				register: $resolve($call['register'] ?? null, $this->registers),
-				schema: $resolve($call['schema'] ?? null, $this->schemas),
+				deletion: new ObjectDeletion(
+					uuid: self::U1,
+					target: new ObjectFindTarget(register: $resolve($call['register'] ?? null, $this->registers), schema: $resolve($call['schema'] ?? null, $this->schemas)),
+					currentUser: $currentUser,
+					permanent: ($call['permanent'] ?? false)
+				),
 				_rbac: ($call['rbac'] ?? true),
 				_multitenancy: ($call['multitenancy'] ?? true),
-				_retentionSweep: ($call['sweep'] ?? false),
-				currentUser: $currentUser,
-				permanent: ($call['permanent'] ?? false)
+				_retentionSweep: ($call['sweep'] ?? false)
 			)];
 		} catch (\Throwable $e) {
 			$result = ['exception' => [get_class($e), $e->getMessage()]];

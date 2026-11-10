@@ -54,6 +54,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Locks metadata routing in ObjectWriteNode::findMatch().
@@ -266,7 +267,8 @@ class ObjectWriteNodeMetadataMatchTest extends TestCase {
 
 		$deleted = null;
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (...$args) use (&$deleted): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted): bool {
+				$args = [$deletion->uuid, $deletion->target->register, $deletion->target->schema, $_rbac, $_multitenancy, $_retentionSweep, $deletion->currentUser, $deletion->permanent];
 				$deleted = ($args[0] ?? null);
 
 				return true;

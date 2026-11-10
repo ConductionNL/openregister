@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 
 /**
  * Tests for the delete() forwarding behaviour on ObjectServiceMapperAdapter.
@@ -51,9 +52,7 @@ class ObjectServiceMapperAdapterTest extends TestCase {
 			->expects($this->once())
 			->method('deleteObject')
 			->with(
-				$this->equalTo('abc-123'),
-				$this->equalTo(1),
-				$this->equalTo(10)
+				$this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'abc-123' && $deletion->target->register == 1 && $deletion->target->schema == 10)
 			)
 			->willReturn(true);
 
@@ -80,9 +79,7 @@ class ObjectServiceMapperAdapterTest extends TestCase {
 			->expects($this->once())
 			->method('deleteObject')
 			->with(
-				$this->equalTo('abc-123'),
-				$this->isNull(),
-				$this->isNull()
+				$this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'abc-123' && $deletion->target->register === null && $deletion->target->schema === null)
 			)
 			->willReturn(true);
 

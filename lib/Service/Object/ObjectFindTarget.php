@@ -43,8 +43,8 @@ final class ObjectFindTarget {
 	 * @spec exclude Value object of the ObjectService::find() facade; read behaviour owned by object-interactions.
 	 */
 	public function __construct(
-		public readonly Register|string|int|null $register,
-		public readonly Schema|string|int|null $schema,
+		public readonly Register|string|int|null $register=null,
+		public readonly Schema|string|int|null $schema=null,
 	) {
 	}//end __construct()
 }//end class
