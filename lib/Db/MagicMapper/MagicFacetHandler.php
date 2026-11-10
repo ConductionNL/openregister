@@ -82,40 +82,6 @@ class MagicFacetHandler {
 	use MagicColumnNameTrait;
 
 	/**
-	 * Reserved query parameters that are never object field filters.
-	 *
-	 * @var array<int, string>
-	 */
-	private const RESERVED_FILTER_PARAMS = [
-		'_limit',
-		'_offset',
-		'_page',
-		'_order',
-		'_sort',
-		'_search',
-		'_extend',
-		'_fields',
-		'_filter',
-		'_unset',
-		'_facets',
-		'_facetable',
-		'_aggregations',
-		'_debug',
-		'_source',
-		'_rbac',
-		'_multitenancy',
-		'_validation',
-		'_events',
-		'_register',
-		'_schema',
-		'_schemas',
-		'_includeDeleted',
-		'_deleted',
-		'_empty',
-		'@self',
-	];
-
-	/**
 	 * Maximum number of buckets to return per facet.
 	 * Set to high value to effectively disable limit (was 50).
 	 */
@@ -2484,7 +2450,9 @@ class MagicFacetHandler {
 	}//end applyObjectFieldFilters()
 
 	/**
-	 * The query terms that filter on an object field: no reserved or underscore-prefixed parameter.
+	 * The query terms that filter on an object field: no `@self` and no underscore-prefixed parameter.
+	 *
+	 * Every reserved query parameter but `@self` starts with an underscore.
 	 *
 	 * @param array $baseQuery The base query.
 	 *
@@ -2493,7 +2461,7 @@ class MagicFacetHandler {
 	private function objectFieldFilterTerms(array $baseQuery): array {
 		$terms = [];
 		foreach ($baseQuery as $key => $value) {
-			if (in_array($key, self::RESERVED_FILTER_PARAMS, true) === true || str_starts_with($key, '_') === true) {
+			if ($key === '@self' || str_starts_with($key, '_') === true) {
 				continue;
 			}
 
