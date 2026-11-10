@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\Event;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
@@ -63,7 +65,7 @@ final class TaskListenersAccessGoldenTest extends TestCase {
 			->with(self::isInstanceOf(Schema::class), 'read', 'jan', 'owner-1', true, $object)
 			->willReturn(true);
 		$watchers = $this->createMock(WatcherServiceInterface::class);
-		$watchers->expects(self::once())->method('followAssigned')->with($object, 'jan', '3', '12');
+		$watchers->expects(self::once())->method('followAssigned')->with(new AddressedObject(object: $object, register: '3', schema: '12'), 'jan');
 
 		$this->assigneeListener($permissions, $watchers)->handle(new ObjectCreatedEvent($object));
 	}//end testAReadableAssigneeIsFollowed()
@@ -109,14 +111,14 @@ final class TaskListenersAccessGoldenTest extends TestCase {
 		$reports = $this->createMock(ContentReportService::class);
 		$reports->expects(self::once())->method('noteRemoval')->with('uuid-case-1')->willReturn(['copy-1']);
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->expects(self::once())->method('createAuditTrailEntry')->with(
+		$audit->expects(self::once())->method('recordObjectEvent')->with(AuditTrailEvents::matching([
 			$object,
 			ContentReportService::ACTION_REMOVAL_NAMED,
 			[
 				'contentReports' => ['copy-1'],
 				'reason' => 'reported content removed; the copies taken at filing time survive it',
 			]
-		)->willReturn(new \OCA\OpenRegister\Db\AuditTrail());
+		]))->willReturn(new \OCA\OpenRegister\Db\AuditTrail());
 
 		(new ContentReportRemovalListener($reports, $audit, new NullLogger()))->handle(new ObjectDeletedEvent($object));
 	}//end testARemovalOfReportedContentIsAudited()
@@ -130,7 +132,7 @@ final class TaskListenersAccessGoldenTest extends TestCase {
 		$reports = $this->createMock(ContentReportService::class);
 		$reports->expects(self::once())->method('noteRemoval')->willReturn([]);
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->expects(self::never())->method('createAuditTrailEntry');
+		$audit->expects(self::never())->method('recordObjectEvent');
 		$listener = new ContentReportRemovalListener($reports, $audit, new NullLogger());
 
 		$listener->handle(new ObjectDeletedEvent($this->caseObject(assignee: null)));

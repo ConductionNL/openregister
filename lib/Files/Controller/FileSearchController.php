@@ -34,6 +34,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 
 /**
  * FileSearchController
@@ -134,9 +135,7 @@ class FileSearchController extends Controller {
 			// open in Nextcloud are returned (openregister#4097).
 			$results = $this->readScope->readableResults(
 				results: $this->vectorService->semanticSearch(
-					query: $query,
-					limit: $limit,
-					filters: ['entity_type' => 'file']
+					request: new SemanticSearchRequest(query: $query, limit: $limit, filters: ['entity_type' => 'file'])
 				)
 			);
 

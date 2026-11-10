@@ -346,7 +346,10 @@ abstract class ExampleSetEngineRows {
 	 */
 	private function entryRefusal(array $entry, ExampleSetFragmentCheck $check): string {
 		$gaps = [];
-		$data = (array) $check->values->fill(value: $entry['data'], context: $this->fillContext(context: $check->context), gaps: $gaps);
+		$data = (array) $check->values->fill(
+			value: $entry['data'],
+			scope: new ExampleSetFillScope(context: $this->fillContext(context: $check->context), gaps: $gaps)
+		);
 		$why  = $this->refusalIn(data: $data, users: $check->users, context: $check->context);
 		if ($gaps !== []) {
 			return 'cannot resolve '.implode(', ', array_unique($gaps));

@@ -444,7 +444,7 @@ class ViewPresentationService {
 			return (string) $id;
 		}
 
-		return md5(serialize($row));
+		return hash(algo: 'xxh128', data: serialize($row));
 	}//end rowIdentity()
 
 	/**

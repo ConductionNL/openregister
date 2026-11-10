@@ -126,6 +126,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
@@ -510,7 +511,10 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		}
 
 		return array_map(
-			static fn (array $item): array => FlowItems::item(...$item),
+			static fn (array $item): array => FlowItems::item(
+				json: $item['json'],
+				options: new FlowItemOptions(binary: $item['binary'], fromItemIndex: $item['fromItemIndex'])
+			),
 			$this->bulk()->write(items: $items, plan: $plan)
 		);
 	}//end writeAll()
@@ -662,7 +666,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 */
 	private function writeItem(ObjectWritePlan $plan, ObjectWriteItem $item): array {
 		if ($this->payloads()->template->isSkipped(path: $plan->skipWhen, json: $item->json) === true) {
-			return FlowItems::item(json: $item->json, binary: $item->binary, fromItemIndex: $item->index);
+			return FlowItems::item(json: $item->json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
 		}
 
 		if ($plan->operation === self::OP_DELETE) {
@@ -698,8 +702,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 
 		return FlowItems::item(
 			json: $plan->shaped(incoming: $item->json, written: $this->writtenJson(saved: $saved, plan: $plan)),
-			binary: $item->binary,
-			fromItemIndex: $item->index
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
 		);
 	}//end saveItem()
 
@@ -789,8 +792,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		// its incoming record forward under `output` like any other write.
 		return FlowItems::item(
 			json: $plan->shaped(incoming: $item->json, written: $plan->deleteRecord(uuid: $uuid, deleted: $deleted)),
-			binary: $item->binary,
-			fromItemIndex: $item->index
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
 		);
 	}//end executeDelete()
 
@@ -847,7 +849,7 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 			$json[$outputKey] = ['deleted' => false];
 		}
 
-		return FlowItems::item(json: $json, binary: $item->binary, fromItemIndex: $item->index);
+		return FlowItems::item(json: $json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
 	}//end unmatchedDelete()
 
 	/**

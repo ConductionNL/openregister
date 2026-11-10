@@ -85,22 +85,20 @@ final class ConditionTracer implements ConditionTracerInterface {
 	/**
 	 * The trace for a condition that has already been judged.
 	 *
-	 * @param mixed $condition The condition as the author declared it.
-	 * @param array<string, mixed> $document The data the condition was evaluated against.
-	 * @param string $verdict The verdict the owning engine reached.
-	 * @param string|null $message The engine's own sentence, when it has one.
+	 * @param ConditionJudgement $judgement The condition, the data it was evaluated against, the verdict the owning
+	 *                                      engine reached and that engine's own sentence, when it has one.
 	 *
 	 * @return RuleTrace The verdict with its deciding operand, when one decided.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function trace(mixed $condition, array $document, string $verdict, ?string $message = null): RuleTrace {
-		$trace = new RuleTrace(verdict: $verdict, message: $message);
-		if ($this->wantsOperand(condition: $condition, verdict: $verdict) === false) {
+	public function trace(ConditionJudgement $judgement): RuleTrace {
+		$trace = new RuleTrace(verdict: $judgement->verdict, message: $judgement->message);
+		if ($this->wantsOperand(condition: $judgement->condition, verdict: $judgement->verdict) === false) {
 			return $trace;
 		}
 
-		return $this->withOperand(trace: $trace, deciding: $this->tryDecidingOperand(node: $condition, document: $document));
+		return $this->withOperand(trace: $trace, deciding: $this->tryDecidingOperand(node: $judgement->condition, document: $judgement->document));
 	}//end trace()
 
 	/**

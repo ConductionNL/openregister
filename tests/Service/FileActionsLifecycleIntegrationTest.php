@@ -33,6 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -47,6 +49,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * @group DB
@@ -159,13 +162,7 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 	 */
 	public function testFullFileLifecycle(): void {
 		// 1. UPLOAD ----------------------------------------------------
-		$original = $this->fileService->addFile(
-			$this->sourceObject,
-			'lifecycle.txt',
-			'lifecycle initial content',
-			false,
-			['lifecycle']
-		);
+		$original = $this->fileService->addFile(new FileTarget($this->sourceObject), new FileUpload('lifecycle.txt', 'lifecycle initial content', false, ['lifecycle']));
 		$fileId = $original->getId();
 		$this->createdFileIds[] = $fileId;
 		$this->assertSame('lifecycle.txt', $original->getName());
@@ -183,11 +180,7 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 		$this->assertSame(['lifecycle', 'integration-test'], $entity->getLabels());
 
 		// 3. RENAME ----------------------------------------------------
-		$renamed = $this->fileService->renameFile(
-			$this->sourceObject,
-			$fileId,
-			'lifecycle-renamed.txt'
-		);
+		$renamed = $this->fileService->renameAttachedFile(rename: new FileRename(object: $this->sourceObject, fileId: $fileId, newName: 'lifecycle-renamed.txt'));
 		$this->assertSame('lifecycle-renamed.txt', $renamed->getName());
 		$this->assertSame(
 			$fileId,

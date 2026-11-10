@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
@@ -130,12 +131,11 @@ class FileSearchControllerTest extends TestCase {
 		$this->vectorService->expects($this->once())
 			->method('semanticSearch')
 			->with(
-				'scoped query',
-				10,
 				$this->callback(
-					function (array $filters): bool {
-						return ($filters['entity_type'] ?? null) === 'file'
-							&& array_key_exists('entityType', $filters) === false;
+					function (SemanticSearchRequest $request): bool {
+						return $request->query === 'scoped query' && $request->limit === 10
+							&& ($request->filters['entity_type'] ?? null) === 'file'
+							&& array_key_exists('entityType', $request->filters) === false;
 					}
 				)
 			)
