@@ -10,12 +10,14 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -288,7 +290,11 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 				return array_map(fn (array $data): ObjectEntity => $this->entity(data: $data), ($this->world['located'] ?? []));
 			}
 		);
-		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(fn (...$args): array => $this->tableRead(args: $args));
+		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			fn (RegisterSchema $table, ListQuery $listing): array => $this->tableRead(
+				args: [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort]
+			)
+		);
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturnCallback(

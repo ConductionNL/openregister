@@ -32,10 +32,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -393,7 +395,8 @@ class SchemaDeletionServiceTest extends TestCase {
 			->expects($this->atLeastOnce())
 			->method('findAllInRegisterSchemaTable')
 			->willReturnCallback(
-				function (Register $register, Schema $schema, ?int $limit, ?int $offset, ?array $filters, array $sort = []): array {
+				function (RegisterSchema $table, ListQuery $listing): array {
+					[$register, $schema, $limit, $offset, $filters, $sort] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 					$this->assertTrue($filters['_includeDeleted']);
 					$this->assertFalse($filters['_rbac']);
 					$this->assertFalse($filters['_multitenancy']);
