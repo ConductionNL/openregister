@@ -2079,3 +2079,4 @@
 2026-11-10T12:50:22Z precheck-20261110T113020-1bfa0787 GREEN tree 9a268384b6 on dev d4c35821e7 prs 1 front=skip: Tests: 54831, Assertions: 181138, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T12:50:42Z precheck-20261110T113316-4d357610 GREEN tree 808e8f1b2b on dev d4c35821e7 prs 1 front=skip: Tests: 54829, Assertions: 181127, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T12:50:58Z precheck-20261110T113719-a281a2cd GREEN tree 428027bb95 on dev d4c35821e7 prs 1 front=skip: Tests: 54829, Assertions: 181127, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
+2026-11-10T12:51:30Z precheck-20261110T113809-5ce48586 NORESULT tree 831c6818e6 prs 1: php-1.log: no Tests line
