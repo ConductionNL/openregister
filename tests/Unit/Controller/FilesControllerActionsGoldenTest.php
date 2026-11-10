@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
@@ -812,8 +813,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 		});
 		$service->method('getBatchHandler')->willReturnCallback(function (): FileBatchHandler {
 			$handler = $this->createMock(FileBatchHandler::class);
-			$handler->method('executeBatch')->willReturnCallback(function (ObjectEntity $object, string $action, array|string|int $fileIds, array $params = []): array {
-				$this->note(call: 'executeBatch', detail: [$object->getUuid(), $action, $fileIds, $params]);
+			$handler->method('runBatch')->willReturnCallback(function (FileBatchRequest $request, array|string|int $fileIds): array {
+				$this->note(call: 'executeBatch', detail: [$request->object->getUuid(), $request->action, $fileIds, $request->params]);
 				$this->work(call: 'executeBatch');
 				return ['summary' => ['failed' => ($this->world['batchFailed'] ?? 0)]];
 			});

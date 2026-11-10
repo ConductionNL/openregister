@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
@@ -54,6 +56,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
+use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -564,12 +567,12 @@ class FilesController extends Controller {
 	 */
 	private function savePostedChat(ObjectEntity $object): JSONResponse {
 		$user = $this->userSession?->getUser();
-		$transcript = (new TalkChatExporter())->export(
+		$transcript = (new TalkChatExporter())->exportTranscript(request: new ChatTranscriptRequest(
 			conversation: (string)$this->request->getParam('conversation', ''),
 			messages: (array)$this->request->getParam('messages', []),
 			savedBy: (string)($user?->getDisplayName() ?? $user?->getUID() ?? ''),
 			savedAt: new DateTimeImmutable()
-		);
+		));
 
 		$file = $this->fileService->addFile(objectEntity: $object, fileName: $transcript['filename'], content: $transcript['content']);
 
@@ -2617,7 +2620,10 @@ class FilesController extends Controller {
 		}
 
 		$handler = $this->fileService->getBatchHandler();
-		$result = $handler->executeBatch(object: $object, action: $data['action'] ?? '', fileIds: $fileIds, params: $data);
+		$result = $handler->runBatch(
+			request: new FileBatchRequest(object: $object, action: $data['action'] ?? '', params: $data),
+			fileIds: $fileIds
+		);
 
 		$statusCode = 200;
 		if ($result['summary']['failed'] > 0) {
@@ -2993,12 +2999,12 @@ class FilesController extends Controller {
 		$object = $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
 		$file = $this->officeFile(object: $object, fileId: $fileId);
 
-		return $this->officeSessions()->open(
+		return $this->officeSessions()->openSession(request: new OfficeOpenRequest(
 			file: $file,
 			editorUid: $user->getUID(),
 			displayName: $user->getDisplayName(),
 			canWrite: $this->objectFileAccess->mayChangeFiles(object: $object)
-		);
+		));
 	}//end openOfficeSession()
 
 	/**

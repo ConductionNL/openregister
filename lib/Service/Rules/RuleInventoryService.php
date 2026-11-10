@@ -63,22 +63,34 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	private readonly RuleScope $scopes;
 
 	/**
+	 * Lifts a property's own calculation into the one map; stateless, so it is built in place.
+	 *
+	 * @var PropertyCalculations
+	 */
+	private readonly PropertyCalculations $propertyCalculations;
+
+	/**
+	 * The published kinds, verdicts and actions; stateless, so it is built in place.
+	 *
+	 * @var RuleVocabulary
+	 */
+	private readonly RuleVocabulary $vocabulary;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
-	 * @param PropertyCalculations $propertyCalculations Lifts a property's own calculation into the one map.
-	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
 	 * @param FlowRuleDescriptors $flows Reads the flows a schema's objects trigger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly RuleRunSummaryMapperInterface $summaries,
-		private readonly PropertyCalculations $propertyCalculations,
-		private readonly RuleVocabulary $vocabulary,
 		private readonly FlowRuleDescriptors $flows,
 	) {
 		$this->scopes = new RuleScope();
+		$this->propertyCalculations = new PropertyCalculations();
+		$this->vocabulary = new RuleVocabulary();
 	}//end __construct()
 
 	/**

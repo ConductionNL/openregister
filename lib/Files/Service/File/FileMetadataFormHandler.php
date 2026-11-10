@@ -105,7 +105,7 @@ class FileMetadataFormHandler {
 			$fileId = (int)$entry['fileId'];
 
 			try {
-				$outcome = $this->saveOne(object: $object, fileId: $fileId, entry: $entry);
+				$outcome = $this->saveOne(object: $object, entry: $entry);
 			} catch (Throwable $e) {
 				$failed[] = ['fileId' => $fileId, 'error' => $e->getMessage()];
 				continue;
@@ -133,8 +133,7 @@ class FileMetadataFormHandler {
 	 * say, which is the signal that no audit entry belongs to it.
 	 *
 	 * @param ObjectEntity $object The object the file belongs to.
-	 * @param integer $fileId The file.
-	 * @param array $entry The row.
+	 * @param array $entry The row; its numeric 'fileId' names the file.
 	 *
 	 * @return array|null What changed, or null when nothing did.
 	 *
@@ -142,7 +141,8 @@ class FileMetadataFormHandler {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function saveOne(ObjectEntity $object, int $fileId, array $entry): ?array {
+	private function saveOne(ObjectEntity $object, array $entry): ?array {
+		$fileId = (int)$entry['fileId'];
 		$node = $this->fileService->getFile(object: $object, file: (string)$fileId);
 		if ($node === null) {
 			throw new Exception(message: "File $fileId is not on this object.");

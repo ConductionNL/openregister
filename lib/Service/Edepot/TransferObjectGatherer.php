@@ -27,10 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\RecordState;
-use Psr\Log\LoggerInterface;
 
 /**
  * Reads the objects a transfer attempt sends.
@@ -46,14 +44,12 @@ final class TransferObjectGatherer {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objectMapper         The object mapper.
+	 * @param TransferStores       $stores               The objects and the log.
 	 * @param PackagedFileChecksum $packagedFileChecksum Computes, dates and fixity-checks each file's checksum.
-	 * @param LoggerInterface      $logger               Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly TransferStores $stores,
 		private readonly PackagedFileChecksum $packagedFileChecksum,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -124,10 +120,10 @@ final class TransferObjectGatherer {
 		$result = [];
 		foreach ($objectRefs as $ref) {
 			try {
-				$object   = $this->objectMapper->find($ref['uuid']);
+				$object   = $this->stores->objects->find($ref['uuid']);
 				$result[] = ['object' => $object, 'files' => $this->filesOf(object: $object)];
 			} catch (\Exception $e) {
-				$this->logger->warning(
+				$this->stores->logger->warning(
 					message: '[EdepotTransferService] Could not load object for transfer',
 					context: ['uuid' => $ref['uuid'], 'error' => $e->getMessage()]
 				);
@@ -185,7 +181,7 @@ final class TransferObjectGatherer {
 		try {
 			return $this->isTransferred(uuid: $ref['uuid']);
 		} catch (\Throwable $e) {
-			$this->logger->debug(
+			$this->stores->logger->debug(
 				message: '[EdepotTransferService] outstanding-check could not load object '.((string)$ref['uuid']),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -218,7 +214,7 @@ final class TransferObjectGatherer {
 	 * @throws \Throwable When the object cannot be loaded.
 	 */
 	private function isTransferred(mixed $uuid): bool {
-		$retention = ($this->objectMapper->find($uuid)->getRetention() ?? []);
+		$retention = ($this->stores->objects->find($uuid)->getRetention() ?? []);
 
 		return in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true;
 	}//end isTransferred()

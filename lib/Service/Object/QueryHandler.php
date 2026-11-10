@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\AppFramework\IAppContainer;
 
 /**
@@ -387,11 +388,11 @@ class QueryHandler implements QueryHandlerInterface {
 		?string $uses = null,
 	): array {
 		$startTime = microtime(true);
-		$metrics   = self::newMetrics();
 
 		// Same seam as searchObjects(): a register or schema reference that
 		// names nothing is refused here, never answered with an empty page.
 		$query = $this->normaliseReferences(query: $query);
+		$run   = new SearchPageRun(query: $query, metrics: self::newMetrics());
 
 		$paging           = new SearchPaging();
 		$reports          = new SearchResponseReports();
@@ -400,22 +401,23 @@ class QueryHandler implements QueryHandlerInterface {
 		$expansion        = $this->expandSearchTerm(query: $query);
 		$queries          = self::withExpandedTerm(queries: $paging->queries(query: $query, window: $window), expansion: $expansion);
 
-		$scope = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses];
-		$scope = $this->narrowByHistory(predicate: $historyPredicate, scope: $scope, metrics: $metrics);
+		$run->scope      = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses];
+		$run->countQuery = $queries['count'];
+		$this->narrowByHistory(run: $run, predicate: $historyPredicate);
 
-		$searchResult = $this->searchDatabase(queries: $queries, scope: $scope, metrics: $metrics);
-		$searchResult = $this->widenWithContentMatches(query: $query, searchResult: $searchResult, scope: $scope + $window, metrics: $metrics);
-		$results      = $this->renderListRows(query: $query, searchResult: $searchResult, scope: $scope, metrics: $metrics);
+		$searchResult = $this->searchDatabase(run: $run, searchQuery: $queries['search']);
+		$searchResult = $this->widenWithContentMatches(query: $query, searchResult: $searchResult, scope: $run->scope + $window, metrics: $run->metrics);
+		$results      = $this->renderListRows(run: $run, searchResult: $searchResult);
 
 		$paginatedResults = $paging->response(results: $results, searchResult: $searchResult, window: $window);
 		$paginatedResults['@self'] += $reports->searchReports(query: $query, historyPredicate: $historyPredicate, expansion: $expansion);
 		$paginatedResults['@self'] += $reports->requestedRegistersAndSchemas(query: $query, searchResult: $searchResult);
 		$paginatedResults['@self'] += $reports->ignoredFilterReport(ignoredFilters: $searchResult['ignoredFilters'] ?? []);
-		$paginatedResults           = $this->withFacets(query: $query, countQuery: $queries['count'], response: $paginatedResults, metrics: $metrics);
+		$paginatedResults           = $this->withFacets(run: $run, response: $paginatedResults);
 
 		// Always add performance metrics to @self for debugging.
-		$metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);
-		$paginatedResults['@self']['metrics'] = $metrics->getArrayCopy();
+		$run->metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);
+		$paginatedResults['@self']['metrics'] = $run->metrics->getArrayCopy();
 
 		return $paginatedResults;
 	}//end searchObjectsPaginatedDatabase()
@@ -458,49 +460,46 @@ class QueryHandler implements QueryHandlerInterface {
 	 * An empty narrowed set is marked `narrowedToNothing`, because an empty id
 	 * set passed on would read as "no id filter" and answer the whole register.
 	 *
+	 * @param SearchPageRun    $run       The search; its scope gets `ids`, `narrowedToNothing` and `activeOrgUuid`
 	 * @param HistoryPredicate $predicate The parsed history predicate
-	 * @param array            $scope     rbac, multitenancy, ids and uses of the search
-	 * @param ArrayObject     $metrics   Collects timings
 	 *
-	 * @return array The scope with `ids`, `narrowedToNothing` and `activeOrgUuid` set
+	 * @return void
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	private function narrowByHistory(HistoryPredicate $predicate, array $scope, ArrayObject $metrics): array {
-		$scope['narrowedToNothing'] = false;
+	private function narrowByHistory(SearchPageRun $run, HistoryPredicate $predicate): void {
+		$run->scope['narrowedToNothing'] = false;
 		if ($predicate->narrows() === true && $this->historyNarrowing !== null) {
-			$historyStart               = microtime(true);
-			$scope['ids']               = $this->historyNarrowing->narrow(predicate: $predicate, ids: $scope['ids']);
-			$scope['narrowedToNothing'] = ($scope['ids'] === []);
-			$metrics['history']         = round((microtime(true) - $historyStart) * 1000, 2);
+			$historyStart                    = microtime(true);
+			$run->scope['ids']               = $this->historyNarrowing->narrow(predicate: $predicate, ids: $run->scope['ids']);
+			$run->scope['narrowedToNothing'] = ($run->scope['ids'] === []);
+			$run->metrics['history']         = round((microtime(true) - $historyStart) * 1000, 2);
 		}
 
-		$scope['activeOrgUuid'] = null;
-		if ($scope['multitenancy'] === true) {
-			$scope['activeOrgUuid'] = $this->performanceHandler->getActiveOrganisationForContext();
+		$run->scope['activeOrgUuid'] = null;
+		if ($run->scope['multitenancy'] === true) {
+			$run->scope['activeOrgUuid'] = $this->performanceHandler->getActiveOrganisationForContext();
 		}
-
-		return $scope;
 	}//end narrowByHistory()
 
 	/**
 	 * Run the combined search and count, or answer an empty page when history left no candidates.
 	 *
-	 * @param array{search: array, count: array} $queries The page and count queries
-	 * @param array                              $scope   The narrowed search scope
-	 * @param ArrayObject                       $metrics Collects timings
+	 * @param SearchPageRun $run         The search: its narrowed scope, count query and timings
+	 * @param array         $searchQuery The page query
 	 *
 	 * @return array The mapper's search result
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
-	private function searchDatabase(array $queries, array $scope, ArrayObject $metrics): array {
+	private function searchDatabase(SearchPageRun $run, array $searchQuery): array {
+		$scope        = $run->scope;
 		$searchStart  = microtime(true);
 		$searchResult = self::NO_SEARCH_RESULT;
 		if ($scope['narrowedToNothing'] === false) {
 			$searchResult = $this->objectMapper->searchObjectsPaginated(
-				searchQuery: $queries['search'],
-				countQuery: $queries['count'],
+				searchQuery: $searchQuery,
+				countQuery: $run->countQuery,
 				_activeOrgUuid: $scope['activeOrgUuid'],
 				_rbac: $scope['rbac'],
 				_multitenancy: $scope['multitenancy'],
@@ -509,8 +508,8 @@ class QueryHandler implements QueryHandlerInterface {
 			);
 		}
 
-		$metrics['search'] = round((microtime(true) - $searchStart) * 1000, 2);
-		self::recordMapperMetrics(searchResult: $searchResult, metrics: $metrics);
+		$run->metrics['search'] = round((microtime(true) - $searchStart) * 1000, 2);
+		self::recordMapperMetrics(searchResult: $searchResult, metrics: $run->metrics);
 
 		return $searchResult;
 	}//end searchDatabase()
@@ -552,15 +551,16 @@ class QueryHandler implements QueryHandlerInterface {
 		}
 
 		$contentSearchStart = microtime(true);
-		$augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
-			query: $query,
+		$page               = new MetadataArmPage(
 			results: $searchResult['results'],
 			total: $searchResult['total'],
 			limit: $scope['limit'],
+			offset: $scope['offset']
+		);
+		$augmented          = $this->contentSearchHandler->widen(
+			widening: new ContentSearchWidening(query: $query, page: $page, activeOrgUuid: $scope['activeOrgUuid']),
 			_rbac: $scope['rbac'],
-			_multitenancy: $scope['multitenancy'],
-			offset: $scope['offset'],
-			activeOrgUuid: $scope['activeOrgUuid']
+			_multitenancy: $scope['multitenancy']
 		);
 		$searchResult['results']   = $augmented['results'];
 		$searchResult['total']     = $augmented['total'];
@@ -576,16 +576,16 @@ class QueryHandler implements QueryHandlerInterface {
 	 * which the response carries at `@self` level), `_fields`, `_filter`,
 	 * `_unset`, property-level authorization or a lens.
 	 *
-	 * @param array        $query        The search query
-	 * @param array        $searchResult The search result
-	 * @param array        $scope        The search scope
-	 * @param ArrayObject $metrics      Collects timings
+	 * @param SearchPageRun $run          The search: its query, scope and timings
+	 * @param array         $searchResult The search result
 	 *
 	 * @return mixed The rows
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
-	private function renderListRows(array $query, array $searchResult, array $scope, ArrayObject $metrics): mixed {
+	private function renderListRows(SearchPageRun $run, array $searchResult): mixed {
+		$query         = $run->query;
+		$scope         = $run->scope;
 		$results       = $searchResult['results'];
 		$extend        = self::rowExtend(query: $query);
 		$renderNeed    = new SearchRenderNeed();
@@ -595,7 +595,7 @@ class QueryHandler implements QueryHandlerInterface {
 		}
 
 		if ($needsRender === false) {
-			$this->prepareCheapRows(results: $results, rbac: $scope['rbac'], metrics: $metrics);
+			$this->prepareCheapRows(run: $run, results: $results);
 			return $results;
 		}
 
@@ -609,7 +609,7 @@ class QueryHandler implements QueryHandlerInterface {
 			_rbac: $scope['rbac'],
 			_multitenancy: $scope['multitenancy']
 		);
-		$metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
+		$run->metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
 
 		return $results;
 	}//end renderListRows()
@@ -645,17 +645,15 @@ class QueryHandler implements QueryHandlerInterface {
 	 * have write-only properties redacted (openregister#380, ocon#147), so a
 	 * list read never shows what a single-object read would strip.
 	 *
-	 * @param array        $results The rows, modified in place
-	 * @param bool         $rbac    Whether access control applies
-	 * @param ArrayObject $metrics Collects timings
+	 * @param SearchPageRun $run     The search: whether access control applies, and its timings
+	 * @param array         $results The rows, modified in place
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The rbac flag gates the redaction
-	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
-	private function prepareCheapRows(array &$results, bool $rbac, ArrayObject $metrics): void {
+	private function prepareCheapRows(SearchPageRun $run, array &$results): void {
+		$metrics    = $run->metrics;
 		$filesStart = microtime(true);
 		$this->renderHandler->attachLightweightFilesToRows(rows: $results);
 		$metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
@@ -665,31 +663,30 @@ class QueryHandler implements QueryHandlerInterface {
 		$metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
 
 		$redactStart = microtime(true);
-		$this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+		$this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $run->scope['rbac']);
 		$metrics['writeOnlyRedaction'] = round((microtime(true) - $redactStart) * 1000, 2);
 	}//end prepareCheapRows()
 
 	/**
 	 * Add facets and facetable fields when the query asks for them.
 	 *
-	 * @param array        $query      The search query
-	 * @param array        $countQuery The count query, which facets are computed over
-	 * @param array        $response   The response so far
-	 * @param ArrayObject $metrics    Collects timings
+	 * @param SearchPageRun $run      The search: its query, the count query facets are computed over, and timings
+	 * @param array         $response The response so far
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
-	private function withFacets(array $query, array $countQuery, array $response, ArrayObject $metrics): array {
+	private function withFacets(SearchPageRun $run, array $response): array {
+		$query = $run->query;
 		if (empty($query['_facets']) === false) {
-			$response['facets'] = $this->facetResults(countQuery: $countQuery, metrics: $metrics);
+			$response['facets'] = $this->facetResults(countQuery: $run->countQuery, metrics: $run->metrics);
 		}
 
 		if (($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true') {
-			$facetableStart        = microtime(true);
-			$response['facetable'] = $this->facetHandler->getFacetableFields(baseQuery: $countQuery, _sampleSize: 100);
-			$metrics['facetable']  = round((microtime(true) - $facetableStart) * 1000, 2);
+			$facetableStart            = microtime(true);
+			$response['facetable']     = $this->facetHandler->getFacetableFields(baseQuery: $run->countQuery, _sampleSize: 100);
+			$run->metrics['facetable'] = round((microtime(true) - $facetableStart) * 1000, 2);
 		}
 
 		return $response;
@@ -746,8 +743,7 @@ class QueryHandler implements QueryHandlerInterface {
 
 		return $dictionary->expand(
 			term: $term,
-			perGroupCap: $this->dictionary->perGroupCap(),
-			perQueryCap: $this->dictionary->perQueryCap()
+			caps: new SynonymCaps(perGroup: $this->dictionary->perGroupCap(), perQuery: $this->dictionary->perQueryCap())
 		);
 	}//end expandSearchTerm()
 

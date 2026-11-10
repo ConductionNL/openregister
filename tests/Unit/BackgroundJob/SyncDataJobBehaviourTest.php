@@ -23,6 +23,7 @@ use OCA\OpenRegister\BackgroundJob\SyncDataJob;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 use OCA\OpenRegister\Service\Sync\SyncScheduleInterface;
@@ -62,7 +63,7 @@ class SyncDataJobBehaviourTest extends TestCase {
 		$sources->method('findBySyncEnabled')->willReturn([$source]);
 		$pipeline = $this->createMock(HarvestPipelineServiceInterface::class);
 		$pipeline->expects($this->once())->method('run')
-			->with($source, $this->anything(), $this->isType('string'), '2026-03-04T05:06:07+00:00')
+			->with($this->callback(fn (HarvestRun $h): bool => $h->source === $source && is_string($h->executionId) && $h->since === '2026-03-04T05:06:07+00:00'))
 			->willReturn([]);
 
 		$this->runJob($sources, $pipeline, $this->createMock(LoggerInterface::class));
@@ -76,7 +77,7 @@ class SyncDataJobBehaviourTest extends TestCase {
 		$sources->method('findBySyncEnabled')->willReturn([$source]);
 		$pipeline = $this->createMock(HarvestPipelineServiceInterface::class);
 		$pipeline->expects($this->once())->method('run')
-			->with($source, $this->anything(), $this->isType('string'), null)
+			->with($this->callback(fn (HarvestRun $h): bool => $h->source === $source && is_string($h->executionId) && $h->since === null))
 			->willReturn(['status' => 'success']);
 
 		$this->runJob($sources, $pipeline, $this->createMock(LoggerInterface::class));

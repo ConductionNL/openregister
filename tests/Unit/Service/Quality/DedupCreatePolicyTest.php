@@ -36,6 +36,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 
 class DedupCreatePolicyTest extends TestCase {
 
@@ -141,7 +142,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['matchRules' => []]);
 		$this->duplicates->expects($this->never())->method('checkCandidate');
 
-		$this->assertSame([], $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false));
+		$this->assertSame([], $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false)));
 	}//end testWarnIsTheDefaultAndDoesNotScore()
 
 	/**
@@ -155,7 +156,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['onCreate' => 'warn']);
 		$this->duplicates->expects($this->never())->method('checkCandidate');
 
-		$this->assertSame([], $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false));
+		$this->assertSame([], $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false)));
 	}//end testDeclaredWarnDoesNotRefuse()
 
 	/**
@@ -173,7 +174,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		try {
-			$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false);
+			$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false));
 			$this->fail('a blocking match should have been refused');
 		} catch (DuplicateBlockedException $e) {
 			$this->assertSame(409, $e->getCode());
@@ -192,7 +193,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['onCreate' => 'block']);
 		$this->duplicates->method('checkCandidate')->willReturn([]);
 
-		$this->assertSame([], $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false));
+		$this->assertSame([], $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false)));
 	}//end testBlockWithoutAMatchAllowsTheCreate()
 
 	/**
@@ -211,7 +212,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		$this->expectException(DuplicateBlockedException::class);
-		$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], true);
+		$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: true));
 	}//end testOverrideOutsideTheGroupIsStillRefused()
 
 	/**
@@ -229,7 +230,7 @@ class DedupCreatePolicyTest extends TestCase {
 		);
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
-		$overridden = $this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], true);
+		$overridden = $this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: true));
 
 		$this->assertSame(['stored-1'], array_column($overridden, 'uuid'));
 	}//end testOverrideInsideTheGroupPassesAndReturnsTheMatches()
@@ -250,7 +251,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		$this->expectException(DuplicateBlockedException::class);
-		$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], false);
+		$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: false));
 	}//end testMembershipWithoutTheFlagIsStillRefused()
 
 	/**
@@ -268,7 +269,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->duplicates->method('checkCandidate')->willReturn($this->oneMatch());
 
 		$this->expectException(DuplicateBlockedException::class);
-		$this->policy->guardCreate(1, 1, ['requester' => 'bsn:1'], true);
+		$this->policy->guardCreate(new CreateCandidate(register: 1, schema: 1, data: ['requester' => 'bsn:1'], overrideRequested: true));
 	}//end testBlockWithoutOverrideGroupsAdmitsNobody()
 
 	/**

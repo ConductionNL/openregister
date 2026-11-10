@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Formats;
 
-use DateTimeInterface;
 
 /**
  * Validates `color` and `recurrence` values and materialises recurrence occurrences.
@@ -47,19 +46,6 @@ interface ExtendedFieldTypeValidatorInterface {
 	public const MAX_OCCURRENCES = 100;
 
 	/**
-	 * Validate a `color` value against the property's declared format.
-	 *
-	 * @param mixed       $value        The colour value submitted by the client.
-	 * @param string|null $format       The declared `format` annotation (null => hex).
-	 * @param string      $propertyName The property name (for the error message).
-	 *
-	 * @return string|null Null on success, or the exact 422 error message on failure.
-	 *
-	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
-	 */
-	public function validateColor(mixed $value, ?string $format, string $propertyName): ?string;
-
-	/**
 	 * Validate a `color` value against the declared format of its property.
 	 *
 	 * @param mixed             $value    The colour value submitted by the client.
@@ -82,19 +68,6 @@ interface ExtendedFieldTypeValidatorInterface {
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
 	 */
 	public function validateRecurrence(mixed $value, string $propertyName): ?string;
-
-	/**
-	 * Materialise the next N upcoming occurrences for a recurrence RRULE.
-	 *
-	 * @param string                 $rrule The RFC 5545 RRULE string.
-	 * @param int                    $count The number of occurrences to emit.
-	 * @param DateTimeInterface|null $start The iteration start (defaults to now).
-	 *
-	 * @return array<int, string> ISO-8601 occurrence timestamps, or empty on parse failure.
-	 *
-	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
-	 */
-	public function materialiseOccurrences(string $rrule, int $count, ?DateTimeInterface $start = null): array;
 
 	/**
 	 * Materialise the occurrences of a recurrence window.

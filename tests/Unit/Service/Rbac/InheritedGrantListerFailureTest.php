@@ -94,7 +94,7 @@ class InheritedGrantListerFailureTest extends TestCase {
 			static fn (string|int $identifier): ObjectEntity => $identifier === 'parent' ? $parent : throw new RuntimeException('gone')
 		);
 		$shares = $this->createMock(ObjectShareReader::class);
-		$shares->expects($this->once())->method('sharesOn')->with($parent, ['alice'], true)->willReturn([]);
+		$shares->expects($this->once())->method('completeSharesOn')->with($parent, ['alice'])->willReturn([]);
 
 		$lister = new InheritedGrantLister(hierarchy: $hierarchy, mapper: $mapper, shares: $shares, logger: $this->createMock(LoggerInterface::class));
 

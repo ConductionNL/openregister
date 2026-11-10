@@ -173,6 +173,6 @@ class NotificationPreferencesController extends Controller {
 			$stored = $this->preferenceService->getOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
 		}
 
-		return $this->settingResponse(target: $target, key: 'override', stored: $stored);
+		return $this->settingResponse(target: $target, stored: ['override' => $stored]);
 	}//end writeOverride()
 }//end class

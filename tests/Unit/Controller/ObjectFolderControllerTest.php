@@ -86,6 +86,13 @@ class ObjectFolderControllerTest extends TestCase {
 
 	private IRequest&MockObject $request;
 
+	/**
+	 * The params the request carries besides the route.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $params = [];
+
 	private Schema $schema;
 
 	private ObjectEntity $object;
@@ -164,7 +171,23 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getParam')->willReturnCallback(
+			fn (string $key, mixed $default = null): mixed => $this->params[$key] ?? $default
+		);
 	}//end setUp()
+
+	/**
+	 * Make the request carry these params besides the route.
+	 *
+	 * @param array<string, string>  $params     The params.
+	 * @param ObjectFolderController $controller The controller that reads them.
+	 *
+	 * @return ObjectFolderController The same controller.
+	 */
+	private function asking(array $params, ObjectFolderController $controller): ObjectFolderController {
+		$this->params = $params;
+		return $controller;
+	}//end asking()
 
 	/**
 	 * A mocked folder.
@@ -320,8 +343,8 @@ class ObjectFolderControllerTest extends TestCase {
 	}//end testAReaderListsTheObjectFolderWithItsSubfolder()
 
 	public function testAReaderListsASubfolder(): void {
-		$response = $this->controllerAs('bea', ['vergunningen'])
-			->index(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Bijlagen');
+		$response = $this->asking(['path' => 'Bijlagen'], $this->controllerAs('bea', ['vergunningen']))
+			->index(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(200, $response->getStatus());
 		$data = $response->getData();
@@ -342,8 +365,8 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testAPersonWhoMayNotReadGets404AndNoListing(): void {
 		$this->fileService->expects($this->never())->method('getObjectFolder');
 
-		$response = $this->controllerAs('gewoon', [])
-			->index(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Bijlagen');
+		$response = $this->asking(['path' => 'Bijlagen'], $this->controllerAs('gewoon', []))
+			->index(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(404, $response->getStatus());
 		$this->assertArrayNotHasKey('entries', $response->getData());
@@ -369,8 +392,8 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testAPathThatCouldLeaveTheFolderIs400BeforeAnyLookup(string $path): void {
 		$this->root->expects($this->never())->method('get');
 
-		$response = $this->controllerAs('bea', ['vergunningen'])
-			->index(register: '20', schema: '35', id: self::OBJECT_UUID, path: $path);
+		$response = $this->asking(['path' => $path], $this->controllerAs('bea', ['vergunningen']))
+			->index(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(400, $response->getStatus());
 	}//end testAPathThatCouldLeaveTheFolderIs400BeforeAnyLookup()
@@ -378,16 +401,16 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testAPathToAFileOrNothingIs404(): void {
 		$controller = $this->controllerAs('bea', ['vergunningen']);
 
-		$this->assertSame(404, $controller->index(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'besluit.pdf')->getStatus());
-		$this->assertSame(404, $controller->index(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Nergens')->getStatus());
+		$this->assertSame(404, $this->asking(['path' => 'besluit.pdf'], $controller)->index(register: '20', schema: '35', id: self::OBJECT_UUID)->getStatus());
+		$this->assertSame(404, $this->asking(['path' => 'Nergens'], $controller)->index(register: '20', schema: '35', id: self::OBJECT_UUID)->getStatus());
 	}//end testAPathToAFileOrNothingIs404()
 
 	public function testAHandlerCreatesASubfolder(): void {
 		$created = $this->folder(id: 300, path: self::ROOT_PATH . '/Bijlagen/Stukken', name: 'Stukken');
 		$this->sub->expects($this->once())->method('newFolder')->with('Stukken')->willReturn($created);
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: ' Stukken ', path: 'Bijlagen');
+		$response = $this->asking(['name' => ' Stukken ', 'path' => 'Bijlagen'], $this->controllerAs('henk', ['behandelaars']))
+			->create(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(201, $response->getStatus());
 		$this->assertSame('Bijlagen/Stukken', $response->getData()['path']);
@@ -397,8 +420,8 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testAReaderMayNotCreateAFolder(): void {
 		$this->root->expects($this->never())->method('newFolder');
 
-		$response = $this->controllerAs('bea', ['vergunningen'])
-			->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: 'Stukken');
+		$response = $this->asking(['name' => 'Stukken'], $this->controllerAs('bea', ['vergunningen']))
+			->create(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(403, $response->getStatus());
 	}//end testAReaderMayNotCreateAFolder()
@@ -406,8 +429,8 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testAPersonWhoMayNotReadGets404OnCreate(): void {
 		$this->root->expects($this->never())->method('newFolder');
 
-		$response = $this->controllerAs('gewoon', [])
-			->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: 'Stukken');
+		$response = $this->asking(['name' => 'Stukken'], $this->controllerAs('gewoon', []))
+			->create(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(404, $response->getStatus());
 	}//end testAPersonWhoMayNotReadGets404OnCreate()
@@ -415,8 +438,8 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testATakenNameIs409(): void {
 		$this->root->expects($this->never())->method('newFolder');
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: 'Bijlagen');
+		$response = $this->asking(['name' => 'Bijlagen'], $this->controllerAs('henk', ['behandelaars']))
+			->create(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(409, $response->getStatus());
 	}//end testATakenNameIs409()
@@ -439,18 +462,66 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testANameThatIsNotOneSegmentIs400(string $name): void {
 		$this->root->expects($this->never())->method('newFolder');
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: $name);
+		$response = $this->asking(['name' => $name], $this->controllerAs('henk', ['behandelaars']))
+			->create(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(400, $response->getStatus());
 	}//end testANameThatIsNotOneSegmentIs400()
+
+	/**
+	 * @return array<string, array{string, string, mixed}>
+	 */
+	public static function nonStringParams(): array {
+		return [
+			'index, int path' => ['index', 'path', 5],
+			'index, bool path' => ['index', 'path', true],
+			'index, array path' => ['index', 'path', ['Bijlagen']],
+			'create, int name' => ['create', 'name', 7],
+			'create, array name' => ['create', 'name', ['Stukken']],
+			'create, bool path' => ['create', 'path', false],
+			'upload, array path' => ['upload', 'path', ['Bijlagen']],
+			'rename, int name' => ['rename', 'name', 42],
+			'rename, array name' => ['rename', 'name', ['x']],
+		];
+	}//end nonStringParams()
+
+	/**
+	 * A non-string name or path is refused with 400 before the access check, so even someone
+	 * who may not read the object gets 400, and nothing is written.
+	 *
+	 * @dataProvider nonStringParams
+	 */
+	public function testANonStringNameOrPathIs400BeforeTheAccessCheck(string $action, string $param, mixed $value): void {
+		$this->fileService->expects($this->never())->method('getObjectFolder');
+		$this->root->expects($this->never())->method('newFolder');
+
+		$params = ['name' => 'Stukken', 'path' => ''];
+		$params[$param] = $value;
+		$controller = $this->asking($params, $this->controllerAs('gewoon', []));
+
+		$response = match ($action) {
+			'index' => $controller->index(register: '20', schema: '35', id: self::OBJECT_UUID),
+			'create' => $controller->create(register: '20', schema: '35', id: self::OBJECT_UUID),
+			'upload' => $controller->upload(register: '20', schema: '35', id: self::OBJECT_UUID),
+			'rename' => $controller->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 200),
+		};
+
+		$this->assertSame(400, $response->getStatus());
+	}//end testANonStringNameOrPathIs400BeforeTheAccessCheck()
+
+	public function testANullPathListsTheObjectFolderRoot(): void {
+		$response = $this->asking(['path' => null], $this->controllerAs('bea', ['vergunningen']))
+			->index(register: '20', schema: '35', id: self::OBJECT_UUID);
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testANullPathListsTheObjectFolderRoot()
 
 	public function testAHandlerRenamesASubfolderInPlace(): void {
 		$moved = $this->folder(id: 200, path: self::ROOT_PATH . '/Stukken', name: 'Stukken');
 		$this->sub->expects($this->once())->method('move')->with(self::ROOT_PATH . '/Stukken')->willReturn($moved);
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 200, name: 'Stukken');
+		$response = $this->asking(['name' => 'Stukken'], $this->controllerAs('henk', ['behandelaars']))
+			->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 200);
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame('Stukken', $response->getData()['path']);
@@ -462,8 +533,8 @@ class ObjectFolderControllerTest extends TestCase {
 			->with(new FileRename($this->object, 201, 'antwoord.txt'))
 			->willReturn($renamed);
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 201, name: 'antwoord.txt');
+		$response = $this->asking(['name' => 'antwoord.txt'], $this->controllerAs('henk', ['behandelaars']))
+			->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 201);
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame('Bijlagen/antwoord.txt', $response->getData()['path']);
@@ -472,8 +543,8 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testRenamingToATakenNameIs409(): void {
 		$this->fileService->expects($this->never())->method('renameAttachedFile');
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 101, name: 'Bijlagen');
+		$response = $this->asking(['name' => 'Bijlagen'], $this->controllerAs('henk', ['behandelaars']))
+			->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 101);
 
 		$this->assertSame(409, $response->getStatus());
 	}//end testRenamingToATakenNameIs409()
@@ -483,7 +554,7 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->fileService->expects($this->never())->method('deleteFile');
 		$controller = $this->controllerAs('henk', ['behandelaars']);
 
-		$this->assertSame(404, $controller->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 999, name: 'x')->getStatus());
+		$this->assertSame(404, $this->asking(['name' => 'x'], $controller)->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 999)->getStatus());
 		$this->assertSame(404, $controller->destroy(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 999)->getStatus());
 	}//end testANodeOfAnotherObjectIs404()
 
@@ -492,7 +563,7 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->root->expects($this->never())->method('move');
 		$controller = $this->controllerAs('henk', ['behandelaars']);
 
-		$this->assertSame(404, $controller->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 100, name: 'x')->getStatus());
+		$this->assertSame(404, $this->asking(['name' => 'x'], $controller)->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 100)->getStatus());
 		$this->assertSame(404, $controller->destroy(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 100)->getStatus());
 	}//end testTheObjectFolderItselfIsNotANodeOfThisApi()
 
@@ -501,7 +572,7 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->sub->expects($this->never())->method('delete');
 		$controller = $this->controllerAs('bea', ['vergunningen']);
 
-		$this->assertSame(403, $controller->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 200, name: 'x')->getStatus());
+		$this->assertSame(403, $this->asking(['name' => 'x'], $controller)->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 200)->getStatus());
 		$this->assertSame(403, $controller->destroy(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 200)->getStatus());
 	}//end testAReaderMayNotRenameOrDelete()
 
@@ -565,8 +636,8 @@ class ObjectFolderControllerTest extends TestCase {
 			)
 			->willReturn($stored);
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->upload(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Bijlagen');
+		$response = $this->asking(['path' => 'Bijlagen'], $this->controllerAs('henk', ['behandelaars']))
+			->upload(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(201, $response->getStatus());
 		$this->assertSame('Bijlagen/nota.txt', $response->getData()['stored'][0]['path']);
@@ -576,8 +647,8 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->uploading(name: 'brief.txt', content: 'x');
 		$this->fileService->expects($this->never())->method('addFile');
 
-		$response = $this->controllerAs('henk', ['behandelaars'])
-			->upload(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Bijlagen');
+		$response = $this->asking(['path' => 'Bijlagen'], $this->controllerAs('henk', ['behandelaars']))
+			->upload(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(409, $response->getStatus());
 		$this->assertSame('brief.txt', $response->getData()['rejected'][0]['name']);
@@ -587,8 +658,8 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->uploading(name: 'nota.txt', content: 'x');
 		$this->fileService->expects($this->never())->method('addFile');
 
-		$response = $this->controllerAs('bea', ['vergunningen'])
-			->upload(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Bijlagen');
+		$response = $this->asking(['path' => 'Bijlagen'], $this->controllerAs('bea', ['vergunningen']))
+			->upload(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(403, $response->getStatus());
 	}//end testAReaderMayNotUpload()
@@ -625,9 +696,9 @@ class ObjectFolderControllerTest extends TestCase {
 
 		$controller = $this->controllerAs('henk', ['behandelaars']);
 		$responses = [
-			$controller->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: 'Stukken'),
-			$controller->upload(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Bijlagen'),
-			$controller->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 201, name: 'nieuw.txt'),
+			$this->asking(['name' => 'Stukken'], $controller)->create(register: '20', schema: '35', id: self::OBJECT_UUID),
+			$this->asking(['path' => 'Bijlagen'], $controller)->upload(register: '20', schema: '35', id: self::OBJECT_UUID),
+			$this->asking(['name' => 'nieuw.txt'], $controller)->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 201),
 			$controller->destroy(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 201),
 		];
 
@@ -676,8 +747,8 @@ class ObjectFolderControllerTest extends TestCase {
 	public function testAReaderOfAFrozenObjectStillGets403(): void {
 		$this->object->setFrozen(['by' => 'alice']);
 
-		$response = $this->controllerAs('bea', ['vergunningen'])
-			->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: 'Stukken');
+		$response = $this->asking(['name' => 'Stukken'], $this->controllerAs('bea', ['vergunningen']))
+			->create(register: '20', schema: '35', id: self::OBJECT_UUID);
 
 		$this->assertSame(403, $response->getStatus());
 	}//end testAReaderOfAFrozenObjectStillGets403()

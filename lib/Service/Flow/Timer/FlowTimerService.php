@@ -161,11 +161,10 @@ class FlowTimerService implements FlowTimerControlInterface {
 		// Arm-time validation is AUTHORITATIVE: resolve the ladder and check
 		// every preBreach rung on the timeline before anything is written.
 		$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $timer, calendar: $calendar), firedKeys: []);
+		$rungs = $this->arithmetic->ladder->resolveLadder(timer: $timer)['rungs'];
 		$this->arithmetic->ladder->validateAgainstTimeline(
-			rungs: $this->arithmetic->ladder->resolveLadder(timer: $timer)['rungs'],
-			anchorAt: $timer->getAnchorAt(),
-			fireAt: $timer->getFireAt(),
-			calendar: $calendar
+			timeline: new RungTimeline(rungs: $rungs, fireAt: $timer->getFireAt(), firedKeys: [], calendar: $calendar),
+			anchorAt: $timer->getAnchorAt()
 		);
 
 		return $this->transactional(mutation: fn (): FlowTimer => $this->insertArmed(timer: $timer, act: $act));
@@ -670,7 +669,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 		);
 		foreach ($due as $entry) {
 			$rung = $entry['rung'];
-			$recipients = $this->arithmetic->ladder->resolveRecipients(rung: $rung, subject: $subject, roleBindings: $ladder['roleBindings']);
+			$audience = new EscalationAudience(subject: $subject, roleBindings: $ladder['roleBindings']);
+			$recipients = $this->arithmetic->ladder->resolveRecipients(rung: $rung, audience: $audience);
 			$transition = 'escalation:' . (string)$rung['key'];
 
 			$row = new FlowTimerFire();
@@ -806,9 +806,10 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$byKey[(string)$rung['key']] = $rung;
 		}
 
+		$timeline = new RungTimeline(rungs: array_values($byKey), fireAt: $fireAt, firedKeys: [], calendar: $scope->calendar);
 		$passed = [];
 		foreach ($byKey as $key => $rung) {
-			if ($this->arithmetic->ladder->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $scope->calendar) <= $now) {
+			if ($this->arithmetic->ladder->rungInstant(rung: $rung, timeline: $timeline) <= $now) {
 				$passed[] = (string)$key;
 			}
 		}
