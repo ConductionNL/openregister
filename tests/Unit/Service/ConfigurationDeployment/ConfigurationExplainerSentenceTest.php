@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
 
 final class ConfigurationExplainerSentenceTest extends TestCase {
 
@@ -77,7 +78,7 @@ final class ConfigurationExplainerSentenceTest extends TestCase {
 		$deployment->setUuid('dep-1');
 		$deployment->setName('mail relay');
 
-		$answer = $this->explainer($this->snapshot(ConfigurationLayer::REGISTER, 'zaken', 'dep-1'), $deployment)->explain('k', 'zaken');
+		$answer = $this->explainer($this->snapshot(ConfigurationLayer::REGISTER, 'zaken', 'dep-1'), $deployment)->explain('k', new ConfigurationScope('zaken'));
 
 		$this->assertSame(
 			sprintf('"k" is set at the %s layer by zaken, last moved by the deployment "mail relay"', ConfigurationLayer::REGISTER),
