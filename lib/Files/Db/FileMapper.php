@@ -335,16 +335,43 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	public function getFiles(?int $node = null, ?array $ids = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$this->selectFilecacheWithShares(qb: $qb);
-		if ($node !== null) {
-			$qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
-		}
-
-		if ($ids !== null && count($ids) > 0) {
-			$qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
-		}
+		$this->whereParentNode(qb: $qb, node: $node);
+		$this->whereFileIdIn(qb: $qb, ids: $ids);
 
 		return array_map(fn (array $row): array => $this->withLinksAndOwner(row: $row), $this->fetchRows(qb: $qb));
 	}//end getFiles()
+
+	/**
+	 * Narrow a filecache select to the children of one node, when a node is given.
+	 *
+	 * @param IQueryBuilder $qb   The select.
+	 * @param int|null      $node The parent node ID, or null for no narrowing.
+	 *
+	 * @return void
+	 */
+	private function whereParentNode(IQueryBuilder $qb, ?int $node): void {
+		if ($node === null) {
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
+	}//end whereParentNode()
+
+	/**
+	 * Narrow a filecache select to the given file IDs, when any are given.
+	 *
+	 * @param IQueryBuilder   $qb  The select.
+	 * @param array<int>|null $ids The file IDs, or null or empty for no narrowing.
+	 *
+	 * @return void
+	 */
+	private function whereFileIdIn(IQueryBuilder $qb, ?array $ids): void {
+		if ($ids === null || count($ids) === 0) {
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
+	}//end whereFileIdIn()
 
 	/**
 	 * Get a single file by its fileid with share information and owner data.
@@ -509,53 +536,39 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 		// If folder is not set, search oc_filecache for a node with name equal to the object's uuid.
 		$uuid = $object->getUuid();
 		if ($uuid === null) {
-			// If uuid is not set, return empty array.
 			return [];
 		}
 
-		// Create a new query builder instance.
+		// Several folders may share the uuid name: the oldest one (lowest fileid) wins.
+		// TODO: Add nightly cron job to cleanup orphaned folders and logs.
+		$nodeId = $this->oldestFolderNamed(uuid: $uuid);
+		if ($nodeId === null) {
+			return [];
+		}
+
+		return $this->getFiles(node: $nodeId);
+	}//end getFilesForObject()
+
+	/**
+	 * The fileid of the oldest filecache node named after an object uuid.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return int|null The lowest matching fileid, or null when no node has that name.
+	 */
+	private function oldestFolderNamed(string $uuid): ?int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('fileid')
 			->from('filecache')
 			->where($qb->expr()->eq('name', $qb->createNamedParameter($uuid)));
 
-		// Execute the query and fetch all matching rows using proper Nextcloud method.
-		$result = $qb->executeQuery();
-		$rows = [];
-
-		// Fetch all rows manually.
-		$row = $result->fetch();
-		while ($row !== false) {
-			$rows[] = $row;
-			$row = $result->fetch();
+		$fileIds = array_map(fn (array $row): int => (int)$row['fileid'], $this->fetchRows(qb: $qb));
+		if ($fileIds === []) {
+			return null;
 		}
 
-		$result->closeCursor();
-
-		// Handle the number of results.
-		$count = count($rows);
-		if ($count === 1) {
-			// Use the fileid as the node id.
-			$nodeId = (int)$rows[0]['fileid'];
-			return $this->getFiles(node: $nodeId);
-		}
-
-		if ($count > 1) {
-			// Multiple folders found with same UUID - pick the oldest one (lowest fileid).
-			// TODO: Add nightly cron job to cleanup orphaned folders and logs.
-			usort(
-				$rows,
-				function ($a, $b) {
-					return (int)$a['fileid'] - (int)$b['fileid'];
-				}
-			);
-			$oldestNodeId = (int)$rows[0]['fileid'];
-			return $this->getFiles(node: $oldestNodeId);
-		}
-
-		// No results found, return empty array.
-		return [];
-	}//end getFilesForObject()
+		return min($fileIds);
+	}//end oldestFolderNamed()
 
 	/**
 	 * Batched lookup: file IDs for a list of object UUIDs.
@@ -571,76 +584,21 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * @param string[] $uuids Object UUIDs to look up.
 	 *
 	 * @return array<string, int[]> Map of UUID -> list of file IDs (empty array if none).
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two-step batched lookup with input
-	 *                                               validation; complexity is intrinsic.
 	 */
 	public function getFileIdsForObjects(array $uuids): array {
-		$result = [];
-		foreach ($uuids as $uuid) {
-			if (is_string($uuid) === true && $uuid !== '') {
-				$result[$uuid] = [];
-			}
-		}
-
+		$result = $this->emptyFileIdsPerUuid(uuids: $uuids);
 		if (empty($result) === true) {
 			return [];
 		}
 
 		// Step 1: resolve UUIDs to folder node IDs via filecache.name.
-		// Multiple folders may share a UUID name; the oldest (lowest fileid) wins,
-		// matching the resolution rule in getFilesForObject.
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('fileid', 'name')
-			->from('filecache')
-			->where(
-				$qb->expr()->in(
-					'name',
-					$qb->createNamedParameter(array_keys($result), IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
-			->orderBy('fileid', 'ASC');
-
-		$stmt = $qb->executeQuery();
-		$uuidToNodeId = [];
-		$row = $stmt->fetch();
-		while ($row !== false) {
-			$name = (string)$row['name'];
-			// First (oldest) folder wins for duplicates.
-			if (isset($uuidToNodeId[$name]) === false) {
-				$uuidToNodeId[$name] = (int)$row['fileid'];
-			}
-
-			$row = $stmt->fetch();
-		}
-
-		$stmt->closeCursor();
-
+		$uuidToNodeId = $this->oldestFolderPerName(names: array_keys($result));
 		if (empty($uuidToNodeId) === true) {
 			return $result;
 		}
 
 		// Step 2: fetch child file IDs for each folder node in one query.
-		$qb2 = $this->db->getQueryBuilder();
-		$qb2->select('fileid', 'parent')
-			->from('filecache')
-			->where(
-				$qb2->expr()->in(
-					'parent',
-					$qb2->createNamedParameter(array_values($uuidToNodeId), IQueryBuilder::PARAM_INT_ARRAY)
-				)
-			);
-
-		$stmt2 = $qb2->executeQuery();
-		$nodeIdToFileIds = [];
-		$childRow = $stmt2->fetch();
-		while ($childRow !== false) {
-			$parent = (int)$childRow['parent'];
-			$nodeIdToFileIds[$parent][] = (int)$childRow['fileid'];
-			$childRow = $stmt2->fetch();
-		}
-
-		$stmt2->closeCursor();
+		$nodeIdToFileIds = $this->childFileIdsPerParent(nodeIds: array_values($uuidToNodeId));
 
 		// Step 3: project node IDs back to UUIDs.
 		foreach ($uuidToNodeId as $uuid => $nodeId) {
@@ -649,6 +607,103 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 
 		return $result;
 	}//end getFileIdsForObjects()
+
+	/**
+	 * An empty file-ID list for every usable uuid; non-strings and empty strings are dropped.
+	 *
+	 * @param array<mixed> $uuids The requested uuids.
+	 *
+	 * @return array<string, int[]> Map of UUID -> empty list.
+	 */
+	private function emptyFileIdsPerUuid(array $uuids): array {
+		$result = [];
+		foreach ($uuids as $uuid) {
+			if (is_string($uuid) === true && $uuid !== '') {
+				$result[$uuid] = [];
+			}
+		}
+
+		return $result;
+	}//end emptyFileIdsPerUuid()
+
+	/**
+	 * The folder node ID per name; when several folders share a name the oldest
+	 * (lowest fileid) wins, matching the resolution rule in getFilesForObject.
+	 *
+	 * @param array<string> $names The folder names (object uuids).
+	 *
+	 * @return array<string, int> Map of name -> folder fileid, for names that have a folder.
+	 */
+	private function oldestFolderPerName(array $names): array {
+		$uuidToNodeId = [];
+		foreach ($this->fetchRows(qb: $this->foldersNamedOldestFirst(names: $names)) as $row) {
+			$name = (string)$row['name'];
+			if (isset($uuidToNodeId[$name]) === false) {
+				$uuidToNodeId[$name] = (int)$row['fileid'];
+			}
+		}
+
+		return $uuidToNodeId;
+	}//end oldestFolderPerName()
+
+	/**
+	 * The select of the filecache nodes with one of the given names, oldest first.
+	 *
+	 * @param array<string> $names The folder names (object uuids).
+	 *
+	 * @return IQueryBuilder The select.
+	 */
+	private function foldersNamedOldestFirst(array $names): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('fileid', 'name')
+			->from('filecache')
+			->where(
+				$qb->expr()->in(
+					'name',
+					$qb->createNamedParameter($names, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			)
+			->orderBy('fileid', 'ASC');
+
+		return $qb;
+	}//end foldersNamedOldestFirst()
+
+	/**
+	 * The child file IDs of the given folder nodes, in one query.
+	 *
+	 * @param array<int> $nodeIds The folder node IDs.
+	 *
+	 * @return array<int, int[]> Map of folder node ID -> child file IDs.
+	 */
+	private function childFileIdsPerParent(array $nodeIds): array {
+		$nodeIdToFileIds = [];
+		foreach ($this->fetchRows(qb: $this->childrenOfFolders(nodeIds: $nodeIds)) as $childRow) {
+			$nodeIdToFileIds[(int)$childRow['parent']][] = (int)$childRow['fileid'];
+		}
+
+		return $nodeIdToFileIds;
+	}//end childFileIdsPerParent()
+
+	/**
+	 * The select of the filecache children of the given folder nodes.
+	 *
+	 * @param array<int> $nodeIds The folder node IDs.
+	 *
+	 * @return IQueryBuilder The select.
+	 */
+	private function childrenOfFolders(array $nodeIds): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('fileid', 'parent')
+			->from('filecache')
+			->where(
+				$qb->expr()->in(
+					'parent',
+					$qb->createNamedParameter($nodeIds, IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			);
+
+		return $qb;
+	}//end childrenOfFolders()
 
 	/**
 	 * Resolve the owning object's UUID for a Nextcloud `filecache.fileid`.
