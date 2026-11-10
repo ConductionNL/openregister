@@ -195,7 +195,7 @@ class ObjectOwnershipController extends Controller {
 		}
 
 		$reassign = fn (): array => $this->reassigned(objects: $objects, owner: $owner);
-		return $this->endpoint->answer(operation: $reassign, context: 'reassign', validates: true);
+		return $this->endpoint->answerValidated(operation: $reassign, context: 'reassign');
 	}//end reassign()
 
 	/**
@@ -268,7 +268,7 @@ class ObjectOwnershipController extends Controller {
 		}
 
 		$assign = fn (): array => $this->assigned(object: $object, owner: $owner);
-		return $this->endpoint->answer(operation: $assign, context: 'assign', validates: true);
+		return $this->endpoint->answerValidated(operation: $assign, context: 'assign');
 	}//end assignOn()
 
 	/**
@@ -293,7 +293,7 @@ class ObjectOwnershipController extends Controller {
 
 		$key   = ObjectScopeResolverInterface::OWNER_GROUP_KEY;
 		$store = fn (): array => ['ownerGroup' => ($this->storeOwnerGroup(object: $object, group: $group)[$key] ?? null)];
-		return $this->endpoint->answer(operation: $store, context: 'setOwnerGroup', validates: true);
+		return $this->endpoint->answerValidated(operation: $store, context: 'setOwnerGroup');
 	}//end setOwnerGroupOn()
 
 	/**
@@ -306,7 +306,7 @@ class ObjectOwnershipController extends Controller {
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
-		return $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		return $this->endpoint->resolve(ref: $ref);
 	}//end resolved()
 
 	/**

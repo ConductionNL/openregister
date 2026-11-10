@@ -227,7 +227,7 @@ class ObjectSharingController extends Controller {
 		}
 
 		$store = fn (): array => ['scope' => ($this->storeScope(object: $object, scope: $scope)['scope'] ?? null)];
-		return $this->endpoint->answer(operation: $store, context: 'setScope', validates: true);
+		return $this->endpoint->answerValidated(operation: $store, context: 'setScope');
 	}//end setScopeOn()
 
 	/**
@@ -265,7 +265,7 @@ class ObjectSharingController extends Controller {
 		$permissions = $this->requestedPermissions();
 
 		$grant = fn (): array => $this->services->sharing->grant(object: $object, type: $type, shareWith: $shareWith, permissions: $permissions);
-		return $this->endpoint->answer(operation: $grant, context: 'createShare', validates: true, status: Http::STATUS_CREATED);
+		return $this->endpoint->answerCreated(operation: $grant, context: 'createShare');
 	}//end createShareOn()
 
 	/**
@@ -282,7 +282,7 @@ class ObjectSharingController extends Controller {
 		}
 
 		$link = fn (): array => $this->linkTo(object: $object);
-		return $this->endpoint->answer(operation: $link, context: 'createLink', validates: true, status: Http::STATUS_CREATED);
+		return $this->endpoint->answerCreated(operation: $link, context: 'createLink');
 	}//end createLinkOn()
 
 	/**
@@ -299,7 +299,7 @@ class ObjectSharingController extends Controller {
 		}
 
 		$invite = fn (): array => $this->invitationTo(object: $object);
-		return $this->endpoint->answer(operation: $invite, context: 'inviteByEmail', validates: true, status: Http::STATUS_CREATED);
+		return $this->endpoint->answerCreated(operation: $invite, context: 'inviteByEmail');
 	}//end inviteByEmailOn()
 
 	/**
@@ -320,7 +320,7 @@ class ObjectSharingController extends Controller {
 			$this->services->sharing->revoke(object: $object, shareId: $shareId);
 			return [];
 		};
-		return $this->endpoint->answer(operation: $revoke, context: 'destroyShare', validates: true, status: Http::STATUS_NO_CONTENT);
+		return $this->endpoint->answerRemoved(operation: $revoke, context: 'destroyShare');
 	}//end destroyShareOn()
 
 	/**
@@ -333,7 +333,7 @@ class ObjectSharingController extends Controller {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
-		return $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		return $this->endpoint->resolve(ref: $ref);
 	}//end resolved()
 
 	/**

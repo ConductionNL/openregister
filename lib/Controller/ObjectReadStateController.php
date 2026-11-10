@@ -234,7 +234,7 @@ class ObjectReadStateController extends Controller {
 	 * @spec openspec/specs/object-read-state/spec.md
 	 */
 	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
-		return $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		return $this->endpoint->resolve(ref: $ref);
 	}//end resolved()
 
 	/**

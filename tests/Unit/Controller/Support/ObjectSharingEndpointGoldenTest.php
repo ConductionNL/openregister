@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -62,19 +63,19 @@ class ObjectSharingEndpointGoldenTest extends TestCase {
 		$this->objects->expects($this->once())->method('setObject')->with('uuid-1');
 		$this->objects->method('getObject')->willReturn($object);
 
-		$this->assertSame($object, $this->endpoint()->resolve('reg', 'sch', 'uuid-1'));
+		$this->assertSame($object, $this->endpoint()->resolve(new ObjectRef('reg', 'sch', 'uuid-1')));
 	}
 
 	public function testResolveRefusesAnUnreadableObjectWith404(): void {
 		$this->objects->method('getObject')->willThrowException(new NotAuthorizedException());
 
-		$this->assertNotFound($this->endpoint()->resolve('reg', 'sch', 'uuid-1'));
+		$this->assertNotFound($this->endpoint()->resolve(new ObjectRef('reg', 'sch', 'uuid-1')));
 	}
 
 	public function testResolveRefusesAMissingObjectWith404(): void {
 		$this->objects->method('getObject')->willReturn(null);
 
-		$this->assertNotFound($this->endpoint()->resolve('reg', 'sch', 'uuid-1'));
+		$this->assertNotFound($this->endpoint()->resolve(new ObjectRef('reg', 'sch', 'uuid-1')));
 	}
 
 	public function testResolveLetsAnUnknownRegisterPropagate(): void {
@@ -82,7 +83,7 @@ class ObjectSharingEndpointGoldenTest extends TestCase {
 		$this->objects->expects($this->never())->method('getObject');
 
 		$this->expectException(RuntimeException::class);
-		$this->endpoint()->resolve('reg', 'sch', 'uuid-1');
+		$this->endpoint()->resolve(new ObjectRef('reg', 'sch', 'uuid-1'));
 	}
 
 	public function testRunReturnsTheOperationResult(): void {
@@ -92,7 +93,7 @@ class ObjectSharingEndpointGoldenTest extends TestCase {
 	}
 
 	public function testRunAnswersARefusalWith403AndItsMessage(): void {
-		$result = $this->endpoint()->run(static fn () => throw new NotAuthorizedException('Not yours'), 'ctx', true);
+		$result = $this->endpoint()->runValidated(static fn () => throw new NotAuthorizedException('Not yours'), 'ctx');
 
 		$this->assertAnswer($result, 403, 'Not yours');
 	}
@@ -100,7 +101,7 @@ class ObjectSharingEndpointGoldenTest extends TestCase {
 	public function testRunAnswersARejectedInputWith400WhenTheOperationValidates(): void {
 		$this->logger->expects($this->never())->method('error');
 
-		$result = $this->endpoint()->run(static fn () => throw new InvalidArgumentException('Bad owner'), 'ctx', true);
+		$result = $this->endpoint()->runValidated(static fn () => throw new InvalidArgumentException('Bad owner'), 'ctx');
 
 		$this->assertAnswer($result, 400, 'Bad owner');
 	}
@@ -120,13 +121,13 @@ class ObjectSharingEndpointGoldenTest extends TestCase {
 	public function testRunHidesAnyOtherFailureBehindTheGeneric500(): void {
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->endpoint()->run(static fn () => throw new RuntimeException('/var/data/secret path'), 'ctx', true);
+		$result = $this->endpoint()->runValidated(static fn () => throw new RuntimeException('/var/data/secret path'), 'ctx');
 
 		$this->assertAnswer($result, 500, 'Generic failure');
 	}
 
 	public function testAnswerWrapsTheResultWithTheGivenStatus(): void {
-		$response = $this->endpoint()->answer(fn (): array => ['id' => 7], 'ctx', false, 201);
+		$response = $this->endpoint()->answerCreated(fn (): array => ['id' => 7], 'ctx');
 
 		$this->assertSame(201, $response->getStatus());
 		$this->assertSame(['id' => 7], $response->getData());
