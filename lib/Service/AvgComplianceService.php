@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -216,6 +217,18 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function aggregatePiiBySchema(): array {
+		$result = $this->piiBySchemaQuery()->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+		return $rows;
+	}//end aggregatePiiBySchema()
+
+	/**
+	 * The query counting detected personal data per register and schema.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function piiBySchemaQuery(): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select(['r.register_id', 'r.schema_id'])
 			->selectAlias($qb->func()->count('e.id'), 'pii_count')
@@ -229,11 +242,8 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 			->where($qb->expr()->isNotNull('r.object_id'))
 			->groupBy('r.register_id', 'r.schema_id');
 
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-		return $rows;
-	}//end aggregatePiiBySchema()
+		return $qb;
+	}//end piiBySchemaQuery()
 
 	/**
 	 * Whether the register's configuration contains the annotation key.
