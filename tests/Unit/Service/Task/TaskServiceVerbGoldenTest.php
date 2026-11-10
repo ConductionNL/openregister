@@ -189,14 +189,10 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task = $this->task();
 		$this->stored($task);
 
-		$done = $this->service()->complete(
+		$done = $this->service()->completeWithAnswer(
 			uuid: 't-7',
-			outcome: 'approved',
-			resultText: 'ok',
-			comment: 'fine',
-			actor: 'alice',
-			responses: ['a' => 1],
-			evidence: ['e' => 2]
+			answer: new TaskAnswer(outcome: 'approved', resultText: 'ok', comment: 'fine', payload: new TaskAnswerPayload(responses: ['a' => 1], evidence: ['e' => 2])),
+			actor: 'alice'
 		);
 
 		$this->assertSame('approved', $done->getOutcome());

@@ -46,6 +46,8 @@ use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\InboxListing;
 use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
+use OCA\OpenRegister\Service\Task\TaskAnswerPayload;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -264,14 +266,14 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		$evidence = $this->storeFiles(task: $task, files: $command->completion->files);
 
 		// 4. Record the completion, referencing the stored files.
-		return $this->sources->tasks->complete(
+		return $this->sources->tasks->completeWithAnswer(
 			uuid: $command->uuid,
-			outcome: $command->completion->outcome(),
-			resultText: null,
-			comment: $command->completion->comment,
-			actor: $command->subject->actor(),
-			responses: $command->completion->answers,
-			evidence: $evidence
+			answer: new TaskAnswer(
+				outcome: $command->completion->outcome(),
+				comment: $command->completion->comment,
+				payload: new TaskAnswerPayload(responses: $command->completion->answers, evidence: $evidence)
+			),
+			actor: $command->subject->actor()
 		);
 	}//end completeTask()
 
