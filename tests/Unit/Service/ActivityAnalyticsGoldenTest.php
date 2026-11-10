@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ActivityFilter;
+use OCA\OpenRegister\Service\ActivityEntriesOptions;
 use DateTime;
 use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapper;
@@ -83,7 +85,12 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 				'affecteduser' => 'getActivityActors',
 				default => 'getActivityEntries',
 			};
-			$actual['activity ' . $name] = $this->outcome(fn () => $service->$method(...$args));
+			$call = fn () => $service->$method(...$args);
+			if ($method === 'getActivityEntries') {
+				$call = fn () => $service->getActivityEntries(...self::entriesArgs(...$args));
+			}
+
+			$actual['activity ' . $name] = $this->outcome($call);
 		}
 
 		$series = [
@@ -121,6 +128,19 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testActivityAndAnalyticsMatchGolden()
+
+	private static function entriesArgs(
+		string $objectUuid,
+		?string $type = null,
+		?string $actor = null,
+		?int $after = null,
+		int $limit = 100,
+		?int $cursor = null,
+		?string $visibility = null
+	): array {
+		$filter = (new ActivityFilter(objectUuid: $objectUuid, type: $type, actor: $actor, after: $after))->withCursor(cursor: $cursor);
+		return [$filter, new ActivityEntriesOptions(limit: $limit, visibility: $visibility)];
+	}
 
 	private function record(string $call): void {
 		$this->calls[] = $call;
