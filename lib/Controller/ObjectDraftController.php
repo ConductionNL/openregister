@@ -208,7 +208,10 @@ class ObjectDraftController extends Controller {
 		try {
 			$registerEntity = $this->registers->find(id: $route->register, _rbac: false, _multitenancy: false);
 			$schemaEntity = $this->schemas->find(id: $route->schema, _rbac: false, _multitenancy: false);
-			$readable = $this->objects->find(id: $route->id, options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false));
+			$readable = $this->objects->find(
+				id: $route->id,
+				options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false)
+			);
 		} catch (Throwable) {
 			return null;
 		}

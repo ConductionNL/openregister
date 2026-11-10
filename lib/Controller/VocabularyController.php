@@ -467,7 +467,10 @@ class VocabularyController extends Controller {
 	 */
 	private function schemeById(string $uuid): ?ObjectEntity {
 		try {
-			return WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SCHEME)));
+			return WriteCause::asLookup(fn () => $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_SCHEME)
+			));
 		} catch (Throwable $e) {
 			return null;
 		}

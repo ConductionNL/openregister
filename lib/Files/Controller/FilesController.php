@@ -447,7 +447,11 @@ class FilesController extends Controller {
 	private function objectUnderReadCheck(FileAccessCheck $check): ?ObjectEntity {
 		$route = $check->route;
 		$object = WriteCause::asLookup(
-			fn () => $this->objectService->find(id: $route->id, options: new ObjectFindOptions(register: $route->register, schema: $route->schema), _rbac: true)
+			fn () => $this->objectService->find(
+				id: $route->id,
+				options: new ObjectFindOptions(register: $route->register, schema: $route->schema),
+				_rbac: true
+			)
 		);
 		if ($object instanceof ObjectEntity === false) {
 			return null;

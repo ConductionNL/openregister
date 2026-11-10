@@ -1276,7 +1276,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_multitenancy=true
     ): ?ObjectEntity {
         $options ??= new ObjectFindOptions();
-        $request   = new ObjectFindRequest(id: $id, extend: $options->extend, files: $options->files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $options->audit);
+        $request   = new ObjectFindRequest(
+            id: $id,
+            extend: $options->extend,
+            files: $options->files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: $options->audit
+        );
         $target    = ObjectFindTarget::fromFindOptions(options: $options);
         if ($options->render === false) {
             return $this->findUnrendered(request: $request, target: $target);
@@ -1752,7 +1759,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_multitenancy=true
     ): ObjectEntity {
         $options ??= new ObjectFindOptions();
-        $request   = new ObjectFindRequest(id: $id, extend: $options->extend, files: $options->files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false);
+        $request   = new ObjectFindRequest(
+            id: $id,
+            extend: $options->extend,
+            files: $options->files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: false
+        );
         return $this->findWithoutAudit(request: $request, target: ObjectFindTarget::fromFindOptions(options: $options));
     }//end findSilent()
 

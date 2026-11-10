@@ -401,7 +401,10 @@ class VocabularyImportService implements VocabularyImporterInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function applyRelationFieldsToDraft(string $uuid, array $relations): void {
-		$existing = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_CONCEPT)));
+		$existing = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA_CONCEPT)
+		));
 		if ($existing === null) {
 			return;
 		}

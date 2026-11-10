@@ -84,7 +84,11 @@ class DeferredEntryObjectResolver implements DeferredEntryObjectResolverInterfac
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
-				options: new ObjectFindOptions(register: $this->nonEmptyString(value: ($entry['register'] ?? null)), schema: $this->nonEmptyString(value: ($entry['schema'] ?? null)), render: false),
+				options: new ObjectFindOptions(
+					register: $this->nonEmptyString(value: ($entry['register'] ?? null)),
+					schema: $this->nonEmptyString(value: ($entry['schema'] ?? null)),
+					render: false
+				),
 				_rbac: false,
 				_multitenancy: false
 			));

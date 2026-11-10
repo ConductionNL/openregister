@@ -216,7 +216,10 @@ class RegistrySubscriptionController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveObjectAndGuardUpdate(ObjectRef $ref): array {
-		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $ref->id, options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false)));
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $ref->id,
+			options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false)
+		));
 		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
 
 		if ($this->mayUpdate(schema: $resolvedSchema, object: $object) === false) {

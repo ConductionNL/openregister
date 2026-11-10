@@ -445,7 +445,10 @@ class ReferenceService {
 	 */
 	private function targetUuidOf(ReferencePattern $pattern, string $code): ?string {
 		try {
-			$object = $this->objects->find(id: $code, options: new ObjectFindOptions(register: $pattern->getRegister(), schema: $pattern->getSchema(), render: false, audit: false));
+			$object = $this->objects->find(
+				id: $code,
+				options: new ObjectFindOptions(register: $pattern->getRegister(), schema: $pattern->getSchema(), render: false, audit: false)
+			);
 			if ($object !== null) {
 				return (string)$object->getUuid();
 			}

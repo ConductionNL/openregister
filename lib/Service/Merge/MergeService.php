@@ -618,7 +618,10 @@ class MergeService implements ObjectMergerInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function reverseMerge(string $mergeOperationId, string $reversedBy): array {
-		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, options: new ObjectFindOptions(schema: self::MERGE_SCHEMA)));
+		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $mergeOperationId,
+			options: new ObjectFindOptions(schema: self::MERGE_SCHEMA)
+		));
 		if ($operationEntity === null) {
 			throw new RuntimeException('Merge operation not found.');
 		}

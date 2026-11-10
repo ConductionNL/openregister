@@ -330,7 +330,12 @@ class ExampleSetStore {
 		}
 
 		try {
-			$row = $service->find(id: $ref->id, options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema), _rbac: false, _multitenancy: false);
+			$row = $service->find(
+				id: $ref->id,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException) {
 			return ['row' => null, 'error' => ''];
 		} catch (Throwable $e) {
@@ -597,7 +602,12 @@ class ExampleSetStore {
 		// Only a row OpenRegister says is not there is gone; a read that failed
 		// proves nothing, so the row stays in the record and the reason is named.
 		try {
-			$row = $service->find(id: $ref->id, options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema), _rbac: false, _multitenancy: false);
+			$row = $service->find(
+				id: $ref->id,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (DoesNotExistException) {
 			$row = null;
 		} catch (Throwable $e) {
