@@ -24,7 +24,7 @@
  * session — no impersonation, no system account, RBAC/IDOR unchanged from
  * the REST path (REQ-DERIVED-005). Every invocation — read, write, or
  * failed — writes exactly one immutable, hash-chained audit record via
- * `AuditTrailMapper::createToolInvocationEntry()` (REQ-DERIVED-006).
+ * `AuditTrailMapper::recordToolInvocation()` (REQ-DERIVED-006).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

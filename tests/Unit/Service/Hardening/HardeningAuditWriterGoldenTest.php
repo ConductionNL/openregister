@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
@@ -33,7 +34,7 @@ use RuntimeException;
 final class HardeningAuditWriterGoldenTest extends TestCase {
 
 	/**
-	 * The arguments each createHardeningChangeEntry call received.
+	 * The arguments each recordHardeningChange call received, as columns.
 	 *
 	 * @var list<array<string, mixed>>
 	 */
@@ -41,8 +42,9 @@ final class HardeningAuditWriterGoldenTest extends TestCase {
 
 	private function writer(?LoggerInterface $logger = null, bool $fail = false): HardeningAuditWriter {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->method('createHardeningChangeEntry')->willReturnCallback(
-			function (string $control, mixed $before, mixed $after, bool $accepted, string $refusal = '') use ($fail) {
+		$mapper->method('recordHardeningChange')->willReturnCallback(
+			function (HardeningChange $change, bool $accepted) use ($fail) {
+				[$control, $before, $after, $refusal] = [$change->control, $change->before, $change->after, $change->refusal];
 				if ($fail === true) {
 					throw new RuntimeException('disk full');
 				}

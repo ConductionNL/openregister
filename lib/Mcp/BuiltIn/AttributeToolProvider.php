@@ -28,7 +28,7 @@
  *
  * Every invocation — read, write, or failed — writes exactly one
  * immutable, hash-chained audit record via
- * `AuditTrailMapper::createToolInvocationEntry()`, identical to the derived
+ * `AuditTrailMapper::recordToolInvocation()`, identical to the derived
  * provider's audit contract (REQ-ATTR-004).
  *
  * SPDX-License-Identifier: EUPL-1.2

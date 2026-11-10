@@ -23,7 +23,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -601,10 +606,8 @@ interface AuditTrailMapperInterface {
 	 * human user yet (tracked as a DEFERRED_QUESTION coordinated with
 	 * Hermiq's `agent-tool-governance-and-disclosure` change).
 	 *
-	 * @param string $toolId Full namespaced tool id, e.g. `pipelinq.lead.search`.
-	 * @param string $paramsDigest SHA-256 hex digest of the invocation's canonical arguments (never raw values).
-	 * @param array $resultSummary Structured outcome summary (count/ids/isError/errorClass).
-	 * @param AuditedObject $about The register, schema and object the invocation touched, each when known.
+	 * @param ToolInvocation $invocation The tool id, the SHA-256 digest of its canonical arguments (never raw
+	 *                                   values), the outcome summary and the register, schema and object it touched.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
@@ -613,9 +616,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
-	public function createToolInvocationEntry(
-		string $toolId, string $paramsDigest, array $resultSummary, AuditedObject $about = new AuditedObject()
-	): AuditTrail;
+	public function recordToolInvocation(ToolInvocation $invocation): AuditTrail;
 
 	/**
 	 * Get processing activities from audit trail entries.
@@ -685,28 +686,18 @@ interface AuditTrailMapperInterface {
 	 * because the same context also goes to the log and the two must not
 	 * disagree about what a line may carry.
 	 *
-	 * @param string $holderOrganisation UUID of the organisation that holds the shared resource.
-	 * @param string $sourceOrganisation UUID of the organisation that attempted the write.
-	 * @param string $resourceType Either `register` or `schema`.
-	 * @param array $context Already-redacted refusal context.
-	 * @param int|null $register Register id the write targeted, when known.
-	 * @param int|null $schema Schema id the write targeted, when known.
-	 * @param string|null $objectUuid Object uuid the caller named, when it named one.
-	 * @param string|null $actorId Acting user id, or null for a system context.
-	 * @param string|null $actorReference Pseudonymous actor reference for the `user_name` column.
+	 * @param SharedMasterDataRefusal $refusal The holding and the attempting organisation, the resource type
+	 *                                         (`register` or `schema`), and the already-redacted context, the
+	 *                                         target and the pseudonymous actor.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createPartyQueryRefusalEntry.
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
-	public function createSharedMasterDataRefusalEntry(
-		string $holderOrganisation, string $sourceOrganisation, string $resourceType, array $context = [], ?int $register = null,
-		?int $schema = null, ?string $objectUuid = null, ?string $actorId = null, ?string $actorReference = null
-	): AuditTrail;
+	public function recordSharedMasterDataRefusal(SharedMasterDataRefusal $refusal): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a party query that
@@ -729,7 +720,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordToolInvocation.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
@@ -747,10 +738,8 @@ interface AuditTrailMapperInterface {
 	 * The purpose is quoted back verbatim. It is a short administered code the
 	 * caller itself sent, not a record about a person.
 	 *
-	 * @param string      $rule     Which refusal it was, one of PurposeRefusedException's RULE_ constants.
-	 * @param string|null $purpose  The purpose the caller named, or null when none was.
-	 * @param int|null    $register The register that was being read, when known.
-	 * @param int|null    $schema   The schema that was being read, when known.
+	 * @param PurposeRefusal $refusal Which refusal it was (one of PurposeRefusedException's RULE_ constants),
+	 *                                the purpose the caller named, and the register and schema being read.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
@@ -758,7 +747,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	public function createPurposeRefusalEntry(string $rule, ?string $purpose = null, ?int $register = null, ?int $schema = null): AuditTrail;
+	public function recordPurposeRefusal(PurposeRefusal $refusal): AuditTrail;
 
 	/**
 	 * Count audit rows per purpose over a period.
@@ -795,11 +784,8 @@ interface AuditTrailMapperInterface {
 	 * where it does not belong. Same shape as
 	 * {@see createPartyQueryRefusalEntry()}.
 	 *
-	 * @param string $control The control identifier.
-	 * @param int|string|array $before The value before the change.
-	 * @param int|string|array $after The value asked for.
-	 * @param bool $accepted Whether the change was made.
-	 * @param string $refusal The refusal, when the change was not made.
+	 * @param HardeningChange $change   The control, the value before, the value asked for, and the refusal.
+	 * @param bool            $accepted Whether the change was made.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
@@ -807,9 +793,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 */
-	public function createHardeningChangeEntry(
-		string $control, int|string|array $before, int|string|array $after, bool $accepted, string $refusal = ''
-	): AuditTrail;
+	public function recordHardeningChange(HardeningChange $change, bool $accepted): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for an export.
@@ -827,21 +811,17 @@ interface AuditTrailMapperInterface {
 	 * because an export has no single object. Same shape as
 	 * {@see createPartyQueryRefusalEntry()}.
 	 *
-	 * @param string $outcome Either `completed` or `refused`.
-	 * @param array<string, mixed> $summary Profile, format, value mode, row count and, on a refusal, the reason.
-	 * @param int|null $register Register id exported, when known.
-	 * @param int|null $schema Schema id exported, when known.
-	 * @param string|null $actorId The principal the export ran as, when it is not the session user.
+	 * @param ExportOutcome $export `completed` or `refused`; the profile, format, value mode, row count and, on a
+	 *                              refusal, the reason; the register and schema; and the principal the export ran as
+	 *                              when it is not the session user.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createToolInvocationEntry.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordToolInvocation.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function createExportEntry(
-		string $outcome, array $summary, ?int $register = null, ?int $schema = null, ?string $actorId = null
-	): AuditTrail;
+	public function recordExport(ExportOutcome $export): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a slug backfill run.
@@ -849,23 +829,21 @@ interface AuditTrailMapperInterface {
 	 * The backfill (`occ openregister:backfill-slugs`) writes the slug column directly: no per-object version and no
 	 * per-object audit row. This single entry per run keeps the change
 	 * reconstructable: it lists the objects whose slug changed with the old and
-	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
-	 * {@see createExportEntry()}.
+	 * the new value (bounded, see slugBackfillSummary()). Hangs on the register and schema, not on an object, like
+	 * {@see recordExport()}.
 	 *
 	 * The run mode is always `fill`: a set slug is never rewritten.
 	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
-	 * @param array<string, mixed> $summary The run's counters.
-	 * @param int|null $register Register id.
-	 * @param int|null $schema Schema id.
+	 * @param SlugBackfill $backfill Every slug the run wrote (the entry keeps the first 1,000), the run's counters,
+	 *                               and the register and schema.
 	 *
 	 * @return AuditTrail The persisted, hash-chained entry.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as recordExport.
 	 */
-	public function createSlugBackfillEntry(array $changes, array $summary, ?int $register = null, ?int $schema = null): AuditTrail;
+	public function recordSlugBackfill(SlugBackfill $backfill): AuditTrail;
 
 	/**
 	 * What a slug backfill entry stores: the counters and a bounded change list.
@@ -876,15 +854,14 @@ interface AuditTrailMapperInterface {
 	 * uuid, old and new slug, next to the total count; the caller logs the full
 	 * list.
 	 *
-	 * @param string $mode    The run mode, `fill`.
-	 * @param array  $changes Every slug the run wrote.
-	 * @param array  $summary The run's counters.
+	 * @param SlugBackfill $backfill The slugs the run wrote and its counters.
+	 * @param string       $mode     The run mode, `fill`.
 	 *
 	 * @return array<string, mixed> The result summary of the entry.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array;
+	public function slugBackfillSummary(SlugBackfill $backfill, string $mode): array;
 
 	/**
 	 * The objects one user read most recently, newest first.

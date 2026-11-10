@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -318,28 +319,19 @@ class SaveObjectAccessPathsGoldenTest extends TestCase {
 		);
 
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createSharedMasterDataRefusalEntry')->willReturnCallback(
-			function (
-				string $holderOrganisation,
-				string $sourceOrganisation,
-				string $resourceType,
-				array $context = [],
-				?int $register = null,
-				?int $schema = null,
-				?string $objectUuid = null,
-				?string $actorId = null,
-				?string $actorReference = null
-			): void {
+		$audit->method('recordSharedMasterDataRefusal')->willReturnCallback(
+			function (SharedMasterDataRefusal $refusal): void {
+				$options = $refusal->options;
 				$this->audited[] = [
-					'holderOrganisation' => $holderOrganisation,
-					'sourceOrganisation' => $sourceOrganisation,
-					'resourceType' => $resourceType,
-					'context' => $context,
-					'register' => $register,
-					'schema' => $schema,
-					'objectUuid' => $objectUuid,
-					'actorId' => $actorId,
-					'actorReference' => $actorReference,
+					'holderOrganisation' => $refusal->holderOrganisation,
+					'sourceOrganisation' => $refusal->sourceOrganisation,
+					'resourceType' => $refusal->resourceType,
+					'context' => $options->context,
+					'register' => $options->target->register,
+					'schema' => $options->target->schema,
+					'objectUuid' => $options->target->objectUuid,
+					'actorId' => $options->actor->id,
+					'actorReference' => $options->actor->name,
 				];
 			}
 		);
