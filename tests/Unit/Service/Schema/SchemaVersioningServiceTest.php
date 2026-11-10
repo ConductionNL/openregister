@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
@@ -47,8 +48,7 @@ class SchemaVersioningServiceTest extends TestCase {
 		$this->service = new SchemaVersioningService(
 			new SchemaDiffService(),
 			$this->changelogMapper,
-			$this->runMapper,
-			$this->runEntryMapper,
+			new SchemaPopulationRuns($this->runMapper, $this->runEntryMapper, $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			$userSession,
 			$this->createMock(LoggerInterface::class)
 		);

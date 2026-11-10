@@ -415,26 +415,41 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class => [
 			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
 			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
-			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
-			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+			'runs'            => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 			'userSession'     => \OCP\IUserSession::class,
 			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class => [
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
-			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+			'runs'           => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 			'validateObject' => \OCA\OpenRegister\Service\Object\ValidateObject::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationService::class => [
-			'planner'        => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
-			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
+			'planner' => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
+			'runs'    => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 		],
 	];
 

@@ -42,7 +42,9 @@ use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
+use OCA\OpenRegister\Service\Schema\MigrationRequest;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
+use OCA\OpenRegister\Service\Schema\RevalidationRequest;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -237,9 +239,9 @@ class SchemaMigrationController extends Controller {
 		}
 
 		try {
-			$run = $this->domain->revalidationService->start(
-				schemaId: $id, registerId: $registerId,
-				proposedDefinition: $this->proposedDefinition(), startedBy: $this->currentUid()
+			$run = $this->domain->revalidationService->startRevalidation(
+				request: new RevalidationRequest(schemaId: $id, registerId: $registerId, proposedDefinition: $this->proposedDefinition()),
+				startedBy: $this->currentUid()
 			);
 		} catch (SchemaRunConcurrencyException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 409);
@@ -342,7 +344,8 @@ class SchemaMigrationController extends Controller {
 			return $registerId;
 		}
 
-		return new JSONResponse(['results' => $this->domain->migrationService->preview($id, $registerId, $plan, $this->sampleSize())]);
+		$request = new MigrationRequest(schemaId: $id, registerId: $registerId, plan: $plan);
+		return new JSONResponse(['results' => $this->domain->migrationService->previewSample(request: $request, sampleSize: $this->sampleSize())]);
 	}//end previewMigration()
 
 	/**
@@ -388,11 +391,9 @@ class SchemaMigrationController extends Controller {
 	 */
 	private function startMigration(MigrationStart $start): JSONResponse {
 		try {
-			$run = $this->domain->migrationService->start(
-				schemaId: $start->schemaId,
-				registerId: $start->registerId,
-				plan: $start->plan,
-				options: $this->migrationOptions(), startedBy: $this->currentUid()
+			$run = $this->domain->migrationService->startMigration(
+				request: new MigrationRequest(schemaId: $start->schemaId, registerId: $start->registerId, plan: $start->plan, options: $this->migrationOptions()),
+				startedBy: $this->currentUid()
 			);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['error' => 'Invalid migration plan', 'problems' => [$e->getMessage()]], 422);

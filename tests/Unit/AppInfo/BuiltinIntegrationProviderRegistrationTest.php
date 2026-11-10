@@ -283,6 +283,8 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\SchemaChangelogMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
+			'OCA\OpenRegister\Db\SchemaMapperInterface',
+			'OCA\OpenRegister\Service\ObjectService',
 			'OCP\IUserSession',
 			'Psr\Log\LoggerInterface',
 		],
@@ -292,7 +294,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 			'OCA\OpenRegister\Service\Object\ValidateObject',
-			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Schema\SchemaMigrationService' => [
 			'OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner',
@@ -300,7 +301,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
-			'Psr\Log\LoggerInterface',
 		],
 	];
 
