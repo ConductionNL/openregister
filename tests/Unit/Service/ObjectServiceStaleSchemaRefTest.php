@@ -41,6 +41,8 @@ use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
@@ -203,7 +205,10 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		$found = new ObjectEntity();
 		$this->getHandlerMock()->expects($this->once())
 			->method('find')
-			->with('c3dce9e3-86a8-44d7-98f6-51c4a06f4b31', $this->identicalTo($register), $this->identicalTo($synchronization))
+			->with(
+				$this->callback(static fn (ObjectFindRequest $request): bool => $request->id === 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31'),
+				$this->callback(static fn (ReadScope $scope): bool => $scope->register === $register && $scope->schema === $synchronization)
+			)
 			->willReturn($found);
 
 		// BEFORE THE FIX this throws SchemaNotInRegisterException naming

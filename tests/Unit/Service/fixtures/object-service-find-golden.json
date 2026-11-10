@@ -1912,10 +1912,8 @@
     "integer id": {
         "results": [
             {
-                "exception": [
-                    "TypeError",
-                    "MockObject::find(): Argument #1 ($id) must be of type string, int given"
-                ]
+                "returned": "42",
+                "rendered": true
             }
         ],
         "calls": [
@@ -1926,7 +1924,46 @@
             },
             [
                 "setup done"
-            ]
+            ],
+            {
+                "get": 42,
+                "register": null,
+                "schema": 10,
+                "extend": [],
+                "files": false,
+                "rbac": true,
+                "multitenancy": true,
+                "audit": true
+            },
+            {
+                "registerMapper.find": "1"
+            },
+            {
+                "checkPermission": "read",
+                "schema": 10,
+                "userId": null,
+                "owner": "owner-1",
+                "rbac": true,
+                "object": "42"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+            },
+            {
+                "processingRead": "42"
+            },
+            {
+                "render": "42",
+                "extend": [],
+                "registers": [
+                    1
+                ],
+                "schemas": [
+                    10
+                ],
+                "rbac": true,
+                "multitenancy": true
+            }
         ],
         "after": {
             "register": null,
