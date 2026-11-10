@@ -86,7 +86,7 @@ class MapperPagingGoldenTest extends TestCase {
 			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7, 'page' => null]],
 			'chunk unvectorized' => [ChunkMapper::class, 'findUnvectorized', []],
 			'chunk file source summaries' => [ChunkMapper::class, 'getFileSourceSummaries', ['search' => 'abc']],
-			'webhook all' => [WebhookMapper::class, 'findAll', ['filters' => ['a' => 1]]],
+			'webhook all' => [WebhookMapper::class, 'findAll', ['query' => ListQuery::class, 'filters' => ['a' => 1]]],
 			'bulk job member by job' => [BulkJobMemberMapper::class, 'findByJob', ['jobId' => 8, 'outcome' => 'failed']],
 			'import preview row by preview' => [ImportPreviewRowMapper::class, 'findByPreview', ['previewId' => 9, 'query' => ListQuery::class, 'filters' => ['decision' => 'skip']]],
 		];
@@ -133,7 +133,7 @@ class MapperPagingGoldenTest extends TestCase {
 
 	/**
 	 * The call arguments for a page; outcome lists take the outcome and page as one filter,
-	 * and ListQuery reads take the page as one ListQuery.
+	 * and ListQuery reads take the page and any column filters as one ListQuery.
 	 */
 	private static function withPage(array $args, array $page): array {
 		if (array_key_exists('page', $args) === true) {
