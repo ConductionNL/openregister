@@ -28,10 +28,13 @@ use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCA\OpenRegister\Repair\SeedTaskFixtures;
-use OCA\OpenRegister\Repair\TaskFixtureMappers;
+use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -102,9 +105,13 @@ class SeedTaskFixturesTest extends TestCase {
 		$config->method('getValueBool')->with('openregister', SeedTaskFixtures::FLAG, false)->willReturn($enabled);
 
 		return new SeedTaskFixtures(
-			appConfig: $config,
-			mappers: new TaskFixtureMappers(tasks: $this->tasks, candidates: $this->candidates, audits: $this->audits),
-			logger: new NullLogger()
+			platform: new RepairPlatform(db: $this->createMock(IDBConnection::class), config: $config, logger: new NullLogger()),
+			mappers: new ApprovalTaskStores(
+				tasks: $this->tasks,
+				candidates: $this->candidates,
+				audits: $this->audits,
+				sequences: $this->createMock(TaskSequenceMapperInterface::class)
+			)
 		);
 	}//end step()
 
