@@ -212,10 +212,27 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob {
-		return $this->preview(
+		return $this->createFromRequest(
 			request: new BulkJobRequest(call: $call, selection: $selection, actorUid: $actorUid, justification: $justification)
 		);
 	}//end create()
+
+	/**
+	 * Create a job from what the operator asked for, rehearse it, and write nothing.
+	 *
+	 * @param BulkJobRequest $request The action, the selection, the actor and the reason.
+	 *
+	 * @return BulkJob The previewed job.
+	 *
+	 * @throws InvalidArgumentException When the action, its parameters or the
+	 *                                  register and schema do not resolve.
+	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function createFromRequest(BulkJobRequest $request): BulkJob {
+		return $this->preview(request: $request);
+	}//end createFromRequest()
 
 	/**
 	 * Resolve, guard and rehearse a request, and write the previewed job.

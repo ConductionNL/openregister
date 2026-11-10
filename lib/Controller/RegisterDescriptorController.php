@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
@@ -169,9 +170,8 @@ class RegisterDescriptorController extends Controller {
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	private function reimport(string $appId, string $slug): JSONResponse {
-		$result = $this->descriptors->reimport(
-			appId: $appId,
-			slug: $slug,
+		$result = $this->descriptors->reimportShipped(
+			register: new ShippedRegister(appId: $appId, slug: $slug),
 			via: 'admin settings: Register descriptors'
 		);
 		if ($result['outcome'] === 'failed') {

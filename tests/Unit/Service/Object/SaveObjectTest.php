@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use Exception;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -49,6 +50,7 @@ use ReflectionMethod;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * Unit tests for SaveObject
@@ -137,10 +139,8 @@ class SaveObjectTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -248,6 +248,23 @@ class SaveObjectTest extends TestCase {
 		$reflection->setAccessible(true);
 		// Use array_values to ensure positional args (PHP 8+ treats string keys as named params).
 		return $reflection->invokeArgs($this->handler, array_values($args));
+	}
+
+	/**
+	 * Assert that setSelfMetadata() leaves an entity exactly as an empty @self block does.
+	 *
+	 * @param array $selfData The @self block whose keys must have no effect.
+	 *
+	 * @return void
+	 */
+	private function assertSelfMetadataIgnores(array $selfData): void {
+		$baseline = new ObjectEntity();
+		$this->invokePrivateMethod('setSelfMetadata', [$baseline, []]);
+
+		$entity = new ObjectEntity();
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+
+		$this->assertEquals($baseline->getObjectArray(), $entity->getObjectArray());
 	}
 
 	/**
@@ -873,8 +890,8 @@ class SaveObjectTest extends TestCase {
 		$schemaProps = [];
 
 		$this->metaHydrationHandler->expects($this->once())
-			->method('processTwigLikeTemplate')
-			->with($context, '{{ voornaam }} {{ achternaam }}', $schemaProps)
+			->method('renderTemplate')
+			->with('{{ voornaam }} {{ achternaam }}', new TemplateSource(data: $context, schemaProperties: $schemaProps))
 			->willReturn('Jan Jansen');
 
 		$result = $this->invokePrivateMethod(
@@ -890,7 +907,7 @@ class SaveObjectTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueNullOnException(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$result = $this->invokePrivateMethod(
@@ -1164,9 +1181,14 @@ class SaveObjectTest extends TestCase {
 			->willReturn('2025-01-15');
 
 		// objectPublishedField is deprecated — should not throw, just log warning.
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['pubDate' => '2025-01-15'], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	public function testHydrateObjectMetadataWithInvalidPublishedDate(): void {
@@ -1179,9 +1201,14 @@ class SaveObjectTest extends TestCase {
 		$this->metaHydrationHandler->method('extractMetadataValue')
 			->willReturn('not-a-date');
 
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['pubDate' => 'not-a-date'], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	public function testHydrateObjectMetadataWithDepublishedField(): void {
@@ -1194,9 +1221,14 @@ class SaveObjectTest extends TestCase {
 			->willReturn('2025-12-31');
 
 		// objectDepublishedField is deprecated — should not throw, just log warning.
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['endDate' => '2025-12-31'], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	public function testHydrateObjectMetadataWithInvalidDepublishedDate(): void {
@@ -1209,9 +1241,14 @@ class SaveObjectTest extends TestCase {
 		$this->metaHydrationHandler->method('extractMetadataValue')
 			->willReturn('invalid');
 
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['endDate' => 'invalid'], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	public function testHydrateObjectMetadataWithEmptyPublishedValue(): void {
@@ -1224,9 +1261,14 @@ class SaveObjectTest extends TestCase {
 			->willReturn('');
 
 		// objectPublishedField is deprecated — should not throw.
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['pubDate' => ''], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	public function testHydrateObjectMetadataWithNumericImageValue(): void {
@@ -1508,52 +1550,37 @@ class SaveObjectTest extends TestCase {
 	public function testSetSelfMetadataSetsPublishedDate(): void {
 		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
 		// Verify it doesn't throw when published is in selfData.
-		$entity = new ObjectEntity();
 		$selfData = ['published' => '2025-06-15'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	public function testSetSelfMetadataSetsPublishedToNullWhenEmpty(): void {
 		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = ['published' => ''];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	public function testSetSelfMetadataHandlesInvalidPublishedDate(): void {
 		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = ['published' => 'not-a-date-at-all-!!!'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	public function testSetSelfMetadataSetsDepublished(): void {
 		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = ['depublished' => '2025-12-31'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	public function testSetSelfMetadataSetsDepublishedToNullWhenMissing(): void {
 		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = [];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	public function testSetSelfMetadataOwnerIsIgnored(): void {
@@ -1645,10 +1672,8 @@ class SaveObjectTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -1880,7 +1905,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->runContext->push($runUuid, 'lock-object', 1);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: $runUuid, nodeId: 'lock-object', sequence: 1));
 		try {
 			$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 		} finally {
@@ -1908,7 +1933,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->runContext->push('run-bbbbbbbb-0000-0000-0000-000000000002', 'lock-object', 1);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: 'run-bbbbbbbb-0000-0000-0000-000000000002', nodeId: 'lock-object', sequence: 1));
 
 		// The refusal is captured rather than caught around a fail(): PHPUnit's
 		// fail() throws, and a catch broad enough for the guard's \Exception
@@ -1944,7 +1969,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->runContext->push('run-aaaaaaaa-0000-0000-0000-000000000001', 'object-write', 1);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: 'run-aaaaaaaa-0000-0000-0000-000000000001', nodeId: 'object-write', sequence: 1));
 
 		$refusal = null;
 		try {
@@ -2418,7 +2443,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setObject([]);
 
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willReturn('Jan Jansen');
 
 		$data = ['firstName' => 'Jan', 'lastName' => 'Jansen'];
@@ -2524,8 +2549,9 @@ class SaveObjectTest extends TestCase {
 		$schema = $this->createMockSchema(1, 'test', [], []);
 
 		// Should not throw — no properties have validateReference enabled.
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivateMethod('validateReferences', [$schema, ['name' => 'Test'], '1', null]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateReferencesSkipsPropertyWithoutValidateReference(): void {
@@ -2537,8 +2563,9 @@ class SaveObjectTest extends TestCase {
 		);
 
 		// Should not throw - validateReference is not enabled.
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivateMethod('validateReferences', [$schema, ['ref' => 'some-uuid'], '1', null]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateReferencesSkipsNullValue(): void {
@@ -2550,8 +2577,9 @@ class SaveObjectTest extends TestCase {
 		);
 
 		// Should not throw - null value.
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivateMethod('validateReferences', [$schema, ['ref' => null], '1', null]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateReferencesSkipsUnchangedValueOnUpdate(): void {
@@ -2566,8 +2594,9 @@ class SaveObjectTest extends TestCase {
 		$oldData = ['ref' => 'some-uuid'];
 
 		// Should not throw - unchanged value.
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivateMethod('validateReferences', [$schema, $data, '1', $oldData]);
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -3017,7 +3046,7 @@ class SaveObjectTest extends TestCase {
 		$schemaObject->properties = [];
 		$schema = $this->createSchemaWithSchemaObject($schemaObject);
 
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$data = ['name' => 'Test'];
 		$result = $this->invokePrivateMethod('processFilePropertiesWithRollback', [$entity, &$data, $register, $schema]);
@@ -3034,7 +3063,7 @@ class SaveObjectTest extends TestCase {
 		$schemaObject->properties = [];
 		$schema = $this->createSchemaWithSchemaObject($schemaObject);
 
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(true);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(true);
 		$this->filePropertyHandler->method('handleFileProperty')
 			->willThrowException(new Exception('File upload failed'));
 
@@ -3648,22 +3677,16 @@ class SaveObjectTest extends TestCase {
 
 	public function testSetSelfMetadataSetsDepublishedToNullWhenEmptyString(): void {
 		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = ['depublished' => ''];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	public function testSetSelfMetadataHandlesInvalidDepublishedDate(): void {
 		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = ['depublished' => 'not-a-date-!!!'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	// =========================================================================
@@ -3695,9 +3718,14 @@ class SaveObjectTest extends TestCase {
 		$this->metaHydrationHandler->method('extractMetadataValue')
 			->willReturn(null);
 
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['pubDate' => null], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	public function testHydrateObjectMetadataDepublishedFieldNull(): void {
@@ -3710,9 +3738,14 @@ class SaveObjectTest extends TestCase {
 		$this->metaHydrationHandler->method('extractMetadataValue')
 			->willReturn(null);
 
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['endDate' => null], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	// =========================================================================
@@ -3963,12 +3996,9 @@ class SaveObjectTest extends TestCase {
 
 	public function testSetSelfMetadataPreservesPublishedWhenNotInSelfData(): void {
 		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = []; // No 'published' key.
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	// =========================================================================
@@ -4017,9 +4047,14 @@ class SaveObjectTest extends TestCase {
 		$this->metaHydrationHandler->method('extractMetadataValue')
 			->willReturn('');
 
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['endDate' => ''], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	public function testHydrateObjectMetadataWithNullPublishedValue(): void {
@@ -4032,9 +4067,14 @@ class SaveObjectTest extends TestCase {
 		$this->metaHydrationHandler->method('extractMetadataValue')
 			->willReturn(null);
 
+		$this->metaHydrationHandler->expects($this->once())
+			->method('hydrateObjectMetadata')
+			->with($entity, $schema);
+
 		$this->handler->hydrateObjectMetadata($entity, $schema);
 
-		$this->assertTrue(true);
+		// The deprecated field is ignored: the object data is left as it was.
+		$this->assertSame(['pubDate' => null], array_diff_key($entity->getObject(), ['id' => null]));
 	}
 
 	// =========================================================================
@@ -4122,10 +4162,11 @@ class SaveObjectTest extends TestCase {
 		$this->schemaMapper->method('findAll')->willReturn([]);
 
 		// Should not throw — unresolvable schema ref is logged and skipped.
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivateMethod('validateReferenceExists', [
 			'myProp', 'some-uuid', 'nonexistent-schema', '1',
 		]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateReferenceExistsThrowsValidationExceptionWhenObjectNotFound(): void {
@@ -4157,13 +4198,12 @@ class SaveObjectTest extends TestCase {
 
 		$foundObject = new ObjectEntity();
 		$foundObject->setUuid('good-uuid');
-		$this->unifiedObjectMapper->method('find')->willReturn($foundObject);
+		$this->unifiedObjectMapper->expects($this->once())->method('find')->willReturn($foundObject);
 
 		// Should not throw.
 		$this->invokePrivateMethod('validateReferenceExists', [
 			'myProp', 'good-uuid', '#/components/schemas/target', '1',
 		]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateReferenceExistsLogsWarningOnGenericException(): void {
@@ -4191,13 +4231,12 @@ class SaveObjectTest extends TestCase {
 		$this->setPrivateProperty('schemaCache', ['2' => $targetSchema]);
 
 		$foundObject = new ObjectEntity();
-		$this->unifiedObjectMapper->method('find')->willReturn($foundObject);
+		$this->unifiedObjectMapper->expects($this->once())->method('find')->willReturn($foundObject);
 
 		// Should not throw — null register is allowed.
 		$this->invokePrivateMethod('validateReferenceExists', [
 			'myProp', 'good-uuid', '#/components/schemas/target', null,
 		]);
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -4226,13 +4265,12 @@ class SaveObjectTest extends TestCase {
 		$this->setPrivateProperty('registerCache', ['1' => $register]);
 
 		$foundObject = new ObjectEntity();
-		$this->unifiedObjectMapper->method('find')->willReturn($foundObject);
+		$this->unifiedObjectMapper->expects($this->exactly(2))->method('find')->willReturn($foundObject);
 
 		$data = ['tags' => ['uuid-1', 'uuid-2']];
 
 		// Should not throw — objects exist.
 		$this->invokePrivateMethod('validateReferences', [$schema, $data, '1', null]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateReferencesSkipsEmptyArrayValues(): void {
@@ -4256,8 +4294,9 @@ class SaveObjectTest extends TestCase {
 		$data = ['tags' => ['', null]];
 
 		// Should not throw — empty values are skipped.
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivateMethod('validateReferences', [$schema, $data, '1', null]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateReferencesValidatesSingleProperty(): void {
@@ -4282,13 +4321,12 @@ class SaveObjectTest extends TestCase {
 		$this->setPrivateProperty('registerCache', ['1' => $register]);
 
 		$foundObject = new ObjectEntity();
-		$this->unifiedObjectMapper->method('find')->willReturn($foundObject);
+		$this->unifiedObjectMapper->expects($this->once())->method('find')->willReturn($foundObject);
 
 		$data = ['parent' => 'some-uuid'];
 
 		// Should not throw.
 		$this->invokePrivateMethod('validateReferences', [$schema, $data, '1', null]);
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -4567,21 +4605,16 @@ class SaveObjectTest extends TestCase {
 
 	public function testSetSelfMetadataWithNullPublishedKeepsExistingNull(): void {
 		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = [];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	public function testSetSelfMetadataWithBoolPublishedTrue(): void {
 		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = new ObjectEntity();
 		$selfData = ['published' => true];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-		$this->assertTrue(true);
+		$this->assertSelfMetadataIgnores($selfData);
 	}
 
 	// =========================================================================

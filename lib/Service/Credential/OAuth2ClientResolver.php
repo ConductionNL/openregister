@@ -166,10 +166,8 @@ class OAuth2ClientResolver {
 			);
 		}
 
-		return $broker->resolveInjectable(
-			credentialId: $clientRef,
-			appId: self::BROKER_APP_ID,
-			actingUserId: $actingUserId
+		return $broker->resolveInjectableFor(
+			request: new InjectableSecretRequest(credentialId: $clientRef, appId: self::BROKER_APP_ID, actingUserId: $actingUserId)
 		);
 	}//end secretFor()
 }//end class

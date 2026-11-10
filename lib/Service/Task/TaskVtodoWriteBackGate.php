@@ -120,7 +120,7 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 			return $this->projector->render(task: $task);
 		}
 
-		return $this->projector->render(task: $this->request(taskUuid: $taskUuid, verb: $verb, actor: $actor));
+		return $this->projector->render(task: $this->request(taskUuid: $taskUuid, act: new TaskAct(verb: $verb, actor: $actor)));
 	}//end handleWrite()
 
 	/**
@@ -130,9 +130,8 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 	 * denials are audited by the lifecycle itself; every other refusal is
 	 * audited here, so no refused write-back goes unrecorded.
 	 *
-	 * @param string $taskUuid The task.
-	 * @param string $verb One of VERBS.
-	 * @param string|null $actor The acting identity.
+	 * @param string  $taskUuid The task.
+	 * @param TaskAct $act      The verb (one of VERBS) and the acting identity.
 	 *
 	 * @return Task The task after the verb.
 	 *
@@ -142,9 +141,9 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
 	 */
-	public function request(string $taskUuid, string $verb, ?string $actor): Task {
-		$task    = $this->resolver->resolve(taskUuid: $taskUuid, actor: $actor);
-		$attempt = new WriteBackAttempt(taskUuid: $taskUuid, task: $task, verb: $verb, actor: $actor);
+	public function request(string $taskUuid, TaskAct $act): Task {
+		$task    = $this->resolver->resolve(taskUuid: $taskUuid, actor: $act->actor);
+		$attempt = new WriteBackAttempt(taskUuid: $taskUuid, task: $task, verb: $act->verb, actor: $act->actor);
 		$this->assertCalendarVerb(attempt: $attempt);
 
 		return $this->performOrRefuse(attempt: $attempt);
@@ -264,6 +263,6 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 			return $this->tasks->cancel(uuid: $attempt->taskUuid, reason: 'Cancelled from the calendar.', actor: $attempt->actor);
 		}
 
-		return $this->tasks->complete(uuid: $attempt->taskUuid, outcome: 'done', resultText: null, comment: null, actor: $attempt->actor);
+		return $this->tasks->completeWithAnswer(uuid: $attempt->taskUuid, answer: new TaskAnswer(outcome: 'done'), actor: $attempt->actor);
 	}//end perform()
 }//end class

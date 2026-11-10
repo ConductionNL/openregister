@@ -111,22 +111,6 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 	 * both parties and the reason, so the row answers "waiting for X to allow Y
 	 * to act as them" without anybody joining it to the grant store.
 	 *
-	 * @param FlowRun $run        The run to park.
-	 * @param string  $declaredBy The principal whose grant is missing.
-	 * @param string  $runAs      The identity it would act as.
-	 * @param string  $reason     The verdict reason that caused the park.
-	 *
-	 * @return FlowRun The parked run.
-	 *
-	 * @spec openspec/specs/delegation-grants/spec.md
-	 */
-	public function park(FlowRun $run, string $declaredBy, string $runAs, string $reason): FlowRun {
-		return $this->parkFor(run: $run, ask: new ConsentAsk(declaredBy: $declaredBy, runAs: $runAs, reason: $reason));
-	}//end park()
-
-	/**
-	 * Write the run as awaiting consent, its context recording both parties and the reason.
-	 *
 	 * @param FlowRun    $run The run to park.
 	 * @param ConsentAsk $ask Who must allow whom, and why.
 	 *
@@ -134,7 +118,7 @@ class FlowConsentParking implements FlowConsentSweepInterface {
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	private function parkFor(FlowRun $run, ConsentAsk $ask): FlowRun {
+	public function parkFor(FlowRun $run, ConsentAsk $ask): FlowRun {
 		$context = ($run->getContext() ?? []);
 		$context[self::CONTEXT_KEY] = [
 			'principal' => $ask->declaredBy,

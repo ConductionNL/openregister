@@ -218,7 +218,7 @@ class DeploymentPreviewAccessGoldenTest extends TestCase {
 				$this->calls[] = ['store.read', $layer, $layerRef, $configKey];
 				$name = ($live[$configKey] ?? 'absent');
 				if ($name === 'absent') {
-					return ConfigurationSnapshot::absent(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+					return ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $layerRef, $configKey));
 				}
 
 				return new ConfigurationSnapshot(new ConfigurationAddress($layer, $layerRef, $configKey), $values[$name], true);

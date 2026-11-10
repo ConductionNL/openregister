@@ -46,6 +46,7 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration;
 
 /**
  * Behaviour of the start flow's claims and cleanup.
@@ -140,7 +141,8 @@ class CredentialOauth2ControllerStartBehaviourTest extends TestCase {
 		$connect = $this->createMock(OAuth2ConnectService::class);
 		$connect->method('oauth2Provider')->willReturn($provider);
 		$connect->method('ensureInstanceClient')->willReturnCallback(
-			static function (array $provider, array $claims) use ($mints, $throws): array {
+			static function (OAuth2ClientRegistration $registration) use ($mints, $throws): array {
+				$claims = $registration->claims;
 				if (isset($throws['ensureInstanceClient']) === true) {
 					throw $throws['ensureInstanceClient'];
 				}

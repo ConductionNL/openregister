@@ -69,6 +69,17 @@ interface NcNotificationSenderInterface {
 	): string;
 
 	/**
+	 * Persist + dispatch a single in-app notification row; the value-object form of {@see self::send()}.
+	 *
+	 * @param InAppNotice $notice The recipient, the object, the rule and what it says.
+	 *
+	 * @return string One of the NcNotificationSender::OUTCOME_* constants.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function notify(InAppNotice $notice): string;
+
+	/**
 	 * Enqueue the web-push ride-along for a set of recipients.
 	 *
 	 * Routed out of band: a background job per recipient so the originating
@@ -92,4 +103,15 @@ interface NcNotificationSenderInterface {
 	public function enqueueWebPush(
 		array $recipients, string $ruleId, string $originApp, string $subject, string $message, array $actions, ObjectEntity $object
 	): void;
+
+	/**
+	 * Enqueue the web-push ride-along; the value-object form of {@see self::enqueueWebPush()}.
+	 *
+	 * @param PushRideAlong $push The recipients, the object, the rule and the push's subject and body.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function enqueuePush(PushRideAlong $push): void;
 }//end interface

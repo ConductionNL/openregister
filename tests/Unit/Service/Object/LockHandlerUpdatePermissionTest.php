@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\LockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -145,7 +147,9 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 		$this->magic->expects($this->never())->method('lockObjectEntity');
 
 		$this->expectException(exception: NotAuthorizedException::class);
-		$this->handler()->lock(identifier: self::OBJ);
+		$this->handler()->lock(
+			request: new LockRequest(identifier: self::OBJ, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 	}//end testAReaderWithoutUpdatePermissionCannotLock()
 
 	/**
@@ -159,7 +163,9 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->method('lockObjectEntity')
 			->willReturn($this->object);
 
-		$result = $this->handler()->lock(identifier: self::OBJ);
+		$result = $this->handler()->lock(
+			request: new LockRequest(identifier: self::OBJ, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 
 		$this->assertSame(expected: self::OBJ, actual: $result['uuid']);
 	}//end testAWriterTakesTheLock()
@@ -184,6 +190,8 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 		$this->magic->expects($this->never())->method('lockObjectEntity');
 
 		$this->expectException(exception: NotAuthorizedException::class);
-		$this->handler()->lock(identifier: self::OBJ, runUuid: 'run-1');
+		$this->handler()->lock(
+			request: new LockRequest(identifier: self::OBJ, process: null, duration: null, runStep: new LockRunStep(runUuid: 'run-1', nodeId: null))
+		);
 	}//end testARunWithoutUpdatePermissionCannotLock()
 }//end class

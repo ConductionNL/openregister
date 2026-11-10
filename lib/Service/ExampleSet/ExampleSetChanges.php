@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * Applies, proves and reverts changes to existing objects.
  *
@@ -230,7 +232,7 @@ class ExampleSetChanges {
 	 */
 	private function withSet(array $row, array $set): array {
 		foreach ($set as $path => $value) {
-			$row = $this->paths->withPath(row: $row, path: (string) $path, value: $value);
+			$row = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: (string) $path, value: $value));
 		}
 
 		return $row;
@@ -251,7 +253,7 @@ class ExampleSetChanges {
 				$list[] = $value;
 			}
 
-			$row = $this->paths->withPath(row: $row, path: (string) $path, value: array_values($list));
+			$row = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: (string) $path, value: array_values($list)));
 		}
 
 		return $row;
@@ -329,17 +331,18 @@ class ExampleSetChanges {
 	 * The value a refresh wrote when there was one (the newest `new` of the
 	 * `#references` change), else the value the object was created with.
 	 *
+	 * The refresh change is the record's `<app>/<key>#references` entry.
+	 *
 	 * @param array<string, mixed> $record The record.
-	 * @param string               $name   The record key of the refresh change, `<app>/<key>#references`.
 	 * @param string               $key    The record key of the object, `<app>/<key>`.
 	 *
 	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
-	public function writtenReferences(array $record, string $name, string $key): array {
+	public function writtenReferences(array $record, string $key): array {
 		$written = (array) ($record['objects'][$key]['refs'] ?? []);
-		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $set) {
+		foreach ((array) ($record['changes'][$key.'#references']['set'] ?? []) as $set) {
 			$written[(string) $set['path']] = $set['new'];
 		}
 
@@ -547,6 +550,9 @@ class ExampleSetChanges {
 			return [];
 		}
 
-		return $this->store->matching(register: (string) $change['register'], schema: (string) $change['schema'], where: $where);
+		return $this->store->rowsMatching(
+			table: new RegisterSchemaRef(register: (string) $change['register'], schema: (string) $change['schema']),
+			where: $where
+		);
 	}//end target()
 }//end class
