@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SecurityService;
@@ -424,7 +425,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 	public function testRateLimitCountsOnlyAuthFailures(string $class, int $code, bool $counts): void {
 		$security = $this->createMock(SecurityService::class);
 		if ($counts === true) {
-			$security->expects($this->once())->method('recordFailedAuthAttempt')->with('', '10.0.0.1', 'inbound_auth_failed');
+			$security->expects($this->once())->method('recordFailedAuthAttempt')->with(new FailedAttempt('', '10.0.0.1', 'inbound_auth_failed'));
 		} else {
 			$security->expects($this->never())->method('recordFailedAuthAttempt');
 		}
