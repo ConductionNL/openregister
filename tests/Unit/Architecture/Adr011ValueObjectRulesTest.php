@@ -37,6 +37,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	private const VALUE_OBJECTS = [
 		'Db/ListQuery.php',
 		'Db/RegisterSchema.php',
+		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
 		'Kernel/Contracts/PreferenceAddress.php',
@@ -51,6 +52,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const KERNEL_LEAVES = [
+		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
 		'Kernel/Contracts/PreferenceAddress.php',
