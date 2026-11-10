@@ -147,3 +147,4 @@ dossiq	5572	7f0161d07ec6a254c66c5011a3af064d18e02cac	GREEN	FV01:4	tree of 25 gre
 dossiq	5574	b4bd5d6fd3f13f0d935f0e463911ee6112ca9925	GREEN	FV01:4	tree of 25 green on php+js unit suites (20 inherited php failures)
 dossiq	5576	ef3b007dd059508a7f610ec8adc224da3b648338	GREEN	FV01:4	tree of 25 green on php+js unit suites (20 inherited php failures)
 dossiq	5578	5026199a9c1fda0077d0768070caf0874cc8a5cc	RED	FV01:5	phpunit ServiceCatchReturnsNullTest::testEverySwallowingCatchIsAllowlisted (new swallowing catch CapacityGuard::findRows returns null, not allowlisted)
+dossiq	5580	2aabfd0ba56deac519c322b9ebad822cfeff5725	GREEN	FV01:5	tree of 4 green on php+js unit suites (20 inherited php failures)
