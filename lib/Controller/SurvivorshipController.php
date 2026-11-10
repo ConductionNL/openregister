@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -89,23 +90,27 @@ class SurvivorshipController extends Controller {
 	private readonly SourceRecordResolverInterface $sourceRecordResolver;
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                        $appName              The application name.
 	 * @param IRequest                      $request              The current request.
 	 * @param SurvivorshipControllerServices $services The services, bundled.
-	 * @param IUserSession                  $userSession          Current user session, for actor attribution.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SurvivorshipControllerServices $services,
-		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objectService = $services->objectService;
 		$this->schemaMapper = $services->schemaMapper;
 		$this->sourceRecordResolver = $services->sourceRecordResolver;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**

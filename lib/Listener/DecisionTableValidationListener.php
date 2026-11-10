@@ -276,7 +276,8 @@ class DecisionTableValidationListener implements IEventListener, DecisionTableVa
 			return null;
 		}
 
-		return $this->otherTableWithKey(rows: $rows, key: $key, uuid: $uuid);
+		$others = array_filter($rows, static fn (ObjectEntity $entity): bool => (string)$entity->getUuid() !== $uuid);
+		return $this->otherTableWithKey(others: $others, key: $key);
 	}//end keyTakenBy()
 
 	/**
@@ -303,19 +304,17 @@ class DecisionTableValidationListener implements IEventListener, DecisionTableVa
 	}//end tablesWithKey()
 
 	/**
-	 * The uuid of the first row that is another table carrying the key, or ''.
+	 * The uuid of the first of the other tables that carries the key, or ''.
 	 *
-	 * @param array<int, ObjectEntity> $rows The rows the search found.
-	 * @param string                   $key  The key being saved.
-	 * @param string                   $uuid The uuid of the row being saved.
+	 * @param array<int, ObjectEntity> $others The rows the search found, minus the row being saved.
+	 * @param string                   $key    The key being saved.
 	 *
 	 * @return string The other table's uuid, '' when there is none.
 	 */
-	private function otherTableWithKey(array $rows, string $key, string $uuid): string {
-		foreach ($rows as $entity) {
-			$other = (string)$entity->getUuid();
-			if ($other !== $uuid && $this->carriesKey(data: $entity->getObject(), key: $key) === true) {
-				return $other;
+	private function otherTableWithKey(array $others, string $key): string {
+		foreach ($others as $entity) {
+			if ($this->carriesKey(data: $entity->getObject(), key: $key) === true) {
+				return (string)$entity->getUuid();
 			}
 		}
 

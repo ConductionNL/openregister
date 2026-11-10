@@ -235,7 +235,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 			new MdtoValueSources($appConfig, $eventMapper, $sourceReader),
 			$writer,
 			$bestandGenerator,
-			new MdtoPreconditions($appConfig, new NullLogger(), new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)))
+			new MdtoPreconditions(new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($appConfig, $this->createMock(\OCP\App\IAppManager::class), new NullLogger()))
 		);
 	}//end generator()
 

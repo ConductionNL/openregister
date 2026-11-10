@@ -253,7 +253,8 @@ class SourceRecordChangeListener implements IEventListener {
 			return;
 		}
 
-		$masterUuids = self::masterUuidsOf(referenceFields: $referenceFields, object: $object, oldObject: $oldObject);
+		$payloads = [($object->getObject() ?? []), ($oldObject?->getObject() ?? [])];
+		$masterUuids = self::masterUuidsOf(referenceFields: $referenceFields, payloads: $payloads);
 		$deferralEnabled = $this->services->deferral->isDeferralEnabled();
 		foreach ($masterUuids as $masterUuid) {
 			$this->queueRecompute(masterUuid: $masterUuid, deferralEnabled: $deferralEnabled);
@@ -264,22 +265,19 @@ class SourceRecordChangeListener implements IEventListener {
 	 * The distinct, non-empty master uuids a source names in its reference
 	 * fields, now and (for an update) before the change.
 	 *
-	 * @param array<int, string> $referenceFields The reference-field names.
-	 * @param ObjectEntity $object The changed source object.
-	 * @param ObjectEntity|null $oldObject The pre-change source object (updates only).
+	 * @param array<int, string>               $referenceFields The reference-field names.
+	 * @param array<int, array<string, mixed>> $payloads        The source's data now, then before the change (empty on create).
 	 *
 	 * @return array<int|string, string> The master uuids.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
-	private static function masterUuidsOf(array $referenceFields, ObjectEntity $object, ?ObjectEntity $oldObject): array {
-		$data = ($object->getObject() ?? []);
-		$oldData = ($oldObject?->getObject() ?? []);
-
+	private static function masterUuidsOf(array $referenceFields, array $payloads): array {
 		$masterUuids = [];
 		foreach ($referenceFields as $referenceField) {
-			$masterUuids[] = (string)($data[$referenceField] ?? '');
-			$masterUuids[] = (string)($oldData[$referenceField] ?? '');
+			foreach ($payloads as $payload) {
+				$masterUuids[] = (string)($payload[$referenceField] ?? '');
+			}
 		}
 
 		return array_unique(array_filter($masterUuids));

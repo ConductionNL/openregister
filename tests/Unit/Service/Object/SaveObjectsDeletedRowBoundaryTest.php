@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -259,8 +260,9 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 
 		$rows = array_map(static fn (array $row): array => $row + ['title' => 'overwritten'], $rows);
 		$result = ['invalid' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
-		$args = [$rows, new BulkBatchDefaults($register, $schema), $flags + ['validation' => false], &$result];
-		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), $args);
+		$batch = new SafeguardBatchRun(objects: $rows, defaults: new BulkBatchDefaults($register, $schema), flags: $flags + ['validation' => false], result: $result);
+		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), [$batch]);
+		$result = $batch->result;
 		$passedIds = array_map(static fn (array $row): mixed => $row['id'] ?? $row['@self']['id'] ?? null, $passed);
 
 		$answers = [];
