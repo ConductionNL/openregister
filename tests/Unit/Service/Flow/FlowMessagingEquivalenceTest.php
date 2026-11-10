@@ -40,6 +40,14 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
@@ -174,22 +182,41 @@ class FlowMessagingEquivalenceTest extends TestCase {
 	 */
 	private function makeDispatcher(): AnnotationNotificationDispatcher {
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $this->logger,
-			groupManager: $this->groupManager,
-			userManager: $this->userManager,
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			ncSender: $this->recorder,
-			recipientResolver: new NotificationRecipientResolver(
+			channels: new ChannelSet(
+				ncSender: $this->recorder,
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->logger
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->logger
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
 				userManager: $this->userManager,
 				groupManager: $this->groupManager,
 				logger: $this->logger
+			)
 			),
-			templating: new NotificationTemplating(logger: $this->logger)
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(logger: $this->logger)
+			)
 		);
 	}//end makeDispatcher()
 
