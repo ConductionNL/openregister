@@ -30,10 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use DateTime;
-use OCA\OpenRegister\Notifications\BackgroundJob\WebPushDispatchJob;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\BackgroundJob\IJobList;
-use OCP\IUserManager;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
 
@@ -51,17 +48,15 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param INotificationManager $notificationManager Nextcloud notification API.
-	 * @param LoggerInterface $logger Logger for dispatch diagnostics.
-	 * @param IUserManager|null $userManager User resolver for the web-push ride-along.
-	 * @param IJobList|null $jobList Job list used to enqueue the web-push dispatch job.
-	 * @param NotificationChannelPolicy|null $channelPolicy The subsystem's per-channel kill switches; null means enabled.
+	 * @param INotificationManager           $notificationManager Nextcloud notification API.
+	 * @param LoggerInterface                $logger              Logger for dispatch diagnostics.
+	 * @param WebPushQueue|null              $webPush             Enqueues the web-push ride-along; null means no web-push.
+	 * @param NotificationChannelPolicy|null $channelPolicy       The subsystem's per-channel kill switches; null means enabled.
 	 */
 	public function __construct(
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
-		private readonly ?IUserManager $userManager = null,
-		private readonly ?IJobList $jobList = null,
+		private readonly ?WebPushQueue $webPush = null,
 		private readonly ?NotificationChannelPolicy $channelPolicy = null,
 	) {
 
@@ -320,7 +315,7 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 	 * @return void
 	 */
 	private function enqueueFor(array $recipients, array $push): void {
-		if ($this->jobList === null) {
+		if ($this->webPush === null) {
 			$this->logger->debug('[NcNotificationSender] web-push declared but IJobList unavailable.');
 			return;
 		}
@@ -344,44 +339,6 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 			'actions' => $push['actions'],
 		];
 
-		foreach ($recipients as $uid) {
-			if ($this->enqueueable(uid: $uid) === true) {
-				$this->jobList->add(WebPushDispatchJob::class, ['uid' => $uid] + $payload);
-			}
-		}
+		$this->webPush->add(recipients: $recipients, payload: $payload);
 	}//end enqueueFor()
-
-	/**
-	 * Whether a recipient is a non-empty string naming a real user.
-	 *
-	 * @param mixed $uid Candidate uid.
-	 *
-	 * @return bool True when the uid may be enqueued.
-	 */
-	private function enqueueable(mixed $uid): bool {
-		return is_string($uid) === true && $uid !== '' && $this->recipientExists(uid: $uid) === true;
-	}//end enqueueable()
-
-	/**
-	 * Whether a uid names a real user; true when no user manager was injected
-	 * (the caller has then already verified its recipients).
-	 *
-	 * @param string $uid Candidate uid.
-	 *
-	 * @return bool True when the uid may be enqueued.
-	 */
-	private function recipientExists(string $uid): bool {
-		if ($this->userManager === null) {
-			return true;
-		}
-
-		try {
-			return $this->userManager->userExists($uid);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('[NcNotificationSender] userExists check failed for "%s": %s', $uid, $e->getMessage())
-			);
-			return false;
-		}
-	}//end recipientExists()
 }//end class

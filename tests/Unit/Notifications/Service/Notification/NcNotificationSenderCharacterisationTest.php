@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Notification;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\BackgroundJob\WebPushDispatchJob;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\WebPushQueue;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserManager;
@@ -149,7 +150,7 @@ class NcNotificationSenderCharacterisationTest extends TestCase
 
     public function testSendWithoutUuidFallsBackToTheRuleNameAndDefaults(): void
     {
-        $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, null, $this->policy(true));
+        $sender = new NcNotificationSender(notificationManager: $this->manager(), logger: $this->createMock(LoggerInterface::class), channelPolicy: $this->policy(true));
 
         $sender->send('bob', $this->object(null, null), 'object_created', 'rule-b', 'T', '', ['objectTitle' => 'ctx', '_text' => 'ctx']);
 
@@ -166,7 +167,7 @@ class NcNotificationSenderCharacterisationTest extends TestCase
 
     public function testSendWithTheChannelSwitchedOffDoesNothing(): void
     {
-        $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, null, $this->policy(false));
+        $sender = new NcNotificationSender(notificationManager: $this->manager(), logger: $this->createMock(LoggerInterface::class), channelPolicy: $this->policy(false));
 
         $this->assertSame(
             NcNotificationSender::OUTCOME_KILL_SWITCH,
@@ -218,7 +219,7 @@ class NcNotificationSenderCharacterisationTest extends TestCase
                 return $uid !== 'ghost';
             }
         );
-        $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), $users, $this->jobList($jobs), $this->policy(true));
+        $sender = new NcNotificationSender(notificationManager: $this->manager(), logger: $this->createMock(LoggerInterface::class), webPush: new WebPushQueue(jobList: $this->jobList($jobs), logger: $this->createMock(LoggerInterface::class), userManager: $users), channelPolicy: $this->policy(true));
 
         $sender->enqueueWebPush(['alice', '', 'ghost', 'broken', 'bob'], 'rule-a', 'procest', 'Title', 'Body', [['x' => 1]], $this->object('obj-1', 'n'));
 
@@ -235,7 +236,7 @@ class NcNotificationSenderCharacterisationTest extends TestCase
     public function testEnqueueWebPushWithoutUserManagerTrustsTheRecipientsAndTagsByRule(): void
     {
         $jobs   = [];
-        $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, $this->jobList($jobs));
+        $sender = new NcNotificationSender(notificationManager: $this->manager(), logger: $this->createMock(LoggerInterface::class), webPush: new WebPushQueue(jobList: $this->jobList($jobs), logger: $this->createMock(LoggerInterface::class)));
 
         $sender->enqueueWebPush(['zed'], 'rule-z', 'openregister', 'T', 'B', [], $this->object(null, null));
 
@@ -246,9 +247,9 @@ class NcNotificationSenderCharacterisationTest extends TestCase
     public function testEnqueueWebPushIsSkippedWithoutJobListOrWithTheSwitchOff(): void
     {
         $jobs = [];
-        (new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, null))
+        (new NcNotificationSender(notificationManager: $this->manager(), logger: $this->createMock(LoggerInterface::class)))
             ->enqueueWebPush(['a'], 'r', 'o', 't', 'b', [], $this->object('o', 'n'));
-        (new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), null, $this->jobList($jobs), $this->policy(false)))
+        (new NcNotificationSender(notificationManager: $this->manager(), logger: $this->createMock(LoggerInterface::class), webPush: new WebPushQueue(jobList: $this->jobList($jobs), logger: $this->createMock(LoggerInterface::class)), channelPolicy: $this->policy(false)))
             ->enqueueWebPush(['a'], 'r', 'o', 't', 'b', [], $this->object('o', 'n'));
 
         $this->assertSame([], $jobs);

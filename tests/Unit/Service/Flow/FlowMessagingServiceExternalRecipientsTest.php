@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\WebPushQueue;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -305,8 +306,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 				ncSender: new NcNotificationSender(
 					notificationManager: $this->notificationManager,
 					logger: $logger,
-					userManager: $this->userManager,
-					jobList: $this->createMock(IJobList::class),
+					webPush: new WebPushQueue(jobList: $this->createMock(IJobList::class), logger: $logger, userManager: $this->userManager),
 					channelPolicy: $policy
 				),
 				emailSender: new EmailSender(

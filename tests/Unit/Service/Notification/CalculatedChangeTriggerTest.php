@@ -34,6 +34,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
 use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
 use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\WebPushQueue;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -327,8 +328,7 @@ class CalculatedChangeTriggerTest extends TestCase {
 			channels: new ChannelSet(
 				ncSender: new NcNotificationSender(
 					notificationManager: $this->notificationManager,
-					logger: $this->logger,
-					userManager: $this->userManager
+					logger: $this->logger
 				),
 				emailSender: new EmailSender(
 					userManager: $this->userManager,

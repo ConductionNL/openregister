@@ -52,6 +52,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
 use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
 use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\WebPushQueue;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -137,8 +138,7 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 			channels: new ChannelSet(
 				ncSender: new NcNotificationSender(
 					notificationManager: $this->createMock(INotificationManager::class),
-					logger: $this->createMock(LoggerInterface::class),
-					userManager: $this->createMock(IUserManager::class)
+					logger: $this->createMock(LoggerInterface::class)
 				),
 				emailSender: new EmailSender(
 					userManager: $this->createMock(IUserManager::class),

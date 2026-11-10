@@ -31,6 +31,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
 use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
 use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\WebPushQueue;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -129,8 +130,7 @@ class TaskVerbActionTest extends TestCase {
 			channels: new ChannelSet(
 				ncSender: new NcNotificationSender(
 					notificationManager: $notifications,
-					logger: new NullLogger(),
-					userManager: $users
+					logger: new NullLogger()
 				),
 				emailSender: new EmailSender(
 					userManager: $users,

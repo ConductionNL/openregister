@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Notification;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\WebPushQueue;
 use OCA\OpenRegister\Notifications\Service\Notification\NoticeContent;
 use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
 use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
@@ -116,7 +117,7 @@ class NcNotificationSenderNoticeTest extends TestCase
         );
         $users = $this->createMock(IUserManager::class);
         $users->method('userExists')->willReturnCallback(fn (string $uid): bool => $uid !== 'ghost');
-        $sender = new NcNotificationSender($this->manager(), $this->createMock(LoggerInterface::class), $users, $jobList);
+        $sender = new NcNotificationSender(notificationManager: $this->manager(), logger: $this->createMock(LoggerInterface::class), webPush: new WebPushQueue(jobList: $jobList, logger: $this->createMock(LoggerInterface::class), userManager: $users));
 
         $sender->enqueueWebPush(['alice', 'ghost', 'bob'], 'rule-a', 'procest', 'Title', 'Body', [['x' => 1]], $this->object());
         $viaOld = $jobs;
