@@ -1409,7 +1409,6 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @param array $object The object to validate.
 	 * @param Schema|int|null $schema The schema or schema ID to validate against.
 	 * @param object $schemaObject A custom schema object for validation.
-	 * @param int $_depth The depth level for validation (unused).
 	 * @param array<string, string> $notSupplied Properties recorded as not supplied, mapped to their reason codes.
 	 *
 	 * @return ValidationResult The result of the validation.
@@ -1421,7 +1420,6 @@ class ValidateObject implements ValidateObjectInterface {
 		array $object,
 		Schema|int|string|null $schema = null,
 		object $schemaObject = new stdClass(),
-		int $_depth = 0,
 		array $notSupplied = [],
 	): ValidationResult {
 		$schema = $this->schemaEntity(schema: $schema);

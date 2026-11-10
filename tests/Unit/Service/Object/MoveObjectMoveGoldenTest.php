@@ -188,7 +188,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 	private function validator(): ValidateObject {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturnCallback(
-			function (array $object, $schema = null, $schemaObject = null, int $_depth = 0, array $notSupplied = []): ValidationResult {
+			function (array $object, $schema = null, $schemaObject = null, array $notSupplied = []): ValidationResult {
 				$this->calls[] = ['validate' => $object, 'schema' => $schema?->getId(), 'notSupplied' => $notSupplied];
 				$spec = $this->setup['validation'];
 				if ($spec === 'throw') {
