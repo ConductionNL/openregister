@@ -264,21 +264,8 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 	 * @return array<int, string> The account ids.
 	 */
 	private function accountsWithClaims(): array {
-		$accounts = [];
-
 		try {
-			$this->userManager->callForSeenUsers(
-				function (IUser $user) use (&$accounts): ?bool {
-					if ($this->claimsFor(userId: $user->getUID()) !== []) {
-						$accounts[] = $user->getUID();
-					}
-
-					// Null rather than false: the callback's return value is
-					// what stops the walk, and stopping it here would silently
-					// leave the rest of the accounts unre-derived.
-					return null;
-				}
-			);
+			return $this->walkAccountsWithClaims();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[DerivedGrantStore] Could not walk the accounts to re-derive; reporting none',
@@ -286,9 +273,32 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 			);
 			return [];
 		}
+	}//end accountsWithClaims()
+
+	/**
+	 * Walk the seen accounts and collect those with claims stored.
+	 *
+	 * @return array<int, string> The account ids, in walk order.
+	 *
+	 * @throws \Throwable Whatever the walk throws; the caller reports none.
+	 */
+	private function walkAccountsWithClaims(): array {
+		$accounts = [];
+		$this->userManager->callForSeenUsers(
+			function (IUser $user) use (&$accounts): ?bool {
+				if ($this->claimsFor(userId: $user->getUID()) !== []) {
+					$accounts[] = $user->getUID();
+				}
+
+				// Null rather than false: the callback's return value is
+				// what stops the walk, and stopping it here would silently
+				// leave the rest of the accounts unre-derived.
+				return null;
+			}
+		);
 
 		return $accounts;
-	}//end accountsWithClaims()
+	}//end walkAccountsWithClaims()
 
 	/**
 	 * A stored JSON list, or an empty one.
