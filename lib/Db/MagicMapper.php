@@ -6952,8 +6952,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Pick the row an identifier means among the rows it matched.
 	 *
 	 * One row is the answer. Several rows: the one whose `_id` or `_uuid` is the
-	 * identifier, when exactly one is; otherwise none (the identifier is
-	 * ambiguous).
+	 * identifier, when exactly one is; when one row has it as `_id` and another as
+	 * `_uuid`, the `_uuid` row; otherwise none (the identifier is ambiguous).
 	 *
 	 * @param list<array<string, mixed>> $rows       The matched rows, at least one.
 	 * @param string|int                 $identifier The identifier the caller sent.
@@ -6968,15 +6968,15 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		$byKey = [];
+		$byUuid = [];
 		foreach ($rows as $row) {
-			// The same reading of the identifier as the query's id condition.
-			$idParam = $this->identifierAsId(identifier: $identifier);
-			$isId = $idParam !== null
-				&& isset($row[self::METADATA_PREFIX . 'id']) === true
-				&& (int)$row[self::METADATA_PREFIX . 'id'] === $idParam;
 			$isUuid = strcasecmp((string)($row[self::METADATA_PREFIX . 'uuid'] ?? ''), (string)$identifier) === 0;
-			if ($isId === true || $isUuid === true) {
+			if ($isUuid === true || $this->rowHasId(row: $row, identifier: $identifier) === true) {
 				$byKey[] = $row;
+			}
+
+			if ($isUuid === true) {
+				$byUuid[] = $row;
 			}
 		}
 
@@ -6984,8 +6984,31 @@ class MagicMapper extends AbstractObjectMapper {
 			return $byKey[0];
 		}
 
+		// "1" can be one object's id and another object's uuid; the uuid is the public identity.
+		if (count($byUuid) === 1) {
+			return $byUuid[0];
+		}
+
 		return null;
 	}//end rowForIdentifier()
+
+	/**
+	 * Whether a row's `_id` is the identifier, read as the query's id condition reads it.
+	 *
+	 * @param array<string, mixed> $row        A matched row.
+	 * @param string|int           $identifier The identifier the caller sent.
+	 *
+	 * @return bool True when the identifier is a canonical integer equal to the row's id.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function rowHasId(array $row, string|int $identifier): bool {
+		$idParam = $this->identifierAsId(identifier: $identifier);
+
+		return $idParam !== null
+			&& isset($row[self::METADATA_PREFIX . 'id']) === true
+			&& (int)$row[self::METADATA_PREFIX . 'id'] === $idParam;
+	}//end rowHasId()
 
 	/**
 	 * The live objects whose slug starts with a prefix, as slug => uuid pairs.
