@@ -45,90 +45,56 @@ interface NotificationPreferencesInterface {
 	public function getEffectiveForUser(string $userId, array $scopes = []): array;
 
 	/**
-	 * Read a group's stored default, or null when the group has none.
+	 * Read a group's stored default at a preference address, or null when the group has none.
 	 *
-	 * @param string $groupId The group id.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param string|null $scope The scope, or null for the group's global default.
+	 * @param string            $groupId The group id.
+	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope is the group's global default.
 	 *
 	 * @return array<string, mixed>|null The decoded default, or null when none/invalid.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
-	public function getGroupDefault(
-		string $groupId,
-		string $schemaSlug,
-		string $notificationKey,
-		?string $scope = null,
-	): ?array;
+	public function groupDefaultAt(string $groupId, PreferenceAddress $address): ?array;
 
 	/**
-	 * Read a user's stored override for a `(schemaSlug, notificationKey)`
-	 * pair. Returns null when no override is stored (fall through to the
-	 * schema default) — never throws for an unknown key.
+	 * Read a user's stored override at a preference address. Returns null when
+	 * no override is stored (fall through to the schema default), never throws
+	 * for an unknown key.
 	 *
-	 * @param string $userId The user UID.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param string|null $scope The scope, or null for the user's global value.
+	 * @param string            $userId  The user UID.
+	 * @param PreferenceAddress $address The schema slug, notification key and scope; a null scope is the user's global value.
 	 *
 	 * @return array<string, mixed>|null The decoded override, or null when none/invalid.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
-	public function getOverride(
-		string $userId,
-		string $schemaSlug,
-		string $notificationKey,
-		?string $scope = null,
-	): ?array;
+	public function overrideAt(string $userId, PreferenceAddress $address): ?array;
 
 	/**
-	 * Write or clear a group's default.
+	 * Write or clear a group's default; the write's party is the group id.
 	 *
-	 * Passing null clears it, so the layer below — the schema default — applies
+	 * A null value clears it, so the layer below, the schema default, applies
 	 * again. The caller is responsible for having established that the writer
 	 * administers this group; this method stores what it is given.
 	 *
-	 * @param string $groupId The group id.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param array<string, mixed>|null $default The default (`enabled`, optional `channels`) or null to clear.
-	 * @param string|null $scope The scope, or null for the group's global default.
+	 * @param PreferenceWrite $write The group, the address and the default (`enabled`, optional `channels`; null clears it).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 */
-	public function setGroupDefault(
-		string $groupId,
-		string $schemaSlug,
-		string $notificationKey,
-		?array $default,
-		?string $scope = null,
-	): void;
+	public function storeGroupDefault(PreferenceWrite $write): void;
 
 	/**
-	 * Write or clear a user's override for one `(schemaSlug, notificationKey)`
-	 * pair. Passing null clears the override so the schema default applies
-	 * again (zero-migration fall-through).
+	 * Write or clear a user's override; the write's party is the user UID.
+	 * A null value clears the override so the schema default applies again
+	 * (zero-migration fall-through).
 	 *
-	 * @param string $userId The user UID.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param array<string, mixed>|null $override Override body (`enabled`, optional `channels`) or null to clear.
-	 * @param string|null $scope The scope, or null for the user's global value.
+	 * @param PreferenceWrite $write The user, the address and the override (`enabled`, optional `channels`; null clears it).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
-	public function setOverride(
-		string $userId,
-		string $schemaSlug,
-		string $notificationKey,
-		?array $override,
-		?string $scope = null,
-	): void;
+	public function storeOverride(PreferenceWrite $write): void;
 }//end interface

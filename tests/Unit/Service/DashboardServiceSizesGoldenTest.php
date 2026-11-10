@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Search\Service\DashboardSizes;
 use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -193,7 +194,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 
 	private function audit(): AuditTrailMapperInterface {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->method('findAll')->willReturnCallback(
+		$mapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (mixed ...$args): array {
 				$this->note('audit.findAll', $args);
 				if ($this->pairsFail === true) {
@@ -202,7 +203,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 
 				return [$this->entity(AuditTrail::class, 200), $this->entity(AuditTrail::class, 666)];
 			}
-		);
+		));
 		$mapper->method('update')->willReturnCallback(
 			function (AuditTrail $log): AuditTrail {
 				$this->note('audit.update', [$log]);
@@ -213,7 +214,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 				return $log;
 			}
 		);
-		$mapper->method('getStatistics')->willReturn(['total' => 21, 'size' => 22]);
+		$mapper->method('statisticsTotals')->willReturn(['total' => 21, 'size' => 22]);
 		return $mapper;
 	}//end audit()
 

@@ -166,7 +166,7 @@ class EdgeCasesErrorHandlingTest extends TestCase {
 
 		// Mock: Parameterized queries should prevent injection.
 		$this->organisationMapper->expects($this->once())
-			->method('findByName')
+			->method('findListByName')
 			->with($maliciousInput) // Input is safely parameterized
 			->willReturn([]);
 

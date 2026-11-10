@@ -25,10 +25,12 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -96,9 +98,11 @@ class ObjectActionBulkTest extends TestCase {
 		$this->registers->method('find')->with('cases', false, false)->willReturn($register);
 		$job = new BulkJob();
 		$this->jobs->expects($this->once())
-			->method('create')
+			->method('createFromRequest')
 			->willReturnCallback(
-				function (BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification) use ($job): BulkJob {
+				function (BulkJobRequest $request) use ($job): BulkJob {
+					[$call, $selection] = [$request->call, $request->selection];
+					[$actorUid, $justification] = [$request->actorUid, $request->justification];
 					$this->assertSame('openregister:run-action', $call->actionId);
 					$this->assertSame(['action' => 'close', 'inputs' => ['reason' => 'done'], 'register' => 'cases', 'schema' => 'case'], $call->parameters);
 					$this->assertSame(['ids' => ['o-1', 'o-2']], $selection->criteria);
@@ -112,7 +116,7 @@ class ObjectActionBulkTest extends TestCase {
 
 		$bulk = new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate);
 
-		$this->assertSame($job, $bulk->start(selection: $this->selection(), action: 'close', inputs: ['reason' => 'done']));
+		$this->assertSame($job, $bulk->start(selection: $this->selection(), request: new ObjectActionRequest(key: 'close', given: ['reason' => 'done'])));
 	}//end testStartCreatesAJobAsTheSignedInUser()
 
 	/**
@@ -124,11 +128,11 @@ class ObjectActionBulkTest extends TestCase {
 		$this->gate->method('userId')->willReturn('noor');
 		$this->registers->method('find')->willThrowException(new DoesNotExistException('no register'));
 		$this->jobs->expects($this->once())
-			->method('create')
-			->with($this->anything(), $this->callback(static fn (BulkJobSelection $selection): bool => $selection->registerId === null && $selection->schemaId === 9))
+			->method('createFromRequest')
+			->with($this->callback(static fn (BulkJobRequest $request): bool => $request->selection->registerId === null && $request->selection->schemaId === 9))
 			->willReturn(new BulkJob());
 
-		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), action: 'close', inputs: []);
+		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), request: new ObjectActionRequest(key: 'close', given: []));
 	}//end testAnUnresolvableRegisterLeavesTheRegisterIdEmpty()
 
 	/**
@@ -138,10 +142,10 @@ class ObjectActionBulkTest extends TestCase {
 	 */
 	public function testWithoutASignedInUserNoJobIsCreated(): void {
 		$this->gate->method('userId')->willReturn(null);
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('needs a signed-in user');
-		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), action: 'close', inputs: []);
+		(new ObjectActionBulk(jobs: $this->jobs, registers: $this->registers, gate: $this->gate))->start(selection: $this->selection(), request: new ObjectActionRequest(key: 'close', given: []));
 	}//end testWithoutASignedInUserNoJobIsCreated()
 }//end class

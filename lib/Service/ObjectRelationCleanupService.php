@@ -133,7 +133,7 @@ class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterf
 	 */
 	private function timelineLinkReaders(string $objectUuid): array {
 		return [
-			'emails' => fn (): array => $this->links->emailService->getEmailsForObject($objectUuid),
+			'emails' => fn (): array => $this->links->emailService->getEmailsForObject($objectUuid)['results'],
 			'calendar events' => fn (): array => $this->links->calendarEventService->getEventsForObject($objectUuid),
 			'contacts' => fn (): array => $this->links->contactService->getContactsForObject($objectUuid),
 			'deck cards' => fn (): array => $this->links->deckCardService->getCardsForObject($objectUuid),

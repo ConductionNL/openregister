@@ -194,7 +194,10 @@ final class ExampleSetRowInstall {
 	private function made(RowInstallStep $step, string $mode): array {
 		$run   = $step->run;
 		$gaps  = [];
-		$data  = (array) $this->values->fill(value: $step->row['entry']['data'], context: ($this->fill)($run->context), gaps: $gaps);
+		$data  = (array) $this->values->fill(
+			value: $step->row['entry']['data'],
+			scope: new ExampleSetFillScope(context: ($this->fill)($run->context), gaps: $gaps)
+		);
 		$error = ($this->refusal)($data, array_keys($run->ledger->record['users']), $run->context);
 		if ($gaps !== []) {
 			$error = 'cannot resolve '.implode(', ', array_unique($gaps));

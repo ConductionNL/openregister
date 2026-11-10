@@ -37,6 +37,7 @@ use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -337,8 +338,8 @@ class CrudToolsCharacterisationTest extends TestCase
 
             $versioning = $this->createMock(SchemaVersioningService::class);
             $versioning->method('classify')->willReturnCallback(
-                function (Schema $existing, array $newDefinition) use (&$log, $changeSet): SchemaChangeSet {
-                    $log[] = 'classify:' . $existing->getTitle() . ':' . json_encode($newDefinition);
+                function (Schema $existing, IncomingDefinition $incoming) use (&$log, $changeSet): SchemaChangeSet {
+                    $log[] = 'classify:' . $existing->getTitle() . ':' . json_encode($incoming->definition);
                     return $changeSet;
                 }
             );

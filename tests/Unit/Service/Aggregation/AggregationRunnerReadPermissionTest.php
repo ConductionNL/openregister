@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -417,7 +418,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($organisationlessAdmitted);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
-			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: 'read')
+			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql((new RbacAccessCall(schema: $s))->forAction('read'))
 		);
 		$magicMapper->method('callerQualifiesForAction')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): bool => $rbac->callerQualifiesForAction(schema: $s, action: $action)
