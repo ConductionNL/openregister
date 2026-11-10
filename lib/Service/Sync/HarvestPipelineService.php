@@ -505,16 +505,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 			return false;
 		}
 
-		try {
-			$local = WriteCause::asLookup(fn () => $this->importServices->objectService->find(
-				id: (string)$previous->getObjectUuid(),
-				register: $source->getTargetRegister(),
-				schema: $source->getTargetSchema()
-			));
-		} catch (Throwable $e) {
-			return false;
-		}
-
+		$local = $this->localObject(source: $source, previous: $previous);
 		if ($local === null) {
 			return false;
 		}
@@ -523,4 +514,24 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 
 		return $localHash !== $previous->getContentHash();
 	}//end localChangedSinceSync()
+
+	/**
+	 * The local object a previous sync wrote, read as a lookup, or null when it cannot be read.
+	 *
+	 * @param Source     $source   The source, for the target register and schema.
+	 * @param SyncRecord $previous The previous sync record, for the object uuid.
+	 *
+	 * @return \OCA\OpenRegister\Db\ObjectEntity|null The object, or null.
+	 */
+	private function localObject(Source $source, SyncRecord $previous): mixed {
+		try {
+			return WriteCause::asLookup(fn () => $this->importServices->objectService->find(
+				id: (string)$previous->getObjectUuid(),
+				register: $source->getTargetRegister(),
+				schema: $source->getTargetSchema()
+			));
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end localObject()
 }//end class
