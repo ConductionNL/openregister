@@ -32,6 +32,10 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\PartReset;
+use OCA\OpenRegister\Service\ShippedBaseline\ResetRequest;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgrade;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgradeOptions;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
@@ -139,7 +143,7 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 	 */
 	public function testAFirstImportRecordsTheReleaseAndNoRow(): void {
 		$incoming = ['title' => 'Zaak'];
-		$result = $this->guard(baseline: null)->guardSchemaUpdate(slug: 'zaak', live: [], incoming: $incoming, app: 'dossiq', appVersion: '1.3.0');
+		$result = $this->guard(baseline: null)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: [], incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
 
 		$this->assertSame(['definition' => $incoming, 'baseline' => $incoming, 'guarded' => false, 'applied' => [], 'preserved' => [], 'conflicts' => []], $result);
 		$this->assertSame([['subject' => 'schema:zaak', 'definition' => $incoming, 'app' => 'dossiq', 'appVersion' => '1.3.0']], $this->baselines);
@@ -152,8 +156,8 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testRecordFalseRecordsNothing(): void {
-		$this->guard(baseline: null)->guardSchemaUpdate(slug: 'zaak', live: [], incoming: ['a' => 1], app: 'dossiq', appVersion: '1.3.0', record: false);
-		$this->guard(baseline: ['a' => 1])->guardSchemaUpdate(slug: 'zaak', live: ['a' => 1], incoming: ['a' => 2], app: 'dossiq', appVersion: '1.3.0', record: false);
+		$this->guard(baseline: null)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: [], incoming: new ShippedDefinition(definition: ['a' => 1], app: 'dossiq', appVersion: '1.3.0')), options: new SchemaUpgradeOptions(record: false));
+		$this->guard(baseline: ['a' => 1])->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: ['a' => 1], incoming: new ShippedDefinition(definition: ['a' => 2], app: 'dossiq', appVersion: '1.3.0')), options: new SchemaUpgradeOptions(record: false));
 
 		$this->assertSame([], $this->baselines);
 	}//end testRecordFalseRecordsNothing()
@@ -168,14 +172,7 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 		$live = ['authorization' => ['read' => ['a']], 'properties' => ['t' => ['maxLength' => 2000]]];
 		$incoming = ['authorization' => ['read' => ['b']], 'properties' => ['t' => ['maxLength' => 1000]]];
 
-		$result = $this->guard(baseline: $baseline, actor: 'beheerder')->guardSchemaUpdate(
-			slug: 'zaak',
-			live: $live,
-			incoming: $incoming,
-			app: 'dossiq',
-			appVersion: '1.3.0',
-			decisions: ['properties.t.maxLength']
-		);
+		$result = $this->guard(baseline: $baseline, actor: 'beheerder')->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')), options: new SchemaUpgradeOptions(decisions: ['properties.t.maxLength']));
 
 		$this->assertTrue($result['guarded']);
 		$this->assertSame($incoming, $result['definition']);
@@ -204,7 +201,7 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 		$guard = $this->guard(baseline: $baseline, decision: $decision);
 		$decision->run(
 			via: 'occ import',
-			operation: static fn (): array => $guard->guardSchemaUpdate(slug: 'p', live: $live, incoming: $incoming, app: 'portaliq', appVersion: '0.9.0')
+			operation: static fn (): array => $guard->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'p', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'portaliq', appVersion: '0.9.0')))
 		);
 
 		$this->assertSame(
@@ -231,7 +228,7 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 		$this->assertSame('"properties.t.maxLength" already matches what was shipped', $unchanged['reason']);
 		$this->assertSame([], $this->rows);
 
-		$neither = $this->guard(baseline: $baseline, actor: 'beheerder')->previewReset(slug: 'zaak', live: $live, path: 'nope');
+		$neither = $this->guard(baseline: $baseline, actor: 'beheerder')->previewPartReset(request: new ResetRequest(slug: 'zaak', live: $live, path: 'nope'));
 		$this->assertSame(['applicable' => false, 'reason' => '"nope" is in neither the shipped baseline nor the live definition', 'from' => null, 'to' => null, 'definition' => $live], $neither);
 
 		$applied = $this->guard(baseline: $baseline, actor: 'beheerder')->resetToBaseline(slug: 'zaak', live: $live, path: 'properties.t.maxLength');
@@ -243,17 +240,17 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 		);
 
 		$this->rows = [];
-		$this->guard(baseline: $baseline, actor: 'beheerder')->recordReset(slug: 's', path: 'p', from: 1, to: 2);
+		$this->guard(baseline: $baseline, actor: 'beheerder')->recordPartReset(slug: 's', reset: new PartReset(path: 'p', from: 1, to: 2));
 		$this->assertSame([['action' => ShippedConfigurationGuard::ACTION_RESET, 'user' => 'beheerder', 'changed' => ['schema' => 's', 'path' => 'p', 'from' => 1, 'to' => 2]]], $this->rows);
 	}//end testResetRowsAllowedAndRefused()
 
 	/**
-	 * recordShipped() records the definition under the schema subject with its release.
+	 * recordShippedSchema() records the definition under the schema subject with its release.
 	 *
 	 * @return void
 	 */
 	public function testRecordShippedRecordsTheRelease(): void {
-		$this->assertTrue($this->guard(baseline: null)->recordShipped(slug: 'zaak', definition: ['a' => 1], app: 'dossiq', appVersion: '2.0.0'));
+		$this->assertTrue($this->guard(baseline: null)->recordShippedSchema(slug: 'zaak', shipped: new ShippedDefinition(definition: ['a' => 1], app: 'dossiq', appVersion: '2.0.0')));
 		$this->assertSame([['subject' => 'schema:zaak', 'definition' => ['a' => 1], 'app' => 'dossiq', 'appVersion' => '2.0.0']], $this->baselines);
 	}//end testRecordShippedRecordsTheRelease()
 }//end class
