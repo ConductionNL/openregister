@@ -33,6 +33,7 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Service\Rules\ConditionJudgement;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
@@ -445,10 +446,12 @@ class LifecycleValidationListener implements IEventListener {
 		}
 
 		return $this->checks->conditionTracer->trace(
-			condition: $attempt->spec['condition'],
-			document: $this->conditionDocument(attempt: $attempt),
-			verdict: $verdict,
-			message: $message
+			judgement: new ConditionJudgement(
+				condition: $attempt->spec['condition'],
+				document: $this->conditionDocument(attempt: $attempt),
+				verdict: $verdict,
+				message: $message
+			)
 		);
 	}//end conditionTrace()
 
