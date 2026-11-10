@@ -35,7 +35,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUser;
 use OCP\IUserSession;
 use OCA\OpenRegister\Tests\Support\ResolvesControllersFromContainer;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -68,31 +67,11 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	private IRequest&MockObject $request;
 
 	/**
-	 * Mock user session for admin/user simulation
+	 * The real user session; each test signs in the account it needs
 	 *
-	 * @var IUserSession&MockObject
+	 * @var IUserSession
 	 */
-	private IUserSession&MockObject $userSession;
-
-	/**
-	 * Mock group manager for admin checks
-	 *
-	 * @var IGroupManager&MockObject
-	 */
-	private IGroupManager&MockObject $groupManager;
-
-	/**
-	 * Whether the caller these doubles describe is an administrator.
-	 *
-	 * The group-manager double has to answer `isAdmin()` as well as
-	 * `getUserGroupIds()`, and consistently: the container now hands it to
-	 * every collaborator the controller uses, and `SaveObject` calls
-	 * `isAdmin()` on a `bool` return type, so an unstubbed null was a
-	 * TypeError. One flag keeps both answers in step.
-	 *
-	 * @var boolean
-	 */
-	private bool $callerIsAdmin = false;
+	private IUserSession $userSession;
 
 	/**
 	 * Real object service from DI
@@ -171,18 +150,17 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
 		$this->objectMapper = \OC::$server->get(MagicMapper::class);
 
-		// THE THREE DOUBLES THIS FILE CONTROLS: the request carries each
-		// test's payload, and the session plus the group manager decide who is
-		// asking. Everything else the controller needs comes from the
-		// container, so a new dependency on it needs no change here.
+		// THE ONLY DOUBLE THIS FILE CONTROLS: the request carries each test's
+		// payload. The session and the group manager are the real ones, because
+		// the controller's collaborators read them through shared objects the
+		// container builds once; a per-test double never reaches them.
+		// Everything else the controller needs comes from the container, so a
+		// new dependency on it needs no change here.
 		$this->request = $this->createMock(IRequest::class);
-		$this->userSession = $this->createMock(IUserSession::class);
-		$this->groupManager = $this->createMock(IGroupManager::class);
-		$this->groupManager->method('isAdmin')->willReturnCallback(fn () => $this->callerIsAdmin);
+		$this->userSession = \OC::$server->get(IUserSession::class);
+		$this->userSession->setUser(null);
 
 		$this->overrideContainerService(id: IRequest::class, instance: $this->request);
-		$this->overrideContainerService(id: IUserSession::class, instance: $this->userSession);
-		$this->overrideContainerService(id: IGroupManager::class, instance: $this->groupManager);
 
 		$this->controller = $this->resolveController(class: ObjectsController::class);
 
@@ -254,6 +232,7 @@ class ObjectsControllerIntegrationTest extends TestCase {
 
 		// Put the container back: an override left behind would hand this
 		// test's doubles to every later test file.
+		$this->userSession->setUser(null);
 		$this->restoreContainerOverrides();
 
 		parent::tearDown();
@@ -309,40 +288,26 @@ class ObjectsControllerIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Set up mock for admin user
+	 * Sign in an administrator account
 	 *
 	 * @return void
 	 */
 	private function setupAdminUser(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('admin');
-		$this->userSession->method('getUser')->willReturn($user);
-		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
-		$this->callerIsAdmin = true;
+		$admins = \OC::$server->get(IGroupManager::class)->get('admin')?->getUsers() ?? [];
+		if ($admins === []) {
+			$this->markTestSkipped('The instance has no administrator account.');
+		}
+
+		$this->userSession->setUser(reset($admins));
 	}
 
 	/**
-	 * Set up mock for regular (non-admin) user
-	 *
-	 * @return void
-	 */
-	private function setupRegularUser(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('testuser');
-		$this->userSession->method('getUser')->willReturn($user);
-		$this->groupManager->method('getUserGroupIds')->willReturn(['users']);
-		$this->callerIsAdmin = false;
-	}
-
-	/**
-	 * Set up mock for no user (public access)
+	 * Sign out, for public access
 	 *
 	 * @return void
 	 */
 	private function setupNoUser(): void {
-		$this->userSession->method('getUser')->willReturn(null);
-		$this->groupManager->method('getUserGroupIds')->willReturn([]);
-		$this->callerIsAdmin = false;
+		$this->userSession->setUser(null);
 	}
 
 	/**
