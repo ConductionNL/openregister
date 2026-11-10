@@ -120,26 +120,23 @@ class HandoffContractBindingValidator implements HandoffContractBindingValidator
 	 * schemas with a COMPLETE binding (design: "no binding block ⇒ not a
 	 * handoff provider").
 	 *
-	 * @param string $kindUri The kind URI to check.
-	 * @param array<string, mixed> $binding The full `handoffContract` block.
-	 * @param array<string, mixed> $properties The schema's own properties map.
+	 * @param HandoffKindBinding $kind One kind's field map out of the `handoffContract` block, over the schema's own properties.
 	 *
 	 * @return bool True when the kind is completely + validly bound.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Implementer binds all mandatory contract fields)
 	 */
-	public static function isCompleteBinding(string $kindUri, array $binding, array $properties): bool {
-		$kind = new HandoffKindBinding(kindUri: $kindUri, fieldMap: ($binding[$kindUri] ?? null), properties: $properties);
+	public static function isCompleteBinding(HandoffKindBinding $kind): bool {
 		if ($kind->hasFields() === false) {
 			return false;
 		}
 
-		if ($kind->bindsAllOf(contractFields: HandoffKindContracts::mandatoryFields($kindUri)) === false) {
+		if ($kind->bindsAllOf(contractFields: HandoffKindContracts::mandatoryFields($kind->kindUri)) === false) {
 			return false;
 		}
 
-		return $kind->bindsOnlyWithin(allowed: HandoffKindContracts::allFields($kindUri));
+		return $kind->bindsOnlyWithin(allowed: HandoffKindContracts::allFields($kind->kindUri));
 	}//end isCompleteBinding()
 
 	/**
