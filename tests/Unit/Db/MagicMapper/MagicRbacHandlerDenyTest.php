@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -342,8 +343,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		// The object read refuses the denied row.
 		$this->assertFalse(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'aaaaaaaa-0000-0000-0000-000000000001')
 			)
 		);
@@ -352,8 +352,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		// refusal above is about the deny and not about the caller.
 		$this->assertTrue(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->row('ana', ['title' => 'gewoon'], null, 'aaaaaaaa-0000-0000-0000-000000000002')
 			)
 		);
@@ -374,8 +373,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasRowPermission(
-				schema: $this->schemaWith(['delete' => ['behandelaars']]),
-				action: 'delete',
+				ask: new RbacPermissionAsk(schema: $this->schemaWith(['delete' => ['behandelaars']]), action: 'delete'),
 				row: $this->row('ana', ['title' => 'van mij'], ['deny' => ['delete' => ['user:ana']]], 'aaaaaaaa-0000-0000-0000-000000000003')
 			)
 		);
@@ -469,8 +467,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'bbbbbbbb-0000-0000-0000-000000000001')
 			)
 		);
@@ -488,8 +485,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'bbbbbbbb-0000-0000-0000-000000000002')
 			)
 		);

@@ -1407,26 +1407,18 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * a stored row goes through {@see hasRowPermission()}, which reads them off
 	 * the row.
 	 *
-	 * @param Schema $schema Schema to check
-	 * @param string $action CRUD action to check
-	 * @param string|null $objectOwner Optional object owner for ownership check
-	 * @param array|null $objectData Optional object data for conditional checks
+	 * @param RbacPermissionAsk $ask The schema, the action, and optionally the object owner and data
 	 *
 	 * @return bool True if user has permission
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $objectOwner = null,
-		?array $objectData = null,
-	): bool {
-		$check = $this->permissionCheckFor(schema: $schema, action: $action)
-			->onObject(objectData: $objectData, objectAuthorization: null)
+	public function hasPermission(RbacPermissionAsk $ask): bool {
+		$check = $this->permissionCheckFor(schema: $ask->schema, action: $ask->action)
+			->onObject(objectData: $ask->objectData, objectAuthorization: null)
 			->identifiedBy(objectUuid: null);
 
-		return $this->verdictOf(check: $check, objectOwner: $objectOwner);
+		return $this->verdictOf(check: $check, objectOwner: $ask->objectOwner);
 	}//end hasPermission()
 
 	/**
@@ -1434,18 +1426,18 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * The row supplies every object fact of the check: its owner, its match
 	 * envelope, its own `_authorization` (carrying scope and deny) and its uuid
-	 * (for per-object grants).
+	 * (for per-object grants). Only the ask's schema and action are read; an
+	 * owner or data on the ask never stands in for the row's.
 	 *
-	 * @param Schema       $schema Schema to check
-	 * @param string       $action CRUD action to check
-	 * @param ObjectEntity $row    The stored row
+	 * @param RbacPermissionAsk $ask The schema and the action
+	 * @param ObjectEntity      $row The stored row
 	 *
 	 * @return bool True if user has permission
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasRowPermission(Schema $schema, string $action, ObjectEntity $row): bool {
-		$check = $this->permissionCheckFor(schema: $schema, action: $action)
+	public function hasRowPermission(RbacPermissionAsk $ask, ObjectEntity $row): bool {
+		$check = $this->permissionCheckFor(schema: $ask->schema, action: $ask->action)
 			->onObject(objectData: $row->getMatchEnvelope(), objectAuthorization: $row->getAuthorization())
 			->identifiedBy(objectUuid: $row->getUuid());
 

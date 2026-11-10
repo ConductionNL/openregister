@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -355,7 +356,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 						return $object;
 					})()
 				),
-				$rbac->hasPermission(schema: $schema, action: 'update', objectOwner: 'importer', objectData: ['assignedGroup' => $team, 'status' => $status]),
+				$rbac->hasPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'update', objectOwner: 'importer', objectData: ['assignedGroup' => $team, 'status' => $status])),
 				'the row-level verdict agrees for ' . $uuid
 			);
 		}

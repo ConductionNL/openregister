@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ScopeChange;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -324,8 +325,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 					object: $entity
 				),
 				'hasPermission' => $this->rbacHandler->hasRowPermission(
-					schema: $schema,
-					action: 'read',
+					ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 					row: $entity
 				),
 				'list (QueryBuilder)' => in_array($key, $queryBuilderVisible, true),
@@ -638,8 +638,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->assertTrue(
 			$this->rbacHandler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $entities['granted']
 			),
 			'the relation-path verdict must honour the grant'

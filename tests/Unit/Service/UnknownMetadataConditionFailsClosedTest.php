@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -356,15 +357,13 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]])
 			)
 		);
 		$this->assertTrue(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]])
 			)
 		);
@@ -378,8 +377,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	public function testTheRelationPathDeniesOnAKnownKeyThatMatches(): void {
 		$this->assertFalse(
 			$this->rbacHandler()->hasRowPermission(
-				schema: $this->schemaWith(['read' => ['editors']]),
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $this->schemaWith(['read' => ['editors']]), action: 'read'),
 				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]]]])
 			)
 		);
