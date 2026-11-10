@@ -461,12 +461,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
 	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array {
-		return $this->getImportHandler()->importFromFilePath(
-			appId: $appId,
-			filePath: $filePath,
-			version: $version,
-			force: $force
-		);
+		return $this->getImportHandler()->importFromFilePath(appId: $appId, filePath: $filePath, version: $version, force: $force);
 	}//end importFromFilePath()
 
 	/**

@@ -1836,18 +1836,10 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
 	 */
 	public function anonymizeDocument(
-		Node $node,
-		array $entities,
-		string $scope = 'document',
-		?string $fileKey = null,
-		?bool $preserveStructure = null,
+		Node $node, array $entities, string $scope = 'document', ?string $fileKey = null, ?bool $preserveStructure = null
 	): Node {
 		return $this->documentProcessingHandler->anonymizeDocument(
-			node: $node,
-			entities: $entities,
-			scope: $scope,
-			fileKey: $fileKey,
-			preserveStructure: $preserveStructure
+			node: $node, entities: $entities, scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure
 		);
 	}//end anonymizeDocument()
 
