@@ -203,11 +203,11 @@ class SubFlowNodeTokenTest extends TestCase {
 	public function testAParentWithoutATokenStillRunsASubFlow(): void {
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'child', 'edges' => []]);
 		$this->runs->method('queueRun')->willReturn($this->runWithToken(FlowRun::STATUS_QUEUED));
-		$this->runs->method('executePass')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
+		$this->runs->expects($this->once())->method('executePass')->willReturn($this->runWithToken(FlowRun::STATUS_COMPLETED));
 
 		$items = $this->node->execute([], ['flow' => 'child'], []);
 
-		$this->assertIsArray($items);
+		$this->assertSame([], $items);
 
 	}//end testAParentWithoutATokenStillRunsASubFlow()
 }//end class

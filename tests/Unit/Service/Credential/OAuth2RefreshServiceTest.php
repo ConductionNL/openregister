@@ -54,6 +54,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshStores;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
+use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2RefreshService
@@ -555,12 +556,12 @@ class OAuth2RefreshServiceTest extends TestCase {
 
 		$notifier = $this->createMock(CredentialRelinkNotifier::class);
 		$notifier->method('announce')->willReturnCallback(
-			function (string $credentialId, string $provider, string $owner, string $reason): void {
+			function (CredentialRelinkRequiredEvent $event): void {
 				$this->announcements[] = [
-					'credentialId' => $credentialId,
-					'provider' => $provider,
-					'owner' => $owner,
-					'reason' => $reason,
+					'credentialId' => $event->getCredentialId(),
+					'provider' => $event->getProvider(),
+					'owner' => $event->getOwner(),
+					'reason' => $event->getReason(),
 				];
 			}
 		);

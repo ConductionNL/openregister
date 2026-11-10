@@ -54,25 +54,20 @@ interface SchemaMigrationServiceInterface {
 	/**
 	 * Preview a plan against a bounded sample without persisting.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, mixed>> $plan The transform chain.
-	 * @param int $sampleSize The sample size.
+	 * @param MigrationRequest $request    The schema, its register and the transform chain.
+	 * @param int              $sampleSize The sample size.
 	 *
 	 * @return array<int, array<string, mixed>> Before/after pairs.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function preview(int $schemaId, int $registerId, array $plan, int $sampleSize = self::DEFAULT_PREVIEW_SAMPLE): array;
+	public function previewSample(MigrationRequest $request, int $sampleSize = self::DEFAULT_PREVIEW_SAMPLE): array;
 
 	/**
 	 * Start a migration run.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, mixed>> $plan The transform chain.
-	 * @param array<string, mixed> $options Options (stopOnError).
-	 * @param string|null $startedBy The starting user.
+	 * @param MigrationRequest $request   The schema, its register, the transform chain and the options (stopOnError).
+	 * @param string|null      $startedBy The starting user.
 	 *
 	 * @return SchemaRun The created run.
 	 *
@@ -81,7 +76,7 @@ interface SchemaMigrationServiceInterface {
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function start(int $schemaId, int $registerId, array $plan, array $options = [], ?string $startedBy = null): SchemaRun;
+	public function startMigration(MigrationRequest $request, ?string $startedBy = null): SchemaRun;
 
 	/**
 	 * Roll a completed or failed migration run back.

@@ -294,7 +294,6 @@ class CaseUnitsGoldenTest extends TestCase {
 	private function machine(IDBConnection $db, CaseRealisationService $realiser, CaseBusinessStateWriter $writer): CasePlanStateMachine {
 		return new CasePlanStateMachine(
 			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
-			table: new CasePlanTransitions(),
 			effects: new CaseTransitionEffects(realiser: $realiser, writer: $writer)
 		);
 	}//end machine()
@@ -306,7 +305,6 @@ class CaseUnitsGoldenTest extends TestCase {
 		CaseAnchorReader $anchor
 	): CasePlanCascade {
 		return new CasePlanCascade(
-			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
 			machine: $machine,
 			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()), realiser: $realiser, anchor: $anchor)
 		);
