@@ -68,7 +68,9 @@
 
 						<FormCheckboxField
 							:modelValue="webhookItem?.enabled !== false"
-							:hint="t('openregister', 'Enable or disable this webhook')"
+							:hint="
+								t('openregister', 'Enable or disable this webhook')
+							"
 							@update:modelValue="updateEnabled">
 							{{ t('openregister', 'Enabled') }}
 						</FormCheckboxField>
@@ -144,7 +146,10 @@
 							trackBy="value"
 							:labelOutside="true"
 							:placeholder="
-								t('openregister', 'Select property to send as payload')
+								t(
+									'openregister',
+									'Select property to send as payload',
+								)
 							"
 							@update:modelValue="updateEventProperty" />
 					</div>
@@ -416,7 +421,15 @@ import {
 	webhookPayload,
 } from '../../services/webhookForm.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
-import { defaultWebhookConfiguration, defaultWebhookItem } from './webhookDefaults.js'
+import {
+	defaultWebhookConfiguration,
+	defaultWebhookItem,
+	emptyEventCatalogue,
+	emptyWebhookSelections,
+	httpMethodOptions,
+	idleMappingPreview,
+	retryPolicyOptions,
+} from './webhookDefaults.js'
 
 export default {
 	name: 'EditWebhook',
@@ -447,63 +460,12 @@ export default {
 			error: null,
 			activeTab: 0,
 			webhookItem: null,
-			selectedMethod: null,
-			selectedEvent: null,
-			selectedEventProperty: null,
-			selectedRetryPolicy: null,
-			selectedMapping: null,
-			mappingOptions: [],
-			loadingMappings: false,
-			preview: null,
-			previewError: null,
-			previewing: false,
+			...emptyWebhookSelections(),
+			...idleMappingPreview(),
 			configuration: defaultWebhookConfiguration(),
-
-			availableEvents: [],
-			eventOptions: [],
-			loadingEvents: false,
-			httpMethodOptions: [
-				{ value: 'GET', label: 'GET', description: 'HTTP GET method' },
-				{
-					value: 'POST',
-					label: 'POST',
-					description: 'Standard HTTP POST method',
-				},
-				{ value: 'PUT', label: 'PUT', description: 'HTTP PUT method' },
-				{ value: 'PATCH', label: 'PATCH', description: 'HTTP PATCH method' },
-				{
-					value: 'DELETE',
-					label: 'DELETE',
-					description: 'HTTP DELETE method',
-				},
-			],
-
-			retryPolicyOptions: [
-				{
-					value: 'exponential',
-					label: t('openregister', 'Exponential'),
-					description: t(
-						'openregister',
-						'Delays double with each attempt (2, 4, 8 minutes...)',
-					),
-				},
-				{
-					value: 'linear',
-					label: t('openregister', 'Linear'),
-					description: t(
-						'openregister',
-						'Delays increase linearly (5, 10, 15 minutes...)',
-					),
-				},
-				{
-					value: 'fixed',
-					label: t('openregister', 'Fixed'),
-					description: t(
-						'openregister',
-						'Constant delay between retries (5 minutes)',
-					),
-				},
-			],
+			...emptyEventCatalogue(),
+			httpMethodOptions: httpMethodOptions(),
+			retryPolicyOptions: retryPolicyOptions(),
 		}
 	},
 

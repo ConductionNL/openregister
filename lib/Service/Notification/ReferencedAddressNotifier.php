@@ -98,40 +98,6 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 	}//end __construct()
 
 	/**
-	 * Mail every `email` entry of a rule that resolves to an address.
-	 *
-	 * Every resolved address is put to integriq in one question. An entry that
-	 * does not resolve, or that integriq refuses, is reported with its reason,
-	 * never dropped in silence.
-	 *
-	 * @param ObjectEntity         $object         The triggering object.
-	 * @param array<string, mixed> $data           Its data.
-	 * @param array<int, mixed>    $recipientsSpec The rule's `recipients` declaration.
-	 * @param string               $subject        The rule's subject.
-	 * @param string               $body           The rule's message.
-	 * @param string               $category       The rule's message category.
-	 * @param Schema|null          $schema         The triggering object's schema, which declares what each reference may point at.
-	 *
-	 * @return array<int, array{field: string, outcome: string}> One outcome per `email` entry.
-	 *
-	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
-	 */
-	public function notify(
-		ObjectEntity $object,
-		array $data,
-		array $recipientsSpec,
-		string $subject,
-		string $body,
-		string $category,
-		?Schema $schema = null,
-	): array {
-		return $this->mail(
-			origin: new ReferenceOrigin(object: $object, data: $data, schema: $schema),
-			request: new MailingRequest(recipients: $recipientsSpec, subject: $subject, body: $body, category: $category)
-		);
-	}//end notify()
-
-	/**
 	 * Mail every `email` entry of a request that resolves to an address.
 	 *
 	 * Every resolved address is put to integriq in one question, under the
@@ -328,12 +294,13 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			$unsubscribe = $decision['unsubscribe'];
 		}
 
-		return $this->delivery->email->sendToAddress(
-			address: $entry['address'],
-			displayName: '',
-			subject: $mailing->subject,
-			body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
-			unsubscribe: $unsubscribe
+		return $this->delivery->email->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $entry['address'], displayName: ''),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $mailing->subject,
+				body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
 		);
 	}//end sendOne()
 

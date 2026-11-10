@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use PHPUnit\Framework\TestCase;
@@ -169,13 +170,13 @@ class DraftExpiryJobTest extends TestCase {
 				$deleted[] = $uuid;
 				// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
-				$audit->method('createAuditTrailEntry')->willReturnCallback(
+				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					static function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$actors): \OCA\OpenRegister\Db\AuditTrail {
 						$actors[] = $actorId;
 
 						return new \OCA\OpenRegister\Db\AuditTrail();
 					}
-				);
+				));
 				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				return true;

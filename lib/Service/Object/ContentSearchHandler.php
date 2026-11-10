@@ -27,6 +27,7 @@ use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -463,10 +464,7 @@ class ContentSearchHandler {
 		}
 
 		$chunkHits = $this->chunkMapper->searchByKeyword(
-			query: $term,
-			limit: self::CHUNK_CANDIDATE_LIMIT,
-			filters: [],
-			allowUnrankedFallback: true
+			search: new KeywordChunkSearch(query: $term, limit: self::CHUNK_CANDIDATE_LIMIT, allowUnrankedFallback: true)
 		);
 
 		$owners = [];

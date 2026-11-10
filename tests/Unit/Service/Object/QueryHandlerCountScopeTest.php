@@ -9,6 +9,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use PHPUnit\Framework\TestCase;
@@ -30,7 +31,7 @@ class QueryHandlerCountScopeTest extends TestCase {
 			->with(['a' => 1], 'org-uuid-123', true, true, ['x'], 'u-1')
 			->willReturn(7);
 
-		$this->assertSame(7, $this->handler($mapper, 'org-uuid-123')->countSearchObjects(['a' => 1], true, true, ['x'], 'u-1'));
+		$this->assertSame(7, $this->handler($mapper, 'org-uuid-123')->countSearchObjects(['a' => 1], true, true, new ObjectSelection(ids: ['x'], uses: 'u-1')));
 	}//end testACountUnderMultitenancyPassesTheActiveOrganisation()
 
 	public function testACountWithoutMultitenancyPassesNoOrganisation(): void {

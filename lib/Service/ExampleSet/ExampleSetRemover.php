@@ -362,7 +362,8 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	private function deleteFilesOf(ExampleSetRemovalRun $run, ExampleSetRecordedObject $held): array {
 		$left = [];
 		foreach (($run->record['files'][$held->name] ?? []) as $file) {
-			$why = $this->objects->files->delete(fileId: (string) $file['id'], name: (string) $file['name'], objectId: (string) $held->entry['id']);
+			$attached = new AttachedFile(id: (string) $file['id'], name: (string) $file['name']);
+			$why      = $this->objects->files->deleteAttached(file: $attached, objectId: (string) $held->entry['id']);
 			if ($why !== '') {
 				$run->report['failed'][] = 'file '.$file['name'].' on '.$held->name.': '.$why;
 				$left[] = $file;

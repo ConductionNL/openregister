@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\File\DangerousFileExtensions;
 use OCA\OpenRegister\Service\File\ExecutableContentDetector;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use Psr\Log\LoggerInterface;
@@ -41,71 +42,7 @@ final class FilePropertyParts {
 	 *
 	 * @var list<string>
 	 */
-	private const DANGEROUS_EXECUTABLE_EXTENSIONS = [
-		// Windows executables.
-		'exe',
-		'bat',
-		'cmd',
-		'com',
-		'msi',
-		'scr',
-		'vbs',
-		'vbe',
-		'js',
-		'jse',
-		'wsf',
-		'wsh',
-		'ps1',
-		'dll',
-		// Unix/Linux executables.
-		'sh',
-		'bash',
-		'csh',
-		'ksh',
-		'zsh',
-		'run',
-		'bin',
-		'app',
-		'deb',
-		'rpm',
-		// Scripts and code.
-		'php',
-		'phtml',
-		'php3',
-		'php4',
-		'php5',
-		'phps',
-		'phar',
-		'py',
-		'pyc',
-		'pyo',
-		'pyw',
-		'pl',
-		'pm',
-		'cgi',
-		'rb',
-		'rbw',
-		'jar',
-		'war',
-		'ear',
-		'class',
-		// Containers and packages.
-		'appimage',
-		'snap',
-		'flatpak',
-		// MacOS.
-		'dmg',
-		'pkg',
-		'command',
-		// Android.
-		'apk',
-		// Other dangerous.
-		'elf',
-		'out',
-		'o',
-		'so',
-		'dylib',
-	];
+	private const DANGEROUS_EXECUTABLE_EXTENSIONS = DangerousFileExtensions::ALL;
 
 	/**
 	 * Reads uploads, data URIs and base64.

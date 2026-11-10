@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -81,7 +82,10 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 		);
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true, ?ObjectEntity $object=null): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
+				$object = $options->object;
 				$this->events[] = 'check:' . $action . ':' . $userId . ':' . $objectOwner . ':' . json_encode([$_rbac, $object === $this->object]);
 			}
 		);

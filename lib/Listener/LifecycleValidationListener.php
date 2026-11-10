@@ -33,6 +33,7 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Service\Rules\ConditionJudgement;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
@@ -170,6 +171,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
 	 */
 	private function writesDeclaredState(LifecycleEdit $edit): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::isActive() === true && $this->access->edits->writesDeclaredState(edit: $edit) === true;
 	}//end writesDeclaredState()
 
@@ -444,10 +446,12 @@ class LifecycleValidationListener implements IEventListener {
 		}
 
 		return $this->checks->conditionTracer->trace(
-			condition: $attempt->spec['condition'],
-			document: $this->conditionDocument(attempt: $attempt),
-			verdict: $verdict,
-			message: $message
+			judgement: new ConditionJudgement(
+				condition: $attempt->spec['condition'],
+				document: $this->conditionDocument(attempt: $attempt),
+				verdict: $verdict,
+				message: $message
+			)
 		);
 	}//end conditionTrace()
 

@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Db\Watcher;
@@ -142,7 +143,7 @@ class AssigneeFollowListenerTest extends TestCase {
 		$object = $this->makeObject(assignee: 'jan');
 		$this->watchers->expects($this->once())
 			->method('followAssigned')
-			->with($object, 'jan', '3', '12')
+			->with(new AddressedObject(object: $object, register: '3', schema: '12'), 'jan')
 			->willReturn(new Watcher());
 
 		$this->makeListener()->handle(new ObjectCreatedEvent($object));

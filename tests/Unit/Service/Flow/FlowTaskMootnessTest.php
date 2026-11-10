@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -75,14 +76,14 @@ class FlowTaskMootnessTest extends TestCase {
 			->method('terminateAsMoot')
 			->with(
 				't-lo',
-				$this->callback(function (string $reason): bool {
-					$this->assertStringContainsString("'s'", $reason, 'names the deciding transition');
-					$this->assertStringContainsString("'lo'", $reason, 'names the node');
-					$this->assertStringContainsString('run-1', $reason);
+				$this->callback(function (TaskTrigger $trigger): bool {
+					$this->assertStringContainsString("'s'", $trigger->reason, 'names the deciding transition');
+					$this->assertStringContainsString("'lo'", $trigger->reason, 'names the node');
+					$this->assertStringContainsString('run-1', $trigger->reason);
+					$this->assertSame('flow-run:run-1', $trigger->source);
 
 					return true;
-				}),
-				'flow-run:run-1'
+				})
 			)
 			->willReturn($this->task(runUuid: 'run-1'));
 

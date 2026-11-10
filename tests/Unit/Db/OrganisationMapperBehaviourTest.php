@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Support\ConfigServices;
@@ -312,7 +313,7 @@ class OrganisationMapperBehaviourTest extends TestCase {
 		$this->assertCount(1, $mapper->findAll(7, 14));
 		$this->assertContains('#1 setFirstResult(14)', $this->queryLog);
 		$this->assertFalse(in_array('#1 expr.isNull(is_local_tenant)', $this->queryLog, true));
-		$this->assertCount(1, $mapper->findByName('ac', 3, 6));
+		$this->assertCount(1, $mapper->findListByName('ac', new ListQuery(3, 6)));
 		$this->assertContains('#2 param :p1 = %ac%, 2', $this->queryLog);
 		$this->assertContains('#2 setMaxResults(3)', $this->queryLog);
 	}
