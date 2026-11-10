@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\LinkProtection;
 use OCA\OpenRegister\Service\Rbac\LinkInvitation;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
@@ -336,7 +337,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 			$resolver->forget();
 
 			$this->assertFalse(
-				$resolver->grantCarriesVerb($recipientUid, $object->getUuid(), 'use'),
+				$resolver->grantCarriesVerb(new GrantLookup($recipientUid, $object->getUuid()), 'use'),
 				'a plain read grant must NOT carry `use` — seeing a credential is weaker than spending it'
 			);
 
@@ -349,11 +350,11 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 			$resolver->forget();
 
 			$this->assertTrue(
-				$resolver->grantCarriesVerb($recipientUid, $withVerb->getUuid(), 'use'),
+				$resolver->grantCarriesVerb(new GrantLookup($recipientUid, $withVerb->getUuid()), 'use'),
 				'a grant created with the `use` verb must carry it'
 			);
 			$this->assertFalse(
-				$resolver->grantCarriesVerb($recipientUid, $withVerb->getUuid(), 'run'),
+				$resolver->grantCarriesVerb(new GrantLookup($recipientUid, $withVerb->getUuid()), 'run'),
 				'it must carry only the verbs it was given'
 			);
 		} finally {

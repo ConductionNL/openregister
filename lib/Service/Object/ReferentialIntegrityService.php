@@ -712,7 +712,7 @@ class ReferentialIntegrityService {
 		);
 		sort($parts);
 
-		return count($parts) . '|' . md5(implode("\n", $parts));
+		return count($parts) . '|' . hash(algo: 'xxh128', data: implode("\n", $parts));
 	}//end catalogueHash()
 
 	/**

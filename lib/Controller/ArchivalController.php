@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Archival\LegalHoldServiceInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -1244,10 +1245,7 @@ class ArchivalController extends Controller {
 
 		try {
 			$nomination = $this->nominations->recompute(
-				object: $object,
-				schema: $schema,
-				actor: $this->currentUserId(),
-				reason: $reason
+				request: new NominationRecompute(object: $object, schema: $schema, actor: $this->currentUserId(), reason: $reason)
 			);
 
 			if (($nomination['status'] ?? null) === ArchivalNominationServiceInterface::STATUS_NOT_APPLICABLE) {
