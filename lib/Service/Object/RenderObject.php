@@ -28,6 +28,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Adbar\Dot;
 use Exception;
@@ -4601,10 +4603,8 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$related = $run->provider->find(
-			register: $run->register,
-			schema: $run->target,
-			id: (string)$identifier,
-			config: $run->config
+			source: new SourcedTable(table: new RegisterSchema(register: $run->register, schema: $run->target), config: $run->config),
+			id: (string)$identifier
 		);
 		if ($related === null) {
 			return $identifier;
