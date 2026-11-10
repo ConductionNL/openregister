@@ -43,10 +43,8 @@ interface WatcherServiceInterface {
 	 * `$notify` is the follow's notification switch: a bool sets it, null
 	 * keeps what is there (and a new follow notifies).
 	 *
-	 * @param ObjectEntity $object The object to follow, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
-	 * @param bool|null $notify The notification switch, or null to keep it.
+	 * @param AddressedObject $target The object to follow, already resolved through RBAC, and how the caller addressed it.
+	 * @param bool|null       $notify The notification switch, or null to keep it.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
@@ -54,12 +52,7 @@ interface WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function watch(
-		ObjectEntity $object,
-		?string $register = null,
-		?string $schema = null,
-		?bool $notify = null,
-	): Watcher;
+	public function watch(AddressedObject $target, ?bool $notify = null): Watcher;
 
 	/**
 	 * Remove the calling user's own subscription.
@@ -90,10 +83,8 @@ interface WatcherServiceInterface {
 	/**
 	 * Subscribe another user, for a caller with `manage`.
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $userId The user to subscribe.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object and how the caller addressed it.
+	 * @param string          $userId The user to subscribe.
 	 *
 	 * @throws NotAuthorizedException When the caller may not manage the object.
 	 *
@@ -101,7 +92,7 @@ interface WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
-	public function addWatcher(ObjectEntity $object, string $userId, ?string $register = null, ?string $schema = null): Watcher;
+	public function addWatcher(AddressedObject $target, string $userId): Watcher;
 
 	/**
 	 * Subscribe a principal who was NAMED in a timeline entry.
@@ -119,10 +110,8 @@ interface WatcherServiceInterface {
 	 * Idempotent, like every other subscribe: naming somebody twice leaves one
 	 * row and writes nothing on the object.
 	 *
-	 * @param ObjectEntity $object The object the entry hangs on.
-	 * @param string $userId The principal who was named, already checked for read access.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object the entry hangs on, and how the caller addressed it.
+	 * @param string          $userId The principal who was named, already checked for read access.
 	 *
 	 * @return Watcher The subscription.
 	 *
@@ -130,12 +119,7 @@ interface WatcherServiceInterface {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function subscribeMentioned(
-		ObjectEntity $object,
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-	): Watcher;
+	public function subscribeMentioned(AddressedObject $target, string $userId): Watcher;
 
 	/**
 	 * Make an assignee follow the object, with notifications on.

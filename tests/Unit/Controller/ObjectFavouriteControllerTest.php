@@ -24,6 +24,7 @@ use OCA\OpenRegister\Controller\ObjectFavouriteController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
@@ -107,7 +108,7 @@ class ObjectFavouriteControllerTest extends TestCase {
 		$row->setObjectUuid('uuid-a');
 		$row->setNotify(false);
 		$this->favourites->expects($this->once())->method('star')
-			->with($this->isInstanceOf(ObjectEntity::class), 'my reg', 's')
+			->with($this->callback(static fn (AddressedObject $target): bool => $target->register === 'my reg' && $target->schema === 's'))
 			->willReturn($row);
 
 		$response = $this->controller()->star('my reg', 's', 'uuid-a');

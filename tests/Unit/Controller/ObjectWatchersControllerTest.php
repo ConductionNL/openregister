@@ -26,6 +26,7 @@ use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerSe
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
@@ -164,7 +165,7 @@ class ObjectWatchersControllerTest extends TestCase {
 	 */
 	public function testWatchWithoutNotifyLeavesTheSwitchToTheService(): void {
 		$this->watchers->expects($this->once())->method('watch')
-			->with($this->isInstanceOf(ObjectEntity::class), 'r', 's', null)
+			->with($this->callback(static fn (AddressedObject $target): bool => $target->register === 'r' && $target->schema === 's'), null)
 			->willReturn($this->row('alice'));
 
 		$response = $this->controller()->watch('r', 's', 'uuid-a');
@@ -183,7 +184,7 @@ class ObjectWatchersControllerTest extends TestCase {
 	public function testWatchReadsTheNotifySwitch(): void {
 		$seen = [];
 		$this->watchers->method('watch')->willReturnCallback(
-			function (ObjectEntity $object, ?string $register, ?string $schema, ?bool $notify) use (&$seen): Watcher {
+			function (AddressedObject $target, ?bool $notify) use (&$seen): Watcher {
 				$seen[] = $notify;
 				return $this->row('alice', ($notify ?? true));
 			}
@@ -326,7 +327,7 @@ class ObjectWatchersControllerTest extends TestCase {
 	public function testAddRefusesAnUnknownUserAndAddsAKnownOne(): void {
 		$this->users->method('userExists')->willReturnMap([['ghost', false], ['bob', true]]);
 		$this->watchers->expects($this->once())->method('addWatcher')
-			->with($this->isInstanceOf(ObjectEntity::class), 'bob', 'r', 's')
+			->with($this->callback(static fn (AddressedObject $target): bool => $target->register === 'r' && $target->schema === 's'), 'bob')
 			->willReturn($this->row('bob'));
 		$controller = $this->controller();
 

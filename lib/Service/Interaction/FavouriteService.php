@@ -70,9 +70,7 @@ class FavouriteService implements FavouriteServiceInterface {
 	/**
 	 * Star an object: follow it with notifications off, unless already followed.
 	 *
-	 * @param ObjectEntity $object The object, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object, already resolved through RBAC, and how the caller addressed it.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
@@ -80,12 +78,8 @@ class FavouriteService implements FavouriteServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
-	public function star(
-		ObjectEntity $object,
-		?string $register = null,
-		?string $schema = null
-	): Watcher {
-		return $this->watchers->followQuietly(object: $object, register: $register, schema: $schema);
+	public function star(AddressedObject $target): Watcher {
+		return $this->watchers->followQuietlyAt(target: $target);
 
 	}//end star()
 
