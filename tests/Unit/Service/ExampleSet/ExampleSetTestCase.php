@@ -88,6 +88,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Db\DeckLinkMapperInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -1352,7 +1353,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function contactLinks(): ContactLinkMapper {
 		$links = $this->createMock(ContactLinkMapper::class);
 		$links->method('findByObjectContactAndRole')->willReturnCallback(
-			function (string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+			function (PersonLinkRef $ref): ?ContactLink {
+				[$objectUuid, $contactUid, $role] = [$ref->objectUuid, $ref->contactUid, $ref->role];
 				foreach (array_keys($this->partyLinks) as $key) {
 					[$object, $party, $linkRole] = explode(' ', $key, 3);
 					if ($object === $objectUuid && ContactLink::partyUid(partyUuid: $party) === $contactUid && $linkRole === $role) {
