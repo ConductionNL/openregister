@@ -198,29 +198,12 @@ class TmloService implements TmloServiceInterface {
 	}//end getSchemaDefaults()
 
 	/**
-	 * Populate TMLO defaults on an object entity.
-	 *
-	 * Merges schema-level TMLO defaults with any explicitly provided TMLO data.
-	 * Sets archiefstatus to 'actief' if not already set.
-	 * Calculates archiefactiedatum from bewaarTermijn if not explicitly provided.
-	 *
-	 * @param ObjectEntity $object The object to populate
-	 * @param Register $register The register (must have tmloEnabled=true)
-	 * @param Schema $schema The schema for default values
-	 *
-	 * @return ObjectEntity The object with populated TMLO metadata
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
-	 */
-	public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity {
-		return $this->populateTableDefaults(object: $object, table: new RegisterSchema(register: $register, schema: $schema));
-	}//end populateDefaults()
-
-	/**
 	 * Populate TMLO defaults on an object entity of one register and schema.
 	 *
 	 * Merges schema-level TMLO defaults with any explicitly provided TMLO data;
-	 * nothing is set unless the register has TMLO enabled.
+	 * nothing is set unless the register has TMLO enabled. Sets archiefstatus
+	 * to 'actief' if not already set, and calculates archiefactiedatum from
+	 * bewaarTermijn if not explicitly provided.
 	 *
 	 * @param ObjectEntity   $object The object to populate
 	 * @param RegisterSchema $table  The register (TMLO switch) and schema (default values)
@@ -229,7 +212,7 @@ class TmloService implements TmloServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
 	 */
-	public function populateTableDefaults(ObjectEntity $object, RegisterSchema $table): ObjectEntity {
+	public function populateDefaults(ObjectEntity $object, RegisterSchema $table): ObjectEntity {
 		if ($this->isTmloEnabled(register: $table->register) === false) {
 			return $object;
 		}
@@ -244,7 +227,7 @@ class TmloService implements TmloServiceInterface {
 		$object->setTmlo($this->withDerivedDefaults(tmlo: $tmlo));
 
 		return $object;
-	}//end populateTableDefaults()
+	}//end populateDefaults()
 
 	/**
 	 * Fill every TMLO field that is not set (or null) from the schema defaults.

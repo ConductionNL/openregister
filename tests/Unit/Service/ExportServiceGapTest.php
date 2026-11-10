@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -172,8 +174,8 @@ class ExportServiceGapTest extends TestCase {
 		]);
 
 		$this->propertyRbacHandler->method('canReadProperty')
-			->willReturnCallback(function ($s, $p) {
-				return $p !== 'secret_field';
+			->willReturnCallback(function (SchemaProperty $read, PropertyAccessRequest $request) {
+				return $read->name !== 'secret_field';
 			});
 		$this->objectService->method('searchObjects')->willReturn([]);
 

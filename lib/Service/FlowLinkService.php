@@ -120,10 +120,8 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 *
 	 * Admin-only. Idempotent: a duplicate link raises a 409 Exception.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $operationId workflowengine operation id.
+	 * @param LinkTarget $target      The parent OR object: its uuid, register id and schema id.
+	 * @param int        $operationId workflowengine operation id.
 	 *
 	 * @return FlowLink The persisted link row.
 	 *
@@ -132,23 +130,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkOperation(string $objectUuid, int $registerId, int $schemaId, int $operationId): FlowLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkToTarget(target: $target, operationId: $operationId);
-	}//end linkOperation()
-
-	/**
-	 * Link a Flow operation to the target object once the caller may and the operation exists.
-	 *
-	 * @param LinkTarget $target      The object, register and schema to link to.
-	 * @param int        $operationId workflowengine operation id.
-	 *
-	 * @return FlowLink The persisted link row.
-	 *
-	 * @throws Exception On missing user, non-admin (403), missing operation (404),
-	 *                   duplicate (409), Flow unavailable (503).
-	 */
-	private function linkToTarget(LinkTarget $target, int $operationId): FlowLink {
+	public function linkOperation(LinkTarget $target, int $operationId): FlowLink {
 		$user  = $this->requireLinkingAdmin();
 		$onRow = $this->requireUnlinkedOperation(objectUuid: $target->objectUuid, operationId: $operationId);
 
@@ -165,7 +147,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 		$link->setLinkedAt(new DateTime());
 
 		return $this->platform->flowLinkMapper->insert($link);
-	}//end linkToTarget()
+	}//end linkOperation()
 
 	/**
 	 * The logged-in administrator, when Flow is available to link against.
@@ -437,13 +419,9 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 * @return array<int|string,mixed>
 	 */
 	private function decodeJsonText(string $text): array {
-		try {
-			$decoded = json_decode($text, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		} catch (Throwable $e) {
-			// Fall through.
+		$decoded = json_decode($text, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
 		return [];

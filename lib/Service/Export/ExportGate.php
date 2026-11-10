@@ -82,12 +82,9 @@ class ExportGate implements ExportGateInterface {
 		}
 
 		try {
-			$this->recorder->recordRefused(
-				profile: $profile,
-				rule: $refusal->getRule(),
-				reason: $refusal->getMessage(),
-				register: $registerId,
-				schema: $schema?->getId()
+			$this->recorder->recordRefusal(
+				refusal: new ExportRefusal(profile: $profile, rule: $refusal->getRule(), reason: $refusal->getMessage()),
+				scope: new ExportScope(register: $registerId, schema: $schema?->getId(), actorId: null)
 			);
 		} catch (Throwable $exception) {
 			// The refusal below stands whether or not the trail took it.

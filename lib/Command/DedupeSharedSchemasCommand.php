@@ -251,7 +251,9 @@ class DedupeSharedSchemasCommand extends Command {
 	 */
 	private function applySplit(SharedSchemaSplitRun $run, PlannedSchemaSplit $split): void {
 		try {
-			$result = $this->dedupe->applySplit(entry: $split->entry, target: $split->registerId, strict: $run->strict);
+			$result = ($run->strict === true)
+				? $this->dedupe->applySplitStrictly(entry: $split->entry, target: $split->registerId)
+				: $this->dedupe->applySplit(entry: $split->entry, target: $split->registerId);
 			$run->output->writeln($this->describeSplit(split: $split, result: $result));
 			$run->split++;
 		} catch (Throwable $e) {

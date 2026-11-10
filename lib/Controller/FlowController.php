@@ -405,6 +405,11 @@ class FlowController extends Controller {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	public function state(string $flowId): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		try {
 			$this->flows->find(uuid: $flowId);
 		} catch (DoesNotExistException $e) {
@@ -573,6 +578,11 @@ class FlowController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$limit      = min(200, max(1, (int)$this->request->getParam('limit', 100)));
 		$offset     = max(0, (int)$this->request->getParam('offset', 0));
 		$appFilter  = $this->trimmedFilter(key: 'app');
@@ -897,6 +907,11 @@ class FlowController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		try {
 			$flow = $this->flows->find(uuid: $id);
 		} catch (DoesNotExistException $e) {
@@ -1242,8 +1257,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function versions(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.read',
+		return $this->withReadableFlow(
 			id: $id,
 			then: function (Flow $flow): JSONResponse {
 				$rows = $this->flowVersionService->versionsOf(flowUuid: (string)$flow->getUuid());
@@ -1253,21 +1267,40 @@ class FlowController extends Controller {
 	}//end versions()
 
 	/**
-	 * Run an action on a flow: the caller must hold the right first (401
-	 * anonymous, 403 without it), then the flow must exist (404).
+	 * Run an action on a flow the caller may read: the right first (401
+	 * anonymous, 403 without flow.read), then the flow must exist (404).
 	 *
-	 * @param string   $right The action right (flow.read or flow.update)
-	 * @param string   $id    The flow UUID
-	 * @param callable $then  The action, given the flow
+	 * @param string   $id   The flow UUID
+	 * @param callable $then The action, given the flow
 	 *
 	 * @return JSONResponse The action's response or the refusal
 	 */
-	private function withFlow(string $right, string $id, callable $then): JSONResponse {
-		$denied = $this->denyUnless(action: $right);
-		if ($denied !== null) {
-			return $denied;
-		}
+	private function withReadableFlow(string $id, callable $then): JSONResponse {
+		return ($this->denyUnless(action: 'flow.read') ?? $this->withFoundFlow(id: $id, then: $then));
+	}//end withReadableFlow()
 
+	/**
+	 * Run an action on a flow the caller may change: the right first (401
+	 * anonymous, 403 without flow.update), then the flow must exist (404).
+	 *
+	 * @param string   $id   The flow UUID
+	 * @param callable $then The action, given the flow
+	 *
+	 * @return JSONResponse The action's response or the refusal
+	 */
+	private function withUpdatableFlow(string $id, callable $then): JSONResponse {
+		return ($this->denyUnless(action: 'flow.update') ?? $this->withFoundFlow(id: $id, then: $then));
+	}//end withUpdatableFlow()
+
+	/**
+	 * Run an action on a flow that exists, or answer 404. Only called after the right was checked.
+	 *
+	 * @param string   $id   The flow UUID
+	 * @param callable $then The action, given the flow
+	 *
+	 * @return JSONResponse The action's response or the 404
+	 */
+	private function withFoundFlow(string $id, callable $then): JSONResponse {
 		try {
 			$flow = $this->flows->find(uuid: $id);
 		} catch (DoesNotExistException $e) {
@@ -1275,7 +1308,7 @@ class FlowController extends Controller {
 		}
 
 		return $then($flow);
-	}//end withFlow()
+	}//end withFoundFlow()
 
 	/**
 	 * Read one version of a flow, including the graph it names.
@@ -1293,8 +1326,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function version(string $id, int $version): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.read',
+		return $this->withReadableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => $this->versionWithGraph(flow: $flow, version: $version)
 		);
@@ -1339,8 +1371,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function versionPreview(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.read',
+		return $this->withReadableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => new JSONResponse($this->flowVersionService->previewPublish(flow: $flow))
 		);
@@ -1361,7 +1392,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function publish(string $id): JSONResponse {
-		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
+		return $this->withUpdatableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
 	}//end publish()
 
 	/**
@@ -1409,8 +1440,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function draft(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.update',
+		return $this->withUpdatableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
 				step: fn () => $this->flowVersionService->createDraft(flow: $flow),
@@ -1452,8 +1482,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function deprecate(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.update',
+		return $this->withUpdatableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
 				step: fn () => $this->flowVersionService->deprecate(flow: $flow),
@@ -1494,7 +1523,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function adopt(string $id): JSONResponse {
-		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
+		return $this->withUpdatableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
 	}//end adopt()
 
 	/**

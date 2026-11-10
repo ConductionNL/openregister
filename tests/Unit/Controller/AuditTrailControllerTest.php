@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
@@ -68,7 +69,7 @@ class AuditTrailControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService(new AuditExportSource($this->pageQuery, $this->logService), $this->jobList),
 			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
@@ -595,7 +596,7 @@ class AuditTrailControllerTest extends TestCase {
 			$session,
 			$groupMgr,
 			$this->createMock(ReadableAuditTrailLister::class),
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService(new AuditExportSource($this->pageQuery, $this->logService), $this->jobList),
 			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}
@@ -863,7 +864,7 @@ class AuditTrailControllerTest extends TestCase {
 			$session,
 			$this->createMock(IGroupManager::class),
 			$lister,
-			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList),
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService(new AuditExportSource($this->pageQuery, $this->logService), $this->jobList),
 			$this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class)
 		);
 	}

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NativeAggregationRequest;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -52,7 +53,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 /**
- * Each case calls tryNativeAggregation() with a request and gives each
+ * Each case calls tryNativeWithSpec() with a request and gives each
  * prepared statement its own rows. The statements with their bindings and
  * the result are compared with fixtures/native-multi-metric-golden.json.
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
@@ -156,6 +157,46 @@ class AggregationRunnerNativeMultiMetricGoldenTest extends TestCase {
 	}//end testNativeMultiMetricMatchesTheGolden()
 
 	/**
+	 * Entries whose metric or field is not a string, on every native platform shape.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function untypedEntries(): array {
+		$entries = [
+			'int metric' => [['metric' => 1], ['metric' => 'count']],
+			'bool metric' => [['metric' => true], ['metric' => 'count']],
+			'missing metric' => [['field' => 'amount'], ['metric' => 'count']],
+			'int field' => [['metric' => 'sum', 'field' => 7], ['metric' => 'count']],
+		];
+		$shapes = [
+			'pg grouped' => ['platform' => 'postgres', 'groupBy' => ['field' => 'status']],
+			'mysql ungrouped' => ['platform' => 'mysql'],
+			'sqlite ungrouped' => ['platform' => 'sqlite'],
+			'unknown platform' => ['platform' => 'unknown', 'groupBy' => ['field' => 'status']],
+		];
+		$cases = [];
+		foreach ($entries as $entryName => $metrics) {
+			foreach ($shapes as $shapeName => $shape) {
+				$cases[$entryName . ', ' . $shapeName] = [$shape + ['metrics' => $metrics, 'rows' => []]];
+			}
+		}
+
+		return $cases;
+	}//end untypedEntries()
+
+	#[DataProvider('untypedEntries')]
+	public function testANonStringEntryMetricOrFieldThrowsInsteadOfFallingBack(array $case): void {
+		$this->expectException(\TypeError::class);
+		// A missing key warns before the TypeError; the warning is not what this pins.
+		set_error_handler(static fn (): bool => true, E_WARNING);
+		try {
+			$this->observe(case: $case);
+		} finally {
+			restore_error_handler();
+		}
+	}//end testANonStringEntryMetricOrFieldThrowsInsteadOfFallingBack()
+
+	/**
 	 * Run the case and record the statements and the result.
 	 *
 	 * @param array<string, mixed> $case The case.
@@ -164,19 +205,23 @@ class AggregationRunnerNativeMultiMetricGoldenTest extends TestCase {
 	 */
 	private function observe(array $case): array {
 		$this->statements = [];
-		$method = new ReflectionMethod(AggregationRunner::class, 'tryNativeAggregation');
+		$method = new ReflectionMethod(AggregationRunner::class, 'tryNativeWithSpec');
 		$result = $method->invoke(
 			$this->runner(case: $case),
-			$this->register(),
-			$this->schema(),
-			$case['metric'] ?? 'count',
-			$case['field'] ?? null,
-			$case['filter'] ?? [],
-			$case['groupBy'] ?? null,
-			$case['dateBucket'] ?? null,
-			$case['metrics'] ?? null,
-			$case['cumulative'] ?? false,
-			$case['rowRbac'] ?? true
+			new NativeAggregationRequest(
+				register: $this->register(),
+				schema: $this->schema(),
+				spec: [
+					'metric'     => $case['metric'] ?? 'count',
+					'field'      => $case['field'] ?? null,
+					'filter'     => $case['filter'] ?? [],
+					'groupBy'    => $case['groupBy'] ?? null,
+					'dateBucket' => $case['dateBucket'] ?? null,
+					'metrics'    => $case['metrics'] ?? null,
+					'cumulative' => $case['cumulative'] ?? false,
+					'rowRbac'    => $case['rowRbac'] ?? true,
+				]
+			)
 		);
 
 		return ['statements' => $this->statements, 'result' => $result];
