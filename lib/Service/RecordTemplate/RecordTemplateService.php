@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\RecordTemplate;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
@@ -104,7 +105,8 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
-		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema);
+		$scope      = ListQuery::unbounded(filters: ['register' => $register, 'schema' => $schema]);
+		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, query: $scope);
 
 		return array_values(array_filter($candidates, fn (RecordTemplate $template): bool => $this->resolveUse(template: $template, reach: $reach)));
 	}//end listFor()
