@@ -109,7 +109,12 @@ class ImportHandlerActingUserAccessGoldenTest extends TestCase {
 	}//end session()
 
 	/**
-	 * @param array|\Throwable|null $admins Members of the admin group; null for no group.
+	 * Install a group manager.
+	 *
+	 * @param array|\Throwable|null $admins    Members of the admin group; null for no group.
+	 * @param array<string>         $adminUids The uids isAdmin() answers true for.
+	 *
+	 * @return void
 	 */
 	private function adminGroup(array|\Throwable|null $admins, array $adminUids = []): void {
 		$groupManager = $this->createMock(IGroupManager::class);
