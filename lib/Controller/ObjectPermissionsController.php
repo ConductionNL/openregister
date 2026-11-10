@@ -310,6 +310,6 @@ class ObjectPermissionsController extends Controller {
 	 * @return ObjectEntity|JSONResponse The object, or the refusal.
 	 */
 	private function resolveObject(ObjectRef $ref): ObjectEntity|JSONResponse {
-		return ($this->gate->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id) ?? ObjectSharingEndpoint::notFound());
+		return ($this->gate->resolve(ref: $ref) ?? ObjectSharingEndpoint::notFound());
 	}//end resolveObject()
 }//end class

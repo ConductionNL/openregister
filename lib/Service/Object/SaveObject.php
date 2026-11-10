@@ -29,6 +29,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -41,6 +43,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\LockedException;
@@ -106,6 +109,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
@@ -1977,8 +1981,7 @@ class SaveObject implements SaveObjectInterface {
 		// Normalize translatable properties (wrap simple values under default language).
 		$call->data = $this->translationHandler->normalizeTranslationsForSave(
 			objectData: $call->data,
-			schema: $call->schema,
-			register: $call->register
+			scope: new TranslationScope(schema: $call->schema, register: $call->register)
 		);
 
 		// Skip when _rbac is false (internal/system calls bypass all authorization).
@@ -2236,10 +2239,12 @@ class SaveObject implements SaveObjectInterface {
 		$dedupPolicy = $this->resolveDedupCreatePolicy();
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: $call->registerId,
-				schema: $call->schemaId,
-				data: $call->data,
-				overrideRequested: $call->flags->dedupOverride
+				candidate: new CreateCandidate(
+					register: $call->registerId,
+					schema: $call->schemaId,
+					data: $call->data,
+					overrideRequested: $call->flags->dedupOverride
+				)
 			);
 		}
 
@@ -2656,10 +2661,8 @@ class SaveObject implements SaveObjectInterface {
 		// active, and refused once it has been nominated.
 		$retentionService = $this->resolveRetentionService();
 		if ($retentionService !== null) {
-			$preparedObject = $retentionService->applyClassificationOnUpdate(
-				object: $preparedObject,
-				schema: $call->schema,
-				previousData: ($oldObjectData ?? [])
+			$preparedObject = $retentionService->applyClassification(
+				update: new RecordUpdate(object: $preparedObject, schema: $call->schema, previousData: ($oldObjectData ?? []))
 			);
 		}
 
@@ -3337,10 +3340,8 @@ class SaveObject implements SaveObjectInterface {
 	private function decideSlug(ObjectEntity $entity, Schema $schema, ?string $stored, array $sent): void {
 		[$selfData, $data] = $sent;
 		$this->slugHandler->applyOnSave(
-			entity: $entity,
-			schema: $schema,
-			originalSlug: $stored,
-			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+			request: new SlugRequest(entity: $entity, schema: $schema, clientSlug: $this->clientSlug(selfData: $selfData, data: $data)),
+			originalSlug: $stored
 		);
 	}//end decideSlug()
 
@@ -3694,7 +3695,7 @@ class SaveObject implements SaveObjectInterface {
 			}
 		}
 
-		$this->tmloService->populateDefaults($objectEntity, $register, $schema);
+		$this->tmloService->populateDefaults($objectEntity, new RegisterSchema(register: $register, schema: $schema));
 	}//end populateTmloDefaults()
 
 	/**
@@ -4331,10 +4332,8 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			return $retentionService->recalculateArchiveActionDate(
-				$preparedObject,
-				$run->schema,
-				$run->oldObject->getObject()
+			return $retentionService->recalculateActionDate(
+				new RecordUpdate($preparedObject, $run->schema, $run->oldObject->getObject())
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());

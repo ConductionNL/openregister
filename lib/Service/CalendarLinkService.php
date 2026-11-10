@@ -178,29 +178,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	}//end stampLinkedBy()
 
 	/**
-	 * Create a new VEVENT through CalendarEventService and record a link-table row.
-	 *
-	 * Delegates the VEVENT write (which adds X-OPENREGISTER-* properties)
-	 * to {@see CalendarEventService::createEvent()} then mirrors the
-	 * linkage in the link table with `taggedWithXor=true`.
-	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception On creation failure.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function createAndLinkEvent(string $objectUuid, int $registerId, int $schemaId, array $eventData): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->createLinkedEvent(target: $target, eventData: $eventData);
-	}//end createAndLinkEvent()
-
-	/**
 	 * Create a VEVENT through CalendarEventService and insert its link-table mirror row.
 	 *
 	 * @param LinkTarget          $target    The object, register and schema to link to.

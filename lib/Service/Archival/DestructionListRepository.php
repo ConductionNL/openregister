@@ -41,7 +41,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -109,10 +112,11 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 				return [];
 			}
 
-			return $this->mappers->objectMapper->findAll(
-				filters: $this->statusFilter(statuses: $statuses),
-				register: $scope['register'],
-				schema: $scope['schema']
+			return $this->mappers->objectMapper->findAllListed(
+				request: new MagicListRequest(
+					table: new RegisterSchema(register: $scope['register'], schema: $scope['schema']),
+					query: ListQuery::unbounded(filters: $this->statusFilter(statuses: $statuses))
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[DestructionListRepository] Could not read destruction lists: ' . $e->getMessage());

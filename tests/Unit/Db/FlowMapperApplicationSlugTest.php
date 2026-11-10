@@ -223,7 +223,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 	public function testCountFlowsAppliesTheApplicationSlugPredicateWhenGiven(): void {
 		$mapper = new FlowMapper($this->db(['total' => 2]));
 
-		$total = $mapper->countFlows(applicationSlug: 'hydra');
+		$total = $mapper->countFlows(new FlowSelection(applicationSlug: 'hydra'));
 
 		$this->assertSame(2, $total);
 		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);

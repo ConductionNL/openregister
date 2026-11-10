@@ -163,7 +163,8 @@ class FlowService implements FlowServiceInterface {
 			return 0;
 		}
 
-		return $this->definitions->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		return $this->definitions->mapper->countFlows(selection: $selection);
 	}//end count()
 
 	/**
