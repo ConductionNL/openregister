@@ -169,7 +169,7 @@ class DecisionTableStore {
 			}
 		}
 
-		return $this->onlyKeyedTable(reference: $reference, byKey: $byKey, byUuid: $byUuid);
+		return ($this->onlyKeyedTable(reference: $reference, byKey: $byKey) ?? $byUuid);
 	}//end lookup()
 
 	/**
@@ -202,7 +202,7 @@ class DecisionTableStore {
 	}//end tableRows()
 
 	/**
-	 * The one table a key names, else the table with that uuid, else null.
+	 * The one table a key names, else null.
 	 *
 	 * Two rows with one key (a save that went around the guard, an import) are two tables, and the register
 	 * returns them in no fixed order: answering with the first would decide by a table nobody chose, and
@@ -210,15 +210,14 @@ class DecisionTableStore {
 	 *
 	 * @param string                              $reference The key or uuid.
 	 * @param array<string, array<string, mixed>> $byKey     The tables carrying that key, by uuid.
-	 * @param array<string, mixed>|null           $byUuid    The table with that uuid.
 	 *
-	 * @return array<string, mixed>|null The table.
+	 * @return array<string, mixed>|null The table, or null when no table carries the key.
 	 *
 	 * @throws UnexpectedValueException When more than one table carries the key.
 	 *
 	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
-	private function onlyKeyedTable(string $reference, array $byKey, ?array $byUuid): ?array {
+	private function onlyKeyedTable(string $reference, array $byKey): ?array {
 		if (count($byKey) > 1) {
 			throw new UnexpectedValueException(
 				sprintf('More than one decision table has the key "%s" (%s); the key must name exactly one.', $reference, implode(', ', array_keys($byKey)))
@@ -229,6 +228,6 @@ class DecisionTableStore {
 			return array_values($byKey)[0];
 		}
 
-		return $byUuid;
+		return null;
 	}//end onlyKeyedTable()
 }//end class

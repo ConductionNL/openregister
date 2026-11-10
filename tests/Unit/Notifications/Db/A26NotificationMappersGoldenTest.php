@@ -43,6 +43,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\ObjectPresenceMapper;
 use OCA\OpenRegister\Notifications\Db\ReferencePatternMapper;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryScope;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
@@ -269,17 +270,17 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			}
 		};
 		return [
-			'broadcast record'               => [$broadcasts, 'record', ['u-1', 'admin', new BroadcastMessage(subject: 'Hi', body: null), new BroadcastWindow(startsAt: $at, endsAt: $at)], [], false],
+			'broadcast record'               => [$broadcasts, 'record', ['u-1', new OutgoingBroadcast(message: new BroadcastMessage(subject: 'Hi', body: null), sender: 'admin', window: new BroadcastWindow(startsAt: $at, endsAt: $at))], [], false],
 			'broadcast findByUuid found'     => [$broadcasts, 'findByUuid', ['u-1'], [[self::ROW]], false],
 			'broadcast findByUuid missing'   => [$broadcasts, 'findByUuid', ['u-1'], [[]], false],
 			'broadcast findAll'              => [$broadcasts, 'findAllBroadcasts', [], [[self::ROW]], false],
 			'broadcast findAll paged'        => [$broadcasts, 'findAllBroadcasts', [5, 10], [[]], false],
 			'broadcast findUnseenFor'        => [$broadcasts, 'findUnseenFor', ['alice', $at], [[self::ROW]], false],
 			'broadcast deleteByUuid'         => [$broadcasts, 'deleteByUuid', ['u-1'], [], false],
-			'receipt acknowledge existing'   => [$receipts, 'acknowledge', ['u-1', 'alice', $at], [[self::ROW]], false],
-			'receipt acknowledge insert'     => [$receipts, 'acknowledge', ['u-1', 'alice', $at], [[]], false],
-			'receipt acknowledge race'       => [$racing, 'acknowledge', ['u-1', 'alice', $at], [[], [self::ROW]], false],
-			'receipt acknowledge race lost'  => [$racing, 'acknowledge', ['u-1', 'alice', $at], [[], []], false],
+			'receipt acknowledge existing'   => [$receipts, 'acknowledge', ['u-1', 'alice'], [[self::ROW]], false],
+			'receipt acknowledge insert'     => [$receipts, 'acknowledge', ['u-1', 'alice'], [[]], false],
+			'receipt acknowledge race'       => [$racing, 'acknowledge', ['u-1', 'alice'], [[], [self::ROW]], false],
+			'receipt acknowledge race lost'  => [$racing, 'acknowledge', ['u-1', 'alice'], [[], []], false],
 			'receipt find missing'           => [$receipts, 'find', ['u-1', 'alice'], [[]], false],
 			'receipt countFor'               => [$receipts, 'countFor', ['u-1'], [[['c' => 2]]], false],
 		];

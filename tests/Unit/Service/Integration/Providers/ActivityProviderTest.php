@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
@@ -79,7 +80,7 @@ class ActivityProviderTest extends TestCase {
 		$apps->method('isInstalled')->willReturn($installed);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		return new TestableActivityProvider(db: $db, appManager: $apps, l10n: $l10n, logger: $this->createMock(LoggerInterface::class));
+		return new TestableActivityProvider(leaf: new LeafMarkerScanning(db: $db, appManager: $apps, l10n: $l10n, logger: $this->createMock(LoggerInterface::class)));
 	}//end buildProvider()
 
 	public function testListEmptyWhenAppMissing(): void {
