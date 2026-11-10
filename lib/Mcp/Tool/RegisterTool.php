@@ -26,8 +26,6 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Register Tool
@@ -48,26 +46,16 @@ use Psr\Log\LoggerInterface;
 class RegisterTool extends AbstractTool {
 
 	/**
-	 * Register service
-	 *
-	 * @var RegisterServiceInterface
-	 */
-	private RegisterServiceInterface $registerService;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param RegisterServiceInterface $registerService Register service
 	 */
 	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		RegisterServiceInterface $registerService,
+		ToolCallTrail $trail,
+		private readonly RegisterServiceInterface $registerService,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->registerService = $registerService;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**
@@ -138,7 +126,7 @@ class RegisterTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
+		return $this->executeWithUser(call: new ToolCall(functionName: $functionName, parameters: $parameters), userId: $userId);
 	}//end executeFunction()
 
 	/**
@@ -213,9 +201,7 @@ class RegisterTool extends AbstractTool {
 	/**
 	 * Create a new register
 	 *
-	 * @param string $title Register title
-	 * @param string $description Register description
-	 * @param string|null $slug Register slug
+	 * @param CreateRegisterCommand $command The register's title, optional description and slug
 	 *
 	 * @return (mixed|string|true)[] Result with created register
 	 *
@@ -225,8 +211,8 @@ class RegisterTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createRegister(string $title, string $description = '', ?string $slug = null): array {
-		return $this->createFrom(data: ['title' => $title, 'description' => $description], slug: $slug);
+	public function createRegister(CreateRegisterCommand $command): array {
+		return $this->createFrom(data: ['title' => $command->title, 'description' => $command->description], slug: $command->slug);
 	}//end createRegister()
 
 	/**
@@ -270,9 +256,7 @@ class RegisterTool extends AbstractTool {
 	/**
 	 * Update an existing register
 	 *
-	 * @param string $id Register ID
-	 * @param string|null $title Register title
-	 * @param string|null $description Register description
+	 * @param UpdateRegisterCommand $command The register's id and the fields to change; null keeps one
 	 *
 	 * @return (mixed|string|true)[] Result with updated register
 	 *
@@ -282,16 +266,15 @@ class RegisterTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateRegister(string $id, ?string $title = null, ?string $description = null): array {
-		return $this->updateFrom(
-			id: $id,
-			data: array_filter(
-				['title' => $title, 'description' => $description],
-				static function ($value): bool {
-					return $value !== null;
-				}
-			)
+	public function updateRegister(UpdateRegisterCommand $command): array {
+		$data = array_filter(
+			['title' => $command->title, 'description' => $command->description],
+			static function ($value): bool {
+				return $value !== null;
+			}
 		);
+
+		return $this->updateFrom(id: $command->id, data: $data);
 	}//end updateRegister()
 
 	/**

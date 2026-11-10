@@ -86,27 +86,6 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	private const GITHUB_API = 'https://api.github.com';
 
 	/**
-	 * Custodies the GitHub token (Doriath's vault where installed, the NC vault otherwise).
-	 *
-	 * @var CredentialBrokerService
-	 */
-	private readonly CredentialBrokerService $broker;
-
-	/**
-	 * Signs published bundles and verifies installed ones.
-	 *
-	 * @var BundleSigner
-	 */
-	private readonly BundleSigner $signer;
-
-	/**
-	 * NC HTTP client factory (anonymous discovery).
-	 *
-	 * @var IClientService
-	 */
-	private readonly IClientService $clientService;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FederatedConfigTransport    $transport The credential, signing and HTTP collaborators federated config sharing talks through.
@@ -115,14 +94,11 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param LoggerInterface             $logger    The logger.
 	 */
 	public function __construct(
-		FederatedConfigTransport $transport,
+		private readonly FederatedConfigTransport $transport,
 		private readonly ShareableConfigTypeRegistry $registry,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->broker = $transport->broker;
-		$this->signer = $transport->signer;
-		$this->clientService = $transport->clientService;
 	}//end __construct()
 
 	/**
@@ -176,19 +152,45 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function install(string $typeId, array $bundle, string $source = ''): array {
-		if ($this->isSourceAllowed(source: $source) === false) {
-			throw new RuntimeException(sprintf('Source "%s" is not on this organisation\'s allowlist.', $source));
-		}
-
-		// Provenance: a tampered signature is always refused. Anyone can sign with
-		// a key of their own, so a bundle counts as verified only against a
-		// non-empty trusted-keys allowlist; without one, an administrator has to
-		// allow unverified bundles explicitly.
-		$this->assertSignatureAccepted(verdict: $this->signer->verify(bundle: $bundle));
-		$this->assertVerifiableOrAllowed();
+		$this->assertSourceAllowed(source: $source);
+		$this->assertBundleVouchedFor(bundle: $bundle);
 
 		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
 	}//end install()
+
+	/**
+	 * Refuse a bundle from a source outside the org's allowlist.
+	 *
+	 * @param string $source Where the bundle came from (a repo/source id).
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the source is not allowlisted.
+	 */
+	private function assertSourceAllowed(string $source): void {
+		if ($this->isSourceAllowed(source: $source) === false) {
+			throw new RuntimeException(sprintf('Source "%s" is not on this organisation\'s allowlist.', $source));
+		}
+	}//end assertSourceAllowed()
+
+	/**
+	 * Refuse a bundle whose provenance does not hold.
+	 *
+	 * Provenance: a tampered signature is always refused. Anyone can sign with
+	 * a key of their own, so a bundle counts as verified only against a
+	 * non-empty trusted-keys allowlist; without one, an administrator has to
+	 * allow unverified bundles explicitly.
+	 *
+	 * @param array $bundle The bundle to install.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the bundle is tampered, untrusted or unverifiable.
+	 */
+	private function assertBundleVouchedFor(array $bundle): void {
+		$this->assertSignatureAccepted(verdict: $this->transport->signer->verify(bundle: $bundle));
+		$this->assertVerifiableOrAllowed();
+	}//end assertBundleVouchedFor()
 
 	/**
 	 * Refuse a tampered signature, then a publisher key nothing trusts.
@@ -218,7 +220,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @throws RuntimeException When the bundle cannot be verified and that is not allowed.
 	 */
 	private function assertVerifiableOrAllowed(): void {
-		if ($this->signer->enforced() === false
+		if ($this->transport->signer->enforced() === false
 			&& $this->appConfig->getValueString(self::APP_ID, self::ALLOW_UNVERIFIED_KEY, '') !== 'true'
 		) {
 			throw new RuntimeException(
@@ -244,34 +246,59 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array {
-		$type = $this->typeOrFail(typeId: $typeId);
+		$destination = new BrokeredPublishTarget(target: $target, credentialId: $credentialId);
+
+		return $this->publishBundle(request: new ConfigPublishRequest(typeId: $typeId, selection: $selection, destination: $destination));
+	}//end publish()
+
+	/**
+	 * Publish one bundle as its request describes.
+	 *
+	 * @param ConfigPublishRequest $request The type, the selection and the brokered target.
+	 *
+	 * @return array `{published: true, repo, path, topic, status}`.
+	 *
+	 * @throws RuntimeException When the push fails.
+	 */
+	private function publishBundle(ConfigPublishRequest $request): array {
+		$type = $this->typeOrFail(typeId: $request->typeId);
 
 		// Make the target repo exist and carry the type's discovery topic, so a
 		// freshly published config is findable via discover() (both single-config
 		// and config-set repos rely on this). Best-effort: a failure here still
 		// lets the contents write surface a clear error.
-		$destination = new BrokeredPublishTarget(target: $target, credentialId: $credentialId);
-		$this->ensureRepo(destination: $destination);
-		$this->setTopics(destination: $destination, topics: [$type->getTopic()]);
+		$this->ensureRepo(destination: $request->destination);
+		$this->setTopics(destination: $request->destination, topics: [$type->getTopic()]);
 
-		$bundle = $this->signer->sign(bundle: $type->serialise(selection: $selection));
-		$content = base64_encode((string)json_encode($bundle, JSON_PRETTY_PRINT));
+		$bundle = $this->transport->signer->sign(bundle: $type->serialise(selection: $request->selection));
+		$status = $this->writeBundle(request: $request, bundle: $bundle);
+		$target = $request->destination->target;
 
-		// The broker makes the call with the token it custodies (Doriath/NC
-		// vault); this service never sees the token. A path, never a full URL.
-		$result = $this->broker->request(
-			credentialId: $credentialId,
+		return ['published' => true, 'repo' => $target->repo, 'path' => $target->path, 'topic' => $type->getTopic(), 'status' => $status];
+	}//end publishBundle()
+
+	/**
+	 * Write the signed bundle into the target repo through the broker.
+	 *
+	 * The broker makes the call with the token it custodies (Doriath/NC
+	 * vault); this service never sees the token. A path, never a full URL.
+	 *
+	 * @param ConfigPublishRequest $request The type and the brokered target.
+	 * @param array                $bundle  The signed bundle.
+	 *
+	 * @return int The HTTP status of the write.
+	 *
+	 * @throws RuntimeException When the push fails.
+	 */
+	private function writeBundle(ConfigPublishRequest $request, array $bundle): int {
+		$target = $request->destination->target;
+		$result = $this->transport->broker->request(
+			credentialId: $request->destination->credentialId,
 			appId: self::APP_ID,
 			method: 'PUT',
 			path: sprintf('/repos/%s/contents/%s', $target->repo, ltrim($target->path, '/')),
 			headers: ['Accept' => 'application/vnd.github+json'],
-			body: (string)json_encode(
-				[
-					'message' => sprintf('Publish %s configuration', $typeId),
-					'content' => $content,
-					'branch' => $target->branch,
-				]
-			)
+			body: $this->contentsBody(request: $request, bundle: $bundle)
 		);
 
 		$status = (int)($result['status'] ?? 0);
@@ -279,15 +306,26 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			throw new RuntimeException(sprintf('GitHub publish failed (%d).', $status));
 		}
 
-		return [
-			'published' => true,
-			'repo' => $target->repo,
-			'path' => $target->path,
-			'topic' => $type->getTopic(),
-			'status' => $status,
-		];
+		return $status;
+	}//end writeBundle()
 
-	}//end publish()
+	/**
+	 * The contents-API request body that commits the bundle file.
+	 *
+	 * @param ConfigPublishRequest $request The type and the brokered target.
+	 * @param array                $bundle  The signed bundle.
+	 *
+	 * @return string The JSON body.
+	 */
+	private function contentsBody(ConfigPublishRequest $request, array $bundle): string {
+		return (string)json_encode(
+			[
+				'message' => sprintf('Publish %s configuration', $request->typeId),
+				'content' => base64_encode((string)json_encode($bundle, JSON_PRETTY_PRINT)),
+				'branch' => $request->destination->target->branch,
+			]
+		);
+	}//end contentsBody()
 
 	/**
 	 * Ensure a GitHub repository exists, creating it when absent.
@@ -332,7 +370,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	private function repoExists(BrokeredPublishTarget $destination): bool {
 		[$owner, $name] = $destination->ownerAndName();
 		try {
-			$existing = $this->broker->request(
+			$existing = $this->transport->broker->request(
 				credentialId: $destination->credentialId,
 				appId: self::APP_ID,
 				method: 'GET',
@@ -374,7 +412,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 */
 	private function tryCreateRepo(string $createPath, BrokeredPublishTarget $destination): bool {
 		try {
-			$created = $this->broker->request(
+			$created = $this->transport->broker->request(
 				credentialId: $destination->credentialId,
 				appId: self::APP_ID,
 				method: 'POST',
@@ -406,7 +444,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		}
 
 		try {
-			$this->broker->request(
+			$this->transport->broker->request(
 				credentialId: $credentialId,
 				appId: self::APP_ID,
 				method: 'PUT',
@@ -490,7 +528,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 */
 	private function githubGet(string $path, ?string $credentialId): string {
 		if ($credentialId !== null && $credentialId !== '') {
-			$result = $this->broker->request(
+			$result = $this->transport->broker->request(
 				credentialId: $credentialId,
 				appId: self::APP_ID,
 				method: 'GET',
@@ -500,7 +538,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			return (string)($result['body'] ?? '');
 		}
 
-		$response = $this->clientService->newClient()->get(
+		$response = $this->transport->clientService->newClient()->get(
 			self::GITHUB_API . $path,
 			['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
 		);
@@ -561,22 +599,33 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function fetchBundle(string $repo, string $path, ?string $credentialId = null): array {
-		$repo = trim($repo);
-		$path = ltrim(trim($path), '/');
-		if ($repo === '' || $path === '') {
+		return $this->fetchPublishedBundle(
+			request: new BundleFetchRequest(repo: trim($repo), path: ltrim(trim($path), '/'), credentialId: $credentialId)
+		);
+	}//end fetchBundle()
+
+	/**
+	 * Read and decode the bundle file a fetch request names.
+	 *
+	 * @param BundleFetchRequest $request The repo, the file path and the optional credential.
+	 *
+	 * @return array The decoded bundle.
+	 *
+	 * @throws RuntimeException When the file cannot be fetched or decoded.
+	 */
+	private function fetchPublishedBundle(BundleFetchRequest $request): array {
+		if ($request->repo === '' || $request->path === '') {
 			throw new RuntimeException('Fetching a bundle needs a repo and a path.');
 		}
 
-		$apiPath = sprintf('/repos/%s/contents/%s', $repo, $path);
-
 		try {
-			$body = $this->githubGet(path: $apiPath, credentialId: $credentialId);
+			$body = $this->githubGet(path: $request->contentsPath(), credentialId: $request->credentialId);
 		} catch (Throwable $e) {
-			throw new RuntimeException(sprintf('Could not fetch %s from %s: %s', $path, $repo, $e->getMessage()));
+			throw new RuntimeException(sprintf('Could not fetch %s from %s: %s', $request->path, $request->repo, $e->getMessage()));
 		}
 
-		return $this->decodeBundle(body: $body, where: sprintf('%s in %s', $path, $repo));
-	}//end fetchBundle()
+		return $this->decodeBundle(body: $body, where: $request->where());
+	}//end fetchPublishedBundle()
 
 	/**
 	 * Decode a contents-API response body into the bundle it carries.
@@ -615,7 +664,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function publicKey(): string {
-		return $this->signer->publicKey();
+		return $this->transport->signer->publicKey();
 	}//end publicKey()
 
 	/**

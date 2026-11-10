@@ -29,6 +29,9 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserManager;
+use OCP\IGroupManager;
 
 /**
  * Doing the work empties the bell, and archiving is never reading.
@@ -73,7 +76,7 @@ class NotificationClearingServiceTest extends TestCase {
 
 		return new NotificationClearingService(
 			mapper: $this->mapper,
-			userSession: $session,
+			principals: new PrincipalDirectory($this->createMock(IUserManager::class), $this->createMock(IGroupManager::class), $session),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 

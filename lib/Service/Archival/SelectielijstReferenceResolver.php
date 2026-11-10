@@ -56,11 +56,11 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 	private const TTL = 86400;
 
 	/**
-	 * The cache the resolved rows are kept in.
+	 * The cache the resolved rows are kept in, once a lookup needed it.
 	 *
-	 * @var ICache
+	 * @var ICache|null
 	 */
-	private ICache $cache;
+	private ?ICache $cache = null;
 
 	/**
 	 * Constructor.
@@ -71,11 +71,19 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 	 */
 	public function __construct(
 		private readonly IClientService $clients,
-		ICacheFactory $cacheFactory,
+		private readonly ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->cache = $cacheFactory->createDistributed('openregister-selectielijst-reference');
 	}//end __construct()
+
+	/**
+	 * The distributed cache of resolved rows, created on first use.
+	 *
+	 * @return ICache The cache.
+	 */
+	private function cache(): ICache {
+		return ($this->cache ??= $this->cacheFactory->createDistributed('openregister-selectielijst-reference'));
+	}//end cache()
 
 	/**
 	 * Whether a URL is one this resolver will fetch: https, an allowed host, a result or process type.
@@ -114,7 +122,7 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 		}
 
 		$key    = hash(algo: 'sha256', data: $url);
-		$cached = $this->cache->get($key);
+		$cached = $this->cache()->get($key);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
@@ -141,7 +149,7 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 		}
 
 		$resolved = ['url' => $url, 'code' => $code, 'name' => $name];
-		$this->cache->set($key, $resolved, self::TTL);
+		$this->cache()->set($key, $resolved, self::TTL);
 
 		return $resolved;
 	}//end resolve()

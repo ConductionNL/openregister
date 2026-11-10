@@ -70,7 +70,7 @@ class MagicMapperRowColumnsTest extends TestCase {
 		$register = new Register();
 		$register->setId(3);
 
-		return (new ReflectionMethod(MagicMapper::class, 'prepareObjectDataForTable'))->invoke($this->mapper, $data, $register, $schema);
+		return (new ReflectionMethod(MagicMapper::class, 'prepareObjectDataForTable'))->invoke($this->mapper, $data, new \OCA\OpenRegister\Db\RegisterSchema($register, $schema));
 	}//end prepare()
 
 	private function schema(int $id, array $properties): Schema {

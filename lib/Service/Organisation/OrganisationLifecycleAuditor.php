@@ -94,8 +94,7 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 
 		$this->write(
 			organisation: $organisation,
-			action: self::ACTION_STATUS,
-			changed: ['status' => ['old' => $before, 'new' => $after]]
+			change: new OrganisationChange(action: self::ACTION_STATUS, changed: ['status' => ['old' => $before, 'new' => $after]])
 		);
 	}//end recordStatus()
 
@@ -111,6 +110,21 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function recordUpdate(Organisation $organisation, array $before, array $after): void {
+		$changed = self::changedFields(before: $before, after: $after);
+		if ($changed !== []) {
+			$this->write(organisation: $organisation, change: new OrganisationChange(action: self::ACTION_UPDATED, changed: $changed));
+		}
+	}//end recordUpdate()
+
+	/**
+	 * The fields whose value differs, by name: `{old, new}`.
+	 *
+	 * @param array<string, mixed> $before The edited fields as they were, by name.
+	 * @param array<string, mixed> $after  The same fields as they are now.
+	 *
+	 * @return array<string, array{old: mixed, new: mixed}> What changed.
+	 */
+	private static function changedFields(array $before, array $after): array {
 		$changed = [];
 		foreach ($after as $field => $value) {
 			$old = ($before[$field] ?? null);
@@ -119,53 +133,82 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 			}
 		}
 
-		if ($changed === []) {
-			return;
-		}
-
-		$this->write(organisation: $organisation, action: self::ACTION_UPDATED, changed: $changed);
-	}//end recordUpdate()
+		return $changed;
+	}//end changedFields()
 
 	/**
 	 * Write one sealed entry; never throws.
 	 *
-	 * @param Organisation         $organisation The organisation.
-	 * @param string               $action       The typed action.
-	 * @param array<string, mixed> $changed      What changed.
+	 * @param Organisation       $organisation The organisation.
+	 * @param OrganisationChange $change       The typed action and what changed.
 	 *
 	 * @return void
 	 */
-	private function write(Organisation $organisation, string $action, array $changed): void {
-		$user     = $this->userSession->getUser();
-		$userId   = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId   = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
-
-		$row = new AuditTrail();
-		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setObjectUuid($organisation->getUuid());
-		$row->setAction($action);
-		$row->setUser($userId);
-		$row->setUserName($userName);
-		$row->setChanged($changed);
-		$row->setCreated(new DateTime());
+	private function write(Organisation $organisation, OrganisationChange $change): void {
+		$row = $this->rowFor(organisation: $organisation, change: $change);
 
 		try {
 			$this->mapper->insertAuditTrails(entries: [$row]);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[OrganisationLifecycleAuditor] Could not record a change of an organisation; the change itself was stored',
-				context: [
-					'file'      => __FILE__,
-					'line'      => __LINE__,
-					'action'    => $action,
-					'uuid'      => $organisation->getUuid(),
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->reportUnwritten(row: $row, error: $e);
 		}
 	}//end write()
+
+	/**
+	 * The audit row for one change, attributed to the session user or the system.
+	 *
+	 * @param Organisation       $organisation The organisation.
+	 * @param OrganisationChange $change       The typed action and what changed.
+	 *
+	 * @return AuditTrail The row to write.
+	 */
+	private function rowFor(Organisation $organisation, OrganisationChange $change): AuditTrail {
+		$actor = $this->actor();
+
+		$row = new AuditTrail();
+		$row->setUuid(Uuid::v4()->toRfc4122());
+		$row->setObjectUuid($organisation->getUuid());
+		$row->setAction($change->action);
+		$row->setUser($actor['id']);
+		$row->setUserName($actor['name']);
+		$row->setChanged($change->changed);
+		$row->setCreated(new DateTime());
+
+		return $row;
+	}//end rowFor()
+
+	/**
+	 * Who made the change: the session user, or the system when there is none.
+	 *
+	 * @return array{id: string, name: string} The actor's uid and display name.
+	 */
+	private function actor(): array {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return ['id' => 'system', 'name' => 'System'];
+		}
+
+		return ['id' => $user->getUID(), 'name' => $user->getDisplayName()];
+	}//end actor()
+
+	/**
+	 * Log a row that could not be written; the change itself was stored.
+	 *
+	 * @param AuditTrail $row   The row that was not written.
+	 * @param Throwable  $error Why.
+	 *
+	 * @return void
+	 */
+	private function reportUnwritten(AuditTrail $row, Throwable $error): void {
+		$this->logger->error(
+			message: '[OrganisationLifecycleAuditor] Could not record a change of an organisation; the change itself was stored',
+			context: [
+				'file'      => __FILE__,
+				'line'      => __LINE__,
+				'action'    => $row->getAction(),
+				'uuid'      => $row->getObjectUuid(),
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end reportUnwritten()
 }//end class

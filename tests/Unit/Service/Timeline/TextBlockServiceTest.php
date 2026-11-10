@@ -35,6 +35,8 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserManager;
 
 /**
  * TextBlockServiceTest.
@@ -77,7 +79,7 @@ class TextBlockServiceTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->service = new TextBlockService($this->blocks, $this->userSession, $this->groupManager);
+		$this->service = new TextBlockService($this->blocks, new PrincipalDirectory($this->createMock(IUserManager::class), $this->groupManager, $this->userSession));
 	}
 
 	private function block(string $body): TextBlock {
