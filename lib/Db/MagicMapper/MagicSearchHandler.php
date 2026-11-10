@@ -677,12 +677,12 @@ class MagicSearchHandler {
 			if (($properties[$root]['type'] ?? null) === 'array'
 				&& $this->relatedRows->mayReadProperty(schema: $schema, property: $root) === true
 			) {
-				$condition = $elements->condition(
-					column: 't.'.$this->sanitizeColumnName(name: $root),
-					fields: $block['fields'],
+				$column    = new NestedPathTarget(
+					expression: 't.'.$this->sanitizeColumnName(name: $root),
 					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
 					isPostgres: $isPostgres
 				);
+				$condition = $elements->condition(column: $column, fields: $block['fields']);
 			}
 
 			if ($condition === null) {
