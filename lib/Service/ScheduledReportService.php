@@ -351,9 +351,44 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReport {
-		$report = $this->mapper->find(id: $id);
-		$this->assertOwnerOrAdmin(report: $report, callerUid: $callerUid, callerIsAdmin: $callerIsAdmin);
+		$caller = new ReportCaller(uid: $callerUid, isAdmin: $callerIsAdmin);
+		return $this->applyUpdate(update: new ScheduledReportUpdate(id: $id, data: $data, caller: $caller));
+	}//end update()
 
+	/**
+	 * Update a scheduled report, as {@see update()} describes.
+	 *
+	 * @param ScheduledReportUpdate $update The report id, the fields to update and who asks.
+	 *
+	 * @return ScheduledReport
+	 *
+	 * @throws DoesNotExistException When no row matches.
+	 * @throws RuntimeException When the caller does not own the row and is not an admin.
+	 * @throws InvalidArgumentException When validation fails.
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function applyUpdate(ScheduledReportUpdate $update): ScheduledReport {
+		$report = $this->mapper->find(id: $update->id);
+		$this->assertMayAccess(report: $report, caller: $update->caller);
+
+		$this->applyFields(report: $report, data: $update->data);
+		$report->setUpdatedAt(new DateTime());
+
+		return $this->mapper->update(entity: $report);
+	}//end applyUpdate()
+
+	/**
+	 * Merge the update payload over the stored report, validate it and set the fields.
+	 *
+	 * @param ScheduledReport     $report The stored report.
+	 * @param array<string,mixed> $data   The update payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When validation fails.
+	 */
+	private function applyFields(ScheduledReport $report, array $data): void {
 		// Merge with existing values so a partial update doesn't blow away
 		// fields the caller didn't send.
 		$merged = $this->mergedPayload(report: $report, data: $data);
@@ -380,11 +415,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		if (array_key_exists('enabled', $data) === true) {
 			$report->setEnabled((bool)$data['enabled']);
 		}
-
-		$report->setUpdatedAt(new DateTime());
-
-		return $this->mapper->update(entity: $report);
-	}//end update()
+	}//end applyFields()
 
 	/**
 	 * The stored report's fields overlaid with the ones the update sends.
@@ -444,10 +475,27 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	public function delete(int $id, string $callerUid, bool $callerIsAdmin): void {
-		$report = $this->mapper->find(id: $id);
-		$this->assertOwnerOrAdmin(report: $report, callerUid: $callerUid, callerIsAdmin: $callerIsAdmin);
-		$this->mapper->delete(entity: $report);
+		$this->deleteAs(id: $id, caller: new ReportCaller(uid: $callerUid, isAdmin: $callerIsAdmin));
 	}//end delete()
+
+	/**
+	 * Delete a scheduled report, as {@see delete()} describes.
+	 *
+	 * @param int          $id     The scheduled report id.
+	 * @param ReportCaller $caller Who asks.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When no row matches.
+	 * @throws RuntimeException When the caller does not own the row and is not an admin.
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function deleteAs(int $id, ReportCaller $caller): void {
+		$report = $this->mapper->find(id: $id);
+		$this->assertMayAccess(report: $report, caller: $caller);
+		$this->mapper->delete(entity: $report);
+	}//end deleteAs()
 
 	/**
 	 * Assert the caller owns the report or is an admin.
@@ -463,16 +511,32 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	public function assertOwnerOrAdmin(ScheduledReportInterface $report, string $callerUid, bool $callerIsAdmin): void {
-		if ($callerIsAdmin === true) {
+		$this->assertMayAccess(report: $report, caller: new ReportCaller(uid: $callerUid, isAdmin: $callerIsAdmin));
+	}//end assertOwnerOrAdmin()
+
+	/**
+	 * Assert the caller owns the report or is an admin, as {@see assertOwnerOrAdmin()} describes.
+	 *
+	 * @param ScheduledReportInterface $report The report.
+	 * @param ReportCaller             $caller Who asks.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the assertion fails.
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	public function assertMayAccess(ScheduledReportInterface $report, ReportCaller $caller): void {
+		if ($caller->isAdmin === true) {
 			return;
 		}
 
-		if ($report->getOwner() === $callerUid) {
+		if ($report->getOwner() === $caller->uid) {
 			return;
 		}
 
 		throw new RuntimeException('You do not have permission to access this scheduled report.');
-	}//end assertOwnerOrAdmin()
+	}//end assertMayAccess()
 
 	/**
 	 * Validate a create/update payload. Register/schema existence is checked
