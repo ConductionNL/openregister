@@ -36,18 +36,18 @@ use DateTime;
 final class ClaimValidationRun {
 
 	/**
-	 * When the token was issued (its iat claim).
+	 * When the token was issued (its iat claim); read once the claim is known to be present.
 	 *
-	 * @var DateTime
+	 * @var DateTime|null
 	 */
-	public DateTime $iat;
+	public ?DateTime $iat = null;
 
 	/**
-	 * When the token expires: its exp claim, else one hour after iat.
+	 * When the token expires: its exp claim, else one hour after iat; read once the issue time is accepted.
 	 *
-	 * @var DateTime
+	 * @var DateTime|null
 	 */
-	public DateTime $exp;
+	public ?DateTime $exp = null;
 
 	/**
 	 * Start a pass over a payload at a moment.
