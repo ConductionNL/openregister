@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\RenderSelection;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -116,7 +117,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		// The render boundary: takes the `writeOnly` property `secret` out of the entity, as the real one does for the schema that declares it.
 		$this->objects->method('renderEntity')->willReturnCallback(
-			function (ObjectEntity $entity, ?array $_extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = [], ?array $unset = [], bool $_rbac = true): array {
+			function (ObjectEntity $entity, ?RenderSelection $selection = null, bool $_rbac = true): array {
 				if ($this->renderFails === true) {
 					throw new RuntimeException('render boundary down');
 				}
