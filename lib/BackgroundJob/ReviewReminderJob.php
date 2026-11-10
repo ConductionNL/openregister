@@ -38,6 +38,7 @@ use OCP\BackgroundJob\TimedJob;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\PendingReviewQuery;
 
 /**
  * The reminder pass over every destruction list still under review.
@@ -158,9 +159,7 @@ class ReviewReminderJob extends TimedJob {
 				$pending,
 				$reviews->pendingEntries(
 					listData: ($list->getObject() ?? []),
-					listUuid: (string)$list->getUuid(),
-					reviewer: null,
-					waitingSince: $cutoff
+					query: new PendingReviewQuery(listUuid: (string)$list->getUuid(), reviewer: null, waitingSince: $cutoff)
 				)
 			);
 		}

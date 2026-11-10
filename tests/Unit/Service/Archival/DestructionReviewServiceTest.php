@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\ReviewerAssignment;
+use OCA\OpenRegister\Service\Archival\PendingReviewQuery;
 
 /**
  * Tests for DestructionReviewService.
@@ -86,9 +88,7 @@ class DestructionReviewServiceTest extends TestCase {
 
 		$listData = $this->service->assignReviewer(
 			listData: $this->list(),
-			entryUuid: 'obj-2',
-			reviewer: 'joris',
-			assignedAt: $moment
+			assignment: new ReviewerAssignment(entryUuid: 'obj-2', reviewer: 'joris', assignedAt: $moment)
 		);
 
 		$entry = $this->service->entry(listData: $listData, entryUuid: 'obj-2');
@@ -100,8 +100,7 @@ class DestructionReviewServiceTest extends TestCase {
 	public function testUnassigningLeavesTheEntryOnTheListAndUnassigned(): void {
 		$listData = $this->service->assignReviewer(
 			listData: $this->list(),
-			entryUuid: 'obj-1',
-			reviewer: null
+			assignment: new ReviewerAssignment(entryUuid: 'obj-1', reviewer: null, assignedAt: new DateTimeImmutable())
 		);
 
 		$entry = $this->service->entry(listData: $listData, entryUuid: 'obj-1');
@@ -115,8 +114,7 @@ class DestructionReviewServiceTest extends TestCase {
 
 		$this->service->assignReviewer(
 			listData: $this->list(),
-			entryUuid: 'obj-99',
-			reviewer: 'joris'
+			assignment: new ReviewerAssignment(entryUuid: 'obj-99', reviewer: 'joris', assignedAt: new DateTimeImmutable())
 		);
 	}
 
@@ -260,20 +258,18 @@ class DestructionReviewServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/cannot be reassigned/');
 
-		$this->service->assignReviewer(listData: $listData, entryUuid: 'obj-1', reviewer: 'joris');
+		$this->service->assignReviewer(listData: $listData, assignment: new ReviewerAssignment(entryUuid: 'obj-1', reviewer: 'joris', assignedAt: new DateTimeImmutable()));
 	}
 
 	public function testAReviewerSeesOnlyTheirOwnUndecidedEntries(): void {
 		$listData = $this->service->assignReviewer(
 			listData: $this->list(),
-			entryUuid: 'obj-2',
-			reviewer: 'joris'
+			assignment: new ReviewerAssignment(entryUuid: 'obj-2', reviewer: 'joris', assignedAt: new DateTimeImmutable())
 		);
 
 		$pending = $this->service->pendingEntries(
 			listData: $listData,
-			listUuid: 'list-a',
-			reviewer: 'els'
+			query: new PendingReviewQuery(listUuid: 'list-a', reviewer: 'els', waitingSince: null)
 		);
 
 		$this->assertCount(1, $pending);
@@ -290,29 +286,23 @@ class DestructionReviewServiceTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->service->pendingEntries(listData: $listData, listUuid: 'list-a', reviewer: 'els')
+			$this->service->pendingEntries(listData: $listData, query: new PendingReviewQuery(listUuid: 'list-a', reviewer: 'els', waitingSince: null))
 		);
 	}
 
 	public function testOnlyEntriesThatHaveWaitedLongEnoughCountForAReminder(): void {
 		$listData = $this->service->assignReviewer(
 			listData: $this->list(),
-			entryUuid: 'obj-2',
-			reviewer: 'els',
-			assignedAt: new DateTimeImmutable('2026-03-01T09:00:00+00:00')
+			assignment: new ReviewerAssignment(entryUuid: 'obj-2', reviewer: 'els', assignedAt: new DateTimeImmutable('2026-03-01T09:00:00+00:00'))
 		);
 		$listData = $this->service->assignReviewer(
 			listData: $listData,
-			entryUuid: 'obj-3',
-			reviewer: 'els',
-			assignedAt: new DateTimeImmutable('2026-03-20T09:00:00+00:00')
+			assignment: new ReviewerAssignment(entryUuid: 'obj-3', reviewer: 'els', assignedAt: new DateTimeImmutable('2026-03-20T09:00:00+00:00'))
 		);
 
 		$pending = $this->service->pendingEntries(
 			listData: $listData,
-			listUuid: 'list-a',
-			reviewer: 'els',
-			waitingSince: new DateTimeImmutable('2026-03-10T09:00:00+00:00')
+			query: new PendingReviewQuery(listUuid: 'list-a', reviewer: 'els', waitingSince: new DateTimeImmutable('2026-03-10T09:00:00+00:00'))
 		);
 
 		// obj-1 carries a reviewer and no assignment time, which is what a list
@@ -323,7 +313,7 @@ class DestructionReviewServiceTest extends TestCase {
 	public function testTheReminderPassCountsPerReviewerAcrossLists(): void {
 		$first = $this->service->pendingEntries(
 			listData: $this->list(),
-			listUuid: 'list-a'
+			query: new PendingReviewQuery(listUuid: 'list-a', reviewer: null, waitingSince: null)
 		);
 
 		$second = $this->service->pendingEntries(
@@ -333,7 +323,7 @@ class DestructionReviewServiceTest extends TestCase {
 					['uuid' => 'obj-5', 'title' => 'Subsidie 2017/4', 'reviewer' => 'joris'],
 				],
 			],
-			listUuid: 'list-b'
+			query: new PendingReviewQuery(listUuid: 'list-b', reviewer: null, waitingSince: null)
 		);
 
 		$counts = $this->service->countByReviewer(entries: array_merge($first, $second));
