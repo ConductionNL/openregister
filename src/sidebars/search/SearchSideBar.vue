@@ -499,6 +499,7 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+import { inheritedProperties } from '../../views/search/inheritedProperties.js'
 import { scopeListLoader } from '../scopeListLoader.js'
 
 /**
@@ -1377,21 +1378,7 @@ export default {
 		 * @return {object} Merged properties object
 		 */
 		resolveInheritedProperties(schema) {
-			const allOf = schema?.allOf || []
-			const inherited = {}
-			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| String(s.id) === String(schemaId),
-				)
-				if (parentSchema?.properties) {
-					Object.assign(inherited, parentSchema.properties)
-				}
-			}
-			return { ...inherited, ...(schema?.properties || {}) }
+			return { ...inheritedProperties(schema), ...(schema?.properties || {}) }
 		},
 
 		/**

@@ -25,6 +25,7 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+import { inheritedProperties } from './inheritedProperties.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -38,6 +39,23 @@ function normalizeObjects(raw) {
 		const id = row['@self']?.id ?? row.id
 		return { ...row, id }
 	})
+}
+
+/**
+ * Properties with every `order` turned into a number, in the same key order.
+ *
+ * @param {object} rawProperties The properties by name
+ * @return {object} The properties, each order a number
+ */
+function withNumericOrder(rawProperties) {
+	const properties = {}
+	for (const [key, prop] of Object.entries(rawProperties)) {
+		properties[key] =
+			prop.order !== undefined
+				? { ...prop, order: Number(prop.order) }
+				: prop
+	}
+	return properties
 }
 
 export default {
@@ -181,30 +199,9 @@ export default {
 			if (!schema || !schema.properties) return schema
 			// Merge inherited properties from allOf parent schemas so extended schemas
 			// expose the full property set (own + inherited) for columns and form fields.
-			const allOf = schema.allOf || []
-			const inheritedProperties = {}
-			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| String(s.id) === String(schemaId),
-				)
-				if (parentSchema?.properties) {
-					Object.assign(inheritedProperties, parentSchema.properties)
-				}
-			}
 			// Own properties take precedence over inherited; normalize order values
-			const rawProperties = { ...inheritedProperties, ...schema.properties }
-			const properties = {}
-			for (const [key, prop] of Object.entries(rawProperties)) {
-				properties[key] =
-					prop.order !== undefined
-						? { ...prop, order: Number(prop.order) }
-						: prop
-			}
-			return { ...schema, properties }
+			const rawProperties = { ...inheritedProperties(schema), ...schema.properties }
+			return { ...schema, properties: withNumericOrder(rawProperties) }
 		},
 
 		/**
