@@ -41,6 +41,7 @@ use OCP\Files\NotPermittedException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 
 /**
  * Pins the allowed and refused outcomes of addFile() and saveFile().
@@ -203,8 +204,8 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$existing = $this->createMock(File::class);
 		$existing->method('getId')->willReturn(4);
 		$this->fileService->method('getFile')->with($entity, 'doc.txt')->willReturn($existing);
-		$this->fileService->expects($this->once())->method('updateFile')
-			->with(4, 'new', ['t'], $entity)
+		$this->fileService->expects($this->once())->method('overwriteFile')
+			->with(new FileOverwrite(4, 'new', ['t'], $entity))
 			->willReturn($existing);
 		$this->folder->expects($this->never())->method('newFile');
 
@@ -213,7 +214,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 
 	public function testSaveCreatesAMissingFile(): void {
 		$this->fileService->method('getFile')->willReturn(null);
-		$this->fileService->expects($this->never())->method('updateFile');
+		$this->fileService->expects($this->never())->method('overwriteFile');
 
 		$this->assertSame($this->file, $this->handler()->saveFile(new ObjectEntity(), new FileUpload('doc.txt', 'new', false)));
 	}//end testSaveCreatesAMissingFile()
@@ -222,7 +223,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$existing = $this->createMock(File::class);
 		$existing->method('getId')->willReturn(4);
 		$this->fileService->method('getFile')->willReturn($existing);
-		$this->fileService->method('updateFile')->willThrowException(new NotPermittedException('locked'));
+		$this->fileService->method('overwriteFile')->willThrowException(new NotPermittedException('locked'));
 
 		$this->expectException(NotPermittedException::class);
 		$this->expectExceptionMessage('Cannot save file doc.txt: locked');
