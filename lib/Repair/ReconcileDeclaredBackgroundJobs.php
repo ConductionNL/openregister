@@ -112,17 +112,7 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 				return 'present';
 			}
 
-			// Resolve through the container so a job with unbuildable
-			// dependencies fails here, named, rather than at cron time.
-			$job = $this->container->get($class);
-			if (($job instanceof IJob) === false) {
-				$output->warning('[OpenRegister] ' . $class . ' is declared as a job but is not an IJob — skipped.');
-				return 'skipped';
-			}
-
-			$this->jobList->add($class);
-			$output->info('[OpenRegister] Registered missing background job: ' . $class);
-			return 'added';
+			return $this->register(class: $class, output: $output);
 		} catch (Throwable $e) {
 			// One unresolvable job must not abort the repair run: the
 			// whole point of this step is to recover an instance.
@@ -134,6 +124,29 @@ class ReconcileDeclaredBackgroundJobs implements IRepairStep {
 			return 'skipped';
 		}//end try
 	}//end reconcileOne()
+
+	/**
+	 * Register a declared job that is missing from the job list, when it resolves to an IJob.
+	 *
+	 * Resolves through the container so a job with unbuildable dependencies
+	 * fails here, named, rather than at cron time.
+	 *
+	 * @param string  $class  The declared job class.
+	 * @param IOutput $output Migration output handle.
+	 *
+	 * @return string `added`, or `skipped` when the class is not an IJob.
+	 */
+	private function register(string $class, IOutput $output): string {
+		$job = $this->container->get($class);
+		if (($job instanceof IJob) === false) {
+			$output->warning('[OpenRegister] ' . $class . ' is declared as a job but is not an IJob — skipped.');
+			return 'skipped';
+		}
+
+		$this->jobList->add($class);
+		$output->info('[OpenRegister] Registered missing background job: ' . $class);
+		return 'added';
+	}//end register()
 
 	/**
 	 * The closing line of the reconciliation.
