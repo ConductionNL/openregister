@@ -30,12 +30,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -172,7 +174,7 @@ class TasksProvider extends CoreIntegrationProvider {
 	 * Accepts the per-provider `(register, schema, objectId)` triple
 	 * (slugs OR ids) and a free-form payload. Resolves the register +
 	 * schema entities so the task carries the int ids that
-	 * `TaskService::createTask` expects, and looks up the object for the
+	 * `TaskService::createObjectTask` expects, and looks up the object for the
 	 * RFC 9253 LINK label. The user's default VTODO calendar is
 	 * auto-discovered downstream — `payload.calendarId` is ignored.
 	 *
@@ -207,16 +209,13 @@ class TasksProvider extends CoreIntegrationProvider {
 	 */
 	private function createTaskFor(ObjectRef $ref, array $payload): array {
 		$table = new RegisterSchema(register: $this->registerMapper->find(id: $ref->register), schema: $this->schemaMapper->find(id: $ref->schema));
-		$task = $this->taskService->createTask(
-			registerId: $table->registerId(),
-			schemaId: $table->schemaId(),
-			objectUuid: $ref->id,
-			objectTitle: $this->objectTitle(table: $table, objectId: $ref->id),
-			data: self::taskData(payload: $payload)
+		$task = $this->taskService->createObjectTask(
+			ref: new ObjectRef(register: $table->registerId(), schema: $table->schemaId(), id: $ref->id),
+			draft: new LinkedTaskDraft(objectTitle: $this->objectTitle(table: $table, objectId: $ref->id), data: self::taskData(payload: $payload))
 		);
 
 		if ($task === null) {
-			throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
+			throw new RuntimeException('TaskService::createObjectTask returned null — calendar invalid or auth failure.');
 		}
 
 		return $task;
@@ -280,7 +279,7 @@ class TasksProvider extends CoreIntegrationProvider {
 	public function update(ObjectRef $ref, string $entityId, array $payload): array {
 		[$calendarId, $taskUri] = $this->ownedTask(objectId: $ref->id, entityId: $entityId);
 
-		return self::updatedOrFail(updated: $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload));
+		return self::updatedOrFail(updated: $this->taskService->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskUri), data: $payload));
 	}//end update()
 
 	/**
@@ -294,7 +293,7 @@ class TasksProvider extends CoreIntegrationProvider {
 	 */
 	private static function updatedOrFail(?array $updated): array {
 		if ($updated === null) {
-			throw new RuntimeException('TaskService::updateTask returned null — entity may not exist.');
+			throw new RuntimeException('TaskService::changeTask returned null — entity may not exist.');
 		}
 
 		return $updated;
@@ -328,7 +327,7 @@ class TasksProvider extends CoreIntegrationProvider {
 	 */
 	private function ownedTask(string $objectId, string $entityId): array {
 		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
-		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
+		$this->taskService->requireTaskAt(objectUuid: $objectId, at: new TaskLocation(calendarId: $calendarId, uri: $taskUri));
 
 		return [$calendarId, $taskUri];
 	}//end ownedTask()

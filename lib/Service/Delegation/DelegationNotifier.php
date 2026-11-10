@@ -49,6 +49,7 @@ namespace OCA\OpenRegister\Service\Delegation;
 use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCP\Notification\IManager;
+use OCP\Notification\INotification;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -102,51 +103,79 @@ class DelegationNotifier implements DelegationNotifierInterface {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function requested(DelegationGrant $grant): void {
-		$actingAs = trim((string)$grant->getActingAs());
-		$principal = trim((string)$grant->getPrincipal());
-		$uuid = trim((string)$grant->getUuid());
-
-		if ($actingAs === '' || $principal === '' || $uuid === '') {
-			return;
-		}
-
-		if ($grant->getStatus() !== DelegationGrant::STATUS_PENDING
-			&& $grant->getStatus() !== DelegationGrant::STATUS_REQUESTED
-		) {
-			// Only an OUTSTANDING request is a question. Prompting about an
-			// answered one asks somebody to decide something they already have.
+		if ($this->isOutstandingAndNamed(grant: $grant) === false) {
 			return;
 		}
 
 		try {
-			$notification = $this->notifications->createNotification();
-			$notification->setApp(self::APP_ID)
-				->setUser($actingAs)
-				->setDateTime(new DateTime())
-				->setObject(type: self::OBJECT_TYPE, id: $uuid)
-				->setSubject(
-					subject: self::SUBJECT_REQUESTED,
-					parameters: [
-						// Server state only. The stated reason is NOT here — see
-						// the class docblock.
-						'principal' => $principal,
-						'actingAs' => $actingAs,
-						'grantUuid' => $uuid,
-					]
-				);
-
-			$this->notifications->notify($notification);
+			$this->notifications->notify($this->consentPrompt(grant: $grant));
 		} catch (Throwable $e) {
 			// Best-effort. A prompt that could not be sent must not undo the
 			// request that was stored: the record is what the API lists, so the
 			// person can still find and answer it even if the push failed.
 			$this->logger->warning(
 				message: '[DelegationNotifier] Could not send the consent prompt: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'grant' => $uuid, 'actingAs' => $actingAs]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'grant' => trim((string)$grant->getUuid()), 'actingAs' => trim((string)$grant->getActingAs())]
 			);
 		}//end try
 
 	}//end requested()
+
+	/**
+	 * Whether the grant names both parties and itself, and is still waiting for an answer.
+	 *
+	 * @param DelegationGrant $grant The grant.
+	 *
+	 * @return boolean Whether a prompt should be raised for it.
+	 */
+	private function isOutstandingAndNamed(DelegationGrant $grant): bool {
+		$parameters = $this->subjectParameters(grant: $grant);
+		if (in_array('', $parameters, true) === true) {
+			return false;
+		}
+
+		// Only an OUTSTANDING request is a question. Prompting about an
+		// answered one asks somebody to decide something they already have.
+		return $grant->getStatus() === DelegationGrant::STATUS_PENDING
+			|| $grant->getStatus() === DelegationGrant::STATUS_REQUESTED;
+	}//end isOutstandingAndNamed()
+
+	/**
+	 * The consent prompt for an outstanding request, addressed to the identity acted as.
+	 *
+	 * @param DelegationGrant $grant The outstanding request.
+	 *
+	 * @return INotification The prompt.
+	 */
+	private function consentPrompt(DelegationGrant $grant): INotification {
+		$parameters = $this->subjectParameters(grant: $grant);
+
+		$notification = $this->notifications->createNotification();
+		$notification->setApp(self::APP_ID)
+			->setUser($parameters['actingAs'])
+			->setDateTime(new DateTime())
+			->setObject(type: self::OBJECT_TYPE, id: $parameters['grantUuid'])
+			->setSubject(subject: self::SUBJECT_REQUESTED, parameters: $parameters);
+
+		return $notification;
+	}//end consentPrompt()
+
+	/**
+	 * The prompt's subject parameters: the trimmed parties and grant uuid.
+	 *
+	 * Server state only. The stated reason is NOT here — see the class docblock.
+	 *
+	 * @param DelegationGrant $grant The grant.
+	 *
+	 * @return array{principal: string, actingAs: string, grantUuid: string} The parameters.
+	 */
+	private function subjectParameters(DelegationGrant $grant): array {
+		return [
+			'principal' => trim((string)$grant->getPrincipal()),
+			'actingAs' => trim((string)$grant->getActingAs()),
+			'grantUuid' => trim((string)$grant->getUuid()),
+		];
+	}//end subjectParameters()
 
 	/**
 	 * Withdraw the prompt for a request that has been answered.
@@ -169,11 +198,7 @@ class DelegationNotifier implements DelegationNotifierInterface {
 		}
 
 		try {
-			$notification = $this->notifications->createNotification();
-			$notification->setApp(self::APP_ID)
-				->setObject(type: self::OBJECT_TYPE, id: $uuid);
-
-			$this->notifications->markProcessed($notification);
+			$this->notifications->markProcessed($this->promptKeyedOn(uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[DelegationNotifier] Could not withdraw the consent prompt: ' . $e->getMessage(),
@@ -182,4 +207,19 @@ class DelegationNotifier implements DelegationNotifierInterface {
 		}
 
 	}//end answered()
+
+	/**
+	 * A notification matching every prompt raised for the grant with this uuid.
+	 *
+	 * @param string $uuid The grant uuid.
+	 *
+	 * @return INotification The match.
+	 */
+	private function promptKeyedOn(string $uuid): INotification {
+		$notification = $this->notifications->createNotification();
+		$notification->setApp(self::APP_ID)
+			->setObject(type: self::OBJECT_TYPE, id: $uuid);
+
+		return $notification;
+	}//end promptKeyedOn()
 }//end class
