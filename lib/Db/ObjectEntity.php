@@ -29,6 +29,7 @@ use Exception;
 use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Db\ObjectEntity\ObjectEntityFieldTypes;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -1125,48 +1126,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'uri', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
-		$this->addType(fieldName: 'object', type: 'json');
-		$this->addType(fieldName: 'files', type: 'json');
-		$this->addType(fieldName: 'relations', type: 'json');
-		$this->addType(fieldName: 'locked', type: 'json');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'folder', type: 'string');
-		$this->addType(fieldName: 'application', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'validation', type: 'json');
-		$this->addType(fieldName: 'quality', type: 'json');
-		$this->addType(fieldName: 'deleted', type: 'json');
-		$this->addType(fieldName: 'archived', type: 'json');
-		$this->addType(fieldName: 'frozen', type: 'json');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'geo', type: 'json');
-		$this->addType(fieldName: 'retention', type: 'json');
-		$this->addType(fieldName: 'tmlo', type: 'json');
-		$this->addType(fieldName: 'mail', type: 'json');
-		$this->addType(fieldName: 'contacts', type: 'json');
-		$this->addType(fieldName: 'notes', type: 'json');
-		$this->addType(fieldName: 'todos', type: 'json');
-		$this->addType(fieldName: 'calendar', type: 'json');
-		$this->addType(fieldName: 'talk', type: 'json');
-		$this->addType(fieldName: 'deck', type: 'json');
-		$this->addType(fieldName: 'size', type: 'string');
-		$this->addType(fieldName: 'schemaVersion', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'summary', type: 'string');
-		$this->addType(fieldName: 'image', type: 'string');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'lastUserActivity', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'expires', type: 'datetime');
+		foreach (ObjectEntityFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -1413,13 +1375,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
 	 *     updated: null|string, created: null|string,
 	 *     deleted: array|null}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function getObjectArray(array $object = []): array {
-		// Initialize the object array with default properties.
 		// Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
-		$objectArray = [
+		$objectArray = array_merge(
+			$this->identityArray(),
+			$this->ownershipArray(),
+			$this->assessmentArray(),
+			$this->lifecycleArray(),
+			$this->workspaceArray()
+		);
+
+		$objectArray = $this->mergeTransientRenderFields(objectArray: $objectArray);
+
+		// Use the '@self' values when the object metadata is extended.
+		return $this->applySelfOverrides(objectArray: $objectArray, object: $object);
+	}//end getObjectArray()
+
+
+	/**
+	 * What the object is and where it lives: identity, register and schema.
+	 *
+	 * @return array<string, mixed> The identity part of the object array.
+	 */
+	private function identityArray(): array {
+		return [
 			'id' => $this->uuid,
 			'slug' => $this->slug,
 			'name' => $this->name ?? $this->uuid,
@@ -1431,6 +1411,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'register' => $this->register,
 			'schema' => $this->schema,
 			'schemaVersion' => $this->schemaVersion,
+		];
+	}//end identityArray()
+
+	/**
+	 * What the object holds and who holds it: files, relations, lock, owner and access.
+	 *
+	 * @return array<string, mixed> The ownership part of the object array.
+	 */
+	private function ownershipArray(): array {
+		return [
 			'files' => $this->getFiles(),
 			'relations' => $this->getRelations(),
 			'locked' => $this->getLocked(),
@@ -1440,11 +1430,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'authorization' => $this->getAuthorization(),
 			'folder' => $this->folder,
 			'application' => $this->application,
+		];
+	}//end ownershipArray()
+
+	/**
+	 * What has been assessed about the object: validation, quality, place and retention.
+	 *
+	 * @return array<string, mixed> The assessment part of the object array.
+	 */
+	private function assessmentArray(): array {
+		return [
 			'validation' => $this->getValidation(),
 			'quality' => $this->getQuality(),
 			'geo' => $this->getGeo(),
 			'retention' => $this->getRetention(),
 			'tmlo' => $this->getTmlo(),
+		];
+	}//end assessmentArray()
+
+	/**
+	 * Where the object is in its life: size, timestamps and the deleted, archived and frozen states.
+	 *
+	 * @return array<string, mixed> The lifecycle part of the object array.
+	 */
+	private function lifecycleArray(): array {
+		return [
 			'size' => $this->size,
 			'updated' => $this->getFormattedDate(date: $this->updated),
 			'lastUserActivity' => $this->getFormattedDate(date: $this->lastUserActivity),
@@ -1454,6 +1464,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'frozen' => $this->getFrozen(),
 			'status' => $this->status,
 			'source' => $this->source,
+		];
+	}//end lifecycleArray()
+
+	/**
+	 * The workspace items linked to the object.
+	 *
+	 * @return array<string, mixed> The workspace part of the object array.
+	 */
+	private function workspaceArray(): array {
+		return [
 			'mail' => $this->getMail(),
 			'contacts' => $this->getContacts(),
 			'notes' => $this->getNotes(),
@@ -1462,37 +1482,37 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'talk' => $this->getTalk(),
 			'deck' => $this->getDeck(),
 		];
+	}//end workspaceArray()
 
-		$objectArray = $this->mergeTransientRenderFields(objectArray: $objectArray);
+	/**
+	 * Apply the '@self' values of an extended object over the object array.
+	 *
+	 * Register, schema, owner and application are taken only when they are
+	 * arrays (expanded); organisation whenever it is set.
+	 *
+	 * @param array $objectArray The object array.
+	 * @param array $object      The object whose '@self' may carry overrides.
+	 *
+	 * @return array The object array with the overrides applied.
+	 */
+	private function applySelfOverrides(array $objectArray, array $object): array {
+		$self = ($object['@self'] ?? null);
+		if (is_array($self) === false) {
+			return $objectArray;
+		}
 
-		// Check for '@self' in the provided object array (this is the case if the object metadata is extended).
-		if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
-			$self = $object['@self'];
-
-			// Use the '@self' values if they are arrays.
-			if (($self['register'] ?? null) !== null && is_array($self['register']) === true) {
-				$objectArray['register'] = $self['register'];
+		foreach (['register', 'schema', 'owner', 'application'] as $key) {
+			if (is_array($self[$key] ?? null) === true) {
+				$objectArray[$key] = $self[$key];
 			}
+		}
 
-			if (($self['schema'] ?? null) !== null && is_array($self['schema']) === true) {
-				$objectArray['schema'] = $self['schema'];
-			}
-
-			if (($self['owner'] ?? null) !== null && is_array($self['owner']) === true) {
-				$objectArray['owner'] = $self['owner'];
-			}
-
-			if (($self['organisation'] ?? null) !== null) {
-				$objectArray['organisation'] = $self['organisation'];
-			}
-
-			if (($self['application'] ?? null) !== null && is_array($self['application']) === true) {
-				$objectArray['application'] = $self['application'];
-			}
-		}//end if
+		if (($self['organisation'] ?? null) !== null) {
+			$objectArray['organisation'] = $self['organisation'];
+		}
 
 		return $objectArray;
-	}//end getObjectArray()
+	}//end applySelfOverrides()
 
 	/**
 	 * The record as an access rule's `match` reads it: its data, with `@self` set from its own metadata.
@@ -1603,22 +1623,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
-		$transient = [
-			'relevance'               => $this->relevance,
-			'urn'                     => $this->urn,
-			'translationCompleteness' => $this->translationCompleteness,
-			'_retention'              => $this->archivalRetention,
-			'_clocks'                 => $this->retentionClocks,
-			'registry'                => $this->registryState,
-			'fieldRules'              => $this->fieldRules,
-			'watching'                => $this->watching,
-			'watcherCount'            => $this->watcherCount,
-			'unread'                  => $this->unread,
-			'watchNotify'             => $this->watchNotify,
-			'favourite'               => $this->watching,
-			'viewedAt'                => $this->viewedAt,
-			'can'                     => $this->can,
-		];
+		$transient = array_merge($this->renderedFields(), $this->readerFields());
 
 		foreach ($transient as $key => $value) {
 			if ($value !== null) {
@@ -1634,6 +1639,40 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return $objectArray;
 	}//end mergeTransientRenderFields()
+
+	/**
+	 * The transient fields the render layer derived for the object itself.
+	 *
+	 * @return array<string, mixed> Field values keyed by their name in @self, null when not rendered.
+	 */
+	private function renderedFields(): array {
+		return [
+			'relevance'               => $this->relevance,
+			'urn'                     => $this->urn,
+			'translationCompleteness' => $this->translationCompleteness,
+			'_retention'              => $this->archivalRetention,
+			'_clocks'                 => $this->retentionClocks,
+			'registry'                => $this->registryState,
+			'fieldRules'              => $this->fieldRules,
+		];
+	}//end renderedFields()
+
+	/**
+	 * The transient fields that answer for the current reader.
+	 *
+	 * @return array<string, mixed> Field values keyed by their name in @self, null when not rendered.
+	 */
+	private function readerFields(): array {
+		return [
+			'watching'                => $this->watching,
+			'watcherCount'            => $this->watcherCount,
+			'unread'                  => $this->unread,
+			'watchNotify'             => $this->watchNotify,
+			'favourite'               => $this->watching,
+			'viewedAt'                => $this->viewedAt,
+			'can'                     => $this->can,
+		];
+	}//end readerFields()
 
 	/**
 	 * Format DateTime object to ISO 8601 string or return null
