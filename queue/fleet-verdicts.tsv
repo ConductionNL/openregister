@@ -3,3 +3,4 @@ dossiq	5434	fca6c3bc9a73dca007a7892d23d4bde2b5236900	RED	FV01:1	vitest hiddenSta
 dossiq	5446	a4629ad44fbe4df82028a7eb510cd804cb318ceb	RED	FV01:1	vitest schemasWithASurface.spec.js 'is a collection on the supplier contribution, scoped by supplierRef' (source-text check on PortalContributionProvider.php)
 dossiq	5400	f7e10716451dce34852ce4bff0242a1a3c086775	GREEN	FV01:1	tree of 23 green on php+js unit suites (20 inherited php failures)
 dossiq	5402	f11b634712f58e91782fbf5f2ef22158f0dd2325	GREEN	FV01:1	tree of 23 green on php+js unit suites (20 inherited php failures)
+dossiq	5404	e1c75a93d9c08a75fd3e098f8d819ee63751cd85	GREEN	FV01:1	tree of 23 green on php+js unit suites (20 inherited php failures)
