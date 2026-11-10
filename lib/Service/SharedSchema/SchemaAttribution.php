@@ -158,21 +158,7 @@ class SchemaAttribution {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function classify(array $candidates, array $entity): array {
-		$target  = $this->signature(definition: $entity);
-		$matches = [];
-
-		foreach ($candidates as $registerId => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			if ($this->signature(definition: $definition) === $target) {
-				$matches[] = (int)$registerId;
-			}
-		}
-
-		sort($matches);
-
+		$matches = $this->matchingRegisters(candidates: $candidates, target: $this->signature(definition: $entity));
 		if (count($matches) === 1) {
 			return ['status' => self::STATUS_ONE_MATCH, 'owner' => $matches[0], 'matches' => $matches];
 		}
@@ -183,6 +169,27 @@ class SchemaAttribution {
 
 		return ['status' => self::STATUS_MULTI_MATCH, 'owner' => null, 'matches' => $matches];
 	}//end classify()
+
+	/**
+	 * The registers whose definition has the target signature, sorted by id.
+	 *
+	 * @param array<int|string, mixed>                         $candidates Register id => that register's definition.
+	 * @param array{properties: string[], required: string[]} $target The signature to match.
+	 *
+	 * @return array<int, int> The matching register ids, ascending.
+	 */
+	private function matchingRegisters(array $candidates, array $target): array {
+		$matches = [];
+		foreach ($candidates as $registerId => $definition) {
+			if (is_array($definition) === true && $this->signature(definition: $definition) === $target) {
+				$matches[] = (int)$registerId;
+			}
+		}
+
+		sort($matches);
+
+		return $matches;
+	}//end matchingRegisters()
 
 	/**
 	 * Parse the repeatable `--keep` option.
