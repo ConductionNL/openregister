@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
@@ -125,7 +127,7 @@ class BulkLegalHoldJobBehaviourTest extends TestCase {
 			->with('[BulkLegalHoldJob] Error: mapper unavailable', ['exception' => $failure]);
 
 		$retention = $this->createMock(RetentionServiceInterface::class);
-		$retention->expects($this->never())->method('placeLegalHold');
+		$retention->expects($this->never())->method('placeHold');
 
 		$requested = [];
 		$container = $this->createMock(ContainerInterface::class);
@@ -151,5 +153,33 @@ class BulkLegalHoldJobBehaviourTest extends TestCase {
 			[LoggerInterface::class, RetentionServiceInterface::class, MagicMapperInterface::class],
 			$requested
 		);
+	}
+
+	public function testPlacesAHoldOnEveryObjectOfTheSchema(): void {
+		$first  = new ObjectEntity();
+		$second = new ObjectEntity();
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+
+		$mapper = $this->createMock(MagicMapperInterface::class);
+		$mapper->expects($this->once())->method('findBySchema')->with(42)->willReturn([$first, $second]);
+		$mapper->expects($this->exactly(2))->method('update');
+
+		$retention = $this->createMock(RetentionServiceInterface::class);
+		$retention->expects($this->exactly(2))->method('placeHold')
+			->willReturnCallback(fn (ObjectEntity $object, HoldOrder $order): ObjectEntity => $object);
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => match ($id) {
+				MagicMapperInterface::class => $mapper,
+				RetentionServiceInterface::class => $retention,
+				default => $logger,
+			}
+		);
+
+		$job = new BulkLegalHoldJob($this->createMock(ITimeFactory::class), $container);
+		$this->runJob($job, ['schemaId' => '42', 'reason' => 'audit']);
 	}
 }

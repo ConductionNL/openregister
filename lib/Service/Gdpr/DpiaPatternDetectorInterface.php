@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr;
 
-use DateTimeImmutable;
-
 /**
  * Detecting the case groups that require a DPIA flag, as the detection job does. Only the method that caller calls.
  */
@@ -40,16 +38,13 @@ interface DpiaPatternDetectorInterface {
 	 * reflects real volume) but are listed separately so the caller never
 	 * re-writes them (idempotency).
 	 *
-	 * @param array<int, mixed> $cases Case payloads (each element is validated as an array at
-	 *                                 runtime); each needs `receivedAt` + the group-by fields +
-	 *                                 optionally `dpiaRequired` and a caller-supplied `@uuid`.
-	 * @param array<string, mixed> $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
-	 * @param DateTimeImmutable $now The evaluation clock.
+	 * @param DpiaDetectionRequest $request The case payloads, the pack's `dpiaDetection` block
+	 *                                      (threshold, windowDays, groupBy) and the evaluation clock.
 	 *
 	 * @return array<int, array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>}> Triggering groups.
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
 	 *   (Scenario: Threshold crossing flags the group)
 	 */
-	public function detect(array $cases, array $config, DateTimeImmutable $now): array;
+	public function detect(DpiaDetectionRequest $request): array;
 }//end interface

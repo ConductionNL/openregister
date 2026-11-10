@@ -83,7 +83,7 @@ class TransitionEngineProviderWriteTest extends TestCase {
 		$this->actions = new LifecycleActionContext();
 
 		$this->engine = new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new LifecycleWriteBoundary($this->actions), $this->registry),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $this->appConfig(), $this->logger),
 			$this->permission()
@@ -335,8 +335,8 @@ class TransitionEngineProviderWriteTest extends TestCase {
 		$serverContainer->method('get')->willThrowException($notFound);
 
 		$engine = new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new LifecycleWriteBoundary(new LifecycleActionContext()), new LifecycleActionProviderRegistry($container, $serverContainer, $this->logger)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new LifecycleWriteBoundary(new LifecycleActionContext()), new LifecycleActionProviderRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($container, $serverContainer, $this->logger))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $this->appConfig(), $this->logger),
 			$this->permission()
 		);

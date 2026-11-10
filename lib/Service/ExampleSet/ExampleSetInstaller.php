@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
@@ -79,90 +80,6 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	];
 
 	/**
-	 * Register access.
-	 *
-	 * @var ExampleSetStore
-	 */
-	private readonly ExampleSetStore $store;
-
-	/**
-	 * The cast's and the service accounts' accounts and groups.
-	 *
-	 * @var ExampleSetPeople
-	 */
-	private readonly ExampleSetPeople $people;
-
-	/**
-	 * Fills placeholders.
-	 *
-	 * @var ExampleSetValues
-	 */
-	private readonly ExampleSetValues $values;
-
-	/**
-	 * What an install made.
-	 *
-	 * @var ExampleSetRecord
-	 */
-	private readonly ExampleSetRecord $record;
-
-	/**
-	 * Compares sent with stored.
-	 *
-	 * @var ExampleSetProof
-	 */
-	private readonly ExampleSetProof $proof;
-
-	/**
-	 * Registers and organisations before the check, and the base context.
-	 *
-	 * @var ExampleSetPrerequisites
-	 */
-	private readonly ExampleSetPrerequisites $prerequisites;
-
-	/**
-	 * Changes objects the set did not create.
-	 *
-	 * @var ExampleSetChanges
-	 */
-	private readonly ExampleSetChanges $changes;
-
-	/**
-	 * Attaches files to objects.
-	 *
-	 * @var ExampleSetFiles
-	 */
-	private readonly ExampleSetFiles $files;
-
-	/**
-	 * Writes a fragment's own app config.
-	 *
-	 * @var ExampleSetAppConfig
-	 */
-	private readonly ExampleSetAppConfig $appConfig;
-
-	/**
-	 * Writes a fragment's own app's preferences of the set's accounts.
-	 *
-	 * @var ExampleSetUserPreferences
-	 */
-	private readonly ExampleSetUserPreferences $userPreferences;
-
-	/**
-	 * Writes the tasks and saved views a fragment declares; null refuses them.
-	 *
-	 * @var ExampleSetEngineKinds|null
-	 */
-	private readonly ?ExampleSetEngineKinds $engineRows;
-
-	/**
-	 * Rewrites a kept object on `--refresh`.
-	 *
-	 * @var ExampleSetRewriter
-	 */
-	private readonly ExampleSetRewriter $rewriter;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ExampleSetInstallerObjects $objects Register access, placeholders, the install record and the proof.
@@ -172,23 +89,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ExampleSetInstallerObjects $objects,
-		ExampleSetInstallerSetup $setup,
-		ExampleSetInstallerWriters $writers,
+		private readonly ExampleSetInstallerObjects $objects,
+		private readonly ExampleSetInstallerSetup $setup,
+		private readonly ExampleSetInstallerWriters $writers,
 		private readonly ?ExampleSetLock $lock=null,
 	) {
-		$this->store           = $objects->store;
-		$this->people          = $setup->people;
-		$this->values          = $objects->values;
-		$this->record          = $objects->record;
-		$this->proof           = $objects->proof;
-		$this->prerequisites   = $setup->prerequisites;
-		$this->changes         = $writers->changes;
-		$this->files           = $writers->files;
-		$this->appConfig       = $setup->appConfig;
-		$this->userPreferences = $setup->userPreferences;
-		$this->engineRows      = $writers->engineRows;
-		$this->rewriter        = $writers->rewriter;
 	}//end __construct()
 
 	/**
@@ -229,14 +134,14 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function checked(ExampleSetInstallRequest $request): array {
 		$plan      = $request->plan;
-		$record    = $this->record->read(set: (string) $plan['set']);
-		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
+		$record    = $this->objects->record->read(set: (string) $plan['set']);
+		$ready     = $this->setup->prerequisites->ensure(plan: $plan, record: $record);
 		$run       = new ExampleSetCheckRun(plan: $plan, record: $record);
-		$run->base = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $request->today));
-		$run->base['setGroups'] = $this->people->groupsOfSet(plan: $plan, record: $run->record);
+		$run->base = $this->withIds(plan: $plan, base: $this->setup->prerequisites->context(plan: $plan, today: $request->today));
+		$run->base['setGroups'] = $this->setup->people->groupsOfSet(plan: $plan, record: $run->record);
 		$vouched       = new ExampleSetVouchedAccounts(record: $run->record, adopt: $request->adopt);
-		$run->refusals = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, vouched: $vouched));
-		$run->users    = $this->people->declaredUids(plan: $plan);
+		$run->refusals = array_merge($ready['refusals'], $this->setup->people->refusals(plan: $plan, vouched: $vouched));
+		$run->users    = $this->setup->people->declaredUids(plan: $plan);
 		foreach ($plan['fragments'] as $fragment) {
 			$this->checkFragment(run: $run, fragment: $fragment);
 		}
@@ -262,18 +167,18 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$this->checkObject(run: $run, object: $object);
 		}
 
-		$engineRows = ($this->engineRows ?? new ExampleSetEngineKinds());
+		$engineRows = ($this->writers->engineRows ?? new ExampleSetEngineKinds());
 		$context    = [
 			'objects'     => $run->objects,
-			'flows'       => $this->values->flowsOf(fragment: $fragment, record: null),
+			'flows'       => $this->objects->values->flowsOf(fragment: $fragment, record: null),
 			'accessLinks' => $engineRows->accessLinksOf(fragment: $fragment, record: null),
 		] + $run->base;
 		$run->refusals = array_merge(
 			$run->refusals,
 			$this->checkChanges(run: $run, context: $context),
 			$this->checkAppConfig(fragment: $fragment, context: $context),
-			$this->checkUserPreferences(run: $run, context: ($context + ['views' => $this->values->viewsOf(fragment: $fragment, record: null)])),
-			$engineRows->check(fragment: $fragment, context: $context, users: $run->users, values: $this->values)
+			$this->checkUserPreferences(run: $run, context: ($context + ['views' => $this->objects->values->viewsOf(fragment: $fragment, record: null)])),
+			$engineRows->check(write: new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->objects->values), users: $run->users)
 		);
 	}//end checkFragment()
 
@@ -314,8 +219,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	private function planObject(ExampleSetCheckRun $run, ExampleSetResolvedObject $declared): void {
 		$object   = $declared->object;
 		$messages = array_merge(
-			$this->store->validate(register: $object['register'], schema: $object['schema'], data: $declared->resolved['sent'], plannedUsers: $run->users),
-			$this->files->refusals(dir: (string) $run->fragment['dir'], object: $object)
+			$this->objects->store->validate(
+				register: $object['register'],
+				schema: $object['schema'],
+				data: $declared->resolved['sent'],
+				plannedUsers: $run->users
+			),
+			$this->writers->files->refusals(dir: (string) $run->fragment['dir'], object: $object)
 		);
 		foreach ($messages as $message) {
 			$run->refusals[] = $this->objectWhere(run: $run, object: $object).': '.$message;
@@ -384,8 +294,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			// Every write of the run is the set's import, its run the set, so a history can leave the set's upkeep
 			// out and the trail can find one load. A row the set declares with its own cause keeps that cause.
 			return WriteCause::runAs(
-				cause: WriteCause::IMPORT,
-				run: 'example-set:'.$set,
+				frame: new CauseFrame(cause: WriteCause::IMPORT, run: 'example-set:'.$set),
 				operation: fn (): array => $this->installHeld(request: $request, report: $report)
 			);
 		} finally {
@@ -412,11 +321,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return $report;
 		}
 
-		$run         = new ExampleSetInstallRun(plan: $plan, record: $this->record->read(set: (string) $plan['set']));
+		$run         = new ExampleSetInstallRun(plan: $plan, record: $this->objects->record->read(set: (string) $plan['set']));
 		$terms       = new ExampleSetAccountTerms(set: $run->set(), adopt: $request->adopt, password: $request->password);
 		$accounts    = new ExampleSetAccountsInstall(plan: $plan, terms: $terms);
-		$run->report = array_merge($report, $this->people->install(install: $accounts, record: $run->record));
-		$run->base   = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $request->today));
+		$run->report = array_merge($report, $this->setup->people->install(install: $accounts, record: $run->record));
+		$run->base   = $this->withIds(plan: $plan, base: $this->setup->prerequisites->context(plan: $plan, today: $request->today));
 		// A grant goes only to a group this set created (ExampleSetGrants).
 		$run->base['setGroups'] = $run->record['groups'];
 		foreach ($plan['fragments'] as $fragment) {
@@ -446,12 +355,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$base['schemas']   = [];
 		preg_match_all('/\{\{\s*register:\s*([^{}\s]+)\s*\}\}/', $text, $registers);
 		foreach (array_unique($registers[1]) as $slug) {
-			$base['registers'][$slug] = $this->store->registerId(register: $slug);
+			$base['registers'][$slug] = $this->objects->store->registerId(register: $slug);
 		}
 
 		preg_match_all('/\{\{\s*schema:\s*([^{}\s\/]+)\/([^{}\s]+)\s*\}\}/', $text, $schemas, PREG_SET_ORDER);
 		foreach ($schemas as $match) {
-			$base['schemas'][$match[1].'/'.$match[2]] = $this->store->schemaId(register: $match[1], schema: $match[2]);
+			$base['schemas'][$match[1].'/'.$match[2]] = $this->objects->store->schemaId(register: $match[1], schema: $match[2]);
 		}
 
 		return $base;
@@ -479,7 +388,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$type   = $change['register'].' '.$change['schema'];
 			$run->checkedChanges[$type] = (($run->checkedChanges[$type] ?? 0) + 1);
 			$where    = $fragment['file'].': change "'.$change['key'].'" ('.$type.')';
-			$resolved = $this->changes->resolve(change: $change, context: $context);
+			$resolved = $this->writers->changes->resolve(change: $change, context: $context);
 			if ($resolved['refusal'] !== '') {
 				$refusals[] = $where.': '.$resolved['refusal'];
 				continue;
@@ -487,7 +396,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 			$merged = $resolved['merged'];
 			unset($merged['@self'], $merged['id']);
-			$messages = $this->store->validate(register: $change['register'], schema: $change['schema'], data: $merged, plannedUsers: $run->users);
+			$messages = $this->objects->store->validate(register: $change['register'], schema: $change['schema'], data: $merged, plannedUsers: $run->users);
 			foreach ($messages as $message) {
 				$refusals[] = $where.': '.$message;
 			}
@@ -571,9 +480,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$held = new ExampleSetKeptObject(object: $object, row: $held->row, context: $run->objectContext());
 		$run->objects[$object['key']] = $this->refreshedOrRewritten(run: $run, held: $held);
 
-		$set  = $run->set();
-		$save = fn (array $kept) => $this->record->write(set: $set, record: $kept);
-		$this->rewriter->follow(record: $run->record, name: $name, written: $run->written, save: $save);
+		if (isset($run->written[$name]) === true) {
+			$rewritten = new RewrittenObject(name: $name, data: $run->written[$name]);
+			if ($this->writers->rewriter->follow(record: $run->record, object: $rewritten) === true) {
+				$this->objects->record->write(set: $run->set(), record: $run->record);
+			}
+		}
 	}//end keepObject()
 
 	/**
@@ -589,11 +501,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return $this->refreshReferences(run: $run, held: $held);
 		}
 
-		return $this->rewriter->rewrite(
-			run: ['store' => $this->store, 'fragment' => $run->fragment, 'object' => $held->object, 'row' => $held->row],
-			resolved: $this->resolve(object: $held->object, scope: new ExampleSetResolveScope(context: $held->context)),
-			report: $run->report,
-			written: $run->written
+		return $this->writers->rewriter->rewrite(
+			rewrite: new KeptObjectRewrite(
+				kept: ['store' => $this->objects->store, 'fragment' => $run->fragment, 'object' => $held->object, 'row' => $held->row],
+				resolved: $this->resolve(object: $held->object, scope: new ExampleSetResolveScope(context: $held->context))
+			),
+			tally: new RewriteTally(report: $run->report, written: $run->written)
 		);
 	}//end refreshedOrRewritten()
 
@@ -609,7 +522,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$resolved = $this->resolve(object: $object, scope: new ExampleSetResolveScope(context: $run->objectContext()));
 		$made     = ['id' => '', 'error' => $resolved['refusal']];
 		if ($resolved['refusal'] === '') {
-			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['sent'], owner: $resolved['owner']);
+			$made = $this->objects->store->create(
+				register: $object['register'],
+				schema: $object['schema'],
+				data: $resolved['sent'],
+				owner: $resolved['owner']
+			);
 		}
 
 		if ($made['id'] === '') {
@@ -647,7 +565,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$run->files[$object['key']] = $this->heldFileIds(record: $run->record, name: $name);
 
 		$id = (string) $run->record['objects'][$name]['id'];
-		$run->objects[$object['key']] = ($this->store->get(register: $object['register'], schema: $object['schema'], id: $id) ?? ['id' => $id]);
+		$run->objects[$object['key']] = ($this->objects->store->get(register: $object['register'], schema: $object['schema'], id: $id) ?? ['id' => $id]);
 	}//end recordCreated()
 
 	/**
@@ -658,7 +576,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return void
 	 */
 	private function written(ExampleSetInstallRun $run): void {
-		$this->record->write(set: $run->set(), record: $run->record);
+		$this->objects->record->write(set: $run->set(), record: $run->record);
 	}//end written()
 
 	/**
@@ -672,23 +590,25 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	private function installFragmentRows(ExampleSetInstallRun $run): void {
 		$fragment = $run->fragment;
 		// Before the changes, so a change can quote a flow or an access link (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
-		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->values);
-		if ($this->engineRows?->installBeforeChanges(write: $write, report: $run->report, record: $run->record) === true) {
+		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->objects->values);
+		$ledger = new RecordLedger(report: $run->report, record: $run->record);
+		if ($this->writers->engineRows?->installBeforeChanges(write: $write, ledger: $ledger) === true) {
 			$this->written(run: $run);
 		}
 
-		$run->context['flows']       = $this->values->flowsOf(fragment: $fragment, record: $run->record);
-		$run->context['accessLinks'] = ($this->engineRows?->accessLinksOf(fragment: $fragment, record: $run->record) ?? []);
+		$run->context['flows']       = $this->objects->values->flowsOf(fragment: $fragment, record: $run->record);
+		$run->context['accessLinks'] = ($this->writers->engineRows?->accessLinksOf(fragment: $fragment, record: $run->record) ?? []);
 		$this->installChanges(run: $run);
 		$this->installAppConfig(run: $run);
 
-		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->values);
-		if ($this->engineRows?->install(write: $write, report: $run->report, record: $run->record) === true) {
+		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->objects->values);
+		$ledger = new RecordLedger(report: $run->report, record: $run->record);
+		if ($this->writers->engineRows?->install(write: $write, ledger: $ledger) === true) {
 			$this->written(run: $run);
 		}
 
 		// After the views, so a preference can quote one (`{{view:key.uuid}}`).
-		$run->context['views'] = $this->values->viewsOf(fragment: $fragment, record: $run->record);
+		$run->context['views'] = $this->objects->values->viewsOf(fragment: $fragment, record: $run->record);
 		$this->installUserPreferences(run: $run);
 	}//end installFragmentRows()
 
@@ -730,7 +650,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$this->recordReferences(run: $run, refreshed: new ExampleSetRecordedObject(name: $name, entry: $made['entry']));
 
-		return ($this->store->get(register: $object['register'], schema: $object['schema'], id: (string) $made['entry']['id']) ?? $held->row);
+		return ($this->objects->store->get(register: $object['register'], schema: $object['schema'], id: (string) $made['entry']['id']) ?? $held->row);
 	}//end refreshReferences()
 
 	/**
@@ -752,11 +672,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return ['entry' => null, 'error' => $resolved['refusal']];
 		}
 
-		$made = $this->changes->refresh(
+		$made = $this->writers->changes->refresh(
 			object: $object,
 			row: $held->row,
 			values: array_intersect_key($resolved['data'], array_flip($this->referenceFields(object: $object))),
-			written: $this->changes->writtenReferences(record: $run->record, name: $key.'#references', key: $key)
+			written: $this->writers->changes->writtenReferences(record: $run->record, key: $key)
 		);
 		foreach ($made['left'] as $field) {
 			$run->report['left'][] = $run->fragment['file'].': object "'.$object['key'].'": field "'.$field
@@ -862,15 +782,15 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$name   = $run->fragment['app'].'/'.$change['key'];
 		$run->report['changes'][$name] = 'kept';
 		if (isset($run->record['changes'][$name]) === true) {
-			$made = $this->changes->follow(change: $change, entry: $run->record['changes'][$name], context: $run->context, refresh: $run->refresh());
+			$made = $this->writers->changes->follow(change: $change, entry: $run->record['changes'][$name], context: $run->context, refresh: $run->refresh());
 			$this->hold(run: $run, followed: new ExampleSetFollowedEntry(part: 'changes', name: $name, made: $made));
 			return;
 		}
 
-		$resolved = $this->changes->resolve(change: $change, context: $run->context);
+		$resolved = $this->writers->changes->resolve(change: $change, context: $run->context);
 		$made     = ['error' => $resolved['refusal'], 'entry' => null];
 		if ($resolved['refusal'] === '') {
-			$made = $this->changes->apply(change: $change, resolved: $resolved);
+			$made = $this->writers->changes->apply(change: $change, resolved: $resolved);
 		}
 
 		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'changes', name: $name, made: $made)) === false) {
@@ -887,7 +807,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return void
 	 */
 	private function hold(ExampleSetInstallRun $run, ExampleSetFollowedEntry $followed): void {
-		$run->report = $this->record->hold(set: $run->set(), followed: $followed, report: $run->report, record: $run->record);
+		if ($this->objects->record->hold(followed: $followed, ledger: new RecordLedger(report: $run->report, record: $run->record)) === true) {
+			$this->objects->record->write(set: $run->set(), record: $run->record);
+		}
 	}//end hold()
 
 	/**
@@ -971,13 +893,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		}
 
 		$gaps = [];
-		$data = $this->values->fillObject(object: $object, context: $context, gaps: $gaps);
+		$data = $this->objects->values->fillObject(object: $object, scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 		if ($gaps !== []) {
 			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
 
-		$owner = $this->values->ownerOf(object: $object, context: $context);
-		$sent  = $this->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
+		$owner = $this->objects->values->ownerOf(object: $object, context: $context);
+		$sent  = $this->writers->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
 
 		return ['data' => $data, 'sent' => $sent, 'refusal' => $owner['refusal'], 'owner' => $owner['owner']];
 	}//end resolve()
@@ -998,7 +920,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function lookedUp(ExampleSetResolveScope $scope, array $lookup): array {
 		$gaps   = [];
-		$where  = (array) $this->values->fill(value: (array) ($lookup['where'] ?? []), context: $scope->context, gaps: $gaps);
+		$where  = (array) $this->objects->values->fill(
+			value: (array) ($lookup['where'] ?? []),
+			scope: new ExampleSetFillScope(context: $scope->context, gaps: $gaps)
+		);
 		$schema = (string) ($lookup['schema'] ?? '');
 		$from   = (string) $lookup['register'];
 		if ($gaps !== []) {
@@ -1009,13 +934,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where'];
 		}
 
-		$rows = $this->store->matching(register: $from, schema: $schema, where: $where);
+		$rows = $this->objects->store->matching(register: $from, schema: $schema, where: $where);
 		if (count($rows) > 1) {
 			return ['id' => '', 'reason' => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one'];
 		}
 
 		if ($rows !== []) {
-			return ['id' => $this->store->idOf(row: $rows[0]), 'reason' => ''];
+			return ['id' => $this->objects->store->idOf(row: $rows[0]), 'reason' => ''];
 		}
 
 		$planned = array_filter($scope->planned, static fn (array $object): bool => $object['register'] === $from && $object['schema'] === $schema);
@@ -1053,7 +978,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function plannedMatch(array $planned, array $where): string {
 		foreach ($planned as $object) {
-			if ($this->store->rowMatches(row: $object['row'], where: $where) === true) {
+			if ($this->objects->store->rowMatches(row: $object['row'], where: $where) === true) {
 				return (string) $object['row']['id'];
 			}
 		}
@@ -1078,7 +1003,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return ['row' => null, 'error' => ''];
 		}
 
-		return $this->store->read(register: $held['register'], schema: $held['schema'], id: $held['id']);
+		return $this->objects->store->read(register: $held['register'], schema: $held['schema'], id: $held['id']);
 	}//end kept()
 
 	/**
@@ -1090,6 +1015,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return array<string, mixed>
 	 */
 	private function standIn(string $name, array $data): array {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5($name);
 		$id   = sprintf(
 			'%s-%s-4%s-8%s-%s',
@@ -1160,7 +1086,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$report = $run->report;
 		foreach ($run->record['objects'] as $name => $held) {
 			$type   = $held['register'].' '.$held['schema'];
-			$stored = $this->store->get(register: $held['register'], schema: $held['schema'], id: $held['id']);
+			$stored = $this->objects->store->get(register: $held['register'], schema: $held['schema'], id: $held['id']);
 			if ($stored === null) {
 				$report['missing'][] = $type.' '.$name;
 				continue;
@@ -1170,13 +1096,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				$report['types'][$type]['arrived']++;
 			}
 
-			foreach ($this->proof->lostPaths(declared: ($run->written[$name] ?? []), stored: $stored) as $path) {
+			foreach ($this->objects->proof->lostPaths(declared: ($run->written[$name] ?? []), stored: $stored) as $path) {
 				$report['lost'][] = $type.' '.$name.': '.$path;
 			}
 		}
 
 		$report            = $this->provenParts(report: $report, record: $run->record);
-		$report['missing'] = array_merge($report['missing'], $this->people->missing(record: $run->record));
+		$report['missing'] = array_merge($report['missing'], $this->setup->people->missing(record: $run->record));
 		$report['ok']      = ($report['dropped'] === [] && $report['missing'] === [] && $report['lost'] === []);
 
 		return $report;
@@ -1192,31 +1118,32 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function provenParts(array $report, array $record): array {
 		foreach ($record['changes'] as $name => $entry) {
-			foreach ($this->changes->lost(entry: $entry) as $path) {
+			foreach ($this->writers->changes->lost(entry: $entry) as $path) {
 				$report['lost'][] = 'change '.$name.': '.$path;
 			}
 		}
 
 		foreach ($record['files'] as $name => $files) {
-			$present = $this->files->names(objectId: (string) ($record['objects'][$name]['id'] ?? ''));
+			$present = $this->writers->files->names(objectId: (string) ($record['objects'][$name]['id'] ?? ''));
 			foreach ($files as $file) {
-				if ($this->files->present(file: $file, names: $present) === false) {
+				if ($this->writers->files->present(file: $file, names: $present) === false) {
 					$report['missing'][] = 'file '.$file['name'].' on '.$name;
 				}
 			}
 		}
 
 		foreach ($record['appConfig'] as $name => $entry) {
-			if ($this->appConfig->lost(entry: $entry) === true) {
+			if ($this->setup->appConfig->lost(entry: $entry) === true) {
 				$report['lost'][] = 'app config '.$entry['app'].' '.$entry['key'].' ('.$name.')';
 			}
 		}
 
-		foreach (array_keys(array_filter($record['userPreferences'], fn (array $entry): bool => $this->userPreferences->lost(entry: $entry))) as $name) {
+		$preferences = $this->setup->userPreferences;
+		foreach (array_keys(array_filter($record['userPreferences'], fn (array $entry): bool => $preferences->lost(entry: $entry))) as $name) {
 			$report['lost'][] = 'user preference '.$name;
 		}
 
-		return ($this->engineRows ?? new ExampleSetEngineKinds())->prove(report: $report, record: $record);
+		return ($this->writers->engineRows ?? new ExampleSetEngineKinds())->prove(report: $report, record: $record);
 	}//end provenParts()
 	/**
 	 * Check the app config of one fragment: each key may be written and each value resolves.
@@ -1230,14 +1157,14 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$refusals = [];
 		foreach (($fragment['appConfig'] ?? []) as $entry) {
 			$where   = $fragment['file'].': app config "'.$entry['key'].'"';
-			$refusal = $this->appConfig->refusal(app: $fragment['app'], key: $entry['key'], generate: $entry['generate']);
+			$refusal = $this->setup->appConfig->refusal(at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']), generate: $entry['generate']);
 			if ($refusal !== '') {
 				$refusals[] = $where.': '.$refusal;
 				continue;
 			}
 
 			$gaps = [];
-			$this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
+			$this->objects->values->fill(value: (string) $entry['value'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 			if ($entry['generate'] === false && $gaps !== []) {
 				$refusals[] = $where.': cannot resolve '.implode(', ', array_unique($gaps));
 			}
@@ -1274,7 +1201,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$gaps   = [];
 		$target = new ExampleSetConfigValue(
 			at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']),
-			value: (string) $this->values->fill(value: (string) $entry['value'], context: $run->context, gaps: $gaps),
+			value: (string) $this->objects->values->fill(value: (string) $entry['value'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps)),
 			type: (string) ($entry['type'] ?? 'string'),
 			kind: ExampleSetConfigValue::kindOf(entry: $entry)
 		);
@@ -1286,7 +1213,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return;
 		}
 
-		$made = $this->appConfig->apply(target: $target);
+		$made = $this->setup->appConfig->apply(target: $target);
 		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'appConfig', name: $name, made: $made)) === false) {
 			$run->report['dropped'][] = $fragment['file'].': app config "'.$entry['key'].'": '.$made['error'];
 		}
@@ -1306,7 +1233,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function raiseRecordedFloor(ExampleSetInstallRun $run, ExampleSetConfigValue $floor): string {
 		$name   = $floor->app.'/'.$floor->key;
-		$raised = $this->appConfig->raise(entry: $run->record['appConfig'][$name], value: $floor->value);
+		$raised = $this->setup->appConfig->raise(entry: $run->record['appConfig'][$name], value: $floor->value);
 		if ($raised['entry'] === null) {
 			return 'kept';
 		}
@@ -1336,8 +1263,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		foreach (($fragment['userPreferences'] ?? []) as $entry) {
 			$where = $fragment['file'].': user preference "'.$entry['key'].'"';
 			$gaps  = [];
-			$uid   = $this->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
-			$this->values->fill(value: $entry['value'], context: $context, gaps: $gaps);
+			$uid   = $this->objects->values->fill(value: $entry['user'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
+			$this->objects->values->fill(value: $entry['value'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 			if (is_string($uid) === false) {
 				$gaps[] = (string) $entry['user'];
 			}
@@ -1347,7 +1274,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				continue;
 			}
 
-			$refusal = $this->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: $run->users);
+			$refusal = $this->setup->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: $run->users);
 			if ($refusal !== '') {
 				$refusals[] = $where.': '.$refusal;
 			}
@@ -1385,25 +1312,29 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	private function installPreference(ExampleSetInstallRun $run, array $entry): void {
 		$app   = $run->fragment['app'];
 		$gaps  = [];
-		$uid   = (string) $this->values->fill(value: $entry['user'], context: $run->context, gaps: $gaps);
-		$value = (string) $this->values->fill(value: $entry['value'], context: $run->context, gaps: $gaps);
+		$uid   = (string) $this->objects->values->fill(value: $entry['user'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps));
+		$value = (string) $this->objects->values->fill(value: $entry['value'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps));
 		$name  = $app.'/'.$uid.'/'.$entry['key'];
 		$run->report['userPreferences'][$name] = 'kept';
 		if (isset($run->record['userPreferences'][$name]) === true) {
-			$made = $this->userPreferences->follow(entry: $run->record['userPreferences'][$name], value: $value, refresh: $run->refresh() && $gaps === []);
+			$made = $this->setup->userPreferences->follow(
+				entry: $run->record['userPreferences'][$name],
+				value: $value,
+				refresh: $run->refresh() && $gaps === []
+			);
 			$this->hold(run: $run, followed: new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made));
 			return;
 		}
 
 		// Checked again against the record: only an account this set created or adopted.
-		$why = $this->userPreferences->refusal(app: $app, uid: $uid, key: $entry['key'], users: array_keys($run->record['users']));
+		$why = $this->setup->userPreferences->refusal(app: $app, uid: $uid, key: $entry['key'], users: array_keys($run->record['users']));
 		if ($why === '' && $gaps !== []) {
 			$why = 'cannot resolve '.implode(', ', $gaps);
 		}
 
 		$made = ['error' => $why, 'entry' => null];
 		if ($why === '') {
-			$made = $this->userPreferences->apply(uid: $uid, app: $app, key: $entry['key'], value: $value);
+			$made = $this->setup->userPreferences->apply(uid: $uid, app: $app, key: $entry['key'], value: $value);
 		}
 
 		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'userPreferences', name: $name, made: $made)) === false) {
@@ -1428,7 +1359,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$fragment = $run->fragment;
 		$name     = $fragment['app'].'/'.$object['key'];
 		$objectId = (string) $run->record['objects'][$name]['id'];
-		$attached = $this->files->attach(dir: (string) $fragment['dir'], object: $object, objectId: $objectId);
+		$attached = $this->writers->files->attach(dir: (string) $fragment['dir'], object: $object, objectId: $objectId);
 		if ($attached['files'] !== []) {
 			$run->record['files'][$name] = $attached['files'];
 			$this->written(run: $run);

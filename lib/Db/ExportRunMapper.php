@@ -51,7 +51,7 @@ class ExportRunMapper extends QBMapper {
 	public const TABLE = 'openregister_export_runs';
 
 	/**
-	 * The list filters findForActor() accepts, mapped to their column.
+	 * The list filters listForActor() accepts, mapped to their column.
 	 *
 	 * @var array<string, string>
 	 */
@@ -98,17 +98,10 @@ class ExportRunMapper extends QBMapper {
 	}//end findByUuid()
 
 	/**
-	 * The runs one actor sees in the area, newest first.
+	 * The runs one actor sees in the area, newest first, for one listing.
 	 *
-	 * Expired runs are included: the row outliving the file is the point, and
-	 * an administrator asked "who holds an export of this register" needs the
-	 * ones that are gone as much as the ones that are not.
-	 *
-	 * @param string|null $actor    The actor, or null for every actor (admin).
-	 * @param array       $filters  Optional equality filters on register, schema, profile, source, status
-	 *                              or actor, and `from` / `until` (DateTime) bounding produced_at.
-	 * @param int         $limit    Page size.
-	 * @param int         $offset   Page offset.
+	 * @param string|null $actor The actor, or null for every actor (admin).
+	 * @param ListQuery   $query The page (limit, and offset or none) and the filters listForActor() accepts.
 	 *
 	 * @return ExportRun[] The runs.
 	 *
@@ -116,20 +109,20 @@ class ExportRunMapper extends QBMapper {
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	public function findForActor(?string $actor, array $filters = [], int $limit = 50, int $offset = 0): array {
+	public function listForActor(?string $actor, ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from(self::TABLE)
 			->orderBy('produced_at', 'DESC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0);
 
 		$this->narrowToActor(qb: $qb, actor: $actor);
-		$this->narrowToPeriod(qb: $qb, filters: $filters);
-		$this->narrowToColumns(qb: $qb, filters: $filters);
+		$this->narrowToPeriod(qb: $qb, filters: $query->filters);
+		$this->narrowToColumns(qb: $qb, filters: $query->filters);
 
 		return $this->findEntities(query: $qb);
-	}//end findForActor()
+	}//end listForActor()
 
 	/**
 	 * Scope a run list to one actor; null (an administrator) adds nothing.

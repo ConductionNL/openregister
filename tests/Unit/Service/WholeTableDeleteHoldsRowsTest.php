@@ -18,12 +18,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
@@ -31,6 +34,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownGuard;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -147,7 +151,8 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		$this->mapper->method('getTableNameForRegisterSchema')->willReturn(self::TABLE);
 		$this->mapper->method('tableExistsForRegisterSchema')->willReturn(true);
 		$this->mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$this->steps[] = 'read ' . $schema->getId();
 
 				return $this->rows[(int)$schema->getId()] ?? [];
@@ -161,13 +166,13 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 				return count($this->rows[(int)$schema->getId()]);
 			}
 		);
-		$this->audit->method('createAuditTrailEntry')->willReturnCallback(
+		$this->audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (): AuditTrail {
 				$this->steps[] = 'audit';
 
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
@@ -249,7 +254,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		);
 
 		try {
-			$service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+			$service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: 42));
 			self::fail('The failure was swallowed.');
 		} catch (RuntimeException $failure) {
 			self::assertSame('gone away', $failure->getMessage());
@@ -367,7 +372,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		$this->registers->method('find')->willReturn($this->register());
 		$this->schemas->method('find')->willReturn($this->schema(id: 42));
 
-		return $this->service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+		return $this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: 42));
 	}//end deleteBySchema()
 
 	/**

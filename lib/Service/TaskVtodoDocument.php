@@ -65,38 +65,19 @@ final class TaskVtodoDocument {
 	/**
 	 * Parse a VTODO iCalendar string into a JSON-friendly array.
 	 *
-	 * @param string $calendarData The raw iCalendar string
-	 * @param string $calendarId   The calendar ID
-	 * @param string $uri          The calendar object URI
+	 * @param string       $calendarData The raw iCalendar string
+	 * @param TaskLocation $at           The calendar and URI of the calendar object
 	 *
 	 * @return array|null Task array or null if not a VTODO
 	 */
-	public function taskOf(string $calendarData, string $calendarId, string $uri): ?array {
+	public function taskOf(string $calendarData, TaskLocation $at): ?array {
 		$vtodo = Reader::read($calendarData)->VTODO;
 		if ($vtodo === null) {
 			return null;
 		}
 
-		return $this->reader->taskArray(vtodo: $vtodo, calendarId: $calendarId, uri: $uri);
+		return $this->reader->taskArray(vtodo: $vtodo, at: $at);
 	}//end taskOf()
-
-	/**
-	 * The document of a new standalone task linked to an object.
-	 *
-	 * @param int    $registerId  The register ID to link
-	 * @param int    $schemaId    The schema ID to link
-	 * @param string $objectUuid  The object UUID to link
-	 * @param string $objectTitle The object title for the LINK label
-	 * @param array  $data        Task data: summary, description, priority, due, status, fields
-	 *
-	 * @return array{uri: string, calendarData: string} The object URI and the iCalendar document.
-	 *
-	 * @throws Exception When the due date cannot be parsed.
-	 */
-	public function compose(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): array {
-		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
-		return $this->composeFor(ref: $ref, draft: new LinkedTaskDraft(objectTitle: $objectTitle, data: $data));
-	}//end compose()
 
 	/**
 	 * The document of a new standalone task linked to an object.

@@ -102,22 +102,28 @@ class ApiTokenSettingsController extends Controller {
 	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
 	 * @param ApiTokenSettingsControllerServices $services The api token settings controller services.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		IRequest $request,
 		ApiTokenSettingsControllerServices $services,
-		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
-		$this->config = $services->config;
+		$this->config = $services->reporting->appConfig;
 		$this->settingsService = $services->settingsService;
 		$this->clientService = $services->clientService;
-		$this->connectionReporter = $services->connectionReporter;
+		$this->connectionReporter = $services->reporting->connectionReporter;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

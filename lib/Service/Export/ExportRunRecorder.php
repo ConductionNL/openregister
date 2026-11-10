@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -155,6 +156,9 @@ class ExportRunRecorder {
 	/**
 	 * The runs one caller sees in the area.
 	 *
+	 * Kept for its caller in ExportRunsController; builds the viewer and the
+	 * page and delegates to listVisible().
+	 *
 	 * @param string|null $actor   The caller.
 	 * @param bool        $isAdmin Whether the caller is an instance administrator.
 	 * @param array       $filters Equality filters on register, schema, profile, source or status.
@@ -169,26 +173,37 @@ class ExportRunRecorder {
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	public function listFor(
-		?string $actor,
-		bool $isAdmin = false,
-		array $filters = [],
-		int $limit = 50,
-		int $offset = 0,
-	): array {
+	public function listFor(?string $actor, bool $isAdmin=false, array $filters=[], int $limit=50, int $offset=0): array {
+		$viewer = new ExportRunViewer(actor: $actor, seesEveryRun: $isAdmin);
+		return $this->listVisible(viewer: $viewer, query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
+	}//end listFor()
+
+	/**
+	 * The runs one viewer sees in the area.
+	 *
+	 * @param ExportRunViewer $viewer Who is looking, and whether they see every run.
+	 * @param ListQuery       $query  Page and equality filters on register, schema, profile, source or status.
+	 *
+	 * @return array<int, array<string, mixed>> The runs, each saying whether it has expired.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
+	 */
+	public function listVisible(ExportRunViewer $viewer, ListQuery $query): array {
+		$actor = $viewer->actor;
 		if ($actor === null || $actor === '') {
 			return [];
 		}
 
 		$scopedTo = $actor;
-		if ($isAdmin === true) {
+		if ($viewer->seesEveryRun === true) {
 			$scopedTo = null;
 		}
 
 		$now = $this->now();
 
 		$rows = [];
-		foreach ($this->mapper->findForActor(actor: $scopedTo, filters: $filters, limit: $limit, offset: $offset) as $run) {
+		$page = new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0), filters: $query->filters);
+		foreach ($this->mapper->listForActor(actor: $scopedTo, query: $page) as $run) {
 			$row = $run->jsonSerialize();
 			// An expired run is NAMED as expired rather than offered as a link
 			// to nothing. A missing file and a file nobody produced look the
@@ -199,7 +214,7 @@ class ExportRunRecorder {
 		}
 
 		return $rows;
-	}//end listFor()
+	}//end listVisible()
 
 	/**
 	 * Count one hand-over of a run's file by the register.

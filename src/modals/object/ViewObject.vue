@@ -1047,6 +1047,15 @@ import {
 	isValidDate,
 	isValidPropertyValue,
 } from '../../services/propertyValues.js'
+import {
+	attachmentState,
+	dialogState,
+	editorState,
+	filesPage,
+	newObjectSelection,
+	propertySaveState,
+	viewObjectTabs,
+} from './viewObjectState.js'
 
 /**
  * A metadata value, or 'Not set' when it is empty.
@@ -1362,52 +1371,14 @@ export default {
 
 	data() {
 		return {
-			closeModalTimeout: null,
-			activeAttachment: null,
-			registerTitle: '',
-			schemaTitle: '',
-			isUpdated: false,
-			isCopied: false,
-			error: null,
-			success: null,
-			formData: {},
-			jsonData: '',
-			activeTab: 0,
-			isInternalUpdate: false, // Flag to prevent infinite loops during synchronization
-			// Vue 3 initialises `instance.update` to null and only assigns the render
-			// effect in setupRenderEffect, i.e. AFTER the `immediate: true` watchers
-			// below have already run. Calling $forceUpdate() in that window makes Vue
-			// queue a null job and throw `Cannot read properties of null (reading
-			// 'flags')`. Vue 2's $forceUpdate() guarded on `vm._watcher &&` so the same
-			// call was a silent no-op there. Gate the call on this flag instead.
-			isMounted: false,
-			objectEditors: {},
-			tabOptions: [
-				'Properties',
-				'Metadata',
-				'Data',
-				'Uses',
-				'Used by',
-				'Contracts',
-				'Files',
-			],
-
-			selectedAttachments: [],
-			fileIdsLoading: [],
-			editingLabelsFileId: null,
-			editingLabels: [],
-			availableLabels: [],
-			labelsLoading: false,
+			...dialogState(),
+			...editorState(),
+			tabOptions: viewObjectTabs(),
+			...attachmentState(),
 			// Register/Schema selection for new objects with multiple options
-			selectedRegisterForNewObject: null,
-			selectedSchemaForNewObject: null,
-			registerSchemaSelectionConfirmed: false,
-			filesCurrentPage: 1,
-			filesPerPage: 10,
-			selectedProperty: null,
-			isSaving: false,
-			propertyChangeDebounceTimers: {}, // Track debounce timers per property
-			pendingNotifications: {}, // Store pending notification info per property
+			...newObjectSelection(),
+			...filesPage(),
+			...propertySaveState(),
 		}
 	},
 

@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Contacts;
 
 use OCA\OpenRegister\Contacts\Support\ContactsMenuPlatform;
 use OCA\OpenRegister\Contacts\Support\ContactsMenuSources;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\Contacts\ContactsMenu\IActionFactory;
@@ -164,9 +165,7 @@ class ContactsMenuProvider implements IProvider {
 		}
 
 		$matches = $this->matchingService->matchContact(
-			$primaryEmail,
-			$fullName,
-			$organizationString
+			contact: new ContactDetails(email: $primaryEmail, name: $fullName, organization: $organizationString)
 		);
 
 		if (empty($matches) === true) {

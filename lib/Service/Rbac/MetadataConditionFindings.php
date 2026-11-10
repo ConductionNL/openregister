@@ -179,7 +179,7 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	public function schemaFindings(Schema $schema, ?Schema $stored = null): array {
 		$name = sprintf('schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? $schema->getId()));
 		$findings = $this->findings(edit: new AuthorizationEdit(authorization: $schema->getAuthorization(), stored: $stored?->getAuthorization()), context: $name);
-		foreach ($this->stored->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+		foreach ($this->stored->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: $name) as $block) {
 			$findings = array_merge($findings, $this->findings(edit: new AuthorizationEdit(authorization: $block['authorization'], stored: $block['stored']), context: $block['context']));
 		}
 

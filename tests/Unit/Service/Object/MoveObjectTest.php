@@ -38,10 +38,12 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -90,7 +92,7 @@ final class MoveObjectTest extends TestCase {
 		$this->objects = $this->createMock(MagicMapper::class);
 		$this->validator = $this->createMock(ValidateObject::class);
 		$this->audit = $this->createMock(AuditTrailMapper::class);
-		$this->audit->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->audit->method('recordObjectEvent')->willReturn(new AuditTrail());
 
 		$this->objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity): ObjectEntity {
@@ -294,7 +296,19 @@ final class MoveObjectTest extends TestCase {
 		$object = $this->object();
 		$object->$setter($state);
 
-		self::assertNotNull(actual: $this->service()->keptReason(object: $object));
+		$reason = $this->service()->keptReason(object: $object);
+
+		self::assertNotNull(actual: $reason);
+		// The migration path gives the same reason a move refuses with.
+		$outcome = $this->service()->move(
+			object: $object,
+			sourceRegister: $this->register(1),
+			sourceSchema: $this->schema(10),
+			targetRegister: $this->register(2),
+			targetSchema: $this->schema(20),
+			actor: 'anna',
+		);
+		self::assertSame(expected: [$reason], actual: $outcome['errors']);
 	}
 
 	/**
@@ -401,7 +415,7 @@ final class MoveObjectTest extends TestCase {
 		$seen = 'unset';
 		$objects = $this->createMock(MagicMapper::class);
 		$objects->expects(self::once())->method('slugForMove')
-			->with($object, self::callback(fn (Register $r) => (int)$r->getId() === 2), self::callback(fn (Schema $s) => (int)$s->getId() === 20))
+			->with($object, self::callback(fn (RegisterSchema $t) => (int)$t->register->getId() === 2 && (int)$t->schema->getId() === 20))
 			->willReturn(null);
 		$objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity) use (&$seen): ObjectEntity {
@@ -585,12 +599,12 @@ final class MoveObjectTest extends TestCase {
 	public function testOneMovedEntryNamesBothAddresses(): void {
 		$recorded = [];
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$recorded): AuditTrail {
 				$recorded[] = ['action' => $action, 'context' => $context, 'actor' => $actorId];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator);
 		$service->move(

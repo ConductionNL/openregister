@@ -8,6 +8,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
@@ -43,6 +46,10 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileOverwrite;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * Golden test for what each file action answers and does, in every world it can meet.
@@ -560,13 +567,13 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 	private function access(): ObjectFileAccess {
 		$access = $this->createMock(ObjectFileAccess::class);
-		$access->method('readable')->willReturnCallback(function (string $register, string $schema, string $id): ObjectEntity {
-			$this->note(call: 'readable', detail: [$register, $schema, $id]);
+		$access->method('readable')->willReturnCallback(function (ObjectRef $ref): ObjectEntity {
+			$this->note(call: 'readable', detail: [$ref->register, $ref->schema, $ref->id]);
 			$this->refusal();
 			return $this->object;
 		});
-		$access->method('changeable')->willReturnCallback(function (string $register, string $schema, string $id, string $verb): ObjectEntity {
-			$this->note(call: 'changeable', detail: [$register, $schema, $id, $verb]);
+		$access->method('changeable')->willReturnCallback(function (ObjectRef $ref, string $verb): ObjectEntity {
+			$this->note(call: 'changeable', detail: [$ref->register, $ref->schema, $ref->id, $verb]);
 			$this->refusal();
 			return $this->object;
 		});
@@ -679,7 +686,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 	 * @param FileService&\PHPUnit\Framework\MockObject\MockObject $service The fake.
 	 */
 	private function stubStorage(FileService $service): void {
-		$service->method('addFile')->willReturnCallback(function (ObjectEntity|string $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
+		$service->method('addFile')->willReturnCallback(function (FileTarget $target, FileUpload $upload): File {
+			[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 			if ($this->action === 'saveChat') {
 				$fileName = (string)preg_replace('/\d/', '#', $fileName);
 				$content = (string)preg_replace('/^Saved by.*$/m', 'Saved by', (string)$content);
@@ -693,13 +701,13 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			return $this->file;
 		});
-		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
-			$this->note(call: 'saveFile', detail: [$fileName, $content, $share, $tags]);
+		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, FileUpload $upload): File {
+			$this->note(call: 'saveFile', detail: [$upload->fileName, $upload->content, $upload->share, $upload->tags]);
 			$this->work(call: 'saveFile');
 			return $this->file;
 		});
-		$service->method('updateFile')->willReturnCallback(function (string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null): File {
-			$this->note(call: 'updateFile', detail: [$filePath, $content, $tags, $object?->getUuid()]);
+		$service->method('overwriteFile')->willReturnCallback(function (FileOverwrite $overwrite): File {
+			$this->note(call: 'updateFile', detail: [$overwrite->filePath, $overwrite->content, $overwrite->tags, $overwrite->object?->getUuid()]);
 			$this->work(call: 'updateFile');
 			return $this->file;
 		});
@@ -708,13 +716,14 @@ class FilesControllerActionsGoldenTest extends TestCase {
 			$this->work(call: 'deleteFile');
 			return ($this->world['deleted'] ?? true);
 		});
-		$service->method('renameFile')->willReturnCallback(function (ObjectEntity $object, int $fileId, string $newName): File {
-			$this->note(call: 'renameFile', detail: [$object->getUuid(), $fileId, $newName]);
+		$service->method('renameAttachedFile')->willReturnCallback(function (FileRename $rename): File {
+			$this->note(call: 'renameFile', detail: [$rename->object->getUuid(), $rename->fileId, $rename->newName]);
 			$this->work(call: 'renameFile');
 			return $this->file;
 		});
-		$service->method('updateFileMetadata')->willReturnCallback(function (int $fileId, ?string $description = null, ?string $category = null, ?array $labels = null): FileEntity {
-			$this->note(call: 'updateFileMetadata', detail: [$fileId, $description, $category, $labels]);
+		$service->method('changeFileMetadata')->willReturnCallback(function (FileMetadataChange $change): FileEntity {
+			$description = $change->description;
+			$this->note(call: 'updateFileMetadata', detail: [$change->fileId, $description, $change->category, $change->labels]);
 			$this->work(call: 'updateFileMetadata');
 			$entity = new FileEntity();
 			$entity->setDescription($description);
@@ -808,8 +817,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 		});
 		$service->method('getBatchHandler')->willReturnCallback(function (): FileBatchHandler {
 			$handler = $this->createMock(FileBatchHandler::class);
-			$handler->method('executeBatch')->willReturnCallback(function (ObjectEntity $object, string $action, array|string|int $fileIds, array $params = []): array {
-				$this->note(call: 'executeBatch', detail: [$object->getUuid(), $action, $fileIds, $params]);
+			$handler->method('runBatch')->willReturnCallback(function (FileBatchRequest $request, array|string|int $fileIds): array {
+				$this->note(call: 'executeBatch', detail: [$request->object->getUuid(), $request->action, $fileIds, $request->params]);
 				$this->work(call: 'executeBatch');
 				return ['summary' => ['failed' => ($this->world['batchFailed'] ?? 0)]];
 			});

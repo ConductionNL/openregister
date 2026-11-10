@@ -28,10 +28,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Party;
 
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
@@ -114,26 +117,17 @@ class PartyNotificationService {
 	 * remaining address is put to integriq in one question; a party it
 	 * refuses is reported, never dropped (opt-out-before-send).
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $subject The subject.
-	 * @param string $body The body.
-	 * @param string|null $role Only the parties in this role, or null for all of them.
-	 * @param string $category The message category; absent or unknown reads as `service`.
+	 * @param PartyMessage $message The object, subject, body and category.
+	 * @param string|null  $role    Only the parties in this role, or null for all of them.
 	 *
 	 * @return array<int, array{party: string, address: string|null, outcome: string}> What happened per party.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
-	public function notifyParties(
-		string $objectUuid,
-		string $subject,
-		string $body,
-		?string $role = null,
-		string $category = OptOutAuthority::DEFAULT_CATEGORY,
-	): array {
+	public function notifyParties(PartyMessage $message, ?string $role=null): array {
 		return $this->notify(
-			message: ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'category' => $category],
+			message: ['objectUuid' => $message->objectUuid, 'subject' => $message->subject, 'body' => $message->body, 'category' => $message->category],
 			role: $role
 		);
 	}//end notifyParties()
@@ -211,12 +205,13 @@ class PartyNotificationService {
 		return [
 			'party' => $recipient['party'],
 			'address' => $recipient['address'],
-			'outcome' => $this->email->sendToAddress(
-				address: $recipient['address'],
-				displayName: (string)($recipient['displayName'] ?? ''),
-				subject: $message['subject'],
-				body: $this->gates->optOut->withLink(body: $message['body'], unsubscribe: $decision['unsubscribe']),
-				unsubscribe: $decision['unsubscribe']
+			'outcome' => $this->email->sendMailTo(
+				addressee: new MailAddressee(address: $recipient['address'], displayName: (string)($recipient['displayName'] ?? '')),
+				content: new MailContent(
+					subject: $message['subject'],
+					body: $this->gates->optOut->withLink(body: $message['body'], unsubscribe: $decision['unsubscribe']),
+					unsubscribe: $decision['unsubscribe']
+				)
 			),
 		];
 	}//end outcomeFor()
@@ -276,8 +271,7 @@ class PartyNotificationService {
 	private function outboundAddress(ObjectEntity $party, ?PartyDefinition $definition): ?string {
 		$addresses = $this->parties->addressesOfKind(
 			party: $party,
-			kind: self::OUTBOUND_KIND,
-			definition: $definition
+			selection: new PartyAddressSelection(kind: self::OUTBOUND_KIND, definition: $definition)
 		);
 
 		if ($addresses === []) {

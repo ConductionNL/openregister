@@ -35,6 +35,8 @@ namespace OCA\OpenRegister\Command;
 use DateTimeInterface;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use Symfony\Component\Console\Command\Command;
@@ -106,7 +108,7 @@ class RematerialiseCalculationsCommand extends Command {
 			return Command::FAILURE;
 		}
 
-		$run = new RematerialiseRun(register: $register, schema: $schema, output: $output);
+		$run = new RematerialiseRun(table: new RegisterSchema(register: $register, schema: $schema), output: $output);
 		$run->dryRun = (bool)$input->getOption('dry-run');
 		if ($run->calculations === []) {
 			$output->writeln('<comment>Schema declares no x-openregister-calculations — nothing to do.</comment>');
@@ -120,9 +122,8 @@ class RematerialiseCalculationsCommand extends Command {
 
 		$this->announce(run: $run);
 		$entities = $this->storage->magicMapper->findAllInRegisterSchemaTable(
-			register: $register,
-			schema: $schema,
-			limit: 100000
+			table: new RegisterSchema(register: $register, schema: $schema),
+			listing: new ListQuery(limit: 100000)
 		);
 		foreach ($entities as $entity) {
 			$this->rematerialiseRow(run: $run, entity: $entity);

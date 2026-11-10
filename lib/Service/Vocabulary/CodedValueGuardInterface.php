@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CodedValueException;
 
 /**
@@ -39,9 +37,7 @@ interface CodedValueGuardInterface {
 	/**
 	 * Refuse the object's coded values that the vocabulary does not allow.
 	 *
-	 * @param array<string,mixed>    $object The submitted object data.
-	 * @param Schema                 $schema The schema being written against.
-	 * @param DateTimeInterface|null $at     The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, the schema it is written against and the instant to judge windows at (now when null).
 	 *
 	 * @return void
 	 *
@@ -49,5 +45,5 @@ interface CodedValueGuardInterface {
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at=null): void;
+	public function enforce(CodedValueWrite $write): void;
 }//end interface

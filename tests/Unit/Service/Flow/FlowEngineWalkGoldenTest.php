@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
@@ -57,6 +58,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
 use stdClass;
+use OCA\OpenRegister\Service\Flow\PlacesPruning;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * A dispatcher whose behaviour per step id is configured by the case.
@@ -367,8 +371,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 		$result = $engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace)))->withContext(context: $context)->withStreams(streams: $streams),
-			items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
-			startAt: ($case['startAt'] ?? null)
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
+				startAt: ($case['startAt'] ?? null)
+			)
 		);
 
 		$result['log'] = self::clip(lines: $result['log']);
@@ -457,8 +463,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function runContext(\Closure $trace): FlowRunContext {
 		$context = $this->createMock(FlowRunContext::class);
-		$context->method('push')->willReturnCallback(function (?string $runUuid, string $nodeId, int $sequence) use ($trace): void {
-			$trace(['push', $runUuid, $nodeId, $sequence]);
+		$context->method('push')->willReturnCallback(function (FlowRunFrame $frame) use ($trace): void {
+			$trace(['push', $frame->runUuid, $frame->nodeId, $frame->sequence]);
 		});
 		$context->method('pop')->willReturnCallback(function () use ($trace): void {
 			$trace(['pop']);
@@ -469,8 +475,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 	private function mootness(\Closure $trace): FlowTaskMootness {
 		$mootness = $this->createMock(FlowTaskMootness::class);
-		$mootness->method('placesPruned')->willReturnCallback(function (array $context, array $places, string $byTransition) use ($trace): int {
-			$trace(['pruned', $places, $byTransition]);
+		$mootness->method('placesPruned')->willReturnCallback(function (array $context, PlacesPruning $pruning) use ($trace): int {
+			$trace(['pruned', $pruning->places, $pruning->byTransition]);
 			return 0;
 		});
 
@@ -537,7 +543,9 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			$trace(['exhaust', $id]);
 			$exhausted[$id] = true;
 		});
-		$walk->method('claim')->willReturnCallback(function (string $id, string $transition, array $places) use (&$refused, $refuse, $trace): ?array {
+		$walk->method('claim')->willReturnCallback(function (string $id, Transition $firing) use (&$refused, $refuse, $trace): ?array {
+			$transition = $firing->getName();
+			$places     = array_map('strval', array_merge($firing->getFroms(), $firing->getTos()));
 			$trace(['claim', $id, $transition, $places]);
 			if (in_array($transition, $refuse, true) === true) {
 				$refused[$id] = true;

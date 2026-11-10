@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -30,6 +31,7 @@ use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
+use OCA\OpenRegister\Files\Service\File\ObjectFolderPath;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -112,7 +114,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
-	 * @param string $path     The folder, relative to the object folder; empty for its root.
+	 *
+	 * The `path` param names the folder, relative to the object folder; empty or absent for its root.
 	 *
 	 * @return JSONResponse The listing, with `canChange`; or 400, 404.
 	 *
@@ -124,9 +127,12 @@ class ObjectFolderController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function index(string $register, string $schema, string $id, string $path = ''): JSONResponse {
+	public function index(string $register, string $schema, string $id): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
-		return $this->answer(work: fn (): JSONResponse => $this->listing(object: $this->ensureReadable(ref: $ref), path: $path));
+		return $this->answer(work: function () use ($ref): JSONResponse {
+			$path = $this->text(name: 'path');
+			return $this->listing(object: $this->ensureReadable(ref: $ref), path: $path);
+		});
 	}//end index()
 
 	/**
@@ -150,8 +156,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
-	 * @param string $name     The new folder's name.
-	 * @param string $path     Where, relative to the object folder; empty for its root.
+	 *
+	 * The `name` param is the new folder's name; `path` says where, relative to the object folder, empty for its root.
 	 *
 	 * @return JSONResponse The new folder (201); or 400, 403, 404, 409.
 	 *
@@ -160,12 +166,16 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	#[NoAdminRequired]
-	public function create(string $register, string $schema, string $id, string $name = '', string $path = ''): JSONResponse {
+	public function create(string $register, string $schema, string $id): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
-		return $this->answer(work: fn (): JSONResponse => new JSONResponse(
-			data: $this->browser->createFolder(object: $this->ensureChangeable(ref: $ref), path: $path, name: $name),
-			statusCode: 201
-		));
+		return $this->answer(work: function () use ($ref): JSONResponse {
+			$path = $this->text(name: 'path');
+			$name = $this->text(name: 'name');
+			return new JSONResponse(
+				data: $this->browser->createFolder(object: $this->ensureChangeable(ref: $ref), path: $path, name: $name),
+				statusCode: 201
+			);
+		});
 	}//end create()
 
 	/**
@@ -178,7 +188,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
-	 * @param string $path     The target folder, relative to the object folder.
+	 *
+	 * The `path` param names the target folder, relative to the object folder.
 	 *
 	 * @return JSONResponse 201 with `stored`; 207 with `stored` and `rejected`; 400, 403, 404; 409 when every file was a taken name.
 	 *
@@ -187,9 +198,12 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	#[NoAdminRequired]
-	public function upload(string $register, string $schema, string $id, string $path = ''): JSONResponse {
+	public function upload(string $register, string $schema, string $id): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
-		return $this->answer(work: fn (): JSONResponse => $this->uploadInto(object: $this->ensureChangeable(ref: $ref), path: $path));
+		return $this->answer(work: function () use ($ref): JSONResponse {
+			$path = $this->text(name: 'path');
+			return $this->uploadInto(object: $this->ensureChangeable(ref: $ref), path: $path);
+		});
 	}//end upload()
 
 	/**
@@ -207,7 +221,7 @@ class ObjectFolderController extends Controller {
 		}
 
 		return $this->responder->uploaded(
-			outcome: $this->services->uploads->uploadAll(object: $object, path: $path, uploads: $uploads),
+			outcome: $this->services->uploads->uploadAll(folder: new ObjectFolderPath(object: $object, path: $path), uploads: $uploads),
 			total: count($uploads)
 		);
 	}//end uploadInto()
@@ -219,7 +233,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
 	 * @param int    $nodeId   The file or folder.
-	 * @param string $name     The new name.
+	 *
+	 * The `name` param is the new name.
 	 *
 	 * @return JSONResponse The renamed node; or 400, 403, 404, 409.
 	 *
@@ -228,11 +243,14 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	#[NoAdminRequired]
-	public function rename(string $register, string $schema, string $id, int $nodeId, string $name = ''): JSONResponse {
+	public function rename(string $register, string $schema, string $id, int $nodeId): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
-		return $this->answer(work: fn (): JSONResponse => new JSONResponse(
-			data: $this->browser->rename(object: $this->ensureChangeable(ref: $ref), nodeId: $nodeId, name: $name)
-		));
+		return $this->answer(work: function () use ($ref, $nodeId): JSONResponse {
+			$name = $this->text(name: 'name');
+			return new JSONResponse(
+				data: $this->browser->rename(object: $this->ensureChangeable(ref: $ref), nodeId: $nodeId, name: $name)
+			);
+		});
 	}//end rename()
 
 	/**
@@ -285,6 +303,35 @@ class ObjectFolderController extends Controller {
 	}//end answer()
 
 	/**
+	 * A text param of the request, as the dispatcher would bind a `string $name = ''` argument.
+	 *
+	 * Read before the access check, so a malformed param is refused with 400 whatever the caller's access.
+	 *
+	 * @param string $name The param's name.
+	 *
+	 * @return string The value, or '' when absent or null.
+	 *
+	 * @throws InvalidArgumentException When the param is present but not a string (answered 400).
+	 */
+	private function text(string $name): string {
+		$value = $this->request->getParam($name);
+		if ($value === null) {
+			return '';
+		}
+
+		if (is_string($value) === false) {
+			$code = ObjectFolderBrowser::BAD_NAME;
+			if ($name === 'path') {
+				$code = ObjectFolderBrowser::BAD_PATH;
+			}
+
+			throw new InvalidArgumentException(message: 'The ' . $name . ' param must be a string', code: $code);
+		}
+
+		return $value;
+	}//end text()
+
+	/**
 	 * The object, when the signed-in person may read it.
 	 *
 	 * @param ObjectRef $ref The object.
@@ -294,7 +341,7 @@ class ObjectFolderController extends Controller {
 	 * @throws ObjectFileAccessDeniedException With 404 when they may not read it.
 	 */
 	private function ensureReadable(ObjectRef $ref): ObjectEntity {
-		return $this->objectFileAccess->readable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
+		return $this->objectFileAccess->readable(ref: $ref);
 	}//end ensureReadable()
 
 	/**
@@ -310,7 +357,7 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
 	 */
 	private function ensureChangeable(ObjectRef $ref): ObjectEntity {
-		$object = $this->objectFileAccess->changeable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
+		$object = $this->objectFileAccess->changeable(ref: $ref);
 
 		// Asked after the access rule, so a caller without access still gets
 		// 404 or 403 and learns nothing of the state; the same order the files

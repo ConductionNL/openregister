@@ -82,15 +82,14 @@ interface SharedMasterDataServiceInterface {
 	 * declaring it on the schema is how one case type or party definition is
 	 * shared across the registers that carry it.
 	 *
-	 * @param integer|null $registerId The register being read, when known.
-	 * @param integer|null $schemaId The schema being read, when known.
+	 * @param DeclaredPair       $pair             The register and schema being read, each when known.
 	 * @param array<int, string> $consumerOrgUuids The reading organisation and its parents.
 	 *
 	 * @return array<int, string> The holder organisation UUIDs to widen by.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function holdersForResource(?int $registerId, ?int $schemaId, array $consumerOrgUuids): array;
+	public function holdersForResource(DeclaredPair $pair, array $consumerOrgUuids): array;
 
 	/**
 	 * Refuse a write to shared master data the acting organisation only consumes.
@@ -100,8 +99,9 @@ interface SharedMasterDataServiceInterface {
 	 * refusal belongs, and the message names the holder so the caller knows who
 	 * to ask rather than only that they were told no.
 	 *
-	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
-	 * @param integer|null $id The row being written.
+	 * A row whose id is not known asks nothing.
+	 *
+	 * @param DeclaredRow        $row            The register or schema row being written ({@see REGISTERS} or {@see SCHEMAS}).
 	 * @param array<int, string> $activeOrgUuids The acting organisation and its parents.
 	 *
 	 * @return void
@@ -110,5 +110,5 @@ interface SharedMasterDataServiceInterface {
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function assertWritable(string $table, ?int $id, array $activeOrgUuids): void;
+	public function assertWritable(DeclaredRow $row, array $activeOrgUuids): void;
 }//end interface

@@ -50,6 +50,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\ScopeChange;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -319,8 +326,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 					object: $entity
 				),
 				'hasPermission' => $this->rbacHandler->hasRowPermission(
-					schema: $schema,
-					action: 'read',
+					ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 					row: $entity
 				),
 				'list (QueryBuilder)' => in_array($key, $queryBuilderVisible, true),
@@ -501,7 +507,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * (task 9.1). The flow engine never runs in the caller's authority: it runs a
 	 * flow AS ITS OWNER, and triggers, scheduled runs and background jobs have no
 	 * session at all to evaluate against. So all four OpenRegisterFlowResolver
-	 * paths — resolveFlow(), resolveSubject(), scheduledFlows() and
+	 * paths — resolveFlow(), resolveObject(), scheduledFlows() and
 	 * buildTriggerIndex() — load with `_rbac: false` on purpose.
 	 *
 	 * If the scope predicate were applied OUTSIDE that gate, making flows private
@@ -633,8 +639,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->assertTrue(
 			$this->rbacHandler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $entities['granted']
 			),
 			'the relation-path verdict must honour the grant'
@@ -880,12 +885,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->asOwner(
 			function () use ($register, $schema, $entity): void {
-				$this->sharingService()->setScope(
-					register: $register,
-					schema: $schema,
-					object: $entity,
-					scope: 'private'
-				);
+				$this->sharingService()->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $entity, scope: 'private'));
 			}
 		);
 
@@ -919,12 +919,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		$this->assertContains('notyours', $this->visibleKeys($register, $schema));
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->sharingService()->setScope(
-			register: $register,
-			schema: $schema,
-			object: $entity,
-			scope: 'private'
-		);
+		$this->sharingService()->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $entity, scope: 'private'));
 	}//end testANonOwnerCannotChangeTheScope()
 
 	/**
@@ -950,12 +945,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->asOwner(
 			function () use ($register, $schema, $entity): void {
-				$this->sharingService()->setScope(
-					register: $register,
-					schema: $schema,
-					object: $entity,
-					scope: 'private'
-				);
+				$this->sharingService()->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $entity, scope: 'private'));
 			}
 		);
 
@@ -983,12 +973,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		$this->assertNotContains('viaservice', $this->visibleKeys($register, $schema), 'private first');
 
 		$grant = $this->asOwner(
-			fn () => $this->sharingService()->grant(
-				object: $entity,
-				type: 'user',
-				shareWith: $this->testUid,
-				permissions: 1
-			)
+			fn () => $this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: $this->testUid, terms: new GrantTerms(permissions: 1)))
 		);
 
 		$this->grantResolver()->forget();
@@ -1033,12 +1018,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		// The owner invites this caller, so they are a genuine recipient.
 		$this->asOwner(
-			fn () => $this->sharingService()->grant(
-				object: $entity,
-				type: 'user',
-				shareWith: $this->testUid,
-				permissions: 1
-			)
+			fn () => $this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: $this->testUid, terms: new GrantTerms(permissions: 1)))
 		);
 		$this->grantResolver()->forget();
 
@@ -1051,12 +1031,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		// And still cannot pass it on.
 		$this->expectException(NotAuthorizedException::class);
-		$this->sharingService()->grant(
-			object: $entity,
-			type: 'user',
-			shareWith: 'somebody-else',
-			permissions: 1
-		);
+		$this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: 'somebody-else', terms: new GrantTerms(permissions: 1)));
 	}//end testARecipientCannotAddAnotherPrincipal()
 
 	/**
@@ -1087,12 +1062,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		$requested = (Constants::PERMISSION_READ | Constants::PERMISSION_UPDATE | Constants::PERMISSION_SHARE);
 
 		$grant = $this->asOwner(
-			fn () => $this->sharingService()->grant(
-				object: $entity,
-				type: 'user',
-				shareWith: $this->testUid,
-				permissions: $requested
-			)
+			fn () => $this->sharingService()->grantWithTerms(object: $entity, request: new GrantRequest(type: 'user', shareWith: $this->testUid, terms: new GrantTerms(permissions: $requested)))
 		);
 
 		$granted = (int)$grant['permissions'];
@@ -1190,7 +1160,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			'a custom verb must map to no core permission bit'
 		);
 		$this->assertFalse(
-			$this->grantResolver()->isGranted($this->testUid, $entity->getUuid(), 'besluit_nemen'),
+			$this->grantResolver()->isGranted(new GrantLookup($this->testUid, $entity->getUuid()), 'besluit_nemen'),
 			'a grant must not admit a verb it cannot carry'
 		);
 	}//end testAGrantCannotAdmitACustomVerb()
@@ -1624,7 +1594,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function assertRawEmitterCarriesTheScopePredicate(Schema $schema): void {
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$joined = implode(' ', $result['conditions']);
 
 		$this->assertStringContainsString(

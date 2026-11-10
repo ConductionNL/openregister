@@ -21,10 +21,8 @@
  *
  * Lazy-resolution policy: `IManager`, `FileService`, and
  * `IUserSession` are pulled from the server container on demand rather
- * than constructor-injected, so the ctor signature
- * `(IDBConnection, IAppManager, IL10N)` stays compatible with the
- * existing `Application.php` registration. Tests inject a mock
- * `ContainerInterface` via the optional fourth ctor arg.
+ * than constructor-injected. Tests inject a mock `ContainerInterface`
+ * via the optional second ctor arg.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -48,10 +46,9 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata;
 // Getters mirror the contract in the interface.
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCP\App\IAppManager;
 use OCP\Files\Folder;
-use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\Server;
 use OCP\Share\IManager;
@@ -107,17 +104,9 @@ class SharesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * Required args mirror the registration block in `Application.php`
-	 * so the wiring there stays untouched. The optional container
-	 * argument is for unit tests only; production uses
+	 * The optional container argument is for unit tests only; production uses
 	 * `\OCP\Server::get(...)` via {@see resolveContainer()}.
 	 *
-	 * @param IDBConnection $db NC DB connection (unused at runtime since
-	 *                          the IManager pivot owns query construction —
-	 *                          kept for parity with the registration block).
-	 * @param IAppManager $appManager NC app manager (unused at runtime: NC core
-	 *                                sharing is always available — kept for
-	 *                                registration-block parity).
 	 * @param IL10N $l10n Localisation.
 	 * @param ContainerInterface|null $container Optional server-container override (tests
 	 *                                           only).
@@ -125,8 +114,6 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
 		private IL10N $l10n,
 		private ?ContainerInterface $container = null,
 	) {
@@ -201,10 +188,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *   - `url`                   — deep-link into the NC Files share panel
 	 *   - `data`                  — passthrough of the above (for the widget)
 	 *
-	 * @param string $register Register slug or numeric id (unused — link
-	 *                         convention is per-object).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -222,8 +206,8 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * (register, schema, objectId, filters); $register and $schema are unused because shares are
 	 * indexed per-object-uuid and there is no register/schema scope for NC core sharing.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->sharesOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->sharesOf(objectId: $ref->id);
 	}//end list()
 
 	/**
@@ -420,7 +404,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *
 	 * The payload selects the kind of thing to create:
 	 *   - `type: 'public-token'` (or `type` omitted) — mint a case token
-	 *     bound to the object via {@see CaseTokenService::mint()}. Optional
+	 *     bound to the object via {@see CaseTokenService::mintFor()}. Optional
 	 *     `label` (string) and `ttlSeconds` (int) tune the link. Returns
 	 *     the token metadata + the public resolve URL.
 	 *
@@ -432,9 +416,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * defers to the abstract NotImplementedException so the controller
 	 * returns the canonical 501 — preserving backward compatibility.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload Mint options (type/label/ttlSeconds).
 	 *
 	 * @return array<string,mixed> Minted token metadata + public URL.
@@ -444,8 +426,8 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		return $this->mintCaseTokenFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	public function create(ObjectRef $ref, array $payload): array {
+		return $this->mintCaseTokenFor(ref: $ref, payload: $payload);
 	}//end create()
 
 	/**
@@ -461,19 +443,21 @@ class SharesProvider extends AbstractIntegrationProvider {
 		if ($type !== 'public-token') {
 			// Only the public-token surface is supported by this provider;
 			// anything else defers to the abstract 501 contract.
-			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
-		if ($service === null || method_exists($service, 'mint') === false) {
-			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
+		if ($service === null || method_exists($service, 'mintFor') === false) {
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
-		return $service->mint(
-			objectUuid: $ref->id,
-			registerId: $this->numericOrNull(value: (string)$ref->register),
-			schemaId: $this->numericOrNull(value: (string)$ref->schema),
-			label: self::mintLabel(payload: $payload),
+		return $service->mintFor(
+			target: new CaseTokenTarget(
+				objectUuid: $ref->id,
+				registerId: $this->numericOrNull(value: (string)$ref->register),
+				schemaId: $this->numericOrNull(value: (string)$ref->schema),
+				label: self::mintLabel(payload: $payload)
+			),
 			ttlSeconds: self::mintTtl(payload: $payload)
 		);
 	}//end mintCaseTokenFor()
@@ -517,17 +501,15 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * path. A `token:`-prefixed entityId addresses a case token; anything
 	 * else is treated as an NC share id exactly as before.
 	 *
-	 * @param string $register Register slug.
-	 * @param string $schema Schema slug.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Share id, or `token:<token-or-id>`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-shares/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->revokeFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), entityId: $entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->revokeFor(ref: $ref, entityId: $entityId);
 	}//end delete()
 
 	/**
@@ -547,7 +529,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
 		if ($service === null || method_exists($service, 'revokeShare') === false) {
-			parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
+			parent::delete(ref: $ref, entityId: $entityId);
 			return;
 		}
 
@@ -569,7 +551,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 			return;
 		}
 
-		parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
+		parent::delete(ref: $ref, entityId: $entityId);
 	}//end deleteCaseToken()
 
 	/**
