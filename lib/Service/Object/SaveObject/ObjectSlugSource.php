@@ -150,17 +150,16 @@ class ObjectSlugSource {
 	}//end differsFromStored()
 
 	/**
-	 * The candidate built from the schema's `objectSlugField`.
+	 * The candidate built from the schema's `objectSlugField`, cut to the slug column (MAX_LENGTH).
 	 *
 	 * @param array  $objectData The object's business data (or an envelope with an `object` key).
 	 * @param Schema $schema     The schema.
-	 * @param int    $maxLength  Width of the slug column.
 	 *
 	 * @return string|null The slugified value cut to the column, or null when there is none.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
-	public function candidate(array $objectData, Schema $schema, int $maxLength): string|null {
+	public function candidate(array $objectData, Schema $schema): string|null {
 		$path = $this->fieldPathAndPrefix(schema: $schema);
 		if ($path === null) {
 			return null;
@@ -175,7 +174,7 @@ class ObjectSlugSource {
 		}
 
 		// Cut to the column without leaving a trailing hyphen at the cut.
-		return rtrim(substr($this->prefixed(prefix: $prefix, name: $name), 0, $maxLength), '-');
+		return rtrim(substr($this->prefixed(prefix: $prefix, name: $name), 0, self::MAX_LENGTH), '-');
 	}//end candidate()
 
 	/**
