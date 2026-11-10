@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\LogService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -31,9 +32,7 @@ class LogServiceTest extends TestCase {
 
 		$this->service = new LogService(
 			$this->auditTrailMapper,
-			$this->objectEntityMapper,
-			$this->registerMapper,
-			$this->schemaMapper
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectEntityMapper)
 		);
 	}
 
