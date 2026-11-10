@@ -69,6 +69,8 @@ class MagicFacetHandlerObjectFieldFiltersGoldenTest extends TestCase {
 			'missing column later' => ['title' => 'x', 'nope' => 1, 'status' => 'open'],
 			'mixed' => ['_order' => ['title' => 'asc'], 'title' => 'a', '@self' => [], 'flag' => false, 'tags' => ['z'], 'status' => ['open']],
 			'null value' => ['title' => null],
+			'context params' => ['register' => 1, 'schema' => 2, 'registers' => [1], 'schemas' => [2], 'extend' => 'owner'],
+			'context params and a filter' => ['extend' => ['owner'], 'title' => 'x', 'schemas' => [2]],
 		];
 
 		$actual = [];

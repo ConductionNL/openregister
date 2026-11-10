@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
+use OCA\OpenRegister\Support\FilterParams;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
@@ -2450,9 +2451,11 @@ class MagicFacetHandler {
 	}//end applyObjectFieldFilters()
 
 	/**
-	 * The query terms that filter on an object field: no `@self` and no underscore-prefixed parameter.
+	 * The query terms that filter on an object field: no `@self`, no underscore-prefixed parameter
+	 * and no context parameter.
 	 *
-	 * Every reserved query parameter but `@self` starts with an underscore.
+	 * The context parameters are the ones search excludes too ({@see FilterParams::OBJECT_CONTEXT_PARAMS}),
+	 * so a facet counts the rows the search lists instead of answering `1 = 0` for them.
 	 *
 	 * @param array $baseQuery The base query.
 	 *
@@ -2461,7 +2464,10 @@ class MagicFacetHandler {
 	private function objectFieldFilterTerms(array $baseQuery): array {
 		$terms = [];
 		foreach ($baseQuery as $key => $value) {
-			if ($key === '@self' || str_starts_with($key, '_') === true) {
+			if ($key === '@self'
+				|| str_starts_with($key, '_') === true
+				|| in_array($key, FilterParams::OBJECT_CONTEXT_PARAMS, true) === true
+			) {
 				continue;
 			}
 
