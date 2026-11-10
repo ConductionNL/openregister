@@ -35,6 +35,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;
@@ -884,7 +885,7 @@ class OrganisationController extends Controller {
 			// Otherwise search by name.
 			$organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
 			if (empty(trim($query)) === false) {
-				$organisations = $this->organisationMapper->findByName(name: trim($query), limit: $limit, offset: $offset);
+				$organisations = $this->organisationMapper->findListByName(name: trim($query), query: new ListQuery(limit: $limit, offset: $offset));
 			}
 
 			// Remove user information for privacy.

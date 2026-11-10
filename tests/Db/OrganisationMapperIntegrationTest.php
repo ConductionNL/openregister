@@ -12,6 +12,7 @@
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -170,7 +171,7 @@ class OrganisationMapperIntegrationTest extends TestCase {
 		$uniqueName = 'UniqueOrgNameTest-' . uniqid();
 		$this->createTestOrganisation(['name' => $uniqueName]);
 
-		$results = $this->mapper->findByName($uniqueName);
+		$results = $this->mapper->findListByName($uniqueName, new ListQuery(50, 0));
 		$this->assertNotEmpty($results);
 		$this->assertSame($uniqueName, $results[0]->getName());
 	}
@@ -179,12 +180,12 @@ class OrganisationMapperIntegrationTest extends TestCase {
 		$uniquePart = 'PartialName' . uniqid();
 		$this->createTestOrganisation(['name' => 'Prefix ' . $uniquePart . ' Suffix']);
 
-		$results = $this->mapper->findByName($uniquePart);
+		$results = $this->mapper->findListByName($uniquePart, new ListQuery(50, 0));
 		$this->assertNotEmpty($results);
 	}
 
 	public function testFindByNameNoResults(): void {
-		$results = $this->mapper->findByName('NonexistentOrgName' . uniqid());
+		$results = $this->mapper->findListByName('NonexistentOrgName' . uniqid(), new ListQuery(50, 0));
 		$this->assertIsArray($results);
 		$this->assertEmpty($results);
 	}
