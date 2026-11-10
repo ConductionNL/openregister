@@ -134,12 +134,7 @@ class LockGuardUnitsGoldenTest extends TestCase {
 			}
 		);
 		$logger = $this->createMock(LoggerInterface::class);
-		$registry = new RunLockRegistry(
-			registry: $mapper,
-			magicMapper: $this->createMock(MagicMapper::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $logger
-		);
+		$registry = new RunLockRegistry(registry: $mapper, recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $logger, $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 		$object = new ObjectEntity();
 		$object->setUuid('o-1');
 		$object->setRegister('3');
