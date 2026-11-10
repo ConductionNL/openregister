@@ -45,6 +45,8 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -122,6 +124,8 @@ class ServicesIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	protected function tearDown(): void {
+		\OC::$server->get(IUserSession::class)->setUser(null);
+
 		// Clean up objects.
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
@@ -1673,11 +1677,26 @@ class ServicesIntegrationTest extends TestCase {
 	}
 
 	/**
+	 * Sign in an administrator: registers and schemas are created by administrators only
+	 *
+	 * @return void
+	 */
+	private function signInAdministrator(): void {
+		$admins = \OC::$server->get(IGroupManager::class)->get('admin')?->getUsers() ?? [];
+		if ($admins === []) {
+			$this->markTestSkipped('The instance has no administrator account.');
+		}
+
+		\OC::$server->get(IUserSession::class)->setUser(reset($admins));
+	}
+
+	/**
 	 * Test McpToolsService::callTool register CRUD
 	 *
 	 * @return void
 	 */
 	public function testMcpToolsServiceRegisterCrud(): void {
+		$this->signInAdministrator();
 		$service = \OC::$server->get(McpToolsService::class);
 
 		// Create.
@@ -1711,6 +1730,7 @@ class ServicesIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testMcpToolsServiceSchemaCrud(): void {
+		$this->signInAdministrator();
 		$service = \OC::$server->get(McpToolsService::class);
 
 		$createResult = $service->callTool('schemas', [
