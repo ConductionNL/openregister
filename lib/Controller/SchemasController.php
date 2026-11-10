@@ -564,12 +564,26 @@ class SchemasController extends Controller {
 		// Leave evidence when a slug was ambiguous and nobody said which register they
 		// meant. Silence here is what made the `agent` collision cost a workaround
 		// instead of a bug report.
-		if (is_string($id) === true && is_numeric($id) === false && $registerParam === null) {
+		if ($this->isUnscopedSlug(id: $id, registerParam: $registerParam) === true) {
 			$this->logAmbiguousSlug(slug: $id, resolved: $schema);
 		}
 
 		return $schema;
 	}//end resolveSchema()
+
+	/**
+	 * Whether the {id} is a slug and the caller named no register at all.
+	 *
+	 * @param int|string $id            The {id} route parameter.
+	 * @param mixed      $registerParam The raw `?register=` parameter.
+	 *
+	 * @return bool True when the global slug lookup may have been ambiguous.
+	 *
+	 * @phpstan-assert-if-true string $id
+	 */
+	private function isUnscopedSlug(int|string $id, mixed $registerParam): bool {
+		return is_string($id) === true && is_numeric($id) === false && $registerParam === null;
+	}//end isUnscopedSlug()
 
 
 	/**
@@ -2920,12 +2934,28 @@ class SchemasController extends Controller {
 			return $reference;
 		}
 
-		if ($dialect === 'schema.org' && isset($document['@type']) === true && is_string($document['@type']) === true) {
+		return $this->schemaOrgTypeReference(dialect: $dialect, document: $document);
+	}//end resolveDialectReference()
+
+	/**
+	 * The `@type` marker of a schema.org document, used as its reference.
+	 *
+	 * @param string               $dialect  The resolved dialect.
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return string|null The type, or null for another dialect or a missing or non-string marker.
+	 */
+	private function schemaOrgTypeReference(string $dialect, array $document): ?string {
+		if ($dialect !== 'schema.org' || isset($document['@type']) === false) {
+			return null;
+		}
+
+		if (is_string($document['@type']) === true) {
 			return $document['@type'];
 		}
 
 		return null;
-	}//end resolveDialectReference()
+	}//end schemaOrgTypeReference()
 
 	/**
 	 * The audit-trail statistics of one schema, for an administrator only.
