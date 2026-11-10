@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
+use OCA\OpenRegister\Service\Export\RowsTable;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -50,7 +51,7 @@ class RowsPdfSectionTest extends TestCase {
 	 * @return void
 	 */
 	public function testAListOfColumnsLabelsItselfAndEverythingIsEscaped(): void {
-		$html = (new RowsPdfSection())->build(title: 'Zaken <& co>', columns: ['title', 'a"b'], rows: [['title' => 'x', 'a"b' => '<b>']]);
+		$html = (new RowsPdfSection())->build(table: new RowsTable(title: 'Zaken <& co>', columns: ['title', 'a"b'], rows: [['title' => 'x', 'a"b' => '<b>']]));
 
 		$this->assertStringStartsWith('<div class="pdf-section"><h1>Zaken &lt;&amp; co&gt;</h1><p class="meta">Exported: ', $html);
 		$this->assertMatchesRegularExpression('/Exported: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} &middot; Rows: 1<\/p>/', $html);
@@ -67,7 +68,7 @@ class RowsPdfSectionTest extends TestCase {
 		$columns = ['n' => 'N', 'b' => 'B', 'l' => 'L', 'm' => 'M', 's' => 'S', 'gone' => 'Gone'];
 		$row     = ['n' => null, 'b' => false, 'l' => [1, true, null], 'm' => ['k' => 'é/x'], 's' => 4.5];
 
-		$html = (new RowsPdfSection())->build(title: 't', columns: $columns, rows: [$row, 'not a row']);
+		$html = (new RowsPdfSection())->build(table: new RowsTable(title: 't', columns: $columns, rows: [$row, 'not a row']));
 
 		$this->assertStringContainsString('<th>N</th><th>B</th><th>L</th><th>M</th><th>S</th><th>Gone</th>', $html);
 		$this->assertSame(
@@ -86,7 +87,7 @@ class RowsPdfSectionTest extends TestCase {
 	public function testLongCellsAreTruncated(): void {
 		$long  = str_repeat('é', 201);
 		$exact = str_repeat('a', 200);
-		$html  = (new RowsPdfSection())->build(title: 't', columns: ['x' => 'X', 'y' => 'Y'], rows: [['x' => $long, 'y' => $exact]]);
+		$html  = (new RowsPdfSection())->build(table: new RowsTable(title: 't', columns: ['x' => 'X', 'y' => 'Y'], rows: [['x' => $long, 'y' => $exact]]));
 
 		$this->assertSame('<tbody><tr><td>'.str_repeat('é', 200).'…</td><td>'.$exact.'</td></tr></tbody></table></div>', $this->body(html: $html));
 	}//end testLongCellsAreTruncated()

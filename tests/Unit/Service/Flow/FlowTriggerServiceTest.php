@@ -88,7 +88,7 @@ class FlowTriggerServiceTest extends TestCase {
 			container: $container
 		);
 
-		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
 		$count = $service->fire(
 			event: 'object.created',
@@ -104,7 +104,7 @@ class FlowTriggerServiceTest extends TestCase {
 		$runner = $this->createMock(FlowRunService::class);
 		$runner->expects($this->never())->method('queue');
 
-		$service = new FlowTriggerService($this->locatorReturning([]), $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($this->locatorReturning([]), $runner, new \Psr\Log\NullLogger()));
 
 		$this->assertSame(0, $service->fire(event: 'object.created', subject: ['register' => 'x', 'schema' => 'y']));
 	}//end testAnEventWithNoWiredFlowQueuesNothing()
@@ -140,9 +140,7 @@ class FlowTriggerServiceTest extends TestCase {
 		);
 
 		$service = new FlowTriggerService(
-			$this->locatorReturning(['unpublished', 'healthy']),
-			$runner,
-			new \Psr\Log\NullLogger()
+			new \OCA\OpenRegister\Service\Flow\FlowExecution($this->locatorReturning(['unpublished', 'healthy']), $runner, new \Psr\Log\NullLogger())
 		);
 
 		$count = $service->fire(
@@ -165,7 +163,7 @@ class FlowTriggerServiceTest extends TestCase {
 		$runner = $this->createMock(FlowRunService::class);
 		$runner->expects($this->never())->method('queue');
 
-		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
 		$this->assertSame(0, $service->fire(event: 'object.created'));
 	}//end testALocatorFailureIsSwallowedAsZero()
@@ -187,7 +185,7 @@ class FlowTriggerServiceTest extends TestCase {
 		$runner->method('queue')->willReturn($run);
 		$runner->method('execute')->willThrowException(new \RuntimeException('step blew up'));
 
-		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
 		$this->assertSame(
 			1,
@@ -219,7 +217,7 @@ class FlowTriggerServiceTest extends TestCase {
 			}
 		);
 
-		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
 		$this->assertSame(1, $service->fire(event: 'file.created'));
 		// execute(run, flow, subject, seedItems): the seed carries the payload.
@@ -240,7 +238,7 @@ class FlowTriggerServiceTest extends TestCase {
 		$runner->method('queue')->willReturn(new FlowRun());
 		$runner->expects($this->never())->method('execute');
 
-		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($locator, $runner, new \Psr\Log\NullLogger()));
 
 		$this->assertSame(1, $service->fire(event: 'object.created', subject: ['uuid' => 'gone']));
 	}//end testAnUnresolvableSubjectLeavesTheSyncRunToTheWorker()
@@ -254,7 +252,7 @@ class FlowTriggerServiceTest extends TestCase {
 		$runner = $this->createMock(FlowRunService::class);
 		$runner->method('queue')->willThrowException(new \RuntimeException('db down'));
 
-		$service = new FlowTriggerService($this->locatorReturning(['f1']), $runner, new \Psr\Log\NullLogger());
+		$service = new FlowTriggerService(new \OCA\OpenRegister\Service\Flow\FlowExecution($this->locatorReturning(['f1']), $runner, new \Psr\Log\NullLogger()));
 
 		// No exception escapes; returns 0.
 		$this->assertSame(0, $service->fire(event: 'object.created'));

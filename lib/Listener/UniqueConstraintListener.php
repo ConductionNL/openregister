@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Schemas\UniqueConflict;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -215,7 +216,7 @@ class UniqueConstraintListener implements IEventListener, UniqueConstraintListen
 		return [
 			'constraint' => $constraint,
 			'conflict' => $conflict,
-			'message' => $this->evaluator->describeBreach(constraint: $constraint, object: $run->data, conflictingId: $conflict),
+			'message' => $this->evaluator->describeBreach(constraint: $constraint, conflict: new UniqueConflict(object: $run->data, conflictingId: $conflict)),
 		];
 	}//end breachOf()
 

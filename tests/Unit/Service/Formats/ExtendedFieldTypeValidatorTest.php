@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Formats;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Formats\FormattedProperty;
+use OCA\OpenRegister\Formats\RecurrenceWindow;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -132,4 +134,23 @@ class ExtendedFieldTypeValidatorTest extends TestCase {
 			'a zero count falls back to the default occurrence count'
 		);
 	}//end testMaterialiseOccurrencesFallsBackToDefaultForZero()
+
+	public function testValidateColorPropertyAnswersAsValidateColor(): void {
+		foreach ([['#ff0000', null], ['rgba(1,2,3)', 'rgba'], [12, null], ['oklch(0.5 0.1 120)', 'oklch'], ['red', 'hex']] as [$value, $format]) {
+			$this->assertSame(
+				$this->validator->validateColor($value, $format, 'accent'),
+				$this->validator->validateColorProperty($value, new FormattedProperty('accent', $format))
+			);
+		}
+	}//end testValidateColorPropertyAnswersAsValidateColor()
+
+	public function testOccurrencesInAnswersAsMaterialiseOccurrences(): void {
+		$start = new DateTimeImmutable('2026-01-05T00:00:00Z');
+		foreach ([['FREQ=WEEKLY;BYDAY=MO;COUNT=10', 3], ['FREQ=DAILY', 0], ['not a rule', 2]] as [$rrule, $count]) {
+			$this->assertSame(
+				$this->validator->materialiseOccurrences($rrule, $count, $start),
+				$this->validator->occurrencesIn(new RecurrenceWindow($rrule, $count, $start))
+			);
+		}
+	}//end testOccurrencesInAnswersAsMaterialiseOccurrences()
 }//end class
