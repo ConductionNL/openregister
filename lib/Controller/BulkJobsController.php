@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -438,7 +439,7 @@ class BulkJobsController extends Controller {
 		$justification = $this->nullableString(value: $this->request->getParam('justification'));
 
 		try {
-			$created = $this->reversal->reverse(original: $job, actorUid: $uid, justification: $justification);
+			$created = $this->reversal->reverse(request: new ReversalRequest(original: $job, actorUid: $uid, justification: $justification));
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);
 		} catch (InvalidArgumentException $exception) {

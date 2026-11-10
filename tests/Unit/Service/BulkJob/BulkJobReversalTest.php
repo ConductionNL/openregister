@@ -52,6 +52,7 @@ use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActions;
 use OCA\OpenRegister\Service\BulkJob\BulkJobEnvironment;
 use OCA\OpenRegister\Service\BulkJob\BulkJobStore;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 
 final class BulkJobReversalTest extends TestCase {
 
@@ -184,7 +185,7 @@ final class BulkJobReversalTest extends TestCase {
 
 	private function refusal(BulkJob $original, string $actor = 'fatima'): BulkJobRefusedException {
 		try {
-			$this->reversal()->reverse($original, $actor, 'Verkeerde filter.');
+			$this->reversal()->reverse(new ReversalRequest($original, $actor, 'Verkeerde filter.'));
 		} catch (BulkJobRefusedException $exception) {
 			return $exception;
 		}
@@ -199,7 +200,7 @@ final class BulkJobReversalTest extends TestCase {
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$original = $this->original();
-		$reversal = $this->reversal()->reverse($original, 'fatima', 'De filter stond verkeerd.');
+		$reversal = $this->reversal()->reverse(new ReversalRequest($original, 'fatima', 'De filter stond verkeerd.'));
 
 		$this->assertSame(RestorePriorValuesAction::ID, $this->created[0]['action']);
 		$this->assertSame(
@@ -226,7 +227,7 @@ final class BulkJobReversalTest extends TestCase {
 		$this->resolver->method('idsOf')->willReturn($written);
 		$this->resolver->method('hydrate')->willReturn([]);
 
-		$this->reversal()->reverse($this->original(), 'fatima', 'x');
+		$this->reversal()->reverse(new ReversalRequest($this->original(), 'fatima', 'x'));
 
 		$this->assertSame($written, $this->created[0]['selection']['ids']);
 	}
@@ -288,7 +289,7 @@ final class BulkJobReversalTest extends TestCase {
 		$original = $this->original();
 		$original->setReversedByJobId(42);
 
-		$reversal = $this->reversal()->reverse($original, 'fatima', 'Tweede poging.');
+		$reversal = $this->reversal()->reverse(new ReversalRequest($original, 'fatima', 'Tweede poging.'));
 
 		$this->assertSame(7, $reversal->getReversesJobId());
 	}
@@ -302,6 +303,6 @@ final class BulkJobReversalTest extends TestCase {
 		$original = $this->original();
 		$original->setReversedByJobId(42);
 
-		$this->assertSame(7, $this->reversal()->reverse($original, 'fatima', 'x')->getReversesJobId());
+		$this->assertSame(7, $this->reversal()->reverse(new ReversalRequest($original, 'fatima', 'x'))->getReversesJobId());
 	}
 }//end class
