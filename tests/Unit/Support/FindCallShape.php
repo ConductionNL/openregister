@@ -70,6 +70,26 @@ final class FindCallShape {
 	}//end findSilent()
 
 	/**
+	 * A find() answer per call, as `willReturnMap()` rows in the flat list.
+	 *
+	 * @param array $rows Each row: the nine flat values, then the answer.
+	 *
+	 * @return \Closure The callback; null for a call no row names.
+	 */
+	public static function returnMap(array $rows): \Closure {
+		return static function (mixed ...$args) use ($rows): mixed {
+			$flat = self::find(args: $args);
+			foreach ($rows as $row) {
+				if (array_slice($row, 0, 9) === $flat) {
+					return $row[9];
+				}
+			}
+
+			return null;
+		};
+	}//end returnMap()
+
+	/**
 	 * The `with()` constraints for a find() call, given as the flat list.
 	 *
 	 * An omitted trailing value is not checked, as with `with()`; a value may be a constraint.

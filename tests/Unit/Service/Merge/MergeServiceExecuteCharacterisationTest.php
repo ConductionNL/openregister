@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -89,12 +90,12 @@ class MergeServiceExecuteCharacterisationTest extends TestCase {
 		$into = $this->object(uuid: 'into-uuid', sources: [['sourceSystem' => 'kvk-api', 'lastUpdated' => '2026-05-01', 'values' => ['name' => 'Voorbeeld B.V.']]]);
 
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('find')->willReturnMap(
+		$objects->method('find')->willReturnCallback(FindCallShape::returnMap(
 			[
 				['from-uuid', [], false, null, null, true, true, true, true, $from],
 				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
-		);
+		));
 		$objects->method('findAll')->willReturn([]);
 		$objects->method('saveObject')->willReturnCallback(
 			function ($object, $extend = [], $register = null, $schema = null) {
