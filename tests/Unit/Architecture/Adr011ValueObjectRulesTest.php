@@ -38,6 +38,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Db/ListQuery.php',
 		'Db/RegisterSchema.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/PreferenceAddress.php',
+		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
 	];
 
@@ -48,6 +50,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 */
 	private const KERNEL_LEAVES = [
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/PreferenceAddress.php',
+		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
 	];
 
