@@ -37,6 +37,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
+use OCA\OpenRegister\Service\Integration\Providers\MarkerScan;
 
 /**
  * list() of the link-table providers.
@@ -92,15 +93,16 @@ class LinkTableListGoldenTest extends TestCase {
 		}
 		$builder = $this->getMockBuilder($class)
 			->setConstructorArgs($args)
-			->onlyMethods(method_exists($class, 'findByMarker') ? ['findByMarker'] : []);
+			->onlyMethods(method_exists($class, 'scanMarker') ? ['scanMarker'] : []);
 		$provider = $builder->getMock();
-		if (method_exists($class, 'findByMarker') === false) {
+		if (method_exists($class, 'scanMarker') === false) {
 			return $provider;
 		}
 
-		$provider->method('findByMarker')->willReturnCallback(
-			function (...$args): array {
-				$this->markerCalls[] = array_map(static fn ($a) => is_object($a) ? 'object' : $a, $args);
+		// Recorded as connection, table, marker column, marker, extra columns, id column.
+		$provider->method('scanMarker')->willReturnCallback(
+			function (IDBConnection $db, MarkerScan $scan): array {
+				$this->markerCalls[] = ['object', $scan->table, $scan->markerColumn, $scan->marker, array_slice($scan->columns, 1), $scan->columns[0]];
 				return [['id' => 7, 'album_id' => 8, 'name' => 'N', 'slug' => 's', 'title' => 't', 'lat' => 1.5]];
 			}
 		);
