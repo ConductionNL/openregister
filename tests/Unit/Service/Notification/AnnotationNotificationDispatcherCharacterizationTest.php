@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager as IActivityManager;
@@ -383,8 +384,8 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$party = $this->createMock(PartyNotificationService::class);
 		$party->method('notifyParties')->willReturnCallback(
-			function (...$args) use ($case): array {
-				$this->record(what: 'parties.notifyParties', args: $args);
+			function (PartyMessage $message, ?string $role = null) use ($case): array {
+				$this->record(what: 'parties.notifyParties', args: [$message->objectUuid, $message->subject, $message->body, $role, $message->category]);
 				if (($case['partiesNone'] ?? false) === true) {
 					return [];
 				}

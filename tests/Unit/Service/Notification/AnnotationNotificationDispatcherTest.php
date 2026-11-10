@@ -23,6 +23,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientRes
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
@@ -1126,8 +1127,8 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$calls = [];
 		$parties = $this->createMock(PartyNotificationService::class);
 		$parties->method('notifyParties')->willReturnCallback(
-			function (string $objectUuid, string $subject, string $body, ?string $role = null, string $category = 'service') use (&$calls): array {
-				$calls[] = ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'role' => $role, 'category' => $category];
+			function (PartyMessage $message, ?string $role = null) use (&$calls): array {
+				$calls[] = ['objectUuid' => $message->objectUuid, 'subject' => $message->subject, 'body' => $message->body, 'role' => $role, 'category' => $message->category];
 				return [];
 			}
 		);
