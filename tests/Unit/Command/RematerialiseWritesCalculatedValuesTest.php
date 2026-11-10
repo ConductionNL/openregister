@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -121,7 +122,7 @@ class RematerialiseWritesCalculatedValuesTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			new RematerialiseStorage($registers, $schemas, $magic, $objects),
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
 			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class))),
 			new SchemaTypeConverter()
 		);

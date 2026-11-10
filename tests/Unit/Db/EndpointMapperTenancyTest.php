@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -77,7 +78,7 @@ class EndpointMapperTenancyTest extends TestCase {
 		$this->groups->method('isAdmin')->willReturn(false);
 		$this->groups->method('getUserGroupIds')->willReturn(['staff']);
 
-		$this->mapper = new EndpointMapper($this->recordingDb(), $this->organisations, $session, $this->groups);
+		$this->mapper = new EndpointMapper($this->recordingDb(), new TenancyServices($this->organisations, $session, $this->groups));
 	}//end setUp()
 
 	/**

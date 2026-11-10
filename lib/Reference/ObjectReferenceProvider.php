@@ -53,55 +53,23 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	IPublicReferenceProvider {
 
 	/**
-	 * The URL generator service
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
-	 * The localization service
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
-	 * Shared preview-formatting/URL-parsing service.
-	 *
-	 * @var ObjectPreviewFormatterInterface
-	 */
-	private readonly ObjectPreviewFormatterInterface $formatter;
-
-	/**
-	 * The current user ID (nullable for public/anonymous access)
-	 *
-	 * @var string|null
-	 */
-	private readonly ?string $userId;
-
-	/**
 	 * Constructor for ObjectReferenceProvider.
 	 *
-	 * @param IURLGenerator $urlGenerator The URL generator
-	 * @param IL10N $l10n The localization service
-	 * @param ObjectPreviewFormatterInterface $formatter Shared preview-formatting service
-	 * @param string|null $userId Current user ID
+	 * @param IURLGenerator                   $urlGenerator The URL generator
+	 * @param IL10N                           $l10n         The localization service
+	 * @param ObjectPreviewFormatterInterface $formatter    Shared preview-formatting/URL-parsing service
+	 * @param string|null                     $userId       The current user ID (null for public/anonymous access)
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function __construct(
-		IURLGenerator $urlGenerator,
-		IL10N $l10n,
-		ObjectPreviewFormatterInterface $formatter,
-		?string $userId,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly IL10N $l10n,
+		private readonly ObjectPreviewFormatterInterface $formatter,
+		private readonly ?string $userId,
 	) {
-		$this->urlGenerator = $urlGenerator;
-		$this->l10n = $l10n;
-		$this->formatter = $formatter;
-		$this->userId = $userId;
 	}//end __construct()
 
 	/**

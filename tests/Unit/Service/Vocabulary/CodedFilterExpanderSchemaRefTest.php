@@ -57,11 +57,10 @@ class CodedFilterExpanderSchemaRefTest extends TestCase {
 			'urn:b' => ['uri' => 'urn:b', 'broader' => ['urn:root'], 'notation' => 'B'],
 		]);
 		$this->schemas = $this->createMock(SchemaMapperInterface::class);
+		$lifecycle = new ConceptLifecycle();
 		$this->expander = new CodedFilterExpander(
-			$concepts,
-			new ConceptHierarchy(new ConceptLifecycle()),
-			$this->schemas,
-			new CodedPropertyDeclarationFactory()
+			new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess($concepts, new ConceptHierarchy($lifecycle), $lifecycle),
+			new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables($this->schemas, new CodedPropertyDeclarationFactory(), $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))
 		);
 	}
 

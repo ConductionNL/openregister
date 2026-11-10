@@ -23,6 +23,8 @@ use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Verifies the scheduled notification job's correctness contract:
@@ -242,7 +244,7 @@ class ScheduledNotificationJobTest extends TestCase {
 	private function runJob(): void {
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			new ScheduledObjectSources($this->schemaMapper, $this->objectMapper, new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
 			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $this->appConfig, $this->logger),
 			$this->cacheFactory
 		);
@@ -480,7 +482,7 @@ class ScheduledNotificationJobTest extends TestCase {
 
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			new ScheduledObjectSources($this->schemaMapper, $this->objectMapper, new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
 			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $appConfig, $this->logger),
 			$this->cacheFactory
 		);

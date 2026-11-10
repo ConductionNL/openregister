@@ -29,8 +29,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Throwable;
 
 /**
@@ -47,13 +46,11 @@ class ApplicationRegister {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registers Names an object's register.
-	 * @param SchemaMapperInterface   $schemas   Names an object's schema.
-	 * @param RegisterSlugResolverInterface $slugs Finds the slug this instance carries.
+	 * @param SchemaCatalogInterface        $catalog Names an object's register and schema.
+	 * @param RegisterSlugResolverInterface $slugs   Finds the slug this instance carries.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly RegisterSlugResolverInterface $slugs,
 	) {
 	}//end __construct()
@@ -81,8 +78,8 @@ class ApplicationRegister {
 	 */
 	public function holds(ObjectEntity $object, string $schema): bool {
 		try {
-			$register = $this->registers->find(id: (string)$object->getRegister(), _rbac: false, _multitenancy: false);
-			$found = $this->schemas->find(id: (string)$object->getSchema(), _rbac: false, _multitenancy: false);
+			$register = $this->catalog->registers()->find(id: (string)$object->getRegister(), _rbac: false, _multitenancy: false);
+			$found = $this->catalog->schemas()->find(id: (string)$object->getSchema(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return false;
 		}

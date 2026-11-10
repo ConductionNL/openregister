@@ -93,20 +93,6 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	public const WITHHELD_FIELDS = ['session', 'request', 'ipAddress'];
 
 	/**
-	 * Whether read entries are given to the caller of this run.
-	 *
-	 * @var bool
-	 */
-	private bool $withReads = false;
-
-	/**
-	 * The free-text term of this run, matched against the redacted entries.
-	 *
-	 * @var string
-	 */
-	private string $search = '';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface        $auditTrailMapper Reads the candidate rows.
@@ -161,7 +147,9 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 			return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
 		}
 
-		return $this->readablePage(userId: $userId, limit: $limit, cursor: $cursor, query: ($query ?? new AuditTrailQuery()));
+		$request = new ReadableTrailPageRequest(userId: $userId, limit: $limit, cursor: $cursor, query: ($query ?? new AuditTrailQuery()));
+
+		return $this->readablePage(request: $request);
 	}//end page()
 
 	/**
@@ -181,57 +169,53 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	/**
 	 * One page for a signed-in caller: walk the trail from the sealed cursor and seal where it stopped.
 	 *
-	 * @param string          $userId  The caller.
-	 * @param int             $limit   How many readable rows the page holds, already bounded.
-	 * @param int|string|null $cursor  The sealed cursor handed back, if any.
-	 * @param AuditTrailQuery $query   The column filters and free-text term from the request.
+	 * @param ReadableTrailPageRequest $request The caller, the bounded page size, the cursor and the query.
 	 *
 	 * @return array{results: array<int, array>, limit: int, cursor: int|string|null, nextCursor: string|null} The page.
 	 */
-	private function readablePage(string $userId, int $limit, int|string|null $cursor, AuditTrailQuery $query): array {
+	private function readablePage(ReadableTrailPageRequest $request): array {
 		// Who read an object is shown only to the groups named for it. A search
 		// is matched against what the caller is given, after redaction: matched
 		// in SQL on the stored `changed`, it would tell the caller whether a
 		// hidden property ever held the term.
-		$this->withReads = $this->history->readEvents()->maySeeReadEvents(userId: $userId);
-		$this->search = trim((string)$query->search);
-		$filters = $this->appliedFilters(filters: $query->filters);
+		$withReads = $this->history->readEvents()->maySeeReadEvents(userId: $request->userId);
+		$search = trim((string)$request->query->search);
+		$filters = $this->appliedFilters(filters: $request->query->filters);
+		$run = new ReadableTrailRun(filters: $filters, limit: $request->limit, withReads: $withReads, search: $search);
 
-		$scope = $this->cursors->scope(userId: $userId, query: ['filters' => $filters, 'search' => $this->search]);
-		$walk = $this->walk(filters: $filters, offset: $this->cursors->open(cursor: $cursor, scope: $scope), limit: $limit);
+		$scope = $this->cursors->scope(userId: $request->userId, query: ['filters' => $filters, 'search' => $search]);
+		$run->offset = $this->cursors->open(cursor: $request->cursor, scope: $scope);
 
 		$nextCursor = null;
-		if ($walk['exhausted'] === false) {
-			$nextCursor = $this->sealedCursor(offset: $walk['offset'], scope: $scope);
+		if ($this->walk(run: $run) === false) {
+			$nextCursor = $this->sealedCursor(offset: $run->offset, scope: $scope);
 		}
 
-		return ['results' => $walk['results'], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => $nextCursor];
+		return ['results' => $run->results, 'limit' => $run->limit, 'cursor' => $request->cursor, 'nextCursor' => $nextCursor];
 	}//end readablePage()
 
 	/**
 	 * Walk the raw trail in batches until the page is full, the trail ends, or the scan budget runs out.
 	 *
-	 * @param array $filters The applied column filters.
-	 * @param int   $offset  The raw-trail offset to start at.
-	 * @param int   $limit   How many readable rows the page holds.
+	 * The rows kept and the offset reached are left on the run.
 	 *
-	 * @return array{results: array<int, array>, offset: int, exhausted: bool} The rows, where the walk stopped, and whether the trail ended.
+	 * @param ReadableTrailRun $run The walk, starting at its offset.
+	 *
+	 * @return bool Whether the trail ended (exhausted).
 	 */
-	private function walk(array $filters, int $offset, int $limit): array {
-		$results = [];
-		$start = $offset;
-		while (count($results) < $limit && ($offset - $start) < self::SCAN_BUDGET) {
-			$batch = $this->auditTrailMapper->findAll(limit: self::BATCH_SIZE, offset: $offset, filters: $filters, sort: ['created' => 'DESC']);
-			$room = ($limit - count($results));
-			$taken = $this->takeReadable(batch: $batch, readable: $this->readerRows(batch: $batch), room: $room, results: $results);
-			$offset += $taken['consumed'];
+	private function walk(ReadableTrailRun $run): bool {
+		$start = $run->offset;
+		while (count($run->results) < $run->limit && ($run->offset - $start) < self::SCAN_BUDGET) {
+			$batch = $this->auditTrailMapper->findAll(limit: self::BATCH_SIZE, offset: $run->offset, filters: $run->filters, sort: ['created' => 'DESC']);
+			$consumed = $this->takeReadable(run: $run, batch: $batch);
+			$run->offset += $consumed;
 
-			if ($this->endsTheTrail(batchSize: count($batch), consumed: $taken['consumed']) === true) {
-				return ['results' => $results, 'offset' => $offset, 'exhausted' => true];
+			if ($this->endsTheTrail(batchSize: count($batch), consumed: $consumed) === true) {
+				return true;
 			}
 		}
 
-		return ['results' => $results, 'offset' => $offset, 'exhausted' => false];
+		return false;
 	}//end walk()
 
 	/**
@@ -293,20 +277,21 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	 * the kept rows would hand the next page the same unreadable rows again,
 	 * for ever.
 	 *
-	 * @param array<AuditTrail>   $batch    The candidate rows, in order.
-	 * @param array<int, array>   $readable The redacted rows the caller may read, by batch index.
-	 * @param int                 $room     How many more rows the page may hold.
-	 * @param array               $results  The page so far, appended to in place.
+	 * @param ReadableTrailRun  $run   The walk, whose page is appended to.
+	 * @param array<AuditTrail> $batch The candidate rows, in order.
 	 *
-	 * @return array{consumed: int, kept: int} How many rows were walked and kept.
+	 * @return int How many rows were walked.
 	 */
-	private function takeReadable(array $batch, array $readable, int $room, array &$results): array {
+	private function takeReadable(ReadableTrailRun $run, array $batch): int {
+		$readable = $this->readerRows(batch: $batch);
+		$room = $run->room();
 		$consumed = 0;
 		$kept = 0;
 		foreach ($batch as $index => $entry) {
 			$consumed++;
-			if ($this->shows(entry: $entry, row: ($readable[$index] ?? null)) === true) {
-				$results[] = $readable[$index];
+			$row = ($readable[$index] ?? null);
+			if ($row !== null && $this->shows(run: $run, entry: $entry) === true && $this->matches(run: $run, row: $row) === true) {
+				$run->results[] = $row;
 				$kept++;
 			}
 
@@ -315,28 +300,32 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 			}
 		}
 
-		return ['consumed' => $consumed, 'kept' => $kept];
+		return $consumed;
 	}//end takeReadable()
 
 	/**
-	 * Whether one candidate row goes on the page.
+	 * Whether a readable entry goes on the page: a read entry only for a caller who may see read entries.
 	 *
-	 * @param AuditTrail $entry The stored entry.
-	 * @param array|null $row   Its redacted form, or null when the caller may not read its object.
+	 * @param ReadableTrailRun $run   The walk.
+	 * @param AuditTrail       $entry The stored entry.
 	 *
-	 * @return bool True when the row is readable, not a hidden read entry, and matches the search.
+	 * @return bool True when the entry is not a read entry hidden from this caller.
 	 */
-	private function shows(AuditTrail $entry, ?array $row): bool {
-		if ($row === null) {
-			return false;
-		}
-
-		if ($this->withReads === false && $this->history->readEvents()->isReadAction(action: $entry->getAction()) === true) {
-			return false;
-		}
-
-		return $this->search === '' || $this->history->matches(entry: $row, search: $this->search);
+	private function shows(ReadableTrailRun $run, AuditTrail $entry): bool {
+		return $run->withReads === true || $this->history->readEvents()->isReadAction(action: $entry->getAction()) === false;
 	}//end shows()
+
+	/**
+	 * Whether a redacted row matches the walk's search; every row does when there is none.
+	 *
+	 * @param ReadableTrailRun $run The walk.
+	 * @param array            $row The redacted row.
+	 *
+	 * @return bool True when the row matches.
+	 */
+	private function matches(ReadableTrailRun $run, array $row): bool {
+		return $run->search === '' || $this->history->matches(entry: $row, search: $run->search);
+	}//end matches()
 
 	/**
 	 * The rows of this batch the caller may read, redacted, by batch index.
@@ -360,7 +349,7 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 		foreach ($this->locate(uuids: array_keys($groups)) as $object) {
 			$indices = ($groups[(string)$object->getUuid()] ?? []);
 			unset($groups[(string)$object->getUuid()]);
-			$rows += $this->objectRows(object: $object, indices: $indices, batch: $batch);
+			$rows += $this->objectRows(object: $object, entries: array_intersect_key($batch, array_flip($indices)));
 		}
 
 		return $rows;
@@ -387,28 +376,26 @@ class ReadableAuditTrailLister implements ReadableAuditTrailListerInterface {
 	 * One object's rows of the batch, redacted as its history is, by batch index.
 	 *
 	 * @param ObjectEntity      $object  The located object; anything else is read as unreadable.
-	 * @param list<int>         $indices The batch indices of its rows.
-	 * @param array<AuditTrail> $batch   The candidate rows.
+	 * @param array<AuditTrail> $entries Its rows of the batch, keyed by batch index, in order.
 	 *
 	 * @return array<int, array> The redacted rows; empty when the object's rows cannot all be read.
 	 */
-	private function objectRows(mixed $object, array $indices, array $batch): array {
-		if ($indices === []) {
+	private function objectRows(mixed $object, array $entries): array {
+		if ($entries === []) {
 			return [];
 		}
 
 		try {
-			$rows = array_map(static fn (int $index): AuditTrail => $batch[$index], $indices);
-			$entries = $this->history->readerEntries(located: $object, rows: $rows);
+			$redacted = $this->history->readerEntries(located: $object, rows: array_values($entries));
 		} catch (Throwable $e) {
 			return [];
 		}
 
-		if ($entries === null || count($entries) !== count($indices)) {
+		if ($redacted === null || count($redacted) !== count($entries)) {
 			return [];
 		}
 
-		return array_combine($indices, $entries);
+		return array_combine(array_keys($entries), $redacted);
 	}//end objectRows()
 
 	/**
