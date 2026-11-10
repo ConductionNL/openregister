@@ -287,15 +287,13 @@ class ConceptLifecycle {
 		$required = $this->asArray(value: ($shape['required'] ?? []));
 		$fields = $this->asArray(value: ($concept[self::FIELD_FIELDS] ?? []));
 
-		$failed = [];
-		foreach ($properties as $name => $definition) {
-			$value = ($fields[(string)$name] ?? null);
-			if (($value === null && in_array((string)$name, $required, true) === true) || $this->isIllTyped(value: $value, definition: $definition) === true) {
-				$failed[] = (string)$name;
-			}
-		}
+		$failed = array_filter(
+			array_keys($properties),
+			fn ($name): bool => (($fields[(string)$name] ?? null) === null && in_array((string)$name, $required, true) === true)
+				|| $this->isIllTyped(value: ($fields[(string)$name] ?? null), definition: $properties[$name]) === true
+		);
 
-		return $failed;
+		return array_values(array_map('strval', $failed));
 	}//end validateAgainstShape()
 
 	/**
