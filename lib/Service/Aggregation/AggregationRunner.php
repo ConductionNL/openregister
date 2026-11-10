@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -625,9 +627,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function fallbackNamedRows(NamedAggregationRun $run): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $run->register,
-			schema: $run->schema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $run->register, schema: $run->schema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		);
 		$run->truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
 		$rows = [];
@@ -1288,9 +1289,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function adhocPhpRows(AdhocAggregationRun $run): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $run->register,
-			schema: $run->schema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $run->register, schema: $run->schema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		);
 
 		$rows = [];
@@ -1762,9 +1762,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		$joinedRows = [];
 		foreach ($this->magicMapper->findAllInRegisterSchemaTable(
-			register: $joinedRegister,
-			schema: $joinedSchema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $joinedRegister, schema: $joinedSchema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		) as $object) {
 			$joinedRows[] = $object->getObject();
 		}
@@ -4455,9 +4454,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function fallbackJoinedValues(JoinedAggregation $joined): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $joined->register,
-			schema: $joined->schema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $joined->register, schema: $joined->schema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		);
 		$truncated = (count($objects) >= self::PHP_FALLBACK_ROW_CAP);
 
@@ -4818,9 +4816,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function fallbackCrossRows(CrossSchemaAggregationRun $cross): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $cross->targetRegister,
-			schema: $cross->targetSchema,
-			limit: self::PHP_FALLBACK_ROW_CAP
+			table: new RegisterSchema(register: $cross->targetRegister, schema: $cross->targetSchema),
+			listing: new ListQuery(limit: self::PHP_FALLBACK_ROW_CAP)
 		);
 		$cross->truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
 

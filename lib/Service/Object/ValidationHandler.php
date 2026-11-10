@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -313,7 +314,8 @@ class ValidationHandler {
 	 */
 	private function loadObjectsForValidation(array $loaded, int $schemaId): ?array {
 		try {
-			return $this->catalog->tables()->findAllInRegisterSchemaTable($loaded['register'], $loaded['schema']);
+			$table = new RegisterSchema(register: $loaded['register'], schema: $loaded['schema']);
+			return $this->catalog->tables()->findAllInRegisterSchemaTable(table: $table);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ValidationHandler] Failed to get objects from magic table',
