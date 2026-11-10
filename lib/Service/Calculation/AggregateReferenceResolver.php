@@ -80,17 +80,18 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 	 * `$payload['@aggregate']` so calculations can read `@aggregate.<name>`
 	 * (or `@aggregate.<name>.<groupKey>`).
 	 *
-	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
+	 * The referrer's register (slug/uuid/id) is the default aggregation context
+	 * when a spec omits its own `register`.
+	 *
+	 * @param ReferringObject      $referrer   The saving object: payload WITH `@self` injected, and its register.
 	 * @param array<string, mixed> $aggregates The `x-openregister-aggregate-refs` map.
-	 * @param string|int|null $registerRef Saving object's register (slug/uuid/id) — the default
-	 *                                     aggregation context when a spec omits its own `register`.
 	 *
 	 * @return array<string, mixed> Map of aggregate-reference name to resolved value (or null).
 	 *
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
 	 */
-	public function resolveAll(array $payload, array $aggregates, mixed $registerRef = null): array {
-		return $this->resolveAllWithOutcome(payload: $payload, aggregates: $aggregates, registerRef: $registerRef)['values'];
+	public function resolveAll(ReferringObject $referrer, array $aggregates): array {
+		return $this->resolveOutcome(referrer: $referrer, aggregates: $aggregates)['values'];
 	}//end resolveAll()
 
 	/**
@@ -109,11 +110,28 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
 	 */
 	public function resolveAllWithOutcome(array $payload, array $aggregates, mixed $registerRef = null): array {
+		$referrer = new ReferringObject(payload: $payload, register: $registerRef);
+		return $this->resolveOutcome(referrer: $referrer, aggregates: $aggregates);
+	}//end resolveAllWithOutcome()
+
+	/**
+	 * As resolveAll(), and also which references could not be resolved and why.
+	 *
+	 * See resolveAllWithOutcome(), which keeps the interface's signature and delegates here.
+	 *
+	 * @param ReferringObject      $referrer   The saving object: payload and register.
+	 * @param array<string, mixed> $aggregates The declared aggregate-references.
+	 *
+	 * @return array{values: array<string, mixed>, failed: array<string, string>} Values and failures by name.
+	 *
+	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
+	 */
+	public function resolveOutcome(ReferringObject $referrer, array $aggregates): array {
 		$values = [];
 		$failed = [];
 		foreach ($this->usableDeclarations(declarations: $aggregates) as $name => $spec) {
 			try {
-				$values[$name] = $this->resolveOne(payload: $payload, spec: $spec, registerRef: $registerRef);
+				$values[$name] = $this->resolveOne(referrer: $referrer, spec: $spec);
 			} catch (Throwable $e) {
 				$values[$name] = null;
 				$failed[(string)$name] = $this->failureOf(spec: $spec, error: $e);
@@ -121,7 +139,7 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 		}
 
 		return ['values' => $values, 'failed' => $failed];
-	}//end resolveAllWithOutcome()
+	}//end resolveOutcome()
 
 	/**
 	 * Log a failed aggregate-reference and name why it failed.
@@ -142,25 +160,24 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 	/**
 	 * Resolve a single aggregate-reference spec to a scalar / grouped map, or null.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param array<string, mixed> $spec Single aggregate-reference declaration.
-	 * @param string|int|null $registerRef Saving object's register ref (default context).
+	 * @param ReferringObject      $referrer The saving object: payload and register (default context).
+	 * @param array<string, mixed> $spec     Single aggregate-reference declaration.
 	 *
 	 * @return mixed The scalar value, a `{stringKey: value}` grouped map, or null.
 	 *
-	 * @throws RuntimeException When the aggregation cannot run (resolveAllWithOutcome() records it).
+	 * @throws RuntimeException When the aggregation cannot run (resolveOutcome() records it).
 	 *
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
 	 */
-	private function resolveOne(array $payload, array $spec, mixed $registerRef): mixed {
-		$target = $this->targetOf(spec: $spec, registerRef: $registerRef);
+	private function resolveOne(ReferringObject $referrer, array $spec): mixed {
+		$target = $this->targetOf(spec: $spec, registerRef: $referrer->register);
 		if ($target === null) {
 			return null;
 		}
 
-		['schema' => $schema, 'metric' => $metric, 'register' => $register] = $target;
+		['schema' => $schema, 'register' => $register] = $target;
 		try {
-			$query = $this->queryFor(payload: $payload, spec: $spec, metric: $metric);
+			$query = $this->queryFor(payload: $referrer->payload, spec: $spec);
 			// As the system, whoever saves: a materialised aggregate is the
 			// schema author's derived value, the same rule references follow
 			// (calculations-resolve-references-regardless-of-saver). Under occ
@@ -202,11 +219,10 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 	}//end targetOf()
 
 	/**
-	 * Build the aggregation query of an aggregate-reference.
+	 * Build the aggregation query of an aggregate-reference whose target targetOf() found.
 	 *
 	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param array<string, mixed> $spec Single aggregate-reference declaration.
-	 * @param string $metric The metric.
+	 * @param array<string, mixed> $spec Single aggregate-reference declaration; its metric is set.
 	 *
 	 * @return AggregationQuery The query.
 	 *
@@ -214,7 +230,8 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 	 *   fail-fast static factory (mirrors AggregationRunner's own usage); no instance
 	 *   alternative exists.
 	 */
-	private function queryFor(array $payload, array $spec, string $metric): AggregationQuery {
+	private function queryFor(array $payload, array $spec): AggregationQuery {
+		$metric = (string)($spec['metric'] ?? '');
 		$field = ($spec['field'] ?? null);
 		if (is_string($field) === false) {
 			$field = null;

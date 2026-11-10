@@ -47,20 +47,25 @@ class EmailSender implements EmailSenderInterface {
 	public const OUTCOME_FAILED = 'failed';
 
 	/**
+	 * The unsubscribe header helper, built on first use.
+	 *
+	 * @var UnsubscribeHeaders|null
+	 */
+	private ?UnsubscribeHeaders $unsubscribeHeaders = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IUserManager $userManager User resolver for the recipient's address.
 	 * @param IMailer $mailer The mailer.
 	 * @param LoggerInterface $logger Logger for handoff diagnostics.
 	 * @param NotificationChannelPolicy|null $channelPolicy The subsystem's per-channel kill switches; null means enabled.
-	 * @param UnsubscribeHeaders|null $unsubscribeHeaders The shared header helper; null builds one.
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
 		private readonly IMailer $mailer,
 		private readonly LoggerInterface $logger,
 		private readonly ?NotificationChannelPolicy $channelPolicy = null,
-		private ?UnsubscribeHeaders $unsubscribeHeaders = null,
 	) {
 	}//end __construct()
 
@@ -81,12 +86,26 @@ class EmailSender implements EmailSenderInterface {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function send(string $uid, string $subject, string $body): string {
+		return $this->sendMail(uid: $uid, content: new MailContent(subject: $subject, body: $body));
+	}//end send()
+
+	/**
+	 * Send a transactional email to a Nextcloud user; the outcome of {@see send()}.
+	 *
+	 * @param string      $uid     Recipient user UID.
+	 * @param MailContent $content The subject and body.
+	 *
+	 * @return string One of the OUTCOME_* constants.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function sendMail(string $uid, MailContent $content): string {
 		if ($this->emailDisabled() === true) {
 			return self::OUTCOME_KILL_SWITCH;
 		}
 
-		return $this->sendToUser(uid: $uid, content: new MailContent(subject: $subject, body: $body));
-	}//end send()
+		return $this->sendToUser(uid: $uid, content: $content);
+	}//end sendMail()
 
 	/**
 	 * Send a transactional email to a bare address.
@@ -97,28 +116,23 @@ class EmailSender implements EmailSenderInterface {
 	 * addresses it holds. The kill switch, the never-throws contract and the
 	 * outcome vocabulary are the account path's, unchanged.
 	 *
-	 * @param string $address The recipient address.
-	 * @param string $displayName The name to address it to, '' for none.
-	 * @param string $subject Email subject line.
-	 * @param string $body Email body text; a caller with a link has appended it already.
-	 * @param array<string, mixed>|null $unsubscribe Integriq's unsubscribe material, for the
-	 *                                               List-Unsubscribe headers; null for none.
+	 * @param MailAddressee $addressee The address and the name to address it to.
+	 * @param MailContent   $content   The subject, body and unsubscribe material.
 	 *
 	 * @return string One of the OUTCOME_* constants.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
-	public function sendToAddress(string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
+	public function sendMailTo(MailAddressee $addressee, MailContent $content): string {
 		if ($this->emailDisabled() === true) {
 			return self::OUTCOME_KILL_SWITCH;
 		}
 
-		$to = trim($address);
-		$content = new MailContent(subject: $subject, body: $body, unsubscribe: $unsubscribe);
+		$to = trim($addressee->address);
 
-		return $this->sendToParty(to: [$to => self::nameFor(address: $to, displayName: $displayName)], content: $content);
-	}//end sendToAddress()
+		return $this->sendToParty(to: [$to => self::nameFor(address: $to, displayName: $addressee->displayName)], content: $content);
+	}//end sendMailTo()
 
 	/**
 	 * Whether the email channel's kill switch is set.
@@ -228,7 +242,7 @@ class EmailSender implements EmailSenderInterface {
 	}//end deliver()
 
 	/**
-	 * The unsubscribe header helper: the injected one, else one built on first use.
+	 * The unsubscribe header helper, built on first use.
 	 *
 	 * @return UnsubscribeHeaders The helper.
 	 */

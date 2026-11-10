@@ -78,22 +78,31 @@ final class LifecycleStateValidator {
 	 * nothing reads as enforced and is not — the same reason a malformed
 	 * transition `condition` is refused.
 	 *
-	 * @param array<string, mixed> $annotation The normalised annotation block.
-	 * @param array<string, mixed> $schema Full schema definition.
-	 * @param array<string, int>|null $enumSet The declared states, or null when the mode does not publish them.
+	 * @param array<string, mixed>  $annotation The normalised annotation block.
+	 * @param StateDeclarationScope $scope      The schema's declared properties and the declared states.
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validateStates(array $annotation, array $schema, ?array $enumSet): array {
+	public function validateStates(array $annotation, StateDeclarationScope $scope): array {
 		$states = ($annotation['states'] ?? null);
-		return (self::statesShapeErrors(states: $states)
-			?? $this->validateStateMap(
-				states: $states,
-				scope: new StateDeclarationScope(properties: self::declaredProperties(schema: $schema), enumSet: $enumSet)
-			));
+		return (self::statesShapeErrors(states: $states) ?? $this->validateStateMap(states: $states, scope: $scope));
 	}//end validateStates()
+
+	/**
+	 * What a `states` block is checked against: the schema's declared properties and the declared states.
+	 *
+	 * @param array<string, mixed>    $schema  Full schema definition.
+	 * @param array<string, int>|null $enumSet The declared states, or null when the mode does not publish them.
+	 *
+	 * @return StateDeclarationScope The scope.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function scopeOf(array $schema, ?array $enumSet): StateDeclarationScope {
+		return new StateDeclarationScope(properties: self::declaredProperties(schema: $schema), enumSet: $enumSet);
+	}//end scopeOf()
 
 	/**
 	 * Validate every block of a well-shaped `states` map.

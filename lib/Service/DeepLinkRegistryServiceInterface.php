@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * The deep-link registration and resolution other components call on DeepLinkRegistryService.
@@ -30,30 +31,18 @@ use OCP\EventDispatcher\IEventDispatcher;
 interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface {
 
 	/**
-	 * Register a deep link pattern for a (register, schema) combination.
+	 * Add a deep link registration for its (register, schema) combination.
 	 *
-	 * @param string $appId The consuming app ID (e.g., "procest")
-	 * @param string $registerSlug The register slug
-	 * @param string $schemaSlug The schema slug
-	 * @param string $urlTemplate URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-	 * @param string $icon Optional icon identifier (defaults to "icon-{appId}")
-	 * @param string|null $displayName Optional human-readable label for the app's
-	 *                                 unified-search results (defaults to null → app id)
+	 * @param DeepLinkRegistration $registration The consuming app, the register and schema slugs, the URL template with
+	 *                                           placeholders (e.g. "/apps/procest/#/cases/{uuid}"), the optional icon
+	 *                                           (defaults to "icon-{appId}") and the optional unified-search label.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
 	 * @spec openspec/specs/deep-link-registry/spec.md
-	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
-	public function register(
-		string $appId,
-		string $registerSlug,
-		string $schemaSlug,
-		string $urlTemplate,
-		string $icon = '',
-		?string $displayName = null,
-	): void;
+	public function add(DeepLinkRegistration $registration): void;
 
 	/**
 	 * Ask the apps for their deep links, once per process.

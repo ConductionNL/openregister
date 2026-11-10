@@ -22,7 +22,7 @@ final class CacheSettingsControllerFactory {
 	 * @param IRequest $request Constructor argument.
 	 * @param AppSettingsInterface $settingsService Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
-	 * @param Factory $appDataFactory Constructor argument.
+	 * @param IAppDataFactory $appDataFactory Constructor argument.
 	 * @param IAppConfig $appConfig Constructor argument.
 	 *
 	 * @return array<int, mixed>
@@ -32,7 +32,7 @@ final class CacheSettingsControllerFactory {
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface $settingsService,
 		\Psr\Log\LoggerInterface $logger,
-		\OC\Files\AppData\Factory $appDataFactory,
+		\OCP\Files\AppData\IAppDataFactory $appDataFactory,
 		\OCP\IAppConfig $appConfig,
 	): array {
 		return [
@@ -41,8 +41,8 @@ final class CacheSettingsControllerFactory {
 				settingsService: $settingsService,
 				logger: $logger,
 				appConfig: $appConfig,
+				appDataFactory: $appDataFactory,
 			),
-			$appDataFactory,
 		];
 	}//end args()
 

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use Psr\Log\LoggerInterface;
 
@@ -173,7 +174,7 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 		}
 
 		try {
-			$translatedValue = $this->provider->translate($sourceValue, $request->fromLong, $request->toLong);
+			$translatedValue = $this->provider->translate($sourceValue, new LanguagePair(fromLong: $request->fromLong, toLong: $request->toLong));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf(

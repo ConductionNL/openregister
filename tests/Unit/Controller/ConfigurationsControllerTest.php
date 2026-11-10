@@ -45,7 +45,6 @@ class ConfigurationsControllerTest extends TestCase {
 			$this->configurationMapper,
 			$this->configurationService,
 			$this->uploadService,
-			'admin',
 			$userSession,
 			$groupManager
 		);

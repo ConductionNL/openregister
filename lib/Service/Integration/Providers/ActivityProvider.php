@@ -206,13 +206,14 @@ class ActivityProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
-		$rows = $this->findByMarker(
+		$rows = $this->scanMarker(
 			db: $this->db,
-			table: 'activity',
-			markerColumn: 'subject',
-			marker: self::MARKER_PREFIX . $objectId . ']',
-			extraColumns: ['type', 'affecteduser', 'timestamp', 'object_id'],
-			idColumn: 'activity_id',
+			scan: new MarkerScan(
+				table: 'activity',
+				markerColumn: 'subject',
+				marker: self::MARKER_PREFIX . $objectId . ']',
+				columns: ['activity_id', 'type', 'affecteduser', 'timestamp', 'object_id'],
+			),
 		);
 
 		if ($this->wantsPublicOnly(filters: $filters) === true) {

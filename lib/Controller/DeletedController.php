@@ -28,11 +28,12 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
+use OCA\OpenRegister\Controller\Support\PurgeRequest;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowInterface;
@@ -572,7 +573,7 @@ class DeletedController extends Controller {
 					'restored' => $restored,
 					'failed' => $failed,
 					'notFound' => $notFound,
-					'message' => $this->formatRestoreMessage(restored: $restored, failed: $failed, notFound: $notFound),
+					'message' => (new BatchOutcome(done: $restored, failed: $failed, notFound: $notFound))->message(verb: 'Restored'),
 				]
 			);
 		} catch (\Exception $e) {
@@ -641,17 +642,21 @@ class DeletedController extends Controller {
 		}
 
 		$schema = $this->services->access->authorizer->resolveSchema(object: $object);
-		$window = $this->services->store->deletion->window->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema));
-		$force = filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
+		$purge = new PurgeRequest(
+			object: $object,
+			schema: $schema,
+			window: $this->services->store->deletion->window->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema)),
+			force: filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN)
+		);
 
 		// The right, both retention clocks and the open recovery window each
 		// refuse in turn, naming the rule that refused.
-		$refusal = $this->refuseDestruction(object: $object, schema: $schema, window: $window, force: $force);
+		$refusal = $this->refuseDestruction(purge: $purge);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $this->performDestruction(object: $object, schema: $schema, window: $window, force: $force);
+		return $this->performDestruction(purge: $purge);
 	}//end destroyFound()
 
 	/**
@@ -713,17 +718,15 @@ class DeletedController extends Controller {
 	 * object can still come back, so destroying it needs the window waived
 	 * explicitly and the refusal says how long is left.
 	 *
-	 * @param ObjectEntity $object The object being purged.
-	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindowInterface|null $window The published recovery window.
-	 * @param bool $force Whether the caller explicitly waived the window.
+	 * @param PurgeRequest $purge The object, its schema, its recovery window and the caller's waiver.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the destruction may proceed.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function refuseDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): ?JSONResponse {
-		$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $schema);
+	private function refuseDestruction(PurgeRequest $purge): ?JSONResponse {
+		$object = $purge->object;
+		$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $purge->schema);
 		if ($refusal !== null) {
 			return new JSONResponse(
 				data: $refusal->toResponseBody(),
@@ -739,15 +742,15 @@ class DeletedController extends Controller {
 			);
 		}
 
-		if ($window !== null && $window->hasLapsed() === false && $force === false) {
+		if ($purge->windowRefuses() === true) {
 			return new JSONResponse(
 				data: [
 					'error' => 'DESTRUCTION_REFUSED',
 					'rule' => 'recovery-window-open',
 					'message' => 'This object can still be restored until '
-						. $window->destroyableFrom()->format('Y-m-d') . '. Destroying it before then '
+						. $purge->window->destroyableFrom()->format('Y-m-d') . '. Destroying it before then '
 						. 'requires the window to be waived explicitly.',
-					'deletionWindow' => $window->toArray(),
+					'deletionWindow' => $purge->window->toArray(),
 				],
 				statusCode: 409
 			);
@@ -763,25 +766,23 @@ class DeletedController extends Controller {
 	 * them leaves an over-recorded destruction rather than an unrecorded one. A
 	 * scope this instance cannot honour refuses before anything is touched.
 	 *
-	 * @param ObjectEntity $object The object being purged.
-	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindowInterface|null $window The published recovery window.
-	 * @param bool $force Whether the caller explicitly waived the window.
+	 * @param PurgeRequest $purge The object, its schema, its recovery window and the caller's waiver.
 	 *
 	 * @return JSONResponse The destruction record, or the scope refusal.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): JSONResponse {
+	private function performDestruction(PurgeRequest $purge): JSONResponse {
+		$object = $purge->object;
 		try {
-			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $schema);
+			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $purge->schema);
 			$record = $this->services->store->deletion->destruction->recorder->record(
 				object: $object,
 				scope: $scopeReport,
 				rule: 'destroy-right-granted',
 				context: [
-					'deletionWindow' => $window?->toArray(),
-					'windowWaived' => ($force === true),
+					'deletionWindow' => $purge->window?->toArray(),
+					'windowWaived' => ($purge->force === true),
 				]
 			);
 		} catch (DestructionRefusedException $e) {
@@ -996,7 +997,7 @@ class DeletedController extends Controller {
 					'deleted' => $deleted,
 					'failed' => $failed,
 					'notFound' => $notFound,
-					'message' => $this->formatDeleteMessage(deleted: $deleted, failed: $failed, notFound: $notFound),
+					'message' => (new BatchOutcome(done: $deleted, failed: $failed, notFound: $notFound))->message(verb: 'Permanently deleted'),
 				]
 			);
 		} catch (\Exception $e) {
@@ -1008,40 +1009,4 @@ class DeletedController extends Controller {
 			);
 		}//end try
 	}//end destroyMultiple()
-
-	/**
-	 * Format restore message.
-	 *
-	 * @param int $restored Number of restored objects.
-	 * @param int $failed Number of failed restorations.
-	 * @param int $notFound Number of objects not found.
-	 *
-	 * @return string Formatted message.
-	 */
-	private function formatRestoreMessage(int $restored, int $failed, int $notFound): string {
-		$message = "Restored {$restored} objects, {$failed} failed";
-		if ($notFound > 0) {
-			$message .= " ({$notFound} not found)";
-		}
-
-		return $message;
-	}//end formatRestoreMessage()
-
-	/**
-	 * Format delete message.
-	 *
-	 * @param int $deleted Number of deleted objects.
-	 * @param int $failed Number of failed deletions.
-	 * @param int $notFound Number of objects not found.
-	 *
-	 * @return string Formatted message.
-	 */
-	private function formatDeleteMessage(int $deleted, int $failed, int $notFound): string {
-		$message = "Permanently deleted {$deleted} objects, {$failed} failed";
-		if ($notFound > 0) {
-			$message .= " ({$notFound} not found)";
-		}
-
-		return $message;
-	}//end formatDeleteMessage()
 }//end class

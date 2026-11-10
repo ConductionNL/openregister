@@ -41,8 +41,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationFilter as RowFilter;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Db\TranslationSlot as RowSlot;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -182,13 +185,17 @@ class TranslationController extends Controller {
 	 */
 	private function plainRows(TranslationFilter $filter, TranslationSearchOptions $options): array {
 		return $this->statusService->search(
-			query: $options->listing->search,
-			language: $filter->language,
-			status: $filter->status,
-			objectUuid: $filter->objectUuid,
-			limit: $options->listing->limit,
-			sourceLanguage: $filter->sourceLanguage,
-			isOutOfDate: $options->outdatedOnly()
+			new TranslationSearch(
+				filter: new RowFilter(
+					language: $filter->language,
+					status: $filter->status,
+					objectUuid: $filter->objectUuid,
+					sourceLanguage: $filter->sourceLanguage
+				),
+				query: $options->listing->search,
+				limit: $options->listing->limit,
+				isOutOfDate: $options->outdatedOnly()
+			)
 		);
 	}//end plainRows()
 
@@ -202,13 +209,17 @@ class TranslationController extends Controller {
 	 */
 	private function rowsWithSource(TranslationFilter $filter, TranslationSearchOptions $options): array {
 		return $this->statusService->searchWithSourceValues(
-			query: $options->listing->search,
-			language: $filter->language,
-			status: $filter->status,
-			objectUuid: $filter->objectUuid,
-			limit: $options->listing->limit,
-			sourceLanguage: $filter->sourceLanguage,
-			isOutOfDate: $options->outdatedOnly()
+			new TranslationSearch(
+				filter: new RowFilter(
+					language: $filter->language,
+					status: $filter->status,
+					objectUuid: $filter->objectUuid,
+					sourceLanguage: $filter->sourceLanguage
+				),
+				query: $options->listing->search,
+				limit: $options->listing->limit,
+				isOutOfDate: $options->outdatedOnly()
+			)
 		);
 	}//end rowsWithSource()
 
@@ -298,7 +309,7 @@ class TranslationController extends Controller {
 		}
 
 		try {
-			$row = $this->statusService->setStatus($slot->uuid, $slot->property, $slot->language, $status);
+			$row = $this->statusService->setStatus(new RowSlot(objectUuid: $slot->uuid, property: $slot->property, language: $slot->language), $status);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}

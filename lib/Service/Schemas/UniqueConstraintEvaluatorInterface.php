@@ -49,12 +49,13 @@ interface UniqueConstraintEvaluatorInterface {
 	 * The message naming a breach.
 	 *
 	 * @param array{name:string,properties:array<int,string>,action:string} $constraint    The constraint.
-	 * @param array<string,mixed>                                          $object        The submitted object data.
-	 * @param string|null                                                  $conflictingId The uuid of an object already holding the combination.
+	 * @param UniqueConflict $conflict The submitted object data and who holds the combination already.
 	 *
 	 * @return string The message.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	public function describeBreach(array $constraint, array $object, ?string $conflictingId): string;
+	public function describeBreach(array $constraint, UniqueConflict $conflict): string;
 
 	/**
 	 * The constraints a schema declares.

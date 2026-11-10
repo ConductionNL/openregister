@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\StateMove;
 use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -144,7 +145,7 @@ class LifecycleEditReaderBehaviourTest extends TestCase {
 	public function testAMatchedTransitionBecomesAnAttemptWithItsActionAndSpec(): void {
 		$resolver = $this->createMock(LifecycleTransitionResolverInterface::class);
 		$resolver->expects($this->once())->method('resolve')
-			->with(['publish' => ['from' => 'draft', 'to' => 'final']], 'u-1', 'draft', 'final')
+			->with(['publish' => ['from' => 'draft', 'to' => 'final']], new StateMove('u-1', 'draft', 'final'))
 			->willReturn(['publish', ['from' => 'draft', 'to' => 'final']]);
 		[$reader, $edit] = $this->editWith($resolver);
 

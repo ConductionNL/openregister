@@ -176,7 +176,13 @@ class ExampleSetInstance {
 	 */
 	private function found(array $declared, array $made): ?array {
 		try {
-			return $this->kept(found: $this->mapper()->findBySlug(slug: $declared['slug']), declared: $declared, made: $made);
+			$organisation = $this->mapper()->findBySlug(slug: $declared['slug']);
+			$quota        = null;
+			if (in_array((string) $organisation->getUuid(), $made, true) === true) {
+				$quota = (array) ($declared['quota'] ?? []);
+			}
+
+			return $this->kept(found: $organisation, quota: $quota);
 		} catch (DoesNotExistException) {
 			return null;
 		} catch (Throwable $e) {
@@ -188,20 +194,18 @@ class ExampleSetInstance {
 	/**
 	 * An organisation that is there: kept, gaining the quota it lacks when the set made it.
 	 *
-	 * @param Organisation         $found    The organisation as stored.
-	 * @param array<string, mixed> $declared The declared organisation.
-	 * @param array<int, string>   $made     Uuids of the organisations this set created.
+	 * @param Organisation              $found The organisation as stored.
+	 * @param array<string, mixed>|null $quota The declared quota when this set made the organisation, null when it did not.
 	 *
 	 * @return array{uuid: string, created: bool, error: string}
 	 */
-	private function kept(Organisation $found, array $declared, array $made): array {
-		$uuid  = (string) $found->getUuid();
+	private function kept(Organisation $found, ?array $quota): array {
 		$error = '';
-		if (in_array($uuid, $made, true) === true) {
-			$error = $this->fillQuota(organisation: $found, quota: (array) ($declared['quota'] ?? []));
+		if ($quota !== null) {
+			$error = $this->fillQuota(organisation: $found, quota: $quota);
 		}
 
-		return ['uuid' => $uuid, 'created' => false, 'error' => $error];
+		return ['uuid' => (string) $found->getUuid(), 'created' => false, 'error' => $error];
 	}//end kept()
 
 	/**

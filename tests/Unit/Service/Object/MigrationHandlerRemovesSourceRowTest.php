@@ -9,6 +9,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\ObjectMigration;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -240,7 +242,14 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 * @return array<string, mixed> The report.
 	 */
 	private function migrate(): array {
-		return $this->handler()->migrateObjects([1, 10], [2, 20], [self::UUID], ['headline' => 'title']);
+		return $this->handler()->migrateObjects(
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: 1, schema: 10),
+				target: new RegisterSchemaRef(register: 2, schema: 20),
+				objectIds: [self::UUID],
+				mapping: ['headline' => 'title']
+			)
+		);
 	}//end migrate()
 
 	/**
@@ -262,7 +271,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		);
 
 		return new MigrationHandler(
-			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(objects: $mapper, validator: $this->validator(), reporting: new \OCA\OpenRegister\Service\Object\MoveReporting(audit: $audit, logger: $logger), events: ($this->guards ?? $this->createStub(IEventDispatcher::class))), auditTrail: $audit),
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, ($this->guards ?? $this->createStub(IEventDispatcher::class))), validator: $this->validator()), auditTrail: $audit),
 			mapping: new MigrationMapping(utilityHandler: $this->utility(), dataManipHandler: $manipulation, relationScanner: $scanner),
 			logger: $logger
 		);

@@ -26,6 +26,7 @@ use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -70,20 +71,18 @@ final class ObjectSharingEndpoint {
 	/**
 	 * Resolve the target object, or the 404 to answer.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema   Schema slug or id.
-	 * @param string $id       Object uuid.
+	 * @param ObjectRef $ref The register, schema and object uuid the route names.
 	 *
 	 * @return ObjectEntity|JSONResponse The object, or the response to return.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function resolve(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
+	public function resolve(ObjectRef $ref): ObjectEntity|JSONResponse {
 		// Aimed outside the try: an unknown register or schema is not an
 		// unreadable object, and is left to propagate as it always has.
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+		$this->objectService->setRegister((string)$ref->register);
+		$this->objectService->setSchema((string)$ref->schema);
+		$this->objectService->setObject($ref->id);
 
 		return ($this->current() ?? self::notFound());
 	}//end resolve()
@@ -119,44 +118,112 @@ final class ObjectSharingEndpoint {
 	}//end notFound()
 
 	/**
-	 * Run the operation and answer its result as JSON, or the refusal.
+	 * Run the operation and answer its result as JSON (200), or the refusal; a rejected input is a 500.
 	 *
 	 * @param Closure $operation Returns the response body.
 	 * @param string  $context   Short label for the log line.
-	 * @param bool    $validates Whether a rejected input answers 400 rather than 500.
-	 * @param int     $status    The status of a successful answer.
 	 *
 	 * @return JSONResponse The answer.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function answer(Closure $operation, string $context, bool $validates = false, int $status = Http::STATUS_OK): JSONResponse {
-		$result = $this->run(operation: $operation, context: $context, validates: $validates);
+	public function answer(Closure $operation, string $context): JSONResponse {
+		return self::respond(result: $this->run(operation: $operation, context: $context), status: Http::STATUS_OK);
+	}//end answer()
+
+	/**
+	 * Run a validating operation and answer its result as JSON (200); a rejected input answers 400.
+	 *
+	 * @param Closure $operation Returns the response body.
+	 * @param string  $context   Short label for the log line.
+	 *
+	 * @return JSONResponse The answer.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function answerValidated(Closure $operation, string $context): JSONResponse {
+		return self::respond(result: $this->runValidated(operation: $operation, context: $context), status: Http::STATUS_OK);
+	}//end answerValidated()
+
+	/**
+	 * Run a validating operation that creates something and answer its result with 201; a rejected input answers 400.
+	 *
+	 * @param Closure $operation Returns the response body.
+	 * @param string  $context   Short label for the log line.
+	 *
+	 * @return JSONResponse The answer.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function answerCreated(Closure $operation, string $context): JSONResponse {
+		return self::respond(result: $this->runValidated(operation: $operation, context: $context), status: Http::STATUS_CREATED);
+	}//end answerCreated()
+
+	/**
+	 * Run a validating operation that removes something and answer with 204; a rejected input answers 400.
+	 *
+	 * @param Closure $operation Returns the response body.
+	 * @param string  $context   Short label for the log line.
+	 *
+	 * @return JSONResponse The answer.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function answerRemoved(Closure $operation, string $context): JSONResponse {
+		return self::respond(result: $this->runValidated(operation: $operation, context: $context), status: Http::STATUS_NO_CONTENT);
+	}//end answerRemoved()
+
+	/**
+	 * A result as a JSON answer with the given status, or the refusal it already is.
+	 *
+	 * @param mixed $result The operation's result, or the JSONResponse to return.
+	 * @param int   $status The status of a successful answer.
+	 *
+	 * @return JSONResponse The answer.
+	 */
+	private static function respond(mixed $result, int $status): JSONResponse {
 		if ($result instanceof JSONResponse) {
 			return $result;
 		}
 
 		return new JSONResponse($result, $status);
-	}//end answer()
+	}//end respond()
 
 	/**
-	 * Run the operation and return its result, or the refusal as a response.
+	 * Run the operation and return its result, or the refusal as a response; a rejected input is a 500.
 	 *
 	 * @param Closure $operation The operation; it never returns a JSONResponse itself.
 	 * @param string  $context   Short label for the log line.
-	 * @param bool    $validates Whether a rejected input answers 400 rather than 500.
 	 *
 	 * @return mixed The operation's result, or the JSONResponse to return.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function run(Closure $operation, string $context, bool $validates = false): mixed {
+	public function run(Closure $operation, string $context): mixed {
 		try {
 			return $operation();
 		} catch (\Throwable $e) {
-			return ($this->refusal(exception: $e, validates: $validates) ?? $this->unexpected(exception: $e, context: $context));
+			return ($this->refusal(exception: $e, validates: false) ?? $this->unexpected(exception: $e, context: $context));
 		}
 	}//end run()
+
+	/**
+	 * Run a validating operation and return its result, or the refusal as a response; a rejected input answers 400.
+	 *
+	 * @param Closure $operation The operation; it never returns a JSONResponse itself.
+	 * @param string  $context   Short label for the log line.
+	 *
+	 * @return mixed The operation's result, or the JSONResponse to return.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function runValidated(Closure $operation, string $context): mixed {
+		try {
+			return $operation();
+		} catch (\Throwable $e) {
+			return ($this->refusal(exception: $e, validates: true) ?? $this->unexpected(exception: $e, context: $context));
+		}
+	}//end runValidated()
 
 	/**
 	 * The answer for a failure the caller caused: a refusal, or a rejected input of a validating operation.

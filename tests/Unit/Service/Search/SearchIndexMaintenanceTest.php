@@ -47,6 +47,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * Locks the rebuild, the snapshot and the restore.
@@ -199,7 +200,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			indexes: ['t_uuid_idx' => 'CREATE UNIQUE INDEX t_uuid_idx ON oc_t (_uuid)']
 		);
 
-		$report = $service->rebuild(apply: true);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 
 		$this->assertSame('completed', $report['state']);
 		$this->assertSame(1, $report['rebuilt']);
@@ -221,7 +222,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 	public function testAPlatformWithoutConcurrentReindexIsRefused(): void {
 		$service = $this->makeService(isPostgres: false);
 
-		$report = $service->rebuild(apply: true);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 
 		$this->assertSame('refused', $report['state']);
 		$this->assertStringContainsString('concurrent reindex', $report['reason']);
@@ -240,7 +241,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			indexes: ['t_uuid_idx' => 'CREATE INDEX t_uuid_idx ON oc_t (_uuid)']
 		);
 
-		$report = $service->rebuild(apply: false);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: false, progress: null));
 
 		$this->assertSame('planned', $report['state']);
 		$this->assertSame(1, $report['indexes']);
@@ -264,7 +265,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 		);
 		$this->failOn = ['"b_idx"'];
 
-		$report = $service->rebuild(apply: true);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 
 		$this->assertSame('failed', $report['state']);
 		$this->assertSame(1, $report['rebuilt']);
@@ -291,7 +292,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			isPostgres: true,
 			indexes: ['t_idx' => 'CREATE INDEX t_idx ON oc_t (a)']
 		);
-		$service->rebuild(apply: false);
+		$service->rebuild(pass: new SearchIndexPass(apply: false, progress: null));
 	}//end testADryRunIsNotStoredAsTheLastRun()
 
 	/**
@@ -309,7 +310,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			isPostgres: true,
 			indexes: ['t_idx' => 'CREATE INDEX t_idx ON oc_t (a)']
 		);
-		$service->rebuild(apply: true);
+		$service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 	}//end testARealRunIsStored()
 
 	/**

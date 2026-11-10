@@ -146,7 +146,7 @@ class ObjectEventProxyListenerBehaviourTest extends TestCase {
 	public function testASlugIsMatchedThroughTheCachedMap(): void {
 		$this->subscribe(ObjectCreatedEvent::class, ['Publications']);
 		$this->cache->expects($this->once())->method('get')
-			->with('r:' . md5('Publications'))
+			->with('r:' . hash(algo: 'xxh128', data: 'Publications'))
 			->willReturn(json_encode(['publications' => ['5']]));
 		$this->cache->expects($this->never())->method('set');
 
@@ -164,7 +164,7 @@ class ObjectEventProxyListenerBehaviourTest extends TestCase {
 		$mapper->expects($this->once())->method('findIdsBySlugs')->with(['person'])->willReturn(['person' => ['12']]);
 		$this->services[SchemaMapperInterface::class] = $mapper;
 		$this->cache->expects($this->once())->method('set')
-			->with('s:' . md5('person'), '{"person":["12"]}', 60);
+			->with('s:' . hash(algo: 'xxh128', data: 'person'), '{"person":["12"]}', 60);
 
 		$this->proxy()->handle($this->created('1', '12'));
 
