@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 
 /**
  * Handler for GitLab API operations

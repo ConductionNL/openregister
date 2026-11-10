@@ -6,8 +6,8 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\Configuration
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Configuration;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 use InvalidArgumentException;
 
