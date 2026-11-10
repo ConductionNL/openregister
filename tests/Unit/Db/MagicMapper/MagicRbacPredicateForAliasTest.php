@@ -35,6 +35,7 @@ namespace Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -248,10 +249,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheUnionCallersStillGetUnqualifiedColumns(): void {
-		$result = $this->handlerFor('alice')->buildRbacConditionsSql(
-			schema: $this->schemaWith([]),
-			action: 'read'
-		);
+		$result = $this->handlerFor('alice')->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith([])))->forAction('read'));
 
 		$joined = implode(' ', $result['conditions']);
 

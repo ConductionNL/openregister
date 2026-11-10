@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -409,7 +410,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 			}
 		);
 
-		$this->rbacHandler('anna')->applyRbacFilters(qb: $qb, schema: $this->bookingSchema(), action: 'read');
+		$this->rbacHandler('anna')->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->bookingSchema()))->forAction('read'));
 
 		$sql = implode(' AND ', array_map(static fn ($predicate): string => (string)$predicate, $wheres));
 		$this->assertStringContainsString('in(t.administration_id,["adm-1","adm-2"]', $sql);
