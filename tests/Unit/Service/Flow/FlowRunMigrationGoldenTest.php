@@ -101,7 +101,7 @@ final class FlowRunMigrationGoldenTest extends TestCase {
 			static fn (string $uuid): FlowRun => ($byUuid[$uuid] ?? throw new RuntimeException('not found'))
 		);
 		$runs->method('findActive')->willReturnCallback($active);
-		$runs->method('findAllRuns')->willReturnCallback(
+		$runs->method('findAllRunsFor')->willReturnCallback(
 			function (...$args) use ($all): array {
 				$this->calls[] = ['findAllRuns', $args];
 				return $all;

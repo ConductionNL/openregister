@@ -214,13 +214,47 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function findAllRuns(FlowRunListing $listing, FlowRunViewer $viewer): array {
+	public function findAllRunsFor(FlowRunListing $listing, FlowRunViewer $viewer): array {
 		$qb = $this->listingPage(listing: $listing);
 
 		$this->narrowToFilter(qb: $qb, filter: $listing->filter);
 		$this->scopeToVisible(qb: $qb, viewer: $viewer);
 
 		return $this->findEntities(query: $qb);
+	}//end findAllRunsFor()
+
+	/**
+	 * List runs newest first, by the loose filters other apps pass by name.
+	 *
+	 * @param string|null        $flowId       Only runs of this flow.
+	 * @param string|null        $status       Only runs in this status.
+	 * @param int                $limit        The page size.
+	 * @param int                $offset       The page start.
+	 * @param string|null        $requesterUid The caller; null applies NO scoping (administrators and system reads only).
+	 * @param array<int, string> $ownedFlowIds The flows the caller owns.
+	 * @param DateTime|null      $since        Only runs started since this moment.
+	 * @param array<int, string> $flowIds      Only runs of these flows.
+	 *
+	 * @return array<int, FlowRun> The runs.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature opencatalogi calls by name.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	public function findAllRuns(
+		?string $flowId=null,
+		?string $status=null,
+		int $limit=50,
+		int $offset=0,
+		?string $requesterUid=null,
+		array $ownedFlowIds=[],
+		?DateTime $since=null,
+		array $flowIds=[],
+	): array {
+		$filter = new FlowRunFilter(flowId: $flowId, status: $status, since: $since, flowIds: $flowIds);
+		$viewer = new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+
+		return $this->findAllRunsFor(listing: new FlowRunListing(filter: $filter, limit: $limit, offset: $offset), viewer: $viewer);
 	}//end findAllRuns()
 
 	/**

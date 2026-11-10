@@ -476,7 +476,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 
 		return array_values(
 			array_filter(
-				$this->runs->findAllRuns(listing: $listing, viewer: $everyone),
+				$this->runs->findAllRunsFor(listing: $listing, viewer: $everyone),
 				static fn (mixed $run): bool => self::migratableOn(run: $run, version: $version)
 			)
 		);

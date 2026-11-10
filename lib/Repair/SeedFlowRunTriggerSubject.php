@@ -172,7 +172,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			// 🔴 `findAllRuns()`, NOT `findAll()`. The latter does not exist;
 			// writing it once already produced a repair that threw, reported
 			// itself skipped, and let the upgrade go green having done nothing.
-			$batch = $runs->findAllRuns(
+			$batch = $runs->findAllRunsFor(
 				listing: new FlowRunListing(limit: $page, offset: $offset),
 				viewer: new FlowRunViewer(requesterUid: null, ownedFlowIds: [])
 			);

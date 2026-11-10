@@ -460,7 +460,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->flowOwnership->method('idsOwnedByCaller')->willReturn(['owned-flow']);
 
 		$this->mapper->expects($this->once())
-			->method('findAllRuns')
+			->method('findAllRunsFor')
 			->with(
 				$this->anything(),
 				new FlowRunViewer(requesterUid: 'alice', ownedFlowIds: ['owned-flow'])
@@ -494,7 +494,7 @@ class FlowRunControllerTest extends TestCase {
 			flowOwnership: $this->flowOwnership
 		);
 
-		$this->mapper->expects($this->never())->method('findAllRuns');
+		$this->mapper->expects($this->never())->method('findAllRunsFor');
 
 		$this->assertSame([], $controller->index()->getData()['results']);
 	}//end testTheHistoryReadReturnsNothingWithoutASession()
@@ -545,7 +545,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->params(['since' => 'not-a-date', 'flowIds' => 'flow-a']);
 
 		$this->mapper->expects($this->never())->method('summarizeByFlow');
-		$this->mapper->expects($this->never())->method('findAllRuns');
+		$this->mapper->expects($this->never())->method('findAllRunsFor');
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->summary()->getStatus());
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->index()->getStatus());
@@ -555,7 +555,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->params(['since' => '2026-10-12T00:00:00+00:00', 'flowIds' => ['flow-a', 'flow-b']]);
 
 		$this->mapper->expects($this->once())
-			->method('findAllRuns')
+			->method('findAllRunsFor')
 			->willReturnCallback(function (...$args): array {
 				$this->assertSame('2026-10-12', $args[0]->filter->since->format('Y-m-d'));
 				$this->assertSame(['flow-a', 'flow-b'], $args[0]->filter->flowIds);
@@ -577,7 +577,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->params(['since' => '2026-10-19T12:00:00+02:00', 'flowIds' => ['flow-a']]);
 
 		$this->mapper->expects($this->once())
-			->method('findAllRuns')
+			->method('findAllRunsFor')
 			->willReturnCallback(function (...$args): array {
 				$this->assertSame('2026-10-19 10:00:00', $args[0]->filter->since->format('Y-m-d H:i:s'));
 				$this->assertSame('UTC', $args[0]->filter->since->getTimezone()->getName());

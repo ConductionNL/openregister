@@ -232,7 +232,7 @@ class FlowRunController extends Controller {
 			since: $since,
 			flowIds: $this->flowIdsParam()
 		);
-		$runs = $this->mapper->findAllRuns(
+		$runs = $this->mapper->findAllRunsFor(
 			listing: new FlowRunListing(filter: $filter, limit: $limit, offset: $offset),
 			viewer: $scope
 		);
@@ -252,7 +252,7 @@ class FlowRunController extends Controller {
 	 *
 	 * A null uid means no scoping, which is correct only for an administrator.
 	 * No session means there is nobody to scope to — and a null uid reaches
-	 * findAllRuns() as "do not scope", which is an ADMINISTRATOR's semantics.
+	 * findAllRunsFor() as "do not scope", which is an ADMINISTRATOR's semantics.
 	 * Falling through would therefore turn the absence of a caller into the
 	 * widest possible read, so it answers null instead: a non-admin with no
 	 * identity owns no runs.

@@ -132,7 +132,7 @@ interface FlowRunMapperInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function findAllRuns(FlowRunListing $listing, FlowRunViewer $viewer): array;
+	public function findAllRunsFor(FlowRunListing $listing, FlowRunViewer $viewer): array;
 
 	/**
 	 * Per flow: its most recent run and how many runs started since a moment.

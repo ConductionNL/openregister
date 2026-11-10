@@ -209,9 +209,9 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 			'since' => '2026-01-01T12:00:00+02:00',
 		];
 		$this->ownership->expects($this->never())->method('idsOwnedByCaller');
-		$this->mapper->expects($this->once())->method('findAllRuns')->willReturnCallback(
+		$this->mapper->expects($this->once())->method('findAllRunsFor')->willReturnCallback(
 			function (...$positional): array {
-				$args = $this->named(FlowRunMapper::class, 'findAllRuns', $positional);
+				$args = $this->named(FlowRunMapper::class, 'findAllRunsFor', $positional);
 				$this->assertSame('12', $args['listing']->filter->flowId);
 				$this->assertSame('done', $args['listing']->filter->status);
 				$this->assertSame(200, $args['listing']->limit);
@@ -233,9 +233,9 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 	public function testAnyoneElseReadsTheirOwnRunsAndTheRunsOfFlowsTheyOwn(): void {
 		$this->signIn('alice', false);
 		$this->params = ['limit' => '0', 'flowIds' => ['x', 7, ' ', 'y']];
-		$this->mapper->expects($this->once())->method('findAllRuns')->willReturnCallback(
+		$this->mapper->expects($this->once())->method('findAllRunsFor')->willReturnCallback(
 			function (...$positional): array {
-				$args = $this->named(FlowRunMapper::class, 'findAllRuns', $positional);
+				$args = $this->named(FlowRunMapper::class, 'findAllRunsFor', $positional);
 				$this->assertNull($args['listing']->filter->flowId);
 				$this->assertNull($args['listing']->filter->status);
 				$this->assertSame(1, $args['listing']->limit);
@@ -255,7 +255,7 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 
 	public function testWithoutASessionTheHistoryIsEmptyAndTheMapperIsNotAsked(): void {
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->mapper->expects($this->never())->method('findAllRuns');
+		$this->mapper->expects($this->never())->method('findAllRunsFor');
 
 		$this->assertSame(['results' => [], 'limit' => 50, 'offset' => 0], $this->runs()->index()->getData());
 	}
@@ -263,7 +263,7 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 	public function testANonStringSinceIsRefused(): void {
 		$this->signIn('alice', false);
 		$this->params = ['since' => ['2026-01-01']];
-		$this->mapper->expects($this->never())->method('findAllRuns');
+		$this->mapper->expects($this->never())->method('findAllRunsFor');
 
 		$response = $this->runs()->index();
 
@@ -274,9 +274,9 @@ class FlowRunReadsAccessGoldenTest extends TestCase {
 	public function testANonListFlowIdsIsNoFilter(): void {
 		$this->signIn('root', true);
 		$this->params = ['flowIds' => 5, 'since' => '  '];
-		$this->mapper->expects($this->once())->method('findAllRuns')->willReturnCallback(
+		$this->mapper->expects($this->once())->method('findAllRunsFor')->willReturnCallback(
 			function (...$positional): array {
-				$args = $this->named(FlowRunMapper::class, 'findAllRuns', $positional);
+				$args = $this->named(FlowRunMapper::class, 'findAllRunsFor', $positional);
 				$this->assertSame([], $args['listing']->filter->flowIds);
 				$this->assertNull($args['listing']->filter->since);
 				return [];

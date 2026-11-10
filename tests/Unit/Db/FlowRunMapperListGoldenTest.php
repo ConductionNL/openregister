@@ -152,6 +152,23 @@ final class FlowRunMapperListGoldenTest extends TestCase {
 		$this->assertSame($expected, json_decode((string)json_encode($actual), true));
 	}//end testOutcomesMatchGolden()
 
+	/**
+	 * The flat signature other apps call by name runs the same queries as the value-object one, case by case.
+	 *
+	 * @return void
+	 */
+	public function testTheFlatSignatureRunsTheSameQueriesAsTheValueObjectOne(): void {
+		foreach (self::listCases() as $name => $args) {
+			$rows = [[['id' => 1, 'uuid' => 'r1', 'flow_id' => 'f1']]];
+			$this->assertSame($this->outcome(method: 'findAllRunsFor', args: $args, rows: $rows), $this->outcome(method: 'findAllRuns', args: $args, rows: $rows), $name);
+		}
+
+		$this->assertSame(
+			$this->outcome(method: 'findAllRuns', args: ['flowId' => 'f1', 'status' => null, 'limit' => 5, 'offset' => 10, 'requesterUid' => 'alice'], rows: [[]]),
+			$this->outcome(method: 'findAllRuns', args: ['f1', null, 5, 10, 'alice'], rows: [[]])
+		);
+	}//end testTheFlatSignatureRunsTheSameQueriesAsTheValueObjectOne()
+
 	public function testAnUnscopedListAndAScopedListDiffer(): void {
 		$open = $this->outcome(method: 'findAllRuns', args: [], rows: [[]]);
 		$scoped = $this->outcome(method: 'findAllRuns', args: ['requesterUid' => 'alice'], rows: [[]]);
@@ -192,9 +209,9 @@ final class FlowRunMapperListGoldenTest extends TestCase {
 
 	/**
 	 * The case tables keep the flat argument names the golden was recorded
-	 * with; the mapper now takes them as value objects. Building those here
-	 * leaves the case names and the recorded fixture untouched, so an
-	 * unchanged fixture proves the queries did not change.
+	 * with. findAllRuns() takes them flat; findAllRunsFor() and
+	 * summarizeByFlow() take value objects, built here, so one fixture
+	 * covers both shapes.
 	 *
 	 * @param string               $method The method.
 	 * @param array<string, mixed> $args   Flat named arguments.
@@ -207,7 +224,7 @@ final class FlowRunMapperListGoldenTest extends TestCase {
 			return ['window' => new FlowActivityWindow(flowIds: $args['flowIds'], since: $args['since']), 'viewer' => $viewer];
 		}
 
-		if ($method !== 'findAllRuns') {
+		if ($method !== 'findAllRunsFor') {
 			return $args;
 		}
 

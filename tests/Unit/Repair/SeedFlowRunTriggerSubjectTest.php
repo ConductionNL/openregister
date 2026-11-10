@@ -111,7 +111,7 @@ final class SeedFlowRunTriggerSubjectTest extends TestCase {
 			// ⚠️ THE PAGE IS THE LISTING'S limit AND offset. Reading them from
 			// anywhere else pins the page index at 0 and loops forever — a
 			// hang, not a failure — so the double reads them from the listing.
-			$mapper->method('findAllRuns')->willReturnCallback(
+			$mapper->method('findAllRunsFor')->willReturnCallback(
 				function (FlowRunListing $listing, FlowRunViewer $viewer) use ($pages): array {
 					$this->assertNull($viewer->requesterUid);
 					$limit = $listing->limit;
@@ -254,7 +254,7 @@ final class SeedFlowRunTriggerSubjectTest extends TestCase {
 		$bad->setSubjectUuid('obj-bad');
 
 		$mapperThrows = $this->createMock(FlowRunMapper::class);
-		$mapperThrows->method('findAllRuns')->willReturn([$bad, $this->aRun('run-ok', 'obj-ok')]);
+		$mapperThrows->method('findAllRunsFor')->willReturn([$bad, $this->aRun('run-ok', 'obj-ok')]);
 		$mapperThrows->method('update')->willReturnCallback(
 			function (FlowRun $run): FlowRun {
 				if ((string)$run->getUuid() === 'run-bad') {
