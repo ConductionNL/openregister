@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -72,7 +73,7 @@ final class ImportedSchemaChangeLog
 		}
 
 		try {
-			return $this->versioning->classify(existing: $existing, newDefinition: $this->definition(existing: $existing, data: $data));
+			return $this->versioning->classify(existing: $existing, incoming: new IncomingDefinition(definition: $this->definition(existing: $existing, data: $data)));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: ImportLogTag::PREFIX.'Could not classify an imported schema change: ' . $e->getMessage(),
