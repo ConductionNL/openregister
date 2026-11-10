@@ -23,10 +23,13 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Rbac\GrantDeclaration;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
@@ -172,9 +175,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
 	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
+	 * @param TenancyServices $tenancy The organisation mapper, user session and group manager the tenancy and RBAC checks read
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger for the resolution diagnostics.
 	 *
@@ -199,9 +200,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		SchemaMapperInterface $schemaMapper,
 		IEventDispatcher $eventDispatcher,
 		\Psr\Container\ContainerInterface $container,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -212,9 +211,9 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$this->schemaMapper = $schemaMapper;
 		$this->eventDispatcher = $eventDispatcher;
 		$this->container = $container;
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
@@ -489,10 +488,24 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		foreach ($ids as $id) {
 			try {
 				$result[] = $this->find(id: $id, _rbac: $_rbac, _multitenancy: $_multitenancy);
-			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException) {
-				// Catch all exceptions but do nothing.
-			} catch (\OCP\DB\Exception) {
-				// Catch all exceptions but do nothing.
+			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+				// Ids that do not resolve to exactly one register are left out of the result.
+				$this->logger->debug(
+					message: '[RegisterMapper] findMultiple skips a register id that does not resolve',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
+			} catch (\OCP\DB\Exception $e) {
+				// A database error drops this id from the result rather than failing the whole batch.
+				$this->logger->warning(
+					message: '[RegisterMapper] findMultiple skips a register after a database error',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
@@ -769,9 +782,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// granted nothing, and the role read as correctly configured in every
 		// screen that showed it.
 		AccessDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
-			authorization: $authorization,
-			roleDefinitions: $roleDefinitions,
-			subject: $subject
+			declaration: new GrantDeclaration(authorization: $authorization, roleDefinitions: $roleDefinitions, subject: $subject)
 		);
 
 		if ($this->isEmptyAuthorization(authorization: $authorization) === true) {
@@ -935,7 +946,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		}
 
 		$objectEntityMapper = $this->container->get(MagicMapperInterface::class);
-		$stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId));
 		if (($stats['total'] ?? 0) > 0) {
 			throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
 		}

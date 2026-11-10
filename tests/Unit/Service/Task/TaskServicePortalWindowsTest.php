@@ -21,7 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
-use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -31,6 +30,9 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
+use OCA\OpenRegister\Service\Task\TaskAnswerPayload;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskCommit;
@@ -235,14 +237,13 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$task->setResponses(['kept' => true]);
 		$this->tasks->method('findByUuid')->willReturn($task);
 
-		$completed = $this->service->complete(
+		$completed = $this->service->completeWithAnswer(
 			uuid: 't-1',
-			outcome: 'submitted',
-			resultText: null,
-			comment: null,
-			actor: 'party:bsn-1',
-			responses: ['remarks' => 'here'],
-			evidence: [['fileId' => 42, 'name' => 'payslip.pdf']]
+			answer: new TaskAnswer(
+				outcome: 'submitted',
+				payload: new TaskAnswerPayload(responses: ['remarks' => 'here'], evidence: [['fileId' => 42, 'name' => 'payslip.pdf']])
+			),
+			actor: 'party:bsn-1'
 		);
 		$this->assertSame(['remarks' => 'here'], $completed->getResponses());
 		$this->assertSame(42, $completed->getEvidence()[0]['fileId']);
@@ -255,7 +256,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$again->setResponses(['kept' => true]);
 		$again->setEvidence([['fileId' => 1]]);
 		$this->tasks->method('findByUuid')->willReturn($again);
-		$plain = $this->service->complete(uuid: 't-1', outcome: 'done', resultText: null, comment: null, actor: 'party:bsn-1');
+		$plain = $this->service->completeWithAnswer(uuid: 't-1', answer: new TaskAnswer(outcome: 'done'), actor: 'party:bsn-1');
 		$this->assertSame(['kept' => true], $plain->getResponses(), 'absent responses overwrite nothing');
 		$this->assertSame([['fileId' => 1]], $plain->getEvidence(), 'absent evidence overwrites nothing');
 	}//end testCompleteCarriesResponsesAndEvidence()

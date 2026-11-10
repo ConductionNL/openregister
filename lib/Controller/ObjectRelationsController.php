@@ -47,6 +47,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
 use OCA\OpenRegister\Service\Relation\AffectedSets;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
@@ -686,11 +688,8 @@ class ObjectRelationsController extends Controller {
 	private function recordProvenance(DerivedLineage $lineage, array $link): ObjectRelation {
 		$provenance = new ProvenanceLink(entry: $link['entry'], relationType: $link['type']);
 		if ($lineage->inherited !== []) {
-			return $this->relations->recordDerivation(
-				parent: $lineage->source,
-				child: $lineage->created,
-				link: $provenance,
-				inherited: $lineage->inherited
+			return $this->relations->recordDerived(
+				derivation: new Derivation(parent: $lineage->source, child: $lineage->created, link: $provenance, inherited: $lineage->inherited)
 			);
 		}
 
@@ -837,8 +836,7 @@ class ObjectRelationsController extends Controller {
 		return $this->purposeScope->narrow(
 			graph: $this->graphs->graph(
 				rootUuid: (string)$object->getUuid(),
-				depth: $this->params->depth(),
-				language: $this->params->language()
+				options: new GraphExportOptions(depth: $this->params->depth(), language: $this->params->language())
 			)
 		);
 	}//end graphWithinPurpose()

@@ -170,20 +170,19 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	 * `$freshnessDecayDays`. Pure and null-safe — a null/non-positive decay
 	 * window, or a null anchor, leaves the tier unchanged.
 	 *
-	 * @param string $tier Starting tier.
-	 * @param array<int, string> $tierOrder Ordered tier names, weakest first.
+	 * @param TierPosition    $position  Starting tier and the ordered tier names, weakest first.
 	 * @param SourceFreshness $freshness Decay window, anchor date and reference instant.
 	 *
 	 * @return string The (possibly stepped-down) tier.
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#1.1
 	 */
-	public function applyFreshnessDecay(string $tier, array $tierOrder, SourceFreshness $freshness): string {
+	public function applyFreshnessDecay(TierPosition $position, SourceFreshness $freshness): string {
 		if ($this->hasDecayed(freshness: $freshness) === false) {
-			return $tier;
+			return $position->tier;
 		}
 
-		return $this->stepDown(tier: $tier, tierOrder: $tierOrder);
+		return $this->stepDown(tier: $position->tier, tierOrder: $position->tierOrder);
 	}//end applyFreshnessDecay()
 
 	/**

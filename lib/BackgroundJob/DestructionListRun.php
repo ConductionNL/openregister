@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -32,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -315,8 +317,9 @@ final class DestructionListRun {
 		$object->setRetention($retention);
 		$this->audit(object: $object, objRef: $objRef);
 
+		$request = new DeletionRequest(register: $object->getRegister(), schema: $object->getSchema(), uuid: (string)$uuid);
 		$this->retentionDestruction->run(
-			fn (): bool => $this->deleteObject->deleteObject($object->getRegister(), $object->getSchema(), (string)$uuid, null, false, false)
+			fn (): bool => $this->deleteObject->deleteObject($request, false, false)
 		);
 		$this->count['destroyed']++;
 	}//end destroyObject()
@@ -371,7 +374,7 @@ final class DestructionListRun {
 	 */
 	private function saveCertificate(): void {
 		$data        = $this->listData;
-		$certificate = $this->retentionService->generateDestructionCertificate($data, $this->count['destroyed'], $data['executedAt']);
+		$certificate = $this->retentionService->certify(new ExecutedDestruction($data, $this->count['destroyed'], $data['executedAt']));
 		if (empty($this->settings['archivalRegister']) === true || empty($this->settings['destructionListSchema']) === true) {
 			return;
 		}

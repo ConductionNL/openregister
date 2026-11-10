@@ -334,9 +334,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(ContainerInterface::class),
-			$organisations,
-			$session,
-			$groups,
+			new TenancyServices($organisations, $session, $groups),
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
 		);

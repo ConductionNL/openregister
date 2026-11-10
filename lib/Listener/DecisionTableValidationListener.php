@@ -102,22 +102,6 @@ class DecisionTableValidationListener implements IEventListener, DecisionTableVa
 	 *
 	 * The bulk writer dispatches no ObjectCreatingEvent, so it asks this directly: one rule, two entry points.
 	 *
-	 * @param string|null          $schema   The row's schema reference (id or slug).
-	 * @param string|null          $register The row's register reference (id or slug).
-	 * @param array<string, mixed> $data     The row's own properties.
-	 * @param string               $uuid     The row's uuid, '' for a new row.
-	 *
-	 * @return array<int, string>|null Null when the row is no decision table, else the problems (empty when it is valid).
-	 *
-	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
-	 */
-	public function problemsFor(?string $schema, ?string $register, array $data, string $uuid): ?array {
-		return $this->problemsOf(row: new ObjectRef(register: (string)$register, schema: (string)$schema, id: $uuid), data: $data);
-	}//end problemsFor()
-
-	/**
-	 * What stops a row from being stored as a decision table: {@see self::problemsFor()} on the row's reference.
-	 *
 	 * @param ObjectRef            $row  The row's register and schema reference (id or slug, '' for none) and uuid ('' for a new row).
 	 * @param array<string, mixed> $data The row's own properties.
 	 *

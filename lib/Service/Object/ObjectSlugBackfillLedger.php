@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -115,11 +117,9 @@ class ObjectSlugBackfillLedger {
 		$schema = $applied->schema;
 		$this->logLargeRun(applied: $applied);
 		try {
-			$this->auditTrail->createSlugBackfillEntry(
-				changes: $applied->changes,
-				summary: $applied->summary,
-				register: (int)$register->getId(),
-				schema: (int)$schema->getId()
+			$target = new AuditedObject(register: (int)$register->getId(), schema: (int)$schema->getId());
+			$this->auditTrail->recordSlugBackfill(
+				backfill: new SlugBackfill(changes: $applied->changes, summary: $applied->summary, target: $target)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

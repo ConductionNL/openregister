@@ -165,7 +165,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	}//end inherit()
 
 	/**
-	 * Record a child created under a parent, with what it inherited.
+	 * Record a child created under a parent, with what it inherited (positional form of recordDerived()).
 	 *
 	 * @param ObjectEntity $parent The parent object.
 	 * @param ObjectEntity $child The created child.
@@ -186,13 +186,32 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		?ProvenanceLink $link = null,
 		array $inherited = [],
 	): ObjectRelation {
-		$link ??= new ProvenanceLink();
+		return $this->recordDerived(derivation: new Derivation(parent: $parent, child: $child, link: ($link ?? new ProvenanceLink()), inherited: $inherited));
+	}//end recordDerivation()
+
+	/**
+	 * Record a child created under a parent, with what it inherited.
+	 *
+	 * A derivation and a split are the same act seen twice: a sub-case started
+	 * from a timeline entry is both.
+	 *
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function recordDerived(Derivation $derivation): ObjectRelation {
 		return $this->stores->mapper->createFromArray(
-			$this->fields->derivedLink(from: $child, to: $parent)
-			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'inherited' => $this->fields->recordOf(inherited: $inherited)]
+			$this->fields->derivedLink(from: $derivation->child, to: $derivation->parent)
+			+ [
+				'relationType' => $derivation->link->relationType,
+				'sourceEntry' => $derivation->link->entry,
+				'inherited' => $this->fields->recordOf(inherited: $derivation->inherited),
+			]
 			+ ['createdBy' => $this->actor()]
 		);
-	}//end recordDerivation()
+	}//end recordDerived()
 
 	/**
 	 * Add an address outside the product as a relation on an object.
