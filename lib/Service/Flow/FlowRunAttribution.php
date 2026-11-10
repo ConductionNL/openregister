@@ -172,7 +172,21 @@ class FlowRunAttribution {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function resolve(string $flowId, ?string $user, string $trigger = 'manual'): array {
-		$caller = $this->orNull(value: $user);
+		return $this->attribute(query: new RunAttributionQuery(flowId: $flowId, user: $user, trigger: $trigger));
+	}//end resolve()
+
+	/**
+	 * Resolve the run's acting identity and organisation, as {@see resolve()} documents.
+	 *
+	 * @param RunAttributionQuery $query The flow, the caller's uid and what started the run.
+	 *
+	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null, refusal?: string}
+	 *         The attribution. A null `user` means REFUSE.
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function attribute(RunAttributionQuery $query): array {
+		$caller = $this->orNull(value: $query->user);
 		$organisation = $this->activeOrganisation();
 
 		if ($caller !== null && $organisation !== null) {
@@ -181,8 +195,25 @@ class FlowRunAttribution {
 			return ['user' => $caller, 'organisation' => $organisation, 'declaredBy' => null];
 		}
 
-		$flow = $this->loadFlow(flowId: $flowId);
-		$declared = $this->declaredByTrigger(flow: $flow, trigger: $trigger);
+		return $this->fromFlow(query: $query, organisation: $organisation);
+	}//end attribute()
+
+	/**
+	 * Fill what the caller and the active organisation left open from the flow and its trigger.
+	 *
+	 * @param RunAttributionQuery $query        The flow, the caller's uid and what started the run.
+	 * @param string|null         $organisation The active organisation, when one resolved.
+	 *
+	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null, refusal?: string}
+	 *         The attribution. A null `user` means REFUSE; `refusal` says why when
+	 *         someone was named.
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function fromFlow(RunAttributionQuery $query, ?string $organisation): array {
+		$caller = $this->orNull(value: $query->user);
+		$flow = $this->loadFlow(flowId: $query->flowId);
+		$declared = $this->declaredByTrigger(flow: $flow, trigger: $query->trigger);
 
 		$declaredBy = null;
 		if ($caller === null) {
@@ -200,7 +231,7 @@ class FlowRunAttribution {
 		}
 
 		return $attribution;
-	}//end resolve()
+	}//end fromFlow()
 
 	/**
 	 * Whether a flow compiled from a manifest declares an identity outside its tenant.

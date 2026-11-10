@@ -87,7 +87,7 @@ class ContactCasesPanel {
 				continue;
 			}
 
-			$groups[$schema] = self::withRow(group: ($groups[$schema] ?? null), schema: $schema, row: $row);
+			$groups[$schema] = self::withRow(group: ($groups[$schema] ?? self::newGroup(schema: $schema, row: $row)), row: $row);
 		}
 
 		$groups = array_values($groups);
@@ -123,24 +123,31 @@ class ContactCasesPanel {
 	}//end readableSchema()
 
 	/**
-	 * A group with one more row counted, and shown while the group holds fewer than ROWS_PER_GROUP.
+	 * An empty group for a schema, labelled from its first row.
 	 *
-	 * @param array<string,mixed>|null $group  The group so far, or null for a new one.
-	 * @param string                   $schema The group's schema.
-	 * @param array<string,mixed>      $row    The row.
+	 * @param string              $schema The schema the group collects.
+	 * @param array<string,mixed> $row    The group's first row.
+	 *
+	 * @return array<string,mixed> The group, without rows.
+	 */
+	private static function newGroup(string $schema, array $row): array {
+		return [
+			'schema' => $schema,
+			'label' => trim((string)($row['schemaLabel'] ?? $schema)),
+			'count' => 0,
+			'rows' => [],
+		];
+	}//end newGroup()
+
+	/**
+	 * The group with one more row counted, and kept while the group has room.
+	 *
+	 * @param array<string,mixed> $group The group so far.
+	 * @param array<string,mixed> $row    The row.
 	 *
 	 * @return array<string,mixed> The group.
 	 */
-	private static function withRow(?array $group, string $schema, array $row): array {
-		if ($group === null) {
-			$group = [
-				'schema' => $schema,
-				'label' => trim((string)($row['schemaLabel'] ?? $schema)),
-				'count' => 0,
-				'rows' => [],
-			];
-		}
-
+	private static function withRow(array $group, array $row): array {
 		$group['count']++;
 		if (count($group['rows']) < self::ROWS_PER_GROUP) {
 			$group['rows'][] = [

@@ -40,6 +40,10 @@ use OCA\OpenRegister\Service\SequenceServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Golden payloads of the scoring and numbering save listeners.
@@ -112,9 +116,8 @@ class SaveScoringGoldenTest extends TestCase {
 		);
 
 		return new QualityScoreOnSaveListener(
-			$this->schemas(['x-openregister-quality' => $quality], $properties),
 			$scorer,
-			$this->logger()
+			$this->eventSchemaLookup($this->schemas(['x-openregister-quality' => $quality], $properties), $this->logger())
 		);
 	}//end quality()
 
@@ -292,4 +295,14 @@ class SaveScoringGoldenTest extends TestCase {
 			$event->getErrors()
 		);
 	}//end testFreezeRefusalBody()
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
+	}
 }//end class

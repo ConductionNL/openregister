@@ -115,7 +115,22 @@ class PermissionsDeclaringEvent extends Event {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declareVerb(string $verb, string $app, string $description, array $levels = self::DEFAULT_LEVELS): bool {
-		$refusal = $this->refusalFor(verb: $verb, app: $app);
+		return $this->addVerb(declaration: new PermissionVerb(verb: $verb, app: $app, description: $description, levels: $levels));
+	}//end declareVerb()
+
+	/**
+	 * Declare one verb, as {@see declareVerb()}: a verb another app already
+	 * declared, or one outside the grammar, is refused and recorded.
+	 *
+	 * @param PermissionVerb $declaration The verb, its app, description and levels.
+	 *
+	 * @return bool True when the declaration was accepted.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function addVerb(PermissionVerb $declaration): bool {
+		$verb    = $declaration->verb;
+		$refusal = $this->refusalFor(verb: $verb, app: $declaration->app);
 		if ($refusal !== null) {
 			$this->rejected[$verb] = $refusal;
 			return false;
@@ -123,13 +138,13 @@ class PermissionsDeclaringEvent extends Event {
 
 		$this->declared[$verb] = [
 			'verb' => $verb,
-			'app' => $app,
-			'description' => $description,
-			'levels' => array_values(array_filter($levels, 'is_string')),
+			'app' => $declaration->app,
+			'description' => $declaration->description,
+			'levels' => array_values(array_filter($declaration->levels, 'is_string')),
 		];
 
 		return true;
-	}//end declareVerb()
+	}//end addVerb()
 
 	/**
 	 * Why a declaration is refused: a verb outside the grammar, or one another app owns.

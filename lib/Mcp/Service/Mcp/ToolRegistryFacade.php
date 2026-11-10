@@ -135,13 +135,10 @@ class ToolRegistryFacade {
 
 		foreach ($this->resolveRegisteredTools(toolWhitelist: []) as $registryId => $tool) {
 			foreach ($tool->getFunctions() as $function) {
-				$allowed = $this->functionIsWhitelisted(
-					function: $function,
-					registryId: (string)$registryId,
-					toolWhitelist: $toolWhitelist
-				);
-
-				if ($allowed === false) {
+				// An empty whitelist admits everything (ADR-035 Decision 4).
+				if ($toolWhitelist !== []
+					&& array_intersect($this->functionIds(function: $function, registryId: (string)$registryId), $toolWhitelist) === []
+				) {
 					continue;
 				}
 
@@ -304,25 +301,19 @@ class ToolRegistryFacade {
 	}//end rightOf()
 
 	/**
-	 * Whether one function descriptor is admitted by a whitelist.
+	 * The ids a whitelist entry may name one function descriptor by.
 	 *
-	 * An empty whitelist admits everything (ADR-035 Decision 4). Otherwise the
-	 * entry must name the function's `name`, its dotted `mcpId`, or the registry
-	 * id of the tool that owns it.
+	 * An entry admits the function when it names the function's `name`, its
+	 * dotted `mcpId`, or the registry id of the tool that owns it.
 	 *
-	 * @param array<string,mixed> $function The LLPhant function descriptor.
-	 * @param string $registryId Registry id of the owning tool.
-	 * @param array<int,string> $toolWhitelist The whitelist to apply.
+	 * @param array<string,mixed> $function   The LLPhant function descriptor.
+	 * @param string              $registryId Registry id of the owning tool.
 	 *
-	 * @return bool True when the descriptor should be listed.
+	 * @return array<int,string> The registry id, then the name and mcpId when set.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
-	private function functionIsWhitelisted(array $function, string $registryId, array $toolWhitelist): bool {
-		if ($toolWhitelist === []) {
-			return true;
-		}
-
+	private function functionIds(array $function, string $registryId): array {
 		$candidates = [$registryId];
 
 		$name = ($function['name'] ?? null);
@@ -335,8 +326,8 @@ class ToolRegistryFacade {
 			$candidates[] = $mcpId;
 		}
 
-		return (array_intersect($candidates, $toolWhitelist) !== []);
-	}//end functionIsWhitelisted()
+		return $candidates;
+	}//end functionIds()
 
 	/**
 	 * Invoke a tool function by its descriptor name or dotted mcpId.

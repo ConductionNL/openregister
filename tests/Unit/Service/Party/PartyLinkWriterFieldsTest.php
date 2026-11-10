@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyLinkRequest;
 use OCA\OpenRegister\Service\Party\PartyLinkTarget;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
 use OCA\OpenRegister\Service\Party\PartyPropertyNames;
@@ -70,7 +71,7 @@ class PartyLinkWriterFieldsTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return (new PartyLinkWriter(links: $links, parties: $parties, session: $session))
-			->write(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: null), partyUuid: 'party-a', role: null, linkedBy: 'ignored');
+			->write(request: new PartyLinkRequest(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: null), partyUuid: 'party-a', role: null, linkedBy: 'ignored'));
 	}//end write()
 
 	/**

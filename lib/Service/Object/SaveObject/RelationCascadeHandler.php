@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -58,21 +59,41 @@ class RelationCascadeHandler {
 	public const SYSTEM_SCOPE = ['_rbac' => false, '_multitenancy' => false];
 
 	/**
+	 * Object entity data mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectEntityMapper;
+
+	/**
+	 * Schema mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper for register operations.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor for RelationCascadeHandler.
 	 *
-	 * @param MagicObjectFinderInterface $objectEntityMapper Object entity data mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
-	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations.
-	 * @param LoggerInterface $logger Logger interface for logging operations.
+	 * @param SchemaCatalogInterface $catalog The register, schema and object mappers.
+	 * @param LoggerInterface        $logger  Logger interface for logging operations.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicObjectFinderInterface $objectEntityMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectEntityMapper = $catalog->tables();
+		$this->schemaMapper       = $catalog->schemas();
+		$this->registerMapper     = $catalog->registers();
 	}//end __construct()
 
 	/**
@@ -100,12 +121,27 @@ class RelationCascadeHandler {
 			return null;
 		}
 
-		$cleanReference = $this->removeQueryParameters(reference: $reference);
-		$byId = fn (string $id) => $this->schemaMapper->find(...(['id' => $id] + $scope));
+		$lookup = new EntityLookup(
+			kind: 'schema',
+			find: fn (string $id) => $this->schemaMapper->find(...(['id' => $id] + $scope)),
+			findAll: fn () => $this->schemaMapper->findAll(...$scope)
+		);
 
-		return $this->directIdMatch(reference: $cleanReference, find: $byId)
-			?? $this->slugLookup(reference: $cleanReference, findAll: fn () => $this->schemaMapper->findAll(...$scope), kind: 'schema');
+		return $this->resolveIn(reference: $this->removeQueryParameters(reference: $reference), lookup: $lookup);
 	}//end resolveSchemaReference()
+
+	/**
+	 * The id a reference names: by direct id first, then by slug.
+	 *
+	 * @param string       $reference The reference without query parameters.
+	 * @param EntityLookup $lookup    How to find the entity by id and list the candidates.
+	 *
+	 * @return null|numeric-string
+	 */
+	private function resolveIn(string $reference, EntityLookup $lookup): ?string {
+		return $this->directIdMatch(reference: $reference, find: $lookup->find)
+			?? $this->slugLookup(reference: $reference, lookup: $lookup);
+	}//end resolveIn()
 
 	/**
 	 * The id of the entity a direct-id reference (a numeric id or a UUID) names, or null when it is no direct id
@@ -131,20 +167,21 @@ class RelationCascadeHandler {
 	}//end directIdMatch()
 
 	/**
-	 * The id of the entity whose slug is the reference's last path segment (the whole reference without a `/`); a failing lookup is logged and yields null.
+	 * The id of the entity whose slug is the reference's last path segment (the whole reference without a `/`).
 	 *
-	 * @param string   $reference The reference without query parameters.
-	 * @param callable $findAll   Lists the candidate entities.
-	 * @param string   $kind      What is looked up ("schema" or "register"), for the log line.
+	 * A failing lookup is logged and yields null.
+	 *
+	 * @param string       $reference The reference without query parameters.
+	 * @param EntityLookup $lookup    Lists the candidate entities, and names what is looked up for the log line.
 	 *
 	 * @return null|numeric-string
 	 */
-	private function slugLookup(string $reference, callable $findAll, string $kind): ?string {
+	private function slugLookup(string $reference, EntityLookup $lookup): ?string {
 		try {
-			return $this->slugMatch(entities: $findAll(), slug: array_slice(explode('/', $reference), -1)[0]);
+			return $this->slugMatch(entities: ($lookup->findAll)(), slug: array_slice(explode('/', $reference), -1)[0]);
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: '[RelationCascadeHandler] Error finding ' . $kind . ' by slug: ' . $e->getMessage(),
+				message: '[RelationCascadeHandler] Error finding ' . $lookup->kind . ' by slug: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
@@ -205,11 +242,13 @@ class RelationCascadeHandler {
 			return null;
 		}
 
-		$cleanReference = $this->removeQueryParameters(reference: $reference);
-		$byId = fn (string $id) => $this->registerMapper->find(id: $id);
+		$lookup = new EntityLookup(
+			kind: 'register',
+			find: fn (string $id) => $this->registerMapper->find(id: $id),
+			findAll: fn () => $this->registerMapper->findAll()
+		);
 
-		return $this->directIdMatch(reference: $cleanReference, find: $byId)
-			?? $this->slugLookup(reference: $cleanReference, findAll: fn () => $this->registerMapper->findAll(), kind: 'register');
+		return $this->resolveIn(reference: $this->removeQueryParameters(reference: $reference), lookup: $lookup);
 	}//end resolveRegisterReference()
 
 	/**
@@ -227,46 +266,71 @@ class RelationCascadeHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
+		return $this->relationsIn(scan: new RelationScan(data: $data, prefix: $prefix, schema: $schema));
+	}//end scanForRelations()
+
+	/**
+	 * The relation paths of one level of data, nested levels included.
+	 *
+	 * @param RelationScan $scan The data, its path prefix and the schema.
+	 *
+	 * @return array Array of relation paths that need resolution.
+	 */
+	private function relationsIn(RelationScan $scan): array {
 		$relations = [];
-		foreach ($data as $key => $value) {
+		foreach (array_keys($scan->data) as $key) {
 			// Special metadata fields are never relations.
 			if (in_array($key, ['_self', '_schema', '_register'], true) === true) {
 				continue;
 			}
 
-			// A top-level key is its own path, so an integer key stays an integer.
-			$path = $key;
-			if ($prefix !== '') {
-				$path = "{$prefix}.{$key}";
-			}
-
-			$relations = array_merge($relations, $this->relationsAt(path: $path, value: $value, schema: $schema));
+			$relations = array_merge($relations, $this->relationsAt(scan: $scan, key: $key));
 		}
 
 		return $relations;
-	}//end scanForRelations()
+	}//end relationsIn()
+
+	/**
+	 * The path of a key of a scanned level: a top-level key is its own path, so an integer key stays an integer.
+	 *
+	 * @param RelationScan $scan The level.
+	 * @param int|string   $key  The key.
+	 *
+	 * @return int|string The path.
+	 */
+	private static function pathOf(RelationScan $scan, int|string $key): int|string {
+		if ($scan->prefix === '') {
+			return $key;
+		}
+
+		return "{$scan->prefix}.{$key}";
+	}//end pathOf()
 
 	/**
 	 * The relation paths one value contributes: itself, or those found inside it.
 	 *
-	 * @param int|string  $path   The value's path.
-	 * @param mixed       $value  The value.
-	 * @param null|Schema $schema The schema to read `$ref` declarations from.
+	 * @param RelationScan $scan The level the value sits in.
+	 * @param int|string   $key  The value's key in that level.
 	 *
 	 * @return array
 	 */
-	private function relationsAt(int|string $path, mixed $value, ?Schema $schema): array {
-		$hasRef = $this->declaresRef(schema: $schema, path: $path);
+	private function relationsAt(RelationScan $scan, int|string $key): array {
+		$value = $scan->data[$key];
 		if (is_array($value) === false) {
-			return $this->singleRelation(path: $path, value: $value, hasRef: $hasRef);
+			return $this->singleRelation(scan: $scan, key: $key);
 		}
+
+		// The declaration at the path is read for an array too, as it always was: a
+		// declaration that is no array refuses the scan here, whatever the value holds.
+		$path = self::pathOf(scan: $scan, key: $key);
+		$this->declaresRef(schema: $scan->schema, path: $path);
 
 		// An array holding a reference is one relation; any other array is scanned for nested ones.
 		if ($this->isArrayOfReferences(array: $value) === true) {
 			return [$path];
 		}
 
-		return $this->scanForRelations(data: $value, prefix: $path, schema: $schema);
+		return $this->scanForRelations(data: $value, prefix: $path, schema: $scan->schema);
 	}//end relationsAt()
 
 	/**
@@ -291,13 +355,15 @@ class RelationCascadeHandler {
 	 * The path of a scalar that is a relation (a reference that either has a `$ref` or looks like an object
 	 * reference), or nothing.
 	 *
-	 * @param int|string $path   The value's path.
-	 * @param mixed      $value  The value.
-	 * @param bool       $hasRef Whether the schema declares a `$ref` for it.
+	 * @param RelationScan $scan The level the value sits in, with the schema that may declare a `$ref` for it.
+	 * @param int|string   $key  The value's key in that level.
 	 *
 	 * @return array
 	 */
-	private function singleRelation(int|string $path, mixed $value, bool $hasRef): array {
+	private function singleRelation(RelationScan $scan, int|string $key): array {
+		$path   = self::pathOf(scan: $scan, key: $key);
+		$value  = $scan->data[$key];
+		$hasRef = $this->declaresRef(schema: $scan->schema, path: $path);
 		if (is_string($value) === true
 			&& $this->isReference(value: $value) === true
 			&& ($hasRef === true || $this->looksLikeObjectReference(value: $value) === true)
@@ -419,16 +485,15 @@ class RelationCascadeHandler {
 	 * (URLs, IDs) with the corresponding object UUIDs.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity being updated.
-	 * @param array $data The object data containing relations.
-	 * @param null|Schema $schema The schema for validation.
+	 * @param RelationScan $scan         The object data containing relations, and the schema for validation.
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema = null): ObjectEntity {
+	public function updateObjectRelations(ObjectEntity $objectEntity, RelationScan $scan): ObjectEntity {
 		// Scan for relations.
-		$relations = $this->scanForRelations(data: $data, prefix: '', schema: $schema);
+		$relations = $this->relationsIn(scan: $scan);
 
 		if (empty($relations) === true) {
 			return $objectEntity;

@@ -27,8 +27,9 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
+use OCA\OpenRegister\BackgroundJob\Support\TenantRecords;
+use OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -40,20 +41,37 @@ use Psr\Log\LoggerInterface;
  */
 class TenantDeprovisionJob extends TimedJob {
 	/**
+	 * Organisation mapper
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	private readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * Lifecycle service
+	 *
+	 * @var TenantLifecycleServiceInterface
+	 */
+	private readonly TenantLifecycleServiceInterface $tenantLifecycleService;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param TenantLifecycleServiceInterface $tenantLifecycleService Lifecycle service
-	 * @param LoggerInterface $logger Logger
+	 * @param ScheduledJobRuntime $runtime The clock, app config and log the job runs on.
+	 * @param TenantRecords       $tenants The organisations, their usage rows and lifecycle.
 	 */
-	public function __construct(
-		ITimeFactory $time,
-		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly TenantLifecycleServiceInterface $tenantLifecycleService,
-		private readonly LoggerInterface $logger,
-	) {
-		parent::__construct(time: $time);
+	public function __construct(ScheduledJobRuntime $runtime, TenantRecords $tenants) {
+		parent::__construct(time: $runtime->time);
+		$this->organisationMapper = $tenants->organisations;
+		$this->tenantLifecycleService = $tenants->lifecycle;
+		$this->logger = $runtime->logger;
 		// Run every hour.
 		$this->setInterval(seconds: 3600);
 	}//end __construct()

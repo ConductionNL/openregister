@@ -31,6 +31,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantIssue;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -58,7 +59,7 @@ final class TokenGrantValidatorMutationTest extends TestCase {
 	}//end grant()
 
 	private function refusal(array $grant): ?string {
-		return $this->validator()->refusalFor($grant, ['read', 'update'], $this->now());
+		return $this->validator()->refusalFor(issue: new TokenGrantIssue($grant, ['read', 'update'], $this->now()));
 	}//end refusal()
 
 	public function testAValidGrantIsAccepted(): void {
@@ -163,7 +164,7 @@ final class TokenGrantValidatorMutationTest extends TestCase {
 		$grant = TokenGrant::fromStored(['verbs' => ['read'], 'expiresAt' => '2026-11-16T12:00:00+00:00']);
 		$this->assertNotNull($grant);
 
-		$this->assertTrue($this->validator()->lapsesSoon($grant, $this->now(), 7));
-		$this->assertFalse($this->validator()->lapsesSoon($grant, $this->now(), 6));
+		$this->assertTrue(TokenGrantValidator::lapsesWithin($grant->daysLeft($this->now()), 7));
+		$this->assertFalse(TokenGrantValidator::lapsesWithin($grant->daysLeft($this->now()), 6));
 	}//end testLapsesSoonHonoursANarrowerWindow()
 }//end class

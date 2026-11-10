@@ -24,12 +24,11 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -73,15 +72,13 @@ class ObjectQuotaListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param ObjectQuotaServiceInterface $quotas  Reads the cap and counts.
-	 * @param SchemaMapperInterface       $schemas Resolves the object's schema.
-	 * @param LoggerInterface    $logger  Logger.
+	 * @param EventSchemaLookup $lookup Resolves the object's schema and logs a failure.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function __construct(
 		private readonly ObjectQuotaServiceInterface $quotas,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly LoggerInterface $logger,
+		private readonly EventSchemaLookup $lookup,
 	) {
 	}//end __construct()
 
@@ -141,7 +138,7 @@ class ObjectQuotaListener implements IEventListener {
 	 */
 	private function schemaOf(string $reference): ?Schema {
 		try {
-			return $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+			return $this->lookup->catalog->schemas()->find(id: $reference, _rbac: false, _multitenancy: false);
 		} catch (Throwable $failure) {
 			// No schema, no quota to read: the save path refuses an unknown schema itself.
 			return null;
@@ -203,7 +200,7 @@ class ObjectQuotaListener implements IEventListener {
 	 * @return array<string, string> The refusal.
 	 */
 	private function uncheckedRefusal(array $scope, Throwable $failure): array {
-		$this->logger->error(
+		$this->lookup->logger->error(
 			message: '[ObjectQuotaListener] The quota count failed, refusing the create: ' . $failure->getMessage(),
 			context: ['app' => 'openregister', 'schema' => $scope['schema'], 'organisation' => $scope['organisation']]
 		);

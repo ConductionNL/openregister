@@ -112,11 +112,8 @@ class ConceptLifecycle {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isOfferable(array $concept, DateTimeInterface $at, bool $allowDeprecated = false): bool {
-		if ($allowDeprecated === false && ($concept['deprecated'] ?? false) === true) {
-			return false;
-		}
-
-		return $this->isWithinWindow(concept: $concept, at: $at);
+		$blocked = ($allowDeprecated === false && ($concept['deprecated'] ?? false) === true);
+		return $blocked === false && $this->isWithinWindow(concept: $concept, at: $at);
 	}//end isOfferable()
 
 	/**

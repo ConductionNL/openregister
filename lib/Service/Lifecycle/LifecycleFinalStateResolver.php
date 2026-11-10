@@ -63,21 +63,26 @@ class LifecycleFinalStateResolver {
 	private array $memo = [];
 
 	/**
+	 * Tells the two forms of `final` apart.
+	 *
+	 * @var LifecycleDeclarationForms
+	 */
+	private readonly LifecycleDeclarationForms $declaration;
+
+	/**
 	 * Constructor.
 	 *
-	 * The declaration reader is defaulted rather than required because it is a
-	 * pure shape check with no collaborators; the parameter exists so a test
-	 * can substitute one.
+	 * The declaration reader is a pure shape check with no collaborators, so
+	 * the resolver builds it itself.
 	 *
-	 * @param MagicObjectFinderInterface                $objects     Loads the referenced row.
-	 * @param LoggerInterface            $logger      Where an unresolvable reference is reported.
-	 * @param LifecycleDeclarationForms  $declaration Tells the two forms of `final` apart.
+	 * @param MagicObjectFinderInterface $objects Loads the referenced row.
+	 * @param LoggerInterface            $logger  Where an unresolvable reference is reported.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objects,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleDeclarationForms $declaration = new LifecycleDeclarationForms(),
 	) {
+		$this->declaration = new LifecycleDeclarationForms();
 	}//end __construct()
 
 	/**

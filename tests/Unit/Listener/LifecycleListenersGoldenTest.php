@@ -70,6 +70,7 @@ use RuntimeException;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
+use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
@@ -147,7 +148,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function actionListener(): LifecycleActionListener {
 		return new LifecycleActionListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()),
 			$this->executor,
 			$this->logger
 		);
@@ -155,7 +156,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function gateListener(): ApprovalChainGateListener {
 		return new ApprovalChainGateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()),
 			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $this->logger)),
 			$this->userSession,
 			$this->logger
@@ -164,7 +165,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function initialListener(): LifecycleInitialStateListener {
 		return new LifecycleInitialStateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
 			$this->references,
 			$this->logger
 		);
@@ -183,7 +184,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 
 		return new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger), $this->userSession, $this->permission),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()), $this->userSession, $this->permission),
 			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->ruleRuns
 		);
@@ -449,7 +450,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			]
 		);
 		$this->executor->expects($this->once())->method('run')
-			->with($actions, ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft'], 'submit')
+			->with($actions, new TransitionPayload('submit', ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft']))
 			->willReturn(['id' => 'obj-1', 'status' => 'sent', 'stamped' => true]);
 
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
@@ -520,7 +521,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			)
 		);
 		$this->actions->declare(uuid: 'obj-1', action: 'named');
-		$this->executor->method('run')->willReturnArgument(1);
+		$this->executor->method('run')->willReturnCallback(static fn (array $actions, TransitionPayload $payload): array => $payload->objectData);
 		$this->logger->expects($this->once())->method('debug')
 			->with('[LifecycleActionListener] executed 2 action(s) for transition "named".');
 

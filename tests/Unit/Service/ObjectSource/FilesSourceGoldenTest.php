@@ -166,7 +166,7 @@ class FilesSourceGoldenTest extends TestCase {
 				$this->log[] = ['log', $level, (string)$message];
 			}
 		};
-		return new FilesObjectSourceProvider($root, $session, $logger);
+		return new FilesObjectSourceProvider(rootFolder: $root, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: $logger));
 	}//end provider()
 
 	/**

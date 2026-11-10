@@ -166,7 +166,7 @@ class ReportRenderJobTest extends TestCase {
 
 		$job = new ReportRenderJob(
 			$this->createMock(ITimeFactory::class),
-			new ReportRenderSources($registerMapper, $schemaMapper, $objectMapper),
+			new ReportRenderSources(new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $objectMapper)),
 			new ReportRenderDelivery($renderService, $this->createMock(IRootFolder::class)),
 			new ReportRenderPlatform($appConfig, $this->createMock(LoggerInterface::class))
 		);

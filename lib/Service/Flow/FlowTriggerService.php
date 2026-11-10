@@ -53,18 +53,35 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 	private const MODE_SYNC = 'sync';
 
 	/**
+	 * Finds flows wired to an event.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Queues the runs.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowLocator $resolvers Finds flows wired to an event.
-	 * @param FlowRunServiceInterface $runner Queues the runs.
-	 * @param LoggerInterface $logger The logger.
+	 * @param FlowExecution $execution Finds flows wired to an event, queues the runs and logs.
 	 */
-	public function __construct(
-		private readonly FlowLocator $resolvers,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly LoggerInterface $logger,
-	) {
-
+	public function __construct(FlowExecution $execution) {
+		$this->resolvers = $execution->resolvers;
+		$this->runner    = $execution->runner;
+		$this->logger    = $execution->logger;
 	}//end __construct()
 
 	/**
@@ -84,6 +101,21 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
 	 */
 	public function fire(string $event, array $subject = [], ?string $user = null, array $context = []): int {
+		return $this->trigger(trigger: new FlowTrigger(event: $event, subject: $subject, user: $user, context: $context));
+	}//end fire()
+
+	/**
+	 * Fire an event: queue a run for every flow wired to it, as {@see fire()} documents.
+	 *
+	 * @param FlowTrigger $trigger The event id, its subject, the acting user and extra run context.
+	 *
+	 * @return int The number of runs queued.
+	 *
+	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	public function trigger(FlowTrigger $trigger): int {
+		$event   = $trigger->event;
+		$subject = $trigger->subject;
 		try {
 			$register = (string)($subject['register'] ?? '');
 			$schema = (string)($subject['schema'] ?? '');
@@ -106,8 +138,8 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 						flowId: $flowId,
 						subject: $subject,
 						trigger: $event,
-						context: $context,
-						user: $user
+						context: $trigger->context,
+						user: $trigger->user
 					);
 				} catch (Throwable $one) {
 					$this->logger->error(
@@ -156,7 +188,7 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 			return 0;
 		}//end try
 
-	}//end fire()
+	}//end trigger()
 
 	/**
 	 * Execute a just-queued run inline when its flow asked to be synchronous.

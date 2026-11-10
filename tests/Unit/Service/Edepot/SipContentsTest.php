@@ -31,7 +31,7 @@ class SipContentsTest extends TestCase {
 
 	public function testEveryEntryIsListedAndTheManifestComesLast(): void {
 		$contents = new SipContents();
-		$contents->addMetadataDocument(uuid: 'u', path: 'objects/u/mdto.xml', content: '<m/>');
+		$contents->listAsMetadata(uuid: 'u', row: $contents->addDocument(path: 'objects/u/mdto.xml', content: '<m/>'));
 		$contents->addFile(path: 'objects/u/content/original/a', file: ['path' => '/tmp/a', 'size' => 3, 'checksum' => 'c']);
 		$row = $contents->addDocument(path: 'mets.xml', content: 'mets');
 

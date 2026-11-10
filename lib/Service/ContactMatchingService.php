@@ -165,17 +165,27 @@ class ContactMatchingService implements ContactMatcherInterface {
 		$this->schemaMapper = $mappers->schemaMapper;
 		$this->registerMapper = $mappers->registerMapper;
 		$this->logger = $logger;
+		$this->cache = $this->distributedCache(cacheFactory: $cacheFactory);
+	}//end __construct()
 
+	/**
+	 * The distributed cache for match results, or null when it cannot be created.
+	 *
+	 * @param ICacheFactory $cacheFactory The cache factory
+	 *
+	 * @return ICache|null The cache, or null (matching then runs uncached).
+	 */
+	private function distributedCache(ICacheFactory $cacheFactory): ?ICache {
 		try {
-			$this->cache = $cacheFactory->createDistributed('openregister_contacts');
+			return $cacheFactory->createDistributed('openregister_contacts');
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				'[ContactMatching] Failed to create cache: {error}',
 				['error' => $e->getMessage()]
 			);
-			$this->cache = null;
+			return null;
 		}
-	}//end __construct()
+	}//end distributedCache()
 
 	/**
 	 * Match a contact by email address (highest confidence).

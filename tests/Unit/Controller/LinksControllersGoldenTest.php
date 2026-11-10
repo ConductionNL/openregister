@@ -230,7 +230,7 @@ class LinksControllersGoldenTest extends TestCase {
 		$objectService->method('getObject')->willReturn(null);
 		$talk = $this->createMock(\OCA\OpenRegister\Service\TalkLinkService::class);
 		$talk->method('isTalkAvailable')->willReturn(true);
-		$controller = new \OCA\OpenRegister\Controller\TalkLinksController('openregister', $this->createMock(IRequest::class), $talk, $objectService);
+		$controller = new \OCA\OpenRegister\Controller\TalkLinksController($this->createMock(IRequest::class), new \OCA\OpenRegister\Controller\Support\TalkLinksControllerServices($talk, $objectService));
 
 		$this->assertSame(404, $controller->index('reg', 'sch', 'obj')->getStatus());
 		$this->assertSame(['setRegister reg', 'setSchema sch', 'setObject obj'], $calls);
