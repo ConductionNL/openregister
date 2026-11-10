@@ -42,6 +42,7 @@ use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInter
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -804,10 +805,12 @@ class WebhookService {
 			);
 
 			return $this->dispatch->cloudEventFormatter->formatAsCloudEvent(
-				eventType: $eventName,
-				payload: $enrichedPayload,
-				source: $config['cloudEventSource'] ?? null,
-				subject: $config['cloudEventSubject'] ?? null
+				attributes: new CloudEventAttributes(
+					type: $eventName,
+					source: $config['cloudEventSource'] ?? null,
+					subject: $config['cloudEventSubject'] ?? null
+				),
+				payload: $enrichedPayload
 			);
 		}
 
