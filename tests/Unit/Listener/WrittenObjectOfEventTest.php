@@ -29,12 +29,15 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
@@ -155,7 +158,7 @@ class WrittenObjectOfEventTest extends TestCase {
 			'created' => [new ObjectCreatedEvent($object), $object],
 			'updated' => [new ObjectUpdatedEvent($object, $old), $object],
 			'deleted' => [new ObjectDeletedEvent($object), $object],
-			'transitioned' => [new ObjectTransitionedEvent($object, 'close', 'open', 'closed', 'u', 'r', 's'), $object],
+			'transitioned' => [new ObjectTransitionedEvent(object: $object, move: new TransitionMove(action: 'close', from: 'open', to: 'closed'), scope: new RegisterSchemaRef(register: 'r', schema: 's'), actor: new TransitionActor(userId: 'u')), $object],
 			'plain' => [new Event(), null],
 			'not an object' => [$odd, null],
 		];
