@@ -2858,3 +2858,4 @@
 2026-11-10T21:55:33Z coordinator RELEASED 33 leases: cloud account stopped ~20:18Z; resuming on a new account
 2026-11-10T22:14:07Z precheck-20261110T220850-bee04e78 NORESULT tree e8e7136b06 prs 1: php-4.log: no Tests line
 2026-11-10T22:14:08Z precheck-20261110T221103-c3536041 CONFLICT-DEV #8900 25e7172d
+2026-11-10T22:15:50Z precheck-20261110T220946-81199553 GREEN tree 2f74d0a3ae on dev 23f27754ab prs 1 front=skip: Tests: 54884, Assertions: 181914, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
