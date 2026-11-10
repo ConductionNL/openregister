@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\LeafAdoption;
 use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
 use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
 use OCP\App\IAppManager;
@@ -98,7 +99,7 @@ class BootstrapAdminSettingsCharacterisationTest extends TestCase
         array $expected
     ): void {
         $context = new RecordingRegistrationContext();
-        Bootstrap::register($context, $appId, $options);
+        Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: $appId, options: $options));
         [$sectionId, $name, $icon, $sectionPriority, $adminPriority] = $expected;
 
         $admin = $context->factories[$adminAlias]($this->container());

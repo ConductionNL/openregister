@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -239,7 +240,7 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
             ['saveHandler' => $save, 'currentRegister' => null, 'currentSchema' => null, 'currentSchemaRef' => null]
         );
 
-        $service->saveObjectsStreaming([['title' => 'row']]);
+        $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']]));
 
         $this->assertSame(['clear', 'stream'], $calls);
     }

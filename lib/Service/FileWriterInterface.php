@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\FileOverwrite;
@@ -37,37 +39,17 @@ interface FileWriterInterface {
 	/**
 	 * Adds a new file to an object's folder.
 	 *
-	 * Delegates to CreateFileHandler for single-responsibility file creation operations.
-	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to add the file to.
-	 * @param string $fileName The name of the file to create.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file.
-	 * @param array $tags Optional array of tags to attach to the file.
-	 * @param int|string|Schema|null $_schema The register of the object to add the file to.
-	 * @param int|string|Register|null $_register The register of the object to add the file to.
-	 * @param int|string|null $registerId The registerId of the object to add the file to.
+	 * @param FileTarget $target The object (or its id) and, when the object does not name it, its register.
+	 * @param FileUpload $upload The file name, content, share toggle and tags.
 	 *
 	 * @return File The created file.
 	 *
 	 * @throws \OCP\Files\NotPermittedException If file creation fails due to permissions.
 	 * @throws \Exception If file creation fails for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
-	public function addFile(
-		ObjectEntity|string $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-		int|string|Schema|null $_schema = null,
-		int|string|Register|null $_register = null,
-		int|string|null $registerId = null,
-	): File;
+	public function addFile(FileTarget $target, FileUpload $upload): File;
 
 	/**
 	 * Delete a file by node, path, or ID.

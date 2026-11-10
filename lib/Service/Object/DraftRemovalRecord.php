@@ -35,6 +35,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
@@ -133,12 +136,13 @@ class DraftRemovalRecord {
 		}
 
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $draft,
-				action: self::ACTION,
-				context: $facts,
-				actorId: $actorId,
-				actorName: $actorName
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $draft,
+					action: self::ACTION,
+					context: $facts,
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actorId, name: $actorName))
+				)
 			);
 
 			return true;

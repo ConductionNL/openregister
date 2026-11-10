@@ -332,24 +332,6 @@ class FormUploadStore implements FormUploadStoreInterface {
 	}//end claim()
 
 	/**
-	 * A token as the upload for the property a payload put it on, or null when the draft already holds that file.
-	 *
-	 * @param string      $formId   The form submitting it.
-	 * @param string      $property The destination property the payload put the token on.
-	 * @param string      $token    The token.
-	 * @param string|null $draftId  The draft being saved or left; a token it already claimed is satisfied.
-	 *
-	 * @return array{name: string, type: string, tmp_name: string, error: int, size: int}|null The upload, null when satisfied.
-	 *
-	 * @throws FormSubmitRefusedException 422 when the token is unknown, expired, another form's or issued for another property.
-	 *
-	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
-	 */
-	public function redeem(string $formId, string $property, string $token, ?string $draftId = null): ?array {
-		return $this->redeemClaim(claim: new FormUploadClaim(formId: $formId, property: $property, draftId: $draftId), token: $token);
-	}//end redeem()
-
-	/**
 	 * A token as the upload for the claim's property, or null when the claim's draft already holds that file.
 	 *
 	 * @param FormUploadClaim $claim The form, destination property and draft redeeming it.
@@ -361,14 +343,14 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
-	public function redeemClaim(FormUploadClaim $claim, string $token): ?array {
+	public function redeem(FormUploadClaim $claim, string $token): ?array {
 		$claims = new FormUploadClaims(time: $this->time, folder: $this->folder(create: false));
 		if ($claims->isClaimedBy(token: $token, claim: $claim) === true) {
 			return null;
 		}
 
 		return $this->forProperty(file: $this->materialise(formId: $claim->formId, token: $token), property: $claim->property);
-	}//end redeemClaim()
+	}//end redeem()
 
 	/**
 	 * A materialised upload for the property it was issued for, without that property.

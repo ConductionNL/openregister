@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -136,12 +139,13 @@ final class SchemaTeardownGuard {
 			return;
 		}
 
-		$this->audit->createAuditTrailEntry(
-			object: self::auditSubject(schema: $schema),
-			action: SchemaDeletionService::ACTION_FORCED_TEARDOWN,
-			context: ['schemaSlug' => $schema->getSlug(), 'keptRows' => $keptRows, 'archivalSchema' => $archival],
-			actorId: self::ACTOR,
-			actorName: self::ACTOR
+		$this->audit->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: self::auditSubject(schema: $schema),
+				action: SchemaDeletionService::ACTION_FORCED_TEARDOWN,
+				context: ['schemaSlug' => $schema->getSlug(), 'keptRows' => $keptRows, 'archivalSchema' => $archival],
+				options: new ObjectAuditEventOptions(actor: new NamedActor(id: self::ACTOR, name: self::ACTOR))
+			)
 		);
 	}//end recordForced()
 

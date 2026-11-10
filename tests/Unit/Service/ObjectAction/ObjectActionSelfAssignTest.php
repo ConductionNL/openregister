@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
@@ -319,8 +320,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	private function take(Schema $schema, ObjectEntity $object, array $given = []): array {
 		return $this->runner(schema: $schema)->run(
 			target: new ObjectActionTarget(object: $object, schema: $schema, register: '3', schemaRef: '7'),
-			key: self::ACTION,
-			given: $given
+			request: new ObjectActionRequest(key: self::ACTION, given: $given)
 		);
 	}//end take()
 

@@ -31,6 +31,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\DeletedController;
@@ -222,14 +223,14 @@ final class DeletedControllerWindowTest extends TestCase {
 
 		$recorded = [];
 		$this->auditTrails->expects(self::once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $entity, string $action, array $context, ?string $actorId) use (&$recorded): AuditTrail {
 					$recorded = ['action' => $action, 'context' => $context, 'actor' => $actorId];
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$response = $this->controller->restore('zaak-100');
 
@@ -260,7 +261,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		$this->scopes->method('destroy')->willReturn(
 			['scope' => [], 'destroyed' => [], 'total' => 0, 'failed' => []]
 		);
-		$this->recorder->method('record')->willReturn([]);
+		$this->recorder->method('recordDestruction')->willReturn([]);
 
 		$response = $this->controller->destroy('zaak-100');
 		$body = $response->getData();
@@ -289,7 +290,7 @@ final class DeletedControllerWindowTest extends TestCase {
 
 		$order = [];
 		$this->recorder->expects(self::once())
-			->method('record')
+			->method('recordDestruction')
 			->willReturnCallback(
 				static function () use (&$order): array {
 					$order[] = 'record';
