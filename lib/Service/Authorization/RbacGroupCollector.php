@@ -159,25 +159,10 @@ class RbacGroupCollector {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function fromSchemaDefinition(array $schemaDefinition): array {
-		$groups = $this->fromAuthorizationBlock(authorization: ($schemaDefinition['authorization'] ?? null));
-
-		$properties = ($schemaDefinition['properties'] ?? null);
-		if (is_array($properties) === false) {
-			return $groups;
-		}
-
-		foreach ($properties as $propertyDefinition) {
-			if (is_array($propertyDefinition) === false) {
-				continue;
-			}
-
-			$groups = array_merge(
-				$groups,
-				$this->fromAuthorizationBlock(authorization: ($propertyDefinition['authorization'] ?? null))
-			);
-		}
-
-		return $groups;
+		return array_merge(
+			$this->fromAuthorizationBlock(authorization: ($schemaDefinition['authorization'] ?? null)),
+			$this->fromAuthorizationOwners(owners: ($schemaDefinition['properties'] ?? null))
+		);
 	}//end fromSchemaDefinition()
 
 	/**
@@ -196,18 +181,26 @@ class RbacGroupCollector {
 
 		$groups = [];
 		foreach ($owners as $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			$groups = array_merge(
-				$groups,
-				$this->fromAuthorizationBlock(authorization: ($definition['authorization'] ?? null))
-			);
+			$groups = array_merge($groups, $this->ownerGroups(definition: $definition));
 		}
 
 		return $groups;
 	}//end fromAuthorizationOwners()
+
+	/**
+	 * The groups one owner's own authorization block names; none for an owner that is not an object.
+	 *
+	 * @param mixed $definition The owner's definition (a property, a register).
+	 *
+	 * @return string[] The group ids.
+	 */
+	private function ownerGroups(mixed $definition): array {
+		if (is_array($definition) === false) {
+			return [];
+		}
+
+		return $this->fromAuthorizationBlock(authorization: ($definition['authorization'] ?? null));
+	}//end ownerGroups()
 
 	/**
 	 * Collect every group id named in a single `authorization` block.
@@ -342,20 +335,32 @@ class RbacGroupCollector {
 	public function provisionable(array $groups): array {
 		$provisionable = [];
 		foreach ($groups as $group) {
-			if (is_string($group) === false) {
-				continue;
-			}
-
-			$group = trim($group);
-			if ($group === '' || in_array($group, self::RESERVED_PRINCIPALS, true) === true) {
-				continue;
-			}
-
-			if (in_array($group, $provisionable, true) === false) {
-				$provisionable[] = $group;
+			$name = $this->provisionableName(group: $group);
+			if ($name !== null && in_array($name, $provisionable, true) === false) {
+				$provisionable[] = $name;
 			}
 		}
 
 		return $provisionable;
 	}//end provisionable()
+
+	/**
+	 * A collected group as a name that can be created: trimmed, non-empty, not a reserved principal.
+	 *
+	 * @param mixed $group The collected group.
+	 *
+	 * @return string|null The name, or null when it cannot be created.
+	 */
+	private function provisionableName(mixed $group): ?string {
+		if (is_string($group) === false) {
+			return null;
+		}
+
+		$group = trim($group);
+		if ($group === '' || in_array($group, self::RESERVED_PRINCIPALS, true) === true) {
+			return null;
+		}
+
+		return $group;
+	}//end provisionableName()
 }//end class
