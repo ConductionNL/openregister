@@ -206,14 +206,7 @@ class UniqueHintChecker {
 	private function holdersOf(UniqueHintLookup $lookup, bool $scoped = true): array {
 		try {
 			$objects = $this->objectService->findAll(
-				[
-					'filters' => [
-						'register' => $lookup->register,
-						'schema' => $lookup->schema,
-						$lookup->property => $lookup->value,
-					],
-					'limit' => self::MAX_CANDIDATES,
-				],
+				self::holdersQuery(lookup: $lookup),
 				_rbac: $scoped,
 				_multitenancy: $scoped
 			);
@@ -222,13 +215,24 @@ class UniqueHintChecker {
 			return [];
 		}
 
-		$entities = [];
-		foreach ($objects as $object) {
-			if ($object instanceof ObjectEntity) {
-				$entities[] = $object;
-			}
-		}
-
-		return $entities;
+		return ObjectEntities::in(objects: $objects);
 	}//end holdersOf()
+
+	/**
+	 * The object-service query for the objects holding the looked-up value.
+	 *
+	 * @param UniqueHintLookup $lookup The register, schema, property and value.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function holdersQuery(UniqueHintLookup $lookup): array {
+		return [
+			'filters' => [
+				'register' => $lookup->register,
+				'schema' => $lookup->schema,
+				$lookup->property => $lookup->value,
+			],
+			'limit' => self::MAX_CANDIDATES,
+		];
+	}//end holdersQuery()
 }//end class
