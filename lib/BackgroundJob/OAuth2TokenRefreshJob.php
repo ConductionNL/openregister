@@ -39,7 +39,6 @@ use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\OAuth2CredentialSweepInterface;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -90,23 +89,29 @@ class OAuth2TokenRefreshJob extends TimedJob {
 	private readonly OAuth2CredentialSweepInterface $refresh;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for TimedJob.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param OAuth2TokenRefreshServices $services Token-set objects, provider catalogue and refresh sweep.
-	 * @param LoggerInterface $logger Reports what was swept and what failed.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		OAuth2TokenRefreshServices $services,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->logger = $runtime->logger;
 		$this->objectService = $services->objectService;
 		$this->catalogue = $services->catalogue;
 		$this->refresh = $services->refresh;
-		parent::__construct(time: $time);
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
 	}//end __construct()

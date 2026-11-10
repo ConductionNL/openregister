@@ -103,27 +103,36 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
-	public function translateObject(
-		ObjectEntity $object,
-		string $fromLong,
-		string $toLong,
-		?array $properties = null,
-	): array {
-		if ($fromLong === $toLong) {
+	public function translateObject(ObjectEntity $object, string $fromLong, string $toLong, ?array $properties = null): array {
+		$request = new ObjectTranslationRequest(object: $object, fromLong: $fromLong, toLong: $toLong);
+		return $this->translate(request: $request, properties: $properties);
+	}//end translateObject()
+
+	/**
+	 * Translate one object's translatable properties from one language to another.
+	 *
+	 * @param ObjectTranslationRequest $request    The object and the source and target language.
+	 * @param array|null               $properties Optional whitelist of property names; null means all translatable ones.
+	 *
+	 * @return array{translated: array, skipped: array} What was translated and what was skipped, with why.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	public function translate(ObjectTranslationRequest $request, ?array $properties = null): array {
+		if ($request->fromLong === $request->toLong) {
 			return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
 		}
 
-		$translatableProps = $this->translatablePropertiesOf(object: $object);
+		$translatableProps = $this->translatablePropertiesOf(object: $request->object);
 		if (is_string($translatableProps) === true) {
 			return ['translated' => [], 'skipped' => ['_global' => $translatableProps]];
 		}
 
-		$request = new ObjectTranslationRequest(object: $object, fromLong: $fromLong, toLong: $toLong);
 		return $this->translateProperties(
 			request: $request,
 			properties: $this->selectedProperties(translatable: $translatableProps, whitelist: $properties)
 		);
-	}//end translateObject()
+	}//end translate()
 
 	/**
 	 * The translatable properties of the object's schema, or why there are none.

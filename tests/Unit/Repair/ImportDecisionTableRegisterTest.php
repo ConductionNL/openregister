@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Repair\ImportDecisionTableRegister;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\App\IAppManager;
@@ -77,9 +78,11 @@ class ImportDecisionTableRegisterTest extends TestCase {
 		$this->appManager->method('getAppPath')->with('openregister')->willReturn($appPath);
 
 		return new ImportDecisionTableRegister(
-			configurationService: $this->configurationService,
-			appManager: $this->appManager,
-			logger: $this->createMock(LoggerInterface::class)
+			import: new RegisterDescriptorImport(
+				configurationService: $this->configurationService,
+				appManager: $this->appManager,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 	}//end step()

@@ -48,7 +48,7 @@ final class PersonLookupControllerA24GoldenTest extends TestCase {
 			$provider->expects($this->once())->method('lookupByBsn')->with('999993653')->willReturn($result);
 		}
 
-		$response = (new PersonLookupController('openregister', $request, $provider))->brpPerson();
+		$response = (new PersonLookupController($request, $provider))->brpPerson();
 
 		return [$response->getStatus(), $response->getData()];
 	}//end outcome()

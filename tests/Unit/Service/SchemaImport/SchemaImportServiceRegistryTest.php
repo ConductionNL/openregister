@@ -28,11 +28,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\SchemaImport;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\SchemaImport\BundledImporters;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaDefinition;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaHeading;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
+use OCA\OpenRegister\Service\SchemaImport\MergeInstruction;
 use OCA\OpenRegister\Service\SchemaImport\SchemaDialectImporter;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
@@ -66,7 +68,12 @@ class SchemaImportServiceRegistryTest extends TestCase {
 	}
 
 	private function service(): SchemaImportService {
-		return new SchemaImportService(new DialectDetector(), new ThreeWayMerge(), $this->root);
+		$service = new SchemaImportService(new DialectDetector(), new ThreeWayMerge());
+		foreach (BundledImporters::at($this->root) as $importer) {
+			$service->register($importer);
+		}
+
+		return $service;
 	}
 
 	public function testAMissingVersionFileFallsBackToUnknown(): void {
@@ -106,7 +113,7 @@ class SchemaImportServiceRegistryTest extends TestCase {
 
 		$this->assertSame(['dialect' => 'fake', 'reference' => 'Thing'], $preview['incomingSource']);
 		$this->assertSame(['@type' => 'Thing'], $preview['jsonld']);
-		$this->assertSame($preview, $preview + (new ThreeWayMerge())->compute([], ['name' => ['type' => 'string']], ['name' => ['type' => 'string'], 'url' => ['type' => 'string']]));
+		$this->assertSame($preview, $preview + (new ThreeWayMerge())->compute(new MergeInstruction([], ['name' => ['type' => 'string']], ['name' => ['type' => 'string'], 'url' => ['type' => 'string']])));
 	}
 
 	private function importer(string $dialect, string $version): SchemaDialectImporter {

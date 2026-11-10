@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
@@ -83,16 +84,14 @@ class FlowRunMigrationController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                       $appName     The app id.
 	 * @param IRequest                     $request     The request.
 	 * @param FlowRunMigrationControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowRunMigrationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->mapper = $services->mapper;
 		$this->userSession = $services->userSession;
 		$this->guard = $services->guard;
@@ -145,7 +144,7 @@ class FlowRunMigrationController extends Controller {
 			return $actor;
 		}
 
-		$outcome = $this->outcomeFor(uuid: $uuid, actorUid: $actor->getUID(), mapping: $this->nodeMappingParam());
+		$outcome = $this->outcomeFor(uuid: $uuid, actorUid: $actor->getUID());
 
 		return $this->outcomeResponse(outcome: $outcome);
 	}//end migrate()
@@ -288,20 +287,21 @@ class FlowRunMigrationController extends Controller {
 	 * the answer still carries the caller's own `dryRun` back, so it reads
 	 * like the preview they wanted.
 	 *
-	 * @param string                $uuid     The run.
-	 * @param string                $actorUid Who asked.
-	 * @param array<string, string> $mapping  Old node id to new node id.
+	 * The node mapping (old node id to new node id) is the request's `mapping`.
+	 *
+	 * @param string $uuid     The run.
+	 * @param string $actorUid Who asked.
 	 *
 	 * @return array<string, mixed> What the service answered.
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	private function outcomeFor(string $uuid, string $actorUid, array $mapping): array {
+	private function outcomeFor(string $uuid, string $actorUid): array {
 		$target = new FlowRunMigrationTarget(
 			targetVersion: (int)$this->request->getParam('targetVersion', 0),
 			reason: (string)$this->request->getParam('reason', ''),
 			actor: $actorUid,
-			mapping: $mapping
+			mapping: $this->nodeMappingParam()
 		);
 
 		if ($this->request->getParam('dryRun', false) === true) {

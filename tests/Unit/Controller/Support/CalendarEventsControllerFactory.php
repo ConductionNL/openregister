@@ -18,7 +18,7 @@ final class CalendarEventsControllerFactory {
 	/**
 	 * The constructor arguments of CalendarEventsController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectCalendarEventsInterface $calendarEventService Constructor argument.
 	 * @param CalendarLinkServiceInterface $calendarLinkService Constructor argument.
@@ -36,7 +36,6 @@ final class CalendarEventsControllerFactory {
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface $permissions,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CalendarEventsControllerServices(
 				calendarEventService: $calendarEventService,

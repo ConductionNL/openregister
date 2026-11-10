@@ -34,7 +34,6 @@ final class EmailLinksControllerFactory {
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface $permissions,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\EmailLinksControllerServices(
 				emailLinkService: $emailLinkService,

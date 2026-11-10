@@ -18,7 +18,7 @@ final class ArchivalControllerFactory {
 	/**
 	 * The constructor arguments of ArchivalController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param DestructionService $destructionService Constructor argument.
 	 * @param LegalHoldService $legalHoldService Constructor argument.
@@ -54,7 +54,6 @@ final class ArchivalControllerFactory {
 		\OCA\OpenRegister\Service\Archival\DestructionListCreator $creator,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ArchivalControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

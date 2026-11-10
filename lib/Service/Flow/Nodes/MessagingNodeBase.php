@@ -111,13 +111,24 @@ abstract class MessagingNodeBase {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
 	public function preview(array $items, array $config, array $context): array {
-		$messages = $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context);
+		return $this->previewOf(
+			messages: $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context)
+		);
+	}//end preview()
 
+	/**
+	 * The dry-run summary of the messages a run would send.
+	 *
+	 * @param array $messages The messages a real run would send.
+	 *
+	 * @return array{summary: string, messages: array} The preview.
+	 */
+	private function previewOf(array $messages): array {
 		return [
 			'summary' => sprintf('%s would send %d message(s)', $this->getDisplayName(), count($messages)),
 			'messages' => $messages,
 		];
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * Send, then pass the items through unchanged.

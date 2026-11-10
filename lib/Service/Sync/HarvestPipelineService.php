@@ -360,7 +360,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		// Conflict resolution when an existing local object changed too.
 		$decision = $this->conflictResolver->resolve(
 			strategy: (string)($source->getConflictStrategy() ?? SyncConflictResolver::SOURCE_WINS),
-			localChanged: $this->localChangedSinceSync(source: $source, previous: $previous)
+			conflict: new SyncConflict(localChanged: $this->localChangedSinceSync(source: $source, previous: $previous))
 		);
 
 		return (self::STATUS_BY_DECISION[$decision] ?? null);

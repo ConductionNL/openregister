@@ -206,7 +206,6 @@ class McpAgentLimitsTest extends TestCase {
 		$logger = new NullLogger();
 		$tools = new McpToolsService([$provider], $logger);
 		$this->controller = McpServerControllerFactory::create(
-			'openregister',
 			$request,
 			new McpProtocolService($cacheFactory, $random, $logger),
 			$tools,

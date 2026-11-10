@@ -18,7 +18,6 @@ final class TaskNotesControllerFactory {
 	/**
 	 * The constructor arguments of TaskNotesController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param TaskManagerInterface $tasks Constructor argument.
 	 * @param TaskAuthorizationService $authorization Constructor argument.
@@ -28,7 +27,6 @@ final class TaskNotesControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface $tasks,
 		\OCA\OpenRegister\Service\Task\TaskAuthorizationService $authorization,
@@ -36,14 +34,13 @@ final class TaskNotesControllerFactory {
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\TaskNotesControllerServices(
 				tasks: $tasks,
 				authorization: $authorization,
 				notes: $notes,
+				userSession: $userSession,
 			),
-			$userSession,
 		];
 	}
 
