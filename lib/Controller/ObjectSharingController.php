@@ -49,6 +49,12 @@ use OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\LinkInvitation;
+use OCA\OpenRegister\Service\Rbac\LinkProtection;
+use OCA\OpenRegister\Service\Rbac\ScopeChange;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -264,7 +270,8 @@ class ObjectSharingController extends Controller {
 		$shareWith = (string)($this->request->getParam('shareWith') ?? '');
 		$permissions = $this->requestedPermissions();
 
-		$grant = fn (): array => $this->services->sharing->grant(object: $object, type: $type, shareWith: $shareWith, permissions: $permissions);
+		$grantRequest = new GrantRequest(type: $type, shareWith: $shareWith, terms: new GrantTerms(permissions: $permissions));
+		$grant        = fn (): array => $this->services->sharing->grantWithTerms(object: $object, request: $grantRequest);
 		return $this->endpoint->answerCreated(operation: $grant, context: 'createShare');
 	}//end createShareOn()
 
@@ -395,12 +402,12 @@ class ObjectSharingController extends Controller {
 	 * @return array The stored authorization block.
 	 */
 	private function storeScope(ObjectEntity $object, string $scope): array {
-		return $this->services->sharing->setScope(
+		$table = new RegisterSchema(
 			register: $this->services->catalog->registers()->find($this->services->objectService->getRegister()),
-			schema: $this->services->catalog->schemas()->find($this->services->objectService->getSchema()),
-			object: $object,
-			scope: $scope
+			schema: $this->services->catalog->schemas()->find($this->services->objectService->getSchema())
 		);
+
+		return $this->services->sharing->setScope(table: $table, change: new ScopeChange(object: $object, scope: $scope));
 	}//end storeScope()
 
 	/**
@@ -411,12 +418,7 @@ class ObjectSharingController extends Controller {
 	 * @return array The created link.
 	 */
 	private function linkTo(ObjectEntity $object): array {
-		return $this->services->sharing->createLink(
-			object: $object,
-			permissions: $this->requestedPermissions(),
-			password: $this->optionalParam(name: 'password'),
-			expiration: $this->optionalParam(name: 'expiration')
-		);
+		return $this->services->sharing->createLink(object: $object, invitation: $this->invitation(recipient: null));
 	}//end linkTo()
 
 	/**
@@ -427,12 +429,21 @@ class ObjectSharingController extends Controller {
 	 * @return array The created invitation.
 	 */
 	private function invitationTo(ObjectEntity $object): array {
-		return $this->services->sharing->inviteByEmail(
-			object: $object,
-			email: (string)($this->request->getParam('email') ?? ''),
-			permissions: $this->requestedPermissions(),
-			password: $this->optionalParam(name: 'password'),
-			expiration: $this->optionalParam(name: 'expiration')
-		);
+		$email = (string)($this->request->getParam('email') ?? '');
+
+		return $this->services->sharing->inviteByEmail(object: $object, invitation: $this->invitation(recipient: $email));
 	}//end invitationTo()
+
+	/**
+	 * The link or invitation the request describes: its permissions (READ unless asked otherwise), password and expiry.
+	 *
+	 * @param string|null $recipient The address to invite, or null for a link.
+	 *
+	 * @return LinkInvitation The invitation.
+	 */
+	private function invitation(?string $recipient): LinkInvitation {
+		$protection = new LinkProtection(password: $this->optionalParam(name: 'password'), expiration: $this->optionalParam(name: 'expiration'));
+
+		return new LinkInvitation(recipient: $recipient, permissions: $this->requestedPermissions(), protection: $protection);
+	}//end invitation()
 }//end class

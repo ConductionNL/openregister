@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -125,7 +127,7 @@ class ObjectSharingServiceGrantDatesTest extends TestCase {
 		$this->share->expects($this->never())->method('setShareTime');
 		$this->times->expects($this->never())->method('stamp');
 
-		$this->sharing->grant(object: $this->record, type: 'user', shareWith: 'tvisser');
+		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'tvisser', terms: new GrantTerms(permissions: 1)));
 	}//end testALiveGrantSetsNoDates()
 
 	/**

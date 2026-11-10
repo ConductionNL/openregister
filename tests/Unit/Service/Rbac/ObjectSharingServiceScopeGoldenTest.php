@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\ScopeChange;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -114,7 +116,7 @@ final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 		$object->setAuthorization(['read' => ['group' => 'x']]);
 
 		try {
-			$result = ['returned' => $this->service(caller: $caller, writer: $writer)->setScope($register, $schema, $object, $scope)];
+			$result = ['returned' => $this->service(caller: $caller, writer: $writer)->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $object, scope: $scope))];
 		} catch (\Throwable $e) {
 			$result = ['refused' => [get_class($e), $e->getMessage()]];
 		}
