@@ -2663,12 +2663,8 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$updatedObject = $this->updateObject(
-			register: $call->register,
-			schema: $call->schema,
-			data: $call->data,
-			existingObject: $preparedObject,
-			silent: $call->flags->silent,
-			oldObject: $oldObject
+			update: new StoredObjectUpdate(register: $call->register, schema: $call->schema, data: $call->data, existingObject: $preparedObject),
+			options: new ObjectUpdateOptions(silent: $call->flags->silent, oldObject: $oldObject)
 		);
 
 		$this->settleOrphans(parent: (string)$preparedObject->getUuid());
@@ -4136,35 +4132,27 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Updates an existing object.
 	 *
-	 * @param Register|int|string $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The updated object data.
-	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
+	 * @param StoredObjectUpdate  $update  The register, schema, new data and the stored object to update.
+	 * @param ObjectUpdateOptions $options Silent mode and the original object before changes.
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
 	 * @throws Exception If there is an error during update.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function updateObject(
-		Register|int|string $register,
-		Schema|int|string $schema,
-		array $data,
-		ObjectEntity $existingObject,
-		bool $silent = false,
-		?ObjectEntity $oldObject = null,
+		StoredObjectUpdate $update,
+		ObjectUpdateOptions $options = new ObjectUpdateOptions(),
 	): ObjectEntity {
-		$run = new ObjectUpdateRun();
-		$run->silent = $silent;
+		$existingObject = $update->existingObject;
+		$data           = $update->data;
+		$run            = new ObjectUpdateRun();
+		$run->silent    = $options->silent;
 
 		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
 		// already hold data prepareObjectForUpdate changed in place.
-		$run->oldObject = ($oldObject ?? clone $existingObject);
+		$run->oldObject = ($options->oldObject ?? clone $existingObject);
 
 		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
 			$run->selfData = $data['@self'];
@@ -4174,10 +4162,12 @@ class SaveObject implements SaveObjectInterface {
 		$run->data = $data;
 
 		// Resolve register and schema to entity objects if needed.
+		$register = $update->register;
 		if (is_int($register) === true || is_string($register) === true) {
 			$register = $this->registerMapper->find(id: (int)$register, _multitenancy: false);
 		}
 
+		$schema = $update->schema;
 		if (is_int($schema) === true || is_string($schema) === true) {
 			$schema = $this->schemaMapper->find(id: (int)$schema, _multitenancy: false);
 		}
@@ -4191,7 +4181,7 @@ class SaveObject implements SaveObjectInterface {
 		$updatedEntity = $this->objectFiles()->storeForUpdate(run: $run, updated: $updatedEntity);
 
 		// Bidirectional relations; skipped in silent mode (cascaded sub-objects) for performance.
-		if ($silent === false) {
+		if ($options->silent === false) {
 			$this->inverseRelations()->update(saved: $updatedEntity, write: new InverseRelationWrite(register: $register, schema: $schema));
 		}
 
