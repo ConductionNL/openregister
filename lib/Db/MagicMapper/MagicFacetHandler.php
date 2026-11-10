@@ -954,7 +954,8 @@ class MagicFacetHandler {
 	 * @return string|null The conditions, or null when the filters rule the table out.
 	 */
 	private function tableWhereSql(array $baseQuery, array $tableConfig): ?string {
-		$table           = new MagicReadTable(schema: $tableConfig['schema'], registerId: ($tableConfig['register'] ?? null)?->getId(), tableName: $tableConfig['tableName']);
+		$registerId      = ($tableConfig['register'] ?? null)?->getId();
+		$table           = new MagicReadTable(schema: $tableConfig['schema'], registerId: $registerId, tableName: $tableConfig['tableName']);
 		$whereConditions = $this->searchHandler->buildWhereClause(request: new WhereClauseRequest(query: $baseQuery, table: $table));
 
 		return $this->conditionsSql(whereConditions: $whereConditions);

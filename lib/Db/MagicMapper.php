@@ -2479,8 +2479,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$armQuery['@self']['schema'] = $arm->schema->getId();
 		}
 
-		$table = new MagicReadTable(schema: $arm->schema, registerId: $arm->register->getId(), tableName: $arm->tableName);
-		return $this->searchHandler->buildWhereClause(request: new WhereClauseRequest(query: $armQuery, table: $table, existingColumns: $arm->existingColumns));
+		$table   = new MagicReadTable(schema: $arm->schema, registerId: $arm->register->getId(), tableName: $arm->tableName);
+		$request = new WhereClauseRequest(query: $armQuery, table: $table, existingColumns: $arm->existingColumns);
+		return $this->searchHandler->buildWhereClause(request: $request);
 	}//end unionArmWhereClauses()
 
 	/**
