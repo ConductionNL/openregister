@@ -258,7 +258,9 @@ class DsarDpiaDetectionJob extends TimedJob {
 			$groups = $this->detectionService->detect(cases: $partitionCases, config: $config, now: $now);
 			foreach ($groups as $group) {
 				$summary['groupsTriggered']++;
-				$this->flagGroup(group: $group, config: $config, summary: $summary);
+				$outcome = $this->flagGroup(group: $group, config: $config);
+				$summary['flagged'] += $outcome['flagged'];
+				$summary['errors'] += $outcome['errors'];
 			}
 		}//end foreach
 
@@ -270,16 +272,16 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 *
 	 * @param array{key: string, count: int, caseUuids: list<string>, unflaggedUuids: list<string>} $group The triggering group.
 	 * @param array<string, mixed> $config The pack's `dpiaDetection` block.
-	 * @param array<string, int> $summary Running summary counters (by reference).
 	 *
-	 * @return void
+	 * @return array{flagged: int, errors: int} How many cases were flagged and how many failed.
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
 	 *   (Scenario: Threshold crossing flags the group)
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function flagGroup(array $group, array $config, array &$summary): void {
+	private function flagGroup(array $group, array $config): array {
+		$outcome = ['flagged' => 0, 'errors' => 0];
 		foreach ($group['unflaggedUuids'] as $uuid) {
 			try {
 				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
@@ -323,9 +325,9 @@ class DsarDpiaDetectionJob extends TimedJob {
 					]
 				);
 
-				$summary['flagged']++;
+				$outcome['flagged']++;
 			} catch (\Throwable $e) {
-				$summary['errors']++;
+				$outcome['errors']++;
 				$this->logger->warning(
 					message: '[DsarDpiaDetectionJob] flagging failed for case ' . $uuid . ': ' . $e->getMessage(),
 					context: ['file' => __FILE__, 'line' => __LINE__]
@@ -333,6 +335,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 			}//end try
 		}//end foreach
 
+		return $outcome;
 	}//end flagGroup()
 
 	/**

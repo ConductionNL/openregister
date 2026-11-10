@@ -148,7 +148,7 @@ class ProcessingLogRetentionJob extends TimedJob {
 		);
 
 		if ($deleted > 0) {
-			$this->recordPurge(retention: $retention, cutoff: $cutoff, deleted: $deleted);
+			$this->recordPurge(prune: new ProcessingLogPrune(retention: $retention, cutoff: $cutoff, deleted: $deleted));
 		}
 
 	}//end run()
@@ -193,19 +193,17 @@ class ProcessingLogRetentionJob extends TimedJob {
 	/**
 	 * Put the purge (period and count) on the audit trail.
 	 *
-	 * @param string   $retention The retention applied.
-	 * @param DateTime $cutoff    The cutoff applied.
-	 * @param int      $deleted   How many entries went.
+	 * @param ProcessingLogPrune $prune The retention and cutoff applied and how many entries went.
 	 *
 	 * @return void
 	 */
-	private function recordPurge(string $retention, DateTime $cutoff, int $deleted): void {
+	private function recordPurge(ProcessingLogPrune $prune): void {
 		$row = new AuditTrail();
 		$row->setUuid(Uuid::v4()->toRfc4122());
 		$row->setAction(self::ACTION_PRUNED);
 		$row->setUser('system');
 		$row->setUserName('System');
-		$row->setChanged(['retention' => $retention, 'before' => $cutoff->format('c'), 'deleted' => $deleted]);
+		$row->setChanged($prune->recorded());
 		$row->setCreated($this->time->getDateTime());
 
 		try {
@@ -213,7 +211,7 @@ class ProcessingLogRetentionJob extends TimedJob {
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[ProcessingLogRetention] Entries were pruned but the purge was not recorded: ' . $e->getMessage(),
-				context: ['retention' => $retention, 'before' => $cutoff->format('c'), 'deleted' => $deleted]
+				context: $prune->recorded()
 			);
 		}
 	}//end recordPurge()
