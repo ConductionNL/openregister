@@ -1113,6 +1113,18 @@ class ContactService implements ContactServiceInterface {
 
 		$links = $this->contactLinkMapper->findByContactUid($contactUid);
 
+		return self::visibleLinkRows(links: $links, allowedAddressbookIds: $allowedAddressbookIds);
+	}//end getObjectsForContact()
+
+	/**
+	 * The link rows the caller may see: user links, and links into the caller's own addressbooks.
+	 *
+	 * @param array<int, ContactLink> $links                 The contact's links.
+	 * @param array<int, int>         $allowedAddressbookIds The caller's addressbooks.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function visibleLinkRows(array $links, array $allowedAddressbookIds): array {
 		return array_values(
 			array_map(
 				static function (ContactLink $link): array {
@@ -1120,17 +1132,27 @@ class ContactService implements ContactServiceInterface {
 				},
 				array_filter(
 					$links,
-					static function (ContactLink $link) use ($allowedAddressbookIds): bool {
-						if ($link->isUserLink() === true) {
-							return true;
-						}
-
-						return in_array((int)$link->getAddressbookId(), $allowedAddressbookIds, true);
-					}
+					static fn (ContactLink $link): bool => self::isVisibleLink(link: $link, allowedAddressbookIds: $allowedAddressbookIds)
 				)
 			)
 		);
-	}//end getObjectsForContact()
+	}//end visibleLinkRows()
+
+	/**
+	 * Whether the caller may see a link: a user link, or one into the caller's own addressbooks.
+	 *
+	 * @param ContactLink     $link                  The link.
+	 * @param array<int, int> $allowedAddressbookIds The caller's addressbooks.
+	 *
+	 * @return bool
+	 */
+	private static function isVisibleLink(ContactLink $link, array $allowedAddressbookIds): bool {
+		if ($link->isUserLink() === true) {
+			return true;
+		}
+
+		return in_array((int)$link->getAddressbookId(), $allowedAddressbookIds, true);
+	}//end isVisibleLink()
 
 	/**
 	 * Collect the addressbook IDs owned by the current session user.
@@ -1170,33 +1192,57 @@ class ContactService implements ContactServiceInterface {
 		$links = $this->contactLinkMapper->findByObjectUuid($objectUuid);
 
 		foreach ($links as $link) {
-			try {
-				if ($link->isUserLink() === true) {
-					$this->runtime->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
-					continue;
-				}
-
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-				if ($card !== false) {
-					$vcard = Reader::read($card['carddata']);
-					// Remove properties matching this object only.
-					unset($vcard->{'X-OPENREGISTER-OBJECT'});
-					unset($vcard->{'X-OPENREGISTER-ROLE'});
-					$this->cardDavBackend->updateCard(
-						$link->getAddressbookId(),
-						$link->getContactUri(),
-						$vcard->serialize()
-					);
-				}
-			} catch (Exception $e) {
-				$this->runtime->logger->warning(
-					'Failed to clean vCard for contact ' . $link->getContactUid() . ': ' . $e->getMessage()
-				);
-			}
+			$this->cleanVcardOf(link: $link);
 		}//end foreach
 
 		$this->contactLinkMapper->deleteByObjectUuid($objectUuid);
 	}//end deleteLinksForObject()
+
+	/**
+	 * Remove an object's properties from the vCard behind one of its links, best-effort; a user link has no vCard.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return void
+	 */
+	private function cleanVcardOf(ContactLink $link): void {
+		try {
+			if ($link->isUserLink() === true) {
+				$this->runtime->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
+				return;
+			}
+
+			$this->removeObjectProperties(link: $link);
+		} catch (Exception $e) {
+			$this->runtime->logger->warning(
+				'Failed to clean vCard for contact ' . $link->getContactUid() . ': ' . $e->getMessage()
+			);
+		}
+	}//end cleanVcardOf()
+
+	/**
+	 * Remove the object and role properties from the vCard behind an addressbook link, when the card still exists.
+	 *
+	 * @param ContactLink $link The addressbook link row.
+	 *
+	 * @return void
+	 */
+	private function removeObjectProperties(ContactLink $link): void {
+		$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+		if ($card === false) {
+			return;
+		}
+
+		$vcard = Reader::read($card['carddata']);
+		// Remove properties matching this object only.
+		unset($vcard->{'X-OPENREGISTER-OBJECT'});
+		unset($vcard->{'X-OPENREGISTER-ROLE'});
+		$this->cardDavBackend->updateCard(
+			$link->getAddressbookId(),
+			$link->getContactUri(),
+			$vcard->serialize()
+		);
+	}//end removeObjectProperties()
 
 	/**
 	 * Find the user's default addressbook.
