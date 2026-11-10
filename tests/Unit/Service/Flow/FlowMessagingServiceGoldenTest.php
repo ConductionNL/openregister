@@ -316,9 +316,9 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 			$this->record(call: 'email.send', args: [$uid, $subject, $body]);
 			return self::outcome(recipient: $uid);
 		});
-		$sender->method('sendToAddress')->willReturnCallback(function (string $address, string $displayName, string $subject, string $body): string {
-			$this->record(call: 'email.sendToAddress', args: [$address, $displayName, $subject, $body]);
-			return self::outcome(recipient: $address);
+		$sender->method('sendMailTo')->willReturnCallback(function (\OCA\OpenRegister\Notifications\Service\Notification\MailAddressee $to, \OCA\OpenRegister\Notifications\Service\Notification\MailContent $mail): string {
+			$this->record(call: 'email.sendToAddress', args: [$to->address, $to->displayName, $mail->subject, $mail->body]);
+			return self::outcome(recipient: $to->address);
 		});
 		return $sender;
 	}//end emailSender()

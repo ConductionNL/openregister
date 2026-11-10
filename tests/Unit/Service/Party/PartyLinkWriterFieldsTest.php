@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -57,7 +58,7 @@ class PartyLinkWriterFieldsTest extends TestCase {
 		$parties->method('find')->with('party-a')->willReturn($party);
 		$parties->expects($this->never())->method('findUnscoped');
 		$parties->method('definitionFor')->willReturn($definition);
-		$parties->method('addressesOfKind')->with($party, 'correspondence', $definition)->willReturn($correspondence);
+		$parties->method('addressesOfKind')->with($party, new PartyAddressSelection('correspondence', $definition))->willReturn($correspondence);
 		$parties->method('addresses')->willReturn($all);
 
 		$links = $this->createMock(ContactLinkMapperInterface::class);

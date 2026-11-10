@@ -41,6 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
@@ -1697,7 +1699,7 @@ class MagicFacetHandler {
 			// whether it is readable on some particular row. A conditional rule
 			// that depends on a record therefore does not admit the facet, which
 			// is the safe direction.
-			return $rbac->canReadProperty(schema: $schema, property: $property, object: []);
+			return $rbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: []));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[MagicFacetHandler] Could not check the property read rule; omitting the facet',
@@ -1801,7 +1803,7 @@ class MagicFacetHandler {
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
 	private function getTermsFacet(TableTermsFacet $facet): array {
-		$cacheKey = md5(json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
+		$cacheKey = hash(algo: 'xxh128', data: json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
 		if (isset($this->facetCache[$cacheKey]) === false) {
 			$this->facetCache[$cacheKey] = $this->computeTermsFacet(facet: $facet);
 		}

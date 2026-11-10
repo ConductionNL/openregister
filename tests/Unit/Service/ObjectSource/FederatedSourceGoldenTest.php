@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -129,23 +131,23 @@ class FederatedSourceGoldenTest extends TestCase {
 		], 'total' => 5]);
 
 		$scenarios = [
-			'find no config' => fn () => $this->provider($record)->find($register, $schema, 'x'),
-			'find no token' => fn () => $this->provider($record)->find($register, $schema, 'x', ['remoteUrl' => 'https://r', 'shareToken' => '  ']),
-			'find record' => fn () => $this->provider($record)->find($register, $schema, 'id/with space', self::CONFIG),
-			'find error body' => fn () => $this->provider(json_encode(['error' => 'gone']))->find($register, $schema, 'x', self::CONFIG),
-			'find scalar body' => fn () => $this->provider('"just a string"')->find($register, $schema, 'x', self::CONFIG),
-			'find invalid json' => fn () => $this->provider('{not json')->find($register, $schema, 'x', self::CONFIG),
-			'find client throws' => fn () => $this->provider(new RuntimeException('timeout'))->find($register, $schema, 'x', self::CONFIG),
-			'findAll no config' => fn () => $this->provider($list)->findAll($register, $schema),
-			'findAll defaults' => fn () => $this->provider($list)->findAll($register, $schema, [], self::CONFIG),
-			'findAll paging and filters.search' => fn () => $this->provider($list)->findAll($register, $schema, ['limit' => 3, 'offset' => '6', 'filters' => ['search' => 'one'], '_search' => 'two', 'search' => 'three'], self::CONFIG),
-			'findAll _search' => fn () => $this->provider($list)->findAll($register, $schema, ['_search' => 7, 'search' => 'three'], self::CONFIG),
-			'findAll search' => fn () => $this->provider($list)->findAll($register, $schema, ['search' => 'three'], self::CONFIG),
-			'findAll empty search' => fn () => $this->provider($list)->findAll($register, $schema, ['filters' => ['search' => ''], 'search' => 'x'], self::CONFIG),
-			'findAll body without results' => fn () => $this->provider(json_encode(['total' => 0]))->findAll($register, $schema, [], self::CONFIG),
-			'findAll scalar body' => fn () => $this->provider('12')->findAll($register, $schema, [], self::CONFIG),
-			'findAll client throws' => fn () => $this->provider(new RuntimeException('refused'))->findAll($register, $schema, [], self::CONFIG),
-			'count' => fn () => $this->provider($list)->count($register, $schema, ['limit' => 10], self::CONFIG),
+			'find no config' => fn () => $this->provider($record)->find(new SourcedTable(new RegisterSchema($register, $schema)), 'x'),
+			'find no token' => fn () => $this->provider($record)->find(new SourcedTable(new RegisterSchema($register, $schema), ['remoteUrl' => 'https://r', 'shareToken' => '  ']), 'x'),
+			'find record' => fn () => $this->provider($record)->find(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), 'id/with space'),
+			'find error body' => fn () => $this->provider(json_encode(['error' => 'gone']))->find(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), 'x'),
+			'find scalar body' => fn () => $this->provider('"just a string"')->find(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), 'x'),
+			'find invalid json' => fn () => $this->provider('{not json')->find(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), 'x'),
+			'find client throws' => fn () => $this->provider(new RuntimeException('timeout'))->find(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), 'x'),
+			'findAll no config' => fn () => $this->provider($list)->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'findAll defaults' => fn () => $this->provider($list)->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), []),
+			'findAll paging and filters.search' => fn () => $this->provider($list)->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), ['limit' => 3, 'offset' => '6', 'filters' => ['search' => 'one'], '_search' => 'two', 'search' => 'three']),
+			'findAll _search' => fn () => $this->provider($list)->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), ['_search' => 7, 'search' => 'three']),
+			'findAll search' => fn () => $this->provider($list)->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), ['search' => 'three']),
+			'findAll empty search' => fn () => $this->provider($list)->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), ['filters' => ['search' => ''], 'search' => 'x']),
+			'findAll body without results' => fn () => $this->provider(json_encode(['total' => 0]))->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), []),
+			'findAll scalar body' => fn () => $this->provider('12')->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), []),
+			'findAll client throws' => fn () => $this->provider(new RuntimeException('refused'))->findAll(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), []),
+			'count' => fn () => $this->provider($list)->count(new SourcedTable(new RegisterSchema($register, $schema), self::CONFIG), ['limit' => 10]),
 		];
 
 		$recording = [];

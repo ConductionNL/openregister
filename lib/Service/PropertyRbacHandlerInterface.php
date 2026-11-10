@@ -35,16 +35,15 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * Whether the current user can read a property of this object.
 	 *
-	 * @param Schema $schema   Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array  $object   Object data (for conditional matching)
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching)
 	 *
 	 * @return bool True if user can read the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level read authorization:
 	 *       evaluates the property's read rules against the current user's groups + object conditions)
 	 */
-	public function canReadProperty(Schema $schema, string $property, array $object): bool;
+	public function canReadProperty(SchemaProperty $property, PropertyAccessRequest $request): bool;
 
 	/**
 	 * Whether the current user could read a property on some row.

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use DateInterval;
 use DateTime;
 use Exception;
@@ -230,7 +231,7 @@ final class LockHandlerRunLockTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('does not have permission to unlock');
-		$this->handler()->unlock(identifier: self::OBJ);
+		$this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 	}//end testTheObjectOwnerCannotUnlockARunsLock()
 
 	/**
@@ -248,6 +249,6 @@ final class LockHandlerRunLockTest extends TestCase {
 		$this->groups->method('isAdmin')->willReturn(false);
 		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
 
-		$this->assertTrue($this->handler()->unlock(identifier: self::OBJ));
+		$this->assertTrue($this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)));
 	}//end testTheObjectOwnerCanStillUnlockAUserLock()
 }//end class

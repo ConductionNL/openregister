@@ -279,11 +279,13 @@ class ExampleSetPeople {
 			$password  = $generated;
 		}
 
-		$error = $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) ($person['displayName'] ?? $uid),
-			email: (string) ($person['email'] ?? ''),
-			password: $password
+		$error = $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: $uid,
+				displayName: (string) ($person['displayName'] ?? $uid),
+				email: (string) ($person['email'] ?? ''),
+				password: $password
+			)
 		);
 		if ($error !== '') {
 			$run->report['dropped'][] = 'account '.$uid.': '.$error;
@@ -393,11 +395,13 @@ class ExampleSetPeople {
 			return;
 		}
 
-		$error = $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) $account['displayName'],
-			email: '',
-			password: $this->accounts->newPassword().$this->accounts->newPassword()
+		$error = $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: $uid,
+				displayName: (string) $account['displayName'],
+				email: '',
+				password: $this->accounts->newPassword().$this->accounts->newPassword()
+			)
 		);
 		if ($error === ExampleSetAccounts::ALREADY_EXISTS && isset($run->record['users'][$uid]) === false) {
 			// Another writer made the declared account in between: the set adopts it, so remove leaves it.
