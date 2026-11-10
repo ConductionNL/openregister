@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Object\ConflictReport;
+use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
@@ -106,8 +107,8 @@ class ObjectsControllerVersionConflictGoldenTest extends TestCase {
 
 	public function testSchemaReportMatchesTheRecording(): void {
 		$report = $this->createMock(ConflictReport::class);
-		$report->method('build')->willReturnCallback(function (ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
-			return ['error' => 'built', 'conflicts' => ['a' => 1, 'b' => 2], 'sent' => $sent, 'intervening' => count($intervening)];
+		$report->method('build')->willReturnCallback(function (RefusedWrite $write, array $intervening): array {
+			return ['error' => 'built', 'conflicts' => ['a' => 1, 'b' => 2], 'sent' => $write->sent, 'intervening' => count($intervening)];
 		});
 		$controller = $this->controller(self::OLDER, '', $report);
 
@@ -116,7 +117,7 @@ class ObjectsControllerVersionConflictGoldenTest extends TestCase {
 
 	public function testAnUnparsableClaimHasNoInterveningChanges(): void {
 		$report = $this->createMock(ConflictReport::class);
-		$report->method('build')->willReturnCallback(function (ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
+		$report->method('build')->willReturnCallback(function (RefusedWrite $write, array $intervening): array {
 			return ['conflicts' => [], 'intervening' => count($intervening)];
 		});
 		$controller = $this->controller('not a date', '', $report);

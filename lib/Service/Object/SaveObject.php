@@ -3854,10 +3854,7 @@ class SaveObject implements SaveObjectInterface {
 		} catch (Exception $e) {
 			$rowUuid = self::streamRowUuid(row: $run->row);
 			$run->status->recordFailed(
-				uuid: $rowUuid,
-				message: $e->getMessage(),
-				exceptionClass: $e::class,
-				index: $run->rowIndex
+				failure: new RowFailure(uuid: $rowUuid, message: $e->getMessage(), exceptionClass: $e::class, index: $run->rowIndex)
 			);
 
 			$this->logger->warning(
