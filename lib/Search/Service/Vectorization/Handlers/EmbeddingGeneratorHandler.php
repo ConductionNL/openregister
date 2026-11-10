@@ -206,6 +206,24 @@ class EmbeddingGeneratorHandler {
 		string $model,
 		array $config,
 	): OpenAIADA002EmbeddingGenerator|OpenAI3SmallEmbeddingGenerator|OpenAI3LargeEmbeddingGenerator {
+		$llphantConfig = $this->openAIConfig(config: $config);
+
+		return match ($model) {
+			'text-embedding-ada-002' => new OpenAIADA002EmbeddingGenerator($llphantConfig),
+			'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($llphantConfig),
+			'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($llphantConfig),
+			default => throw new Exception("Unsupported OpenAI model: {$model}")
+		};
+	}//end createOpenAIGenerator()
+
+	/**
+	 * Build the LLPhant OpenAI configuration, keeping LLPhant's defaults for an empty key or URL
+	 *
+	 * @param array $config Configuration array with api_key and base_url
+	 *
+	 * @return OpenAIConfig The LLPhant configuration
+	 */
+	private function openAIConfig(array $config): OpenAIConfig {
 		$llphantConfig = new OpenAIConfig();
 
 		if (empty($config['api_key']) === false) {
@@ -216,13 +234,8 @@ class EmbeddingGeneratorHandler {
 			$llphantConfig->url = $config['base_url'];
 		}
 
-		return match ($model) {
-			'text-embedding-ada-002' => new OpenAIADA002EmbeddingGenerator($llphantConfig),
-			'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($llphantConfig),
-			'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($llphantConfig),
-			default => throw new Exception("Unsupported OpenAI model: {$model}")
-		};
-	}//end createOpenAIGenerator()
+		return $llphantConfig;
+	}//end openAIConfig()
 
 	/**
 	 * Create Fireworks AI embedding generator
