@@ -138,16 +138,24 @@ class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface 
 	 */
 	private function collisionFindings(array $authorization, string $subject): array {
 		$findings = [];
+		foreach ($this->collisions(authorization: $authorization) as $collision) {
+			$findings[] = $collision->sentence(subject: $subject);
+		}
 
+		return $findings;
+	}//end collisionFindings()
+
+	/**
+	 * Every principal a verb's deny list names that the same verb's grant list names too.
+	 *
+	 * @param array $authorization The block as written.
+	 *
+	 * @return array<int, DenyCollision> The collisions, by deny verb and in deny-list order.
+	 */
+	private function collisions(array $authorization): array {
+		$collisions = [];
 		foreach ($this->denyResolver->denyBlock(authorization: $authorization) as $action => $denyEntries) {
-			if (is_string($action) === false || is_array($denyEntries) === false) {
-				continue;
-			}
-
-			// `roles` is a role-to-group map, not a verb's rule list. It is
-			// expanded into verbs long before enforcement, and reading it here
-			// as if it were one would compare a role name against a group name.
-			if ($action === self::ROLES_KEY) {
+			if (self::isVerbRuleList(action: $action, entries: $denyEntries) === false) {
 				continue;
 			}
 
@@ -155,24 +163,28 @@ class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface 
 			$denied = $this->principalsNamedIn(entries: $denyEntries);
 
 			foreach (array_intersect($denied, $granted) as $principal) {
-				$findings[] = sprintf(
-					'The authorization of %s both grants and denies "%s" to "%s" at the same level: '
-					. 'the rule "%s" in %s and the rule "%s" in %s.deny. '
-					. 'Remove one of the two; a deny wins, so leaving both stored would grant nothing '
-					. 'and read as a grant.',
-					$subject,
-					$action,
-					$principal,
-					$principal,
-					$action,
-					$principal,
-					$action
-				);
+				$collisions[] = new DenyCollision(action: $action, principal: $principal);
 			}
 		}
 
-		return $findings;
-	}//end collisionFindings()
+		return $collisions;
+	}//end collisions()
+
+	/**
+	 * Whether a deny-block entry is one verb's rule list.
+	 *
+	 * `roles` is a role-to-group map, not a verb's rule list. It is
+	 * expanded into verbs long before enforcement, and reading it here
+	 * as if it were one would compare a role name against a group name.
+	 *
+	 * @param mixed $action  The entry's key.
+	 * @param mixed $entries The entry's value.
+	 *
+	 * @return bool True for a verb and its list.
+	 */
+	private static function isVerbRuleList(mixed $action, mixed $entries): bool {
+		return (is_string($action) === true && is_array($entries) === true && $action !== self::ROLES_KEY);
+	}//end isVerbRuleList()
 
 	/**
 	 * The refusal that keeps a register administrable, or null.
@@ -186,13 +198,7 @@ class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface 
 		$denied = $this->principalsNamedIn(
 			entries: ($this->denyResolver->denyBlock(authorization: $authorization)[self::ACTION_MANAGE] ?? null)
 		);
-		if ($denied === []) {
-			return null;
-		}
-
-		$granted = $this->principalsNamedIn(entries: ($authorization[self::ACTION_MANAGE] ?? null));
-		$surviving = array_values(array_diff($granted, $denied));
-		if ($surviving !== []) {
+		if ($denied === [] || $this->survivingManagers(authorization: $authorization, denied: $denied) !== []) {
 			return null;
 		}
 
@@ -207,6 +213,20 @@ class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface 
 			self::ACTION_MANAGE
 		);
 	}//end orphanedManageFinding()
+
+	/**
+	 * The principals granted `manage` that the deny does not take it from.
+	 *
+	 * @param array    $authorization The block as written.
+	 * @param string[] $denied        The principals denied `manage`.
+	 *
+	 * @return string[] The surviving managers.
+	 */
+	private function survivingManagers(array $authorization, array $denied): array {
+		$granted = $this->principalsNamedIn(entries: ($authorization[self::ACTION_MANAGE] ?? null));
+
+		return array_values(array_diff($granted, $denied));
+	}//end survivingManagers()
 
 	/**
 	 * The principal names one rule list mentions.
