@@ -2440,3 +2440,4 @@
 2026-11-10T15:26:21Z integrator-20261110T111852-c9674639 NORESULT tree 53f765f735 prs 50: php-4.log: no Tests line
 2026-11-10T15:26:33Z precheck-20261110T113524-0214373c GREEN tree aa9005de2e on dev cd5c411f0b prs 1 front=skip: Tests: 54836, Assertions: 181559, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T15:26:45Z precheck-20261110T113316-4d357610 GREEN tree 84ec5fbe5a on dev cd5c411f0b prs 1 front=skip: Tests: 54837, Assertions: 181562, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
+2026-11-10T15:26:55Z precheck-20261110T113051-6c6f1023 GREEN tree 7210f5672c on dev cd5c411f0b prs 1 front=skip: Tests: 54836, Assertions: 181559, Errors: 6, Failures: 11, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
