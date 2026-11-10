@@ -89,6 +89,21 @@ import {
  *
  * @visual exclude {Covered by tests/e2e/ci/rules-engine-admin-ui.spec.ts, which drives the tab against a live instance.}
  */
+/**
+ * Read the rule vocabulary, a schema's rule inventory and the operator
+ * catalogue at once.
+ *
+ * @param {string} schemaReference The schema whose rules to read.
+ * @return {Promise<Array>} The vocabulary, inventory and operators.
+ */
+function fetchRuleContext(schemaReference) {
+	return Promise.all([
+		fetchVocabulary(),
+		fetchInventory(schemaReference),
+		fetchOperators(),
+	])
+}
+
 export default {
 	name: 'SchemaRulesTab',
 
@@ -165,19 +180,7 @@ export default {
 			this.draft = null
 
 			try {
-				const [vocabulary, inventory, operators] = await Promise.all([
-					fetchVocabulary(),
-					fetchInventory(this.schemaReference),
-					fetchOperators(),
-				])
-
-				this.vocabulary = {
-					kinds: vocabulary.kinds ?? [],
-					verdicts: vocabulary.verdicts ?? [],
-					actions: vocabulary.actions ?? [],
-				}
-				this.rules = inventory.rules ?? []
-				this.operators = operators
+				this.showRuleContext(await fetchRuleContext(this.schemaReference))
 			} catch (failure) {
 				this.error = messageFor(
 					failure,
@@ -190,6 +193,26 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Keep the vocabulary, the inventory's rules and the operator
+		 * catalogue the load read.
+		 *
+		 * @param {Array} context The vocabulary, inventory and operators.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		showRuleContext([vocabulary, inventory, operators]) {
+			this.vocabulary = {
+				kinds: vocabulary.kinds ?? [],
+				verdicts: vocabulary.verdicts ?? [],
+				actions: vocabulary.actions ?? [],
+			}
+			this.rules = inventory.rules ?? []
+			this.operators = operators
 		},
 
 		/**
@@ -227,12 +250,7 @@ export default {
 
 			try {
 				await setRuleEnabled(this.schemaReference, rule.id, enabled)
-				const inventory = await fetchInventory(this.schemaReference)
-				this.rules = inventory.rules ?? []
-				if (this.selected) {
-					this.selected =
-						this.rules.find((row) => row.id === this.selected.id) ?? null
-				}
+				await this.reloadRules()
 			} catch (failure) {
 				this.error = messageFor(
 					failure,
@@ -240,6 +258,23 @@ export default {
 				)
 			} finally {
 				this.switching = ''
+			}
+		},
+
+		/**
+		 * Read the inventory again and keep the open rule open as the server
+		 * now has it, or close it when it is gone.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		async reloadRules() {
+			const inventory = await fetchInventory(this.schemaReference)
+			this.rules = inventory.rules ?? []
+			if (this.selected) {
+				this.selected =
+					this.rules.find((row) => row.id === this.selected.id) ?? null
 			}
 		},
 	},
