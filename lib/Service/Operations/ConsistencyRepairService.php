@@ -151,14 +151,16 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 		$changed = $this->delete(table: (string)$plan['table'], ids: $ids);
 
 		$this->recorder->recordAct(
-			jobClass: self::ACT,
-			actor: $actor,
-			details: [
-				'check' => $slug,
-				'table' => $plan['table'],
-				'objects' => $plan['objects'],
-			],
-			message: 'Repaired '.$changed.' row(s) found by the "'.$slug.'" check.'
+			act: new OperatorAct(
+				jobClass: self::ACT,
+				actor: $actor,
+				details: [
+					'check' => $slug,
+					'table' => $plan['table'],
+					'objects' => $plan['objects'],
+				],
+				message: 'Repaired '.$changed.' row(s) found by the "'.$slug.'" check.'
+			)
 		);
 
 		return [

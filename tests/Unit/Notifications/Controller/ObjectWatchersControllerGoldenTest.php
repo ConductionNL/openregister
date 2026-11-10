@@ -17,6 +17,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Controller\ObjectWatchersController;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCP\IRequest;
 use OCP\IUserManager;
@@ -107,8 +108,8 @@ class ObjectWatchersControllerGoldenTest extends TestCase
 
         $watchers = $this->createMock(WatcherServiceInterface::class);
         $watchers->method('watch')->willReturnCallback(
-            function (ObjectEntity $object, ?string $register, ?string $schema, ?bool $notify) use ($fail): Watcher {
-                $fail('watch:' . $register . ':' . $schema . ':' . var_export($notify, true));
+            function (AddressedObject $target, ?bool $notify) use ($fail): Watcher {
+                $fail('watch:' . $target->register . ':' . $target->schema . ':' . var_export($notify, true));
                 return self::row('me');
             }
         );
@@ -125,8 +126,8 @@ class ObjectWatchersControllerGoldenTest extends TestCase
             }
         );
         $watchers->method('addWatcher')->willReturnCallback(
-            function (ObjectEntity $object, string $userId, ?string $register, ?string $schema) use ($fail): Watcher {
-                $fail('addWatcher:' . $userId . ':' . $register . ':' . $schema);
+            function (AddressedObject $target, string $userId) use ($fail): Watcher {
+                $fail('addWatcher:' . $userId . ':' . $target->register . ':' . $target->schema);
                 return self::row($userId);
             }
         );

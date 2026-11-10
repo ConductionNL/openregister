@@ -119,24 +119,6 @@ class AppImportJobRecorder {
 	}//end end()
 
 	/**
-	 * Record a finished job for an app id when it created at least one traceable object.
-	 *
-	 * @param string $appId          The app id the import ran under (e.g. `learniq.demo`).
-	 * @param string $importJobId    The job id begin() returned.
-	 * @param string $version        The version the app imported.
-	 * @param int    $objectsWritten How many objects the import reported writing.
-	 *
-	 * @return bool True when the job was recorded.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
-	 */
-	public function record(string $appId, string $importJobId, string $version, int $objectsWritten): bool {
-		return $this->recordFinished(
-			job: new FinishedImportJob(appId: $appId, importJobId: $importJobId, version: $version, objectsWritten: $objectsWritten)
-		);
-	}//end record()
-
-	/**
 	 * Record a finished job for its app id when it created at least one traceable object.
 	 *
 	 * @param FinishedImportJob $job The job that ended.

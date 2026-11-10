@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Quality;
 
+use OCA\OpenRegister\Service\Quality\QualityListingRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -156,7 +157,7 @@ class QualityStatisticsListingGoldenTest extends TestCase {
 	 */
 	#[DataProvider('listings')]
 	public function testListingIsPinned(?string $status, QualityListingWindow $window, array $expected, int $total): void {
-		$result = $this->service()->lowestQuality('reg', 'sch', $status, $window);
+		$result = $this->service()->lowestQuality(new QualityListingRequest('reg', 'sch', $status, $window));
 
 		$rows = [];
 		foreach ($expected as [$id, $score, $rowStatus]) {
