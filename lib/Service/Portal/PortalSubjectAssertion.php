@@ -156,24 +156,49 @@ class PortalSubjectAssertion implements PortalSubjectAssertionInterface {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Malformed assertion.');
 		}
 
-		[$headerPart, $claimsPart, $signaturePart] = $parts;
-		$header = json_decode($this->b64UrlDecode(encoded: $headerPart), true);
-		if (is_array($header) === false || ($header['alg'] ?? '') !== 'HS256') {
-			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Unsupported assertion algorithm.');
-		}
+		$this->assertHs256(headerPart: $parts[0]);
+		$this->assertSigned(parts: $parts, secret: $secret);
 
-		$expected = $this->b64UrlEncode(bytes: hash_hmac('sha256', $headerPart . '.' . $claimsPart, $secret, true));
-		if (hash_equals($expected, $signaturePart) === false) {
-			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Assertion signature does not verify.');
-		}
-
-		$claims = json_decode($this->b64UrlDecode(encoded: $claimsPart), true);
+		$claims = json_decode($this->b64UrlDecode(encoded: $parts[1]), true);
 		if (is_array($claims) === false) {
 			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Malformed assertion claims.');
 		}
 
 		return $claims;
 	}//end verifiedClaims()
+
+	/**
+	 * Refuse an assertion whose header does not declare HS256.
+	 *
+	 * @param string $headerPart The encoded header.
+	 *
+	 * @return void
+	 *
+	 * @throws PortalSubjectException When the header is unreadable or names another algorithm.
+	 */
+	private function assertHs256(string $headerPart): void {
+		$header = json_decode($this->b64UrlDecode(encoded: $headerPart), true);
+		if (is_array($header) === false || ($header['alg'] ?? '') !== 'HS256') {
+			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Unsupported assertion algorithm.');
+		}
+	}//end assertHs256()
+
+	/**
+	 * Refuse an assertion whose signature does not verify against the secret.
+	 *
+	 * @param array<int, string> $parts  The header, claims and signature parts.
+	 * @param string             $secret The shared secret.
+	 *
+	 * @return void
+	 *
+	 * @throws PortalSubjectException When the signature does not verify.
+	 */
+	private function assertSigned(array $parts, string $secret): void {
+		$expected = $this->b64UrlEncode(bytes: hash_hmac('sha256', $parts[0] . '.' . $parts[1], $secret, true));
+		if (hash_equals($expected, $parts[2]) === false) {
+			throw new PortalSubjectException(refusal: PortalSubjectException::CODE_INVALID, message: 'Assertion signature does not verify.');
+		}
+	}//end assertSigned()
 
 	/**
 	 * The subject a verified claim set asserts, refused on any wrong claim.
