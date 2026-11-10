@@ -22,6 +22,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * Records, per scenario, the createEvent call, the CalDAV lookups and the whole inserted
@@ -135,7 +136,7 @@ class CalendarLinkServiceWriteGoldenTest extends TestCase {
 		$service = $this->service($s);
 		try {
 			if ($kind === 'create') {
-				$service->createAndLinkEvent('obj-1', 3, 4, $args);
+				$service->createLinkedEvent((new LinkTarget('obj-1', 3))->inSchema(4), $args);
 			} else {
 				$service->linkEvent('obj-1', 3, 4, $args[0], $args[1]);
 			}

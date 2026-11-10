@@ -73,6 +73,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * REST surface for the calendar leaf on a task.
@@ -263,10 +264,9 @@ class TaskEventsController extends Controller {
 		$data['objectTitle'] = ($task->getTitle() ?? (string)$task->getUuid());
 
 		return $this->linked(
-			write: fn () => $this->links->createAndLinkEvent(
-				objectUuid: (string)$task->getUuid(),
-				registerId: (int)$task->getRegisterId(),
-				schemaId: (int)$task->getSchemaId(),
+			write: fn () => $this->links->createLinkedEvent(
+				target: (new LinkTarget(objectUuid: (string)$task->getUuid(), registerId: (int)$task->getRegisterId()))
+					->inSchema(schemaId: (int)$task->getSchemaId()),
 				eventData: $data
 			)
 		);

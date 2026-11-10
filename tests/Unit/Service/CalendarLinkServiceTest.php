@@ -44,6 +44,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -157,7 +158,7 @@ class CalendarLinkServiceTest extends TestCase {
 			}))
 			->willReturnArgument(0);
 
-		$result = $this->service->createAndLinkEvent('obj-1', 1, 2, [
+		$result = $this->service->createLinkedEvent((new LinkTarget('obj-1', 1))->inSchema(2), [
 			'summary' => 'New meeting',
 			'objectTitle' => 'My object',
 		]);

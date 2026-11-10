@@ -322,7 +322,15 @@ class PersonLinkService implements PersonLinkServiceInterface {
 
 		$contacts = $this->targets->contacts;
 
-		return $contacts->linkContact($target->objectUuid, $target->registerId, $contact[0], $contact[1], $placement->role, $target->schemaId);
+		return $contacts->linkCard(
+			card: new ContactCardRef(addressbookId: $contact[0], contactUri: $contact[1]),
+			placement: new ContactPlacement(
+				objectUuid: $target->objectUuid,
+				registerId: $target->registerId,
+				schemaId: $target->schemaId,
+				role: $placement->role
+			)
+		);
 	}//end linkAddressbookContact()
 
 	/**

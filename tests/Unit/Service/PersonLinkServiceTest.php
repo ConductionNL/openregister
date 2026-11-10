@@ -26,6 +26,8 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ContactCardRef;
+use OCA\OpenRegister\Service\ContactPlacement;
 
 /**
  * People on objects: the service that links a user or a contact in a role.
@@ -150,7 +152,7 @@ class PersonLinkServiceTest extends TestCase {
 	 */
 	public function testAUserPayloadWritesAUserLinkAndAnnouncesIt(): void {
 		$this->schemaDeclaresRoles();
-		$this->contacts->expects($this->never())->method('linkContact');
+		$this->contacts->expects($this->never())->method('linkCard');
 		$this->userLinks->expects($this->once())
 			->method('write')
 			->with('case-1', 5, 7, 'jan', 'handler')
@@ -180,8 +182,8 @@ class PersonLinkServiceTest extends TestCase {
 		$this->schemaDeclaresRoles();
 		$this->userLinks->expects($this->never())->method('write');
 		$this->contacts->expects($this->once())
-			->method('linkContact')
-			->with('case-1', 5, 1, 'jan.vcf', 'initiator', 7)
+			->method('linkCard')
+			->with(new ContactCardRef(addressbookId: 1, contactUri: 'jan.vcf'), new ContactPlacement(objectUuid: 'case-1', registerId: 5, schemaId: 7, role: 'initiator'))
 			->willReturn($this->storedLink(contactUid: 'jan-uid', role: 'initiator'));
 
 		$link = $this->service->link(

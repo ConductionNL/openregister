@@ -549,36 +549,12 @@ class ContactService implements ContactServiceInterface {
 	}//end contactPhotoRoute()
 
 	/**
-	 * Link an existing contact to an object.
+	 * Tag an existing vCard with its object and role, and save the link row of it.
 	 *
 	 * Tier-2: the call is idempotent — if a link row already exists for
 	 * `(objectUuid, contactUid)` (enforced by the
 	 * `idx_contact_object_uid_uniq` index) the row is updated in-place
-	 * with the freshened cached fields and the new role. Callers that
-	 * relied on the previous "always-insert" semantics still get a
-	 * persisted entity back.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param int $addressbookId The addressbook ID.
-	 * @param string $contactUri The contact URI in the addressbook.
-	 * @param string|null $role The role of this contact on the object.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
-	 *
-	 * @return ContactLink The created or updated link.
-	 *
-	 * @throws Exception If the contact does not exist.
-	 *
-	 * @spec openspec/specs/contacts-actions/spec.md
-	 */
-	public function linkContact(string $objectUuid, int $registerId, int $addressbookId, string $contactUri, ?string $role = null,
-		?int $schemaId = null): ContactLink {
-		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $role);
-		return $this->linkCard(card: new ContactCardRef(addressbookId: $addressbookId, contactUri: $contactUri), placement: $placement);
-	}//end linkContact()
-
-	/**
-	 * Tag an existing vCard with its object and role, and save the link row of it.
+	 * with the freshened cached fields and the new role.
 	 *
 	 * @param ContactCardRef   $card      The vCard to link.
 	 * @param ContactPlacement $placement Where it is linked, and in what role.

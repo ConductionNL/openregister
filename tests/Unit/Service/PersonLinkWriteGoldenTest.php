@@ -110,8 +110,9 @@ class PersonLinkWriteGoldenTest extends TestCase {
 			}
 		);
 		$contacts = $this->createMock(ContactService::class);
-		$contacts->method('linkContact')->willReturnCallback(
-			function (...$args): ContactLink {
+		$contacts->method('linkCard')->willReturnCallback(
+			function (\OCA\OpenRegister\Service\ContactCardRef $card, \OCA\OpenRegister\Service\ContactPlacement $placement): ContactLink {
+				$args = [$placement->objectUuid, $placement->registerId, $card->addressbookId, $card->contactUri, $placement->role, $placement->schemaId];
 				$this->calls[] = 'contact:'.json_encode($args);
 				return new ContactLink();
 			}
