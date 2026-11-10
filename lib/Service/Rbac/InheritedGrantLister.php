@@ -141,11 +141,10 @@ class InheritedGrantLister {
 				continue;
 			}
 
-			$shares = $this->shares->sharesOn(
-				object: $ancestor,
-				sharers: [(string)$ancestor->getOwner()],
-				complete: $complete
-			);
+			$shares = match ($complete) {
+				true => $this->shares->completeSharesOn(object: $ancestor, sharers: [(string)$ancestor->getOwner()]),
+				false => $this->shares->sharesOn(object: $ancestor, sharers: [(string)$ancestor->getOwner()]),
+			};
 			foreach ($shares as $share) {
 				$found[] = ['ancestor' => $ancestor, 'type' => $share['type'], 'share' => $share['share']];
 			}
