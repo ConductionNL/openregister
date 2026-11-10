@@ -1964,15 +1964,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function saveResolvedObject(ObjectSaveCall $call): ObjectEntity {
-		// Shared master data guard (REQ-SLE-001, design D-2): a register or
-		// schema this organisation only CONSUMES is read-only to it. It is a
-		// property of the RESOURCE being written, decided before anything is
-		// prepared, validated or persisted.
-		if ($call->flags->persist === true && OrganisationContext::multitenancy(requested: $call->flags->multitenancy) === true) {
-			$this->refuseSharedMasterDataWrite(
-				target: new ObjectWriteTarget(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid)
-			);
-		}
+		$this->guardSharedMasterData(call: $call);
 
 		// Read-only projection guard: a schema served from an external source
 		// (x-openregister-object-source) is read-only unless its provider opts
@@ -1983,16 +1975,8 @@ class SaveObject implements SaveObjectInterface {
 			return $this->delegateObjectSourceWrite(call: $call, objectSource: $objectSource);
 		}
 
-		// Normalize translatable properties (wrap simple values under default language).
-		$call->data = $this->translationHandler->normalizeTranslationsForSave(
-			objectData: $call->data,
-			scope: new TranslationScope(schema: $call->schema, register: $call->register)
-		);
-
-		// Skip when _rbac is false (internal/system calls bypass all authorization).
-		if ($call->flags->rbac === true && $call->schema->hasPropertyAuthorization() === true) {
-			$this->refuseUnauthorizedProperties(call: $call);
-		}
+		$this->normalizeCallTranslations(call: $call);
+		$this->guardPropertyAuthorization(call: $call);
 
 		$existingObject = $this->existingObjectForSave(call: $call);
 		if ($existingObject !== null) {
@@ -2001,6 +1985,61 @@ class SaveObject implements SaveObjectInterface {
 
 		return $this->createNewForSave(call: $call);
 	}//end saveResolvedObject()
+
+	/**
+	 * Refuse a persisting, multitenant write to a register or schema this organisation only consumes.
+	 *
+	 * Shared master data guard (REQ-SLE-001, design D-2): a register or
+	 * schema this organisation only CONSUMES is read-only to it. It is a
+	 * property of the RESOURCE being written, decided before anything is
+	 * prepared, validated or persisted.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function guardSharedMasterData(ObjectSaveCall $call): void {
+		if ($call->flags->persist === true && OrganisationContext::multitenancy(requested: $call->flags->multitenancy) === true) {
+			$this->refuseSharedMasterDataWrite(
+				target: new ObjectWriteTarget(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid)
+			);
+		}
+	}//end guardSharedMasterData()
+
+	/**
+	 * Normalize translatable properties (wrap simple values under default language).
+	 *
+	 * @param ObjectSaveCall $call The save call; its data is replaced.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function normalizeCallTranslations(ObjectSaveCall $call): void {
+		$call->data = $this->translationHandler->normalizeTranslationsForSave(
+			objectData: $call->data,
+			scope: new TranslationScope(schema: $call->schema, register: $call->register)
+		);
+	}//end normalizeCallTranslations()
+
+	/**
+	 * Refuse properties the caller may not write, when RBAC applies and the schema guards properties.
+	 *
+	 * Skip when _rbac is false (internal/system calls bypass all authorization).
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function guardPropertyAuthorization(ObjectSaveCall $call): void {
+		if ($call->flags->rbac === true && $call->schema->hasPropertyAuthorization() === true) {
+			$this->refuseUnauthorizedProperties(call: $call);
+		}
+	}//end guardPropertyAuthorization()
 
 	/**
 	 * Refuse a save that modifies properties the caller may not write.
@@ -2435,16 +2474,13 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private static function splitSelfData(array $data, ?string $uuid): array {
+	private static function splitSelfData(array $data, string|null $uuid): array {
 		// Extract @self metadata.
-		$selfData = [];
-		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
-			$selfData = $data['@self'];
-		}
+		$selfData = self::selfBlockOf(data: $data);
 
 		// Use @self.id as UUID if no UUID is provided.
-		if ($uuid === null && (($selfData['id'] ?? null) !== null || (($data['id'] ?? null) !== null) === true)) {
-			$uuid = $selfData['id'] ?? $data['id'];
+		if ($uuid === null) {
+			$uuid = self::embeddedIdentifier(selfData: $selfData, data: $data);
 		}
 
 		// Normalize empty string to null.
@@ -2458,6 +2494,37 @@ class SaveObject implements SaveObjectInterface {
 
 		return [$uuid, $selfData, $data];
 	}//end splitSelfData()
+
+	/**
+	 * The data's `@self` block when it is an array, else an empty block.
+	 *
+	 * @param array $data The object data.
+	 *
+	 * @return array The `@self` block.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function selfBlockOf(array $data): array {
+		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
+			return $data['@self'];
+		}
+
+		return [];
+	}//end selfBlockOf()
+
+	/**
+	 * The identifier the data carries: `@self.id`, else the top-level `id`, else null.
+	 *
+	 * @param array $selfData The `@self` block.
+	 * @param array $data     The object data.
+	 *
+	 * @return mixed The identifier, or null.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function embeddedIdentifier(array $selfData, array $data): mixed {
+		return $selfData['id'] ?? $data['id'] ?? null;
+	}//end embeddedIdentifier()
 
 	/**
 	 * Injects uploaded files into the object data.
@@ -2517,19 +2584,10 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function findAndValidateExistingObject(ObjectSaveCall $call): ?ObjectEntity {
+	private function findAndValidateExistingObject(ObjectSaveCall $call): ObjectEntity|null {
 		$uuid = (string)$call->uuid;
 		try {
-			// Always disable RBAC and multitenancy for internal object lookup
-			// to avoid permission errors when validating existing objects.
-			$existingObject = $this->objectEntityMapper->find(
-				identifier: $uuid,
-				register: $call->register,
-				schema: $call->schema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
+			$existingObject = $this->findStoredObject(call: $call);
 
 			// An explicit uuid names the row of that uuid only. The lookup also
 			// matches ids, slugs and uris; a row found that way is another row,
@@ -2538,61 +2596,8 @@ class SaveObject implements SaveObjectInterface {
 				return null;
 			}
 
-			// Check if object is locked - prevent updates on locked objects.
-			//
-			// This guard NEVER FIRED before the run-scoped-locking change. It
-			// read the holder from `$lockData['userId']`, and
-			// `ObjectEntity::lock()` has always written it under `user`, so
-			// `$lockOwner` was invariably null and the `!== null` test
-			// short-circuited every time. Every lock taken since the endpoint
-			// shipped was decorative on this path. It is fixed by delegating
-			// to the one production predicate instead of re-spelling the
-			// comparison here, which is what went wrong in the first place.
-			$currentUser = $this->userSession->getUser();
-			$currentUserId = null;
-			if ($currentUser !== null) {
-				$currentUserId = $currentUser->getUID();
-			}
-
-			// WHICH RUN IS WRITING, not just which user. A run-scoped lock
-			// refuses every caller but the holding run, so a guard that omits
-			// the run identity refuses THE RUN THAT TOOK THE LOCK: a flow
-			// locks a case at one step and is turned away by its own lock at
-			// the next. Ambient rather than a parameter because the write is
-			// routinely several calls deep in code that has never heard of
-			// flows; absent, it reads as a person, which is the fail-closed
-			// answer a run lock already gives.
-			$callerRun = $this->runContext?->currentRunUuid();
-
-			// A TYPED refusal, not a plain `Exception`. The message is unchanged,
-			// but the type is what lets a caller answer 423 instead of falling
-			// into a generic 500 — which is what PATCH and POST-patch did for a
-			// payload that was otherwise valid. The holder travels on the
-			// exception rather than being re-derived at each catch site.
-			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
-				throw LockedException::forObject($existingObject);
-			}
-
-			// The archive and the freeze refuse the write here, at the one
-			// choke point every data write to an existing object already
-			// passes through. Put anywhere further out — in a controller, say —
-			// and a flow, an import or a cascade would each need its own copy
-			// of the check, which is how a guard ends up holding one door of
-			// four.
-			//
-			// Neither refusal applies to the reversal or to the retention
-			// machinery: `unarchive()`, `unfreeze()`, a destruction date and a
-			// legal hold are all written through the mapper's dedicated
-			// metadata paths and never reach `saveObject()`. That is deliberate.
-			// An archive that quietly disabled `retention-management` would be
-			// the opposite of what an archive is for.
-			if ($existingObject->isArchived() === true) {
-				throw ObjectStateWriteException::archived($existingObject);
-			}
-
-			if ($existingObject->isFrozen() === true) {
-				throw ObjectStateWriteException::frozen($existingObject);
-			}
+			$this->refuseLockedByAnother(existingObject: $existingObject);
+			$this->refuseArchivedOrFrozen(existingObject: $existingObject);
 
 			return $existingObject;
 		} catch (DoesNotExistException $e) {
@@ -2600,6 +2605,115 @@ class SaveObject implements SaveObjectInterface {
 			return null;
 		}//end try
 	}//end findAndValidateExistingObject()
+
+	/**
+	 * The stored object the save call's uuid names, looked up past RBAC and multitenancy.
+	 *
+	 * @param ObjectSaveCall $call The save call: the object UUID, register and schema.
+	 *
+	 * @return ObjectEntity The stored object.
+	 *
+	 * @throws DoesNotExistException When no object matches.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function findStoredObject(ObjectSaveCall $call): ObjectEntity {
+		// Always disable RBAC and multitenancy for internal object lookup
+		// to avoid permission errors when validating existing objects.
+		return $this->objectEntityMapper->find(
+			identifier: (string)$call->uuid,
+			register: $call->register,
+			schema: $call->schema,
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end findStoredObject()
+
+	/**
+	 * Refuse a write to an object another user or run holds the lock on.
+	 *
+	 * Check if object is locked - prevent updates on locked objects.
+	 *
+	 * This guard NEVER FIRED before the run-scoped-locking change. It
+	 * read the holder from `$lockData['userId']`, and
+	 * `ObjectEntity::lock()` has always written it under `user`, so
+	 * `$lockOwner` was invariably null and the `!== null` test
+	 * short-circuited every time. Every lock taken since the endpoint
+	 * shipped was decorative on this path. It is fixed by delegating
+	 * to the one production predicate instead of re-spelling the
+	 * comparison here, which is what went wrong in the first place.
+	 *
+	 * WHICH RUN IS WRITING, not just which user. A run-scoped lock
+	 * refuses every caller but the holding run, so a guard that omits
+	 * the run identity refuses THE RUN THAT TOOK THE LOCK: a flow
+	 * locks a case at one step and is turned away by its own lock at
+	 * the next. Ambient rather than a parameter because the write is
+	 * routinely several calls deep in code that has never heard of
+	 * flows; absent, it reads as a person, which is the fail-closed
+	 * answer a run lock already gives.
+	 *
+	 * A TYPED refusal, not a plain `Exception`. The message is unchanged,
+	 * but the type is what lets a caller answer 423 instead of falling
+	 * into a generic 500 — which is what PATCH and POST-patch did for a
+	 * payload that was otherwise valid. The holder travels on the
+	 * exception rather than being re-derived at each catch site.
+	 *
+	 * @param ObjectEntity $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @throws LockedException When someone else holds the lock.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseLockedByAnother(ObjectEntity $existingObject): void {
+		$currentUser = $this->userSession->getUser();
+		$currentUserId = null;
+		if ($currentUser !== null) {
+			$currentUserId = $currentUser->getUID();
+		}
+
+		$callerRun = $this->runContext?->currentRunUuid();
+		if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
+			throw LockedException::forObject($existingObject);
+		}
+	}//end refuseLockedByAnother()
+
+	/**
+	 * Refuse a data write to an archived or frozen object.
+	 *
+	 * The archive and the freeze refuse the write here, at the one
+	 * choke point every data write to an existing object already
+	 * passes through. Put anywhere further out — in a controller, say —
+	 * and a flow, an import or a cascade would each need its own copy
+	 * of the check, which is how a guard ends up holding one door of
+	 * four.
+	 *
+	 * Neither refusal applies to the reversal or to the retention
+	 * machinery: `unarchive()`, `unfreeze()`, a destruction date and a
+	 * legal hold are all written through the mapper's dedicated
+	 * metadata paths and never reach `saveObject()`. That is deliberate.
+	 * An archive that quietly disabled `retention-management` would be
+	 * the opposite of what an archive is for.
+	 *
+	 * @param ObjectEntity $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectStateWriteException When the object is archived or frozen.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseArchivedOrFrozen(ObjectEntity $existingObject): void {
+		if ($existingObject->isArchived() === true) {
+			throw ObjectStateWriteException::archived($existingObject);
+		}
+
+		if ($existingObject->isFrozen() === true) {
+			throw ObjectStateWriteException::frozen($existingObject);
+		}
+	}//end refuseArchivedOrFrozen()
 
 	/**
 	 * The `@self` an update works from: a version the caller carries counts only for a trusted caller.
@@ -3487,7 +3601,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
-	private function bindSelfFolder(ObjectEntity $objectEntity, ?FolderBind $bind): void {
+	private function bindSelfFolder(ObjectEntity $objectEntity, FolderBind|null $bind): void {
 		// Propagate @self.folder so the access-control check governs the bind
 		// (numeric → access-checked, empty/legacy → auto-create). Without
 		// propagation a user-supplied @self.folder is silently dropped —
