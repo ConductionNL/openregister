@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -76,7 +77,7 @@ final class TextExtractionProvidedTextTest extends TestCase {
 		$settings = $this->createMock(SettingsService::class);
 		$settings->method('getFileSettingsOnly')->willReturn(['entityRecognitionEnabled' => true, 'entityRecognitionMethod' => 'regex']);
 
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			$this->files,
 			$this->chunks,
 			$this->root,

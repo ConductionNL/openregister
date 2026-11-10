@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -156,6 +157,6 @@ class EmailLinkServicePickerGoldenTest extends TestCase {
 				$this->logs[] = $message;
 			}
 		);
-		return new EmailLinkService($this->createMock(EmailLinkMapper::class), $appManager, $db, $session, $logger);
+		return new EmailLinkService($this->createMock(EmailLinkMapper::class), $db, new LinkServiceRuntime($appManager, $session, $logger));
 	}//end makeService()
 }//end class

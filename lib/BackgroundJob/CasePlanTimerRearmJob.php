@@ -26,8 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -50,18 +49,24 @@ class CasePlanTimerRearmJob extends TimedJob {
 	public const INTERVAL_SECONDS = 300;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Job scheduling clock.
-	 * @param CasePlanTimerRearm $rearm The pass.
-	 * @param LoggerInterface $logger The logger.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
+	 * @param CasePlanTimerRearmInterface $rearm The pass.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly CasePlanTimerRearm $rearm,
-		private readonly LoggerInterface $logger,
+		JobRuntime $runtime,
+		private readonly CasePlanTimerRearmInterface $rearm,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 		// Two overlapping passes would enforce one expired term twice and race on the same markers.
 		$this->setAllowParallelRuns(allow: false);

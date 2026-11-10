@@ -39,31 +39,18 @@ use Psr\Log\LoggerInterface;
  */
 class LinkedEntityPropertyHandler {
 	/**
-	 * Map of Nc* type names to their metadata column setter methods.
+	 * Map of Nc* type names to their metadata column, read and written
+	 * through the entity's get<Column>() and set<Column>().
 	 */
-	private const NC_TYPE_TO_SETTER = [
-		'NcMail' => 'setMail',
-		'NcContact' => 'setContacts',
-		'NcNote' => 'setNotes',
-		'NcTodo' => 'setTodos',
-		'NcCalendarEvent' => 'setCalendar',
-		'NcTalk' => 'setTalk',
-		'NcDeck' => 'setDeck',
-		'NcFile' => 'setFiles',
-	];
-
-	/**
-	 * Map of Nc* type names to their metadata column getter methods.
-	 */
-	private const NC_TYPE_TO_GETTER = [
-		'NcMail' => 'getMail',
-		'NcContact' => 'getContacts',
-		'NcNote' => 'getNotes',
-		'NcTodo' => 'getTodos',
-		'NcCalendarEvent' => 'getCalendar',
-		'NcTalk' => 'getTalk',
-		'NcDeck' => 'getDeck',
-		'NcFile' => 'getFiles',
+	private const NC_TYPE_COLUMNS = [
+		'NcMail' => 'Mail',
+		'NcContact' => 'Contacts',
+		'NcNote' => 'Notes',
+		'NcTodo' => 'Todos',
+		'NcCalendarEvent' => 'Calendar',
+		'NcTalk' => 'Talk',
+		'NcDeck' => 'Deck',
+		'NcFile' => 'Files',
 	];
 
 	/**
@@ -95,83 +82,141 @@ class LinkedEntityPropertyHandler {
 	 */
 	public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity {
 		$properties = $schema->getProperties();
-		if (is_array($properties) === false || empty($properties) === true) {
+		if (is_array($properties) === false) {
 			return $object;
 		}
 
-		// Collect extracted IDs grouped by Nc* type.
-		$extractedIds = [];
-
-		foreach ($properties as $propertyName => $propertyConfig) {
-			if (is_array($propertyConfig) === false) {
-				continue;
-			}
-
-			$this->extractFromProperty(
-				propertyName: $propertyName,
-				propertyConfig: $propertyConfig,
-				data: $data,
-				extractedIds: $extractedIds
-			);
-		}
-
 		// Merge extracted IDs into metadata columns, preserving ad-hoc links.
-		foreach ($extractedIds as $ncType => $ids) {
-			$this->mergeIntoMetadataColumn(object: $object, ncType: $ncType, newIds: $ids);
+		foreach ($this->extractIds(properties: $properties, data: $data) as $ncType => $ids) {
+			$this->mergeIntoMetadataColumn(object: $object, linked: new LinkedEntityIds(ncType: $ncType, ids: $ids));
 		}
 
 		return $object;
 	}//end extractAndPopulate()
 
 	/**
-	 * Extract IDs from a single property based on its Nc* type.
+	 * Collect the reference ids of every Nc* typed property, grouped by type.
 	 *
-	 * @param string $propertyName The property name
-	 * @param array $propertyConfig The property configuration from the schema
-	 * @param array $data The object data
-	 * @param array $extractedIds Reference to the collected IDs (grouped by type)
+	 * @param array $properties The schema properties.
+	 * @param array $data The object data.
 	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @return array<string, array<int, string>> The ids by Nc* type; a type without ids is absent.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	private function extractFromProperty(
-		string $propertyName,
-		array $propertyConfig,
-		array $data,
-		array &$extractedIds,
-	): void {
-		$type = $propertyConfig['type'] ?? null;
+	private function extractIds(array $properties, array $data): array {
+		$extractedIds = [];
+		foreach ($properties as $propertyName => $propertyConfig) {
+			$linked = $this->linkedIds(propertyConfig: $propertyConfig, value: $data[$propertyName] ?? null);
+			if ($linked !== null) {
+				$extractedIds[$linked->ncType] = array_merge($extractedIds[$linked->ncType] ?? [], $linked->ids);
+			}
+		}
 
-		// Direct Nc* type property.
-		if ($type !== null && isset(self::NC_TYPE_TO_SETTER[$type]) === true) {
-			$value = $data[$propertyName] ?? null;
+		return $extractedIds;
+	}//end extractIds()
+
+	/**
+	 * The ids a single property holds: one envelope for a direct Nc* type, a
+	 * list of envelopes for an array of Nc* items.
+	 *
+	 * @param mixed $propertyConfig The property configuration from the schema; a non-array is skipped.
+	 * @param mixed $value The property's value in the object data.
+	 *
+	 * @return LinkedEntityIds|null The ids, or null when the property is not Nc* typed or holds no id.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function linkedIds(mixed $propertyConfig, mixed $value): ?LinkedEntityIds {
+		if (is_array($propertyConfig) === false) {
+			return null;
+		}
+
+		$type = $propertyConfig['type'] ?? null;
+		if ($this->isNcType(type: $type) === true) {
+			return $this->envelopeIds(ncType: $type, values: [$value]);
+		}
+
+		return $this->itemIds(propertyConfig: $propertyConfig, value: $value);
+	}//end linkedIds()
+
+	/**
+	 * The ids of an array property whose items are an Nc* type.
+	 *
+	 * @param array $propertyConfig The property configuration from the schema.
+	 * @param mixed $value The property's value; a non-array holds no ids.
+	 *
+	 * @return LinkedEntityIds|null The ids, or null when this is no such array or it holds no id.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function itemIds(array $propertyConfig, mixed $value): ?LinkedEntityIds {
+		if (($propertyConfig['type'] ?? null) !== 'array') {
+			return null;
+		}
+
+		$itemsType = $propertyConfig['items']['type'] ?? null;
+		if ($this->isNcType(type: $itemsType) === false) {
+			return null;
+		}
+
+		return $this->envelopeIds(ncType: $itemsType, values: $value);
+	}//end itemIds()
+
+	/**
+	 * Whether a schema type is one of the Nc* types.
+	 *
+	 * @param mixed $type The type.
+	 *
+	 * @return bool True for a type with a metadata column.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function isNcType(mixed $type): bool {
+		return $type !== null && isset(self::NC_TYPE_COLUMNS[$type]) === true;
+	}//end isNcType()
+
+	/**
+	 * The ids in a list of reference envelopes, in order.
+	 *
+	 * @param string $ncType The Nc* type.
+	 * @param mixed $values The envelopes; a non-array holds none.
+	 *
+	 * @return LinkedEntityIds|null The ids, or null when none of the values holds an id.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function envelopeIds(string $ncType, mixed $values): ?LinkedEntityIds {
+		if (is_array($values) === false) {
+			return null;
+		}
+
+		$ids = $this->idsInEnvelopes(values: $values);
+		if ($ids === []) {
+			return null;
+		}
+
+		return new LinkedEntityIds(ncType: $ncType, ids: $ids);
+	}//end envelopeIds()
+
+	/**
+	 * The ids the envelopes in a list hold, in order; values without an id are skipped.
+	 *
+	 * @param array $values The envelopes.
+	 *
+	 * @return list<string>
+	 */
+	private function idsInEnvelopes(array $values): array {
+		$ids = [];
+		foreach ($values as $value) {
 			$id = $this->extractIdFromEnvelope(value: $value);
 			if ($id !== null) {
-				$extractedIds[$type][] = $id;
-			}
-
-			return;
-		}
-
-		// Array of Nc* type items.
-		if ($type === 'array') {
-			$itemsType = $propertyConfig['items']['type'] ?? null;
-			if ($itemsType !== null && isset(self::NC_TYPE_TO_SETTER[$itemsType]) === true) {
-				$values = $data[$propertyName] ?? [];
-				if (is_array($values) === true) {
-					foreach ($values as $value) {
-						$id = $this->extractIdFromEnvelope(value: $value);
-						if ($id !== null) {
-							$extractedIds[$itemsType][] = $id;
-						}
-					}
-				}
+				$ids[] = $id;
 			}
 		}
-	}//end extractFromProperty()
+
+		return $ids;
+	}//end idsInEnvelopes()
 
 	/**
 	 * Extract the `id` field from a reference envelope.
@@ -186,13 +231,9 @@ class LinkedEntityPropertyHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function extractIdFromEnvelope(mixed $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
 		// Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }.
-		if (is_array($value) === true && isset($value['id']) === true) {
-			return (string)$value['id'];
+		if (is_array($value) === true) {
+			return $this->envelopeId(envelope: $value);
 		}
 
 		// Plain string ID (for simple references).
@@ -204,40 +245,41 @@ class LinkedEntityPropertyHandler {
 	}//end extractIdFromEnvelope()
 
 	/**
+	 * The `id` of a full envelope, as a string, or null when it has none.
+	 *
+	 * @param array $envelope The envelope.
+	 *
+	 * @return string|null
+	 */
+	private function envelopeId(array $envelope): ?string {
+		if (isset($envelope['id']) === true) {
+			return (string)$envelope['id'];
+		}
+
+		return null;
+	}//end envelopeId()
+
+	/**
 	 * Merge extracted IDs into the object's metadata column, preserving existing ad-hoc links.
 	 *
 	 * @param ObjectEntity $object The object entity
-	 * @param string $ncType The Nc* type name
-	 * @param array $newIds The newly extracted IDs
+	 * @param LinkedEntityIds $linked The Nc* type and the newly extracted IDs
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
 	 */
-	private function mergeIntoMetadataColumn(ObjectEntity $object, string $ncType, array $newIds): void {
-		$getter = self::NC_TYPE_TO_GETTER[$ncType] ?? null;
-		$setter = self::NC_TYPE_TO_SETTER[$ncType] ?? null;
+	private function mergeIntoMetadataColumn(ObjectEntity $object, LinkedEntityIds $linked): void {
+		$column = self::NC_TYPE_COLUMNS[$linked->ncType];
 
-		if ($getter === null || $setter === null) {
-			return;
-		}
-
-		// Get existing IDs (includes ad-hoc links from sidebar).
-		$existingIds = $object->$getter() ?? [];
-
-		// Merge and deduplicate.
-		$mergedIds = array_values(array_unique(array_merge($existingIds, $newIds)));
-
-		$object->$setter($mergedIds);
+		// Existing IDs include ad-hoc links from the sidebar; merge and deduplicate.
+		$existingIds = $object->{'get' . $column}() ?? [];
+		$mergedIds = array_values(array_unique(array_merge($existingIds, $linked->ids)));
+		$object->{'set' . $column}($mergedIds);
 
 		$this->logger->debug(
 			'[LinkedEntityPropertyHandler] Merged IDs into metadata column',
-			[
-				'ncType' => $ncType,
-				'newIds' => $newIds,
-				'existing' => count($existingIds),
-				'merged' => count($mergedIds),
-			]
+			['ncType' => $linked->ncType, 'newIds' => $linked->ids, 'existing' => count($existingIds), 'merged' => count($mergedIds)]
 		);
 	}//end mergeIntoMetadataColumn()
 }//end class

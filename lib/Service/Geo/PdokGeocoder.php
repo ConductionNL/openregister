@@ -46,7 +46,7 @@ use Throwable;
  *   Coupling to NC's IAppManager + the DI container is required to
  *   detect and lazily resolve the OpenConnector CallService.
  */
-class PdokGeocoder {
+class PdokGeocoder implements PdokGeocoderInterface {
 
 	/**
 	 * PDOK Locatieserver v3.1 base URL (REQ-GEO-005).
@@ -126,16 +126,29 @@ class PdokGeocoder {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
 	 */
 	public function geocodeFree(string $query, int $maxItems = 5, bool $bagOnly = false): array {
-		$query = trim($query);
-		if ($query === '') {
+		return $this->suggestionsFor(address: new AddressQuery(query: trim($query), maxItems: $maxItems, bagOnly: $bagOnly));
+	}//end geocodeFree()
+
+	/**
+	 * The suggestions for one address search; empty on a blank query or any failure.
+	 *
+	 * @param AddressQuery $address The trimmed text, the maximum and the BAG-only flag.
+	 *
+	 * @return array<int, array<string, mixed>> Suggestions (possibly empty).
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
+	 */
+	private function suggestionsFor(AddressQuery $address): array {
+		if ($address->query === '') {
 			return [];
 		}
 
 		$params = [
-			'q' => $query,
-			'rows' => max(1, $maxItems),
+			'q' => $address->query,
+			'rows' => max(1, $address->maxItems),
 		];
-		if ($bagOnly === true) {
+		if ($address->bagOnly === true) {
 			$params['fq'] = 'type:adres';
 		}
 
@@ -144,8 +157,8 @@ class PdokGeocoder {
 			return [];
 		}
 
-		return $this->shapeSuggestions(payload: $payload, maxItems: $maxItems);
-	}//end geocodeFree()
+		return $this->shapeSuggestions(payload: $payload, maxItems: $address->maxItems);
+	}//end suggestionsFor()
 
 	/**
 	 * Reverse geocoding: coordinates -> nearest address (or null).

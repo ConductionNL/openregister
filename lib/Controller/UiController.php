@@ -85,31 +85,16 @@ class UiController extends Controller {
 	 */
 	private function makeSpaResponse(): TemplateResponse {
 		try {
-			// Create template response for SPA index page.
-			$response = new TemplateResponse(
-				appName: $this->appName,
-				templateName: 'index',
-				params: []
-			);
-
-			// Configure Content Security Policy to allow API connections.
-			// Permissive connect-src is necessary for frontend to make API calls.
+			$response = new TemplateResponse(appName: $this->appName, templateName: 'index', params: []);
+			// Permissive connect-src is necessary for the frontend to make API calls.
 			$csp = new ContentSecurityPolicy();
 			$csp->addAllowedConnectDomain('*');
 			$response->setContentSecurityPolicy($csp);
 
-			// Return successful template response.
 			return $response;
 		} catch (\Exception $e) {
-			// Return error template if rendering fails.
-			$response = new TemplateResponse(
-				appName: $this->appName,
-				templateName: 'error',
-				params: ['error' => $e->getMessage()]
-			);
-			$response->setStatus(500);
-			return $response;
-		}//end try
+			return (new TemplateResponse(appName: $this->appName, templateName: 'error', params: ['error' => $e->getMessage()]))->setStatus(500);
+		}
 	}//end makeSpaResponse()
 
 	/**

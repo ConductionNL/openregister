@@ -36,7 +36,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Notifications\Db\PushSubscription;
 use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
+use OCA\OpenRegister\Notifications\Controller\Support\WebPushControllerServices;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
 use OCA\OpenRegister\Notifications\Service\WebPush\WebPushService;
 use OCP\AppFramework\Controller;
@@ -57,24 +60,49 @@ use OCP\IUserSession;
  */
 class WebPushController extends Controller {
 	/**
+	 * VAPID key and delivery service.
+	 *
+	 * @var WebPushService
+	 */
+	private readonly WebPushService $webPushService;
+
+	/**
+	 * Subscription store.
+	 *
+	 * @var PushSubscriptionMapper
+	 */
+	private readonly PushSubscriptionMapper $subscriptionMapper;
+
+	/**
+	 * Hex-icon raster service.
+	 *
+	 * @var HexIconService
+	 */
+	private readonly HexIconService $hexIconService;
+
+	/**
+	 * Current session (owner binding).
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request Active HTTP request.
-	 * @param WebPushService $webPushService VAPID key + delivery service.
-	 * @param PushSubscriptionMapper $subscriptionMapper Subscription store.
-	 * @param HexIconService $hexIconService Hex-icon raster service.
-	 * @param IUserSession $userSession Current session (owner binding).
+	 * @param IRequest $request Request.
+	 * @param WebPushControllerServices $services The controller's services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly WebPushService $webPushService,
-		private readonly PushSubscriptionMapper $subscriptionMapper,
-		private readonly HexIconService $hexIconService,
-		private readonly IUserSession $userSession,
+		WebPushControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->webPushService = $services->webPushService;
+		$this->subscriptionMapper = $services->subscriptionMapper;
+		$this->hexIconService = $services->hexIconService;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -123,13 +151,13 @@ class WebPushController extends Controller {
 			return new JSONResponse(['error' => 'endpoint, keys.p256dh and keys.auth are required'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$subscription = $this->subscriptionMapper->store(
-			userId: $user->getUID(),
-			endpoint: $endpoint,
-			p256dh: $p256dh,
-			auth: $auth,
-			userAgent: $this->request->getHeader('User-Agent')
-		);
+		$subscription = new PushSubscription();
+		$subscription->setUserId($user->getUID());
+		$subscription->setEndpoint($endpoint);
+		$subscription->setP256dh($p256dh);
+		$subscription->setAuth($auth);
+		$subscription->setUserAgent($this->request->getHeader('User-Agent'));
+		$subscription = $this->subscriptionMapper->store(subscription: $subscription);
 
 		return new JSONResponse($subscription->jsonSerialize(), Http::STATUS_CREATED);
 	}//end subscribe()

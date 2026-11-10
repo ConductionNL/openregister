@@ -33,10 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\AvgRetentionService;
-use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\AvgRetentionPassInterface;
 
 /**
  * Daily AVG retention enforcement.
@@ -81,20 +78,16 @@ class AvgRetentionJob extends AbstractRetentionJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory required by parent.
-	 * @param IAppConfig $appConfig App-config reader.
-	 * @param AvgRetentionService $retentionService Domain service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
+	 * @param AvgRetentionPassInterface $retentionService Domain service.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		IAppConfig $appConfig,
-		private readonly AvgRetentionService $retentionService,
-		LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
+		private readonly AvgRetentionPassInterface $retentionService,
 	) {
-		parent::__construct(time: $time, appConfig: $appConfig, logger: $logger);
+		parent::__construct(runtime: $runtime);
 	}//end __construct()
 
 	/**

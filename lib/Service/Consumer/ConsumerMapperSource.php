@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Consumer;
 
 use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Db\ConsumerMapperInterface;
 
 /**
  * The default consumer source: OpenRegister's Consumer entities.
@@ -42,12 +42,12 @@ class ConsumerMapperSource implements ConsumerSource {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConsumerMapper $consumers OpenRegister's consumer table.
+	 * @param ConsumerMapperInterface $consumers OpenRegister's consumer table.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function __construct(
-		private readonly ConsumerMapper $consumers,
+		private readonly ConsumerMapperInterface $consumers,
 	) {
 	}//end __construct()
 

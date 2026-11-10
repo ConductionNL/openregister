@@ -107,7 +107,7 @@ final class McpTool {
 	 *                            grants on this value.
 	 * @param string|null $reach The widest set of principals a successful call can affect or
 	 *                           disclose to; when set, MUST be one of
-	 *                           {@see \OCA\OpenRegister\Service\Capability\ToolReachResolver::ORDER}
+	 *                           {@see \OCA\OpenRegister\Service\Capability\ToolReachLevels::ORDER}
 	 *                           (`self`, `user`, `instance`, `external`), validated by the scanner at
 	 *                           scan time. A curated two-segment id carries no verb to infer a reach
 	 *                           from, so an omitted reach resolves to `external` (fail closed).

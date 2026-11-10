@@ -22,6 +22,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -90,13 +94,10 @@ class SaveObjectsSchemaContextGoldenTest extends TestCase {
 			}
 		);
 		$handler = new SaveObjects(
-			$this->createMock(MagicMapper::class),
-			$schemaMapper,
-			$registerMapper,
-			$this->createMock(SaveObject::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(LoggerInterface::class)
+			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $schemaMapper, registerMapper: $registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class)),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks()
 		);
 
 		return (new ReflectionMethod(SaveObjects::class, 'loadAndValidateSchemaContext'))->invoke($handler, $register, $schema);

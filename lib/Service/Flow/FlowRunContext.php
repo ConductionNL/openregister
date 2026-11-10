@@ -60,7 +60,7 @@ namespace OCA\OpenRegister\Service\Flow;
  *
  * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
  */
-class FlowRunContext {
+class FlowRunContext implements FlowRunContextInterface {
 	/**
 	 * The context key carrying the executing run's uuid into the engine.
 	 *

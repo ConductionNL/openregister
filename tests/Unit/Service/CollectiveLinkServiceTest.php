@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\CollectiveLink;
 use OCA\OpenRegister\Db\CollectiveLinkMapper;
 use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -100,10 +101,8 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->service = new CollectiveLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->urlGenerator,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
+			$this->urlGenerator
 		);
 	}//end setUp()
 

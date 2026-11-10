@@ -38,15 +38,12 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 
 	/**
 	 * The config keys of which at least one must be non-empty.
@@ -54,19 +51,6 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 * @var string[]
 	 */
 	private const RESHAPING_KEYS = ['set', 'compute', 'rename', 'remove'];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
 
 	/**
 	 * The step type.
@@ -103,17 +87,6 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/rename.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes — reshaping data grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return bool Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a set-fields step.
@@ -225,6 +198,18 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	public function execute(array $items, array $config, array $context): array {
 		$plan = new SetFieldsPlan(config: $config, context: $context, itemCount: count($items));
 
+		return $this->reshapeEach(plan: $plan, items: $items);
+	}//end execute()
+
+	/**
+	 * Apply the plan to every item, one in and one out.
+	 *
+	 * @param SetFieldsPlan $plan  The step's plan for this run.
+	 * @param array         $items The input items.
+	 *
+	 * @return array The output items, one per input item.
+	 */
+	private function reshapeEach(SetFieldsPlan $plan, array $items): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
@@ -235,7 +220,7 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 		}
 
 		return $out;
-	}//end execute()
+	}//end reshapeEach()
 
 	/**
 	 * Apply the plan to one item's record.
@@ -599,16 +584,4 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

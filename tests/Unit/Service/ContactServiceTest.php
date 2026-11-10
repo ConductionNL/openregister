@@ -8,6 +8,7 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -39,8 +40,7 @@ class ContactServiceTest extends TestCase {
 		$this->service = new ContactService(
 			$this->contactLinkMapper,
 			$this->cardDavBackend,
-			$this->userSession,
-			$this->logger,
+			new LinkSessionRuntime($this->userSession, $this->logger),
 			$this->urlGenerator
 		);
 	}

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * What show() asks of the request's object service.
@@ -37,7 +37,7 @@ final class ShowServices {
 	 * Hold the services.
 	 *
 	 * @param ObjectOperationsInterface $objects     The object service.
-	 * @param PermissionHandler         $permissions Answers what a reader may do.
+	 * @param PermissionHandlerInterface         $permissions Answers what a reader may do.
 	 * @param CacheHandlerInterface     $names       Answers object names.
 	 *
 	 * @return void
@@ -46,7 +46,7 @@ final class ShowServices {
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objects,
-		public readonly PermissionHandler $permissions,
+		public readonly PermissionHandlerInterface $permissions,
 		public readonly CacheHandlerInterface $names,
 	) {
 	}//end __construct()

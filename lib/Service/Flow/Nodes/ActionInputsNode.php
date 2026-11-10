@@ -37,9 +37,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 
 /**
  * Copies the run's action inputs onto each item.
@@ -49,7 +46,7 @@ use OCP\WorkflowEngine\IManager;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
  */
-class ActionInputsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, ActionInputsNodeInterface {
 
 	/**
 	 * The step type.
@@ -57,18 +54,6 @@ class ActionInputsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxon
 	 * @var string
 	 */
 	public const TYPE = 'openregister.action-inputs';
-
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N         $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-	}//end __construct()
 
 	/**
 	 * The step type.
@@ -115,19 +100,6 @@ class ActionInputsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxon
 	}//end getIcon()
 
 	/**
-	 * Available in both scopes: it only copies what the run already carries.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return bool Whether it is available.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * The step takes no configuration.
 	 *
 	 * @return array<int, string> The accepted config keys.
@@ -166,11 +138,32 @@ class ActionInputsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxon
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$inputs = array_merge(
+		return $this->withInputs(items: $items, inputs: $this->inputsOf(context: $context));
+	}//end execute()
+
+	/**
+	 * The run's inputs merged with the held writeOnly values.
+	 *
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The inputs every item carries.
+	 */
+	private function inputsOf(array $context): array {
+		return array_merge(
 			(array)($context['inputs'] ?? []),
 			ObjectActionSecrets::read(ref: ($context[ObjectActionSecrets::CONTEXT_KEY] ?? null))
 		);
+	}//end inputsOf()
 
+	/**
+	 * Every item with `inputs` set on its json.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $inputs The inputs to set.
+	 *
+	 * @return array The items, each carrying `inputs`.
+	 */
+	private function withInputs(array $items, array $inputs): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
@@ -179,7 +172,7 @@ class ActionInputsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxon
 		}
 
 		return $out;
-	}//end execute()
+	}//end withInputs()
 
 	/**
 	 * The BPMN kind.
@@ -191,15 +184,4 @@ class ActionInputsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxon
 	public function getKind(): string {
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 	}//end getKind()
-
-	/**
-	 * The palette category.
-	 *
-	 * @return string The category.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-	}//end getCategory()
 }//end class

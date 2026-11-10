@@ -71,6 +71,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectUpdateObjectTest extends TestCase {
 
@@ -124,7 +126,6 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
 			data: $case['data'],
 			existingObject: $existing,
-			folderId: null,
 			silent: ($case['silent'] ?? false),
 			oldObject: $old
 		);
@@ -195,29 +196,49 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionServiceInterface::class) ? $retention : throw new \RuntimeException('no ' . $id));
 
 		return new SaveObject(
-			$mapper,
-			$unified,
-			$this->createMock(MetadataHydrationHandler::class),
-			$files,
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->createMock(IUserSession::class),
-			$audit,
-			$schemas,
-			$registers,
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(CacheHandler::class),
-			$settings,
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			$logger,
-			$this->createMock(TmloService::class),
-			$this->createMock(FolderManagementHandler::class),
-			$this->createMock(PermissionHandler::class),
-			container: $container
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $mapper,
+						unifiedObjectMapper: $unified,
+						schemaMapper: $schemas,
+						registerMapper: $registers
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $audit,
+						settingsService: $settings,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class),
+						container: $container
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $files,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(TranslationHandler::class),
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->createMock(IUserSession::class),
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->createMock(OrganisationService::class)
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $this->createMock(FolderManagementHandler::class)
 		);
 	}
 

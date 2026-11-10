@@ -34,7 +34,7 @@ final class RulesControllerServices {
 	 * @param RulesMappers  $mappers  The mappers bundle.
 	 * @param RulesDomain   $domain   The domain bundle.
 	 * @param RulesReplay   $replay   The replay bundle.
-	 * @param RulesPlatform $platform The platform bundle.
+	 * @param DsarCasePlatform $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
@@ -42,7 +42,7 @@ final class RulesControllerServices {
 		public readonly RulesMappers $mappers,
 		public readonly RulesDomain $domain,
 		public readonly RulesReplay $replay,
-		public readonly RulesPlatform $platform,
+		public readonly DsarCasePlatform $platform,
 	) {
 	}//end __construct()
 }//end class

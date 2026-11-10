@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Controller\Trait;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
- * Needs the using class to hold `$objectService` and a PermissionHandler `$permissions`.
+ * Needs the using class to hold `$objectService` and a PermissionHandlerInterface `$permissions`.
  */
 trait ChecksObjectUpdateRight
 {

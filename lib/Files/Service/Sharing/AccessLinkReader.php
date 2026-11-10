@@ -44,18 +44,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 
 /**
  * Resolves and renders the subject behind an access link.
@@ -102,26 +106,73 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	private const MAX_VIEW_OBJECTS = 200;
 
 	/**
+	 * The object read path.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Resolves the schema whose rules apply.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Strips write-only and unreadable properties.
+	 *
+	 * @var PropertyRbacHandlerInterface
+	 */
+	private readonly PropertyRbacHandlerInterface $properties;
+
+	/**
+	 * Reads and projects the public half of the timeline.
+	 *
+	 * @var PublicTimelineInterface
+	 */
+	private readonly PublicTimelineInterface $timeline;
+
+	/**
+	 * Reads which object a subject names.
+	 *
+	 * @var AccessLinkSubjectInterface
+	 */
+	private readonly AccessLinkSubjectInterface $subjects;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Refuses a restricted file to a link. Null only in legacy fixtures.
+	 *
+	 * @var FileRestrictionStore|null
+	 */
+	private readonly ?FileRestrictionStore $restrictions;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects The object read path.
-	 * @param SchemaMapperInterface $schemas Resolves the schema whose rules apply.
-	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
-	 * @param PublicTimelineInterface $timeline Reads and projects the public half of the timeline.
-	 * @param AccessLinkSubject $subjects Reads which object a subject names.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param FileRestrictionStore|null $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
+	 * @param AccessLinkReaderSources $sources The object read path, the subject parser and the optional file restriction store.
+	 * @param AccessLinkReaderFilters $filters Schema mapper, property RBAC handler and public timeline.
+	 * @param LoggerInterface         $logger  PSR logger.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly PropertyRbacHandler $properties,
-		private readonly PublicTimelineInterface $timeline,
-		private readonly AccessLinkSubject $subjects,
-		private readonly LoggerInterface $logger,
-		private readonly ?FileRestrictionStore $restrictions = null,
+		AccessLinkReaderSources $sources,
+		AccessLinkReaderFilters $filters,
+		LoggerInterface $logger,
 	) {
-
+		$this->objects = $sources->objects;
+		$this->subjects = $sources->subjects;
+		$this->restrictions = $sources->restrictions;
+		$this->schemas = $filters->schemas;
+		$this->properties = $filters->properties;
+		$this->timeline = $filters->timeline;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -131,13 +182,13 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * has no rules of its own here: it belongs to an object and inherits them.
 	 * A view link resolves to no single object, so this answers null for one.
 	 *
-	 * @param AccessLink $link The link.
+	 * @param AccessLinkInterface $link The link.
 	 *
 	 * @return ObjectEntity|null The object, or null.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
 	 */
-	public function subjectObject(AccessLink $link): ?ObjectEntity {
+	public function subjectObject(AccessLinkInterface $link): ?ObjectEntity {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_VIEW) {
 			return null;
 		}
@@ -194,14 +245,14 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	/**
 	 * What the link serves, filtered, or null when the subject is gone.
 	 *
-	 * @param AccessLink $link The link.
-	 * @param ObjectEntity|null $object The subject, when the caller already resolved it.
+	 * @param AccessLinkInterface $link The link.
+	 * @param ObjectEntityInterface|null $object The subject, when the caller already resolved it.
 	 *
 	 * @return array<string, mixed>|null The body, or null when there is nothing to serve.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
-	public function read(AccessLink $link, ?ObjectEntity $object = null): ?array {
+	public function read(AccessLinkInterface $link, ?ObjectEntityInterface $object = null): ?array {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_VIEW) {
 			return $this->readView(link: $link);
 		}
@@ -209,7 +260,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		// The caller usually resolved the object already, because it needs it to
 		// attribute the audit entry. Taking it as an argument keeps the public
 		// read path to ONE database fetch instead of two.
-		$object = ($object ?? $this->subjectObject(link: $link));
+		$object = StoredEntity::object(object: $object ?? $this->subjectObject(link: $link));
 		if ($object === null) {
 			return null;
 		}
@@ -235,13 +286,13 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	/**
 	 * The objects a view link serves, each filtered.
 	 *
-	 * @param AccessLink $link The link.
+	 * @param AccessLinkInterface $link The link.
 	 *
 	 * @return array<string, mixed>|null The body, or null when the view is gone.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
 	 */
-	private function readView(AccessLink $link): ?array {
+	private function readView(AccessLinkInterface $link): ?array {
 		$viewId = trim((string)$link->getSubjectId());
 		if ($viewId === '') {
 			return null;
@@ -298,14 +349,14 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * with the same audience get the same projection, from here, rather than a
 	 * second allow-list that drifts.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param ObjectEntityInterface $object The object.
 	 *
 	 * @return array<string, mixed> The published projection.
 	 *
 	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
 	 */
-	public function publish(ObjectEntity $object): array {
-		return $this->project(object: $object);
+	public function publish(ObjectEntityInterface $object): array {
+		return $this->project(object: StoredEntity::object(object: $object));
 	}//end publish()
 
 	/**
@@ -377,7 +428,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		);
 
 		// A link never reveals an explicit-reveal value: it reads masked.
-		return ExplicitReveal::maskAll(schema: $schema, object: $readable);
+		return ExplicitRevealMasks::maskAll(schema: $schema, object: $readable);
 	}//end filteredProperties()
 
 	/**

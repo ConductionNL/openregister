@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * Hooked into the schema-save path in SchemaService (or its caller). Errors
  * map to HTTP 422 responses as schema-save failures.
  */
-final class LifecycleAnnotationValidator {
+final class LifecycleAnnotationValidator implements LifecycleAnnotationValidatorInterface {
 
 	use LifecycleFieldCheck;
 	use LifecycleErrorBuilding;

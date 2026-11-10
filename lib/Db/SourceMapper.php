@@ -24,14 +24,12 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\SourceCreatedEvent;
-use OCA\OpenRegister\Event\SourceDeletedEvent;
-use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -57,7 +55,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class SourceMapper extends QBMapper {
+class SourceMapper extends QBMapper implements SourceMapperInterface {
 
 	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
@@ -85,11 +83,11 @@ class SourceMapper extends QBMapper {
 	protected IGroupManager $groupManager;
 
 	/**
-	 * Event dispatcher for dispatching source events
+	 * Announces source events
 	 *
-	 * @var IEventDispatcher
+	 * @var EntityEventsInterface
 	 */
-	private IEventDispatcher $eventDispatcher;
+	private EntityEventsInterface $entityEvents;
 
 	/**
 	 * Organisation mapper for multi-tenancy
@@ -109,25 +107,21 @@ class SourceMapper extends QBMapper {
 	 * Constructor
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param TenancyServices $tenancy Organisation mapper, session and groups
+	 * @param EntityEventsInterface $entityEvents Announces source events
 	 * @param IAppConfig $appConfig App configuration
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		IEventDispatcher $eventDispatcher,
+		TenancyServices $tenancy,
+		EntityEventsInterface $entityEvents,
 		IAppConfig $appConfig,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_sources', entityClass: Source::class);
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
+		$this->entityEvents = $entityEvents;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
@@ -173,11 +167,11 @@ class SourceMapper extends QBMapper {
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
+		array|null $searchConditions = [],
+		array|null $searchParams = [],
 	): array {
 		// Verify RBAC permission to read.
 		$this->verifyRbacPermission(action: 'read', entityType: 'source');
@@ -190,19 +184,35 @@ class SourceMapper extends QBMapper {
 			->setFirstResult($offset);
 
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-			foreach ($searchParams ?? [] as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
+		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * OR the raw search conditions into the query and bind their parameters.
+	 *
+	 * Nothing is added, and no parameter is bound, when there are no conditions.
+	 *
+	 * @param IQueryBuilder $qb               The query to add the conditions to.
+	 * @param array|null    $searchConditions SQL fragments, joined with OR.
+	 * @param array|null    $searchParams     Parameter name to value for those fragments.
+	 *
+	 * @return void
+	 */
+	private function applySearchConditions(IQueryBuilder $qb, array|null $searchConditions, array|null $searchParams): void {
+		if (empty($searchConditions) === true) {
+			return;
+		}
+
+		$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+		foreach ($searchParams ?? [] as $param => $value) {
+			$qb->setParameter($param, $value);
+		}
+	}//end applySearchConditions()
 
 	/**
 	 * Find all sources that have scheduled sync enabled.
@@ -313,7 +323,7 @@ class SourceMapper extends QBMapper {
 		$entity = parent::insert(entity: $entity);
 
 		// Dispatch creation event.
-		$this->eventDispatcher->dispatchTyped(new SourceCreatedEvent(source: $entity));
+		$this->entityEvents->sourceCreated(source: $entity);
 
 		return $entity;
 	}//end insert()
@@ -343,7 +353,7 @@ class SourceMapper extends QBMapper {
 		$entity = parent::update(entity: $entity);
 
 		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent(newSource: $entity, oldSource: $oldEntity));
+		$this->entityEvents->sourceUpdated(newSource: $entity, oldSource: $oldEntity);
 
 		return $entity;
 	}//end update()
@@ -368,7 +378,7 @@ class SourceMapper extends QBMapper {
 		$entity = parent::delete(entity: $entity);
 
 		// Dispatch deletion event.
-		$this->eventDispatcher->dispatchTyped(new SourceDeletedEvent(source: $entity));
+		$this->entityEvents->sourceDeleted(source: $entity);
 
 		return $entity;
 	}//end delete()

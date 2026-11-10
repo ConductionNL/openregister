@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -168,13 +169,12 @@ class OrganisationContextTenancyTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$conditionMatcher = new ConditionMatcher(
-			$userSession,
+			new ConditionUserResolvers($userSession, $groupManager),
 			$container,
 			$this->createMock(OperatorEvaluator::class),
-			$logger,
-			$groupManager
+			$logger
 		);
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$this->createMock(IUserManager::class),
 			$groupManager,

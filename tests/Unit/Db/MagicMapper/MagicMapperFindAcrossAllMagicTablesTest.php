@@ -30,6 +30,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -37,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IPreparedStatement;
@@ -452,11 +456,11 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
 				return match ($id) {
-					DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+					DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 					\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(
 						\OCA\OpenRegister\Service\ConditionMatcher::class
 					),
-					\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(
+					\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class
 					),
 					default => null,
@@ -466,17 +470,22 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 
 		$mapper = new MagicMapper(
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$config,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$config,
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$statisticsHandler = $this->createMock(MagicStatisticsHandler::class);

@@ -41,63 +41,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
  * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface
  * is PHP's own conversion; there is no instance form.
  */
-final class SlaCalculator {
-
-	/**
-	 * The unit vocabulary, shared by the SLA and the escalation offsets.
-	 */
-	public const UNIT_HOURS = 'hours';
-
-	public const UNIT_BUSINESS_DAYS = 'businessDays';
-
-	public const UNIT_CALENDAR_DAYS = 'calendarDays';
-
-	/**
-	 * Every accepted unit.
-	 *
-	 * @var array<int, string>
-	 */
-	public const UNITS = [self::UNIT_HOURS, self::UNIT_BUSINESS_DAYS, self::UNIT_CALENDAR_DAYS];
-
-	/**
-	 * The end date is left where the budget put it. THE DEFAULT, and it is the
-	 * default deliberately: rolling changes a deadline, and a deadline that
-	 * moved without anybody asking is worse than one that lands on a Sunday.
-	 *
-	 * @var string
-	 */
-	public const ROLL_NONE = 'none';
-
-	/**
-	 * Move the end date forward to the first working day. This is the rule the
-	 * Algemene termijnenwet states for a statutory term; whether a given term
-	 * is one, and whether the calendar it is measured against lists the right
-	 * days, are both questions for the administrator, not for this class.
-	 *
-	 * @var string
-	 */
-	public const ROLL_NEXT = 'next';
-
-	/**
-	 * Move the end date back to the last working day.
-	 *
-	 * @var string
-	 */
-	public const ROLL_PREVIOUS = 'previous';
-
-	/**
-	 * The whole roll vocabulary.
-	 *
-	 * @var array<int, string>
-	 */
-	public const ROLLS = [self::ROLL_NONE, self::ROLL_NEXT, self::ROLL_PREVIOUS];
-
-	/**
-	 * The accepted SLA value range, inclusive.
-	 */
-	public const MIN_VALUE = 1;
-
-	public const MAX_VALUE = 10000;
+final class SlaCalculator implements SlaCalculatorInterface {
 
 	/**
 	 * Seconds in a day, the fraction base for business days.
@@ -217,38 +161,40 @@ final class SlaCalculator {
 	 * @param string $unit The unit.
 	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and
 	 *        refused when absent, ignored for hours and calendar days.
-	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 */
+	public function add(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
+		$addition = new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: $value, unit: $unit, calendar: $calendar);
+
+		return $this->addWatched(addition: $addition, collector: null);
+	}//end add()
+
+	/**
+	 * Add an amount of business time to an instant, recording the walk when someone is watching.
+	 *
+	 * @param SlaAddition        $addition  The start, the amount, the unit and the calendar.
+	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking; the arm path passes none.
+	 *
+	 * @return DateTimeImmutable The resulting instant.
+	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function add(
-		DateTimeInterface $from,
-		float $value,
-		string $unit,
-		?WorkingCalendar $calendar,
-		?WalkCollector $collector = null
-	): DateTimeImmutable {
-		$addition = new SlaAddition(
-			start: DateTimeImmutable::createFromInterface($from),
-			value: $value,
-			unit: $unit,
-			calendar: $calendar
-		);
-		$this->validateUnit(unit: $unit);
+	public function addWatched(SlaAddition $addition, ?WalkCollector $collector): DateTimeImmutable {
+		$this->validateUnit(unit: $addition->unit);
 
-		if ($unit === self::UNIT_HOURS) {
+		if ($addition->unit === self::UNIT_HOURS) {
 			return $this->addHours(addition: $addition);
 		}
 
-		if ($unit === self::UNIT_CALENDAR_DAYS) {
-			return $this->addCalendarDays(start: $addition->start, value: $value);
+		if ($addition->unit === self::UNIT_CALENDAR_DAYS) {
+			return $this->addCalendarDays(start: $addition->start, value: $addition->value);
 		}
 
 		return $this->walk(addition: $addition, collector: $collector);
-	}//end add()
+	}//end addWatched()
 
 	/**
 	 * Subtract an amount of business time from an instant.
@@ -279,24 +225,36 @@ final class SlaCalculator {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function measure(DateTimeInterface $from, DateTimeInterface $to, string $unit, WorkingCalendar $calendar): float {
+		return $this->measureSpan(span: new CalendarSpan(from: $from, to: $to, calendar: $calendar), unit: $unit);
+	}//end measure()
+
+	/**
+	 * The amount of one unit across a span; a span that runs backwards yields a negative amount.
+	 *
+	 * @param CalendarSpan $span The instants and the resolved calendar.
+	 * @param string       $unit The unit.
+	 *
+	 * @return float The amount in the unit.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 */
+	private function measureSpan(CalendarSpan $span, string $unit): float {
 		$this->validateUnit(unit: $unit);
 		if ($unit === self::UNIT_HOURS) {
-			return (($to->getTimestamp() - $from->getTimestamp()) / 3600);
+			return (($span->to->getTimestamp() - $span->from->getTimestamp()) / 3600);
 		}
 
 		if ($unit === self::UNIT_CALENDAR_DAYS) {
-			return self::calendarDaysBetween(from: $from, to: $to);
+			return self::calendarDaysBetween(from: $span->from, to: $span->to);
 		}
 
-		if ($to->getTimestamp() < $from->getTimestamp()) {
-			return -$this->measure(from: $to, to: $from, unit: $unit, calendar: $calendar);
+		if ($span->to->getTimestamp() < $span->from->getTimestamp()) {
+			return -$this->measureSpan(span: new CalendarSpan(from: $span->to, to: $span->from, calendar: $span->calendar), unit: $unit);
 		}
-
-		$span = new CalendarSpan(from: $from, to: $to, calendar: $calendar);
 
 		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingFraction(span: $span, cursor: $cursor))
 			?? throw $this->walkLimit(subject: $span->describe(what: 'business days'));
-	}//end measure()
+	}//end measureSpan()
 
 	/**
 	 * How many WORKING hours lie between two instants.
@@ -333,24 +291,36 @@ final class SlaCalculator {
 	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function elapsedBusinessHours(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar): float {
-		if ($to->getTimestamp() < $from->getTimestamp()) {
-			return -$this->elapsedBusinessHours(from: $to, to: $from, calendar: $calendar);
+		return $this->businessHours(span: new CalendarSpan(from: $from, to: $to, calendar: $calendar));
+	}//end elapsedBusinessHours()
+
+	/**
+	 * The working hours across a span; a span that runs backwards yields a negative amount.
+	 *
+	 * Declared service hours are measured by the service-hours clock; otherwise
+	 * each working day contributes the overlap with its working window.
+	 *
+	 * @param CalendarSpan $span The instants and the resolved calendar.
+	 *
+	 * @return float The working hours between the two instants.
+	 *
+	 * @throws FlowTimerValidationException When the interval is longer than the walk allows.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md
+	 */
+	private function businessHours(CalendarSpan $span): float {
+		if ($span->to->getTimestamp() < $span->from->getTimestamp()) {
+			return -$this->businessHours(span: new CalendarSpan(from: $span->to, to: $span->from, calendar: $span->calendar));
 		}
 
-		if ($calendar->getServiceHours()->areDeclared() === true) {
-			return $this->hoursClock->elapsed(
-				from: $from,
-				to: $to,
-				calendar: $calendar,
-				windows: $calendar->getServiceHours()
-			);
+		$windows = $span->calendar->getServiceHours();
+		if ($windows->areDeclared() === true) {
+			return $this->hoursClock->elapsed(from: $span->from, to: $span->to, calendar: $span->calendar, windows: $windows);
 		}
-
-		$span = new CalendarSpan(from: $from, to: $to, calendar: $calendar);
 
 		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingHours(span: $span, cursor: $cursor))
 			?? throw $this->walkLimit(subject: $span->describe(what: 'working hours'));
-	}//end elapsedBusinessHours()
+	}//end businessHours()
 
 	/**
 	 * Convert an amount between units, through hours as the pivot: one business
@@ -366,20 +336,36 @@ final class SlaCalculator {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	public function convert(float $value, string $fromUnit, string $toUnit, WorkingCalendar $calendar): float {
-		$this->validateUnit(unit: $fromUnit);
-		$this->validateUnit(unit: $toUnit);
-		if ($fromUnit === $toUnit) {
-			return $value;
-		}
-
-		$hoursPer = [
-			self::UNIT_HOURS => 1.0,
-			self::UNIT_BUSINESS_DAYS => $calendar->getHoursPerWorkingDay(),
-			self::UNIT_CALENDAR_DAYS => 24.0,
-		];
-
-		return (($value * $hoursPer[$fromUnit]) / $hoursPer[$toUnit]);
+		$fromHours = $this->hoursPer(unit: $fromUnit, calendar: $calendar);
+		$toHours = $this->hoursPer(unit: $toUnit, calendar: $calendar);
+		// An identical unit returns the amount untouched rather than through
+		// the pivot, so no rounding is introduced where nothing changed.
+		return match ($fromUnit) { $toUnit => $value, default => (($value * $fromHours) / $toHours) };
 	}//end convert()
+
+	/**
+	 * How many hours one of a unit stands for on this calendar, once the unit
+	 * is validated; the only unit left after hours and calendar days is
+	 * business days.
+	 *
+	 * @param string          $unit     The unit.
+	 * @param WorkingCalendar $calendar Supplies hoursPerWorkingDay.
+	 *
+	 * @return float
+	 *
+	 * @throws FlowTimerValidationException When the unit is not one of the three.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 */
+	private function hoursPer(string $unit, WorkingCalendar $calendar): float {
+		$this->validateUnit(unit: $unit);
+
+		return match ($unit) {
+			self::UNIT_HOURS => 1.0,
+			self::UNIT_CALENDAR_DAYS => 24.0,
+			default => $calendar->getHoursPerWorkingDay(),
+		};
+	}//end hoursPer()
 
 	/**
 	 * Add hours: through the calendar's service hours when it declares any,
@@ -624,11 +610,6 @@ final class SlaCalculator {
 	 * @throws FlowTimerValidationException When the modifier is unparseable.
 	 */
 	private function shift(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
-		$shifted = $moment->modify($modifier);
-		if ($shifted === false) {
-			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
-		}
-
-		return $shifted;
+		return MomentShift::by(moment: $moment, modifier: $modifier);
 	}//end shift()
 }//end class

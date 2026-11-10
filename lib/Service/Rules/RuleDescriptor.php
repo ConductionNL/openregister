@@ -60,16 +60,10 @@ final class RuleDescriptor implements JsonSerializable {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $kind One of the RuleVocabulary KIND_ constants.
-	 * @param string $schemaSlug The slug of the schema the rule acts on.
-	 * @param string $key The rule's own key within its kind.
-	 * @param string $label What the rule is called on screen.
-	 * @param string $source The annotation path the rule was read from.
-	 * @param bool $enabled Whether the rule is switched on.
-	 * @param array<int, string> $actions What the rule does when it fires.
-	 * @param mixed $condition The rule's condition, as the author declared it.
-	 * @param int|null $maxObjects The ceiling the rule declares for one run.
-	 * @param array{property: string, value: string}|null $scope The objects the rule is about, or null for all.
+	 * @param RuleOrigin $origin  The kind, the schema, the key and the annotation path the rule was read from.
+	 * @param string     $label   What the rule is called on screen.
+	 * @param RuleEffect $effect  What the rule does, its condition, its ceiling and its scope.
+	 * @param bool       $enabled Whether the rule is switched on.
 	 *
 	 * @return void
 	 *
@@ -77,20 +71,12 @@ final class RuleDescriptor implements JsonSerializable {
 	 *   object, not a mode switch: it records whether the rule is on, every caller passes
 	 *   it by name, and the class branches on it nowhere. Splitting the constructor in two
 	 *   would produce two descriptors that differ only in one stored value.
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per field of the value
-	 *   object, each passed by name; a builder would add a second class for no behaviour.
 	 */
 	public function __construct(
-		private readonly string $kind,
-		private readonly string $schemaSlug,
-		private readonly string $key,
+		private readonly RuleOrigin $origin,
 		private readonly string $label,
-		private readonly string $source,
+		private readonly RuleEffect $effect = new RuleEffect(),
 		private readonly bool $enabled = true,
-		private readonly array $actions = [],
-		private readonly mixed $condition = null,
-		private readonly ?int $maxObjects = null,
-		private readonly ?array $scope = null,
 	) {
 	}//end __construct()
 
@@ -102,7 +88,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getId(): string {
-		return ($this->kind . self::ID_SEPARATOR . $this->schemaSlug . self::ID_SEPARATOR . $this->key);
+		return self::idFor(kind: $this->origin->kind, schemaSlug: $this->origin->schemaSlug, key: $this->origin->key);
 	}//end getId()
 
 	/**
@@ -134,7 +120,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getKind(): string {
-		return $this->kind;
+		return $this->origin->kind;
 	}//end getKind()
 
 	/**
@@ -145,7 +131,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getSchemaSlug(): string {
-		return $this->schemaSlug;
+		return $this->origin->schemaSlug;
 	}//end getSchemaSlug()
 
 	/**
@@ -156,7 +142,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getKey(): string {
-		return $this->key;
+		return $this->origin->key;
 	}//end getKey()
 
 	/**
@@ -178,7 +164,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getCondition(): mixed {
-		return $this->condition;
+		return $this->effect->condition;
 	}//end getCondition()
 
 	/**
@@ -189,7 +175,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getMaxObjects(): ?int {
-		return $this->maxObjects;
+		return $this->effect->maxObjects;
 	}//end getMaxObjects()
 
 	/**
@@ -200,7 +186,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getScope(): ?array {
-		return $this->scope;
+		return $this->effect->scope;
 	}//end getScope()
 
 	/**
@@ -211,19 +197,8 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->getId(),
-			'kind' => $this->kind,
-			'schema' => $this->schemaSlug,
-			'key' => $this->key,
-			'label' => $this->label,
-			'source' => $this->source,
-			'enabled' => $this->enabled,
-			'actions' => $this->actions,
-			'condition' => $this->condition,
-			'maxObjects' => $this->maxObjects,
-			'scope' => $this->scope,
-			'order' => (new RuleVocabulary())->orderOf(kind: $this->kind),
-		];
+		$fields = get_object_vars($this->origin) + ['label' => $this->label, 'enabled' => $this->enabled] + get_object_vars($this->effect);
+
+		return (new RuleDescriptorJson())->serialize(fields: $fields);
 	}//end jsonSerialize()
 }//end class

@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use Throwable;
 
 /**
@@ -328,13 +328,13 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param PlaceholderResolver $placeholders Shared placeholder resolver for literal-string interpolation.
+	 * @param PlaceholderResolverInterface $placeholders Shared placeholder resolver for literal-string interpolation.
 	 * @param RateSchedule        $rates        The arithmetic behind graduated and bandRate.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly PlaceholderResolver $placeholders,
+		private readonly PlaceholderResolverInterface $placeholders,
 		private readonly RateSchedule $rates = new RateSchedule(),
 	) {
 	}//end __construct()

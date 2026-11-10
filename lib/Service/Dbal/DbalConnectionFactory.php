@@ -46,7 +46,7 @@ use Throwable;
 /**
  * Builds and caches read-only DBAL connections for database-type sources.
  */
-class DbalConnectionFactory {
+class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	/**
 	 * DBAL drivers OpenRegister supports for virtual registers (v1).
 	 *

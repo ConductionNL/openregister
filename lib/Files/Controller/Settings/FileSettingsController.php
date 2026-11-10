@@ -19,9 +19,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
+use OCA\OpenRegister\Files\Controller\Support\ServiceHealthProbe;
 use Exception;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
+use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -46,22 +49,40 @@ use Psr\Log\LoggerInterface;
  */
 class FileSettingsController extends Controller {
 	/**
+	 * DI container, for the optional extraction backends.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
-	 * @param IRequest $request The request.
-	 * @param ContainerInterface $container DI container.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param IRequest                       $request  The request.
+	 * @param FileSettingsControllerServices $services The container, the settings service and the logger.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
-		private readonly ContainerInterface $container,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly LoggerInterface $logger,
+		FileSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->container = $services->container;
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -115,13 +136,7 @@ class FileSettingsController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end updateFileSettings()
 
@@ -144,13 +159,7 @@ class FileSettingsController extends Controller {
 		try {
 			// Validate inputs.
 			if (empty($apiEndpoint) === true || empty($apiKey) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'API endpoint and API key are required',
-					],
-					statusCode: 400
-				);
+				return $this->error(message: 'API endpoint and API key are required', status: 400);
 			}
 
 			$headers = [
@@ -159,20 +168,12 @@ class FileSettingsController extends Controller {
 			];
 
 			$result = $this->performHealthCheck(
-				url: $apiEndpoint . '/health',
-				serviceName: 'Dolphin',
-				headers: $headers
+				probe: new ServiceHealthProbe(serviceName: 'Dolphin', url: $apiEndpoint . '/health', headers: $headers)
 			);
 
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testDolphinConnection()
 
@@ -194,18 +195,11 @@ class FileSettingsController extends Controller {
 		try {
 			// Validate inputs.
 			if (empty($apiEndpoint) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'API endpoint is required',
-					],
-					statusCode: 400
-				);
+				return $this->error(message: 'API endpoint is required', status: 400);
 			}
 
 			$result = $this->performHealthCheck(
-				url: $apiEndpoint . '/health',
-				serviceName: 'Presidio'
+				probe: new ServiceHealthProbe(serviceName: 'Presidio', url: $apiEndpoint . '/health')
 			);
 
 			if ($result['success'] === true) {
@@ -216,13 +210,7 @@ class FileSettingsController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testPresidioConnection()
 
@@ -251,11 +239,11 @@ class FileSettingsController extends Controller {
 	public function testOpenAnonymiserConnection(string $apiEndpoint = ''): JSONResponse {
 		try {
 			/*
-			 * @var AnonymisationBackendService $service
+			 * @var AnonymisationBackendServiceInterface $service
 			 */
 
-			$service = $this->container->get(AnonymisationBackendService::class);
-			$probe = $service->testConnection(method: BackendState::METHOD_OPENANONYMISER);
+			$service = $this->container->get(AnonymisationBackendServiceInterface::class);
+			$probe = $service->testConnection(method: BackendMethodsInterface::METHOD_OPENANONYMISER);
 
 			if ($probe->reachable === true) {
 				return new JSONResponse(
@@ -273,13 +261,7 @@ class FileSettingsController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testOpenAnonymiserConnection()
 
@@ -316,7 +298,7 @@ class FileSettingsController extends Controller {
 	public function getFileExtractionStats(): JSONResponse {
 		try {
 			$fileMapper = $this->container->get(\OCA\OpenRegister\Files\Db\FileMapperInterface::class);
-			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkMapper::class);
+			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface::class);
 			$extractionStats = $this->container->get(\OCA\OpenRegister\Files\Service\TextExtractionService::class)->getStats();
 
 			$processedFiles = $chunkMapper->countFileSourceSummaries();
@@ -368,21 +350,20 @@ class FileSettingsController extends Controller {
 	 * Executes a GET request to the given URL with optional headers and returns
 	 * a standardized result array indicating success or failure.
 	 *
-	 * @param string $url The full URL to check (e.g. endpoint + '/health').
-	 * @param string $serviceName Human-readable service name for error messages.
-	 * @param string[] $headers Optional HTTP headers (default: Content-Type: application/json).
+	 * @param ServiceHealthProbe $probe The service name, the URL to check and its optional headers.
 	 *
 	 * @return array{success: bool, message?: string, error?: string} Health check result.
 	 *
 	 * @spec exclude Private helper: shared cURL health-check used by the connection-test endpoints;
 	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
 	 */
-	private function performHealthCheck(string $url, string $serviceName, array $headers = []): array {
+	private function performHealthCheck(ServiceHealthProbe $probe): array {
+		$headers = $probe->headers;
 		if (empty($headers) === true) {
 			$headers = ['Content-Type: application/json'];
 		}
 
-		$ch = curl_init($url);
+		$ch = curl_init($probe->url);
 		curl_setopt_array(
 			$ch,
 			[
@@ -408,13 +389,13 @@ class FileSettingsController extends Controller {
 		if ($httpCode === 200 || $httpCode === 201) {
 			return [
 				'success' => true,
-				'message' => $serviceName . ' connection successful',
+				'message' => $probe->serviceName . ' connection successful',
 			];
 		}
 
 		return [
 			'success' => false,
-			'error' => $serviceName . ' API returned HTTP ' . $httpCode,
+			'error' => $probe->serviceName . ' API returned HTTP ' . $httpCode,
 		];
 	}//end performHealthCheck()
 
@@ -457,4 +438,16 @@ class FileSettingsController extends Controller {
 
 		return $capabilities;
 	}//end fetchPresidioCapabilities()
+
+	/**
+	 * A failed response: `success` false and the error.
+	 *
+	 * @param string $message The error.
+	 * @param int    $status  The HTTP status.
+	 *
+	 * @return JSONResponse
+	 */
+	private function error(string $message, int $status=500): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $message], statusCode: $status);
+	}//end error()
 }//end class

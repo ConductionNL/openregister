@@ -26,10 +26,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
@@ -41,7 +42,7 @@ use Throwable;
  * Reading a file asks the object read rule, through the same
  * `ObjectService::find(_rbac: true)` an object read uses, so groups,
  * `user:<uid>`, the owner rule, conditions and organisation scope all apply.
- * Changing a file asks `PermissionHandler` for `update` on the object.
+ * Changing a file asks `PermissionHandlerInterface` for `update` on the object.
  *
  * Every unknown answers no. An object that cannot be found, a rule that
  * cannot be read and a lookup that throws all refuse.
@@ -91,12 +92,12 @@ class ObjectFileAccess {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface     $objectService     Reads objects under the caller's RBAC.
-	 * @param PermissionHandler $permissionHandler Decides the update rule on one object.
+	 * @param PermissionHandlerInterface $permissionHandler Decides the update rule on one object.
 	 * @param SchemaMapperInterface      $schemaMapper      Resolves the object's schema, which carries the rule.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
@@ -114,14 +115,30 @@ class ObjectFileAccess {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function readable(string $register, string $schema, string $id): ObjectEntity {
+		return $this->readableByRef(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end readable()
+
+	/**
+	 * The object an ObjectRef names, when the caller may read it.
+	 *
+	 * @param ObjectRef $ref The register, schema and object references from the route.
+	 *
+	 * @return ObjectEntity The readable object.
+	 *
+	 * @throws ObjectFileAccessDeniedException With 404 when the caller may not read it.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	public function readableByRef(ObjectRef $ref): ObjectEntity {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $id,
-				register: $register,
-				schema: $schema,
+				id: $ref->id,
+				register: $ref->register,
+				schema: $ref->schema,
 				_rbac: true,
 				_multitenancy: true
 			));
@@ -138,7 +155,7 @@ class ObjectFileAccess {
 		}
 
 		return $object;
-	}//end readable()
+	}//end readableByRef()
 
 	/**
 	 * The object behind a route, when the caller may change it.
@@ -156,14 +173,31 @@ class ObjectFileAccess {
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 */
 	public function changeable(string $register, string $schema, string $id, string $verb = self::ADD_FILES): ObjectEntity {
-		$object = $this->readable(register: $register, schema: $schema, id: $id);
+		return $this->changeableByRef(ref: new ObjectRef(register: $register, schema: $schema, id: $id), verb: $verb);
+	}//end changeable()
+
+	/**
+	 * The object an ObjectRef names, when the caller may change it.
+	 *
+	 * @param ObjectRef $ref  The register, schema and object references from the route.
+	 * @param string    $verb The file verb the change needs when the schema names file verbs: addFiles or deleteFiles.
+	 *
+	 * @return ObjectEntity The changeable object.
+	 *
+	 * @throws ObjectFileAccessDeniedException With 404 when the caller may not read it,
+	 *                                         403 when the caller may read but not update it.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
+	 */
+	public function changeableByRef(ObjectRef $ref, string $verb = self::ADD_FILES): ObjectEntity {
+		$object = $this->readableByRef(ref: $ref);
 
 		if ($this->mayChangeFiles(object: $object, verb: $verb) === false) {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_CHANGEABLE);
 		}
 
 		return $object;
-	}//end changeable()
+	}//end changeableByRef()
 
 	/**
 	 * Whether the caller may read an object already in hand.

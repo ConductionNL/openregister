@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
@@ -59,6 +60,10 @@ use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
+use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
+use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
+use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
 
 /**
  * Records every send handed to the nc-notification channel unit.
@@ -200,37 +205,50 @@ class FlowMessagingEquivalenceTest extends TestCase {
 		$config->method('getUserValue')->willReturnArgument(3);
 
 		return new FlowMessagingService(
-			channelPolicy: new NotificationChannelPolicy(appConfig: $this->appConfig, logger: $this->logger),
-			recipientResolver: new NotificationRecipientResolver(
-				userManager: $this->userManager,
-				groupManager: $this->groupManager,
-				logger: $this->logger
+			channels: new FlowMessagingChannels(
+				channelPolicy: new NotificationChannelPolicy(appConfig: $this->appConfig, logger: $this->logger),
+				ncSender: $this->recorder,
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->logger
+				)
 			),
-			templating: new NotificationTemplating(logger: $this->logger),
-			ncSender: $this->recorder,
-			emailSender: new EmailSender(
-				userManager: $this->userManager,
-				mailer: $this->createMock(IMailer::class),
-				logger: $this->logger
+			recipients: new FlowMessagingRecipients(
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $this->logger
+				),
+				preferences: new NotificationPreferenceService(
+					config: $config,
+					schemaMapper: $this->createMock(SchemaMapper::class),
+					logger: $this->logger
+				),
+				rateLimiter: new RateLimiter(
+					cacheFactory: $cacheFactory,
+					appConfig: $this->appConfig,
+					logger: $this->logger
+				),
+				userManager: $this->userManager
 			),
-			talkSender: new TalkSender(
-				httpClient: $this->createMock(IClientService::class),
-				logger: $this->logger
-			),
-			rateLimiter: new RateLimiter(
-				cacheFactory: $cacheFactory,
+			platform: new FlowMessagingPlatform(
+				templating: new NotificationTemplating(logger: $this->logger),
 				appConfig: $this->appConfig,
-				logger: $this->logger
+				logger: $this->logger,
+				eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 			),
-			preferences: new NotificationPreferenceService(
-				config: $config,
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				logger: $this->logger
-			),
-			userManager: $this->userManager,
-			appConfig: $this->appConfig,
-			logger: $this->logger,
-			eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
+			overrides: new FlowMessagingOverrides(
+				optOut: OptOutAuthorityFactory::create(
+					eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class),
+					appConfig: $this->appConfig,
+					logger: $this->logger
+				)
+			)
 		);
 	}//end makeMessaging()
 

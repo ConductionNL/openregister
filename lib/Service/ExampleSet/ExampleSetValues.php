@@ -147,7 +147,7 @@ class ExampleSetValues {
 			return array_map(fn (mixed $item): mixed => $this->filled(value: $item, run: $run), $value);
 		}
 
-		if (is_string($value) === false || str_contains($value, '{{') === false) {
+		if ($this->holdsPlaceholder(value: $value) === false) {
 			return $value;
 		}
 
@@ -157,6 +157,19 @@ class ExampleSetValues {
 
 		return preg_replace_callback(self::ANY, fn (array $match): string => $this->asText(match: $match, run: $run), $value);
 	}//end filled()
+
+	/**
+	 * Whether a declared value is text that holds a placeholder.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-true string $value
+	 */
+	private function holdsPlaceholder(mixed $value): bool {
+		return is_string($value) === true && str_contains($value, '{{') === true;
+	}//end holdsPlaceholder()
 
 	/**
 	 * What a string that is exactly one placeholder stands for, typed; the string as written when it cannot be filled.

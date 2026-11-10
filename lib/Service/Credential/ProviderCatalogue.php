@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
 /**
  * In-memory, read-only accessor for the shipped provider catalogue.
  */
-class ProviderCatalogue {
+class ProviderCatalogue implements ProviderCatalogueInterface {
 	/**
 	 * App-relative path to the shipped catalogue file.
 	 *

@@ -154,7 +154,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 			);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($resolvable);
+		$objectMapper->method('findStoredAcrossAllMagicTables')->willReturn($resolvable);
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturnCallback(

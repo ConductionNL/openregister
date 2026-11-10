@@ -44,6 +44,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuard
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
  * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
  * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport

@@ -178,23 +178,48 @@ final class MagicUpsertChunkRun {
 		$valuesClause = [];
 		$parameters = [];
 		foreach ($this->rows as $objectData) {
-			$rowValues = [];
-			foreach ($this->columns as $column) {
-				$paramName = 'p' . count($parameters);
-				$rowValues[] = ':' . $paramName;
-				$value = $objectData[$column] ?? null;
-				if (is_bool($value) === true) {
-					$value = (int) $value;
-				}
-
-				$parameters[$paramName] = $value;
-			}
-
-			$valuesClause[] = '(' . implode(',', $rowValues) . ')';
+			$row = $this->rowValues(objectData: $objectData, offset: count($parameters));
+			$valuesClause[] = $row[0];
+			$parameters += $row[1];
 		}
 
 		return [implode(',', $valuesClause), $parameters];
 	}//end valuesAndParameters()
+
+	/**
+	 * The VALUES tuple of one row and its named parameters.
+	 *
+	 * @param array<string, mixed> $objectData The row.
+	 * @param int                  $offset     The number of parameters bound by earlier rows.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>} The tuple and its parameters.
+	 */
+	private function rowValues(array $objectData, int $offset): array {
+		$placeholders = [];
+		$parameters = [];
+		foreach ($this->columns as $column) {
+			$paramName = 'p' . ($offset + count($parameters));
+			$placeholders[] = ':' . $paramName;
+			$parameters[$paramName] = $this->bindable(value: $objectData[$column] ?? null);
+		}
+
+		return ['(' . implode(',', $placeholders) . ')', $parameters];
+	}//end rowValues()
+
+	/**
+	 * A value as it is bound: booleans become 0/1.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed The bindable value.
+	 */
+	private function bindable(mixed $value): mixed {
+		if (is_bool($value) === true) {
+			return (int) $value;
+		}
+
+		return $value;
+	}//end bindable()
 
 	/**
 	 * Mark one read-back row created, updated or unchanged.
@@ -213,17 +238,33 @@ final class MagicUpsertChunkRun {
 		$objUuid = $obj['_uuid'] ?? null;
 		$obj['object_status'] = 'created';
 		if (isset($this->existingUuids[$objUuid]) === true) {
-			$updatedTime = $obj['_updated'] ?? null;
-			$obj['object_status'] = 'unchanged';
-			if ($updatedTime !== null && $updatedTime >= $this->operationStartTime) {
-				$obj['object_status'] = 'updated';
-				if (isset($this->preUpdateRows[$objUuid]) === true) {
-					$obj['_pre_update_row'] = $this->preUpdateRows[$objUuid];
-				}
-			}
+			$obj = $this->classifyExisting(obj: $obj, objUuid: $objUuid);
 		}
 
 		$obj['operation_start_time'] = $this->operationStartTime;
 		return $obj;
 	}//end classify()
+
+	/**
+	 * Mark a read-back row whose uuid existed before the write updated or unchanged.
+	 *
+	 * @param array<string, mixed> $obj     The row as read back.
+	 * @param mixed                $objUuid The row's uuid.
+	 *
+	 * @return array<string, mixed> The row with `object_status`, and `_pre_update_row` when updated.
+	 */
+	private function classifyExisting(array $obj, mixed $objUuid): array {
+		$updatedTime = $obj['_updated'] ?? null;
+		$obj['object_status'] = 'unchanged';
+		if ($updatedTime === null || ($updatedTime >= $this->operationStartTime) === false) {
+			return $obj;
+		}
+
+		$obj['object_status'] = 'updated';
+		if (isset($this->preUpdateRows[$objUuid]) === true) {
+			$obj['_pre_update_row'] = $this->preUpdateRows[$objUuid];
+		}
+
+		return $obj;
+	}//end classifyExisting()
 }//end class

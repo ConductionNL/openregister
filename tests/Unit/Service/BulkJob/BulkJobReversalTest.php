@@ -49,6 +49,9 @@ use OCP\IAppConfig;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActions;
+use OCA\OpenRegister\Service\BulkJob\BulkJobEnvironment;
+use OCA\OpenRegister\Service\BulkJob\BulkJobStore;
 
 final class BulkJobReversalTest extends TestCase {
 
@@ -131,20 +134,27 @@ final class BulkJobReversalTest extends TestCase {
 			static fn (string $app, string $key, int $default = 0): int => $default
 		);
 
-		$service = new BulkJobService(
+		$store = new BulkJobStore(
 			$this->jobMapper,
 			$this->memberMapper,
-			$this->registry,
-			$this->resolver,
-			$this->executor,
-			$this->createMock(ObjectService::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IJobList::class),
-			$appConfig,
 			new NullLogger()
 		);
+		$service = new BulkJobService(
+			$store,
+			new BulkJobActions(
+				$this->registry,
+				$this->resolver,
+				$this->executor
+			),
+			new BulkJobEnvironment(
+				$this->createMock(ObjectService::class),
+				$this->createMock(IUserManager::class),
+				$appConfig
+			)
+		);
 
-		return new BulkJobReversal($service, $this->jobMapper, $this->memberMapper);
+		return new BulkJobReversal($service, $store);
 	}
 
 	private function original(
@@ -185,7 +195,7 @@ final class BulkJobReversalTest extends TestCase {
 	public function testAHundredCasesGoBackAsOneJobNamingTheOriginal(): void {
 		$uuids = array_map(static fn (int $i): string => 'case-'.$i, range(1, 100));
 		$this->memberMapper->method('findWrittenUuidsByJob')->willReturn($uuids);
-		$this->resolver->method('resolveUuids')->willReturn($uuids);
+		$this->resolver->method('idsOf')->willReturn($uuids);
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$original = $this->original();
@@ -213,7 +223,7 @@ final class BulkJobReversalTest extends TestCase {
 		// this job's business.
 		$written = ['case-3', 'case-9'];
 		$this->memberMapper->method('findWrittenUuidsByJob')->willReturn($written);
-		$this->resolver->method('resolveUuids')->willReturn($written);
+		$this->resolver->method('idsOf')->willReturn($written);
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$this->reversal()->reverse($this->original(), 'fatima', 'x');
@@ -272,7 +282,7 @@ final class BulkJobReversalTest extends TestCase {
 		$existing->setState(BulkJob::STATE_CANCELLED);
 		$this->jobMapper->method('find')->willReturn($existing);
 		$this->memberMapper->method('findWrittenUuidsByJob')->willReturn(['case-1']);
-		$this->resolver->method('resolveUuids')->willReturn(['case-1']);
+		$this->resolver->method('idsOf')->willReturn(['case-1']);
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$original = $this->original();
@@ -286,7 +296,7 @@ final class BulkJobReversalTest extends TestCase {
 	public function testAReversalNamingAJobThatIsGoneIsNotBlockedByIt(): void {
 		$this->jobMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
 		$this->memberMapper->method('findWrittenUuidsByJob')->willReturn(['case-1']);
-		$this->resolver->method('resolveUuids')->willReturn(['case-1']);
+		$this->resolver->method('idsOf')->willReturn(['case-1']);
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$original = $this->original();

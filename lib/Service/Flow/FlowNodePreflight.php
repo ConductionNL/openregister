@@ -103,7 +103,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
  */
-class FlowNodePreflight {
+class FlowNodePreflight implements FlowNodePreflightInterface {
 
 	/**
 	 * The owning app is enabled but does not provide the type.
@@ -285,12 +285,12 @@ class FlowNodePreflight {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The live catalogue of node types.
+	 * @param FlowNodeCatalogueInterface $registry The live catalogue of node types.
 	 * @param IAppManager $appManager Tells an absent app from a stale one.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeCatalogueInterface $registry,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {

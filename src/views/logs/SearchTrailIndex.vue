@@ -200,8 +200,6 @@ import { navigationStore, searchTrailStore } from '../../store/store.js'
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcCheckboxRadioSwitch,
 	NcDateTime,
@@ -219,6 +217,8 @@ import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
+import { storePaging } from '../storePaging.js'
+import { recountOnChange } from './recountOnChange.js'
 
 export default {
 	name: 'SearchTrailIndex',
@@ -233,6 +233,14 @@ export default {
 		MagnifyPlus,
 		PaginationComponent,
 	},
+
+	mixins: [
+		storePaging({
+			fetch: (options) => searchTrailStore.fetchSearchTrails(options),
+			limit: () => searchTrailStore.searchTrailPagination.limit,
+			selection: 'selectedSearchTrails',
+		}),
+	],
 
 	data() {
 		return {
@@ -317,18 +325,7 @@ export default {
 	},
 
 	watch: {
-		paginatedSearchTrails: {
-			/**
-			 * @spec exclude list-view watcher; re-emits counts when the trail list changes
-			 */
-			handler() {
-				this.$nextTick(() => {
-					this.updateCounts()
-				})
-			},
-
-			deep: false,
-		},
+		paginatedSearchTrails: recountOnChange,
 	},
 
 	/**
@@ -645,46 +642,6 @@ export default {
 		},
 
 		/**
-		 * Handle page change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-change handler
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 */
-		async onPageChanged(page) {
-			try {
-				await searchTrailStore.fetchSearchTrails({
-					page,
-					limit: searchTrailStore.searchTrailPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedSearchTrails = []
-			} catch (error) {
-				console.error('Error loading page:', error)
-			}
-		},
-
-		/**
-		 * Handle page size change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-size-change handler
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await searchTrailStore.fetchSearchTrails({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedSearchTrails = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
-			}
-		},
-
-		/**
 		 * Check if search trail has parameters
 		 *
 		 * @spec exclude list-view parameter-presence display helper
@@ -912,20 +869,4 @@ export default {
 	background-color: var(--color-error) !important;
 	color: var(--color-main-background) !important;
 }
-
-.copySuccessIcon {
-	color: var(--color-success) !important;
-}
-
-:deep(.copySuccessIcon) {
-	animation: copySuccess 0.3s ease-in-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	:deep(.copySuccessIcon) {
-		animation: none;
-	}
-}
-
-@include keyframes-copy-success-rules;
 </style>

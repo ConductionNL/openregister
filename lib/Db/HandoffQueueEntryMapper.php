@@ -49,7 +49,7 @@ use OCP\IDBConnection;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Scenario: No provider installed, queue mode)
  */
-class HandoffQueueEntryMapper extends QBMapper {
+class HandoffQueueEntryMapper extends QBMapper implements HandoffQueueEntryMapperInterface {
 
 	use SelectByColumnTrait;
 	/**

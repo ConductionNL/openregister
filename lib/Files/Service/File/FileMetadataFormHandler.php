@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use Throwable;
 
 /**
@@ -64,9 +64,9 @@ class FileMetadataFormHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService $fileService The file layer this handler edits through.
+	 * @param FileServiceInterface $fileService The file layer this handler edits through.
 	 */
-	public function __construct(private readonly FileService $fileService) {
+	public function __construct(private readonly FileServiceInterface $fileService) {
 	}//end __construct()
 
 	/**

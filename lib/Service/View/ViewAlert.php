@@ -97,21 +97,35 @@ final class ViewAlert implements JsonSerializable {
 	public const MIN_EVERY = 300;
 
 	/**
+	 * One of OPERATORS.
+	 *
+	 * @var string
+	 */
+	public readonly string $operator;
+
+	/**
+	 * The line.
+	 *
+	 * @var integer
+	 */
+	public readonly int $threshold;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string   $operator   One of OPERATORS.
-	 * @param int      $threshold  The line.
-	 * @param string[] $recipients Who hears about it.
-	 * @param string[] $channels   How.
-	 * @param int      $every      Seconds between evaluations.
+	 * @param ViewAlertLine $line       The direction and the threshold.
+	 * @param string[]      $recipients Who hears about it.
+	 * @param string[]      $channels   How.
+	 * @param int           $every      Seconds between evaluations.
 	 */
 	private function __construct(
-		public readonly string $operator,
-		public readonly int $threshold,
+		ViewAlertLine $line,
 		public readonly array $recipients,
 		public readonly array $channels,
 		public readonly int $every,
 	) {
+		$this->operator = $line->operator;
+		$this->threshold = $line->threshold;
 	}//end __construct()
 
 	/**
@@ -152,8 +166,7 @@ final class ViewAlert implements JsonSerializable {
 		}
 
 		return new self(
-			operator: $operator,
-			threshold: $threshold,
+			line: new ViewAlertLine(operator: $operator, threshold: $threshold),
 			recipients: $recipients,
 			channels: $channels,
 			every: self::validEvery(raw: ($raw['every'] ?? self::MIN_EVERY))

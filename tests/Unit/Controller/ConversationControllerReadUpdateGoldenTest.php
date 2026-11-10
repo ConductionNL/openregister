@@ -36,7 +36,7 @@ use RuntimeException;
  * cannot grant access. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ConversationController
- * @uses \OCA\OpenRegister\Controller\Support\ConversationMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ChatMappers
  * @uses \OCA\OpenRegister\Controller\Support\ConversationDomain
  * @uses \OCA\OpenRegister\Controller\Support\ConversationPlatform
  * @uses \OCA\OpenRegister\Controller\Support\ConversationControllerServices
@@ -161,7 +161,6 @@ class ConversationControllerReadUpdateGoldenTest extends TestCase {
 		}
 
 		$controller = ConversationControllerFactory::create(
-			'openregister',
 			$request,
 			$conversations,
 			$messages,

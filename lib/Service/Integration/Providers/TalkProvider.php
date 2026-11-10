@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use DateTime;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -65,7 +65,7 @@ class TalkProvider extends AbstractIntegrationProvider {
 		private IAppManager $appManager,
 		private IUserSession $userSession,
 		private IL10N $l10n,
-		private ?TalkLinkMapper $talkLinkMapper = null,
+		private ?TalkLinkMapperInterface $talkLinkMapper = null,
 	) {
 	}//end __construct()
 
@@ -121,12 +121,23 @@ class TalkProvider extends AbstractIntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->rowsForSignedIn(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The object's conversation rows; none without a signed-in user.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function rowsForSignedIn(string $objectId): array {
 		if ($this->userSession->getUser() === null) {
 			return [];
 		}
 
 		return $this->objectRows(objectId: $objectId);
-	}//end list()
+	}//end rowsForSignedIn()
 
 	/**
 	 * The object's link rows; none when no link mapper is wired or the link

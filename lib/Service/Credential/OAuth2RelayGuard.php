@@ -44,7 +44,7 @@ use OCP\IAppConfig;
 /**
  * Administrator-managed allow-list for relayed OAuth2 callbacks.
  */
-class OAuth2RelayGuard {
+class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 	/**
 	 * App-config key holding the newline- or comma-separated list of allowed origins.
 	 *

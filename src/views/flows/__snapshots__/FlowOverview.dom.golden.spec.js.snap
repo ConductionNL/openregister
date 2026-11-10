@@ -1,0 +1,68 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FlowOverview tables shows the notes without versions or runs 1`] = `
+[
+  "t:This flow has no steps yet.",
+  "t:No version has been published yet.",
+  "t:No runs match this filter.",
+]
+`;
+
+exports[`FlowOverview tables shows the versions and the runs 1`] = `
+[
+  {
+    "headers": [
+      "t:Version",
+      "t:Status",
+      "t:Published",
+    ],
+    "rows": [
+      [
+        "v1.0.0",
+        "[success] t:Published",
+        "t:{date} by {person}{"date":"1 Nov 2026, 10:00:00","person":"admin"}",
+      ],
+      [
+        "v2",
+        "[warning] t:Draft",
+        "",
+      ],
+    ],
+  },
+  {
+    "headers": [
+      "t:Status",
+      "t:Started",
+      "t:Duration",
+      "t:About",
+      "t:Stopped at",
+      "t:Version",
+    ],
+    "rows": [
+      [
+        "[error] t:Failed",
+        "2 Nov 2026, 10:00:00",
+        "",
+        "e2236ef7",
+        "Boom",
+        "v1.0.0",
+      ],
+      [
+        "[success] t:Completed",
+        "1 Nov 2026, 09:00:00",
+        "",
+        "",
+        "",
+        "v2",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`FlowOverview tables shows the versions and the runs 2`] = `
+[
+  "{"name":"flow-run-detail","params":{"uuid":"run-1"}}",
+  "{"name":"flow-run-detail","params":{"uuid":"run-2"}}",
+]
+`;

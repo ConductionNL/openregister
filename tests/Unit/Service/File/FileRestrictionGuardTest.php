@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Event\FileRestrictionAdmitEvent;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionCaller;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
@@ -82,7 +83,15 @@ class FileRestrictionGuardTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
-		return new FileRestrictionGuard($this->store, $session, $groupManager, $this->dispatcher, new NullLogger());
+		return new FileRestrictionGuard(
+			store: $this->store,
+			caller: new FileRestrictionCaller(
+				userSession: $session,
+				groupManager: $groupManager
+			),
+			dispatcher: $this->dispatcher,
+			logger: new NullLogger()
+		);
 	}//end guardFor()
 
 	public function testAFileWithoutRestrictionIsReadable(): void {

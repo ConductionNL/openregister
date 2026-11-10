@@ -23,11 +23,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -181,16 +182,14 @@ class SettingsController extends Controller {
 	/**
 	 * SettingsController constructor.
 	 *
-	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param SettingsControllerServices $services The settings controller services.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		SettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->config = $services->store->config;
 		$this->db = $services->store->db;
 		$this->container = $services->store->container;
@@ -375,7 +374,7 @@ class SettingsController extends Controller {
 	 * @return array<string, mixed> The report.
 	 */
 	private function searchIndexReport(): array {
-		$maintenance = $this->container->get(SearchIndexMaintenance::class);
+		$maintenance = $this->container->get(SearchIndexMaintenanceInterface::class);
 		$tables = $maintenance->indexNamesFor(tableNames: $maintenance->tablesInScope());
 
 		return [

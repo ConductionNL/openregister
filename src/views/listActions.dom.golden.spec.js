@@ -41,6 +41,7 @@ jest.mock('vue', () => ({
 }))
 jest.mock('@conduction/nextcloud-vue', () => ({
 	__esModule: true,
+	CnDataTable: jest.requireActual('../../tests/unit/support/tableGolden.js').CnDataTableStub,
 	CnIndexPage: mockIndexPage(),
 }))
 jest.mock('vue-material-design-icons/AccountMultiplePlus.vue', () =>
@@ -452,4 +453,38 @@ describe('list page action menus golden', () => {
 		expect(clicks.length).toBeGreaterThan(0)
 		expect(clicks).toMatchSnapshot()
 	})
+})
+
+describe('list page index-page settings golden', () => {
+	it.each(['applications', 'organisations', 'registers', 'sources', 'schemas'])(
+		'%s',
+		async (page) => {
+			globalThis.listRows = PAGES[page].rows ?? []
+			globalThis.storeLists = PAGES[page].lists
+			globalThis.listLog = []
+			window.OC = { getCurrentUser: () => ({ uid: 'me' }) }
+			const wrapper = mount(PAGES[page].component, {
+				global: {
+					config: {
+						globalProperties: {
+							t: (app, text) => `t:${text}`,
+							$route: { query: {}, path: '/' },
+							$router: { push: () => {} },
+						},
+					},
+				},
+			})
+			await flushPromises()
+			const attrs = wrapper.findComponent({ name: 'CnIndexPage' }).vm.$attrs
+			const settings = Object.fromEntries(
+				Object.entries(attrs).filter(
+					([key, value]) =>
+						!/^on[A-Z]/.test(key) && typeof value !== 'function',
+				),
+			)
+			expect(Object.keys(settings)).toMatchSnapshot()
+			expect(settings).toMatchSnapshot()
+			wrapper.unmount()
+		},
+	)
 })

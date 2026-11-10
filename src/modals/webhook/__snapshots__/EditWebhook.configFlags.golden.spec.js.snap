@@ -1,0 +1,414 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditWebhook configuration flags (golden) closeModal resets the form 1`] = `
+{
+  "configuration": {
+    "allowPrivateTargets": false,
+    "eventProperty": null,
+    "responseMapping": {},
+    "sendCloudEvent": true,
+    "waitForResponse": false,
+  },
+  "data": {
+    "allowPrivateTargets": false,
+    "eventProperty": null,
+    "responseMapping": {},
+    "sendCloudEvent": true,
+    "waitForResponse": false,
+  },
+  "error": null,
+  "loading": false,
+  "selectedEvent": null,
+  "selectedEventProperty": null,
+  "selectedMethod": null,
+  "selectedRetryPolicy": null,
+  "webhookItem": null,
+}
+`;
+
+exports[`EditWebhook configuration flags (golden) each setter writes both copies of the configuration 1`] = `
+[
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateSendCloudEvent",
+    "start": {
+      "webhookItem": null,
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "sendCloudEvent": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": false,
+      "waitForResponse": false,
+    },
+    "setter": "updateSendCloudEvent",
+    "start": {
+      "webhookItem": null,
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "sendCloudEvent": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateSendCloudEvent",
+    "start": {
+      "webhookItem": {},
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "sendCloudEvent": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": false,
+      "waitForResponse": false,
+    },
+    "setter": "updateSendCloudEvent",
+    "start": {
+      "webhookItem": {},
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "sendCloudEvent": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateSendCloudEvent",
+    "start": {
+      "webhookItem": {
+        "configuration": {
+          "eventProperty": "x",
+          "sendCloudEvent": true,
+        },
+      },
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "eventProperty": "x",
+        "sendCloudEvent": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": false,
+      "waitForResponse": false,
+    },
+    "setter": "updateSendCloudEvent",
+    "start": {
+      "webhookItem": {
+        "configuration": {
+          "eventProperty": "x",
+          "sendCloudEvent": true,
+        },
+      },
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "eventProperty": "x",
+        "sendCloudEvent": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": true,
+    },
+    "setter": "updateWaitForResponse",
+    "start": {
+      "webhookItem": null,
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "waitForResponse": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateWaitForResponse",
+    "start": {
+      "webhookItem": null,
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "waitForResponse": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": true,
+    },
+    "setter": "updateWaitForResponse",
+    "start": {
+      "webhookItem": {},
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "waitForResponse": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateWaitForResponse",
+    "start": {
+      "webhookItem": {},
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "waitForResponse": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": true,
+    },
+    "setter": "updateWaitForResponse",
+    "start": {
+      "webhookItem": {
+        "configuration": {
+          "eventProperty": "x",
+          "sendCloudEvent": true,
+        },
+      },
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "eventProperty": "x",
+        "sendCloudEvent": true,
+        "waitForResponse": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateWaitForResponse",
+    "start": {
+      "webhookItem": {
+        "configuration": {
+          "eventProperty": "x",
+          "sendCloudEvent": true,
+        },
+      },
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "eventProperty": "x",
+        "sendCloudEvent": true,
+        "waitForResponse": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": true,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateAllowPrivateTargets",
+    "start": {
+      "webhookItem": null,
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "allowPrivateTargets": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateAllowPrivateTargets",
+    "start": {
+      "webhookItem": null,
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "allowPrivateTargets": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": true,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateAllowPrivateTargets",
+    "start": {
+      "webhookItem": {},
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "allowPrivateTargets": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateAllowPrivateTargets",
+    "start": {
+      "webhookItem": {},
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "allowPrivateTargets": false,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": true,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateAllowPrivateTargets",
+    "start": {
+      "webhookItem": {
+        "configuration": {
+          "eventProperty": "x",
+          "sendCloudEvent": true,
+        },
+      },
+    },
+    "value": true,
+    "webhookItem": {
+      "configuration": {
+        "allowPrivateTargets": true,
+        "eventProperty": "x",
+        "sendCloudEvent": true,
+      },
+    },
+  },
+  {
+    "configuration": {
+      "allowPrivateTargets": false,
+      "eventProperty": null,
+      "responseMapping": {},
+      "sendCloudEvent": true,
+      "waitForResponse": false,
+    },
+    "setter": "updateAllowPrivateTargets",
+    "start": {
+      "webhookItem": {
+        "configuration": {
+          "eventProperty": "x",
+          "sendCloudEvent": true,
+        },
+      },
+    },
+    "value": false,
+    "webhookItem": {
+      "configuration": {
+        "allowPrivateTargets": false,
+        "eventProperty": "x",
+        "sendCloudEvent": true,
+      },
+    },
+  },
+]
+`;

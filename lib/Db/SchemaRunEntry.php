@@ -52,6 +52,7 @@ use OCP\AppFramework\Db\Entity;
 class SchemaRunEntry extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Outcome constants.
@@ -128,23 +129,4 @@ class SchemaRunEntry extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'preData', type: 'json');
 
 	}//end __construct()
-
-	/**
-	 * JSON serialisation.
-	 *
-	 * @return array<string, mixed> The serialised entry.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'runId' => $this->runId,
-			'objectUuid' => $this->objectUuid,
-			'outcome' => $this->outcome,
-			'message' => $this->message,
-			'preVersion' => $this->preVersion,
-			'postVersion' => $this->postVersion,
-			'preData' => $this->preData,
-		];
-
-	}//end jsonSerialize()
 }//end class

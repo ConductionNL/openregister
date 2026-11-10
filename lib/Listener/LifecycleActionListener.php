@@ -35,7 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -51,15 +51,15 @@ class LifecycleActionListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param LifecycleEditReader $edits Reads the edit and the transition it amounts to.
-	 * @param LifecycleActionExecutor $executor Runs the transition's declared actions.
-	 * @param LoggerInterface $logger Logger for diagnostics.
+	 * @param LifecycleEditReader              $edits    Reads the edit and the transition it amounts to.
+	 * @param LifecycleActionExecutorInterface $executor Runs the transition's declared actions.
+	 * @param LoggerInterface                  $logger   Logger for diagnostics.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly LifecycleEditReader $edits,
-		private readonly LifecycleActionExecutor $executor,
+		private readonly LifecycleActionExecutorInterface $executor,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

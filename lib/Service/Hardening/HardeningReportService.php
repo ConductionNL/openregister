@@ -53,7 +53,7 @@ use OCA\OpenRegister\Service\SecurityService;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningReportService {
+class HardeningReportService implements HardeningReportServiceInterface {
 
 	/**
 	 * What every control reports beside its value: id => [title, category, source, unit, note].

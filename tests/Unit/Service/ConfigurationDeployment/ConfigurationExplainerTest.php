@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationProvenance;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -77,22 +79,8 @@ final class ConfigurationExplainerTest extends TestCase {
 	public function testWhyDoesThisInstanceBehaveLikeThis(): void {
 		$explainer = $this->explainer(
 			[
-				ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(
-					ConfigurationLayer::INSTANCE,
-					null,
-					'integration.mail',
-					['relay' => 'instance-smtp'],
-					true,
-					'dep-instance'
-				),
-				ConfigurationLayer::REGISTER => new ConfigurationSnapshot(
-					ConfigurationLayer::REGISTER,
-					'zaken',
-					'integration.mail',
-					['relay' => 'zaken-smtp'],
-					true,
-					'dep-register'
-				),
+				ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'integration.mail'), ['relay' => 'instance-smtp'], true, new ConfigurationProvenance('dep-instance')),
+				ConfigurationLayer::REGISTER => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail'), ['relay' => 'zaken-smtp'], true, new ConfigurationProvenance('dep-register')),
 			],
 			$this->deployment('dep-register', 'zaken mail relay')
 		);
@@ -111,14 +99,9 @@ final class ConfigurationExplainerTest extends TestCase {
 	public function testAnOlderValueIsNamedHonestly(): void {
 		$explainer = $this->explainer(
 			[
-				ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(
-					ConfigurationLayer::INSTANCE,
-					null,
-					'rbac',
-					['enabled' => true],
-					true,
+				ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), ['enabled' => true], true,
 					// Never moved by a deployment.
-					null
+					new ConfigurationProvenance(null)
 				),
 			]
 		);
@@ -136,18 +119,10 @@ final class ConfigurationExplainerTest extends TestCase {
 
 	public function testTheHighestLayerHoldingAValueWins(): void {
 		$byLayer = [
-			ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(
-				ConfigurationLayer::INSTANCE, null, 'lifecycle.stage', 'instance', true, null
-			),
-			ConfigurationLayer::REGISTER => new ConfigurationSnapshot(
-				ConfigurationLayer::REGISTER, 'zaken', 'lifecycle.stage', 'register', true, null
-			),
-			ConfigurationLayer::BUNDLE => new ConfigurationSnapshot(
-				ConfigurationLayer::BUNDLE, 'standaard', 'lifecycle.stage', 'bundle', true, null
-			),
-			ConfigurationLayer::SUBJECT => new ConfigurationSnapshot(
-				ConfigurationLayer::SUBJECT, 'zaak', 'lifecycle.stage', 'subject', true, null
-			),
+			ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'lifecycle.stage'), 'instance', true, new ConfigurationProvenance(null)),
+			ConfigurationLayer::REGISTER => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'lifecycle.stage'), 'register', true, new ConfigurationProvenance(null)),
+			ConfigurationLayer::BUNDLE => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::BUNDLE, 'standaard', 'lifecycle.stage'), 'bundle', true, new ConfigurationProvenance(null)),
+			ConfigurationLayer::SUBJECT => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::SUBJECT, 'zaak', 'lifecycle.stage'), 'subject', true, new ConfigurationProvenance(null)),
 		];
 
 		$answer = $this->explainer($byLayer)->explain('lifecycle.stage', 'zaken', 'standaard', 'zaak');
@@ -159,9 +134,7 @@ final class ConfigurationExplainerTest extends TestCase {
 
 	public function testALayerTheCallerDidNotNameIsLeftOutOfTheChain(): void {
 		$byLayer = [
-			ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(
-				ConfigurationLayer::INSTANCE, null, 'lifecycle.stage', 'instance', true, null
-			),
+			ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'lifecycle.stage'), 'instance', true, new ConfigurationProvenance(null)),
 		];
 
 		$answer = $this->explainer($byLayer)->explain('lifecycle.stage');
@@ -181,12 +154,42 @@ final class ConfigurationExplainerTest extends TestCase {
 		$this->assertFalse($answer['predatesFirstDeployment']);
 	}//end testASettingNoLayerHoldsIsReportedAsNotFound()
 
+	public function testTheNotFoundAnswerIsPinnedKeyForKey(): void {
+		$answer = $this->explainer([])->explain('integration.mail', 'zaken');
+
+		$this->assertSame(
+			['key', 'found', 'value', 'layer', 'layerRef', 'deployment', 'predatesFirstDeployment', 'explanation', 'chain'],
+			array_keys($answer)
+		);
+		$this->assertSame('integration.mail', $answer['key']);
+		$this->assertNull($answer['deployment']);
+		$this->assertNull($answer['layerRef']);
+		$this->assertSame('no layer sets "integration.mail"', $answer['explanation']);
+		$this->assertCount(2, $answer['chain']);
+	}//end testTheNotFoundAnswerIsPinnedKeyForKey()
+
+	public function testTheFoundAnswerIsPinnedKeyForKey(): void {
+		$answer = $this->explainer(
+			[
+				ConfigurationLayer::REGISTER => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail'), ['relay' => 'smtp'], true, new ConfigurationProvenance('dep-9')),
+			],
+			$this->deployment('dep-9', 'mail relay')
+		)->explain('integration.mail', 'zaken');
+
+		$this->assertSame(
+			['key', 'found', 'value', 'layer', 'layerRef', 'deployment', 'predatesFirstDeployment', 'explanation', 'chain'],
+			array_keys($answer)
+		);
+		$this->assertSame([true, ['relay' => 'smtp'], ConfigurationLayer::REGISTER, 'zaken', false], [$answer['found'], $answer['value'], $answer['layer'], $answer['layerRef'], $answer['predatesFirstDeployment']]);
+		$this->assertSame('dep-9', $answer['deployment']['uuid']);
+		$this->assertIsString($answer['explanation']);
+		$this->assertCount(2, $answer['chain']);
+	}//end testTheFoundAnswerIsPinnedKeyForKey()
+
 	public function testAProvenanceNamingADeploymentTheHistoryLostSaysSo(): void {
 		$explainer = $this->explainer(
 			[
-				ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(
-					ConfigurationLayer::INSTANCE, null, 'rbac', ['enabled' => true], true, 'dep-gone'
-				),
+				ConfigurationLayer::INSTANCE => new ConfigurationSnapshot(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), ['enabled' => true], true, new ConfigurationProvenance('dep-gone')),
 			]
 		);
 

@@ -264,6 +264,10 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function applyUnreadLens(array $query): array {
+		// Never trust a resolved key from the outside: a caller must not hand
+		// in somebody else's uid.
+		unset($query['_unreadFor']);
+
 		if (array_key_exists('_unread', $query) === false) {
 			return $query;
 		}
@@ -690,11 +694,11 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function applyViewsToQuery(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
-		return $this->viewScope->apply(
-			query: $query,
-			viewIds: $viewIds,
-			_viewScopeRequired: $_viewScopeRequired
-		);
+		if ($_viewScopeRequired === true) {
+			return $this->viewScope->applyRequired(query: $query, viewIds: $viewIds);
+		}
+
+		return $this->viewScope->apply(query: $query, viewIds: $viewIds);
 	}//end applyViewsToQuery()
 
 	/**

@@ -84,7 +84,6 @@ class UrnControllerTest extends TestCase {
 		$this->urnService = $this->createMock(UrnService::class);
 
 		$this->controller = new UrnController(
-			'openregister',
 			$this->request,
 			$this->urnService
 		);

@@ -55,10 +55,8 @@ class AggregationControllerValueGroupedTest extends TestCase {
 	 */
 	private function makeController(): AggregationController {
 		return new AggregationController(
-			'openregister',
 			$this->request,
-			$this->runner,
-			$this->validator
+			new \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices($this->runner, $this->validator)
 		);
 
 	}//end makeController()

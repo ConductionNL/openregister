@@ -24,15 +24,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -73,9 +76,9 @@ class FileTextController extends Controller {
 	/**
 	 * File service for file operations
 	 *
-	 * @var FileService
+	 * @var FileServiceInterface
 	 */
-	private readonly FileService $fileService;
+	private readonly FileServiceInterface $fileService;
 
 	/**
 	 * Entity relation mapper
@@ -113,32 +116,23 @@ class FileTextController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
-	 * Root folder for per-user file access checks
+	 * Whether the caller can open a file.
 	 *
-	 * @var IRootFolder
+	 * @var CallerFileAccess
 	 */
-	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * The object read rule for an object's file.
-	 *
-	 * @var ?\OCA\OpenRegister\Files\Service\File\FileReadScope
-	 */
-	private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope;
+	private readonly CallerFileAccess $fileAccess;
 
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName App name
 	 * @param IRequest $request Request object
 	 * @param FileTextControllerServices $services The file text controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FileTextControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->textExtractor = $services->domain->textExtractor;
 		$this->fileService = $services->domain->fileService;
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
@@ -146,8 +140,11 @@ class FileTextController extends Controller {
 		$this->manualEntityService = $services->domain->manualEntityService;
 		$this->userSession = $services->session->userSession;
 		$this->session = $services->session;
-		$this->rootFolder = $services->platform->rootFolder;
-		$this->fileReadScope = $services->domain->fileReadScope;
+		$this->fileAccess = new CallerFileAccess(
+			fileReadScope: $services->domain->fileReadScope,
+			userSession: $services->session->userSession,
+			rootFolder: $services->platform->rootFolder
+		);
 	}//end __construct()
 
 	/**
@@ -163,19 +160,7 @@ class FileTextController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
-		// An object's file sits in the openregister account's home, never in
-		// the caller's own tree: the object's read rule decides it.
-		if ($this->fileReadScope !== null) {
-			return $this->fileReadScope->mayReadFile(fileId: $fileId);
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-		return empty($userFolder->getById($fileId)) === false;
+		return $this->fileAccess->mayOpen(fileId: $fileId);
 	}//end hasFileAccess()
 
 	/**
@@ -781,14 +766,9 @@ class FileTextController extends Controller {
 		);
 
 		try {
-			$result = $this->manualEntityService->addManualEntity(
-				fileId: $fileId,
-				value: $input['value'],
-				type: $input['type'],
-				wholeWord: $input['wholeWord'],
-				caseSensitive: $input['caseSensitive'],
-				actor: $user
-			);
+			$manualEntity = (new ManualEntityRequest(fileId: $fileId, value: $input['value'], type: $input['type'], actor: $user))
+				->withMatching(wholeWord: $input['wholeWord'], caseSensitive: $input['caseSensitive']);
+			$result       = $this->manualEntityService->addManualEntity(request: $manualEntity);
 		} catch (ManualEntityException $e) {
 			return $this->mapManualEntityException(exception: $e, fileId: $fileId);
 		} catch (Throwable $e) {

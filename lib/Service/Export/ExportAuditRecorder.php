@@ -43,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportAuditRecorder {
+class ExportAuditRecorder implements ExportAuditRecorderInterface {
 	/**
 	 * The outcome of an export that produced a file.
 	 *
@@ -97,16 +97,16 @@ class ExportAuditRecorder {
 		?string $actorId = null,
 	): void {
 		$this->write(
-			outcome: self::OUTCOME_COMPLETED,
-			summary: [
-				'profile' => $profile,
-				'rowCount' => $rowCount,
-				'format' => $format,
-				'valueMode' => $valueMode,
-			],
-			register: $register,
-			schema: $schema,
-			actorId: $actorId
+			entry: new ExportAuditEntry(
+				outcome: self::OUTCOME_COMPLETED,
+				summary: [
+					'profile' => $profile,
+					'rowCount' => $rowCount,
+					'format' => $format,
+					'valueMode' => $valueMode,
+				],
+				scope: new ExportScope(register: $register, schema: $schema, actorId: $actorId)
+			)
 		);
 	}//end recordCompleted()
 
@@ -133,50 +133,40 @@ class ExportAuditRecorder {
 		?string $actorId = null,
 	): void {
 		$this->write(
-			outcome: self::OUTCOME_REFUSED,
-			summary: [
-				'profile' => $profile,
-				'rowCount' => 0,
-				'verb' => ExportRightService::ACTION,
-				'rule' => $rule,
-				'reason' => $reason,
-			],
-			register: $register,
-			schema: $schema,
-			actorId: $actorId
+			entry: new ExportAuditEntry(
+				outcome: self::OUTCOME_REFUSED,
+				summary: [
+					'profile' => $profile,
+					'rowCount' => 0,
+					'verb' => ExportRightService::ACTION,
+					'rule' => $rule,
+					'reason' => $reason,
+				],
+				scope: new ExportScope(register: $register, schema: $schema, actorId: $actorId)
+			)
 		);
 	}//end recordRefused()
 
 	/**
 	 * Write one entry, swallowing a ledger failure.
 	 *
-	 * @param string $outcome The outcome.
-	 * @param array<string, mixed> $summary The structured summary.
-	 * @param int|null $register The register.
-	 * @param int|null $schema The schema.
-	 * @param string|null $actorId The principal.
+	 * @param ExportAuditEntry $entry The outcome, summary, register, schema and principal.
 	 *
 	 * @return void
 	 */
-	private function write(
-		string $outcome,
-		array $summary,
-		?int $register,
-		?int $schema,
-		?string $actorId,
-	): void {
+	private function write(ExportAuditEntry $entry): void {
 		try {
 			$this->auditTrailMapper->createExportEntry(
-				outcome: $outcome,
-				summary: $summary,
-				register: $register,
-				schema: $schema,
-				actorId: $actorId
+				outcome: $entry->outcome,
+				summary: $entry->summary,
+				register: $entry->scope->register,
+				schema: $entry->scope->schema,
+				actorId: $entry->scope->actorId
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[ExportAudit] Could not record the export',
-				context: ['outcome' => $outcome, 'summary' => $summary, 'error' => $e->getMessage()]
+				context: ['outcome' => $entry->outcome, 'summary' => $entry->summary, 'error' => $e->getMessage()]
 			);
 		}
 	}//end write()

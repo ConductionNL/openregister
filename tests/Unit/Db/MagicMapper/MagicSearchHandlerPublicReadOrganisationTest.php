@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
@@ -107,7 +108,7 @@ class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$userManager,
 			$this->groupManager,
@@ -121,7 +122,7 @@ class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 
 		$container->method('get')->willReturnCallback(
 			static function (string $service) use ($permissionHandler, $registerMapper) {
-				if ($service === PermissionHandler::class) {
+				if ($service === PermissionHandlerInterface::class) {
 					return $permissionHandler;
 				}
 

@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
@@ -41,6 +40,8 @@ use OCP\IDBConnection;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class ReferencePatternMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 
 	/**
 	 * Constructor.
@@ -66,18 +67,12 @@ class ReferencePatternMapper extends QBMapper {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function findBySlug(string $slug): ?ReferencePattern {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('slug', $qb->createNamedParameter($slug)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['slug' => $slug]));
+		if ($found instanceof ReferencePattern) {
+			return $found;
 		}
 
+		return null;
 	}//end findBySlug()
 
 	/**

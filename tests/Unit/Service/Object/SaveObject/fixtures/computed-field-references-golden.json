@@ -1,0 +1,402 @@
+{
+    "references": {
+        "save": {
+            "owner": "uuid-owner",
+            "link": "uuid-link",
+            "plainUuid": "uuid-owner",
+            "gone": "uuid-gone",
+            "blank": "  ",
+            "number": 5,
+            "nullObject": "uuid-null",
+            "7": "uuid-owner",
+            "out": "Owner|Link|0|0",
+            "refKeys": null
+        },
+        "read": {
+            "owner": "uuid-owner",
+            "link": "uuid-link",
+            "plainUuid": "uuid-owner",
+            "gone": "uuid-gone",
+            "blank": "  ",
+            "number": 5,
+            "nullObject": "uuid-null",
+            "7": "uuid-owner",
+            "hasRef": "y"
+        },
+        "calls": [
+            [
+                "uuid-owner",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-link",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-gone",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-null",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-owner",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-owner",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-link",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-gone",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-null",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-owner",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-owner",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-link",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-gone",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-null",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-owner",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        ],
+        "logs": [
+            [
+                "debug",
+                "[ComputedFieldHandler] Failed to resolve reference",
+                {
+                    "app": "openregister",
+                    "propertyName": "gone",
+                    "refValue": "uuid-gone",
+                    "error": "gone"
+                }
+            ],
+            [
+                "debug",
+                "[ComputedFieldHandler] Failed to resolve reference",
+                {
+                    "app": "openregister",
+                    "propertyName": "gone",
+                    "refValue": "uuid-gone",
+                    "error": "gone"
+                }
+            ],
+            [
+                "warning",
+                "Computed field evaluation error: Filter \"keys\" is not allowed in \"computed_refKeys_a59d4dc15d93181cb6aaf1fa818241c3\" at line 1.",
+                {
+                    "app": "openregister",
+                    "propertyName": "refKeys",
+                    "expression": "{{ _ref|keys|join(',') }}",
+                    "error": "Filter \"keys\" is not allowed in \"computed_refKeys_a59d4dc15d93181cb6aaf1fa818241c3\" at line 1."
+                }
+            ],
+            [
+                "debug",
+                "[ComputedFieldHandler] Failed to resolve reference",
+                {
+                    "app": "openregister",
+                    "propertyName": "gone",
+                    "refValue": "uuid-gone",
+                    "error": "gone"
+                }
+            ]
+        ]
+    },
+    "noReferenceProperties": {
+        "save": {
+            "a": "x",
+            "out": "||0|0",
+            "refKeys": null
+        },
+        "read": {
+            "a": "x",
+            "hasRef": "n"
+        },
+        "calls": [],
+        "logs": [
+            [
+                "warning",
+                "Computed field evaluation error: Filter \"keys\" is not allowed in \"computed_refKeys_a59d4dc15d93181cb6aaf1fa818241c3\" at line 1.",
+                {
+                    "app": "openregister",
+                    "propertyName": "refKeys",
+                    "expression": "{{ _ref|keys|join(',') }}",
+                    "error": "Filter \"keys\" is not allowed in \"computed_refKeys_a59d4dc15d93181cb6aaf1fa818241c3\" at line 1."
+                }
+            ]
+        ]
+    },
+    "failingLookup": {
+        "save": {
+            "owner": "uuid-error",
+            "out": null,
+            "refKeys": null
+        },
+        "read": {
+            "owner": "uuid-error",
+            "hasRef": null
+        },
+        "calls": [
+            [
+                "uuid-error",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-error",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-error",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        ],
+        "logs": [
+            [
+                "warning",
+                "Computed field evaluation error: broken",
+                {
+                    "app": "openregister",
+                    "propertyName": "out",
+                    "expression": "{{ _ref.owner.name }}|{{ _ref.link.name }}|{{ _ref.gone|length }}|{{ _ref.blank|length }}",
+                    "error": "broken"
+                }
+            ],
+            [
+                "warning",
+                "Computed field evaluation error: broken",
+                {
+                    "app": "openregister",
+                    "propertyName": "refKeys",
+                    "expression": "{{ _ref|keys|join(',') }}",
+                    "error": "broken"
+                }
+            ],
+            [
+                "warning",
+                "Computed field evaluation error: broken",
+                {
+                    "app": "openregister",
+                    "propertyName": "hasRef",
+                    "expression": "{{ _ref is defined ? 'y' : 'n' }}",
+                    "error": "broken"
+                }
+            ]
+        ]
+    },
+    "runtimeFailure": {
+        "save": {
+            "owner": "uuid-runtime",
+            "out": "||0|0",
+            "refKeys": null
+        },
+        "read": {
+            "owner": "uuid-runtime",
+            "hasRef": "y"
+        },
+        "calls": [
+            [
+                "uuid-runtime",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-runtime",
+                null,
+                null,
+                false,
+                false,
+                false
+            ],
+            [
+                "uuid-runtime",
+                null,
+                null,
+                false,
+                false,
+                false
+            ]
+        ],
+        "logs": [
+            [
+                "debug",
+                "[ComputedFieldHandler] Failed to resolve reference",
+                {
+                    "app": "openregister",
+                    "propertyName": "owner",
+                    "refValue": "uuid-runtime",
+                    "error": "db down"
+                }
+            ],
+            [
+                "debug",
+                "[ComputedFieldHandler] Failed to resolve reference",
+                {
+                    "app": "openregister",
+                    "propertyName": "owner",
+                    "refValue": "uuid-runtime",
+                    "error": "db down"
+                }
+            ],
+            [
+                "warning",
+                "Computed field evaluation error: Filter \"keys\" is not allowed in \"computed_refKeys_a59d4dc15d93181cb6aaf1fa818241c3\" at line 1.",
+                {
+                    "app": "openregister",
+                    "propertyName": "refKeys",
+                    "expression": "{{ _ref|keys|join(',') }}",
+                    "error": "Filter \"keys\" is not allowed in \"computed_refKeys_a59d4dc15d93181cb6aaf1fa818241c3\" at line 1."
+                }
+            ],
+            [
+                "debug",
+                "[ComputedFieldHandler] Failed to resolve reference",
+                {
+                    "app": "openregister",
+                    "propertyName": "owner",
+                    "refValue": "uuid-runtime",
+                    "error": "db down"
+                }
+            ]
+        ]
+    },
+    "scores": {
+        "save": {
+            "a": "x",
+            "score": 3.5,
+            "extra": 1
+        },
+        "read": {
+            "a": "x",
+            "score": 3.5,
+            "extra": 1
+        },
+        "calls": [],
+        "logs": []
+    },
+    "scoresFail": {
+        "save": {
+            "a": "x"
+        },
+        "read": {
+            "a": "x"
+        },
+        "calls": [],
+        "logs": [
+            [
+                "warning",
+                "[ComputedFieldHandler] Rolled-up concept score skipped: vocabulary down",
+                {
+                    "schema": 7
+                }
+            ],
+            [
+                "warning",
+                "[ComputedFieldHandler] Rolled-up concept score skipped: vocabulary down",
+                {
+                    "schema": 7
+                }
+            ]
+        ]
+    }
+}

@@ -66,7 +66,23 @@ class ExampleSetMoment {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function dayOrMoment(array $parts, mixed $today): ?string {
-		if (($today instanceof DateTimeImmutable) === false || preg_match($this->momentPattern(kind: $parts['kind']), $parts['rest'], $match) !== 1) {
+		if (($today instanceof DateTimeImmutable) === false) {
+			return null;
+		}
+
+		return $this->dayOrMomentOn(parts: $parts, today: $today);
+	}//end dayOrMoment()
+
+	/**
+	 * A `date:` or `datetime:` placeholder on a known install day, or null when it does not parse.
+	 *
+	 * @param array{kind: string, rest: string} $parts The placeholder's kind and the rest after the colon.
+	 * @param DateTimeImmutable                 $today The install day.
+	 *
+	 * @return string|null
+	 */
+	private function dayOrMomentOn(array $parts, DateTimeImmutable $today): ?string {
+		if (preg_match($this->momentPattern(kind: $parts['kind']), $parts['rest'], $match) !== 1) {
 			return null;
 		}
 
@@ -76,7 +92,7 @@ class ExampleSetMoment {
 		}
 
 		return $day->setTime((int) $match[3], (int) $match[4])->setTimezone(new DateTimeZone('UTC'))->format('c');
-	}//end dayOrMoment()
+	}//end dayOrMomentOn()
 
 	/**
 	 * The pattern a day (`date`) or a moment (`datetime`) placeholder's reference must match.

@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Exception\ManualEntityException;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
@@ -181,7 +182,11 @@ class FileTextControllerManualEntityTest extends TestCase {
 
 		$this->manualEntityService->expects($this->once())
 			->method('addManualEntity')
-			->with(42, 'Jan', 'PERSON', false, false, $this->anything())
+			->with(
+				$this->callback(
+					static fn (ManualEntityRequest $request): bool => [$request->fileId, $request->value, $request->type, $request->wholeWord(), $request->caseSensitive()] === [42, 'Jan', 'PERSON', false, false]
+				)
+			)
 			->willThrowException(new \RuntimeException('stop'));
 
 		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $this->controller->addManualEntity(fileId: 42)->getStatus());
@@ -395,7 +400,6 @@ class FileTextControllerManualEntityTest extends TestCase {
 				entity: $entity,
 				entityWasNew: true,
 				relations: [$relation],
-				matchCount: 1,
 				matchesSkipped: 0
 			)
 		);
@@ -437,7 +441,6 @@ class FileTextControllerManualEntityTest extends TestCase {
 				entity: $entity,
 				entityWasNew: false,
 				relations: [],
-				matchCount: 0,
 				matchesSkipped: 0
 			)
 		);

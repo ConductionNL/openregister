@@ -44,7 +44,7 @@ final class NullRegulatorEscalateProvider implements RegulatorEscalateProvider {
 	 *
 	 * @var string
 	 */
-	public const PROVIDER_ID = 'or.default.regulator-escalate.null';
+	public const PROVIDER_ID = RegulatorEscalateProvider::NULL_PROVIDER_ID;
 
 	/**
 	 * {@inheritDoc}

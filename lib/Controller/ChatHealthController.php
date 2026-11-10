@@ -29,6 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
+use OCA\OpenRegister\Controller\Support\ChatHealthControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -54,7 +57,7 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class ChatHealthController extends Controller {
+class ChatHealthController extends Controller implements ChatFamilyControllerInterface {
 
 	/**
 	 * Settings service for LLM configuration lookup.
@@ -71,24 +74,20 @@ class ChatHealthController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request HTTP request object
-	 * @param AppSettingsInterface $settingsService Settings service for LLM config
-	 * @param LoggerInterface $logger Logger for surfacing config errors
+	 * @param IRequest                     $request  HTTP request object
+	 * @param ChatHealthControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		AppSettingsInterface $settingsService,
-		LoggerInterface $logger,
+		ChatHealthControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->settingsService = $settingsService;
-		$this->logger = $logger;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

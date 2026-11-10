@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Service\LinkTarget;
@@ -93,9 +94,11 @@ class OpenProjectLinkServiceTest extends TestCase {
 			$this->mapper,
 			$this->provider,
 			$this->router,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 

@@ -54,7 +54,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
  */
-class FormDestinationValidator {
+class FormDestinationValidator implements FormDestinationValidatorInterface {
 
 	public const REQUIRED_UNMAPPED = 'required-unmapped';
 	public const PROPERTY_UNKNOWN = 'property-unknown';
@@ -123,23 +123,63 @@ class FormDestinationValidator {
 	public function validate(array $mapping, Schema $schema, array $options = []): array {
 		$fields = $this->fieldsOf(mapping: $mapping);
 		$fixed = $this->fixedOf(mapping: $mapping);
+		$findings = array_merge(
+			$this->destinationFindings(schema: $schema, audience: (string)($options['audience'] ?? '')),
+			$this->allFieldFindings(fields: $fields, schema: $schema),
+			$this->allFixedFindings(fixed: $fixed, schema: $schema)
+		);
 
-		$findings = $this->destinationFindings(schema: $schema, audience: (string)($options['audience'] ?? ''));
+		return array_merge($findings, $this->requiredFindings(schema: $schema, sourced: $this->sourcedBy(fields: $fields, fixed: $fixed)));
+	}//end validate()
+
+	/**
+	 * The findings of every mapped field, in order.
+	 *
+	 * @param array<int, array<string, mixed>> $fields The mapping's fields.
+	 * @param Schema                           $schema The destination schema.
+	 *
+	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
+	 */
+	private function allFieldFindings(array $fields, Schema $schema): array {
+		$findings = [];
 		foreach ($fields as $field) {
 			array_push($findings, ...$this->fieldFindings(field: $field, schema: $schema));
 		}
 
+		return $findings;
+	}//end allFieldFindings()
+
+	/**
+	 * The findings of every fixed value, in order.
+	 *
+	 * @param array<string, mixed> $fixed  The mapping's fixed values.
+	 * @param Schema               $schema The destination schema.
+	 *
+	 * @return array<int, array{property: string, code: string, message: string}>
+	 */
+	private function allFixedFindings(array $fixed, Schema $schema): array {
+		$findings = [];
 		foreach ($fixed as $property => $value) {
-			array_push($findings, ...$this->fixedFindings(property: (string)$property, value: $value, schema: $schema));
+			array_push($findings, ...$this->fixedFindings(fixed: new FixedValue(property: (string)$property, value: $value), schema: $schema));
 		}
 
-		$sourced = array_merge(
+		return $findings;
+	}//end allFixedFindings()
+
+	/**
+	 * The properties a mapping fills: each field's property, then each fixed value's.
+	 *
+	 * @param array<int, array<string, mixed>> $fields The mapping's fields.
+	 * @param array<string, mixed>             $fixed  The mapping's fixed values.
+	 *
+	 * @return array<int, string> The property names.
+	 */
+	private function sourcedBy(array $fields, array $fixed): array {
+		return array_merge(
 			array_map(static fn (array $field): string => (string)($field['property'] ?? ''), $fields),
 			array_map('strval', array_keys($fixed))
 		);
-
-		return array_merge($findings, $this->requiredFindings(schema: $schema, sourced: $sourced));
-	}//end validate()
+	}//end sourcedBy()
 
 	/**
 	 * Why a task-form field of this schema cannot be rendered, or null when it can.
@@ -228,28 +268,50 @@ class FormDestinationValidator {
 	 */
 	private function destinationFindings(Schema $schema, string $audience): array {
 		$findings = [];
-		$slug = (string)$schema->getSlug();
 		if (($schema->getConfiguration()['staging'] ?? false) === true) {
-			$findings[] = $this->finding(
-				property: '',
-				code: self::DESTINATION_IS_STAGING,
-				message: $this->l10n->t(
-					'Schema "%1$s" is marked as a staging object. A form submits into the object a person works on, not into a layer before it.',
-					[$slug]
-				)
-			);
+			$findings[] = $this->stagingFinding(slug: (string)$schema->getSlug());
 		}
 
 		if ($audience !== '' && $this->grantsCreateTo(schema: $schema, audience: $audience) === false) {
-			$findings[] = $this->finding(
-				property: '',
-				code: self::DESTINATION_NOT_PUBLIC,
-				message: $this->l10n->t('Schema "%1$s" does not let a %2$s visitor create objects, so this form could never be submitted.', [$slug, $audience])
-			);
+			$findings[] = $this->closedFinding(slug: (string)$schema->getSlug(), audience: $audience);
 		}
 
 		return $findings;
 	}//end destinationFindings()
+
+	/**
+	 * The finding for a staging schema used as a destination.
+	 *
+	 * @param string $slug The schema's slug.
+	 *
+	 * @return array{property: string, code: string, message: string}
+	 */
+	private function stagingFinding(string $slug): array {
+		return (new FormFinding(
+			property: '',
+			code: self::DESTINATION_IS_STAGING,
+			message: $this->l10n->t(
+				'Schema "%1$s" is marked as a staging object. A form submits into the object a person works on, not into a layer before it.',
+				[$slug]
+			)
+		))->toArray();
+	}//end stagingFinding()
+
+	/**
+	 * The finding for a destination that does not let the form's audience create.
+	 *
+	 * @param string $slug     The schema's slug.
+	 * @param string $audience `public` or `authenticated`.
+	 *
+	 * @return array{property: string, code: string, message: string}
+	 */
+	private function closedFinding(string $slug, string $audience): array {
+		return (new FormFinding(
+			property: '',
+			code: self::DESTINATION_NOT_PUBLIC,
+			message: $this->l10n->t('Schema "%1$s" does not let a %2$s visitor create objects, so this form could never be submitted.', [$slug, $audience])
+		))->toArray();
+	}//end closedFinding()
 
 	/**
 	 * Whether the schema lets the audience create objects.
@@ -268,24 +330,51 @@ class FormDestinationValidator {
 			return true;
 		}
 
-		$accepted = ['public'];
-		if ($audience === 'authenticated') {
-			$accepted[] = 'authenticated';
-		}
-
+		$accepted = $this->acceptedGroups(audience: $audience);
 		foreach ((array)($authorization['create'] ?? []) as $entry) {
-			$group = $entry;
-			if (is_array($entry) === true) {
-				$group = ($entry['group'] ?? null);
-			}
-
-			if (is_string($group) === true && in_array($group, $accepted, true) === true) {
+			if (in_array($this->groupOf(entry: $entry), $accepted, true) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end grantsCreateTo()
+
+	/**
+	 * The create grants that serve an audience: `public`, and for an authenticated audience also `authenticated`.
+	 *
+	 * @param string $audience `public` or `authenticated`.
+	 *
+	 * @return array<int, string> The groups.
+	 */
+	private function acceptedGroups(string $audience): array {
+		$accepted = ['public'];
+		if ($audience === 'authenticated') {
+			$accepted[] = 'authenticated';
+		}
+
+		return $accepted;
+	}//end acceptedGroups()
+
+	/**
+	 * The group a create grant names: the entry itself, or its `group`; null when that is not a string.
+	 *
+	 * @param mixed $entry The grant entry.
+	 *
+	 * @return string|null The group.
+	 */
+	private function groupOf(mixed $entry): ?string {
+		$group = $entry;
+		if (is_array($entry) === true) {
+			$group = ($entry['group'] ?? null);
+		}
+
+		if (is_string($group) === true) {
+			return $group;
+		}
+
+		return null;
+	}//end groupOf()
 
 	/**
 	 * Findings for one mapped field.
@@ -296,164 +385,187 @@ class FormDestinationValidator {
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
 	 */
 	private function fieldFindings(array $field, Schema $schema): array {
-		$name = (string)($field['field'] ?? '');
-		$propertyName = (string)($field['property'] ?? '');
 		$properties = $schema->getProperties();
-		if ($propertyName === '' || array_key_exists($propertyName, $properties) === false) {
-			if ($propertyName !== '' && $this->allowsExtras(schema: $schema) === true) {
-				return [];
-			}
-
-			return [
-				$this->finding(
-					property: $propertyName,
-					code: self::PROPERTY_UNKNOWN,
-					message: $this->l10n->t(
-						'Field "%1$s" writes into "%2$s", which schema "%3$s" does not have.',
-						[$name, $propertyName, (string)$schema->getSlug()]
-					),
-					field: $name
-				),
-			];
+		$mapped = new MappedField(field: $field, property: (array)($properties[(string)($field['property'] ?? '')] ?? []));
+		if ($mapped->propertyName === '' || array_key_exists($mapped->propertyName, $properties) === false) {
+			return $this->unknownPropertyFindings(mapped: $mapped, schema: $schema);
 		}
 
-		$property = (array)$properties[$propertyName];
-		if (($property['readOnly'] ?? false) === true) {
-			return [
-				$this->finding(
-					property: $propertyName,
-					code: self::PROPERTY_READ_ONLY,
-					message: $this->l10n->t('Field "%1$s" writes into "%2$s", which is read-only, so the save would refuse it.', [$name, $propertyName]),
-					field: $name
-				),
-			];
-		}
-
-		$shape = $this->shapeFindings(field: $field, property: $property, name: $name, propertyName: $propertyName);
-		if ($shape !== [] && $shape[0]['code'] === self::TYPE_MISMATCH) {
-			// A text field into an integer: its bounds and options say nothing more.
-			return $shape;
-		}
-
-		return array_merge(
-			$shape,
-			$this->enumFindings(field: $field, property: $property, name: $name, propertyName: $propertyName),
-			$this->constraintFindings(field: $field, property: $property, name: $name, propertyName: $propertyName)
-		);
+		return $this->knownPropertyFindings(mapped: $mapped);
 	}//end fieldFindings()
 
 	/**
-	 * Type and format findings for one field.
+	 * Findings for a field that writes into a property the schema does not declare.
 	 *
-	 * @param array<string, mixed> $field        The mapping entry.
-	 * @param array<string, mixed> $property     The schema property.
-	 * @param string               $name         The field name.
-	 * @param string               $propertyName The property name.
+	 * @param MappedField $mapped The field and its (empty) property.
+	 * @param Schema      $schema The destination schema.
 	 *
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
 	 */
-	private function shapeFindings(array $field, array $property, string $name, string $propertyName): array {
-		if ($this->rules->typeFits(field: $field, property: $property) === false) {
-			return [
-				$this->finding(
-					property: $propertyName,
-					code: self::TYPE_MISMATCH,
-					message: $this->l10n->t(
-						'Field "%1$s" is a %2$s field and cannot produce the %3$s that "%4$s" holds.',
-						[$name, (string)($field['type'] ?? ''), $this->typeLabel(property: $property), $propertyName]
-					),
-					field: $name
-				),
-			];
+	private function unknownPropertyFindings(MappedField $mapped, Schema $schema): array {
+		if ($mapped->propertyName !== '' && $this->allowsExtras(schema: $schema) === true) {
+			return [];
 		}
 
-		if ($this->rules->formatFits(field: $field, property: $property) === false) {
-			return [
-				$this->finding(
-					property: $propertyName,
-					code: self::FORMAT_MISMATCH,
-					message: $this->l10n->t(
-						'Field "%1$s" does not produce the %2$s format that "%3$s" demands.',
-						[$name, (string)($property['format'] ?? ''), $propertyName]
-					),
-					field: $name
-				),
-			];
+		$message = $this->l10n->t(
+			'Field "%1$s" writes into "%2$s", which schema "%3$s" does not have.',
+			[$mapped->name, $mapped->propertyName, (string)$schema->getSlug()]
+		);
+
+		return [$mapped->finding(code: self::PROPERTY_UNKNOWN, message: $message)];
+	}//end unknownPropertyFindings()
+
+	/**
+	 * Findings for a field that writes into a declared property.
+	 *
+	 * @param MappedField $mapped The field and its property.
+	 *
+	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
+	 */
+	private function knownPropertyFindings(MappedField $mapped): array {
+		// A read-only property, or a text field into an integer: nothing else about the field matters.
+		$blocking = $this->blockingFinding(mapped: $mapped);
+		if ($blocking !== null) {
+			return [$blocking];
 		}
 
-		return [];
-	}//end shapeFindings()
+		return array_merge(
+			$this->formatFindings(mapped: $mapped),
+			$this->enumFindings(mapped: $mapped),
+			$this->constraintFindings(mapped: $mapped)
+		);
+	}//end knownPropertyFindings()
+
+	/**
+	 * The finding that makes every other finding about a field moot: read-only, or a type mismatch.
+	 *
+	 * @param MappedField $mapped The field and its property.
+	 *
+	 * @return array{field: string, property: string, code: string, message: string}|null The finding, or null when none blocks.
+	 */
+	private function blockingFinding(MappedField $mapped): ?array {
+		if (($mapped->property['readOnly'] ?? false) === true) {
+			$message = $this->l10n->t(
+				'Field "%1$s" writes into "%2$s", which is read-only, so the save would refuse it.',
+				[$mapped->name, $mapped->propertyName]
+			);
+			return $mapped->finding(code: self::PROPERTY_READ_ONLY, message: $message);
+		}
+
+		if ($this->rules->typeFits(field: $mapped->field, property: $mapped->property) === false) {
+			return $this->typeMismatchFinding(mapped: $mapped);
+		}
+
+		return null;
+	}//end blockingFinding()
+
+	/**
+	 * The finding for a field that cannot produce the property's type.
+	 *
+	 * @param MappedField $mapped The field and its property.
+	 *
+	 * @return array{field: string, property: string, code: string, message: string}
+	 */
+	private function typeMismatchFinding(MappedField $mapped): array {
+		$message = $this->l10n->t(
+			'Field "%1$s" is a %2$s field and cannot produce the %3$s that "%4$s" holds.',
+			[$mapped->name, $mapped->fieldType(), $mapped->propertyType(), $mapped->propertyName]
+		);
+
+		return $mapped->finding(code: self::TYPE_MISMATCH, message: $message);
+	}//end typeMismatchFinding()
+
+	/**
+	 * Format findings for one field whose type fits.
+	 *
+	 * @param MappedField $mapped The field and its property.
+	 *
+	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
+	 */
+	private function formatFindings(MappedField $mapped): array {
+		if ($this->rules->formatFits(field: $mapped->field, property: $mapped->property) === true) {
+			return [];
+		}
+
+		$message = $this->l10n->t(
+			'Field "%1$s" does not produce the %2$s format that "%3$s" demands.',
+			[$mapped->name, $mapped->format(), $mapped->propertyName]
+		);
+
+		return [$mapped->finding(code: self::FORMAT_MISMATCH, message: $message)];
+	}//end formatFindings()
 
 	/**
 	 * Enum findings for one field: free text into an enum, or options outside it.
 	 *
-	 * @param array<string, mixed> $field        The mapping entry.
-	 * @param array<string, mixed> $property     The schema property.
-	 * @param string               $name         The field name.
-	 * @param string               $propertyName The property name.
+	 * @param MappedField $mapped The field and its property.
 	 *
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
 	 */
-	private function enumFindings(array $field, array $property, string $name, string $propertyName): array {
-		$enum = $this->rules->enumOf(property: $property);
+	private function enumFindings(MappedField $mapped): array {
+		$enum = $this->rules->enumOf(property: $mapped->property);
 		if ($enum === null) {
 			return [];
 		}
 
-		$options = $this->rules->optionsOf(field: $field);
+		$options = $this->rules->optionsOf(field: $mapped->field);
 		if ($options === null) {
-			return [
-				$this->finding(
-					property: $propertyName,
-					code: self::ENUM_UNCONSTRAINED,
-					message: $this->l10n->t(
-						'Field "%1$s" lets anything be typed, but "%2$s" accepts only: %3$s.',
-						[$name, $propertyName, $this->listOf(values: $enum)]
-					),
-					field: $name
-				),
-			];
+			return [$this->unconstrainedFinding(mapped: $mapped, enum: $enum)];
 		}
 
-		$findings = [];
-		foreach ($options as $option) {
-			if (in_array($option, $enum, true) === true) {
-				continue;
-			}
-
-			$findings[] = $this->finding(
-				property: $propertyName,
-				code: self::ENUM_VALUE_UNKNOWN,
-				message: $this->l10n->t('Field "%1$s" offers "%2$s", which "%3$s" does not accept.', [$name, $this->scalarLabel(value: $option), $propertyName]),
-				field: $name
-			);
-		}
-
-		return $findings;
+		$outside = array_filter($options, static fn (mixed $option): bool => in_array($option, $enum, true) === false);
+		return array_map(fn (mixed $option): array => $this->unknownOptionFinding(mapped: $mapped, option: $option), array_values($outside));
 	}//end enumFindings()
+
+	/**
+	 * The finding for a free field that writes into an enum.
+	 *
+	 * @param MappedField       $mapped The field and its property.
+	 * @param array<int, mixed> $enum   The values the property accepts.
+	 *
+	 * @return array{field: string, property: string, code: string, message: string}
+	 */
+	private function unconstrainedFinding(MappedField $mapped, array $enum): array {
+		$message = $this->l10n->t(
+			'Field "%1$s" lets anything be typed, but "%2$s" accepts only: %3$s.',
+			[$mapped->name, $mapped->propertyName, $this->listOf(values: $enum)]
+		);
+
+		return $mapped->finding(code: self::ENUM_UNCONSTRAINED, message: $message);
+	}//end unconstrainedFinding()
+
+	/**
+	 * The finding for one offered option the property's enum does not accept.
+	 *
+	 * @param MappedField $mapped The field and its property.
+	 * @param mixed       $option The offered value.
+	 *
+	 * @return array{field: string, property: string, code: string, message: string}
+	 */
+	private function unknownOptionFinding(MappedField $mapped, mixed $option): array {
+		$message = $this->l10n->t(
+			'Field "%1$s" offers "%2$s", which "%3$s" does not accept.',
+			[$mapped->name, $this->scalarLabel(value: $option), $mapped->propertyName]
+		);
+
+		return $mapped->finding(code: self::ENUM_VALUE_UNKNOWN, message: $message);
+	}//end unknownOptionFinding()
 
 	/**
 	 * Constraint findings for one field: one per bound the field leaves looser.
 	 *
-	 * @param array<string, mixed> $field        The mapping entry.
-	 * @param array<string, mixed> $property     The schema property.
-	 * @param string               $name         The field name.
-	 * @param string               $propertyName The property name.
+	 * @param MappedField $mapped The field and its property.
 	 *
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
 	 */
-	private function constraintFindings(array $field, array $property, string $name, string $propertyName): array {
+	private function constraintFindings(MappedField $mapped): array {
 		$findings = [];
-		foreach ($this->rules->looserConstraints(field: $field, property: $property) as $constraint) {
-			$findings[] = $this->finding(
-				property: $propertyName,
-				code: self::CONSTRAINT_LOOSER,
-				message: $this->l10n->t(
-					'Field "%1$s" allows more than "%2$s" does: set %3$s to %4$s or tighter.',
-					[$name, $propertyName, $constraint, $this->scalarLabel(value: $property[$constraint])]
-				),
-				field: $name
+		foreach ($this->rules->looserConstraints(field: $mapped->field, property: $mapped->property) as $constraint) {
+			$message = $this->l10n->t(
+				'Field "%1$s" allows more than "%2$s" does: set %3$s to %4$s or tighter.',
+				[$mapped->name, $mapped->propertyName, $constraint, $this->scalarLabel(value: $mapped->property[$constraint])]
 			);
+			$findings[] = $mapped->finding(code: self::CONSTRAINT_LOOSER, message: $message);
 		}
 
 		return $findings;
@@ -462,40 +574,48 @@ class FormDestinationValidator {
 	/**
 	 * Findings for one fixed value.
 	 *
+	 * @param FixedValue $fixed  The property and the value fixed into it.
+	 * @param Schema     $schema The destination schema.
+	 *
+	 * @return array<int, array{property: string, code: string, message: string}>
+	 */
+	private function fixedFindings(FixedValue $fixed, Schema $schema): array {
+		$property = $fixed->property;
+		$properties = $schema->getProperties();
+		if (array_key_exists($property, $properties) === false) {
+			return $this->unknownFixedFindings(property: $property, schema: $schema);
+		}
+
+		if ($this->rules->fixedValueFits(value: $fixed->value, property: (array)$properties[$property]) === true) {
+			return [];
+		}
+
+		$message = $this->l10n->t('The fixed value for "%1$s" is one the property does not accept.', [$property]);
+
+		return [(new FormFinding(property: $property, code: self::FIXED_VALUE_INVALID, message: $message))->toArray()];
+	}//end fixedFindings()
+
+	/**
+	 * Findings for a fixed value into a property the schema does not have: none when it allows extras.
+	 *
 	 * @param string $property The property the value is fixed into.
-	 * @param mixed  $value    The fixed value.
 	 * @param Schema $schema   The destination schema.
 	 *
 	 * @return array<int, array{property: string, code: string, message: string}>
 	 */
-	private function fixedFindings(string $property, mixed $value, Schema $schema): array {
-		$properties = $schema->getProperties();
-		if (array_key_exists($property, $properties) === false) {
-			if ($this->allowsExtras(schema: $schema) === true) {
-				return [];
-			}
-
-			return [
-				$this->finding(
-					property: $property,
-					code: self::PROPERTY_UNKNOWN,
-					message: $this->l10n->t('A fixed value writes into "%1$s", which schema "%2$s" does not have.', [$property, (string)$schema->getSlug()])
-				),
-			];
-		}
-
-		if ($this->rules->fixedValueFits(value: $value, property: (array)$properties[$property]) === true) {
+	private function unknownFixedFindings(string $property, Schema $schema): array {
+		if ($this->allowsExtras(schema: $schema) === true) {
 			return [];
 		}
 
 		return [
-			$this->finding(
+			(new FormFinding(
 				property: $property,
-				code: self::FIXED_VALUE_INVALID,
-				message: $this->l10n->t('The fixed value for "%1$s" is one the property does not accept.', [$property])
-			),
+				code: self::PROPERTY_UNKNOWN,
+				message: $this->l10n->t('A fixed value writes into "%1$s", which schema "%2$s" does not have.', [$property, (string)$schema->getSlug()])
+			))->toArray(),
 		];
-	}//end fixedFindings()
+	}//end unknownFixedFindings()
 
 	/**
 	 * Findings for required properties no field, fixed value or server default fills.
@@ -507,29 +627,39 @@ class FormDestinationValidator {
 	 */
 	private function requiredFindings(Schema $schema, array $sourced): array {
 		$properties = $schema->getProperties();
+		$findings = [];
+		foreach ($this->requiredOf(schema: $schema) as $name) {
+			if (in_array($name, $sourced, true) === true || self::isServerFilled(property: (array)($properties[$name] ?? [])) === true) {
+				continue;
+			}
+
+			$findings[] = (new FormFinding(
+				property: $name,
+				code: self::REQUIRED_UNMAPPED,
+				message: $this->l10n->t('"%1$s" is required, and no field, fixed value or server default fills it.', [$name])
+			))->toArray();
+		}
+
+		return $findings;
+	}//end requiredFindings()
+
+	/**
+	 * The required properties of a schema: its `required` list, then each property flagged `required: true`, once each.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, string> The property names.
+	 */
+	private function requiredOf(Schema $schema): array {
 		$required = $schema->getRequired();
-		foreach ($properties as $name => $property) {
+		foreach ($schema->getProperties() as $name => $property) {
 			if (is_array($property) === true && ($property['required'] ?? false) === true) {
 				$required[] = (string)$name;
 			}
 		}
 
-		$findings = [];
-		foreach (array_values(array_unique(array_map('strval', $required))) as $name) {
-			$property = (array)($properties[$name] ?? []);
-			if (in_array($name, $sourced, true) === true || self::isServerFilled(property: $property) === true) {
-				continue;
-			}
-
-			$findings[] = $this->finding(
-				property: $name,
-				code: self::REQUIRED_UNMAPPED,
-				message: $this->l10n->t('"%1$s" is required, and no field, fixed value or server default fills it.', [$name])
-			);
-		}
-
-		return $findings;
-	}//end requiredFindings()
+		return array_values(array_unique(array_map('strval', $required)));
+	}//end requiredOf()
 
 	/**
 	 * Whether the server fills a property: a default, a computation, a generated identifier, or the serverSet marker.
@@ -595,45 +725,6 @@ class FormDestinationValidator {
 
 		return $fixed;
 	}//end fixedOf()
-
-	/**
-	 * One finding, the field key present only when a field is named.
-	 *
-	 * @param string      $property The property.
-	 * @param string      $code     The finding code.
-	 * @param string      $message  The translated message.
-	 * @param string|null $field    The field, when the finding is about one.
-	 *
-	 * @return array{field?: string, property: string, code: string, message: string}
-	 */
-	private function finding(string $property, string $code, string $message, ?string $field = null): array {
-		$finding = [];
-		if ($field !== null) {
-			$finding['field'] = $field;
-		}
-
-		$finding['property'] = $property;
-		$finding['code'] = $code;
-		$finding['message'] = $message;
-
-		return $finding;
-	}//end finding()
-
-	/**
-	 * A property's type, for a message.
-	 *
-	 * @param array<string, mixed> $property The schema property.
-	 *
-	 * @return string The type, or types joined.
-	 */
-	private function typeLabel(array $property): string {
-		$type = ($property['type'] ?? '');
-		if (is_array($type) === true) {
-			return implode('/', array_map('strval', $type));
-		}
-
-		return (string)$type;
-	}//end typeLabel()
 
 	/**
 	 * A list of values, for a message.

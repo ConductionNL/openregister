@@ -24,6 +24,12 @@ use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ChatService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
+use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,
@@ -80,11 +86,17 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 		});
 
 		$history = $this->createMock(MessageHistoryHandler::class);
-		$history->method('storeMessage')->willReturnCallback(
-			function (int $conversationId, string $role, string $content, ?array $sources = null, ?array $context = null) use ($s) {
-				$this->calls[] = ['history.store', $conversationId, $role, $content, $sources, $context];
+		$history->method('storeUserMessage')->willReturnCallback(
+			function (ChatMessageRequest $request) {
+				$this->calls[] = ['history.store', $request->conversationId, Message::ROLE_USER, $request->userMessage, null, $request->cnAiContext];
+				return new Message();
+			}
+		);
+		$history->method('storeAssistantMessage')->willReturnCallback(
+			function (int $conversationId, ChatReply $reply) use ($s) {
+				$this->calls[] = ['history.store', $conversationId, Message::ROLE_ASSISTANT, $reply->content, $reply->sources, null];
 				$message = new Message();
-				if ($role === Message::ROLE_ASSISTANT && $s['storedId'] !== null) {
+				if ($s['storedId'] !== null) {
 					$message->setId($s['storedId']);
 				}
 				return $message;
@@ -107,15 +119,15 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			$response->lastUsage = ['tokens' => 99];
 			return 'Title for ' . $m;
 		});
-		$conversationHandler->method('ensureUniqueTitle')->willReturnCallback(function (string $t, string $u, int $a) {
-			$this->calls[] = ['title.unique', $t, $u, $a];
-			return $t . ' (2)';
+		$conversationHandler->method('ensureUniqueTitle')->willReturnCallback(function (TitleClaim $claim) {
+			$this->calls[] = ['title.unique', $claim->baseTitle, $claim->userId, $claim->agentId];
+			return $claim->baseTitle . ' (2)';
 		});
 
 		$contextHandler = $this->createMock(ContextRetrievalHandler::class);
 		$contextHandler->method('retrieveContext')->willReturnCallback(
-			function (string $query, ?Agent $agent, array $selectedViews = [], array $ragSettings = []) use ($s) {
-				$this->calls[] = ['context', $query, $agent?->getName(), $selectedViews, $ragSettings];
+			function (ChatMessageRequest $request, ?Agent $agent) use ($s) {
+				$this->calls[] = ['context', $request->userMessage, $agent?->getName(), $request->selectedViews, $request->ragSettings];
 				if ($s['fail'] === true) {
 					throw new Exception('context down');
 				}
@@ -123,9 +135,9 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			}
 		);
 		$response->method('generateResponse')->willReturnCallback(
-			function (string $userMessage, array $context, array $messageHistory, ?Agent $agent, array $selectedTools = [], ?StreamYieldChannel $channel = null, array $cnAiContext = []) {
-				$this->calls[] = ['llm', $userMessage, $context, $messageHistory, $agent?->getName(), $selectedTools, $channel !== null, $cnAiContext];
-				return 'answer to ' . $userMessage;
+			function (ChatMessageRequest $request, ReplyGrounding $grounding) {
+				$this->calls[] = ['llm', $request->userMessage, $grounding->context, $grounding->messageHistory, $grounding->agent?->getName(), $request->selectedTools, $request->channel !== null, $request->cnAiContext];
+				return 'answer to ' . $request->userMessage;
 			}
 		);
 
@@ -140,14 +152,18 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 		});
 
 		return new ChatService(
-			$conversationMapper,
-			$messageMapper,
-			$agentMapper,
-			$contextHandler,
-			$response,
-			$conversationHandler,
-			$history,
-			$logger
+			new ChatServiceStores(
+				$conversationMapper,
+				$messageMapper,
+				$agentMapper,
+			),
+			new ChatServiceHandlers(
+				$contextHandler,
+				$response,
+				$conversationHandler,
+				$history,
+			),
+			$logger,
 		);
 	}
 

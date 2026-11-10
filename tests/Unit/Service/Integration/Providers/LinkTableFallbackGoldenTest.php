@@ -43,6 +43,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
 /**
  * list() of the link-table providers with a fallback.
@@ -230,14 +232,14 @@ class LinkTableFallbackGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		if (str_starts_with($name, 'cospend')) {
 			$mapper = $this->mapper(Db\CospendLinkMapper::class, $links);
-			return new Providers\CospendProvider($this->db(), $apps, $l10n, $mapper, $this->container($name === 'cospend'));
+			return new Providers\CospendProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $mapper, $this->container($name === 'cospend'));
 		}
 		if ($name === 'forms') {
-			return new Providers\FormsProvider($this->db(), $apps, $l10n, $this->mapper(Db\FormLinkMapper::class, $links), new NullLogger());
+			return new Providers\FormsProvider(new LeafMarkerScanning($this->db(), $apps, $l10n, new NullLogger()), $this->mapper(Db\FormLinkMapper::class, $links));
 		}
 		$config = $this->createMock(IConfig::class);
 		$config->method('getAppValue')->willReturn('timemanager');
-		return new Providers\TimeProvider($this->db(), $apps, $l10n, $this->mapper(Db\TimeTrackerLinkMapper::class, $links), $config, new NullLogger());
+		return new Providers\TimeProvider(new LeafMarkerScanning($this->db(), $apps, $l10n, new NullLogger()), $this->mapper(Db\TimeTrackerLinkMapper::class, $links), $config);
 	}//end provider()
 
 	/**

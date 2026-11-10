@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
@@ -45,16 +46,14 @@ class GraphQLSubscriptionController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request Request object
 	 * @param SubscriptionService $subscriptionService Subscription service
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly SubscriptionService $subscriptionService,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -71,7 +70,7 @@ class GraphQLSubscriptionController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: SubscriptionService filters every streamed event through
-	 *   verifyEventRBAC -> PermissionHandler::hasPermission(schema,'read'); non-readable schemas are never streamed.
+	 *   verifyEventRBAC -> PermissionHandlerInterface::hasPermission(schema,'read'); non-readable schemas are never streamed.
 	 *
 	 * @CORS
 	 *

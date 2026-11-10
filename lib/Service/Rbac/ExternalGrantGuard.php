@@ -51,7 +51,7 @@ use DateTimeInterface;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ExternalGrantGuard {
+class ExternalGrantGuard implements ExternalGrantGuardInterface {
 	/**
 	 * The entry key declaring that a principal is outside the organisation.
 	 *
@@ -65,13 +65,6 @@ class ExternalGrantGuard {
 	 * @var string
 	 */
 	public const RULE = 'external-grant-needs-an-end';
-
-	/**
-	 * How many days before an end counts as "about to lapse" by default.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_WARNING_DAYS = 14;
 
 	/**
 	 * Block keys that are settings rather than lists of entries.
@@ -160,25 +153,26 @@ class ExternalGrantGuard {
 	 *
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
-	public function lapsingWithin(
-		?array $authorization,
-		int $days = self::DEFAULT_WARNING_DAYS,
-		?DateTimeInterface $now = null,
-	): array {
-		$now = ($now ?? new DateTimeImmutable());
-		$horizon = ($now->getTimestamp() + ($days * 86400));
+	public function lapsingWithin(?array $authorization, int $days = self::DEFAULT_WARNING_DAYS, ?DateTimeInterface $now = null): array {
+		return $this->lapsingIn(authorization: $authorization, window: new LapseWindow(now: ($now ?? new DateTimeImmutable()), days: $days));
+	}//end lapsingWithin()
 
+	/**
+	 * The external grants whose end falls inside one window, soonest first.
+	 *
+	 * @param array|null  $authorization The block as written.
+	 * @param LapseWindow $window        The moment and how far ahead to look.
+	 *
+	 * @return array<int, array<string, mixed>> The grants about to lapse.
+	 */
+	private function lapsingIn(?array $authorization, LapseWindow $window): array {
 		$lapsing = [];
 		foreach ($this->entries(authorization: $authorization) as $found) {
-			if ($this->isExternal(entry: $found['entry']) === false) {
-				continue;
-			}
-
-			$ends = $this->endOf(entry: $found['entry']);
+			$ends = $this->externalEndOf(entry: $found['entry']);
 			// An end already past is not a warning, it is a lapse. Reporting it
 			// as "about to lapse" would send somebody to renew access that has
 			// already stopped answering.
-			if ($ends === null || $ends <= $now->getTimestamp() || $ends > $horizon) {
+			if ($ends === null || $ends <= $window->now->getTimestamp() || $ends > $window->horizon()) {
 				continue;
 			}
 
@@ -187,7 +181,7 @@ class ExternalGrantGuard {
 				'principal' => $this->principalOf(entry: $found['entry']),
 				'holders' => $this->holdersOf(entry: $found['entry']),
 				'endsAt' => date(DATE_ATOM, $ends),
-				'daysLeft' => (int)ceil((($ends - $now->getTimestamp()) / 86400)),
+				'daysLeft' => (int)ceil((($ends - $window->now->getTimestamp()) / 86400)),
 			];
 		}
 
@@ -197,7 +191,22 @@ class ExternalGrantGuard {
 		);
 
 		return $lapsing;
-	}//end lapsingWithin()
+	}//end lapsingIn()
+
+	/**
+	 * The end of an external entry, or null for an internal one or one without an end.
+	 *
+	 * @param mixed $entry One entry.
+	 *
+	 * @return int|null The end, as a Unix timestamp.
+	 */
+	private function externalEndOf(mixed $entry): ?int {
+		if ($this->isExternal(entry: $entry) === false) {
+			return null;
+		}
+
+		return $this->endOf(entry: $entry);
+	}//end externalEndOf()
 
 	/**
 	 * Every entry in a block, with the action it was written under.

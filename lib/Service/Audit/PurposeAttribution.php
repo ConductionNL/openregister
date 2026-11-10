@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class PurposeAttribution {
+class PurposeAttribution implements PurposeAttributionInterface {
 	/**
 	 * Constructor.
 	 *

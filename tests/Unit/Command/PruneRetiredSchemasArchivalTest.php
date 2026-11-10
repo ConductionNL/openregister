@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -90,8 +91,7 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$this->deletionService = $this->createMock(SchemaDeletionService::class);
 
 		$this->command = new PruneRetiredSchemasCommand(
-			$this->schemaMapper,
-			$this->registerMapper,
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper),
 			$this->deletionService
 		);
 

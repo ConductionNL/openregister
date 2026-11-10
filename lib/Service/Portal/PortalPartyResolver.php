@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Portal;
 
-use OCA\OpenRegister\Db\AbstractObjectMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Exception\PortalPartyNotFoundException;
 use Throwable;
 
@@ -89,7 +89,7 @@ class PortalPartyResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param AbstractObjectMapper|null $objects Reads the case object. Nullable
+	 * @param MagicMapperInterface|null $objects Reads the case object. Nullable
 	 *                                           so the resolver stays
 	 *                                           constructible bare; ABSENT, a
 	 *                                           resolution by uuid throws, so
@@ -97,7 +97,7 @@ class PortalPartyResolver {
 	 *                                           matching nobody quietly.
 	 */
 	public function __construct(
-		private readonly ?AbstractObjectMapper $objects = null,
+		private readonly ?MagicMapperInterface $objects = null,
 	) {
 
 	}//end __construct()

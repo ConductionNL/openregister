@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
-use OCA\OpenRegister\Service\History\StateHistoryProjector;
-use OCA\OpenRegister\Service\Quality\UniqueHintWarnings;
+use OCA\OpenRegister\Service\History\StateHistoryProjectorInterface;
+use OCA\OpenRegister\Service\Quality\UniqueHintWarningsInterface;
 
 /**
  * Recovery window, soft uniqueness, purpose binding and state history for object reads and writes.
@@ -37,17 +37,17 @@ final class ObjectGovernanceServices {
 	 * Bundle the services.
 	 *
 	 * @param ?DeletionWindowService $windowService      The recovery-window service, null when absent.
-	 * @param ?UniqueHintWarnings    $uniqueHintWarnings The soft-uniqueness collector, null when absent.
-	 * @param ?PurposeGuard          $purposeGuard       The purpose guard, null when absent.
-	 * @param ?StateHistoryProjector $stateHistory       The state-history projector, null when absent.
+	 * @param ?UniqueHintWarningsInterface    $uniqueHintWarnings The soft-uniqueness collector, null when absent.
+	 * @param ?PurposeGuardInterface          $purposeGuard       The purpose guard, null when absent.
+	 * @param ?StateHistoryProjectorInterface $stateHistory       The state-history projector, null when absent.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly ?DeletionWindowService $windowService = null,
-		public readonly ?UniqueHintWarnings $uniqueHintWarnings = null,
-		public readonly ?PurposeGuard $purposeGuard = null,
-		public readonly ?StateHistoryProjector $stateHistory = null,
+		public readonly ?UniqueHintWarningsInterface $uniqueHintWarnings = null,
+		public readonly ?PurposeGuardInterface $purposeGuard = null,
+		public readonly ?StateHistoryProjectorInterface $stateHistory = null,
 	) {
 	}//end __construct()
 }//end class

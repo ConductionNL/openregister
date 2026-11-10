@@ -158,15 +158,12 @@ interface EntityRelationMapperInterface {
 	 * 142 has both `"Jan Jansen"` PERSON and `"Jansen"` PERSON entities)
 	 * are legitimately distinct rows.
 	 *
-	 * @param int $fileId Nextcloud file id.
-	 * @param int $entityId Catalogue entity id.
-	 * @param int $chunkId Chunk row id the position is relative to.
-	 * @param int $positionStart Position of the first byte of the match within the chunk.
-	 * @param int $positionEnd Position one past the last byte of the match within the chunk.
+	 * @param int           $fileId  Nextcloud file id.
+	 * @param EntityMention $mention The entity, chunk and span within the chunk.
 	 *
 	 * @return bool True when a row with exactly these five values exists.
 	 */
-	public function existsForFileAtPosition(int $fileId, int $entityId, int $chunkId, int $positionStart, int $positionEnd): bool;
+	public function existsForFileAtPosition(int $fileId, EntityMention $mention): bool;
 
 	/**
 	 * Insert multiple relation rows in a single pass.

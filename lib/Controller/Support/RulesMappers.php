@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RuleRunMapper;
+use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -35,13 +35,13 @@ final class RulesMappers {
 	 * Bundle the services.
 	 *
 	 * @param SchemaMapperInterface  $schemaMapper Resolves the schema a rule is declared on.
-	 * @param RuleRunMapper $runs         Reads the run log.
+	 * @param RuleRunMapperInterface $runs         Reads the run log.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
 		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RuleRunMapper $runs,
+		public readonly RuleRunMapperInterface $runs,
 	) {
 	}//end __construct()
 }//end class

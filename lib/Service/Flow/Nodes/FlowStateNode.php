@@ -28,7 +28,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 
 /**
  * The node that makes flow state usable from a graph.
@@ -61,7 +60,7 @@ use OCP\WorkflowEngine\IManager;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * Read one key into the item.
@@ -147,11 +146,11 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IL10N $l10n,
+		IURLGenerator $urls,
 	) {
+		parent::__construct(l10n: $l10n, urls: $urls);
 		$this->slots = new FlowStateSlots();
-
 	}//end __construct()
 
 	/**
@@ -189,17 +188,6 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/history.svg');
 	}//end getIcon()
-
-	/**
-	 * Availability.
-	 *
-	 * @param integer $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a flow-state step, across all five operations.
@@ -295,6 +283,18 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	public function execute(array $items, array $config, array $context): array {
 		$step = new FlowStateStep(state: $this->stateOf(context: $context), config: $config);
 
+		return $this->applyEach(step: $step, items: $items);
+	}//end execute()
+
+	/**
+	 * Apply the operation to every item, in order.
+	 *
+	 * @param FlowStateStep $step  The state handle and configuration.
+	 * @param array         $items The input items.
+	 *
+	 * @return array The output items.
+	 */
+	private function applyEach(FlowStateStep $step, array $items): array {
 		$output = [];
 		foreach ($items as $index => $item) {
 			$output[] = FlowItems::item(
@@ -305,7 +305,7 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 		}
 
 		return $output;
-	}//end execute()
+	}//end applyEach()
 
 	/**
 	 * The run's flow-state handle.
@@ -411,16 +411,4 @@ class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

@@ -29,20 +29,21 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\OrganisationUsageService;
-use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
-use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
-use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -95,16 +96,16 @@ class OrganisationController extends Controller {
 	/**
 	 * Tenant lifecycle service for state transitions
 	 *
-	 * @var TenantLifecycleService
+	 * @var TenantLifecycleServiceInterface
 	 */
-	private TenantLifecycleService $tenantLifecycleService;
+	private TenantLifecycleServiceInterface $tenantLifecycleService;
 
 	/**
 	 * Tenant usage mapper for quota data
 	 *
-	 * @var TenantUsageMapper
+	 * @var TenantUsageMapperInterface
 	 */
-	private TenantUsageMapper $tenantUsageMapper;
+	private TenantUsageMapperInterface $tenantUsageMapper;
 
 	/**
 	 * The session bundle, which answers the admin check.
@@ -123,37 +124,35 @@ class OrganisationController extends Controller {
 	/**
 	 * Records a change of who holds the special right `grant_manage`.
 	 *
-	 * @var GrantChangeAuditor|null
+	 * @var GrantChangeAuditorInterface|null
 	 */
-	private ?GrantChangeAuditor $grantAuditor;
+	private ?GrantChangeAuditorInterface $grantAuditor;
 
 	/**
 	 * Measures an organisation's usage
 	 *
-	 * @var OrganisationUsageService
+	 * @var OrganisationUsageServiceInterface
 	 */
-	private readonly OrganisationUsageService $usageService;
+	private readonly OrganisationUsageServiceInterface $usageService;
 
 	/**
 	 * Records an edit of an organisation's details. Null only in legacy fixtures.
 	 *
-	 * @var ?OrganisationLifecycleAuditor
+	 * @var ?OrganisationEditAuditorInterface
 	 */
-	private readonly ?OrganisationLifecycleAuditor $lifecycleAuditor;
+	private readonly ?OrganisationEditAuditorInterface $lifecycleAuditor;
 
 	/**
 	 * OrganisationController constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param OrganisationControllerServices $services The organisation controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		OrganisationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->usageService = $services->domain->usageService;
 		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
 		$this->grantAuditor = $services->domain->grantAuditor;
@@ -814,7 +813,7 @@ class OrganisationController extends Controller {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	private function grantManageOf(object $organisation): array {
-		$list = ($organisation->getAuthorization()[OrganisationSpecialRights::GRANT_MANAGE] ?? []);
+		$list = ($organisation->getAuthorization()[OrganisationSpecialRightsInterface::GRANT_MANAGE] ?? []);
 		if (is_array($list) === false) {
 			return [];
 		}
@@ -1353,9 +1352,9 @@ class OrganisationController extends Controller {
 	public function activate(string $uuid): JSONResponse {
 		try {
 			$organisation = $this->organisationMapper->findByUuid($uuid);
-			$status = $organisation->getStatus() ?? TenantLifecycleService::STATUS_ACTIVE;
+			$status = $organisation->getStatus() ?? TenantLifecycleServiceInterface::STATUS_ACTIVE;
 
-			if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
+			if ($status === TenantLifecycleServiceInterface::STATUS_PROVISIONING) {
 				$userId = $this->userSession->getUser()?->getUID() ?? 'admin';
 				$result = $this->tenantLifecycleService->provision($organisation, $userId);
 				return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);

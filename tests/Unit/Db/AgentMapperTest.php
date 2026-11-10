@@ -4,6 +4,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapperPlatform;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -36,11 +37,10 @@ class AgentMapperTest extends TestCase {
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
 		$this->mapper = new AgentMapper(
-			$this->db,
+			new AgentMapperPlatform($this->db, $this->eventDispatcher),
 			$this->organisationMapper,
 			$this->userSession,
-			$this->groupManager,
-			$this->eventDispatcher
+			$this->groupManager
 		);
 	}
 

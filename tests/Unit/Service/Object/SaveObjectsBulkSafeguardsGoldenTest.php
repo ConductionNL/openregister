@@ -23,9 +23,15 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -225,16 +231,14 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'statistics' => ['totalProcessed' => count($case['rows']), 'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0],
 		];
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
-		$passed = $method->invokeArgs(
-			$this->handler(case: $case, logger: $logger),
-			[
-				$case['rows'],
-				$this->defaultRegister(register: ($case['register'] ?? 'object')),
-				$this->defaultSchema(case: $case),
-				['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
-				&$result,
-			]
+		$batch  = new SafeguardBatchRun(
+			objects: $case['rows'],
+			defaults: new BulkBatchDefaults($this->defaultRegister(register: ($case['register'] ?? 'object')), $this->defaultSchema(case: $case)),
+			flags: ['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
+			result: $result
 		);
+		$passed = $method->invokeArgs($this->handler(case: $case, logger: $logger), [$batch]);
+		$result = $batch->result;
 
 		return ['passed' => $passed, 'result' => $result, 'calls' => $this->calls, 'log' => $logger->lines];
 	}//end runCase()
@@ -264,7 +268,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'logger'              => $logger,
 		];
 		if ($wiring === 'legacy') {
-			return new SaveObjects(...$args);
+			return $this->built(args: $args);
 		}
 
 		if ($wiring !== 'no-groups') {
@@ -280,8 +284,24 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			$args['rowRules'] = new BulkRowRules(propertyRbac: $this->propertyRbac(mode: $case['propertyRbac']));
 		}
 
-		return new SaveObjects(...$args);
+		return $this->built(args: $args);
 	}//end handler()
+
+	/**
+	 * The handler built from its collaborators, keyed by the collaborator they fill.
+	 *
+	 * @param array<string, mixed> $args The collaborators
+	 *
+	 * @return SaveObjects
+	 */
+	private function built(array $args): SaveObjects {
+		return new SaveObjects(
+			stores: new BulkSaveStores(objectEntityMapper: $args['objectEntityMapper'], schemaMapper: $args['schemaMapper'], registerMapper: $args['registerMapper'], saveHandler: $args['saveHandler']),
+			session: new BulkSaveSession(userSession: $args['userSession'], organisationService: $args['organisationService'], groupManager: ($args['groupManager'] ?? null)),
+			reporting: new BulkSaveReporting(logger: $args['logger']),
+			checks: new BulkRowChecks(permissionHandler: ($args['permissionHandler'] ?? null), validateHandler: ($args['validateHandler'] ?? null), rowRules: ($args['rowRules'] ?? null))
+		);
+	}//end built()
 
 	/**
 	 * The default schema argument: an entity (id 7), an id, or nothing.

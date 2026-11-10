@@ -26,18 +26,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
-use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
+use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 
 /**
  * Controller for e-Depot settings management.
@@ -46,10 +46,39 @@ use Psr\Log\LoggerInterface;
  * authentication, and SIP profile. Also supports connection testing.
  *
  * @psalm-suppress UnusedClass
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class EdepotSettingsController extends Controller {
+	/**
+	 * The settings answered as '***' when they hold a value.
+	 *
+	 * @var list<string>
+	 */
+	private const SECRET_FIELDS = ['apiKey', 'bearerToken', 'password'];
+
+	/**
+	 * The request parameter of each setting and the config key it is saved under, in write order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const CONFIG_KEYS = [
+		'endpointUrl' => 'edepot_endpoint_url',
+		'authenticationType' => 'edepot_auth_type',
+		'apiKey' => 'edepot_api_key',
+		'bearerToken' => 'edepot_bearer_token',
+		'targetArchive' => 'edepot_target_archive',
+		'sipProfile' => 'edepot_sip_profile',
+		'transport' => 'edepot_transport',
+		'host' => 'edepot_sftp_host',
+		'port' => 'edepot_sftp_port',
+		'username' => 'edepot_sftp_username',
+		'password' => 'edepot_sftp_password',
+		'keyPath' => 'edepot_sftp_key_path',
+		'remotePath' => 'edepot_sftp_remote_path',
+		'hostKeyFingerprint' => 'edepot_sftp_host_key_fingerprint',
+		'sourceId' => 'edepot_openconnector_source_id',
+		'baseUrl' => 'edepot_openconnector_base_url',
+	];
+
 	/**
 	 * The app configuration.
 	 *
@@ -60,64 +89,54 @@ class EdepotSettingsController extends Controller {
 	/**
 	 * The transfer service.
 	 *
-	 * @var EdepotTransferService
+	 * @var EdepotTransferServiceInterface
 	 */
-	private readonly EdepotTransferService $transferService;
+	private readonly EdepotTransferServiceInterface $transferService;
 
 	/**
 	 * SFTP transport.
 	 *
-	 * @var SftpTransport
+	 * @var SftpTransportInterface
 	 */
-	private readonly SftpTransport $sftpTransport;
+	private readonly SftpTransportInterface $sftpTransport;
 
 	/**
 	 * REST API transport.
 	 *
-	 * @var RestApiTransport
+	 * @var RestApiTransportInterface
 	 */
-	private readonly RestApiTransport $restTransport;
+	private readonly RestApiTransportInterface $restTransport;
 
 	/**
 	 * OpenConnector transport.
 	 *
-	 * @var OpenConnectorTransport
+	 * @var OpenConnectorTransportInterface
 	 */
-	private readonly OpenConnectorTransport $ocTransport;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
+	private readonly OpenConnectorTransportInterface $ocTransport;
 
 	/**
 	 * Reports connection test outcomes to integriq's connection registry.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param EdepotSettingsControllerServices $services The edepot settings controller services.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		EdepotSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->appConfig = $services->platform->appConfig;
 		$this->transferService = $services->domain->transferService;
 		$this->sftpTransport = $services->domain->sftpTransport;
 		$this->restTransport = $services->domain->restTransport;
 		$this->ocTransport = $services->domain->ocTransport;
-		$this->logger = $services->platform->logger;
 		$this->connectionReporter = $services->platform->connectionReporter;
 	}//end __construct()
 
@@ -132,28 +151,31 @@ class EdepotSettingsController extends Controller {
 	 */
 	public function getEdepotSettings(): JSONResponse {
 		try {
-			$config = $this->transferService->getTransportConfig();
-
-			// Mask sensitive values.
-			if (empty($config['apiKey']) === false) {
-				$config['apiKey'] = '***';
-			}
-
-			if (empty($config['bearerToken']) === false) {
-				$config['bearerToken'] = '***';
-			}
-
-			if (empty($config['password']) === false) {
-				$config['password'] = '***';
-			}
-
+			$config = $this->maskedSecrets(config: $this->transferService->getTransportConfig());
 			$config['availableProfiles'] = $this->transferService->getAvailableProfiles();
 
 			return new JSONResponse(data: $config);
 		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-		}//end try
+			return $this->failure(e: $e);
+		}
 	}//end getEdepotSettings()
+
+	/**
+	 * Mask the secret settings that hold a value.
+	 *
+	 * @param array<string, mixed> $config The transport configuration.
+	 *
+	 * @return array<string, mixed> The configuration with secrets as '***'.
+	 */
+	private function maskedSecrets(array $config): array {
+		foreach (self::SECRET_FIELDS as $field) {
+			if (empty($config[$field]) === false) {
+				$config[$field] = '***';
+			}
+		}
+
+		return $config;
+	}//end maskedSecrets()
 
 	/**
 	 * Update e-Depot settings.
@@ -167,68 +189,92 @@ class EdepotSettingsController extends Controller {
 	public function updateEdepotSettings(): JSONResponse {
 		try {
 			$params = $this->request->getParams();
-
-			// Validate SIP profile.
-			$sipProfile = ($params['sipProfile'] ?? 'default');
-			if ($this->transferService->isValidProfile($sipProfile) === false) {
-				$available = implode(', ', array_keys($this->transferService->getAvailableProfiles()));
-				return new JSONResponse(
-					data: ['error' => "Invalid SIP profile '{$sipProfile}'. Available: {$available}"],
-					statusCode: 400
-				);
+			$invalid = $this->invalidProfile(sipProfile: ($params['sipProfile'] ?? 'default'));
+			if ($invalid !== null) {
+				return $invalid;
 			}
 
-			// Store configuration values.
-			$configMap = [
-				'endpointUrl' => 'edepot_endpoint_url',
-				'authenticationType' => 'edepot_auth_type',
-				'apiKey' => 'edepot_api_key',
-				'bearerToken' => 'edepot_bearer_token',
-				'targetArchive' => 'edepot_target_archive',
-				'sipProfile' => 'edepot_sip_profile',
-				'transport' => 'edepot_transport',
-				'host' => 'edepot_sftp_host',
-				'port' => 'edepot_sftp_port',
-				'username' => 'edepot_sftp_username',
-				'password' => 'edepot_sftp_password',
-				'keyPath' => 'edepot_sftp_key_path',
-				'remotePath' => 'edepot_sftp_remote_path',
-				'hostKeyFingerprint' => 'edepot_sftp_host_key_fingerprint',
-				'sourceId' => 'edepot_openconnector_source_id',
-				'baseUrl' => 'edepot_openconnector_base_url',
-			];
-
-			foreach ($configMap as $paramKey => $configKey) {
-				if (isset($params[$paramKey]) === true) {
-					$value = (string)$params[$paramKey];
-					// Skip masked values (don't overwrite secrets with '***').
-					if ($value === '***') {
-						continue;
-					}
-
-					$this->appConfig->setValueString('openregister', $configKey, $value);
-				}
-			}
-
-			// Test connection if requested.
-			$testResult = null;
-			if (isset($params['testConnection']) === true && $params['testConnection'] === true) {
-				$transport = $this->resolveTransport(type: ($params['transport'] ?? 'rest_api'));
-				$config = $this->transferService->getTransportConfig();
-				$testResult = $transport->testConnection($config);
-				$this->reportTest(passed: $testResult, transport: $transport->getName());
-			}
-
-			$response = ['success' => true];
-			if ($testResult !== null) {
-				$response['connectionTest'] = $testResult;
-			}
-
-			return new JSONResponse(data: $response);
+			$this->storeSettings(params: $params);
+			return $this->settingsSaved(testResult: $this->requestedConnectionTest(params: $params));
 		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-		}//end try
+			return $this->failure(e: $e);
+		}
 	}//end updateEdepotSettings()
+
+	/**
+	 * The answer for saved settings, with the connection test outcome when one ran.
+	 *
+	 * @param bool|null $testResult Whether the transport answered, or null when no test was asked.
+	 *
+	 * @return JSONResponse The 200 answer.
+	 */
+	private function settingsSaved(?bool $testResult): JSONResponse {
+		$response = ['success' => true];
+		if ($testResult !== null) {
+			$response['connectionTest'] = $testResult;
+		}
+
+		return new JSONResponse(data: $response);
+	}//end settingsSaved()
+
+	/**
+	 * The 400 answer for an unknown SIP profile, if it is one.
+	 *
+	 * @param mixed $sipProfile The requested SIP profile.
+	 *
+	 * @return JSONResponse|null The rejection, or null when the profile is known.
+	 */
+	private function invalidProfile(mixed $sipProfile): ?JSONResponse {
+		if ($this->transferService->isValidProfile($sipProfile) === true) {
+			return null;
+		}
+
+		$available = implode(', ', array_keys($this->transferService->getAvailableProfiles()));
+		return new JSONResponse(
+			data: ['error' => "Invalid SIP profile '{$sipProfile}'. Available: {$available}"],
+			statusCode: 400
+		);
+	}//end invalidProfile()
+
+	/**
+	 * Save every setting the request carries, skipping masked values so secrets are not overwritten with '***'.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return void
+	 */
+	private function storeSettings(array $params): void {
+		foreach (self::CONFIG_KEYS as $paramKey => $configKey) {
+			if (isset($params[$paramKey]) === false) {
+				continue;
+			}
+
+			$value = (string)$params[$paramKey];
+			if ($value !== '***') {
+				$this->appConfig->setValueString('openregister', $configKey, $value);
+			}
+		}
+	}//end storeSettings()
+
+	/**
+	 * Run the connection test when the request asks for it.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return bool|null Whether the transport answered, or null when no test was asked.
+	 */
+	private function requestedConnectionTest(array $params): ?bool {
+		if (isset($params['testConnection']) === false || $params['testConnection'] !== true) {
+			return null;
+		}
+
+		$transport = $this->resolveTransport(type: ($params['transport'] ?? 'rest_api'));
+		$config = $this->transferService->getTransportConfig();
+		$testResult = $transport->testConnection($config);
+		$this->reportTest(passed: $testResult, transport: $transport->getName());
+
+		return $testResult;
+	}//end requestedConnectionTest()
 
 	/**
 	 * Test e-Depot connection.
@@ -246,39 +292,61 @@ class EdepotSettingsController extends Controller {
 			$result = $transport->testConnection($config);
 			$this->reportTest(passed: $result, transport: $transport->getName());
 
-			$message = 'Connection failed';
-			if ($result === true) {
-				$message = 'Connection successful';
-			}
-
 			return new JSONResponse(
-				data: [
-					'success' => $result,
-					'transport' => $transport->getName(),
-					'message' => $message,
-				]
+				data: ['success' => $result, 'transport' => $transport->getName(), 'message' => $this->testMessage(passed: $result)]
 			);
 		} catch (\Exception $e) {
-			$this->connectionReporter->report(
-				key: 'edepot',
-				status: 'error',
-				message: 'The e-Depot connection test failed: ' . $e->getMessage()
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->testFailed(e: $e);
+		}
 	}//end testEdepotConnection()
+
+	/**
+	 * Describe a connection test outcome.
+	 *
+	 * @param bool $passed Whether the transport answered.
+	 *
+	 * @return string The message.
+	 */
+	private function testMessage(bool $passed): string {
+		if ($passed === true) {
+			return 'Connection successful';
+		}
+
+		return 'Connection failed';
+	}//end testMessage()
+
+	/**
+	 * Report a connection test that threw and answer it.
+	 *
+	 * @param \Exception $e The exception.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 */
+	private function testFailed(\Exception $e): JSONResponse {
+		$this->connectionReporter->report(
+			key: 'edepot',
+			status: 'error',
+			message: 'The e-Depot connection test failed: ' . $e->getMessage()
+		);
+
+		return new JSONResponse(data: ['success' => false, 'error' => $e->getMessage()], statusCode: 500);
+	}//end testFailed()
+
+	/**
+	 * The 500 answer for a settings read or write that threw.
+	 *
+	 * @param \Exception $e The exception.
+	 *
+	 * @return JSONResponse The failure.
+	 */
+	private function failure(\Exception $e): JSONResponse {
+		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+	}//end failure()
 
 	/**
 	 * Tell integriq what an e-Depot connection test found.
 	 *
-	 * @param bool   $passed    Whether the transport answered.
+	 * @param bool $passed Whether the transport answered.
 	 * @param string $transport The transport name the test used.
 	 *
 	 * @return void

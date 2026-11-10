@@ -31,8 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Handoff\HandoffService;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 
@@ -54,18 +53,24 @@ class HandoffQueueDrainJob extends TimedJob {
 	private const DEFAULT_INTERVAL = 300;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory.
-	 * @param HandoffService $handoffService The handoff engine (drain surface).
-	 * @param LoggerInterface $logger Structured logging.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
+	 * @param HandoffServiceInterface $handoffService The handoff engine (drain surface).
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly HandoffService $handoffService,
-		private readonly LoggerInterface $logger,
+		JobRuntime $runtime,
+		private readonly HandoffServiceInterface $handoffService,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 
 		$this->setInterval(seconds: self::DEFAULT_INTERVAL);
 

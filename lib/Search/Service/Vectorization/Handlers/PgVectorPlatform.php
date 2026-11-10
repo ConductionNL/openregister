@@ -49,16 +49,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  */
-class PgVectorPlatform {
-
-	/**
-	 * Unprefixed pgvector ANN sidecar table name.
-	 *
-	 * Must never carry the Nextcloud table prefix: staying outside the
-	 * `/^<prefix>/` migration filter is what keeps the vector-typed column
-	 * invisible to Doctrine schema introspection.
-	 */
-	public const SIDECAR_TABLE = 'openregister_vec_ann';
+class PgVectorPlatform implements VectorSidecarTableInterface {
 
 	/**
 	 * Cached sidecar embedding dimension.

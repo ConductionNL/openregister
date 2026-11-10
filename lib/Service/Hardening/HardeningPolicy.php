@@ -55,7 +55,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningPolicy {
+class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterface {
 
 	/**
 	 * The app the administered controls live under.

@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Files\Service\File\ObjectFileMigration;
+use OCA\OpenRegister\Files\Service\File\ObjectFileMigrationFiles;
+use OCA\OpenRegister\Files\Service\File\ObjectFileMigrationSettings;
 use OCA\OpenRegister\Files\Service\File\ObjectFileShareReowner;
 use OCP\Encryption\IManager as IEncryptionManager;
 use OCP\Files\File;
@@ -192,7 +194,7 @@ class ObjectFileMigrationTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getUserValue')->willReturnCallback(fn (): string => $this->quota);
 
-		return new ObjectFileMigration($root, $userManager, $ownership, $reowner, $appConfig, $encryption, new NullLogger(), $config);
+		return new ObjectFileMigration(new ObjectFileMigrationFiles($root, $userManager, $ownership, $reowner), new ObjectFileMigrationSettings($appConfig, $encryption, $config), new NullLogger());
 	}//end migration()
 
 	public function testAnIntakesAttachmentsMoveWithTheirIds(): void {

@@ -60,7 +60,7 @@ class SearchControllerTest extends TestCase {
 			]);
 
 		// Create controller instance.
-		$controller = new SearchController('openregister', $request, $objectService);
+		$controller = new SearchController($request, $objectService);
 
 		// Execute search.
 		$response = $controller->search();
@@ -98,7 +98,7 @@ class SearchControllerTest extends TestCase {
 			]);
 
 		// Create controller instance.
-		$controller = new SearchController('openregister', $request, $objectService);
+		$controller = new SearchController($request, $objectService);
 
 		// Execute search.
 		$response = $controller->search();
@@ -142,7 +142,7 @@ class SearchControllerTest extends TestCase {
 			->willReturn($mockResults);
 
 		// Create controller instance.
-		$controller = new SearchController('openregister', $request, $objectService);
+		$controller = new SearchController($request, $objectService);
 
 		// Execute search.
 		$response = $controller->search();

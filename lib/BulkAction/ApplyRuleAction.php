@@ -29,15 +29,11 @@ namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\IUser;
-use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
 
 /**
  * Applying a rule to objects that already exist.
@@ -59,32 +55,19 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class ApplyRuleAction implements BulkActionInterface {
-
-	/**
-	 * The action id.
-	 *
-	 * @var string
-	 */
-	public const ID = 'openregister:apply-rule';
+class ApplyRuleAction implements ApplyRuleActionInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService The object write path.
-	 * @param SchemaMapperInterface $schemaMapper Resolves the schema the rule is declared on.
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ApplyRuleServices $rules  Rule inventory and calculation evaluator.
+	 * @param BulkObjectAccess  $access The member's schema, the object write path and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RuleInventoryService $inventory,
-		private readonly CalculationEvaluatorInterface $evaluator,
-		private readonly LoggerInterface $logger,
+		private readonly ApplyRuleServices $rules,
+		private readonly BulkObjectAccess $access,
 	) {
 	}//end __construct()
 
@@ -225,7 +208,7 @@ class ApplyRuleAction implements BulkActionInterface {
 
 		try {
 			// No SequenceContext: a replay must never reserve a running number.
-			$value = $this->evaluator->evaluate($current, $rule->getCondition());
+			$value = $this->rules->evaluator->evaluate($current, $rule->getCondition());
 		} catch (Throwable $failure) {
 			return BulkActionResult::failed(message: $failure->getMessage());
 		}
@@ -257,7 +240,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 */
 	private function write(ObjectEntity $object, array $patch, ?IUser $actor): BulkActionResult {
 		try {
-			$this->objectService->patchObject(
+			$this->access->objects->patchObject(
 				objectId: (string)$object->getUuid(),
 				data: $patch,
 				register: $object->getRegister(),
@@ -265,7 +248,7 @@ class ApplyRuleAction implements BulkActionInterface {
 				currentUser: $actor
 			);
 		} catch (Throwable $failure) {
-			$this->logger->warning(
+			$this->access->logger->warning(
 				message: '[ApplyRuleAction] Write failed for object',
 				context: [
 					'action' => self::ID,
@@ -291,9 +274,9 @@ class ApplyRuleAction implements BulkActionInterface {
 	 */
 	private function ruleFor(array $parameters): ?RuleDescriptor {
 		try {
-			$schema = $this->schemaMapper->find((string)($parameters['schema'] ?? ''));
+			$schema = $this->access->schemas->find((string)($parameters['schema'] ?? ''));
 
-			return $this->inventory->find(schema: $schema, ruleId: (string)($parameters['ruleId'] ?? ''));
+			return $this->rules->inventory->find(schema: $schema, ruleId: (string)($parameters['ruleId'] ?? ''));
 		} catch (Throwable $failure) {
 			return null;
 		}

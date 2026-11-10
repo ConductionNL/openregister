@@ -82,29 +82,41 @@ class GeoSpatialEvaluator {
 		return match ($filter->type) {
 			GeoFilter::TYPE_BBOX => $this->matchesBbox(geometry: $rowGeometry, bbox: $filter->payload),
 			GeoFilter::TYPE_NEAR => $this->matchesNear(geometry: $rowGeometry, payload: $filter->payload),
-			GeoFilter::TYPE_WITHIN => $this->matchesWithin(rowGeometry: $rowGeometry, predicateGeometry: $filter->payload['geometry']),
-			GeoFilter::TYPE_INTERSECTS => $this->matchesIntersects(rowGeometry: $rowGeometry, predicateGeometry: $filter->payload['geometry']),
-			default => false,
+			default => $this->matchesPredicate(rowGeometry: $rowGeometry, filter: $filter),
 		};
 	}//end matches()
 
 	/**
+	 * Match against the polygon predicate of a within or intersects filter.
+	 *
+	 * @param array     $rowGeometry The GeoJSON geometry from the row.
+	 * @param GeoFilter $filter      The filter to apply.
+	 *
+	 * @return bool False for any other filter type.
+	 */
+	private function matchesPredicate(array $rowGeometry, GeoFilter $filter): bool {
+		return match ($filter->type) {
+			GeoFilter::TYPE_WITHIN => $this->matchesWithin(rowGeometry: $rowGeometry, predicateGeometry: $filter->payload['geometry']),
+			GeoFilter::TYPE_INTERSECTS => $this->matchesIntersects(rowGeometry: $rowGeometry, predicateGeometry: $filter->payload['geometry']),
+			default => false,
+		};
+	}//end matchesPredicate()
+
+	/**
 	 * Compute the great-circle distance in meters between two lon/lat pairs.
 	 *
-	 * @param float $lon1 Longitude of point A.
-	 * @param float $lat1 Latitude of point A.
-	 * @param float $lon2 Longitude of point B.
-	 * @param float $lat2 Latitude of point B.
+	 * @param GeoPoint $from Point A.
+	 * @param GeoPoint $to   Point B.
 	 *
 	 * @return float Distance in meters.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
 	 */
-	public function haversineMeters(float $lon1, float $lat1, float $lon2, float $lat2): float {
-		$phi1 = deg2rad($lat1);
-		$phi2 = deg2rad($lat2);
-		$dPhi = deg2rad(($lat2 - $lat1));
-		$dLam = deg2rad(($lon2 - $lon1));
+	public function haversineMeters(GeoPoint $from, GeoPoint $to): float {
+		$phi1 = deg2rad($from->lat);
+		$phi2 = deg2rad($to->lat);
+		$dPhi = deg2rad(($to->lat - $from->lat));
+		$dLam = deg2rad(($to->lon - $from->lon));
 
 		$a = (sin($dPhi / 2) ** 2) + cos($phi1) * cos($phi2) * (sin($dLam / 2) ** 2);
 		$c = 2 * atan2(sqrt($a), sqrt(1 - $a));
@@ -153,10 +165,8 @@ class GeoSpatialEvaluator {
 		}
 
 		$distance = $this->haversineMeters(
-			lon1: $payload['lon'],
-			lat1: $payload['lat'],
-			lon2: $point[0],
-			lat2: $point[1]
+			from: new GeoPoint(lon: $payload['lon'], lat: $payload['lat']),
+			to: new GeoPoint(lon: $point[0], lat: $point[1])
 		);
 		return $distance <= $payload['radius'];
 	}//end matchesNear()
@@ -216,15 +226,28 @@ class GeoSpatialEvaluator {
 	 */
 	private function touchesAny(mixed $row, array $predicatePolygons): bool {
 		foreach ($predicatePolygons as $pred) {
-			if ($this->anyVertexInside(vertices: ($row[0] ?? []), polygon: $pred) === true
-				|| $this->anyVertexInside(vertices: ($pred[0] ?? []), polygon: $row) === true
-			) {
+			if ($this->touches(row: $row, pred: $pred) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end touchesAny()
+
+	/**
+	 * Whether a row polygon and a predicate polygon have a vertex inside the other's outer ring.
+	 *
+	 * The row's vertices are tried first, so the predicate is only read when they all miss.
+	 *
+	 * @param mixed $row  One row polygon.
+	 * @param mixed $pred One predicate polygon.
+	 *
+	 * @return bool
+	 */
+	private function touches(mixed $row, mixed $pred): bool {
+		return $this->anyVertexInside(vertices: ($row[0] ?? []), polygon: $pred) === true
+			|| $this->anyVertexInside(vertices: ($pred[0] ?? []), polygon: $row) === true;
+	}//end touches()
 
 	/**
 	 * Whether any of the vertices lies inside the polygon's outer ring.
@@ -260,20 +283,49 @@ class GeoSpatialEvaluator {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
 	 */
 	private function extractRepresentativePoint(array $geometry): ?array {
-		$type = ($geometry['type'] ?? null);
 		$coords = ($geometry['coordinates'] ?? null);
 		if (is_array($coords) === false) {
 			return null;
 		}
 
+		return $this->pointOf(type: ($geometry['type'] ?? null), coords: $coords);
+	}//end extractRepresentativePoint()
+
+	/**
+	 * The representative `[lon, lat]` of a geometry of a given type.
+	 *
+	 * @param mixed $type   The geometry type.
+	 * @param array $coords The geometry's coordinates.
+	 *
+	 * @return ?array `[lon, lat]` or null when the shape is unsupported.
+	 */
+	private function pointOf(mixed $type, array $coords): ?array {
+		if ($type === 'Point') {
+			return $this->numericPair(pair: $coords);
+		}
+
+		if ($type === 'LineString') {
+			return $this->numericPair(pair: ($coords[0] ?? null));
+		}
+
+		return $this->outerRingCentroid(type: $type, coords: $coords);
+	}//end pointOf()
+
+	/**
+	 * The centroid of the outer ring of a Polygon, or of a MultiPolygon's first polygon.
+	 *
+	 * @param mixed $type   The geometry type.
+	 * @param array $coords The geometry's coordinates.
+	 *
+	 * @return ?array `[lon, lat]`, or null for another type or a ring with no usable vertex.
+	 */
+	private function outerRingCentroid(mixed $type, array $coords): ?array {
 		return match ($type) {
-			'Point' => $this->numericPair(pair: $coords),
 			'Polygon' => $this->ringCentroid(ring: $this->arrayOrEmpty(value: ($coords[0] ?? null))),
 			'MultiPolygon' => $this->ringCentroid(ring: $this->arrayOrEmpty(value: ($coords[0][0] ?? null))),
-			'LineString' => $this->numericPair(pair: ($coords[0] ?? null)),
 			default => null,
 		};
-	}//end extractRepresentativePoint()
+	}//end outerRingCentroid()
 
 	/**
 	 * Read `[lon, lat]` floats from a vertex with at least two numeric leading values.
@@ -358,21 +410,32 @@ class GeoSpatialEvaluator {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
 	 */
 	private function pointInRing(array $point, array $ring): bool {
-		if (count($ring) < 3) {
+		$n = count($ring);
+		if ($n < 3) {
 			return false;
 		}
 
 		$ray = [$point[0], $point[1]];
 		$inside = false;
-		$n = count($ring);
 		for ($i = 0, $j = ($n - 1); $i < $n; $j = $i++) {
-			if ($this->edgeCrossesRay(ray: $ray, edge: [($ring[$i] ?? null), ($ring[$j] ?? null)]) === true) {
-				$inside = !$inside;
-			}
+			// Each crossing flips the answer.
+			$inside = ($inside !== $this->edgeCrossesRay(ray: $ray, edge: $this->edgeOf(ring: $ring, ends: [$i, $j])));
 		}
 
 		return $inside;
 	}//end pointInRing()
+
+	/**
+	 * The two vertices of a ring edge, null where the ring has no vertex at that position.
+	 *
+	 * @param array                $ring The ring vertices.
+	 * @param array{0: int, 1: int} $ends The positions of the edge's two vertices.
+	 *
+	 * @return array{0: mixed, 1: mixed}
+	 */
+	private function edgeOf(array $ring, array $ends): array {
+		return [($ring[$ends[0]] ?? null), ($ring[$ends[1]] ?? null)];
+	}//end edgeOf()
 
 	/**
 	 * Whether a ring edge crosses the horizontal ray cast east from a point.
@@ -406,13 +469,24 @@ class GeoSpatialEvaluator {
 	 * @return array{0: mixed, 1: mixed, 2: mixed, 3: mixed}|null
 	 */
 	private function edgeCoordinates(array $edge): ?array {
-		$coordinates = [($edge[0][0] ?? null), ($edge[0][1] ?? null), ($edge[1][0] ?? null), ($edge[1][1] ?? null)];
+		$coordinates = array_merge($this->pairOf(vertex: $edge[0]), $this->pairOf(vertex: $edge[1]));
 		if (in_array(null, $coordinates, true) === true) {
 			return null;
 		}
 
 		return $coordinates;
 	}//end edgeCoordinates()
+
+	/**
+	 * The first two values of a vertex, null where it has none.
+	 *
+	 * @param mixed $vertex The vertex.
+	 *
+	 * @return array{0: mixed, 1: mixed}
+	 */
+	private function pairOf(mixed $vertex): array {
+		return [($vertex[0] ?? null), ($vertex[1] ?? null)];
+	}//end pairOf()
 
 	/**
 	 * Normalise a Polygon or MultiPolygon to a list of polygons.

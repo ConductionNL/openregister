@@ -24,11 +24,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\EndpointsControllerServices;
 use OCA\OpenRegister\Db\Endpoint;
-use OCA\OpenRegister\Db\EndpointLogMapper;
-use OCA\OpenRegister\Db\EndpointMapper;
-use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Db\EndpointLogMapperInterface;
+use OCA\OpenRegister\Db\EndpointMapperInterface;
+use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -72,27 +74,27 @@ class EndpointsController extends Controller {
 	 *
 	 * Handles CRUD operations for endpoint entities in the database.
 	 *
-	 * @var EndpointMapper Endpoint mapper instance
+	 * @var EndpointMapperInterface Endpoint mapper instance
 	 */
-	private readonly EndpointMapper $endpointMapper;
+	private readonly EndpointMapperInterface $endpointMapper;
 
 	/**
 	 * Endpoint service for business logic
 	 *
 	 * Handles endpoint testing and execution logic.
 	 *
-	 * @var EndpointService Endpoint service instance
+	 * @var EndpointServiceInterface Endpoint service instance
 	 */
-	private readonly EndpointService $endpointService;
+	private readonly EndpointServiceInterface $endpointService;
 
 	/**
 	 * Endpoint log mapper for log operations
 	 *
 	 * Handles database operations for endpoint execution logs.
 	 *
-	 * @var EndpointLogMapper Endpoint log mapper instance
+	 * @var EndpointLogMapperInterface Endpoint log mapper instance
 	 */
-	private readonly EndpointLogMapper $endpointLogMapper;
+	private readonly EndpointLogMapperInterface $endpointLogMapper;
 
 	/**
 	 * Logger for error tracking and debugging
@@ -116,32 +118,24 @@ class EndpointsController extends Controller {
 	 * Initializes controller with required dependencies for endpoint management.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param EndpointMapper $endpointMapper Endpoint mapper for database operations
-	 * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
-	 * @param EndpointService $endpointService Endpoint service for business logic
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param EndpointsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		EndpointMapper $endpointMapper,
-		EndpointLogMapper $endpointLogMapper,
-		EndpointService $endpointService,
-		ControllerSession $session,
+		EndpointsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
-		$this->endpointMapper = $endpointMapper;
-		$this->endpointLogMapper = $endpointLogMapper;
-		$this->endpointService = $endpointService;
-		$this->logger = $session->logger;
-		$this->session = $session;
+		$this->endpointMapper = $services->endpointMapper;
+		$this->endpointLogMapper = $services->endpointLogMapper;
+		$this->endpointService = $services->endpointService;
+		$this->logger = $services->session->logger;
+		$this->session = $services->session;
 	}//end __construct()
 
 	/**

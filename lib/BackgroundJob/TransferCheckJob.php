@@ -27,13 +27,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Edepot\TransferListService;
-use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
+use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\TransferCheckServices;
 
 /**
  * Transfer Check Job
@@ -54,12 +55,31 @@ class TransferCheckJob extends TimedJob {
 	private const DEFAULT_INTERVAL = 86400;
 
 	/**
+	 * Owns the retention sweep both archival jobs share.
+	 *
+	 * @var RetentionServiceInterface
+	 */
+	private readonly RetentionServiceInterface $retentionService;
+
+	/**
+	 * The transfer list service.
+	 *
+	 * @var TransferListRunInterface
+	 */
+	private readonly TransferListRunInterface $transferListService;
+
+	/**
+	 * Durable transfer-list records.
+	 *
+	 * @var TransferRecordServiceInterface
+	 */
+	private readonly TransferRecordServiceInterface $transferRecords;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The time factory.
-	 * @param RetentionServiceInterface $retentionService Owns the retention sweep both archival jobs share.
-	 * @param TransferListService $transferListService The transfer list service.
-	 * @param TransferRecordService $transferRecords Durable transfer-list records.
+	 * @param TransferCheckServices $services Retention sweep, transfer list run and transfer records.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -67,12 +87,13 @@ class TransferCheckJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly RetentionServiceInterface $retentionService,
-		private readonly TransferListService $transferListService,
-		private readonly TransferRecordService $transferRecords,
+		TransferCheckServices $services,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->retentionService = $services->retentionService;
+		$this->transferListService = $services->transferListService;
+		$this->transferRecords = $services->transferRecords;
 		parent::__construct(time: $time);
 
 		$interval = (int)$this->appConfig->getValueString(

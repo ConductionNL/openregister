@@ -30,274 +30,54 @@ import {
 				<Magnify :size="20" />
 			</template>
 
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Register')
-					}}</label>
-					<NcSelect
-						v-bind="registerOptions"
-						id="registerSelect"
-						:modelValue="selectedRegisterValue"
-						:loading="registerLoading"
-						:disabled="registerLoading"
-						:inputLabel="t('openregister', 'Register')"
-						:placeholder="t('openregister', 'Select a register')"
-						@update:modelValue="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schema')
-					}}</label>
-					<NcSelect
-						v-bind="schemaOptions"
-						id="schemaSelect"
-						:modelValue="selectedSchemaValue"
-						:loading="schemaLoading"
-						:disabled="!registerStore.registerItem || schemaLoading"
-						:inputLabel="t('openregister', 'Schema')"
-						:placeholder="t('openregister', 'Select a schema')"
-						@update:modelValue="handleSchemaChange" />
-				</div>
-			</div>
+			<StatisticsScopeFilter
+				:registerLoading="registerLoading"
+				:schemaLoading="schemaLoading" />
 
 			<!-- System Totals Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Totals') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
+			<SidebarStatsSection
+				:title="t('openregister', 'Totals')"
+				:loading="dashboardStore.loading">
+				<div v-if="systemTotals" class="statsContainer">
+					<StatisticsTotalsTable
+						:stats="systemTotals.stats"
+						:leadingRows="registerCountRows" />
 				</div>
-				<div v-else-if="systemTotals" class="statsContainer">
-					<table class="statisticsTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Name') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Count') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Size') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Registers') }}
-								</th>
-								<td>{{ filteredRegisters.length }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Schemas') }}
-								</th>
-								<td>{{ totalSchemas }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Objects') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.total || 0 }}
-								</td>
-								<td>
-									{{
-										formatBytes(
-											systemTotals.stats?.objects?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.invalid || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.deleted || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Locked') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.locked || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Logs') }}
-								</th>
-								<td>{{ systemTotals.stats?.logs?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											systemTotals.stats?.logs?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Files') }}
-								</th>
-								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											systemTotals.stats?.files?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
+			</SidebarStatsSection>
 
 			<!-- Orphaned Items Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Orphaned Items') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
+			<SidebarStatsSection
+				:title="t('openregister', 'Orphaned Items')"
+				:loading="dashboardStore.loading">
+				<div v-if="orphanedItems" class="statsContainer">
+					<StatisticsTotalsTable :stats="orphanedItems.stats" />
 				</div>
-				<div v-else-if="orphanedItems" class="statsContainer">
-					<table class="statisticsTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Name') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Count') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Size') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Objects') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.total || 0 }}
-								</td>
-								<td>
-									{{
-										formatBytes(
-											orphanedItems.stats?.objects?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.invalid || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.deleted || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Locked') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.locked || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Logs') }}
-								</th>
-								<td>{{ orphanedItems.stats?.logs?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											orphanedItems.stats?.logs?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Files') }}
-								</th>
-								<td>{{ orphanedItems.stats?.files?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											orphanedItems.stats?.files?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
+			</SidebarStatsSection>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
-import {
-	NcAppSidebar,
-	NcAppSidebarTab,
-	NcLoadingIcon,
-	NcSelect,
-} from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import formatBytes from '../../services/formatBytes.js'
-import { scopePickers } from '../../services/scopePickers.js'
+import SidebarStatsSection from '../SidebarStatsSection.vue'
+import StatisticsScopeFilter from '../StatisticsScopeFilter.vue'
+import StatisticsTotalsTable from './StatisticsTotalsTable.vue'
+import { dashboardScope } from '../dashboardScope.js'
+import { scopeListLoader } from '../scopeListLoader.js'
 
 export default {
 	name: 'DashboardSideBar',
 	components: {
 		NcAppSidebar,
 		NcAppSidebarTab,
-		NcSelect,
-		NcLoadingIcon,
 		Magnify,
+		StatisticsTotalsTable,
+		SidebarStatsSection,
+		StatisticsScopeFilter,
 	},
 
-	mixins: [scopePickers],
+	mixins: [scopeListLoader, dashboardScope],
 
 	data() {
 		return {
@@ -314,19 +94,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Flatten the object metadata map into column descriptors for display.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array} Metadata column descriptors
-		 */
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
-		},
-
 		/**
 		 * Get system totals from dashboardStore
 		 *
@@ -351,31 +118,22 @@ export default {
 			)
 		},
 
-		/**
-		 * Get filtered registers (excluding system and orphaned)
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array}
-		 */
-		filteredRegisters() {
-			return dashboardStore.registers.filter(
-				(register) =>
-					register.title !== 'System Totals'
-					&& register.title !== 'Orphaned Items',
-			)
-		},
 
 		/**
-		 * Get total number of schemas in filtered registers
+		 * The register and schema counts that open the system totals table.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {number}
+		 * @return {Array<object>} The rows
 		 */
-		totalSchemas() {
-			return this.filteredRegisters.reduce((total, register) => {
-				return total + (register.schemas?.length || 0)
-			}, 0)
+		registerCountRows() {
+			return [
+				{
+					label: t('openregister', 'Registers'),
+					count: this.filteredRegisters.length,
+				},
+				{ label: t('openregister', 'Schemas'), count: this.totalSchemas },
+			]
 		},
+
 	},
 
 	watch: {
@@ -400,19 +158,7 @@ export default {
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchema
-			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
-			 */
-			handler(newSchema) {
-				if (newSchema) {
-					objectStore.initializeProperties(newSchema)
-				} else {
-					objectStore.properties = {}
-					objectStore.initializeColumnFilters()
-				}
-			},
-
+			handler: 'syncSchemaProperties',
 			deep: true,
 		},
 	},
@@ -426,21 +172,7 @@ export default {
 		this.schemaLoading = true
 
 		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore
-				.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore
-				.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
+		this.loadScopeLists()
 
 		// Load objects if register and schema are already selected
 		if (registerStore.registerItem && schemaStore.schemaItem) {
@@ -449,33 +181,7 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Apply a new register selection and reset the dependent schema state.
-		 *
-		 * @param {object|null} option - The selected register (or null to clear)
-		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-2
-		 */
-		handleRegisterChange(option) {
-			registerStore.setRegisterItem(option)
-			schemaStore.setSchemaItem(null)
-		},
 
-		/**
-		 * Apply a schema selection: set the schema, initialise its properties, and
-		 * refresh the object list for the new filter context.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object|null} option - The selected schema (or null to clear)
-		 * @return {Promise<void>}
-		 */
-		async handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
-			if (option) {
-				objectStore.initializeProperties(option)
-				objectStore.refreshObjectList()
-			}
-		},
 
 		/**
 		 * Re-run the object search for the current register/schema with the search term.
@@ -503,61 +209,9 @@ export default {
 </style>
 
 <style lang="scss" scoped>
-@use '../../styles/sidebars.scss' as *;
-@include sidebar-section;
-
-.sectionTitle {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
-
-@include sidebar-loading;
-
 .statsContainer {
 	padding: 0 16px;
 }
-
-.statisticsTable {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 0.9em;
-
-	td,
-	th {
-		padding: 4px 8px;
-		border-bottom: 1px solid var(--color-border);
-		text-align: left;
-
-		&:nth-child(2),
-		&:nth-child(3) {
-			text-align: right;
-		}
-	}
-
-	/* Row headers are labels, not emphasis — keep the original visual weight. */
-	tbody th {
-		font-weight: normal;
-	}
-
-	.subRow td,
-	.subRow th {
-		color: var(--color-text-maxcontrast);
-	}
-
-	.indented {
-		padding-left: 24px;
-	}
-
-	tr:last-child td,
-	tr:last-child th {
-		border-bottom: none;
-	}
-}
-
-@include filter-section-block;
 
 .dateRangeInputs {
 	display: flex;

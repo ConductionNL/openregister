@@ -27,6 +27,7 @@ namespace Unit\Service\Quality;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -152,10 +153,7 @@ class DismissedPairStoreTest extends TestCase {
 			);
 
 		$stored = $this->store->dismiss(
-			first: 'bbb',
-			second: 'aaa',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
+			pair: new ReviewedPair('bbb', 'aaa', 'reg', 'party'),
 			fingerprint: 'fp1',
 			reason: 'different people, same street',
 			dismissedBy: 'reviewer'
@@ -165,6 +163,9 @@ class DismissedPairStoreTest extends TestCase {
 		$this->assertSame('bbb', $written['objectB']);
 		$this->assertSame('reviewer', $written['dismissedBy']);
 		$this->assertSame('different people, same street', $written['reason']);
+		$this->assertSame('reg', $written['registerSlug']);
+		$this->assertSame('party', $written['schemaSlug']);
+		$this->assertSame('fp1', $written['fingerprint']);
 		$this->assertTrue($written['active']);
 		$this->assertNotEmpty($written['dismissedAt']);
 		$this->assertSame('new-row', $stored['id']);
@@ -194,10 +195,7 @@ class DismissedPairStoreTest extends TestCase {
 		);
 
 		$this->store->dismiss(
-			first: 'aaa',
-			second: 'bbb',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
+			pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
 			fingerprint: 'fp2',
 			reason: 'still different',
 			dismissedBy: 'reviewer'
@@ -228,10 +226,7 @@ class DismissedPairStoreTest extends TestCase {
 		);
 
 		$this->store->undismiss(
-			first: 'aaa',
-			second: 'bbb',
-			registerSlug: 'reg',
-			schemaSlug: 'party',
+			pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
 			reversedBy: 'supervisor'
 		);
 
@@ -254,10 +249,7 @@ class DismissedPairStoreTest extends TestCase {
 
 		$this->assertNull(
 			$this->store->undismiss(
-				first: 'aaa',
-				second: 'bbb',
-				registerSlug: 'reg',
-				schemaSlug: 'party',
+				pair: new ReviewedPair('aaa', 'bbb', 'reg', 'party'),
 				reversedBy: 'supervisor'
 			)
 		);

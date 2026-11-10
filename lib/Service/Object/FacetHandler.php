@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -68,13 +68,26 @@ use Psr\Log\LoggerInterface;
 class FacetHandler {
 
 	/**
+	 * Unified object mapper with storage routing.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $unifiedObjectMapper;
+
+	/**
+	 * Schema database mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor for FacetHandler.
 	 *
-	 * @param MagicMapperInterface $unifiedObjectMapper Unified object mapper with storage routing.
-	 * @param SchemaMapperInterface $schemaMapper Schema database mapper.
+	 * @param FacetLookups $lookups The object and schema lookups facets are computed from.
 	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds a facet over a property the caller may not read.
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a facet over a property the caller may not read.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed property is withheld, which is the safe direction.
 	 *
@@ -83,15 +96,16 @@ class FacetHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $unifiedObjectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		FacetLookups $lookups,
 		private readonly FacetResponseCache $responseCache,
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
+		$this->unifiedObjectMapper = $lookups->unifiedObjectMapper;
+		$this->schemaMapper        = $lookups->schemaMapper;
 	}//end __construct()
 
 	/**

@@ -14,6 +14,8 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -28,12 +30,9 @@ class ValidateObjectRelationShapesTest extends TestCase {
 
 	private function transform(string $method, object $schema): void {
 		$handler = new ValidateObject(
-			$this->createStub(IAppConfig::class),
-			$this->createStub(MagicMapperInterface::class),
-			$this->createStub(SchemaMapperInterface::class),
-			$this->createStub(IURLGenerator::class),
-			$this->createStub(LoggerInterface::class),
-			$this->createStub(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createStub(IAppConfig::class), schemaMapper: $this->createStub(SchemaMapperInterface::class), urlGenerator: $this->createStub(IURLGenerator::class)),
+			lookups: new ValidationLookups(objectMapper: $this->createStub(MagicMapperInterface::class), userManager: $this->createStub(IUserManager::class)),
+			logger: $this->createStub(LoggerInterface::class)
 		);
 
 		(new ReflectionMethod(ValidateObject::class, $method))->invoke($handler, $schema);

@@ -99,6 +99,30 @@ final class MagicUnionPage {
 	}//end batchQuery()
 
 	/**
+	 * The statements that read one batch up to the end of the page.
+	 *
+	 * Each stays within the largest page size, the bound limitClause() holds
+	 * every statement to, and together they cover `offset + page size` rows.
+	 * An unlimited query is one statement.
+	 *
+	 * @return \Generator<int, array> The query of each statement.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	public function batchSteps(): \Generator {
+		$size = $this->size();
+		if ($size === null) {
+			yield $this->batchQuery();
+			return;
+		}
+
+		$end = ($this->offset() + $size);
+		for ($start = 0; $start < $end; $start += $this->maxSize) {
+			yield ['_offset' => $start, '_limit' => min($this->maxSize, ($end - $start))] + $this->query;
+		}
+	}//end batchSteps()
+
+	/**
 	 * The caller's page of merged rows.
 	 *
 	 * @param array $rows The merged rows, in order.

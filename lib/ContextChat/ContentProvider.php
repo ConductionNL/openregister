@@ -30,38 +30,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\ContextChat;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\ContextChat\IContentProvider;
-use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderLinks;
 
 /**
  * Content provider surfacing OpenRegister objects to Context Chat.
  *
  * @spec openspec/specs/context-chat-provider/spec.md
  */
-class ContentProvider implements IContentProvider {
-
-	/**
-	 * The app id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const APP_ID = 'openregister';
-
-	/**
-	 * The provider id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_ID = 'openregister_objects';
+class ContentProvider implements IContentProvider, ContentProviderInterface {
 
 	/**
 	 * Batch size used when walking a (register, schema) pair during import.
@@ -73,25 +57,19 @@ class ContentProvider implements IContentProvider {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ContextChatSubmissionListener $submissionListener Shared submission logic (single object).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Object lookup/walk mapper.
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for `getItemUrl`.
-	 * @param IURLGenerator $urlGenerator URL generator for the fallback route.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ContextChatSubmissionListenerInterface $submissionListener Shared submission logic (single object).
+	 * @param SchemaCatalogInterface                 $catalog            Schema, register and magic-table lookups.
+	 * @param ContentProviderLinks                   $links              Deep-link resolver and URL generator.
+	 * @param LoggerInterface                        $logger             PSR logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
 	public function __construct(
-		private readonly ContextChatSubmissionListener $submissionListener,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly DeepLinkRegistryService $deepLinkRegistry,
-		private readonly IURLGenerator $urlGenerator,
+		private readonly ContextChatSubmissionListenerInterface $submissionListener,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly ContentProviderLinks $links,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -121,7 +99,7 @@ class ContentProvider implements IContentProvider {
 	/**
 	 * Resolve the absolute URL a user would reach this content item at.
 	 *
-	 * Resolves via {@see DeepLinkRegistryService::resolveUrl()} — the same
+	 * Resolves via {@see DeepLinkResolverInterface::resolveUrl()} — the same
 	 * mechanism `ObjectsProvider` already uses for unified-search result
 	 * URLs — and falls back to the `openregister.objects.show` route when no
 	 * app has claimed a deep link for the object's (register, schema) pair.
@@ -134,7 +112,7 @@ class ContentProvider implements IContentProvider {
 	 */
 	public function getItemUrl(string $id): string {
 		try {
-			$object = $this->magicMapper->find(
+			$object = $this->catalog->tables()->find(
 				identifier: $id,
 				includeDeleted: false,
 				_rbac: false,
@@ -150,7 +128,7 @@ class ContentProvider implements IContentProvider {
 					'error' => $e->getMessage(),
 				]
 			);
-			return $this->urlGenerator->linkToRoute(
+			return $this->links->urlGenerator->linkToRoute(
 				'openregister.objects.show',
 				['register' => 0, 'schema' => 0, 'id' => $id]
 			);
@@ -169,7 +147,7 @@ class ContentProvider implements IContentProvider {
 			]
 		);
 
-		$url = $this->deepLinkRegistry->resolveUrl(
+		$url = $this->links->deepLinkRegistry->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,
 			objectData: $flatData
@@ -178,7 +156,7 @@ class ContentProvider implements IContentProvider {
 			return $url;
 		}
 
-		return $this->urlGenerator->linkToRoute(
+		return $this->links->urlGenerator->linkToRoute(
 			'openregister.objects.show',
 			['register' => $registerId, 'schema' => $schemaId, 'id' => $object->getUuid()]
 		);
@@ -216,7 +194,7 @@ class ContentProvider implements IContentProvider {
 
 			$offset = 0;
 			do {
-				$batch = $this->magicMapper->findAllInRegisterSchemaTable(
+				$batch = $this->catalog->tables()->findAllInRegisterSchemaTable(
 					register: $register,
 					schema: $schema,
 					limit: self::BATCH_SIZE,
@@ -256,7 +234,7 @@ class ContentProvider implements IContentProvider {
 		$pairs = [];
 
 		try {
-			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			$schemas = $this->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ContentProvider] Failed to enumerate schemas for reindex',
@@ -274,14 +252,14 @@ class ContentProvider implements IContentProvider {
 				continue;
 			}
 
-			$registerIds = $this->registerMapper->getAllRegisterIdsWithSchema((int)$schema->getId());
+			$registerIds = $this->catalog->registers()->getAllRegisterIdsWithSchema((int)$schema->getId());
 			foreach ($registerIds as $candidateRegisterId) {
 				if ($registerId !== null && (int)$candidateRegisterId !== $registerId) {
 					continue;
 				}
 
 				try {
-					$register = $this->registerMapper->find(
+					$register = $this->catalog->registers()->find(
 						id: $candidateRegisterId,
 						_rbac: false,
 						_multitenancy: false

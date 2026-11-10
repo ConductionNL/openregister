@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service;
 
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ReplyThreadResolver;
 use Throwable;
@@ -40,12 +40,12 @@ class ReplyThreadService {
 	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapper           $links    The recorded links.
+	 * @param EmailLinkMapperInterface           $links    The recorded links.
 	 * @param ObjectOperationsInterface $objects  Reads an object under the caller's rights.
 	 * @param ReplyThreadResolver       $resolver The header rules.
 	 */
 	public function __construct(
-		private readonly EmailLinkMapper $links,
+		private readonly EmailLinkMapperInterface $links,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly ReplyThreadResolver $resolver,
 	) {

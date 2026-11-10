@@ -105,24 +105,39 @@ class RenderObjectTest extends TestCase {
 			});
 
 		$this->handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->objectMapper,
+					registerMapper: $this->registerMapper,
+					schemaMapper: $this->schemaMapper,
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translationHandler,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 	}
 
@@ -154,6 +169,22 @@ class RenderObjectTest extends TestCase {
 	 *
 	 * @return mixed
 	 */
+	/**
+	 * An extend pass at depth 0, as handleExtendDot() receives it.
+	 *
+	 * @param bool  $allFlag    Whether every relation extends.
+	 * @param array $visitedIds The ids already handled on this path.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\ExtendDotRun The pass.
+	 */
+	private function extendDotRun(bool $allFlag, array $visitedIds): \OCA\OpenRegister\Service\Object\ExtendDotRun {
+		$run = new \OCA\OpenRegister\Service\Object\ExtendDotRun();
+		$run->allFlag    = $allFlag;
+		$run->visitedIds = $visitedIds;
+
+		return $run;
+	}
+
 	private function invokePrivate(string $method, array $args = []) {
 		$owner = $this->methodOwner($this->handler, $method);
 		$m = new \ReflectionMethod($owner, $method);
@@ -1589,24 +1620,39 @@ class RenderObjectTest extends TestCase {
 			->willReturn([$schema]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->objectMapper,
+					registerMapper: $this->registerMapper,
+					schemaMapper: $schemaMapper,
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -1624,24 +1670,39 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->objectMapper,
+					registerMapper: $this->registerMapper,
+					schemaMapper: $schemaMapper,
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -3232,7 +3293,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['name' => 'Test'];
 		$extend = ['nonexistent'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		$this->assertSame('Test', $result['name']);
 	}
@@ -3241,7 +3302,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['@self' => ['schema' => 1], 'name' => 'Test'];
 		$extend = ['@self'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// @self should be skipped.
 		$this->assertSame(['schema' => 1], $result['@self']);
@@ -3251,7 +3312,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => null, 'name' => 'Test'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		$this->assertNull($result['ref']);
 	}
@@ -3265,7 +3326,7 @@ class RenderObjectTest extends TestCase {
 		];
 		$extend = ['items'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// Already extended objects (with 'id' or '@self') should be returned as-is.
 		$this->assertSame('uuid-1', $result['items'][0]['id']);
@@ -3281,7 +3342,7 @@ class RenderObjectTest extends TestCase {
 		];
 		$extend = ['items'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// Should filter out null results (non-id arrays return null).
 		$this->assertIsArray($result['items']);
@@ -3297,7 +3358,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// Object not found, should keep original UUID.
 		$this->assertSame($uuid, $result['ref']);
@@ -3323,7 +3384,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// Should be extended to full object.
 		$this->assertIsArray($result['ref']);
@@ -3334,7 +3395,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => '_internal_value'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// Values starting with _ should be skipped.
 		$this->assertSame('_internal_value', $result['ref']);
@@ -3344,7 +3405,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => '@some_value'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		$this->assertSame('@some_value', $result['ref']);
 	}
@@ -3358,7 +3419,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// URL value - last path segment used as lookup, not found, skipped.
 		$this->assertSame('http://example.com/api/objects/some-slug', $result['ref']);
@@ -3387,7 +3448,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// uuid1 should be extended, uuid2 preserved as original string.
 		$this->assertIsArray($result['items']);
@@ -3403,7 +3464,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// null and @-prefixed values should be filtered.
 		$this->assertIsArray($result['items']);
@@ -3429,7 +3490,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// Pass uuid as visitedId to trigger circular detection.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, [$uuid]]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [$uuid])]);
 
 		$this->assertIsArray($result['items']);
 		$this->assertCount(1, $result['items']);
@@ -3456,7 +3517,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// allFlag = true should add 'all' to sub-extends.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, true, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(true, [])]);
 
 		$this->assertIsArray($result['ref']);
 		$this->assertArrayHasKey('id', $result['ref']);
@@ -3482,7 +3543,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// With string override, the result should be set at custom.path.
 		$this->assertIsArray($result);
@@ -3508,7 +3569,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 	}
@@ -3537,7 +3598,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['@self.register', '@self.schema'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
+			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
 		]);
 
 		$this->assertArrayHasKey('@self', $result);
@@ -3565,7 +3626,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['ref'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
+			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
 		]);
 
 		// ref should be extended to the full object.
@@ -3593,7 +3654,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['all'];
 
 		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext($extend, 0, [], [], [], null, null, null, [], true),
+			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
 		]);
 
 		$this->assertIsArray($result);
@@ -4147,7 +4208,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result['ref']);
 		$this->assertArrayHasKey('id', $result['ref']);
@@ -4398,7 +4459,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// Pass uuid as visited to trigger circular detection on single value.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, [$uuid]]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [$uuid])]);
 
 		// Should detect circular and set @circular flag.
 		$this->assertIsArray($result['ref']);
@@ -4430,7 +4491,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		// Should resolve the UUID from the URL and extend.
 		$this->assertIsArray($result['ref']);
@@ -4510,24 +4571,39 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->objectMapper,
+					registerMapper: $this->registerMapper,
+					schemaMapper: $schemaMapper,
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -4586,7 +4662,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// allFlag = true should merge 'all' into sub-extend for array items.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, true, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(true, [])]);
 
 		$this->assertIsArray($result['items']);
 		$this->assertCount(1, $result['items']);
@@ -4814,7 +4890,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 		$this->assertIsArray($result['parent']['child']);
@@ -4845,7 +4921,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 		$this->assertIsArray($result['level1']['level2']['ref']);
@@ -4867,24 +4943,39 @@ class RenderObjectTest extends TestCase {
 			->willReturn([$schema]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->objectMapper,
+					registerMapper: $this->registerMapper,
+					schemaMapper: $schemaMapper,
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -6440,24 +6531,39 @@ class RenderObjectTest extends TestCase {
 		$registerMapper->method('find')->willReturn($register);
 
 		return new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$languageService
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->objectMapper,
+					registerMapper: $registerMapper,
+					schemaMapper: $schemaMapper,
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translationHandler,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $languageService
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 	}//end buildHandlerWithRealTranslation()
 
@@ -6820,7 +6926,7 @@ class RenderObjectTest extends TestCase {
 		$extend = ['list', 'single', 'under', 'at', 'circ', 'gone', 'named' => 'plain', 'dotted', 'list.friend'];
 		$exposures = ['list' => ['exposes' => ['name']], 'single' => ['exposes' => ['name']]];
 
-		return $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, $allFlag, ['u3'], $exposures]);
+		return $this->invokePrivate('handleExtendDot', [$data, &$extend, $this->extendDotRun($allFlag, ['u3']), $exposures]);
 	}
 
 	/**
@@ -7018,9 +7124,21 @@ class RenderObjectTest extends TestCase {
 		$registry = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
 		$registry->method('get')->willReturnCallback(static fn (string $name) => ($name === 'org-source') ? $provider : null);
 		$handler = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
-		$values = ['objectSourceRegistry' => $registry];
+		$runtime = (new \ReflectionProperty(RenderObject::class, 'runtime'))->getValue($this->handler);
+		$values = [
+			'runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $runtime->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(
+					objectSourceRegistry: $registry,
+					fieldEncryptionHandler: $runtime->extensions->fieldEncryptionHandler,
+					lensResolver: $runtime->extensions->lensResolver
+				),
+				request: $runtime->request,
+				container: $runtime->container
+			),
+		];
 		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
-			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'objectSourceRegistry') {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'runtime') {
 				$values[$prop->getName()] = $prop->getValue($this->handler);
 			}
 		}

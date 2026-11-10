@@ -41,7 +41,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -140,13 +143,9 @@ class ObjectWriteNodeMetadataMatchTest extends TestCase {
 		$appConfig->method('getValueInt')->willReturn(1000);
 
 		$this->node = new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$userManager,
-			$appConfig,
-			$l10n,
-			$this->createMock(IURLGenerator::class)
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($userManager, $appConfig),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$this->seenFilters = null;

@@ -142,9 +142,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			->willReturn('openregister_table_1_2');
 
 		return new SearchIndexMaintenance(
-			db: $this->db,
-			registerMapper: $this->registerMapper,
-			magicMapper: $this->magicMapper,
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($this->db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->magicMapper)),
 			appConfig: $this->appConfig,
 			config: $this->config,
 			logger: $this->createMock(\Psr\Log\LoggerInterface::class)
@@ -173,9 +171,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 		$this->db->expects($this->once())->method('prepare')->willReturn($statement);
 
 		$service = new SearchIndexMaintenance(
-			db: $this->db,
-			registerMapper: $this->registerMapper,
-			magicMapper: $this->magicMapper,
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($this->db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->magicMapper)),
 			appConfig: $this->appConfig,
 			config: $this->config,
 			logger: $this->createMock(\Psr\Log\LoggerInterface::class)

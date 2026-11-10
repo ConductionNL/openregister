@@ -36,10 +36,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -88,9 +87,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the dedup annotation.
-	 * @param RegisterMapperInterface $registerMapper Register lookup — the boundary the schema resolves inside.
-	 * @param SimilarityCalculator $similarity Pure field-similarity primitives, for the comparator.
+	 * @param DedupScoringSources $sources Schema and register lookup and the similarity primitives.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -100,17 +97,26 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
-		SimilarityCalculator $similarity,
+		DedupScoringSources $sources,
 		private readonly DismissedPairStore $dismissals,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->ruleResolver = new DedupRuleResolver(
-			scopedSchemaResolver: new RegisterScopedSchemaResolver(registerMapper: $registerMapper, schemaMapper: $schemaMapper)
-		);
-		$this->comparator = new PayloadComparator(similarity: $similarity);
+		$this->ruleResolver = self::ruleResolverOver(sources: $sources);
+		$this->comparator = new PayloadComparator(similarity: $sources->similarity);
 	}//end __construct()
+
+	/**
+	 * The rule resolver over the register-scoped schema lookup of the scoring sources.
+	 *
+	 * @param DedupScoringSources $sources Schema and register lookup and the similarity primitives.
+	 *
+	 * @return DedupRuleResolver
+	 */
+	private static function ruleResolverOver(DedupScoringSources $sources): DedupRuleResolver {
+		return new DedupRuleResolver(
+			scopedSchemaResolver: RegisterScopedSchemaResolvers::over(registerMapper: $sources->registerMapper, schemaMapper: $sources->schemaMapper)
+		);
+	}//end ruleResolverOver()
 
 
 	/**
@@ -133,9 +139,20 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-6
 	 */
 	public function findDuplicates($register, $schema, ?array $matchRules = null, ?float $threshold = null): array {
-		$run = $this->ruleResolver->resolve(
+		return $this->duplicatesFor(
 			request: new DedupRun(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold)
 		);
+	}//end findDuplicates()
+
+	/**
+	 * Scan a schema's objects for duplicate pairs; see findDuplicates().
+	 *
+	 * @param DedupRun $request The register, schema, optional rules and optional cut-off, unresolved.
+	 *
+	 * @return array<int, array<string, mixed>> Pairs, highest score first.
+	 */
+	private function duplicatesFor(DedupRun $request): array {
+		$run = $this->ruleResolver->resolve(request: $request);
 		if ($run === null) {
 			return [];
 		}
@@ -146,7 +163,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		}
 
 		return $this->byScoreDescending(rows: $this->withoutDismissedPairs(pairs: $this->scorePartitions(run: $run), run: $run));
-	}//end findDuplicates()
+	}//end duplicatesFor()
 
 	/**
 	 * Score an UNSAVED candidate body against the stored objects of a
@@ -176,7 +193,6 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @param int|string $register Register id, uuid or slug — the boundary the schema resolves inside.
 	 * @param int|string $schema Schema id, uuid or slug.
 	 * @param array<string, mixed> $candidate The unsaved body.
-	 * @param array<int, mixed>|null $matchRules Optional caller-supplied rules; the annotation's when null.
 	 * @param float|null $threshold Optional cut-off; the annotation's, then {@see DedupRuleResolver::DEFAULT_THRESHOLD}, when null.
 	 *
 	 * @return array<int, array{
@@ -188,24 +204,52 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
-	public function checkCandidate($register, $schema, array $candidate, ?array $matchRules = null, ?float $threshold = null): array {
-		$run = $this->ruleResolver->resolve(
-			request: new DedupRun(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold)
+	public function checkCandidate($register, $schema, array $candidate, ?float $threshold = null): array {
+		return $this->matchesFor(
+			request: new DedupRun(register: $register, schema: $schema, threshold: $threshold),
+			candidate: $candidate
 		);
+	}//end checkCandidate()
+
+	/**
+	 * The stored objects an unsaved body matches; see checkCandidate().
+	 *
+	 * @param DedupRun             $request   The register, schema and optional cut-off, unresolved.
+	 * @param array<string, mixed> $candidate The unsaved body.
+	 *
+	 * @return array<int, array<string, mixed>> Matches, highest score first.
+	 */
+	private function matchesFor(DedupRun $request, array $candidate): array {
+		$run = $this->ruleResolver->resolve(request: $request);
 		if ($run === null) {
 			return [];
 		}
 
-		$token = $this->comparator->blockingToken(data: $candidate, keys: $run->getBlockingKeys());
-		if ($token === '' && count($run->getBlockingKeys()) > 0) {
+		$run = $this->candidateRun(run: $run, candidate: $candidate);
+		if ($run === null) {
 			return [];
 		}
 
-		$run = $run->withObjects(objects: $this->loadCandidates(run: $run));
-		$run = $run->withObjects(objects: $this->inBucket(token: $token, run: $run));
-
 		return $this->byScoreDescending(rows: $this->candidateMatches(candidate: $candidate, run: $run));
-	}//end checkCandidate()
+	}//end matchesFor()
+
+	/**
+	 * The run narrowed to the stored objects in the candidate's blocking bucket.
+	 *
+	 * @param DedupRun             $run       The resolved run.
+	 * @param array<string, mixed> $candidate The candidate's data.
+	 *
+	 * @return DedupRun|null The narrowed run, or null when blocking keys are declared and the candidate has no token.
+	 */
+	private function candidateRun(DedupRun $run, array $candidate): ?DedupRun {
+		$token = $this->comparator->blockingToken(data: $candidate, keys: $run->getBlockingKeys());
+		if ($token === '' && count($run->getBlockingKeys()) > 0) {
+			return null;
+		}
+
+		$run = $run->withObjects(objects: $this->loadCandidates(run: $run));
+		return $run->withObjects(objects: $this->inBucket(token: $token, run: $run));
+	}//end candidateRun()
 
 	/**
 	 * The objects that share the candidate's blocking token; all of them when nothing blocks.
@@ -278,11 +322,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	public function effectiveThreshold($register, $schema, ?float $threshold = null): float {
 		$run = $this->ruleResolver->resolve(request: new DedupRun(register: $register, schema: $schema, threshold: $threshold));
-		if ($run === null) {
-			return DedupRuleResolver::DEFAULT_THRESHOLD;
-		}
-
-		return $run->getCutOff();
+		return $run?->getCutOff() ?? DedupRuleResolver::DEFAULT_THRESHOLD;
 	}//end effectiveThreshold()
 
 	/**
@@ -327,19 +367,30 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function pairFingerprint(array $dataA, array $dataB, array $rules): string {
-		$rules = $this->ruleResolver->sanitise(rules: $rules);
+		return $this->fingerprintOf(payloads: [$dataA, $dataB], rules: $this->ruleResolver->sanitise(rules: $rules));
+	}//end pairFingerprint()
+
+	/**
+	 * The order-independent fingerprint of two payloads under sanitised rules.
+	 *
+	 * @param array{0: array<string, mixed>, 1: array<string, mixed>} $payloads The two payloads.
+	 * @param array<int, array<string, mixed>>                         $rules    The sanitised match rules.
+	 *
+	 * @return string A hex digest, or an empty string when no rule survives sanitising.
+	 */
+	private function fingerprintOf(array $payloads, array $rules): string {
 		if (count($rules) === 0) {
 			return '';
 		}
 
 		$sides = [
-			$this->comparator->fingerprintSide(data: $dataA, rules: $rules),
-			$this->comparator->fingerprintSide(data: $dataB, rules: $rules),
+			$this->comparator->fingerprintSide(data: $payloads[0], rules: $rules),
+			$this->comparator->fingerprintSide(data: $payloads[1], rules: $rules),
 		];
 		sort($sides, SORT_STRING);
 
 		return hash('sha256', implode('||', $sides));
-	}//end pairFingerprint()
+	}//end fingerprintOf()
 
 	/**
 	 * The rules a register/schema compares on, so a caller dismissing a pair
@@ -378,11 +429,6 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @return array<int, array<string, mixed>> The pairs still worth offering.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) `DismissedPairStore::key()` is a pure
-	 *   function of two uuids with nothing to inject, and it has to be the SAME
-	 *   function the store writes with: a second implementation of the canonical
-	 *   order is a dismissal looked up under a key nothing ever stored it at.
 	 */
 	private function withoutDismissedPairs(array $pairs, DedupRun $run): array {
 		$dismissals = $this->activeDismissals(pairs: $pairs, run: $run);
@@ -390,17 +436,37 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return $pairs;
 		}
 
-		$kept = [];
-		foreach ($pairs as $pair) {
-			$dismissal = ($dismissals[DismissedPairStore::key(first: (string) $pair['objectA'], second: (string) $pair['objectB'])] ?? null);
-			// A pair whose values moved since the judgement is a new question, and is offered again.
-			if ($dismissal === null || $this->currentFingerprint(pair: $pair, run: $run) !== (string) ($dismissal['fingerprint'] ?? '')) {
-				$kept[] = $pair;
-			}
+		$offered = function (array $pair) use ($dismissals, $run): bool {
+			$print = $this->dismissedFingerprint(pair: $pair, dismissals: $dismissals);
+			return $print === null || $this->currentFingerprint(pair: $pair, run: $run) !== $print;
+		};
+
+		return array_values(array_filter($pairs, $offered));
+	}//end withoutDismissedPairs()
+
+	/**
+	 * The fingerprint a pair was dismissed with, or null when it was not dismissed.
+	 *
+	 * A pair whose values moved since the judgement is a new question, and is offered again.
+	 *
+	 * @param array<string, mixed>                $pair       The scored pair.
+	 * @param array<string, array<string, mixed>> $dismissals Dismissal rows by pair key.
+	 *
+	 * @return string|null
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `DismissedPairStore::key()` is a pure
+	 *   function of two uuids with nothing to inject, and it has to be the SAME
+	 *   function the store writes with: a second implementation of the canonical
+	 *   order is a dismissal looked up under a key nothing ever stored it at.
+	 */
+	private function dismissedFingerprint(array $pair, array $dismissals): ?string {
+		$dismissal = ($dismissals[DismissedPairStore::key(first: (string) $pair['objectA'], second: (string) $pair['objectB'])] ?? null);
+		if ($dismissal === null) {
+			return null;
 		}
 
-		return $kept;
-	}//end withoutDismissedPairs()
+		return (string) ($dismissal['fingerprint'] ?? '');
+	}//end dismissedFingerprint()
 
 	/**
 	 * The active dismissals of the run's register/schema; none are looked up when there are no pairs.
@@ -474,19 +540,32 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return ['*' => $objects];
 		}
 
+		// Drop singleton buckets — a bucket of one has no pair to compare.
+		return array_filter(
+			$this->bucketsOf(objects: $objects, blockingKeys: $blockingKeys),
+			static fn (array $bucket) => count($bucket) > 1
+		);
+	}//end partition()
+
+	/**
+	 * Group objects by their blocking-key token, leaving out those with an empty token.
+	 *
+	 * @param array<int, ObjectEntity> $objects      Candidate objects.
+	 * @param array<int, string>       $blockingKeys Field names to block on.
+	 *
+	 * @return array<string, array<int, ObjectEntity>>
+	 */
+	private function bucketsOf(array $objects, array $blockingKeys): array {
 		$buckets = [];
 		foreach ($objects as $object) {
 			$token = $this->comparator->blockingToken(data: ($object->getObject() ?? []), keys: $blockingKeys);
-			if ($token === '') {
-				continue;
+			if ($token !== '') {
+				$buckets[$token][] = $object;
 			}
-
-			$buckets[$token][] = $object;
 		}
 
-		// Drop singleton buckets — a bucket of one has no pair to compare.
-		return array_filter($buckets, static fn (array $bucket) => count($bucket) > 1);
-	}//end partition()
+		return $buckets;
+	}//end bucketsOf()
 
 	/**
 	 * Score every pair within each blocking bucket of the run.

@@ -47,12 +47,12 @@ class DecisionTableStore {
 	/**
 	 * The register the tables live in.
 	 */
-	public const REGISTER = 'decision-tables';
+	public const REGISTER = DecisionTableLocation::REGISTER;
 
 	/**
 	 * The schema of one table.
 	 */
-	public const SCHEMA = 'decision-table';
+	public const SCHEMA = DecisionTableLocation::SCHEMA;
 
 	/**
 	 * Tables resolved in this request, by reference.
@@ -151,6 +151,37 @@ class DecisionTableStore {
 	 * @throws UnexpectedValueException When the register cannot be read, or more than one table carries the key.
 	 */
 	private function lookup(string $reference): ?array {
+		$byKey  = [];
+		$byUuid = null;
+		foreach ($this->tableRows() as $entity) {
+			$data = $entity->getObject();
+			if (is_array($data) === false) {
+				continue;
+			}
+
+			if (trim((string)($data['key'] ?? '')) === $reference) {
+				$byKey[(string)$entity->getUuid()] = $data;
+				continue;
+			}
+
+			if ($byUuid === null && (string)$entity->getUuid() === $reference) {
+				$byUuid = $data;
+			}
+		}
+
+		return $this->onlyKeyedTable(reference: $reference, byKey: $byKey, byUuid: $byUuid);
+	}//end lookup()
+
+	/**
+	 * Every row of the decision-table register.
+	 *
+	 * @return array<int|string, mixed> The rows.
+	 *
+	 * @throws UnexpectedValueException When the register cannot be read.
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+	 */
+	private function tableRows(): array {
 		try {
 			$rows = $this->objects->searchObjectsBySlug(
 				registerSlug: self::REGISTER,
@@ -167,27 +198,27 @@ class DecisionTableStore {
 			);
 		}
 
-		$byKey  = [];
-		$byUuid = null;
-		foreach ((array)$rows as $entity) {
-			$data = $entity->getObject();
-			if (is_array($data) === false) {
-				continue;
-			}
+		return (array)$rows;
+	}//end tableRows()
 
-			if (trim((string)($data['key'] ?? '')) === $reference) {
-				$byKey[(string)$entity->getUuid()] = $data;
-				continue;
-			}
-
-			if ($byUuid === null && (string)$entity->getUuid() === $reference) {
-				$byUuid = $data;
-			}
-		}
-
-		// Two rows with one key (a save that went around the guard, an import) are two tables, and the register
-		// returns them in no fixed order: answering with the first would decide by a table nobody chose, and
-		// which one could change between requests.
+	/**
+	 * The one table a key names, else the table with that uuid, else null.
+	 *
+	 * Two rows with one key (a save that went around the guard, an import) are two tables, and the register
+	 * returns them in no fixed order: answering with the first would decide by a table nobody chose, and
+	 * which one could change between requests.
+	 *
+	 * @param string                              $reference The key or uuid.
+	 * @param array<string, array<string, mixed>> $byKey     The tables carrying that key, by uuid.
+	 * @param array<string, mixed>|null           $byUuid    The table with that uuid.
+	 *
+	 * @return array<string, mixed>|null The table.
+	 *
+	 * @throws UnexpectedValueException When more than one table carries the key.
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+	 */
+	private function onlyKeyedTable(string $reference, array $byKey, ?array $byUuid): ?array {
 		if (count($byKey) > 1) {
 			throw new UnexpectedValueException(
 				sprintf('More than one decision table has the key "%s" (%s); the key must name exactly one.', $reference, implode(', ', array_keys($byKey)))
@@ -199,5 +230,5 @@ class DecisionTableStore {
 		}
 
 		return $byUuid;
-	}//end lookup()
+	}//end onlyKeyedTable()
 }//end class

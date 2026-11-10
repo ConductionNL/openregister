@@ -33,6 +33,10 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Service\ScheduledReportDelivery;
+use OCA\OpenRegister\Service\ScheduledReportExporters;
+use OCA\OpenRegister\Service\ScheduledReportOwnerServices;
+use OCA\OpenRegister\Service\ScheduledReportStores;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
 use OCP\IUserManager;
@@ -55,17 +59,14 @@ class ScheduledReportServiceDueTest extends TestCase {
 		$this->mapper = $this->createMock(ScheduledReportMapper::class);
 
 		$this->service = new ScheduledReportService(
-			$this->mapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(ExportService::class),
-			$this->createMock(IRootFolder::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IManager::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IMailer::class),
-			$this->createMock(IConfig::class)
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new ScheduledReportExporters($this->createMock(ExportService::class), null, null),
+			new ScheduledReportDelivery(
+				new ScheduledReportOwnerServices($this->createMock(IUserManager::class), $this->createMock(IUserSession::class), $this->createMock(IRootFolder::class), $this->createMock(IManager::class)),
+				$this->createMock(IMailer::class),
+				$this->createMock(IConfig::class)
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 

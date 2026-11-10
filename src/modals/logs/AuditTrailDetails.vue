@@ -20,36 +20,8 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Action') }}</label>
-						<span
-							class="action-badge"
-							:class="`action-${auditTrailStore.auditTrailItem.action}`">
-							<Plus
-								v-if="
-									auditTrailStore.auditTrailItem.action
-									=== 'create'
-								"
-								:size="16" />
-							<Pencil
-								v-else-if="
-									auditTrailStore.auditTrailItem.action
-									=== 'update'
-								"
-								:size="16" />
-							<Delete
-								v-else-if="
-									auditTrailStore.auditTrailItem.action
-									=== 'delete'
-								"
-								:size="16" />
-							<Eye
-								v-else-if="
-									auditTrailStore.auditTrailItem.action === 'read'
-								"
-								:size="16" />
-							{{
-								auditTrailStore.auditTrailItem.action?.toUpperCase()
-							}}
-						</span>
+						<AuditActionBadge
+							:action="auditTrailStore.auditTrailItem.action" />
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Created') }}</label>
@@ -158,25 +130,19 @@ import { NcButton, NcDialog } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import AuditActionBadge from './AuditActionBadge.vue'
 import auditTrailModal from '../../services/auditTrailModal.js'
 
 export default {
 	name: 'AuditTrailDetails',
 	components: {
+		AuditActionBadge,
 		NcDialog,
 		NcButton,
 		// Icons
 		Close,
 		ContentCopy,
 		CompareHorizontal,
-		Plus,
-		Pencil,
-		Delete,
-		Eye,
 	},
 
 	mixins: [auditTrailModal],

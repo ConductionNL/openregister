@@ -81,64 +81,100 @@ class ContactCasesPanel {
 
 			$total++;
 
-			if (($row['readable'] ?? true) === false) {
-				// Counted apart and not broken down by schema: a per-schema
-				// count of things you may not read tells you which register
-				// somebody appears in, which is most of what you were not
-				// allowed to know.
+			$schema = self::readableSchema(row: $row);
+			if ($schema === null) {
 				$unreadable++;
 				continue;
 			}
 
-			$schema = trim((string)($row['schema'] ?? ''));
-			if ($schema === '') {
-				// A link with no schema cannot be grouped and must not be
-				// invented into one: it is counted as unreadable, which is
-				// what it is to a reader.
-				$unreadable++;
-				continue;
-			}
-
-			if (isset($groups[$schema]) === false) {
-				$groups[$schema] = [
-					'schema' => $schema,
-					'label' => trim((string)($row['schemaLabel'] ?? $schema)),
-					'count' => 0,
-					'rows' => [],
-				];
-			}
-
-			$groups[$schema]['count']++;
-			if (count($groups[$schema]['rows']) < self::ROWS_PER_GROUP) {
-				$groups[$schema]['rows'][] = [
-					'objectUuid' => (string)($row['objectUuid'] ?? ''),
-					'title' => trim((string)($row['title'] ?? '')),
-					'status' => trim((string)($row['status'] ?? '')),
-					'url' => (string)($row['url'] ?? ''),
-					'role' => trim((string)($row['role'] ?? '')),
-				];
-			}
+			$groups[$schema] = self::withRow(group: ($groups[$schema] ?? null), schema: $schema, row: $row);
 		}
 
 		$groups = array_values($groups);
-		usort(
-			$groups,
-			static function (array $left, array $right): int {
-				// The biggest group first, because that is where a reader
-				// looks; ties by label so the order is a fact rather than
-				// whatever the map happened to hold.
-				$byCount = ($right['count'] <=> $left['count']);
-
-				if ($byCount !== 0) {
-					return $byCount;
-				}
-
-				return strcasecmp($left['label'], $right['label']);
-			}
-		);
+		usort($groups, [self::class, 'compareGroups']);
 
 		return ['groups' => $groups, 'unreadable' => $unreadable, 'total' => $total];
 	}//end group()
+
+	/**
+	 * The schema a row is grouped under, or null when the reader may not see it.
+	 *
+	 * An unreadable row is counted apart and not broken down by schema: a
+	 * per-schema count of things you may not read tells you which register
+	 * somebody appears in, which is most of what you were not allowed to know.
+	 * A link with no schema cannot be grouped and must not be invented into
+	 * one: it is counted as unreadable, which is what it is to a reader.
+	 *
+	 * @param array<string,mixed> $row One resolved row.
+	 *
+	 * @return string|null The trimmed schema, or null for an unreadable or schema-less row.
+	 */
+	private static function readableSchema(array $row): ?string {
+		if (($row['readable'] ?? true) === false) {
+			return null;
+		}
+
+		$schema = trim((string)($row['schema'] ?? ''));
+		if ($schema === '') {
+			return null;
+		}
+
+		return $schema;
+	}//end readableSchema()
+
+	/**
+	 * A group with one more row counted, and shown while the group holds fewer than ROWS_PER_GROUP.
+	 *
+	 * @param array<string,mixed>|null $group  The group so far, or null for a new one.
+	 * @param string                   $schema The group's schema.
+	 * @param array<string,mixed>      $row    The row.
+	 *
+	 * @return array<string,mixed> The group.
+	 */
+	private static function withRow(?array $group, string $schema, array $row): array {
+		if ($group === null) {
+			$group = [
+				'schema' => $schema,
+				'label' => trim((string)($row['schemaLabel'] ?? $schema)),
+				'count' => 0,
+				'rows' => [],
+			];
+		}
+
+		$group['count']++;
+		if (count($group['rows']) < self::ROWS_PER_GROUP) {
+			$group['rows'][] = [
+				'objectUuid' => (string)($row['objectUuid'] ?? ''),
+				'title' => trim((string)($row['title'] ?? '')),
+				'status' => trim((string)($row['status'] ?? '')),
+				'url' => (string)($row['url'] ?? ''),
+				'role' => trim((string)($row['role'] ?? '')),
+			];
+		}
+
+		return $group;
+	}//end withRow()
+
+	/**
+	 * Group order: the biggest group first, ties by label.
+	 *
+	 * @param array<string,mixed> $left  One group.
+	 * @param array<string,mixed> $right The other group.
+	 *
+	 * @return int The comparison.
+	 */
+	private static function compareGroups(array $left, array $right): int {
+		// The biggest group first, because that is where a reader
+		// looks; ties by label so the order is a fact rather than
+		// whatever the map happened to hold.
+		$byCount = ($right['count'] <=> $left['count']);
+
+		if ($byCount !== 0) {
+			return $byCount;
+		}
+
+		return strcasecmp($left['label'], $right['label']);
+	}//end compareGroups()
 
 	/**
 	 * Whether a group is showing everything it counted.

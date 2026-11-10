@@ -1,0 +1,274 @@
+{
+    "pg raw scalar": [
+        "\"title\" = 'Hallo'"
+    ],
+    "pg raw camel": [
+        "\"first_name\" = 'Jan'"
+    ],
+    "pg raw is null": [
+        "\"title\" = 'IS NULL'"
+    ],
+    "pg raw is not null": [
+        "\"count\"::text = 'IS NOT NULL'"
+    ],
+    "pg raw number": [
+        "\"count\" = '3'"
+    ],
+    "pg raw numeric string": [
+        "\"count\" = '3'"
+    ],
+    "pg raw uuid on number": [
+        "\"count\"::text = '0a1b2c3d-1111-2222-3333-444455556666'"
+    ],
+    "pg raw boolean true": [
+        "\"flag\" = '1'"
+    ],
+    "pg raw boolean false": [
+        "\"flag\" = '0'"
+    ],
+    "pg raw list": [
+        "\"title\" IN ('a', 'b')"
+    ],
+    "pg raw list on number": [
+        "\"count\"::text IN ('1', 'x')"
+    ],
+    "pg raw range": [
+        "\"amount\" >= '1'",
+        "\"amount\" <= '9'"
+    ],
+    "pg raw gt lt": [
+        "\"count\" > '1'",
+        "\"count\"::text < 'z'"
+    ],
+    "pg raw in scalar": [
+        "\"title\" IN ('a')"
+    ],
+    "pg raw in list": [
+        "\"count\"::text IN ('1', 'u')"
+    ],
+    "pg raw notIn list": [
+        "\"title\" NOT IN ('a', 'b')"
+    ],
+    "pg raw notIn empty": [],
+    "pg raw notIn scalar": [
+        "\"count\"::text NOT IN ('x')"
+    ],
+    "pg raw ne": [
+        "\"count\"::text <> 'x'"
+    ],
+    "pg raw isnull true": [
+        "\"title\" IS NULL"
+    ],
+    "pg raw isnull false": [
+        "\"title\" IS NOT NULL"
+    ],
+    "pg raw everything": [
+        "\"amount\" >= '1'",
+        "\"amount\" < '5'",
+        "\"amount\" IN ('2')",
+        "\"amount\" NOT IN ('3')",
+        "\"amount\" <> '4'",
+        "\"amount\" IS NOT NULL"
+    ],
+    "pg raw like": [
+        "(CAST(\"title\" AS TEXT) ILIKE '%foo%')"
+    ],
+    "pg raw like and gte": [
+        "(CAST(\"count\" AS TEXT) ILIKE '%1%')",
+        "\"count\" >= '2'"
+    ],
+    "pg raw like empty": [],
+    "pg raw or null": [
+        "((\"title\" IN ('a')) OR \"title\" IS NULL)"
+    ],
+    "pg raw array": [
+        "COALESCE(\"tags\", '[]')::jsonb @> '[\"x\"]'::jsonb"
+    ],
+    "pg raw array list": [
+        "(COALESCE(\"tags\", '[]')::jsonb @> '[\"x\"]'::jsonb OR COALESCE(\"tags\", '[]')::jsonb @> '[\"y\"]'::jsonb)"
+    ],
+    "pg raw object": [
+        "\"owner\" = 'abc'"
+    ],
+    "pg raw object list": [
+        "\"owner\" IN ('abc', 'def')"
+    ],
+    "pg raw missing": [
+        "1=0",
+        "\"title\" = 'x'"
+    ],
+    "pg raw several": [
+        "\"title\" = 'a'",
+        "\"count\" >= '2'",
+        "\"flag\" = '1'"
+    ],
+    "pg raw reserved and meta": [
+        "\"title\" = 'y'"
+    ],
+    "pg raw nested": [
+        "(\"owner\" #>> '{name}') = 'Jan'"
+    ],
+    "pg qb nested": [
+        "(t.owner #>> '{name}') = :p1[\"Jan\",2]"
+    ],
+    "pg raw nested deep": [
+        "(\"owner\" #>> '{address,city}') IN ('a', 'b')"
+    ],
+    "pg qb nested deep": [
+        "(t.owner #>> '{address,city}') IN (:p1[\"a\",2], :p2[\"b\",2])"
+    ],
+    "pg raw nested or null": [
+        "(((\"owner\" #>> '{name}') IN ('Jan')) OR (\"owner\" #>> '{name}') IS NULL)"
+    ],
+    "pg qb nested or null": [
+        "(((t.owner #>> '{name}') IN (:p1[\"Jan\",2])) OR (t.owner #>> '{name}') IS NULL)"
+    ],
+    "pg raw nested unreadable": [
+        "1=0"
+    ],
+    "pg qb nested unreadable": [
+        "1 = 0"
+    ],
+    "pg raw nested encrypted": [
+        "(\"sealed\" #>> '{name}') = 'x'"
+    ],
+    "pg qb nested encrypted": [
+        "threw OCA\\OpenRegister\\Exception\\EncryptedFieldFilterException: Property \"sealed\" is encrypted at rest and cannot be filtered, searched or faceted server-side."
+    ],
+    "mysql raw scalar": [
+        "`title` = 'Hallo'"
+    ],
+    "mysql raw camel": [
+        "`first_name` = 'Jan'"
+    ],
+    "mysql raw is null": [
+        "`title` = 'IS NULL'"
+    ],
+    "mysql raw is not null": [
+        "CAST(`count` AS CHAR) = 'IS NOT NULL'"
+    ],
+    "mysql raw number": [
+        "`count` = '3'"
+    ],
+    "mysql raw numeric string": [
+        "`count` = '3'"
+    ],
+    "mysql raw uuid on number": [
+        "CAST(`count` AS CHAR) = '0a1b2c3d-1111-2222-3333-444455556666'"
+    ],
+    "mysql raw boolean true": [
+        "`flag` = '1'"
+    ],
+    "mysql raw boolean false": [
+        "`flag` = '0'"
+    ],
+    "mysql raw list": [
+        "`title` IN ('a', 'b')"
+    ],
+    "mysql raw list on number": [
+        "CAST(`count` AS CHAR) IN ('1', 'x')"
+    ],
+    "mysql raw range": [
+        "`amount` >= '1'",
+        "`amount` <= '9'"
+    ],
+    "mysql raw gt lt": [
+        "`count` > '1'",
+        "CAST(`count` AS CHAR) < 'z'"
+    ],
+    "mysql raw in scalar": [
+        "`title` IN ('a')"
+    ],
+    "mysql raw in list": [
+        "CAST(`count` AS CHAR) IN ('1', 'u')"
+    ],
+    "mysql raw notIn list": [
+        "`title` NOT IN ('a', 'b')"
+    ],
+    "mysql raw notIn empty": [],
+    "mysql raw notIn scalar": [
+        "CAST(`count` AS CHAR) NOT IN ('x')"
+    ],
+    "mysql raw ne": [
+        "CAST(`count` AS CHAR) <> 'x'"
+    ],
+    "mysql raw isnull true": [
+        "`title` IS NULL"
+    ],
+    "mysql raw isnull false": [
+        "`title` IS NOT NULL"
+    ],
+    "mysql raw everything": [
+        "`amount` >= '1'",
+        "`amount` < '5'",
+        "`amount` IN ('2')",
+        "`amount` NOT IN ('3')",
+        "`amount` <> '4'",
+        "`amount` IS NOT NULL"
+    ],
+    "mysql raw like": [
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%foo%'))"
+    ],
+    "mysql raw like and gte": [
+        "(LOWER(CAST(`count` AS CHAR)) LIKE LOWER('%1%'))",
+        "`count` >= '2'"
+    ],
+    "mysql raw like empty": [],
+    "mysql raw or null": [
+        "((`title` IN ('a')) OR `title` IS NULL)"
+    ],
+    "mysql raw array": [
+        "COALESCE(`tags`, '[]')::jsonb @> '[\"x\"]'::jsonb"
+    ],
+    "mysql raw array list": [
+        "(COALESCE(`tags`, '[]')::jsonb @> '[\"x\"]'::jsonb OR COALESCE(`tags`, '[]')::jsonb @> '[\"y\"]'::jsonb)"
+    ],
+    "mysql raw object": [
+        "`owner` = 'abc'"
+    ],
+    "mysql raw object list": [
+        "`owner` IN ('abc', 'def')"
+    ],
+    "mysql raw missing": [
+        "1=0",
+        "`title` = 'x'"
+    ],
+    "mysql raw several": [
+        "`title` = 'a'",
+        "`count` >= '2'",
+        "`flag` = '1'"
+    ],
+    "mysql raw reserved and meta": [
+        "`title` = 'y'"
+    ],
+    "mysql raw nested": [
+        "JSON_UNQUOTE(JSON_EXTRACT(`owner`, '$.name')) = 'Jan'"
+    ],
+    "mysql qb nested": [
+        "JSON_UNQUOTE(JSON_EXTRACT(t.owner, '$.name')) = :p1[\"Jan\",2]"
+    ],
+    "mysql raw nested deep": [
+        "JSON_UNQUOTE(JSON_EXTRACT(`owner`, '$.address.city')) IN ('a', 'b')"
+    ],
+    "mysql qb nested deep": [
+        "JSON_UNQUOTE(JSON_EXTRACT(t.owner, '$.address.city')) IN (:p1[\"a\",2], :p2[\"b\",2])"
+    ],
+    "mysql raw nested or null": [
+        "((JSON_UNQUOTE(JSON_EXTRACT(`owner`, '$.name')) IN ('Jan')) OR JSON_UNQUOTE(JSON_EXTRACT(`owner`, '$.name')) IS NULL)"
+    ],
+    "mysql qb nested or null": [
+        "((JSON_UNQUOTE(JSON_EXTRACT(t.owner, '$.name')) IN (:p1[\"Jan\",2])) OR JSON_UNQUOTE(JSON_EXTRACT(t.owner, '$.name')) IS NULL)"
+    ],
+    "mysql raw nested unreadable": [
+        "1=0"
+    ],
+    "mysql qb nested unreadable": [
+        "1 = 0"
+    ],
+    "mysql raw nested encrypted": [
+        "JSON_UNQUOTE(JSON_EXTRACT(`sealed`, '$.name')) = 'x'"
+    ],
+    "mysql qb nested encrypted": [
+        "threw OCA\\OpenRegister\\Exception\\EncryptedFieldFilterException: Property \"sealed\" is encrypted at rest and cannot be filtered, searched or faceted server-side."
+    ]
+}

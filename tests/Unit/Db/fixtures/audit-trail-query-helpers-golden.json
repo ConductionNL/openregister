@@ -1,0 +1,448 @@
+{
+    "page / no filters": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / actor": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / comma list": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"create\",\"update\"], 102",
+            "#1 expr.in(action, :p1, NULL)",
+            "#1 andWhere(in(action, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / array list": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"1\",\"2\"], 102",
+            "#1 expr.in(register, :p1, NULL)",
+            "#1 andWhere(in(register, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / single after trimming": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / only blanks": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / empty values": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / integer value": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 5, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / unknown key": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / all columns": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = a, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = b, 2",
+            "#1 expr.eq(action, :p2, NULL)",
+            "#1 andWhere(eq(action, :p2, NULL))",
+            "#1 param :p3 = c, 2",
+            "#1 expr.eq(register, :p3, NULL)",
+            "#1 andWhere(eq(register, :p3, NULL))",
+            "#1 param :p4 = d, 2",
+            "#1 expr.eq(schema, :p4, NULL)",
+            "#1 andWhere(eq(schema, :p4, NULL))",
+            "#1 param :p5 = e, 2",
+            "#1 expr.eq(object_uuid, :p5, NULL)",
+            "#1 andWhere(eq(object_uuid, :p5, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / from": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2026-10-09 00:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / bare to": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2026-10-09 23:59:59, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / timed to": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 2026-10-09 12:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / blank period": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / non-date from": {
+        "thrown": "InvalidArgumentException: \"not a date\" is not a date.",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)"
+        ]
+    },
+    "page / non-date to after actor": {
+        "thrown": "InvalidArgumentException: \"nope\" is not a date.",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = a, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))"
+        ]
+    },
+    "page / search": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = %50\\% off\\_%, 2",
+            "#1 expr.like(changed, :p1, NULL)",
+            "#1 andWhere(like(changed, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / blank search": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / cursor": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = 42, 1",
+            "#1 expr.lt(id, :p1, NULL)",
+            "#1 andWhere(lt(id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / zero cursor": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / negative cursor": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(21)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / limit below one": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / limit above max": {
+        "ids": [],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(501)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / exactly a page": {
+        "ids": [
+            100,
+            99,
+            98
+        ],
+        "nextCursor": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(4)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / one more than a page": {
+        "ids": [
+            100,
+            99,
+            98
+        ],
+        "nextCursor": 98,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(4)",
+            "#1 executeQuery()"
+        ]
+    },
+    "page / everything": {
+        "ids": [
+            100,
+            99
+        ],
+        "nextCursor": 99,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = [\"a\",\"b\"], 102",
+            "#1 expr.in(user, :p1, NULL)",
+            "#1 andWhere(in(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 00:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 23:59:59, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(changed, :p4, NULL)",
+            "#1 andWhere(like(changed, :p4, NULL))",
+            "#1 param :p5 = 10, 1",
+            "#1 expr.lt(id, :p5, NULL)",
+            "#1 andWhere(lt(id, :p5, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "toDatabaseValue / null json": null,
+    "toDatabaseValue / json array": "{\"a\":1}",
+    "toDatabaseValue / json string": "\"x\"",
+    "toDatabaseValue / datetime": "2026-02-03 04:05:06",
+    "toDatabaseValue / datetime given text": "2026-02-03",
+    "toDatabaseValue / boolean true": 1,
+    "toDatabaseValue / bool false": 0,
+    "toDatabaseValue / bool from text": 1,
+    "toDatabaseValue / string": "text",
+    "toDatabaseValue / integer": 7,
+    "toDatabaseValue / zero": "0",
+    "revertChanges / update": {
+        "id": "keep",
+        "title": "old",
+        "kept": 1
+    },
+    "revertChanges / create is never undone": {
+        "id": "keep",
+        "title": "new",
+        "added": "x",
+        "kept": 1
+    },
+    "revertChanges / changes not an array": {
+        "id": "keep",
+        "title": "new",
+        "added": "x",
+        "kept": 1
+    },
+    "revertChanges / no changes": {
+        "id": "keep",
+        "title": "new",
+        "added": "x",
+        "kept": 1
+    },
+    "revertChanges / self and id skipped": {
+        "id": "keep",
+        "title": "new",
+        "added": "x",
+        "kept": 1
+    },
+    "revertChanges / change not an array": {
+        "id": "keep",
+        "title": "new",
+        "added": "x",
+        "kept": 1
+    },
+    "revertChanges / change without old": {
+        "id": "keep",
+        "title": "new",
+        "added": "x",
+        "kept": 1
+    },
+    "revertChanges / old is false": {
+        "id": "keep",
+        "title": "new",
+        "added": "x",
+        "kept": false
+    },
+    "revertChanges / new field on empty object": {
+        "id": null,
+        "title": "t"
+    },
+    "revertChanges / remove from empty object": {
+        "id": null
+    },
+    "capChangedPayload / null": null,
+    "capChangedPayload / empty": [],
+    "capChangedPayload / small": {
+        "title": {
+            "old": "a",
+            "new": "b"
+        }
+    },
+    "capChangedPayload / at the ceiling": {
+        "body": "string(65534)"
+    },
+    "capChangedPayload / just over": {
+        "body": {
+            "elided": true,
+            "reason": "value exceeded the 65536-byte audit payload ceiling",
+            "bytes": 65537
+        },
+        "title": "x"
+    },
+    "capChangedPayload / not encodable": {
+        "bad": "\ufffd1"
+    },
+    "capChangedPayload / nested over": {
+        "payload": {
+            "elided": true,
+            "reason": "value exceeded the 65536-byte audit payload ceiling",
+            "bytes": 65555
+        }
+    }
+}

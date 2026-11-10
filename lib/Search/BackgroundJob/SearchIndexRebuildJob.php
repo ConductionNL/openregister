@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
-use OCA\OpenRegister\Service\Operations\JobRunRecorder;
+use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\AppFramework\Utility\ITimeFactory;
 use RuntimeException;
@@ -51,12 +51,12 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory           $time     Time factory for the parent job class.
-	 * @param JobRunRecorder         $recorder The wrapper that writes the run row.
+	 * @param JobRunRecorderInterface         $recorder The wrapper that writes the run row.
 	 * @param SearchIndexMaintenance $index    The rebuild itself.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		JobRunRecorder $recorder,
+		JobRunRecorderInterface $recorder,
 		private readonly SearchIndexMaintenance $index,
 	) {
 		parent::__construct(time: $time, recorder: $recorder);

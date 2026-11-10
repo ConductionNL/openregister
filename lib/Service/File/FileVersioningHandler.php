@@ -31,7 +31,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 
 /**
  * Handles file versioning operations.
@@ -50,23 +50,57 @@ use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
  */
 class FileVersioningHandler {
 	/**
+	 * Root folder for file access.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * App manager to check if files_versions is enabled.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * App container the Files_Versions manager is resolved from.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * User session for current user context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for FileVersioningHandler.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for file access.
-	 * @param IAppManager $appManager App manager to check if files_versions is enabled.
-	 * @param IUserSession $userSession User session for current user context.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param ContainerInterface $container App container the Files_Versions manager is resolved from.
+	 * @param FileVersionsPlatform $platform    The root folder, the app manager and the container the versions manager is resolved from.
+	 * @param FileSession          $session     The user session and logger.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		FileVersionsPlatform $platform,
+		FileSession $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
+		$this->rootFolder = $platform->rootFolder;
+		$this->appManager = $platform->appManager;
+		$this->container = $platform->container;
 	}//end __construct()
 
 	/**
@@ -363,7 +397,7 @@ class FileVersioningHandler {
 		// passed the object rule, so the versions are read as that account.
 		if (preg_match('#^/openregister/files/Open Registers/#', $path) === 1) {
 			try {
-				return $this->container->get(FileOwnershipHandler::class)->getUser();
+				return $this->container->get(FileOwnershipHandlerInterface::class)->getUser();
 			} catch (\Throwable $e) {
 				return null;
 			}

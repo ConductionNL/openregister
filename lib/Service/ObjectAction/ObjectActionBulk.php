@@ -28,11 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
-use OCA\OpenRegister\BulkAction\RunActionAction;
+use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use InvalidArgumentException;
 use Throwable;
@@ -42,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
  */
-class ObjectActionBulk {
+class ObjectActionBulk implements ObjectActionBulkInterface {
 
 	/**
 	 * Constructor.
@@ -61,45 +62,51 @@ class ObjectActionBulk {
 	/**
 	 * Create the previewed job.
 	 *
-	 * @param Schema               $schema   The selection's schema.
-	 * @param string               $register The register as the caller named it.
-	 * @param string               $schemaRef The schema as the caller named it.
-	 * @param string               $action   The action key.
-	 * @param list<string>         $ids      The selection.
-	 * @param array<string, mixed> $inputs   The inputs.
+	 * @param ObjectActionSelection $selection The selection, its schema, and the register and schema as named.
+	 * @param string                $action    The action key.
+	 * @param array<string, mixed>  $inputs    The inputs.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
 	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
 	 * @throws InvalidArgumentException When nobody is signed in to run it as.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per part of the request being handed over.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
-	public function start(
-		Schema $schema,
-		string $register,
-		string $schemaRef,
-		string $action,
-		array $ids,
-		array $inputs,
-	): BulkJob {
+	public function start(ObjectActionSelection $selection, string $action, array $inputs): BulkJob {
+		$parameters = ['action' => $action, 'inputs' => $inputs, 'register' => $selection->register, 'schema' => $selection->schemaRef];
+
+		return $this->create(selection: $selection, call: new BulkJobActionCall(actionId: RunActionActionInterface::ID, parameters: $parameters));
+	}//end start()
+
+	/**
+	 * Create the previewed job that makes this call on every selected object, as the signed-in user.
+	 *
+	 * @param ObjectActionSelection $selection The selection, its schema, and the register as named.
+	 * @param BulkJobActionCall     $call      The run-action call each member gets.
+	 *
+	 * @return BulkJob The previewed job.
+	 *
+	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
+	 * @throws InvalidArgumentException When nobody is signed in to run it as.
+	 */
+	private function create(ObjectActionSelection $selection, BulkJobActionCall $call): BulkJob {
 		$actorUid = $this->gate->userId();
 		if ($actorUid === null) {
 			throw new InvalidArgumentException('A bulk job runs as the person who starts it, so it needs a signed-in user.');
 		}
 
 		return $this->jobs->create(
-			actionId: RunActionAction::ID,
-			parameters: ['action' => $action, 'inputs' => $inputs, 'register' => $register, 'schema' => $schemaRef],
-			selection: ['ids' => $ids],
-			justification: null,
+			call: $call,
+			selection: new BulkJobSelection(
+				criteria: ['ids' => $selection->ids],
+				registerId: $this->registerId(register: $selection->register),
+				schemaId: $selection->schema->getId()
+			),
 			actorUid: $actorUid,
-			registerId: $this->registerId(register: $register),
-			schemaId: $schema->getId()
+			justification: null
 		);
-	}//end start()
+	}//end create()
 
 	/**
 	 * The register's id, or null when the name resolves to none.

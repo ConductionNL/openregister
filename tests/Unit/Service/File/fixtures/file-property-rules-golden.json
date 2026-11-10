@@ -1,0 +1,355 @@
+{
+    "array-items-config": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": 99,
+                "allowedTypes": [
+                    "text/plain"
+                ]
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "array-items-not-array": {
+        "fileConfigOf": {
+            "returned": null
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "array-of-strings": {
+        "fileConfigOf": {
+            "returned": null
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "bytes-decimal-string": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": "1.5"
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 1
+        }
+    },
+    "bytes-float": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": 10.9
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 10
+        }
+    },
+    "bytes-int": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": 2048
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 2048
+        }
+    },
+    "bytes-negative-mb-set": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": -5,
+                "fileConfiguration": {
+                    "maxSize": "0.5"
+                }
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 524288
+        }
+    },
+    "bytes-numeric-string": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": "512"
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 512
+        }
+    },
+    "bytes-text-mb-float": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": "big",
+                "fileConfiguration": {
+                    "maxSize": 1.25
+                }
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 1310720
+        }
+    },
+    "bytes-tiny": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": 0.4
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "bytes-zero-mb-set": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "maxSize": 0,
+                "fileConfiguration": {
+                    "maxSize": 2
+                }
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 2097152
+        }
+    },
+    "editor-not-array": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "fileConfiguration": "big"
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "editor-null": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "fileConfiguration": null
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "empty": {
+        "fileConfigOf": {
+            "returned": null
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "file-array": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file"
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "file-type": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file"
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "mb-missing": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "fileConfiguration": []
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "mb-text": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "fileConfiguration": {
+                    "maxSize": "ten"
+                }
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "mb-tiny": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "fileConfiguration": {
+                    "maxSize": 1.0e-7
+                }
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "mb-zero": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "fileConfiguration": {
+                    "maxSize": 0
+                }
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "string-format-file": {
+        "fileConfigOf": {
+            "returned": null
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "types-editor": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "fileConfiguration": {
+                    "allowedMimeTypes": [
+                        "image/jpeg"
+                    ],
+                    "maxSize": 1
+                }
+            }
+        },
+        "allowedTypes": {
+            "returned": [
+                "image/jpeg"
+            ]
+        },
+        "maxSizeBytes": {
+            "returned": 1048576
+        }
+    },
+    "types-list": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "allowedTypes": [
+                    "application/pdf",
+                    "image/png"
+                ]
+            }
+        },
+        "allowedTypes": {
+            "returned": [
+                "application/pdf",
+                "image/png"
+            ]
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    },
+    "types-string": {
+        "fileConfigOf": {
+            "returned": {
+                "type": "file",
+                "allowedTypes": "application/pdf"
+            }
+        },
+        "allowedTypes": {
+            "returned": []
+        },
+        "maxSizeBytes": {
+            "returned": 0
+        }
+    }
+}

@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\CollectiveLinkMapper;
 use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -156,7 +157,7 @@ class CollectiveLinkServicePagesGoldenTest extends TestCase {
 		$logger->method('warning')->willReturnCallback(fn (string $m) => $this->record('warning ' . $m));
 		$logger->method('debug')->willReturnCallback(fn (string $m) => $this->record('debug ' . $m));
 		$mapper = $this->getMockBuilder(CollectiveLinkMapper::class)->disableOriginalConstructor()->getMock();
-		return new CollectiveLinkService($mapper, $container, $appManager, $session, $urls, $logger);
+		return new CollectiveLinkService($mapper, $container, new LinkServiceRuntime($appManager, $session, $logger), $urls);
 	}//end makeService()
 
 	public function record(string $call): void {

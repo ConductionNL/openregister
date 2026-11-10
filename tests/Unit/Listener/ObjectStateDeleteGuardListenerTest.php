@@ -71,7 +71,7 @@ class ObjectStateDeleteGuardListenerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$event = new ObjectDeletingEvent(object: $this->object);
-		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow))->handle($event);
+		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow, retention: new RetentionDestruction()))->handle($event);
 
 		return $event;
 	}//end delete()
@@ -143,7 +143,7 @@ class ObjectStateDeleteGuardListenerTest extends TestCase {
 		$event = new ObjectCreatingEvent(object: $this->object);
 
 		$session = $this->createMock(IUserSession::class);
-		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow))->handle($event);
+		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $this->flow, retention: new RetentionDestruction()))->handle($event);
 
 		$this->assertFalse($event->isPropagationStopped());
 	}//end testAnotherEventIsIgnored()

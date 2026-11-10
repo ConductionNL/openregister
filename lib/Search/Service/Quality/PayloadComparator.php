@@ -19,8 +19,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
-use OCA\OpenRegister\Service\Quality\QualityScorer;
-
 /**
  * The one rule engine behind both duplicate detection entry points.
  *
@@ -57,7 +55,7 @@ class PayloadComparator {
 	 * read. A dotted path (e.g. `goldenRecord.email`) traverses each
 	 * segment in order and yields `null` — never throws — as soon as any
 	 * segment is missing or its container is not an array. Mirrors the
-	 * dot-path idiom used by {@see QualityScorer::fieldValue()}.
+	 * dot-path idiom used by {@see \OCA\OpenRegister\Service\Quality\QualityScorer::fieldValue()}.
 	 *
 	 * @param array<string, mixed> $data Object payload.
 	 * @param string               $path Field name or dotted path.

@@ -33,27 +33,13 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 
 /**
  * Stops the run, optionally as an error.
  */
-class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
-
+class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
+	IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 	/**
 	 * The step type.
 	 *
@@ -89,17 +75,6 @@ class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNode
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/close.svg');
 	}//end getIcon()
-
-	/**
-	 * Stopping grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a stop step.
@@ -179,17 +154,30 @@ class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNode
 			return [];
 		}
 
+		throw $this->stopFor(config: $config);
+	}//end execute()
+
+	/**
+	 * The stop a reached end node throws: its configured message, or the
+	 * default for a plain or an error stop.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return FlowStop The stop to throw.
+	 */
+	private function stopFor(array $config): FlowStop {
 		$isError = (($config['error'] ?? false) === true);
 		$message = trim((string)($config['message'] ?? ''));
-		if ($message === '') {
-			$message = 'Flow stopped';
-			if ($isError === true) {
-				$message = 'Flow stopped with an error';
-			}
+		if ($message === '' && $isError === true) {
+			return new FlowStop(reason: 'Flow stopped with an error', isError: true);
 		}
 
-		throw new FlowStop(reason: $message, isError: $isError);
-	}//end execute()
+		if ($message === '') {
+			$message = 'Flow stopped';
+		}
+
+		return new FlowStop(reason: $message, isError: $isError);
+	}//end stopFor()
 
 	/**
 	 * What kind of step this is. An end.
@@ -202,16 +190,4 @@ class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNode
 		return IFlowNodeTaxonomy::KIND_EVENT;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

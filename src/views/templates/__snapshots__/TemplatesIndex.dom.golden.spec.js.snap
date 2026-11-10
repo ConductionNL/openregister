@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TemplatesIndex table shows every template with its menu 1`] = `
+[
+  {
+    "headers": [
+      "t:Name",
+      "t:Type",
+      "t:Description",
+      "t:Updated At",
+      "t:Actions",
+    ],
+    "rows": [
+      [
+        "Letter",
+        "docx",
+        "A letter",
+        "date:2026-11-01",
+        "t:View Details",
+      ],
+      [
+        "Theme",
+        "css",
+        "-",
+        "-",
+        "t:View Details",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`TemplatesIndex table shows the placeholder without templates 1`] = `"t:Templates are coming soon | t:The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships."`;

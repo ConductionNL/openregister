@@ -21,6 +21,8 @@ use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
+use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -43,13 +45,17 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 	 */
 	private function makeHandler(): DocumentProcessingHandler {
 		return new DocumentProcessingHandler(
-			rootFolder: $this->createMock(originalClassName: IRootFolder::class),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			entityRelationMapper: $this->createMock(originalClassName: EntityRelationMapper::class),
-			sanitizer: $this->createMock(originalClassName: OfficeDocumentSanitizer::class),
-			anonymisationLogMapper: $this->createMock(originalClassName: AnonymisationLogMapper::class),
-			l10n: null
+			platform: new DocumentProcessingPlatform(
+				rootFolder: $this->createMock(originalClassName: IRootFolder::class),
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				l10n: null
+			),
+			redaction: new DocumentRedactionServices(
+				entityRelationMapper: $this->createMock(originalClassName: EntityRelationMapper::class),
+				sanitizer: $this->createMock(originalClassName: OfficeDocumentSanitizer::class),
+				anonymisationLogMapper: $this->createMock(originalClassName: AnonymisationLogMapper::class)
+			),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 	}//end makeHandler()
 

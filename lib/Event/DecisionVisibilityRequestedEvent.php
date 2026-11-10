@@ -30,8 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Decision;
-use OCA\OpenRegister\Service\Decision\ReviewPolicy;
-use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
 
 /**
  * A question with one answer: may this user see this hidden decision?
@@ -44,7 +43,7 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
  */
-class DecisionVisibilityRequestedEvent extends Event {
+class DecisionVisibilityRequestedEvent extends AbstractDecisionRequestEvent {
 
 	/**
 	 * Whether a listener let the caller see the decision.
@@ -56,22 +55,22 @@ class DecisionVisibilityRequestedEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param Decision|null        $decision The hidden decision, or null when its record is gone.
-	 * @param string               $actorId  The user who reads it.
-	 * @param ReviewPolicy         $policy   The policy that applies.
-	 * @param array<string, mixed> $subject  What the decision is on: subjectType,
-	 *                                       subjectId and, when known, register,
-	 *                                       schema, objectUuid and fileId.
+	 * @param Decision|null         $decision The hidden decision, or null when its record is gone.
+	 * @param string                $actorId  The user who reads it.
+	 * @param ReviewPolicyInterface $policy   The policy that applies.
+	 * @param array<string, mixed>  $subject  What the decision is on: subjectType,
+	 *                                        subjectId and, when known, register,
+	 *                                        schema, objectUuid and fileId.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
 	 */
 	public function __construct(
 		private readonly ?Decision $decision,
-		private readonly string $actorId,
-		private readonly ReviewPolicy $policy,
-		private readonly array $subject,
+		string $actorId,
+		ReviewPolicyInterface $policy,
+		array $subject,
 	) {
-		parent::__construct();
+		parent::__construct(actorId: $actorId, policy: $policy, subject: $subject);
 	}//end __construct()
 
 	/**
@@ -84,40 +83,6 @@ class DecisionVisibilityRequestedEvent extends Event {
 	public function getDecision(): ?Decision {
 		return $this->decision;
 	}//end getDecision()
-
-	/**
-	 * The user who reads it.
-	 *
-	 * @return string The user id.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
-	 */
-	public function getActorId(): string {
-		return $this->actorId;
-	}//end getActorId()
-
-	/**
-	 * The policy that applies.
-	 *
-	 * @return ReviewPolicy The policy.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
-	 */
-	public function getPolicy(): ReviewPolicy {
-		return $this->policy;
-	}//end getPolicy()
-
-	/**
-	 * What the decision is on.
-	 *
-	 * @return array<string, mixed> subjectType, subjectId and, when known,
-	 *                              register, schema, objectUuid and fileId.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
-	 */
-	public function getSubject(): array {
-		return $this->subject;
-	}//end getSubject()
 
 	/**
 	 * Let the caller see the decision.

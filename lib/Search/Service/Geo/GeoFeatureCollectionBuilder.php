@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Search\Service\Geo;
 /**
  * Builds GeoJSON FeatureCollections and WFS-compatible envelopes.
  */
-class GeoFeatureCollectionBuilder {
+class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterface {
 
 	/**
 	 * GeoJSON geometry types recognised when scanning a row.
@@ -71,23 +71,32 @@ class GeoFeatureCollectionBuilder {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function buildFeatureCollection(
-		array $rows,
-		?string $geoProperty = null,
-		?array $fields = null,
-		bool $includeArea = false,
-	): array {
-		$rows = array_filter($rows, static fn ($row): bool => is_array($row));
-		$features = array_map(
-			fn (array $row): ?array => $this->buildFeature(row: $row, geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea),
-			$rows
+	public function buildFeatureCollection(array $rows, ?string $geoProperty = null, ?array $fields = null, bool $includeArea = false): array {
+		return $this->collect(
+			rows: $rows,
+			shape: new FeatureShape(geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea)
 		);
+	}//end buildFeatureCollection()
+
+	/**
+	 * Build a GeoJSON FeatureCollection from a list of object rows in one shape.
+	 *
+	 * @param array        $rows  Object rows (assoc arrays); a non-array row is skipped.
+	 * @param FeatureShape $shape The geo property, the allow-list and whether to add the area.
+	 *
+	 * @return array A GeoJSON FeatureCollection.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	public function collect(array $rows, FeatureShape $shape): array {
+		$rows = array_filter($rows, static fn ($row): bool => is_array($row));
+		$features = array_map(fn (array $row): ?array => $this->feature(row: $row, shape: $shape), $rows);
 
 		return [
 			'type' => 'FeatureCollection',
 			'features' => array_values(array_filter($features, static fn (?array $feature): bool => $feature !== null)),
 		];
-	}//end buildFeatureCollection()
+	}//end collect()
 
 	/**
 	 * Build a single GeoJSON Feature from an object row.
@@ -101,24 +110,36 @@ class GeoFeatureCollectionBuilder {
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function buildFeature(
-		array $row,
-		?string $geoProperty = null,
-		?array $fields = null,
-		bool $includeArea = false,
-	): ?array {
-		[$geomKey, $geometry] = $this->locateGeometry(row: $row, geoProperty: $geoProperty);
+	public function buildFeature(array $row, ?string $geoProperty = null, ?array $fields = null, bool $includeArea = false): ?array {
+		return $this->feature(
+			row: $row,
+			shape: new FeatureShape(geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea)
+		);
+	}//end buildFeature()
+
+	/**
+	 * Build a single GeoJSON Feature from an object row in one shape.
+	 *
+	 * @param array        $row   The object row.
+	 * @param FeatureShape $shape The geo property, the allow-list and whether to add the area.
+	 *
+	 * @return ?array The Feature, or null when no geometry is present.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	public function feature(array $row, FeatureShape $shape): ?array {
+		[$geomKey, $geometry] = $this->locateGeometry(row: $row, geoProperty: $shape->geoProperty);
 		if ($geometry === null) {
 			return null;
 		}
 
-		$properties = $this->allowedProperties(properties: $this->withoutKey(row: $row, key: $geomKey), fields: $fields);
-		if ($includeArea === true) {
+		$properties = $this->allowedProperties(properties: $this->withoutKey(row: $row, key: $geomKey), fields: $shape->fields);
+		if ($shape->includeArea === true) {
 			$properties = $this->withArea(properties: $properties, geometry: $geometry);
 		}
 
 		return $this->withId(feature: ['type' => 'Feature', 'geometry' => $geometry, 'properties' => $properties], row: $row);
-	}//end buildFeature()
+	}//end feature()
 
 	/**
 	 * Add the row's id (or `@self.id`) to the Feature, when it has one.
@@ -170,8 +191,19 @@ class GeoFeatureCollectionBuilder {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
 	public function buildWfsResponse(array $rows, ?string $geoProperty = null, ?int $maxFeatures = null): array {
-		$collection = $this->buildFeatureCollection(rows: $rows, geoProperty: $geoProperty);
+		$collection = $this->collect(rows: $rows, shape: new FeatureShape(geoProperty: $geoProperty));
+		return $this->capped(collection: $collection, maxFeatures: $maxFeatures);
+	}//end buildWfsResponse()
 
+	/**
+	 * A FeatureCollection cut to at most maxFeatures features, with its `numberReturned`.
+	 *
+	 * @param array    $collection  A GeoJSON FeatureCollection.
+	 * @param int|null $maxFeatures Optional cap on returned features; a negative cap is ignored.
+	 *
+	 * @return array
+	 */
+	private function capped(array $collection, ?int $maxFeatures): array {
 		if ($maxFeatures !== null && $maxFeatures >= 0) {
 			$collection['features'] = array_slice($collection['features'], 0, $maxFeatures);
 		}
@@ -179,7 +211,7 @@ class GeoFeatureCollectionBuilder {
 		$collection['numberReturned'] = count($collection['features']);
 
 		return $collection;
-	}//end buildWfsResponse()
+	}//end capped()
 
 	/**
 	 * Locate a geometry value within a row.
@@ -251,20 +283,25 @@ class GeoFeatureCollectionBuilder {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
 	private function coerceGeometry(mixed $value): ?array {
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		if (in_array(($value['type'] ?? null), self::GEOJSON_TYPES, true) === false) {
-			return null;
-		}
-
-		if (isset($value['coordinates']) === false || is_array($value['coordinates']) === false) {
+		if ($this->isGeometry(value: $value) === false) {
 			return null;
 		}
 
 		return $value;
 	}//end coerceGeometry()
+
+	/**
+	 * Whether a value has the shape of a recognised GeoJSON geometry.
+	 *
+	 * @param mixed $value The candidate.
+	 *
+	 * @return bool True for an array with a recognised `type` and an array of `coordinates`.
+	 */
+	private function isGeometry(mixed $value): bool {
+		return is_array($value) === true
+			&& in_array(($value['type'] ?? null), self::GEOJSON_TYPES, true) === true
+			&& is_array($value['coordinates'] ?? null) === true;
+	}//end isGeometry()
 
 	/**
 	 * Compute the geodesic area of a Polygon or MultiPolygon in m^2.
@@ -285,18 +322,29 @@ class GeoFeatureCollectionBuilder {
 			return null;
 		}
 
-		$polygons = ($geometry['coordinates'] ?? []);
-		if ($type === 'Polygon') {
-			$polygons = [$polygons];
-		}
-
 		$total = 0.0;
-		foreach ($polygons as $rings) {
+		foreach ($this->polygonsOf(geometry: $geometry) as $rings) {
 			$total += $this->polygonArea(rings: $rings);
 		}
 
 		return round($total, 2);
 	}//end geodesicAreaM2()
+
+	/**
+	 * The polygons of a Polygon or MultiPolygon: a Polygon is one polygon.
+	 *
+	 * @param array $geometry GeoJSON Polygon or MultiPolygon.
+	 *
+	 * @return mixed The polygons, as the geometry holds them (not checked to be an array).
+	 */
+	private function polygonsOf(array $geometry): mixed {
+		$polygons = ($geometry['coordinates'] ?? []);
+		if ($geometry['type'] === 'Polygon') {
+			return [$polygons];
+		}
+
+		return $polygons;
+	}//end polygonsOf()
 
 	/**
 	 * Area of one polygon: its outer ring less its holes; 0.0 for an empty or malformed polygon.
@@ -349,10 +397,7 @@ class GeoFeatureCollectionBuilder {
 
 		$area = 0.0;
 		for ($i = 0; $i < $count; $i++) {
-			$term = $this->edgeTerm(edge: [$ring[$i], $ring[(($i + 1) % $count)]]);
-			if ($term !== null) {
-				$area += $term;
-			}
+			$area += ($this->edgeTerm(edge: [$ring[$i], $ring[(($i + 1) % $count)]]) ?? 0.0);
 		}
 
 		return ($area * self::EARTH_RADIUS_M * self::EARTH_RADIUS_M / 2.0);
@@ -367,19 +412,24 @@ class GeoFeatureCollectionBuilder {
 	 */
 	private function edgeTerm(array $edge): ?float {
 		[$from, $to] = $edge;
-		if (is_array($from) === false || is_array($to) === false) {
+		if ($this->isPosition(vertex: $from) === false || $this->isPosition(vertex: $to) === false) {
 			return null;
 		}
 
-		if (is_numeric($from[0] ?? null) === false || is_numeric($to[0] ?? null) === false) {
-			return null;
-		}
-
-		$lon1 = deg2rad((float)$from[0]);
 		$lat1 = deg2rad((float)$from[1]);
-		$lon2 = deg2rad((float)$to[0]);
 		$lat2 = deg2rad((float)$to[1]);
 
-		return ($lon2 - $lon1) * (2 + sin($lat1) + sin($lat2));
+		return (deg2rad((float)$to[0]) - deg2rad((float)$from[0])) * (2 + sin($lat1) + sin($lat2));
 	}//end edgeTerm()
+
+	/**
+	 * Whether a vertex is an array with a numeric longitude.
+	 *
+	 * @param mixed $vertex The vertex.
+	 *
+	 * @return bool
+	 */
+	private function isPosition(mixed $vertex): bool {
+		return is_array($vertex) === true && is_numeric($vertex[0] ?? null) === true;
+	}//end isPosition()
 }//end class
