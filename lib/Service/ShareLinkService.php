@@ -53,6 +53,7 @@ use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;
@@ -295,10 +296,9 @@ class ShareLinkService implements ShareLinkServiceInterface {
 
 		try {
 			return $permissions->hasPermission(
-				schema: $schemas->find((int)$entity->getSchema()),
-				action: 'update',
-				objectOwner: $entity->getOwner(),
-				object: $entity
+				ask: (new PermissionAsk(schema: $schemas->find((int)$entity->getSchema()), action: 'update'))
+					->askedBy(userId: null, objectOwner: $entity->getOwner())
+					->about(object: $entity, register: null)
 			);
 		} catch (Throwable $e) {
 			return false;

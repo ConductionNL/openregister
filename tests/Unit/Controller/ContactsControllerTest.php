@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\PersonLinkChange;
 use OCA\OpenRegister\Service\PersonLinkRef;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCA\OpenRegister\Service\PersonLinkTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -67,12 +68,12 @@ class ContactsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->personLinks = $this->createMock(PersonLinkService::class);
 		$this->permissions = $this->createMock(PermissionHandler::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action): bool {
 				$this->askedActions[] = $action;
 				return $action === 'update' ? $this->mayUpdate : true;
 			}
-		);
+		));
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
 
 		$this->l10n->method('t')->willReturnCallback(

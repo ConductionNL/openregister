@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -1304,7 +1305,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 			]
 		);
 
-		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static function (Schema $schema) use ($joinedSchemaListAllowed): bool {
 				if ((string)$schema->getSlug() === 'commitment-budget') {
 					return $joinedSchemaListAllowed;
@@ -1312,7 +1313,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 
 				return true;
 			}
-		);
+		));
 
 		$this->usePhpFallback();
 

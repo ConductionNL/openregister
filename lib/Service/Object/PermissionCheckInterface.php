@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * The yes/no permission verdict of PermissionHandler, for callers that only ask.
@@ -50,14 +48,12 @@ interface PermissionCheckInterface {
 	 * read path by {@see \OCA\OpenRegister\Service\Object\RenderObject::renderEntity()}.
 	 * This handler owns object/schema-level RBAC only.
 	 *
-	 * @param Schema $schema The schema to check permissions for.
-	 * @param string $action The CRUD action (create, read, update, delete).
-	 * @param string|null $userId Optional user ID (defaults to current user).
-	 * @param string|null $objectOwner Optional object owner for ownership check.
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object (a create, a delete by id).
-	 *                              Only a declared action's elevation reads it.
+	 * @param PermissionAsk $ask   The question: the schema and the CRUD action (create, read, update, delete);
+	 *                            the user (null for the current user) and the object owner for the ownership
+	 *                            check; the object for conditional authorization matching, or, for a check that
+	 *                            names no object (a create, a delete by id), the register written to, which only
+	 *                            a declared action's elevation reads.
+	 * @param bool          $_rbac Whether to apply RBAC checks (default: true).
 	 *
 	 * @return bool True if user has permission, false otherwise
 	 *
@@ -65,13 +61,5 @@ interface PermissionCheckInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
-		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
-	): bool;
+	public function hasPermission(PermissionAsk $ask, bool $_rbac = true): bool;
 }//end interface

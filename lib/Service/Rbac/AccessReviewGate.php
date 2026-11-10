@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * The object resolution and the access-review checks of the per-object access reads.
@@ -217,11 +218,9 @@ class AccessReviewGate implements AccessReviewGateInterface {
 		}
 
 		return $run->handler->hasPermission(
-			schema: $schema,
-			action: $action,
-			userId: $this->callerUid(),
-			objectOwner: $object?->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: $action))
+				->askedBy(userId: $this->callerUid(), objectOwner: $object?->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end writtenRuleAdmits()
 

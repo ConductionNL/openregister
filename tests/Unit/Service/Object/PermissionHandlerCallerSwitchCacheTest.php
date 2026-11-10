@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -73,9 +74,9 @@ class PermissionHandlerCallerSwitchCacheTest extends TestCase {
 		$schema->setId(5);
 		$schema->setAuthorization(['read' => ['editors']]);
 
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read'));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 
 		$current = null;
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'read'));
+		$this->assertFalse($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}//end testANullUserIsAnsweredForWhoeverTheSessionHoldsNow()
 }//end class

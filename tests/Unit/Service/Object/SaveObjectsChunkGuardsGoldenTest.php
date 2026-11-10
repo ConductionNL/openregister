@@ -126,12 +126,12 @@ class SaveObjectsChunkGuardsGoldenTest extends TestCase {
 		$permissions = null;
 		if ($scenario['permissions'] === true) {
 			$permissions = $this->createMock(PermissionHandler::class);
-			$permissions->method('hasPermission')->willReturnCallback(
+			$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 				function (Schema $schema, string $action, ?string $userId, ?string $objectOwner, bool $_rbac) use (&$record): bool {
 					$record['asked'][] = [$schema->getId(), $action, $userId, $objectOwner, $_rbac];
 					return $objectOwner !== 'eve' && $schema->getId() !== 2;
 				}
-			);
+			));
 		}
 
 		$validator = null;

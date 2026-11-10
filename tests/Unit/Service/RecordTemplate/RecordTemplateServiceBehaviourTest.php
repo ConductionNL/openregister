@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateCollaborators;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\IGroupManager;
@@ -125,13 +126,13 @@ final class RecordTemplateServiceBehaviourTest extends TestCase {
 		});
 
 		$permissions = $this->createMock(PermissionCheckInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action, ?string $userId = null): bool {
 				$key = $userId . '|' . $schema->getSlug();
 				$this->asked[$key] = ($this->asked[$key] ?? 0) + 1;
 				return $action === 'create' && ($this->creators[$key] ?? false) === true;
 			}
-		);
+		));
 
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('groupExists')->willReturn(true);

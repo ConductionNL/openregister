@@ -46,6 +46,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Follows an object for its new assignee.
@@ -187,7 +188,12 @@ final class AssigneeFollowListener implements IEventListener {
 		$object = $run->object;
 		$owner = $object->getOwner();
 
-		return $this->permissions->hasPermission(schema: $run->schema, action: 'read', userId: $userId, objectOwner: $owner, _rbac: true, object: $object);
+		return $this->permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $run->schema, action: 'read'))
+				->askedBy(userId: $userId, objectOwner: $owner)
+				->about(object: $object, register: null),
+			_rbac: true
+		);
 
 	}//end mayRead()
 

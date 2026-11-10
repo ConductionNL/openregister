@@ -59,6 +59,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use Throwable;
 
@@ -778,10 +779,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	private function mayEdit(Schema $schema, ObjectEntity $object): bool {
 		try {
 			return $this->guards->permissions->hasPermission(
-				schema: $schema,
-				action: 'update',
-				objectOwner: $object->getOwner(),
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: null, objectOwner: $object->getOwner())
+					->about(object: $object, register: null)
 			);
 		} catch (Throwable $e) {
 			// Fail closed: a verdict that could not be reached is not a yes.

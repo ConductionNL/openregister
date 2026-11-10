@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -112,12 +113,12 @@ class EntryMentionGoldenTest extends TestCase {
 		);
 
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool {
 				$this->calls[] = 'read? ' . $userId . ' ' . $action . ' ' . json_encode([$objectOwner, $_rbac, $object?->getUuid()]);
 				return $userId !== 'bob';
 			}
-		);
+		));
 
 		$watchers = $this->createMock(WatcherServiceInterface::class);
 		$watchers->method('subscribeMentioned')->willReturnCallback(

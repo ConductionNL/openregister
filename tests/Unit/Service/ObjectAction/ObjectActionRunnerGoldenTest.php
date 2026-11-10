@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -90,12 +91,12 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		parent::setUp();
 
 		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function ($schema, string $action): bool {
 				$this->asked[] = $action;
 				return ($this->rights[$action] ?? true);
 			}
-		);
+		));
 		$this->steps = $this->createMock(ObjectActionStepsFlow::class);
 		$this->steps->method('flowFor')->willReturn('steps-flow');
 		// The real ObjectActionAudit writes the entry, so the acting user is

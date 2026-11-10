@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Notifications\Service\GraphQL;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 
 /**
@@ -224,7 +225,7 @@ class SubscriptionService {
 
 		try {
 			$schema = $this->schemaMapper->find($eventSchemaId);
-			return $this->permissionHandler->hasPermission($schema, 'read');
+			return $this->permissionHandler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 		} catch (\Exception $e) {
 			return false;
 		}

@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -161,9 +162,9 @@ class AccessReviewGateGoldenTest extends TestCase {
 				return false;
 			}
 		);
-		$handler->method('hasPermission')->willReturnCallback(
+		$handler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn (Schema $schema, string $action): bool => in_array($action, $decisionAllows, true)
-		);
+		));
 
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('getSchema')->willReturn(7);

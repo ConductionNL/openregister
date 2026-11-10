@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -566,12 +567,10 @@ class FlowNodeRunController extends Controller {
 		}
 
 		$permitted = $this->permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'update',
-			userId: $this->callerUid(),
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: $this->callerUid(), objectOwner: $object->getOwner())
+				->about(object: $object, register: null),
+			_rbac: true
 		);
 
 		if ($permitted === false) {

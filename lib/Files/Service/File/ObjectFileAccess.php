@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
@@ -255,12 +256,10 @@ class ObjectFileAccess {
 			$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
 
 			return $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: 'update',
-				userId: null,
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: null, objectOwner: $object->getOwner())
+					->about(object: $object, register: null),
+				_rbac: true
 			);
 		} catch (Throwable $e) {
 			return false;
@@ -480,12 +479,10 @@ class ObjectFileAccess {
 	private function allows(FileVerbCheck $check): bool {
 		try {
 			return $this->permissionHandler->hasPermission(
-				schema: $check->schema,
-				action: $check->verb,
-				userId: null,
-				objectOwner: $check->object->getOwner(),
-				_rbac: true,
-				object: $check->object
+				ask: (new PermissionAsk(schema: $check->schema, action: $check->verb))
+					->askedBy(userId: null, objectOwner: $check->object->getOwner())
+					->about(object: $check->object, register: null),
+				_rbac: true
 			);
 		} catch (Throwable $e) {
 			return false;

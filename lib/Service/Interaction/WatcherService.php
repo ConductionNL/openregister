@@ -56,6 +56,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 
@@ -441,10 +442,9 @@ class WatcherService implements WatcherServiceInterface {
 
 		try {
 			return $this->permissions->hasPermission(
-				schema: $schema,
-				action: 'update',
-				objectOwner: $object->getOwner(),
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: null, objectOwner: $object->getOwner())
+					->about(object: $object, register: null)
 			);
 		} catch (\Throwable $e) {
 			return false;

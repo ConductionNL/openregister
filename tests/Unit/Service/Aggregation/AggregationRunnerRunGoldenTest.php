@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -205,12 +206,12 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		);
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($case): bool {
 				$this->calls[] = ['permission' => [$args['action'] ?? $args[1] ?? null, $args['userId'] ?? $args[2] ?? null]];
 				return $case['allow'];
 			}
-		);
+		));
 
 		$session = $this->createMock(IUserSession::class);
 		$user = null;

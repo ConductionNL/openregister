@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -171,12 +172,12 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 */
 	private function permissions(bool $mayUpdate): \OCA\OpenRegister\Service\Object\PermissionHandler {
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (\OCA\OpenRegister\Db\Schema $schema, string $action) use ($mayUpdate): bool {
 				$this->askedActions[] = $action;
 				return $action === 'update' ? $mayUpdate : true;
 			}
-		);
+		));
 		return $permissions;
 	}//end permissions()
 

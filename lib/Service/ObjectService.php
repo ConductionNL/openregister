@@ -142,6 +142,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
 
@@ -6469,10 +6470,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $permitted = [];
         foreach ($this->objectMapper->findMultiple($readable) as $object) {
             $mayUpdate = $this->permissionHandler->hasPermission(
-                schema: $table->schema,
-                action: 'update',
-                objectOwner: $object->getOwner(),
-                object: $object
+                ask: (new PermissionAsk(schema: $table->schema, action: 'update'))
+                    ->askedBy(userId: null, objectOwner: $object->getOwner())
+                    ->about(object: $object, register: null)
             );
             if ($mayUpdate === true) {
                 $permitted[] = (string) $object->getUuid();

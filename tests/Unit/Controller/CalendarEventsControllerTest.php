@@ -45,6 +45,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -77,12 +78,12 @@ class CalendarEventsControllerTest extends TestCase {
 
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action): bool {
 				$this->askedActions[] = $action;
 				return $action === 'update' ? $this->mayUpdate : true;
 			}
-		);
+		));
 
 		$this->controller = CalendarEventsControllerFactory::create(
 			'openregister',

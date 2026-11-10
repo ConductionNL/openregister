@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\Deletion;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
 use Psr\Log\LoggerInterface;
@@ -184,12 +185,10 @@ class DestroyRightService {
 
 		try {
 			return $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: self::ACTION,
-				userId: $userId,
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: self::ACTION))
+					->askedBy(userId: $userId, objectOwner: $object->getOwner())
+					->about(object: $object, register: null),
+				_rbac: true
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

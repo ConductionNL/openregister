@@ -164,7 +164,10 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function assertMayRevert(array $context): void {
 		$object = $context['object'];
-		if ($this->permissionHandler->hasPermission(schema: $context['schema'], action: 'update', object: $object) === false) {
+		if ($this->permissionHandler->hasPermission(
+			ask: (new PermissionAsk(schema: $context['schema'], action: 'update'))
+				->about(object: $object, register: null)
+		) === false) {
 			throw new NotAuthorizedException(message: 'You do not have permission to revert this object');
 		}
 

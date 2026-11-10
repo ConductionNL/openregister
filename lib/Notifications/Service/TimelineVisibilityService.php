@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Notifications\Service;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -196,12 +197,10 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		return $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: $action,
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: $action))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null),
+			_rbac: true
 		);
 	}//end holds()
 

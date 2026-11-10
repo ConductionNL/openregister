@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -220,11 +221,10 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $this->schemaWith(
+				ask: (new PermissionAsk(schema: $this->schemaWith(
 					['read' => [['group' => 'waarnemers', 'until' => '2020-01-01T00:00:00+01:00']]]
-				),
-				action: 'read',
-				userId: 'ana'
+				), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 	}//end testAGrantThatEndedNoLongerAdmits()
@@ -242,11 +242,10 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $this->schemaWith(
+				ask: (new PermissionAsk(schema: $this->schemaWith(
 					['read' => [['group' => 'waarnemers', 'until' => date('c', strtotime('+10 years'))]]]
-				),
-				action: 'read',
-				userId: 'ana'
+				), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 	}//end testTheSameGrantWithItsEndAheadStillAdmits()
@@ -269,11 +268,10 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$granted = $this->handlerFor(userId: 'ana', groups: ['gasten']);
 		$this->assertTrue(
 			$granted->hasPermission(
-				schema: $this->schemaWith(
+				ask: (new PermissionAsk(schema: $this->schemaWith(
 					['read' => [['user' => 'ana', 'until' => date('c', strtotime('+10 years'))]]]
-				),
-				action: 'read',
-				userId: 'ana'
+				), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			),
 			'the assignee could not read it while the step was open, so the refusal below proves nothing'
 		);
@@ -281,9 +279,8 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$expired = $this->handlerFor(userId: 'ana', groups: ['gasten']);
 		$this->assertFalse(
 			$expired->hasPermission(
-				schema: $this->schemaWith(['read' => [['user' => 'ana', 'until' => $deadline]]]),
-				action: 'read',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => [['user' => 'ana', 'until' => $deadline]]]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 	}//end testAStepsGrantDiesWithTheStep()
@@ -301,13 +298,13 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
 		$inside = $this->handlerFor(userId: 'noor', groups: ['beheerders'], registerSlug: 'zaken');
 		$this->assertTrue(
-			$inside->hasPermission(schema: $this->schemaWith($block), action: 'manage', userId: 'noor'),
+			$inside->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith($block), action: 'manage'))->askedBy(userId: 'noor', objectOwner: null)),
 			'the scoped grant does not administer the register it names'
 		);
 
 		$outside = $this->handlerFor(userId: 'noor', groups: ['beheerders'], registerSlug: 'besluiten');
 		$this->assertFalse(
-			$outside->hasPermission(schema: $this->schemaWith($block), action: 'manage', userId: 'noor'),
+			$outside->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith($block), action: 'manage'))->askedBy(userId: 'noor', objectOwner: null)),
 			'the scoped grant administers a register it does not name'
 		);
 	}//end testScopedManageDoesNotReachAnotherRegister()
@@ -329,9 +326,8 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['read' => ['behandelaars']]),
-				action: 'read',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 	}//end testADerivedGroupIsMatchedLikeAnyOther()
@@ -350,9 +346,8 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['read' => ['behandelaars']]),
-				action: 'read',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 	}//end testTheSameCallerWithoutTheDerivationIsRefused()
@@ -380,9 +375,8 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		);
 		$this->assertTrue(
 			$inside->hasPermission(
-				schema: $this->schemaWith(['read' => ['behandelaars']]),
-				action: 'read',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 
@@ -394,9 +388,8 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		);
 		$this->assertFalse(
 			$outside->hasPermission(
-				schema: $this->schemaWith(['read' => ['behandelaars']]),
-				action: 'read',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			),
 			'the derived group reached a register the rule does not name'
 		);
@@ -419,9 +412,8 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['read' => ['behandelaars']]),
-				action: 'read',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			),
 			'a derived admin group bypassed the rules'
 		);

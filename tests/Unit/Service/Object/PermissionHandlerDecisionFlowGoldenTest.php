@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -287,13 +288,10 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 		$schema->setAuthorization($ask['block']);
 		$object = $this->objectOf($ask['object']);
 		$call   = static fn (): bool => $handler->hasPermission(
-			schema: $schema,
-			action: $ask['action'],
-			userId: $ask['user'],
-			objectOwner: $ask['owner'],
-			_rbac: $ask['rbac'],
-			object: $object,
-			register: $ask['register']
+			ask: (new PermissionAsk(schema: $schema, action: $ask['action']))
+				->askedBy(userId: $ask['user'], objectOwner: $ask['owner'])
+				->about(object: $object, register: $ask['register']),
+			_rbac: $ask['rbac']
 		);
 
 		$answers = [$this->answer($call), $this->answer($call)];

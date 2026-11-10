@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistrySubscriptionControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -120,7 +121,7 @@ class RegistrySubscriptionControllerA24GoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->schema, 'update', 'caller', 'owner-1', true, $this->object)
+			->with(...PermissionAskArgs::with($this->schema, 'update', 'caller', 'owner-1', true, $this->object))
 			->willReturn($allowed);
 
 		return RegistrySubscriptionControllerFactory::create(

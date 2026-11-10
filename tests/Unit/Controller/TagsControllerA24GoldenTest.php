@@ -33,6 +33,7 @@ use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use OCP\IUser;
@@ -139,7 +140,7 @@ class TagsControllerA24GoldenTest extends TestCase {
 		$schema = null;
 		if ($mayUpdate !== null) {
 			$schema = new Schema();
-			$this->permissionHandler->method('hasPermission')->willReturnCallback(
+			$this->permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 				function (
 					Schema $s,
 					string $action,
@@ -153,7 +154,7 @@ class TagsControllerA24GoldenTest extends TestCase {
 					$this->assertSame($this->object, $object);
 					return $mayUpdate;
 				}
-			);
+			));
 		}
 
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);

@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 
 /**
  * Golden: the status, body and call order of index/create/destroy on the email links API,
@@ -140,12 +141,12 @@ class EmailsControllerGoldenTest extends TestCase
         $objectService->method('getCurrentSchemaEntity')->willReturn($scenario['schema'] === true ? new Schema() : null);
 
         $permissions = $this->createMock(PermissionHandlerInterface::class);
-        $permissions->method('hasPermission')->willReturnCallback(
+        $permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
             function (Schema $schema, string $action) use ($scenario): bool {
                 $this->log[] = 'hasPermission:' . $action;
                 return $scenario['update'];
             }
-        );
+        ));
 
         return new EmailsController(
             $request,

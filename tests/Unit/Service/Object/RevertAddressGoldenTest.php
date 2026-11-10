@@ -88,8 +88,9 @@ class RevertAddressGoldenTest extends TestCase {
 			$this->assertSame('address passed', $e->getMessage());
 			return 'allowed';
 		} catch (TypeError $e) {
-			// A lookup without a schema passes the address and fails at the permission check.
-			$this->assertStringContainsString('hasPermission', $e->getMessage());
+			// A lookup without a schema passes the address and fails at the permission check,
+			// where the question it asks cannot be built without a schema.
+			$this->assertStringContainsString('PermissionAsk', $e->getMessage());
 			return 'allowed';
 		}
 

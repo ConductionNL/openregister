@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -327,9 +328,9 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 			['update' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]], 'deny' => ['update' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]]
 		);
 
-		$this->assertFalse($this->permissionHandler()->hasPermission(schema: $denied, action: 'update', userId: 'alice', objectOwner: 'bob', object: $this->record()));
-		$this->assertTrue($this->permissionHandler()->hasPermission(schema: $control, action: 'update', userId: 'alice', objectOwner: 'bob', object: $this->record()));
-		$this->assertTrue($this->permissionHandler()->hasPermission(schema: $otherDeny, action: 'update', userId: 'alice', objectOwner: 'bob', object: $this->record()));
+		$this->assertFalse($this->permissionHandler()->hasPermission(ask: (new PermissionAsk(schema: $denied, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $this->record(), register: null)));
+		$this->assertTrue($this->permissionHandler()->hasPermission(ask: (new PermissionAsk(schema: $control, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $this->record(), register: null)));
+		$this->assertTrue($this->permissionHandler()->hasPermission(ask: (new PermissionAsk(schema: $otherDeny, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $this->record(), register: null)));
 	}//end testAConditionalDenyOnUnknownMetadataDenies()
 
 	/**
@@ -341,8 +342,8 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 		$allow = $this->schemaWith(['update' => [['group' => 'editors', 'match' => ['_published' => ['$exists' => false]]]]]);
 		$control = $this->schemaWith(['update' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]]]);
 
-		$this->assertFalse($this->permissionHandler()->hasPermission(schema: $allow, action: 'update', userId: 'alice', objectOwner: 'bob', object: $this->record()));
-		$this->assertTrue($this->permissionHandler()->hasPermission(schema: $control, action: 'update', userId: 'alice', objectOwner: 'bob', object: $this->record()));
+		$this->assertFalse($this->permissionHandler()->hasPermission(ask: (new PermissionAsk(schema: $allow, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $this->record(), register: null)));
+		$this->assertTrue($this->permissionHandler()->hasPermission(ask: (new PermissionAsk(schema: $control, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $this->record(), register: null)));
 	}//end testAnAllowOnUnknownMetadataDoesNotGrant()
 
 	/**
@@ -397,25 +398,21 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 		$this->assertFalse($this->matcher->objectMatchesConditions(object: $envelope, match: $match));
 		$this->assertFalse(
 			$this->permissionHandler()->hasPermission(
-				schema: $this->schemaWith(['update' => [['group' => 'editors', 'match' => $match]]]),
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $this->record()
+				ask: (new PermissionAsk(schema: $this->schemaWith(['update' => [['group' => 'editors', 'match' => $match]]]), action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $this->record(), register: null)
 			)
 		);
 		$this->assertFalse(
 			$this->permissionHandler()->hasPermission(
-				schema: $this->schemaWith(
+				ask: (new PermissionAsk(schema: $this->schemaWith(
 					[
 						'update' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]],
 						'deny'   => ['update' => [['group' => 'editors', 'match' => ['@self.published' => true]]]],
 					]
-				),
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $this->record()
+				), action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $this->record(), register: null)
 			)
 		);
 	}//end testAnUnknownSelfKeyFailsClosed()
@@ -433,16 +430,14 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 		$this->assertTrue($this->matcher->objectMatchesConditions(object: $envelope, match: ['@self.uuid' => 'rec-1']));
 		$this->assertFalse(
 			$this->permissionHandler()->hasPermission(
-				schema: $this->schemaWith(
+				ask: (new PermissionAsk(schema: $this->schemaWith(
 					[
 						'update' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]],
 						'deny'   => ['update' => [['group' => 'editors', 'match' => ['@self.owner' => 'bob']]]],
 					]
-				),
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $this->record()
+				), action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $this->record(), register: null)
 			)
 		);
 	}//end testAKnownSelfKeyReadsTheRecord()

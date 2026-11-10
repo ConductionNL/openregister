@@ -127,9 +127,9 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	 */
 	private function handler(): RevertHandler {
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			fn (Schema $schema, string $action, ...$rest): bool => ($this->mayUpdate === true && $action === 'update' && $schema === $this->schema && in_array($this->current, $rest, true) === true)
-		);
+		));
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(

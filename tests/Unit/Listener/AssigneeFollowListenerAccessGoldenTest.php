@@ -28,6 +28,7 @@ use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -63,12 +64,12 @@ class AssigneeFollowListenerAccessGoldenTest extends TestCase {
 		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => in_array($uid, ['jan', 'piet'], true));
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static function (...$args) use (&$calls, $allowed, $schema): bool {
 				$calls[] = ['hasPermission', $args[0] === $schema, $args[1], $args[2], $args[3], $args[4], $args[5]->getUuid(), ($args[6] ?? null)];
 				return $allowed;
 			}
-		);
+		));
 
 		$watchers = $this->createMock(WatcherService::class);
 		$watchers->method('followAssigned')->willReturnCallback(

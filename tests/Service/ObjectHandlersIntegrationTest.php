@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -785,11 +786,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasPermissionRbacDisabled(): void {
 		$result = $this->permissionHandler->hasPermission(
-			$this->authSchema,
-			'delete',
-			'admin',
-			null,
-			false
+			ask: (new PermissionAsk(schema: $this->authSchema, action: 'delete'))
+				->askedBy(userId: 'admin', objectOwner: null),
+			_rbac: false
 		);
 		$this->assertTrue($result);
 	}
@@ -799,11 +798,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasPermissionAdminUser(): void {
 		$result = $this->permissionHandler->hasPermission(
-			$this->authSchema,
-			'delete',
-			'admin',
-			null,
-			true
+			ask: (new PermissionAsk(schema: $this->authSchema, action: 'delete'))
+				->askedBy(userId: 'admin', objectOwner: null),
+			_rbac: true
 		);
 		$this->assertTrue($result);
 	}
@@ -817,11 +814,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$userId = $user ? $user->getUID() : 'admin';
 
 		$result = $this->permissionHandler->hasPermission(
-			$this->authSchema,
-			'delete',
-			$userId,
-			$userId,
-			true
+			ask: (new PermissionAsk(schema: $this->authSchema, action: 'delete'))
+				->askedBy(userId: $userId, objectOwner: $userId),
+			_rbac: true
 		);
 		$this->assertTrue($result);
 	}

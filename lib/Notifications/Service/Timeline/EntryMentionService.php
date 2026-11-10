@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\AddressedObject;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -259,12 +260,10 @@ class EntryMentionService {
 		}
 
 		return $this->readCheck->permissions->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null),
+			_rbac: true
 		);
 	}//end mayRead()
 

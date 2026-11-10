@@ -46,6 +46,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -462,12 +463,10 @@ class TransitionEngine {
 		$allowed = true;
 		if ($asSystem === false) {
 			$allowed = $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: 'update',
-				userId: $this->userSession->getUser()?->getUID(),
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: $this->userSession->getUser()?->getUID(), objectOwner: $object->getOwner())
+					->about(object: $object, register: null),
+				_rbac: true
 			);
 		}
 
@@ -976,12 +975,10 @@ class TransitionEngine {
 		// object's current lifecycle state to anyone who could guess the id.
 		$callerId = $this->userSession->getUser()?->getUID();
 		$allowed = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: $callerId,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: $callerId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null),
+			_rbac: true
 		);
 		if ($allowed === false) {
 			throw new NotAuthorizedException(

@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -536,13 +537,13 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		// Parent schema: permitted. Target schema: forbidden.
 		$callCount = 0;
 		$this->permissionHandler->method('hasPermission')
-			->willReturnCallback(
+			->willReturnCallback(PermissionAskArgs::spread(
 				function () use (&$callCount): bool {
 					$callCount++;
 					// First call = parent schema (allowed), second = target schema (denied).
 					return $callCount === 1;
 				}
-			);
+			));
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Forbidden');

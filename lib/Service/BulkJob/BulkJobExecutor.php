@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -363,11 +364,9 @@ class BulkJobExecutor {
 		}
 
 		$allowed = $this->services->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $actorUid,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: $actorUid, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 
 		if ($allowed === true) {

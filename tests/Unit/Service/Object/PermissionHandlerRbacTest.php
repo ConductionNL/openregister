@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IAppConfig;
@@ -148,10 +149,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		// Schema says behandelaars can read, register says public can read.
 		// Schema overrides: user in behandelaars should be able to read.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 
 		// Schema says only admin can create, not behandelaars.
-		$this->assertFalse($this->handler->hasPermission($schema, 'create'));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
 	}
 
 	public function testRegisterFallbackWhenSchemaHasNoAuth(): void {
@@ -168,10 +169,10 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		// Should use register authorization: medewerkers can read.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 
 		// Register says only admin can create.
-		$this->assertFalse($this->handler->hasPermission($schema, 'create'));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
 	}
 
 	public function testNeitherSchemaNorRegisterHasAuth(): void {
@@ -183,8 +184,8 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		// No authorization anywhere = everyone has permission.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
-		$this->assertTrue($this->handler->hasPermission($schema, 'create'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
 	}
 
 	public function testActionNotConfiguredOnNonEmptyBlockFailsClosed(): void {
@@ -200,12 +201,12 @@ class PermissionHandlerRbacTest extends TestCase {
 		]);
 
 		// Explicitly-granted action still works.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 
 		// Omitted actions are now denied (were allowed under the old default).
-		$this->assertFalse($this->handler->hasPermission($schema, 'create'));
-		$this->assertFalse($this->handler->hasPermission($schema, 'update'));
-		$this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'delete')));
 	}
 
 	// === Role Expansion Tests ===
@@ -230,8 +231,8 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		// Public group has viewer role => read only.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
-		$this->assertFalse($this->handler->hasPermission($schema, 'create'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
 	}
 
 	public function testRoleExpansionEditorRole(): void {
@@ -256,10 +257,10 @@ class PermissionHandlerRbacTest extends TestCase {
 		// Behandelaars has editor role => read, create, update.
 		// rbac-default-deny: an action NOT covered by the role (delete) is now
 		// denied on this non-empty authorization block.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
-		$this->assertTrue($this->handler->hasPermission($schema, 'create'));
-		$this->assertTrue($this->handler->hasPermission($schema, 'update'));
-		$this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'delete')));
 	}
 
 	public function testMixedRoleAndDirectAuth(): void {
@@ -281,7 +282,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		// extra-groep has direct read permission.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}
 
 	public function testUnknownRoleNameIsIgnored(): void {
@@ -311,7 +312,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		// nothing-grants-nothing). It now names the canonical verbs with nobody.
 		$result = $this->handler->resolveAuthorization($schema);
 		$this->assertSame(['read' => [], 'create' => [], 'update' => [], 'delete' => []], $result);
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}
 
 	// === Manage Action Tests ===
@@ -328,7 +329,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		// User in register-beheerders should have manage permission.
-		$this->assertTrue($this->handler->hasPermission($schema, 'manage'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'manage')));
 	}
 
 	public function testManageActionDenied(): void {
@@ -343,9 +344,9 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		// User NOT in register-beheerders should NOT have manage permission.
-		$this->assertFalse($this->handler->hasPermission($schema, 'manage'));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'manage')));
 		// But should still be able to read.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}
 
 	public function testAdminBypassesManageCheck(): void {
@@ -359,7 +360,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		// Admin always has all permissions.
-		$this->assertTrue($this->handler->hasPermission($schema, 'manage'));
+		$this->assertTrue($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'manage')));
 	}
 
 	// ------------------------------------------------------------------
@@ -411,12 +412,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			)
 		);
 	}
@@ -442,12 +441,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			)
 		);
 	}
@@ -477,12 +474,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: 'jan',
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: 'jan', objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			)
 		);
 	}
@@ -506,7 +501,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			->method('objectMatchesConditions')
 			->willReturn(true);
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan', null, true, $object));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}
 
 	public function testOrganisationVariableFoldsIntoEnvelopeViaSelf(): void {
@@ -538,7 +533,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			)
 			->willReturn(true);
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan', null, true, $object));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}
 
 	public function testAdminBypassSkipsConditionMatcher(): void {
@@ -560,7 +555,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'admin1', null, true, $object));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'admin1', objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}
 
 	public function testOwnerBypassSkipsConditionMatcher(): void {
@@ -584,12 +579,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: 'jan',
-				objectOwner: 'jan',
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: 'jan', objectOwner: 'jan')
+					->about(object: $object, register: null),
+				_rbac: true
 			)
 		);
 	}
@@ -609,7 +602,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
 	}
 
 	public function testConditionalRuleWithoutMatchClauseDoesNotInvokeConditionMatcher(): void {
@@ -627,7 +620,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
 	}
 
 	public function testAnonymousCallerAgainstNonPublicRuleReturnsFalseWithoutDelegation(): void {
@@ -646,7 +639,7 @@ class PermissionHandlerRbacTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}
 
 	// ------------------------------------------------------------------
@@ -710,12 +703,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			),
 			'Past-dated publication should be accessible via $lte $now rule'
 		);
@@ -742,12 +733,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			),
 			'Publication with null publishedAt must NOT match $lte $now (SQL-aligned semantics)'
 		);
@@ -771,12 +760,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			)
 		);
 	}
@@ -799,12 +786,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			)
 		);
 	}
@@ -842,12 +827,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			),
 			'$now must resolve to Y-m-d H:i:s so it lex-compares correctly against Y-m-d H:i:s stored dates'
 		);
@@ -882,12 +865,10 @@ class PermissionHandlerRbacTest extends TestCase {
 		// Result is deterministic — what matters is PHP and SQL agree.
 		// (Assertion is whatever the lex result is; we freeze the contract here.)
 		$phpVerdict = $handler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: null,
-			objectOwner: null,
-			_rbac: true,
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: null, objectOwner: null)
+				->about(object: $object, register: null),
+			_rbac: true
 		);
 
 		// Expected: the stored date's year (2025) is before the current year, so
@@ -918,12 +899,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			),
 			'Date-only "2025-06-01" MUST $lte $now (prefix is lexicographically less than current year)'
 		);
@@ -960,11 +939,13 @@ class PermissionHandlerRbacTest extends TestCase {
 		// Case A: published, within window → rule 1 matches.
 		$this->assertTrue(
 			$handler->hasPermission(
-				$schema, 'read', null, null, true,
-				$this->createObjectEntity([
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $this->createObjectEntity([
 					'publicatiedatum' => '2025-01-01 00:00:00',
 					'depublicatiedatum' => date('Y-m-d H:i:s', strtotime('+10 years')),
-				])
+				]), register: null),
+				_rbac: true
 			),
 			'Published, within window: allow'
 		);
@@ -972,11 +953,13 @@ class PermissionHandlerRbacTest extends TestCase {
 		// Case B: published, depublicatiedatum is null → rule 2 matches.
 		$this->assertTrue(
 			$handler->hasPermission(
-				$schema, 'read', null, null, true,
-				$this->createObjectEntity([
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $this->createObjectEntity([
 					'publicatiedatum' => '2025-01-01 00:00:00',
 					'depublicatiedatum' => null,
-				])
+				]), register: null),
+				_rbac: true
 			),
 			'Published, never expires: allow'
 		);
@@ -984,11 +967,13 @@ class PermissionHandlerRbacTest extends TestCase {
 		// Case C: published but depublicatiedatum in the past → neither rule matches.
 		$this->assertFalse(
 			$handler->hasPermission(
-				$schema, 'read', null, null, true,
-				$this->createObjectEntity([
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $this->createObjectEntity([
 					'publicatiedatum' => '2025-01-01 00:00:00',
 					'depublicatiedatum' => '2025-06-01 00:00:00',
-				])
+				]), register: null),
+				_rbac: true
 			),
 			'Expired publication: deny'
 		);
@@ -996,11 +981,13 @@ class PermissionHandlerRbacTest extends TestCase {
 		// Case D: not yet published → neither rule matches.
 		$this->assertFalse(
 			$handler->hasPermission(
-				$schema, 'read', null, null, true,
-				$this->createObjectEntity([
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $this->createObjectEntity([
 					'publicatiedatum' => date('Y-m-d H:i:s', strtotime('+10 years')),
 					'depublicatiedatum' => null,
-				])
+				]), register: null),
+				_rbac: true
 			),
 			'Future-dated publication: deny'
 		);
@@ -1008,8 +995,10 @@ class PermissionHandlerRbacTest extends TestCase {
 		// Case E: no publicatiedatum at all → neither rule matches (null-handling).
 		$this->assertFalse(
 			$handler->hasPermission(
-				$schema, 'read', null, null, true,
-				$this->createObjectEntity(['title' => 'draft'])
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $this->createObjectEntity(['title' => 'draft']), register: null),
+				_rbac: true
 			),
 			'Draft with no publicatiedatum: deny'
 		);
@@ -1042,12 +1031,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: 'jan',
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: 'jan', objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			),
 			'Resolved relation with matching id MUST satisfy the scalar id rule'
 		);
@@ -1059,12 +1046,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: 'jan',
-				objectOwner: null,
-				_rbac: true,
-				object: $objectMismatch
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: 'jan', objectOwner: null)
+					->about(object: $objectMismatch, register: null),
+				_rbac: true
 			),
 			'Resolved relation with mismatched id MUST NOT satisfy the rule'
 		);
@@ -1092,12 +1077,10 @@ class PermissionHandlerRbacTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: 'jan',
-				objectOwner: null,
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: 'jan', objectOwner: null)
+					->about(object: $object, register: null),
+				_rbac: true
 			),
 			'Malformed rule with unknown operator MUST NOT grant access'
 		);
@@ -1122,15 +1105,15 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'create'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')),
 			'Anonymous create on a no-authorization schema MUST be denied (fail closed)'
 		);
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'update'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')),
 			'Anonymous update on a no-authorization schema MUST be denied (fail closed)'
 		);
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'delete'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'delete')),
 			'Anonymous delete on a no-authorization schema MUST be denied (fail closed)'
 		);
 	}
@@ -1144,7 +1127,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'create'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')),
 			'Anonymous create MUST be denied when the action is not explicitly granted to public'
 		);
 	}
@@ -1158,7 +1141,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'create'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')),
 			'Anonymous create MUST be denied when create is granted only to a non-public group'
 		);
 	}
@@ -1172,7 +1155,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertTrue(
-			$this->handler->hasPermission($schema, 'create'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')),
 			'Anonymous create MUST be allowed when the schema explicitly grants public create'
 		);
 	}
@@ -1186,7 +1169,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertTrue(
-			$this->handler->hasPermission($schema, 'create'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')),
 			'Anonymous create MUST be allowed when public create is declared as a complex entry'
 		);
 	}
@@ -1204,7 +1187,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertTrue(
-			$this->handler->hasPermission($schema, 'create'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')),
 			'Authenticated create behaviour MUST be unchanged by the anonymous fail-closed gate'
 		);
 	}
@@ -1220,7 +1203,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertTrue(
-			$this->handler->hasPermission($schema, 'read'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')),
 			"'authenticated' MUST grant any logged-in user regardless of group membership"
 		);
 	}
@@ -1235,7 +1218,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertTrue(
-			$this->handler->hasPermission($schema, 'update'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')),
 			"'authenticated' MUST grant a logged-in user who belongs to no groups"
 		);
 	}
@@ -1250,7 +1233,7 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->setupRegisterForSchema(1, $register);
 
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'read'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')),
 			"'authenticated' MUST NOT grant an anonymous caller"
 		);
 	}
