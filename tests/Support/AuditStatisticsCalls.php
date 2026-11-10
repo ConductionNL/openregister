@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Support;
 
 use Closure;
+use DateTime;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 
 /**
@@ -48,6 +49,24 @@ final class AuditStatisticsCalls {
 
 		return $scope;
 	}//end scope()
+
+	/**
+	 * The scope of one register and schema (null for all) between two dates.
+	 *
+	 * @param DateTime|null $from       The first day.
+	 * @param DateTime|null $till       The last day.
+	 * @param int|null      $registerId The register.
+	 * @param int|null      $schemaId   The schema.
+	 *
+	 * @return AuditStatisticsScope The scope.
+	 */
+	public static function window(?DateTime $from = null, ?DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): AuditStatisticsScope {
+		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->from = $from;
+		$scope->till = $till;
+
+		return $scope;
+	}//end window()
 
 	/**
 	 * A statisticsTotals() callback that calls $inner with the scope's register, schema and exclusions.

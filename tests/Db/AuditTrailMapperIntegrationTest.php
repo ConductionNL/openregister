@@ -449,7 +449,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	public function testGetActionChartDataReturnsExpectedStructure(): void {
 		$this->createTestAuditTrail(null, null, 'create');
 
-		$data = $this->mapper->getActionChartData();
+		$data = $this->mapper->actionChartData(AuditStatisticsCalls::window());
 		$this->assertIsArray($data);
 		$this->assertArrayHasKey('labels', $data);
 		$this->assertArrayHasKey('series', $data);
@@ -461,7 +461,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$from = new DateTime('-7 days');
 		$till = new DateTime('+1 day');
 
-		$data = $this->mapper->getActionChartData($from, $till);
+		$data = $this->mapper->actionChartData(AuditStatisticsCalls::window($from, $till));
 		$this->assertIsArray($data);
 		$this->assertArrayHasKey('labels', $data);
 	}
@@ -471,7 +471,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$data = $this->mapper->getActionChartData(null, null, $register->getId(), $schema->getId());
+		$data = $this->mapper->actionChartData(AuditStatisticsCalls::window(null, null, $register->getId(), $schema->getId()));
 		$this->assertIsArray($data);
 	}
 
