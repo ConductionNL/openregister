@@ -241,21 +241,35 @@ class RbacGroupCollector {
 				continue;
 			}
 
-			if ($key === self::ROLES_KEY) {
-				$groups = array_merge($groups, $this->fromRoleAssignments(roleAssignments: $value));
-				continue;
-			}
-
-			foreach ($value as $rule) {
-				$group = $this->groupFromRule(rule: $rule);
-				if ($group !== null) {
-					$groups[] = $group;
-				}
-			}
+			$groups = array_merge($groups, $this->groupsFromEntry(key: $key, value: $value));
 		}
 
 		return $groups;
 	}//end fromAuthorizationBlock()
+
+	/**
+	 * The groups one authorization entry names: its role assignments, or the group of each of its rules.
+	 *
+	 * @param string|int $key   The entry's key (an action, or the roles key).
+	 * @param array      $value The entry's rules or role assignments.
+	 *
+	 * @return string[] The group ids, in order.
+	 */
+	private function groupsFromEntry(string|int $key, array $value): array {
+		if ($key === self::ROLES_KEY) {
+			return $this->fromRoleAssignments(roleAssignments: $value);
+		}
+
+		$groups = [];
+		foreach ($value as $rule) {
+			$group = $this->groupFromRule(rule: $rule);
+			if ($group !== null) {
+				$groups[] = $group;
+			}
+		}
+
+		return $groups;
+	}//end groupsFromEntry()
 
 	/**
 	 * Extract group ids from a `roles` assignment map.
