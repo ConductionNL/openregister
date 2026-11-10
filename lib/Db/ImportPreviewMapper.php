@@ -116,20 +116,10 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 	 * @return ImportPreview The persisted preview.
 	 */
 	public function createFromArray(array $data): ImportPreview {
-		$preview = new ImportPreview();
-
-		foreach ($data as $key => $value) {
-			// Not method_exists(): an Entity's setters are magic, so
-			// method_exists() answers false for every one of them and the
-			// whole record would be written empty without a single error.
-			$method = 'set'.ucfirst($key);
-
-			try {
-				$preview->$method($value);
-			} catch (\Exception $exception) {
-				// An unknown field is ignored, as Entity::__call already does.
-			}
-		}
+		// Through the setters, not method_exists(): an Entity's setters are magic, so
+		// method_exists() answers false for every one of them and the whole record
+		// would be written empty without a single error. An unknown field is ignored.
+		$preview = (new ImportPreview())->hydrate(object: $data);
 
 		if ($preview->getUuid() === null) {
 			$preview->setUuid(Uuid::v4()->toRfc4122());
