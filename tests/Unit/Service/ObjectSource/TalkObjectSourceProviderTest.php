@@ -71,7 +71,7 @@ class TalkObjectSourceProviderTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 
-		return new TalkObjectSourceProvider($appManager, $userSession, $container, new NullLogger());
+		return new TalkObjectSourceProvider(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: new NullLogger()), userSession: $userSession);
 	}//end provider()
 
 	/**
