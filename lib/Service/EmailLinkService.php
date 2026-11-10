@@ -66,6 +66,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
+use OCA\OpenRegister\Db\MailMessageKey;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -173,12 +174,12 @@ class EmailLinkService implements EmailLinkServiceInterface {
 
 		// Idempotent path: return the existing row if the composite key
 		// already exists.
-		$existing = $this->mapper->findByObjectAccountMessageUid(
-			objectUuid: $target->objectUuid,
+		$key      = new MailMessageKey(
 			mailAccountId: $message->mailAccountId,
 			mailMessageId: $message->messageNumber(),
 			mailMessageUid: $message->uidForMatch()
 		);
+		$existing = $this->mapper->findByObjectAccountMessageUid(objectUuid: $target->objectUuid, message: $key);
 		if ($existing !== null) {
 			return $existing;
 		}
