@@ -279,7 +279,7 @@ class EmailLinkServiceTest extends TestCase {
 	public function testGetMessagesForMailboxReturnsEmptyShape(): void {
 		$this->appManager->method('isEnabledForUser')->with('mail')->willReturn(false);
 
-		$result = $this->service->getMessagesForMailbox(1, 'INBOX', null, 25);
+		$result = $this->service->getMessagesForMailbox((new \OCA\OpenRegister\Service\MailboxPage(1, 'INBOX'))->startingAfter(null, 25));
 		$this->assertSame(['items' => [], 'nextCursor' => null], $result);
 	}
 }//end class

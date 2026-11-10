@@ -77,6 +77,19 @@ final class MailboxPage {
 	}//end startingAfter()
 
 	/**
+	 * A copy whose page size lies between 1 and the given maximum.
+	 *
+	 * @param int $max The largest page size allowed.
+	 *
+	 * @return self The copy.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function withLimitAtMost(int $max): self {
+		return $this->startingAfter(afterCursor: $this->afterCursor, limit: max(1, min($this->limit, $max)));
+	}//end withLimitAtMost()
+
+	/**
 	 * The message id to start after; 0 for the first page.
 	 *
 	 * @return int The cursor id.
