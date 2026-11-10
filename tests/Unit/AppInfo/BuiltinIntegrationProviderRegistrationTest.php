@@ -280,7 +280,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner' => [
 		],
 		'OCA\OpenRegister\Service\Schema\SchemaVersioningService' => [
-			'OCA\OpenRegister\Service\Schema\SchemaDiffService',
 			'OCA\OpenRegister\Db\SchemaChangelogMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',

@@ -55,21 +55,27 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaVersioningService {
 	/**
+	 * Pure diff/classification: constructor-less, so it is built here, not injected.
+	 *
+	 * @var SchemaDiffService
+	 */
+	private readonly SchemaDiffService $diffService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaDiffService              $diffService     Pure diff/classification.
 	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog persistence.
 	 * @param SchemaPopulationRuns           $runs            The run ledger (for invalid counts).
 	 * @param IUserSession                   $userSession     Current user resolution.
 	 * @param LoggerInterface                $logger          Logger.
 	 */
 	public function __construct(
-		private readonly SchemaDiffService $diffService,
 		private readonly SchemaChangelogMapperInterface $changelogMapper,
 		private readonly SchemaPopulationRuns $runs,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->diffService = new SchemaDiffService();
 	}//end __construct()
 
 	/**

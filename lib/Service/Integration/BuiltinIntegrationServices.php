@@ -404,7 +404,6 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaDiffService::class => [],
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class => [],
 		\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class => [
-			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
 			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
 			'runs'            => [
 				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
