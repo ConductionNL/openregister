@@ -1116,11 +1116,7 @@ class ExportService implements ObjectExporterInterface {
 				// Skip properties restricted by authorization rules the current user doesn't satisfy.
 				// Uses PropertyRbacHandler (the single source of truth for property-level RBAC).
 				// Empty object array causes conditional match rules to fail-closed (safe default for headers).
-				if ($this->propertyRbacHandler->canReadProperty(
-					schema: $schema,
-					property: $fieldName,
-					object: []
-				) === false
+				if ($this->propertyRbacHandler->canReadProperty(property: new SchemaProperty(schema: $schema, name: $fieldName), request: new PropertyAccessRequest(object: [])) === false
 				) {
 					continue;
 				}
@@ -1317,6 +1313,10 @@ class ExportService implements ObjectExporterInterface {
 			return null;
 		}
 
+		if (is_bool($value) === true) {
+			return var_export($value, true);
+		}
+
 		if (is_scalar($value) === true) {
 			return (string)$value;
 		}
@@ -1442,18 +1442,7 @@ class ExportService implements ObjectExporterInterface {
 			// Try to decode as JSON array first.
 			$decoded = json_decode($value, true);
 			if (is_array($decoded) === true) {
-				$names = array_map(
-					function ($item) use ($uuidToNameMap) {
-						if (is_string($item) === true) {
-							return $uuidToNameMap[$item] ?? $item;
-						}
-
-						return $this->convertValueToString(value: $item);
-					},
-					$decoded
-				);
-
-				return json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+				return $this->namesOfList(items: $decoded, uuidToNameMap: $uuidToNameMap);
 			}
 
 			// Single UUID string → single name.
@@ -1461,22 +1450,37 @@ class ExportService implements ObjectExporterInterface {
 		}//end if
 
 		if (is_array($value) === true) {
-			$names = array_map(
-				function ($item) use ($uuidToNameMap) {
-					if (is_string($item) === true) {
-						return $uuidToNameMap[$item] ?? $item;
-					}
-
-					return $this->convertValueToString(value: $item);
-				},
-				$value
-			);
-
-			return json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			return $this->namesOfList(items: $value, uuidToNameMap: $uuidToNameMap);
 		}
 
 		return $this->convertValueToString(value: $value);
 	}//end resolveUuidsToNames()
+
+	/**
+	 * A list of UUIDs as a JSON array of names; empty strings are dropped.
+	 *
+	 * @param array $items         The UUIDs and other values.
+	 * @param array $uuidToNameMap Map of UUID to name.
+	 *
+	 * @return string The JSON array of names.
+	 */
+	private function namesOfList(array $items, array $uuidToNameMap): string {
+		$names = [];
+		foreach ($items as $item) {
+			if ($item === '') {
+				continue;
+			}
+
+			if (is_string($item) === true) {
+				$names[] = ($uuidToNameMap[$item] ?? $item);
+				continue;
+			}
+
+			$names[] = $this->convertValueToString(value: $item);
+		}
+
+		return (string)json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+	}//end namesOfList()
 
 	/**
 	 * Get all schemas for a register

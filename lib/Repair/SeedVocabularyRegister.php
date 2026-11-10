@@ -193,6 +193,7 @@ class SeedVocabularyRegister implements IRepairStep {
 					continue;
 				}
 
+				// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 				$report = SystemOperationContext::run(
 					fn (): array => $this->importService->importJsonLd(jsonLd: $jsonLd)
 				);

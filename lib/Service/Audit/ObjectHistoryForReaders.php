@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Reads one object's audit trail on behalf of a non-admin reader of that object.
@@ -101,10 +102,8 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 	 * the stored payload: matched in SQL, `?_search=<value>` would tell a
 	 * reader whether a hidden property ever held that value.
 	 *
-	 * @param string $register The register slug or id from the path.
-	 * @param string $schema   The schema slug or id from the path.
-	 * @param string $id       The object id from the path.
-	 * @param array  $params   limit, offset, page, filters, sort and search, as the controller extracts them.
+	 * @param ObjectRef $ref    The register and schema slug or id and the object id from the path.
+	 * @param array     $params limit, offset, page, filters, sort and search, as the controller extracts them.
 	 *
 	 * @return array{results: array<int, array>, total: int, page: int|null, pages: float, limit: int, offset: int|null, readEventsVisible: bool}|null
 	 *     The page, with whether read entries are shown to this caller, or null when the object is not readable for this caller.
@@ -114,8 +113,8 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
-	public function page(string $register, string $schema, string $id, array $params): ?array {
-		$object = $this->access->readableOrAmbiguous(register: $register, schema: $schema, id: $id);
+	public function page(ObjectRef $ref, array $params): ?array {
+		$object = $this->access->readableOrAmbiguous(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 		if ($object === null) {
 			return null;
 		}

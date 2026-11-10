@@ -640,12 +640,13 @@ class FlowMessagingService {
 	 */
 	private function mailAddress(FlowSend $send, FlowSendItem $item): void {
 		$unsubscribe = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient)['unsubscribe'];
-		$outcome = $this->channels->emailSender->sendToAddress(
-			address: $item->recipient,
-			displayName: $item->name,
-			subject: $item->title,
-			body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
-			unsubscribe: $unsubscribe
+		$outcome = $this->channels->emailSender->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $item->recipient, displayName: $item->name),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $item->title,
+				body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
 		);
 		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {
 			$send->add(bucket: 'delivered', recipient: $item->recipient);

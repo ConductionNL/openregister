@@ -354,15 +354,14 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	/**
 	 * Whether one object is granted to the caller for one action.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object's UUID.
-	 * @param string $action The action being decided.
+	 * @param GrantLookup $lookup The caller and the object's UUID.
+	 * @param string      $action The action being decided.
 	 *
 	 * @return bool True when a grant exists that carries the action's permission.
 	 */
-	public function isGranted(?string $userId, ?string $objectUuid, string $action = 'read'): bool {
-		return $this->namesAnObject(objectUuid: $objectUuid) === true
-			&& array_key_exists((string)$objectUuid, $this->grantedObjectUuidsFor(userId: $userId, action: $action));
+	public function isGranted(GrantLookup $lookup, string $action = 'read'): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& array_key_exists((string)$lookup->objectUuid, $this->grantedObjectUuidsFor(userId: $lookup->userId, action: $action));
 	}//end isGranted()
 
 	/**
@@ -537,15 +536,14 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * evaluator finite and reviewable. An extension verb is asked for by the
 	 * endpoint that performs the action, and only there.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object.
-	 * @param string $verb The extension verb, e.g. `use`.
+	 * @param GrantLookup $lookup The caller and the object.
+	 * @param string      $verb   The extension verb, e.g. `use`.
 	 *
 	 * @return bool True when a grant to this caller carries that verb.
 	 */
-	public function grantCarriesVerb(?string $userId, ?string $objectUuid, string $verb): bool {
-		return $this->namesAnObject(objectUuid: $objectUuid) === true
-			&& in_array($verb, $this->verbsHeldOn(userId: $userId, objectUuid: (string)$objectUuid), true);
+	public function grantCarriesVerb(GrantLookup $lookup, string $verb): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& in_array($verb, $this->verbsHeldOn(userId: $lookup->userId, objectUuid: (string)$lookup->objectUuid), true);
 	}//end grantCarriesVerb()
 
 	/**

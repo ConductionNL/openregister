@@ -60,6 +60,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
@@ -248,7 +249,7 @@ class SaveObjects {
 		}
 
 		// Load from database and cache.
-		$schema = $this->stores->schemaMapper->find($schemaId);
+		$schema = $this->stores->catalog->schemas()->find($schemaId);
 		self::$schemaCache[$schemaId] = $schema;
 
 		return $schema;
@@ -262,7 +263,7 @@ class SaveObjects {
 	private function bulkSlugs(): BulkObjectSlugs {
 		$this->bulkSlugs ??= new BulkObjectSlugs(
 			slugHandler: $this->stores->saveHandler->getSlugHandler(),
-			registerMapper: $this->stores->registerMapper,
+			registerMapper: $this->stores->catalog->registers(),
 			logger: $this->reporting->logger,
 			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId)
 		);
@@ -315,7 +316,7 @@ class SaveObjects {
 		}
 
 		// Load from database and cache.
-		$register = $this->stores->registerMapper->find($registerId);
+		$register = $this->stores->catalog->registers()->find($registerId);
 		self::$registerCache[$registerId] = $register;
 
 		return $register;
@@ -1040,7 +1041,7 @@ class SaveObjects {
 			return $row;
 		}
 
-		return ExplicitReveal::restoreMasked(schema: $run->rowSchema, incoming: $row, stored: ($run->rowExisting->getObject() ?? []));
+		return ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $run->rowSchema, incoming: $row, stored: ($run->rowExisting->getObject() ?? [])));
 	}//end restoreRevealedValues()
 
 	/**
@@ -1238,7 +1239,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function callerMayOverwriteStoredRow(BulkSafeguardRun $run): bool {
-		return $this->stores->objectEntityMapper->callerOrganisationsHold(row: $run->rowExisting) === true
+		return $this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowExisting) === true
 			|| $this->callerReadsStoredRow(run: $run) === true;
 	}//end callerMayOverwriteStoredRow()
 
@@ -1255,7 +1256,7 @@ class SaveObjects {
 	private function callerReadsStoredRow(BulkSafeguardRun $run): bool {
 		$uuid = (string) $run->rowExisting->getUuid();
 		try {
-			$read = $this->stores->objectEntityMapper->find(
+			$read = $this->stores->catalog->tables()->find(
 				identifier: $uuid,
 				register: $run->rowRegister,
 				schema: $run->rowSchema
@@ -1307,7 +1308,7 @@ class SaveObjects {
 			return null;
 		}
 
-		if ($this->stores->objectEntityMapper->callerOrganisationsHold(row: $run->rowDeleted) === true) {
+		if ($this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowDeleted) === true) {
 			return null;
 		}
 
@@ -1824,7 +1825,7 @@ class SaveObjects {
 	 * @throws \Throwable When no row, or no single row, is found.
 	 */
 	private function findStoredRow(string $uuid, BulkSafeguardRun $run): ObjectEntity {
-		return $this->stores->objectEntityMapper->find(
+		return $this->stores->catalog->tables()->find(
 			identifier: $uuid,
 			register: $run->rowRegister,
 			schema: self::boundedSchema(run: $run),
@@ -1976,7 +1977,7 @@ class SaveObjects {
 	 * @return array<string, ObjectEntity>
 	 */
 	private function findGroupRows(array $group): array {
-		return $this->stores->objectEntityMapper->findObjectsByUuidsInRegisterSchema(
+		return $this->stores->catalog->tables()->findObjectsByUuidsInRegisterSchema(
 			register: $group['register'],
 			schema: $group['schema'],
 			uuids: $group['uuids'],
@@ -3222,6 +3223,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function dispatchesChunkEvents(bool $events): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $events === true && $this->reporting->eventDispatcher !== null && SystemOperationContext::isActive() === false;
 	}//end dispatchesChunkEvents()
 
@@ -3335,7 +3337,7 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->stores->objectEntityMapper->convertRowToObjectEntity(
+			return $this->stores->catalog->tables()->convertRowToObjectEntity(
 				row: $row,
 				_register: $this->loadRegisterWithCache(registerId: $row['_register']),
 				_schema: $this->loadSchemaWithCache(schemaId: $row['_schema'])
@@ -3422,7 +3424,7 @@ class SaveObjects {
 		$this->logBulkPersist(count: count($transformedObjects));
 
 		// MAXIMUM PERFORMANCE: Always use ultra-fast bulk operations for large imports.
-		return $this->stores->objectEntityMapper->ultraFastBulkSave(
+		return $this->stores->catalog->tables()->ultraFastBulkSave(
 			insertObjects: $transformedObjects,
 			updateObjects: [],
 			register: $this->persistRegister(register: $register),
@@ -3464,7 +3466,7 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->stores->registerMapper->find($register);
+			return $this->stores->catalog->registers()->find($register);
 		} catch (Exception $e) {
 			$this->reporting->logger->warning(
 				message: '[SaveObjects] Failed to resolve register for bulk save',
@@ -3487,7 +3489,7 @@ class SaveObjects {
 		}
 
 		try {
-			return $this->stores->schemaMapper->find($schema);
+			return $this->stores->catalog->schemas()->find($schema);
 		} catch (Exception $e) {
 			$this->reporting->logger->warning(
 				message: '[SaveObjects] Failed to resolve schema for bulk save',

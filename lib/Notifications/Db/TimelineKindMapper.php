@@ -94,8 +94,7 @@ class TimelineKindMapper extends QBMapper {
 			->from($this->getTableName())
 			->orderBy('slug', 'ASC');
 
-		$this->whereScopedOrUnscoped(qb: $qb, column: 'register', value: $register);
-		$this->whereScopedOrUnscoped(qb: $qb, column: 'schema', value: $schema);
+		$this->whereScopedOrUnscoped(qb: $qb, columns: ['register' => $register, 'schema' => $schema]);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()

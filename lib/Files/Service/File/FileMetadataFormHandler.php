@@ -29,6 +29,8 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use Throwable;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * Saves a whole dossier's file metadata in one act.
@@ -154,13 +156,13 @@ class FileMetadataFormHandler {
 
 		$name = $this->requested(entry: $entry, key: 'name');
 		if ($name !== null && $name !== $currentName && $name !== '') {
-			$this->fileService->renameFile(object: $object, fileId: $fileId, newName: $name);
+			$this->fileService->renameAttachedFile(rename: new FileRename(object: $object, fileId: $fileId, newName: $name));
 			$diff['name'] = ['old' => $currentName, 'new' => $name];
 		}
 
 		$description = $this->requested(entry: $entry, key: 'description');
 		if ($description !== null && $description !== (string)$currentDescription) {
-			$this->fileService->updateFileMetadata(fileId: $fileId, description: $description);
+			$this->fileService->changeFileMetadata(change: new FileMetadataChange(fileId: $fileId, description: $description));
 			$diff['description'] = ['old' => $currentDescription, 'new' => $description];
 		}
 

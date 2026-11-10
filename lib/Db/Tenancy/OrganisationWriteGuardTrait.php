@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Db\Tenancy;
 
 use Exception;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCP\AppFramework\Db\Entity;
 use OCP\IAppConfig;
 use Symfony\Component\HttpFoundation\Response;
@@ -245,7 +246,7 @@ trait OrganisationWriteGuardTrait {
 	 */
 	private function assertSharedMasterDataWritable(string $table, int $entityId): void {
 		try {
-			$this->sharedMasterData()->assertWritable(table: $table, id: $entityId, activeOrgUuids: $this->getActiveOrganisationUuids());
+			$this->sharedMasterData()->assertWritable(row: new DeclaredRow(table: $table, id: $entityId), activeOrgUuids: $this->getActiveOrganisationUuids());
 		} catch (SharedMasterDataWriteException $refusal) {
 			$this->logSharedMasterDataRefusal(refusal: $refusal, entityId: $entityId);
 			throw $refusal;

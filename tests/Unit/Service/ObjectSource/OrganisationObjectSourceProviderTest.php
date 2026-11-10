@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
@@ -242,8 +244,7 @@ class OrganisationObjectSourceProviderTest extends TestCase {
 		$this->assertSame(
 			[],
 			$provider->findAll(
-				register: new \OCA\OpenRegister\Db\Register(),
-				schema: new \OCA\OpenRegister\Db\Schema()
+				source: new SourcedTable(new RegisterSchema(new \OCA\OpenRegister\Db\Register(), new \OCA\OpenRegister\Db\Schema()))
 			)
 		);
 
