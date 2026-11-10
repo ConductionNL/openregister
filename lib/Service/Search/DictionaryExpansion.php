@@ -42,20 +42,6 @@ use JsonSerializable;
 final class DictionaryExpansion implements JsonSerializable {
 
 	/**
-	 * Stopwords the dictionary dropped.
-	 *
-	 * @var string[]
-	 */
-	private readonly array $removed;
-
-	/**
-	 * Whether the original stood because removal would have emptied it.
-	 *
-	 * @var bool
-	 */
-	private readonly bool $kept;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string              $term      The term the search actually runs.
@@ -67,10 +53,8 @@ final class DictionaryExpansion implements JsonSerializable {
 		private readonly string $term,
 		private readonly string $original,
 		private readonly array $added,
-		DictionaryStopwords $stopwords,
+		private readonly DictionaryStopwords $stopwords,
 	) {
-		$this->removed = $stopwords->removed;
-		$this->kept = $stopwords->kept;
 	}//end __construct()
 
 	/**
@@ -147,7 +131,7 @@ final class DictionaryExpansion implements JsonSerializable {
 	 * @return bool True when the dictionary did something.
 	 */
 	public function isReportable(): bool {
-		return ($this->changed() === true || $this->removed !== [] || $this->kept === true);
+		return ($this->changed() === true || $this->stopwords->removed !== [] || $this->stopwords->kept === true);
 	}//end isReportable()
 
 	/**
@@ -162,10 +146,10 @@ final class DictionaryExpansion implements JsonSerializable {
 			'original' => $this->original,
 			'searched' => $this->term,
 			'added' => $this->added,
-			'removedStopwords' => $this->removed,
+			'removedStopwords' => $this->stopwords->removed,
 			// Says WHY nothing was removed from a term made only of stopwords,
 			// which otherwise looks like a dictionary that did not load.
-			'keptBecauseRemovalWouldEmptyIt' => $this->kept,
+			'keptBecauseRemovalWouldEmptyIt' => $this->stopwords->kept,
 		];
 	}//end jsonSerialize()
 }//end class

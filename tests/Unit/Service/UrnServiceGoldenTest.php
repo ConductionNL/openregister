@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -101,7 +100,7 @@ class UrnServiceGoldenTest extends TestCase {
 		$this->log = [];
 		$options = array_merge(['config' => '', 'base' => 'https://Cloud.Example.com'], $options);
 		$service = new UrnService(
-			new RegisterSchemaMappers($this->registerMapper(), $this->schemaMapper()),
+			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(), schemas: $this->schemaMapper(), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			$this->urlGenerator($options['base']),
 			$this->appConfig($options['config']),
 			$this->logger()
