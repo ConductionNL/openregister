@@ -189,7 +189,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->ungatedSchema();
 		$event = $this->event('test-plain', 'draft', 'submitted');
 
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 
 		$this->listener->handle($event);
 
@@ -202,7 +202,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
 		$this->sequenceService->expects($this->once())
-			->method('provision')
+			->method('provisionChain')
 			->with(
 				$this->callback(static fn (ResolvedChain $chain): bool => $chain->template['name'] === 'submit-approval'
 					&& count($chain->template['positions']) === 2 && $chain->tierPositions === [['order' => 1, 'role' => 'finance-clerks', 'min' => 1, 'minAmount' => 0]]),
@@ -220,7 +220,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$event = $this->event('test-commitment', 'draft', 'submitted');
 
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_RUNNING));
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 
 		$this->listener->handle($event);
 
@@ -233,7 +233,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$event = $this->event('test-commitment', 'draft', 'submitted');
 
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_COMPLETED));
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 
 		$this->listener->handle($event);
 
@@ -246,7 +246,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 
 		// The rejected sequence is the NEWEST one — it was not deleted.
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_REJECTED));
-		$this->sequenceService->expects($this->once())->method('provision');
+		$this->sequenceService->expects($this->once())->method('provisionChain');
 
 		$this->listener->handle($event);
 
@@ -259,7 +259,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$event = $this->event('test-commitment', 'draft', 'submitted');
 
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_UNDECIDED));
-		$this->sequenceService->expects($this->once())->method('provision');
+		$this->sequenceService->expects($this->once())->method('provisionChain');
 
 		$this->listener->handle($event);
 
@@ -301,7 +301,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
 		$this->sequenceService->expects($this->once())
-			->method('provision')
+			->method('provisionChain')
 			->with(
 				$this->callback(static fn (ResolvedChain $chain): bool => $chain->tierPositions === [['order' => 1, 'role' => 'finance-directors', 'min' => 1, 'minAmount' => 100000]]),
 				$this->callback(static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'obj-1' && $anchor->requesterId === 'requester1')
@@ -331,7 +331,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
 		$this->sequenceService->expects($this->once())
-			->method('provision')
+			->method('provisionChain')
 			->with(
 				$this->callback(static fn (ResolvedChain $chain): bool => $chain->tierPositions === [
 					['order' => 1, 'role' => 'teamleider', 'min' => 1, 'minAmount' => 1],
@@ -361,7 +361,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$event = $this->event(schemaSlug: 'test-commitment', oldStatus: 'draft', newStatus: 'submitted', amount: 0);
 
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 
 		$this->listener->handle($event);
 
@@ -377,7 +377,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->gatedSchema(tiers: 'every-other');
 		$event = $this->event(schemaSlug: 'test-commitment', oldStatus: 'draft', newStatus: 'submitted');
 
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 
 		$this->listener->handle($event);
 
@@ -390,7 +390,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		$this->gatedSchema(approvers: [['min' => 1]]);
 		$event = $this->event('test-commitment', 'draft', 'submitted');
 
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 
 		$this->listener->handle($event);
 

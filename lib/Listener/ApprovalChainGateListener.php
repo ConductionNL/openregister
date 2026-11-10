@@ -286,7 +286,7 @@ class ApprovalChainGateListener implements IEventListener {
 			$registerId = (int)$register;
 		}
 
-		$this->sequences->sequenceService->provision(
+		$this->sequences->sequenceService->provisionChain(
 			chain: $this->sequences->sequenceService->chain(template: $run->template, tierPositions: $run->tierPositions),
 			anchor: $this->sequences->sequenceService->anchorOf(
 				objectUuid: $run->edit->uuid(),

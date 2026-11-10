@@ -357,7 +357,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 	public function testAnUndeclaredLifecycleLeavesTheEditAlone(array $configuration): void {
 		$this->schema($configuration);
 		$this->executor->expects($this->never())->method('run');
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 
 		$this->actionListener()->handle($event);
@@ -544,7 +544,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 				],
 			]
 		);
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 
 		$this->gateListener()->handle($event);
@@ -566,7 +566,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 		$this->logger->expects($this->once())->method('error')
 			->with('[ApprovalChainGateListener] chain "broken" could not be compiled for schema 9');
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 
 		$this->gateListener()->handle($event);
@@ -585,7 +585,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 		$this->loginAs('alice');
 		$this->schema($this->chain(['transition' => 'submit', 'approvers' => [['role' => 'clerks', 'min' => 1]]]));
 		$captured = [];
-		$this->sequenceService->expects($this->once())->method('provision')->willReturnCallback(
+		$this->sequenceService->expects($this->once())->method('provisionChain')->willReturnCallback(
 			function (...$arguments) use (&$captured): TaskSequence {
 				$captured = $arguments;
 				return $this->sequence(TaskSequence::STATUS_RUNNING);
@@ -612,7 +612,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 	public function testAnAnonymousAttemptOnASlugRegisterProvisionsWithoutEither(): void {
 		$this->schema($this->chain(['transition' => 'submit', 'approvers' => [['role' => 'clerks', 'min' => 1]]]));
 		$captured = [];
-		$this->sequenceService->method('provision')->willReturnCallback(
+		$this->sequenceService->method('provisionChain')->willReturnCallback(
 			function (...$arguments) use (&$captured): TaskSequence {
 				$captured = $arguments;
 				return $this->sequence(TaskSequence::STATUS_RUNNING);
@@ -637,7 +637,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 		$this->sequenceMapper->expects($this->once())->method('findNewestForAnchor')
 			->with('obj-1', (string)$template['templateId'])
 			->willReturn($this->sequence(TaskSequence::STATUS_RUNNING));
-		$this->sequenceService->expects($this->never())->method('provision');
+		$this->sequenceService->expects($this->never())->method('provisionChain');
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 
 		$this->gateListener()->handle($event);
@@ -679,7 +679,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 	public function testARejectedSequenceProvisionsAgain(): void {
 		$this->schema($this->chain(['transition' => 'submit', 'approvers' => [['role' => 'clerks', 'min' => 1]]]));
 		$this->sequenceMapper->method('findNewestForAnchor')->willReturn($this->sequence(TaskSequence::STATUS_REJECTED));
-		$this->sequenceService->expects($this->once())->method('provision')->willReturn($this->sequence(TaskSequence::STATUS_RUNNING));
+		$this->sequenceService->expects($this->once())->method('provisionChain')->willReturn($this->sequence(TaskSequence::STATUS_RUNNING));
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 
 		$this->gateListener()->handle($event);
@@ -695,7 +695,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 	public function testTheHighestTierAtOrBelowTheAmountIsProvisioned(int $amount, ?string $role): void {
 		$this->schema($this->chain(['transition' => 'submit', 'amountField' => 'amount', 'approvers' => $this->approvers()]));
 		$captured = [];
-		$this->sequenceService->method('provision')->willReturnCallback(
+		$this->sequenceService->method('provisionChain')->willReturnCallback(
 			function (...$arguments) use (&$captured): TaskSequence {
 				$captured = $arguments;
 				return $this->sequence(TaskSequence::STATUS_RUNNING);
@@ -735,7 +735,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 		$approvers = array_reverse($this->approvers());
 		$this->schema($this->chain(['transition' => 'submit', 'amountField' => 'amount', 'tiers' => 'cumulative', 'approvers' => $approvers]));
 		$captured = [];
-		$this->sequenceService->expects($this->once())->method('provision')->willReturnCallback(
+		$this->sequenceService->expects($this->once())->method('provisionChain')->willReturnCallback(
 			function (...$arguments) use (&$captured): TaskSequence {
 				$captured = $arguments;
 				return $this->sequence(TaskSequence::STATUS_RUNNING);

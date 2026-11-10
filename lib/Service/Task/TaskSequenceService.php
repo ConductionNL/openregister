@@ -91,12 +91,44 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function provision(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence {
+	public function provisionChain(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence {
 		$sequence = self::newSequence(chain: $chain);
 		self::anchor(sequence: $sequence, anchor: $anchor);
 		self::open(sequence: $sequence, provenance: $anchor->provenance);
 
 		return $this->insertWithPositions(sequence: $sequence, chain: $chain);
+	}//end provisionChain()
+
+	/**
+	 * Provision and start a sequence for an object, by the loose values other apps pass by name.
+	 *
+	 * @param array<string, mixed>                  $template         The task template.
+	 * @param string                                $anchorObjectUuid The object the sequence is for.
+	 * @param string|null                           $requesterId      Who asked for it.
+	 * @param array<int, array<string, mixed>>|null $tierPositions    Positions that replace the template's, or null.
+	 * @param int|null                              $registerId       The object's register.
+	 * @param string|null                           $runUuid          The flow run that opened it, or null.
+	 * @param string|null                           $nodeId           The flow node that opened it, or null.
+	 *
+	 * @return TaskSequence The provisioned, running sequence.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature buildiq calls by name.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function provision(
+		array $template,
+		string $anchorObjectUuid,
+		?string $requesterId,
+		?array $tierPositions=null,
+		?int $registerId=null,
+		?string $runUuid=null,
+		?string $nodeId=null,
+	): TaskSequence {
+		$provenance = new SequenceProvenance(runUuid: $runUuid, nodeId: $nodeId);
+		$anchor     = new SequenceAnchor(objectUuid: $anchorObjectUuid, requesterId: $requesterId, registerId: $registerId, provenance: $provenance);
+
+		return $this->provisionChain(chain: new ResolvedChain(template: $template, tierPositions: $tierPositions), anchor: $anchor);
 	}//end provision()
 
 	/**
@@ -107,7 +139,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * @param array<string, mixed>                  $template      The compiled template.
 	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier, or null for every declared position.
 	 *
-	 * @return ResolvedChain The chain, to hand to {@see provision()}.
+	 * @return ResolvedChain The chain, to hand to {@see provisionChain()}.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
@@ -124,7 +156,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * @param string|null $requesterId Who attempted the gated transition.
 	 * @param int|null    $registerId  The anchor's register.
 	 *
-	 * @return SequenceAnchor The anchor, to hand to {@see provision()}.
+	 * @return SequenceAnchor The anchor, to hand to {@see provisionChain()}.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */

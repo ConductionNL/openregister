@@ -49,7 +49,7 @@ interface TaskSequenceServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function provision(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence;
+	public function provisionChain(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence;
 
 	/**
 	 * The approval chain a sequence walks: a compiled template and its resolved tier.
@@ -59,7 +59,7 @@ interface TaskSequenceServiceInterface {
 	 * @param array<string, mixed>                  $template      The compiled template.
 	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier, or null for every declared position.
 	 *
-	 * @return ResolvedChain The chain, to hand to {@see provision()}.
+	 * @return ResolvedChain The chain, to hand to {@see provisionChain()}.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
@@ -74,7 +74,7 @@ interface TaskSequenceServiceInterface {
 	 * @param string|null $requesterId Who attempted the gated transition.
 	 * @param int|null    $registerId  The anchor's register.
 	 *
-	 * @return SequenceAnchor The anchor, to hand to {@see provision()}.
+	 * @return SequenceAnchor The anchor, to hand to {@see provisionChain()}.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
