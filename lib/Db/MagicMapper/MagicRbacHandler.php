@@ -2006,6 +2006,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function sqlFilterBypassed(RbacAccessCall $call): bool {
 		$user = $this->identifyCaller(call: $call);
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $call->callerIsAdmin() === true
 			|| ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true);
 	}//end sqlFilterBypassed()
@@ -2213,6 +2214,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return false;
 		}
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $this->isCommandLine() === true || SystemOperationContext::isActive() === true;
 	}//end isTrustedSystemCaller()
 

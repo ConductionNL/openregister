@@ -38,6 +38,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use OCP\IUserSession;
 use Throwable;
 
@@ -159,11 +160,13 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 			try {
 				$schema->setAuthorization($after);
 				$this->sources->schemaMapper->update($schema);
-				$this->log->audit->logSchemaAuthorizationChange(
-					schemaId: (int)$schema->getId(),
-					schemaTitle: (string)$schema->getTitle(),
-					oldAuthorization: $before,
-					newAuthorization: $after
+				$this->log->audit->recordSchemaChange(
+					change: new AuthorizationChange(
+						entityId: (int)$schema->getId(),
+						entityTitle: (string)$schema->getTitle(),
+						before: $before,
+						after: $after
+					)
 				);
 
 				$record['removed'][] = [

@@ -168,7 +168,7 @@ class RuleReplayServiceTest extends TestCase {
 	 */
 	public function testARunawaySelectionIsRefusedBeforeAnythingIsCreated(): void {
 		$this->objects->method('countSearchObjects')->willReturn(4000);
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		try {
 			$this->service()->preview(
@@ -201,7 +201,7 @@ class RuleReplayServiceTest extends TestCase {
 		$this->objects->expects($this->once())
 			->method('countSearchObjects')
 			->willReturn(4000);
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		$this->expectException(RuleCeilingException::class);
 		$this->service()->preview(
@@ -224,7 +224,7 @@ class RuleReplayServiceTest extends TestCase {
 
 		$job = new BulkJob();
 		$job->setId(3);
-		$this->jobs->expects($this->once())->method('create')->willReturn($job);
+		$this->jobs->expects($this->once())->method('createFromRequest')->willReturn($job);
 
 		$result = $this->service()->preview(
 			schema: $this->schema(),
@@ -253,7 +253,7 @@ class RuleReplayServiceTest extends TestCase {
 
 		$job = new BulkJob();
 		$job->setId(4);
-		$this->jobs->expects($this->once())->method('create')->willReturn($job);
+		$this->jobs->expects($this->once())->method('createFromRequest')->willReturn($job);
 
 		$result = $this->service()->preview(
 			schema: $this->schema(maxObjects: null),
@@ -275,7 +275,7 @@ class RuleReplayServiceTest extends TestCase {
 	 */
 	public function testAnIdsSelectionIsCountedByItsDistinctIds(): void {
 		$this->objects->expects($this->never())->method('countSearchObjects');
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		try {
 			$this->service()->preview(
@@ -298,7 +298,7 @@ class RuleReplayServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnknownRuleIsRefused(): void {
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		$result = $this->service()->preview(
 			schema: $this->schema(),
@@ -322,7 +322,7 @@ class RuleReplayServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAConditionCannotBeReplayed(): void {
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		$result = $this->service()->preview(
 			schema: $this->schema(asCalculation: false),
@@ -343,7 +343,7 @@ class RuleReplayServiceTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnEmptySelectionIsRefused(): void {
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		$result = $this->service()->preview(
 			schema: $this->schema(),
@@ -366,7 +366,7 @@ class RuleReplayServiceTest extends TestCase {
 	 */
 	public function testACountThatFailsRefusesRatherThanRuns(): void {
 		$this->objects->method('countSearchObjects')->willThrowException(new \RuntimeException('no'));
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFromRequest');
 
 		$result = $this->service()->preview(
 			schema: $this->schema(),

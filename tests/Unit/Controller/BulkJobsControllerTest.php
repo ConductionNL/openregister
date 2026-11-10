@@ -319,7 +319,7 @@ final class BulkJobsControllerTest extends TestCase {
 	public function testAMalformedCreateAnswersFourHundred(): void {
 		$this->signIn('coordinator');
 		$this->params['action'] = 'openregister:assign';
-		$this->service->method('create')->willThrowException(
+		$this->service->method('createFromRequest')->willThrowException(
 			new \InvalidArgumentException('A bulk job needs both a register and a schema.')
 		);
 

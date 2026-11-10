@@ -3,7 +3,7 @@
 /**
  * Characterisation of SubscriptionService's event-stream filter and its per-event RBAC check.
  *
- * APCu is absent in the unit sandbox, so getEventsSince() answers [] before it
+ * APCu is absent in the unit sandbox, so eventsMatching() answers [] before it
  * filters; the filter and the RBAC check are pinned directly. Both the allowed
  * and the refused outcomes are pinned: a schema the caller may not read, and a
  * schema lookup that throws, are refused.
@@ -157,6 +157,6 @@ final class SubscriptionServiceEventFilterTest extends TestCase {
 			$this->markTestSkipped('APCu is enabled here; the buffer would be read.');
 		}
 
-		$this->assertSame([], $this->service()->getEventsSince('e1', 1, 10));
+		$this->assertSame([], $this->service()->eventsMatching(new EventStreamFilter('e1', 1, 10)));
 	}
 }//end class
