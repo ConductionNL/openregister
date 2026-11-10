@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
@@ -48,6 +49,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Class AuditTrailController
@@ -536,9 +538,11 @@ class AuditTrailController extends Controller {
 
 		$page = $this->readableLister->page(
 			userId: $user->getUID(),
-			limit: (int)$params['limit'],
-			cursor: $cursor,
-			query: $this->readableLister->query(filters: ($params['filters'] ?? []), search: ($params['search'] ?? null))
+			options: new TrailPageOptions(
+				limit: (int)$params['limit'],
+				cursor: $cursor,
+				query: $this->readableLister->query(filters: ($params['filters'] ?? []), search: ($params['search'] ?? null))
+			)
 		);
 
 		return new JSONResponse(data: $page);
@@ -805,9 +809,7 @@ class AuditTrailController extends Controller {
 	private function objectsForReader(AuditObjectRef $object): JSONResponse {
 		try {
 			$page = $this->historyForReaders->page(
-				register: $object->register,
-				schema: $object->schema,
-				id: $object->id,
+				ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 				params: $this->extractRequestParameters()
 			);
 		} catch (PurposeRefusedException $refusal) {
