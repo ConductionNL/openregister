@@ -65,12 +65,9 @@ class EmailSenderTest extends TestCase {
 	public function testUnsubscribeMaterialSetsTheHeaders(): void {
 		$message = new RecordingSymfonyMessage();
 
-		$outcome = $this->sender($message)->sendToAddress(
-			address: 'piet@example.nl',
-			displayName: '',
-			subject: 'Your case',
-			body: 'Body',
-			unsubscribe: ['url' => 'https://nc.example/u/abc', 'oneClickUrl' => 'https://nc.example/u/abc']
+		$outcome = $this->sender($message)->sendMailTo(
+			new MailAddressee(address: 'piet@example.nl'),
+			new MailContent(subject: 'Your case', body: 'Body', unsubscribe: ['url' => 'https://nc.example/u/abc', 'oneClickUrl' => 'https://nc.example/u/abc'])
 		);
 
 		$this->assertSame(EmailSender::OUTCOME_DISPATCHED, $outcome);
@@ -83,7 +80,7 @@ class EmailSenderTest extends TestCase {
 	public function testNoMaterialSetsNoHeaders(): void {
 		$message = new RecordingSymfonyMessage();
 
-		$this->sender($message)->sendToAddress(address: 'piet@example.nl', displayName: '', subject: 'S', body: 'B');
+		$this->sender($message)->sendMailTo(new MailAddressee(address: 'piet@example.nl'), new MailContent(subject: 'S', body: 'B'));
 
 		$this->assertSame([], $message->headers);
 		$this->assertCount(1, $this->sent);
@@ -92,12 +89,9 @@ class EmailSenderTest extends TestCase {
 	public function testAMailerWithoutHeadersStillSends(): void {
 		$message = new RecordingMessage();
 
-		$outcome = $this->sender($message)->sendToAddress(
-			address: 'piet@example.nl',
-			displayName: '',
-			subject: 'S',
-			body: 'B',
-			unsubscribe: ['oneClickUrl' => 'https://nc.example/u/abc']
+		$outcome = $this->sender($message)->sendMailTo(
+			new MailAddressee(address: 'piet@example.nl'),
+			new MailContent(subject: 'S', body: 'B', unsubscribe: ['oneClickUrl' => 'https://nc.example/u/abc'])
 		);
 
 		$this->assertSame(EmailSender::OUTCOME_DISPATCHED, $outcome);
