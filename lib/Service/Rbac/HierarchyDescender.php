@@ -320,6 +320,26 @@ class HierarchyDescender {
 	 * @return array<string, string> Child UUID => parent UUID.
 	 */
 	private function childrenInChunk(ChildrenRead $read, array $parents): array {
+		$result = $this->childrenQuery(read: $read, parents: $parents)->executeQuery();
+		$children = $this->childrenFromRows(rows: $result->fetchAll(), parentColumn: $read->parentColumn);
+
+		$result->closeCursor();
+
+		return $children;
+	}//end childrenInChunk()
+
+	/**
+	 * The query for one chunk's children, bounded when the read has a remaining budget.
+	 *
+	 * A bounded read also leaves out a row that names itself as its parent, so a
+	 * self-loop cannot spend the budget.
+	 *
+	 * @param ChildrenRead       $read    The table, the parent column and the remaining budget.
+	 * @param array<int, string> $parents The parent uuids of this chunk.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function childrenQuery(ChildrenRead $read, array $parents): IQueryBuilder {
 		$parentColumn = $read->parentColumn;
 		$limit = $read->remaining();
 		$qb = $this->db->getQueryBuilder();
@@ -337,13 +357,8 @@ class HierarchyDescender {
 			$qb->setMaxResults($limit);
 		}
 
-		$result = $qb->executeQuery();
-		$children = $this->childrenFromRows(rows: $result->fetchAll(), parentColumn: $parentColumn);
-
-		$result->closeCursor();
-
-		return $children;
-	}//end childrenInChunk()
+		return $qb;
+	}//end childrenQuery()
 
 	/**
 	 * Child uuid => parent uuid from fetched rows, dropping blanks and self-parents.
