@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
 use Psr\Log\LoggerInterface;
@@ -322,13 +324,17 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 	 */
 	private function importConfigured(Register $register, array $definition): Schema {
 		return $this->ownership->importHandler->importSchema(
-			data: $definition,
-			slugsAndIdsMap: $this->store->schemaMapper->getSlugToIdMap(),
-			owner: $register->getOwner(),
-			appId: $register->getApplication(),
-			version: (string)($definition['version'] ?? '0.0.1'),
-			force: true,
-			registerSchemaIds: []
+			definition: new ImportedSchemaLookup(
+				data: $definition,
+				registerSchemaIds: [],
+				options: new SchemaImportOptions(
+					owner: $register->getOwner(),
+					appId: $register->getApplication(),
+					version: (string)($definition['version'] ?? '0.0.1'),
+					force: true
+				)
+			),
+			slugsAndIdsMap: $this->store->schemaMapper->getSlugToIdMap()
 		);
 	}//end importConfigured()
 

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Import\DryRunBatch;
@@ -981,7 +982,10 @@ class ImportService implements ObjectImporterInterface {
 				$schemaData['title'] = $schemaKey;
 			}
 
-			$createdSchema = $importHandler->importSchema(data: $schemaData, slugsAndIdsMap: $schemas['slugsAndIds']);
+			$createdSchema = $importHandler->importSchema(
+				definition: new ImportedSchemaLookup(data: $schemaData),
+				slugsAndIdsMap: $schemas['slugsAndIds']
+			);
 			$createdSchemas[$createdSchema->getSlug()] = $createdSchema;
 		}
 

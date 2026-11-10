@@ -33,7 +33,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -456,12 +458,12 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 		);
 
 		$result = $handler->importSchema(
-			data:              ['slug' => 'standalone', 'title' => 'Standalone', 'version' => '2.0.0'],
-			slugsAndIdsMap:    [],
-			appId:             'my-app',
-			version:           '2.0.0',
-			force:             true,
-			registerSchemaIds: null
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'standalone', 'title' => 'Standalone', 'version' => '2.0.0'],
+				registerSchemaIds: null,
+				options: new SchemaImportOptions(appId: 'my-app', version: '2.0.0', force: true)
+			),
+			slugsAndIdsMap: []
 		);
 
 		// Resolved via the app-scoped fallback (id 555), not created fresh.
@@ -507,11 +509,12 @@ class ImportHandlerPerRegisterSlugUniquenessTest extends TestCase {
 		);
 
 		$result = $handler->importSchema(
-			data:              ['slug' => 'automation', 'title' => 'Automation', 'version' => '1.0.0'],
-			slugsAndIdsMap:    [],
-			appId:             'openbuild-app',
-			version:           '1.0.0',
-			registerSchemaIds: []
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'automation', 'title' => 'Automation', 'version' => '1.0.0'],
+				registerSchemaIds: [],
+				options: new SchemaImportOptions(appId: 'openbuild-app', version: '1.0.0')
+			),
+			slugsAndIdsMap: []
 		);
 
 		// A NEW schema (999), not the foreign one (71).

@@ -35,8 +35,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportDuplicates;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportRun;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -363,7 +365,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertInstanceOf(Schema::class, $result);
 		$this->assertIsArray($persisted, 'the schema payload must reach the mapper');
@@ -428,7 +436,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willReturn($existingRegister);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame(['register' => 55], $created['properties']['children']['items']['objectConfiguration']);
@@ -473,7 +487,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame([], $created['properties']['children']['items']['objectConfiguration']);
@@ -525,7 +545,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame(['schema' => 66], $created['properties']['children']['items']['objectConfiguration']);
@@ -567,7 +593,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame([], $created['properties']['children']['items']['objectConfiguration']);
@@ -612,7 +644,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame(77, $created['properties']['related']['register']);
@@ -655,7 +693,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame(78, $created['properties']['children']['items']['register']);
@@ -689,7 +733,13 @@ class ImportHandlerCoverageTest extends TestCase {
 			'version' => '2.0.0',
 		];
 
-		$result = $this->handler->importSchema($data, [], 'owner-user', 'my-app', '2.0.0', true);
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: 'owner-user', appId: 'my-app', version: '2.0.0', force: true)
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($existing, $result);
 
@@ -1602,7 +1652,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame(['type' => 'string'], $created['properties']['files']['items']);
@@ -1647,7 +1703,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame(['key' => 'value'], $created['properties']['children']['items']['objectConfiguration']);
@@ -1856,7 +1918,13 @@ class ImportHandlerCoverageTest extends TestCase {
 			'version' => '1.0.0',
 		];
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertInstanceOf(Schema::class, $result);
 		$this->assertSame(120, $result->getId());
@@ -2095,7 +2163,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willReturn($existingRegister);
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame(['register' => 88], $created['properties']['related']['objectConfiguration']);
@@ -2138,7 +2212,13 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
 
-		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
+		$result = $this->handler->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $data,
+				options: new SchemaImportOptions(owner: null, appId: null, version: '1.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame($createdSchema, $result);
 		$this->assertSame([], $created['properties']['related']['objectConfiguration']);

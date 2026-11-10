@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -173,7 +175,9 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
 		$result = $this->handler->importSchema(
-			data: ['slug' => 'case', 'title' => 'Case', 'version' => '1.0.0', 'properties' => ['title' => ['type' => 'string']], 'required' => []],
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'case', 'title' => 'Case', 'version' => '1.0.0', 'properties' => ['title' => ['type' => 'string']], 'required' => []]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -195,13 +199,15 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 			->willReturn(new SchemaChangelog());
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'case',
 				'title' => 'Case',
 				'version' => '1.0.0',
 				'properties' => ['title' => ['type' => 'string'], 'status' => ['type' => 'string'], 'note' => ['type' => 'string']],
 				'required' => ['status'],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -222,7 +228,9 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 			->willReturn(new SchemaChangelog());
 
 		$this->handler->importSchema(
-			data: ['slug' => 'case', 'title' => 'Case', 'version' => '1.5.0', 'properties' => ['title' => ['type' => 'string']], 'required' => []],
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'case', 'title' => 'Case', 'version' => '1.5.0', 'properties' => ['title' => ['type' => 'string']], 'required' => []]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -240,13 +248,15 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 		$this->changelogMapper->expects($this->never())->method('createFromArray');
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'case',
 				'title' => 'Case, renamed',
 				'version' => '1.0.1',
 				'properties' => ['title' => ['type' => 'string'], 'status' => ['type' => 'string']],
 				'required' => ['status'],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -271,13 +281,15 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 		$this->changelogMapper->method('createFromArray')->willReturn(new SchemaChangelog());
 
 		$this->handler->importSchema(
-			data: [
+			definition: new ImportedSchemaLookup(
+				data: [
 				'slug' => 'case',
 				'title' => 'Case',
 				'version' => '1.0.1',
 				'properties' => ['name' => ['type' => 'string'], 'location' => ['type' => 'object', 'format' => 'geo:point']],
 				'required' => [],
-			],
+			]
+			),
 			slugsAndIdsMap: []
 		);
 
@@ -330,8 +342,14 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 		$incoming = ['slug' => 'case', 'title' => 'Case', 'version' => '1.0.0', 'properties' => ['title' => ['type' => 'string']], 'required' => []];
 
 		// Pass 1, then Pass 2 exactly as importFromJson() calls it.
-		$handler->importSchema(data: $incoming, slugsAndIdsMap: []);
-		$result = $handler->importSchema(data: $incoming, slugsAndIdsMap: [], force: true, registerSchemaIds: [12]);
+		$handler->importSchema(
+			definition: new ImportedSchemaLookup(data: $incoming),
+			slugsAndIdsMap: []
+		);
+		$result = $handler->importSchema(
+			definition: new ImportedSchemaLookup(data: $incoming, registerSchemaIds: [12], options: new SchemaImportOptions(force: true)),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame('2.0.0', $result->getVersion());
 		$this->assertSame('2.0.0', $stored->getVersion());

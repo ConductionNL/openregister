@@ -27,7 +27,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
@@ -267,7 +269,15 @@ class ImportHandlerImportSchemaCharacterizationTest extends TestCase {
 		(new ReflectionProperty(ImportHandler::class, 'registersMap'))->setValue($handler, ['mapped-reg' => $mappedRegister]);
 
 		try {
-			$result = $handler->importSchema(...$case['args']);
+			$args = $case['args'];
+			$options = new SchemaImportOptions(
+				owner: $args['owner'] ?? null,
+				appId: $args['appId'] ?? null,
+				version: $args['version'] ?? null,
+				force: $args['force'] ?? false
+			);
+			$definition = new ImportedSchemaLookup(data: $args['data'], registerSchemaIds: $args['registerSchemaIds'] ?? null, options: $options);
+			$result = $handler->importSchema(definition: $definition, slugsAndIdsMap: $args['slugsAndIdsMap']);
 			$seen['result'] = ['id' => $result->getId(), 'slug' => $result->getSlug(), 'version' => $result->getVersion(), 'owner' => $result->getOwner(), 'application' => $result->getApplication()];
 		} catch (\Throwable $e) {
 			$previous = $e->getPrevious();

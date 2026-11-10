@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
@@ -84,7 +85,7 @@ class ImportHandlerSchemaShapeTest extends TestCase {
 		$this->expectExceptionMessage('imported schema fails OAS-shape validation: ');
 
 		$this->handler()->importSchema(
-			data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => 'not a map'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => 'not a map']),
 			slugsAndIdsMap: []
 		);
 	}//end testAPropertiesListIsRefused()
@@ -98,7 +99,10 @@ class ImportHandlerSchemaShapeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('imported schema fails OAS-shape validation');
 
-		$this->handler()->importSchema(data: ['slug' => 'demo', 'title' => 'Demo'], slugsAndIdsMap: []);
+		$this->handler()->importSchema(
+			definition: new ImportedSchemaLookup(data: ['slug' => 'demo', 'title' => 'Demo']),
+			slugsAndIdsMap: []
+		);
 	}//end testAMissingPropertiesMapIsRefused()
 
 	/**
@@ -111,7 +115,7 @@ class ImportHandlerSchemaShapeTest extends TestCase {
 		$this->expectExceptionMessage("missing a 'slug'");
 
 		$this->handler()->importSchema(
-			data: ['title' => 'Demo', 'properties' => ['name' => ['type' => 'string']]],
+			definition: new ImportedSchemaLookup(data: ['title' => 'Demo', 'properties' => ['name' => ['type' => 'string']]]),
 			slugsAndIdsMap: []
 		);
 	}//end testAWellShapedSchemaReachesTheSlugCheck()

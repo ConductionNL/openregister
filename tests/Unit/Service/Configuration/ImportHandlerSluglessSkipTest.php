@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -96,7 +97,7 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 		$this->expectExceptionMessage("missing a 'slug'");
 
 		$this->handler->importSchema(
-			data: ['title' => 'A schema with no slug', 'properties' => []],
+			definition: new ImportedSchemaLookup(data: ['title' => 'A schema with no slug', 'properties' => []]),
 			slugsAndIdsMap: []
 		);
 	}//end testImportSchemaThrowsRuntimeExceptionWhenSlugMissing()
@@ -108,7 +109,7 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 		$this->expectExceptionMessage("missing a 'slug'");
 
 		$this->handler->importSchema(
-			data: ['slug' => '   ', 'title' => 'Blank slug', 'properties' => []],
+			definition: new ImportedSchemaLookup(data: ['slug' => '   ', 'title' => 'Blank slug', 'properties' => []]),
 			slugsAndIdsMap: []
 		);
 	}//end testImportSchemaThrowsRuntimeExceptionWhenSlugBlank()
@@ -119,7 +120,7 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 		// (an \Error) would slip past that catch and abort the entire import.
 		try {
 			$this->handler->importSchema(
-				data: ['properties' => []],
+				definition: new ImportedSchemaLookup(data: ['properties' => []]),
 				slugsAndIdsMap: []
 			);
 			$this->fail('Expected a RuntimeException for the slug-less fragment.');
