@@ -65,15 +65,13 @@ interface VectorEmbeddingsInterface {
 	/**
 	 * Test embedding generation with custom configuration
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
+	 * @param EmbeddingProbe $probe The provider ('openai', 'fireworks', 'ollama'), its configuration and the text to embed.
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array;
+	public function testEmbedding(EmbeddingProbe $probe): array;
 
 	/**
 	 * Generate embeddings for multiple texts in batch
@@ -127,10 +125,8 @@ interface VectorEmbeddingsInterface {
 	 * Caller supplies keyword search results; vector search runs against the database.
 	 * Results are fused using Reciprocal Rank Fusion (RRF).
 	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse with vector results
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+	 * @param HybridSearchRequest $request The query text, the pre-fetched keyword results to fuse, the maximum
+	 *                                     results and the weight per search type.
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown
 	 *
@@ -138,9 +134,7 @@ interface VectorEmbeddingsInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function hybridSearch(
-		string $query, array $keywordResults = [], int $limit = 20, array $weights = ['keyword' => 0.5, 'vector' => 0.5]
-	): array;
+	public function hybridSearch(HybridSearchRequest $request): array;
 
 	/**
 	 * Get vector statistics from the PostgreSQL database
