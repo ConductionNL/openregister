@@ -106,12 +106,13 @@ class DeploymentService implements DeploymentServiceInterface {
 		$preview = $this->previews->preview(set: $set);
 		$this->requireNoRefusals(set: $set, preview: $preview);
 
-		return $this->apply(
+		$plan = new DeploymentPlan(
 			changes: array_values(array_map(self::changeFromVerdict(...), $preview['changes'])),
 			name: ($name ?? $set->getName() ?? 'configuration deployment'),
-			origin: DeploymentOrigin::ofSet(set: $set),
-			closeSet: $set
+			origin: DeploymentOrigin::ofSet(set: $set)
 		);
+
+		return $this->apply(plan: $plan, closeSet: $set);
 
 	}//end deploy()
 
@@ -152,12 +153,13 @@ class DeploymentService implements DeploymentServiceInterface {
 		$label = $original->getName() ?? $deploymentUuid;
 		self::requireRestorable(original: $original, label: $label);
 
-		return $this->apply(
+		$plan = new DeploymentPlan(
 			changes: $this->restoringChanges(original: $original),
 			name: ($name ?? sprintf('rollback of %s', $label)),
-			origin: DeploymentOrigin::rollbackOf(restoresUuid: (string)$original->getUuid(), actor: $this->actor()),
-			closeSet: null
+			origin: DeploymentOrigin::rollbackOf(restoresUuid: (string)$original->getUuid(), actor: $this->actor())
 		);
+
+		return $this->apply(plan: $plan, closeSet: null);
 
 	}//end rollback()
 
@@ -269,32 +271,28 @@ class DeploymentService implements DeploymentServiceInterface {
 	}//end history()
 
 	/**
-	 * Apply a list of changes as one deployment, or none of them.
+	 * Apply a plan's changes as one deployment, or none of them.
 	 *
-	 * @param array<int, array<string, mixed>> $changes  The changes, in order.
-	 * @param string                           $name     The deployment's name.
-	 * @param DeploymentOrigin                 $origin   The set or deployment it comes from.
-	 * @param ConfigurationDraftSet|null       $closeSet The set to mark deployed, if any.
+	 * @param DeploymentPlan             $plan     The changes, the name and the origin.
+	 * @param ConfigurationDraftSet|null $closeSet The set to mark deployed, if any.
 	 *
 	 * @return ConfigurationDeployment The recorded deployment.
 	 *
 	 * @throws DeploymentRefusedException When a write fails; every earlier write is undone first.
 	 */
-	private function apply(array $changes, string $name, DeploymentOrigin $origin, ?ConfigurationDraftSet $closeSet): ConfigurationDeployment {
-		$deploymentUuid = Uuid::v4()->toRfc4122();
-		$actor = $this->actor();
-		$undo = [];
+	private function apply(DeploymentPlan $plan, ?ConfigurationDraftSet $closeSet): ConfigurationDeployment {
+		$run = new DeploymentRun(uuid: Uuid::v4()->toRfc4122(), actor: $this->actor());
 
 		$this->db->beginTransaction();
 
 		try {
-			foreach ($changes as $change) {
-				$undo[] = $this->writeOne(change: $change, deploymentUuid: $deploymentUuid, actor: $actor);
+			foreach ($plan->changes as $change) {
+				$run->undo[] = $this->writeOne(run: $run, change: $change);
 			}
 
-			return $this->record(row: $origin->row(uuid: $deploymentUuid, name: $name, deployedBy: $actor, changes: $changes), closeSet: $closeSet);
+			return $this->record(row: $plan->row(uuid: $run->uuid, deployedBy: $run->actor), closeSet: $closeSet);
 		} catch (Throwable $throwable) {
-			throw $this->undo(throwable: $throwable, undo: $undo, deploymentUuid: $deploymentUuid);
+			throw $this->undo(run: $run, throwable: $throwable);
 		}
 
 	}//end apply()
@@ -323,19 +321,18 @@ class DeploymentService implements DeploymentServiceInterface {
 	/**
 	 * Undo a deployment that failed mid-apply: roll the rows back, restore the written values, log.
 	 *
-	 * @param Throwable                        $throwable      The failure.
-	 * @param array<int, array<string, mixed>> $undo           The undo entries of the writes so far.
-	 * @param string                           $deploymentUuid The deployment.
+	 * @param DeploymentRun $run       The deployment, with the undo entries of the writes so far.
+	 * @param Throwable     $throwable The failure.
 	 *
 	 * @return DeploymentRefusedException The refusal to throw.
 	 */
-	private function undo(Throwable $throwable, array $undo, string $deploymentUuid): DeploymentRefusedException {
+	private function undo(DeploymentRun $run, Throwable $throwable): DeploymentRefusedException {
 		$this->db->rollBack();
-		$restored = $this->store->restore(undoEntries: $undo);
+		$restored = $this->store->restore(undoEntries: $run->undo);
 
 		$this->logger->error(
 			'Configuration deployment refused mid-apply and was undone',
-			['app' => 'openregister', 'deployment' => $deploymentUuid, 'restored' => $restored, 'exception' => $throwable]
+			['app' => 'openregister', 'deployment' => $run->uuid, 'restored' => $restored, 'exception' => $throwable]
 		);
 
 		return new DeploymentRefusedException(
@@ -350,15 +347,14 @@ class DeploymentService implements DeploymentServiceInterface {
 	/**
 	 * Write one address, returning its undo entry.
 	 *
-	 * @param array<string, mixed> $change         The address and its new value.
-	 * @param string               $deploymentUuid The deployment doing the writing.
-	 * @param string|null          $actor          Who is doing the writing.
+	 * @param DeploymentRun        $run    The deployment doing the writing, and who does it.
+	 * @param array<string, mixed> $change The address and its new value.
 	 *
 	 * @return array<string, mixed> The undo entry.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	private function writeOne(array $change, string $deploymentUuid, ?string $actor): array {
+	private function writeOne(DeploymentRun $run, array $change): array {
 		$layer = (string)($change['layer'] ?? ConfigurationLayer::INSTANCE);
 		$layerRef = ($change['layerRef'] ?? null);
 		$configKey = (string)($change['key'] ?? '');
@@ -370,7 +366,7 @@ class DeploymentService implements DeploymentServiceInterface {
 		$value = ($change['value'] ?? null);
 		return $this->store->write(
 			address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
-			write: new ConfigurationWrite(value: $value, deploymentUuid: $deploymentUuid, actor: $actor)
+			write: new ConfigurationWrite(value: $value, deploymentUuid: $run->uuid, actor: $run->actor)
 		);
 
 	}//end writeOne()

@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
+use OCA\OpenRegister\Files\Controller\Support\ServiceHealthProbe;
 use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
@@ -47,20 +49,40 @@ use Psr\Log\LoggerInterface;
  */
 class FileSettingsController extends Controller {
 	/**
+	 * DI container, for the optional extraction backends.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The request.
-	 * @param ContainerInterface $container DI container.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param IRequest                       $request  The request.
+	 * @param FileSettingsControllerServices $services The container, the settings service and the logger.
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly ContainerInterface $container,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly LoggerInterface $logger,
+		FileSettingsControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->container = $services->container;
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -146,9 +168,7 @@ class FileSettingsController extends Controller {
 			];
 
 			$result = $this->performHealthCheck(
-				url: $apiEndpoint . '/health',
-				serviceName: 'Dolphin',
-				headers: $headers
+				probe: new ServiceHealthProbe(serviceName: 'Dolphin', url: $apiEndpoint . '/health', headers: $headers)
 			);
 
 			return new JSONResponse(data: $result);
@@ -179,8 +199,7 @@ class FileSettingsController extends Controller {
 			}
 
 			$result = $this->performHealthCheck(
-				url: $apiEndpoint . '/health',
-				serviceName: 'Presidio'
+				probe: new ServiceHealthProbe(serviceName: 'Presidio', url: $apiEndpoint . '/health')
 			);
 
 			if ($result['success'] === true) {
@@ -331,21 +350,20 @@ class FileSettingsController extends Controller {
 	 * Executes a GET request to the given URL with optional headers and returns
 	 * a standardized result array indicating success or failure.
 	 *
-	 * @param string $url The full URL to check (e.g. endpoint + '/health').
-	 * @param string $serviceName Human-readable service name for error messages.
-	 * @param string[] $headers Optional HTTP headers (default: Content-Type: application/json).
+	 * @param ServiceHealthProbe $probe The service name, the URL to check and its optional headers.
 	 *
 	 * @return array{success: bool, message?: string, error?: string} Health check result.
 	 *
 	 * @spec exclude Private helper: shared cURL health-check used by the connection-test endpoints;
 	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
 	 */
-	private function performHealthCheck(string $url, string $serviceName, array $headers = []): array {
+	private function performHealthCheck(ServiceHealthProbe $probe): array {
+		$headers = $probe->headers;
 		if (empty($headers) === true) {
 			$headers = ['Content-Type: application/json'];
 		}
 
-		$ch = curl_init($url);
+		$ch = curl_init($probe->url);
 		curl_setopt_array(
 			$ch,
 			[
@@ -371,13 +389,13 @@ class FileSettingsController extends Controller {
 		if ($httpCode === 200 || $httpCode === 201) {
 			return [
 				'success' => true,
-				'message' => $serviceName . ' connection successful',
+				'message' => $probe->serviceName . ' connection successful',
 			];
 		}
 
 		return [
 			'success' => false,
-			'error' => $serviceName . ' API returned HTTP ' . $httpCode,
+			'error' => $probe->serviceName . ' API returned HTTP ' . $httpCode,
 		];
 	}//end performHealthCheck()
 

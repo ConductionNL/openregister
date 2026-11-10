@@ -63,62 +63,6 @@ class BulkJobExecutor {
 	public const RULE_NOT_VISIBLE = 'the object does not exist, or the read rule on its schema does not include you';
 
 	/**
-	 * Job persistence.
-	 *
-	 * @var BulkJobMapperInterface
-	 */
-	private readonly BulkJobMapperInterface $jobMapper;
-
-	/**
-	 * Member persistence.
-	 *
-	 * @var BulkJobMemberMapperInterface
-	 */
-	private readonly BulkJobMemberMapperInterface $memberMapper;
-
-	/**
-	 * Schema lookup for the access check.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Audit entries per member.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Selection resolution.
-	 *
-	 * @var BulkSelectionResolver
-	 */
-	private readonly BulkSelectionResolver $resolver;
-
-	/**
-	 * The catalogue of registered actions.
-	 *
-	 * @var BulkActionRegistry
-	 */
-	private readonly BulkActionRegistry $registry;
-
-	/**
-	 * Per-object access checks.
-	 *
-	 * @var PermissionCheckInterface
-	 */
-	private readonly PermissionCheckInterface $permissionHandler;
-
-	/**
-	 * Actor lookup.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param BulkJobExecutorStores   $stores   The persistence collaborators of the bulk job executor.
@@ -126,18 +70,10 @@ class BulkJobExecutor {
 	 * @param LoggerInterface         $logger   Logger.
 	 */
 	public function __construct(
-		BulkJobExecutorStores $stores,
-		BulkJobExecutorServices $services,
+		private readonly BulkJobExecutorStores $stores,
+		private readonly BulkJobExecutorServices $services,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->jobMapper = $stores->jobMapper;
-		$this->memberMapper = $stores->memberMapper;
-		$this->schemaMapper = $stores->schemaMapper;
-		$this->auditTrailMapper = $stores->auditTrailMapper;
-		$this->resolver = $services->resolver;
-		$this->registry = $services->registry;
-		$this->permissionHandler = $services->permissionHandler;
-		$this->userManager = $services->userManager;
 	}//end __construct()
 
 	/**
@@ -193,7 +129,7 @@ class BulkJobExecutor {
 	 */
 	public function writePreviewMembers(BulkJobPass $pass, array $uuids): void {
 		foreach ($uuids as $uuid) {
-			$this->memberMapper->createFromArray($this->previewRow(pass: $pass, uuid: $uuid));
+			$this->stores->memberMapper->createFromArray($this->previewRow(pass: $pass, uuid: $uuid));
 		}
 	}//end writePreviewMembers()
 
@@ -214,7 +150,7 @@ class BulkJobExecutor {
 		foreach ($uuids as $uuid) {
 			$row = $this->previewRow(pass: $pass, uuid: $uuid);
 			$row['addedAtCommit'] = true;
-			$this->memberMapper->createFromArray($row);
+			$this->stores->memberMapper->createFromArray($row);
 		}
 	}//end writeAddedMembers()
 
@@ -261,7 +197,7 @@ class BulkJobExecutor {
 	 */
 	public function processBatch(BulkJob $job, int $batchSize): bool {
 		$pass = null;
-		$members = $this->memberMapper->findPendingBatch(
+		$members = $this->stores->memberMapper->findPendingBatch(
 			jobId: (int)$job->getId(),
 			cursor: new IdCursor(afterId: $job->getCursor(), limit: $batchSize)
 		);
@@ -270,20 +206,19 @@ class BulkJobExecutor {
 			$this->refreshCounts(job: $job);
 			$job->setState(BulkJob::STATE_COMPLETED);
 			$this->stampReversalDeadline(job: $job);
-			$this->jobMapper->save($job);
+			$this->stores->jobMapper->save($job);
 
 			return false;
 		}
 
 		$actor = $this->actorOf(job: $job);
-		$objects = $this->resolver->hydrate(
+		$objects = $this->services->resolver->hydrate(
 			uuids: array_map(static fn (BulkJobMember $member): string => (string)$member->getObjectUuid(), $members),
-			registerId: $job->getRegisterId(),
-			schemaId: $job->getSchemaId()
+			scope: new BulkJobSelection(criteria: ($job->getSelection() ?? []), registerId: $job->getRegisterId(), schemaId: $job->getSchemaId())
 		);
 
 		foreach ($members as $member) {
-			if ($this->jobMapper->readState((int)$job->getId()) === BulkJob::STATE_CANCELLING) {
+			if ($this->stores->jobMapper->readState((int)$job->getId()) === BulkJob::STATE_CANCELLING) {
 				$this->stopAtBoundary(job: $job, member: $member);
 
 				return false;
@@ -295,7 +230,7 @@ class BulkJobExecutor {
 		}//end foreach
 
 		$this->refreshCounts(job: $job);
-		$this->jobMapper->save($job);
+		$this->stores->jobMapper->save($job);
 
 		return true;
 	}//end processBatch()
@@ -310,7 +245,7 @@ class BulkJobExecutor {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function refreshCounts(BulkJob $job): void {
-		$counts = $this->memberMapper->countByOutcome(jobId: (int)$job->getId());
+		$counts = $this->stores->memberMapper->countByOutcome(jobId: (int)$job->getId());
 
 		$job->setApplied((int)($counts[BulkJobMember::OUTCOME_APPLIED] ?? 0));
 		$job->setSkipped((int)($counts[BulkJobMember::OUTCOME_SKIPPED] ?? 0));
@@ -318,7 +253,7 @@ class BulkJobExecutor {
 		$job->setFailed((int)($counts[BulkJobMember::OUTCOME_FAILED] ?? 0));
 
 		$job->setProcessed(
-			$this->memberMapper->countWalked(jobId: (int)$job->getId(), cursor: $job->getCursor())
+			$this->stores->memberMapper->countWalked(jobId: (int)$job->getId(), cursor: $job->getCursor())
 		);
 	}//end refreshCounts()
 
@@ -330,7 +265,7 @@ class BulkJobExecutor {
 	 * @return BulkActionInterface The action.
 	 */
 	private function actionOf(BulkJob $job): BulkActionInterface {
-		return $this->registry->get(id: (string)$job->getAction());
+		return $this->services->registry->get(id: (string)$job->getAction());
 	}//end actionOf()
 
 	/**
@@ -406,7 +341,7 @@ class BulkJobExecutor {
 			}
 		}
 
-		$this->recordOutcome(member: $member, result: $result, written: $result->isApplied());
+		$this->recordCommitted(member: $member, result: $result);
 	}//end commitMember()
 
 	/**
@@ -422,12 +357,12 @@ class BulkJobExecutor {
 	 */
 	private function refusalFor(ObjectEntity $object, string $actorUid): ?BulkActionOutcomeInterface {
 		try {
-			$schema = $this->schemaMapper->find($object->getSchema());
+			$schema = $this->stores->schemaMapper->find($object->getSchema());
 		} catch (\Throwable $exception) {
 			return new BulkJobRefusal(rule: 'the schema of this object could not be resolved, so no write rule could be read');
 		}
 
-		$allowed = $this->permissionHandler->hasPermission(
+		$allowed = $this->services->permissionHandler->hasPermission(
 			schema: $schema,
 			action: 'update',
 			userId: $actorUid,
@@ -474,28 +409,39 @@ class BulkJobExecutor {
 	}//end reversalPlanOf()
 
 	/**
-	 * Persist one member's outcome.
+	 * Persist one member's outcome without a write stamp.
 	 *
-	 * @param BulkJobMember $member The member.
+	 * @param BulkJobMember              $member The member.
 	 * @param BulkActionOutcomeInterface $result The outcome.
-	 * @param bool $written True when a real write landed on this member.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The write stamp is the
-	 * idempotence key and cannot be read off the outcome, which a preview
-	 * also sets.
 	 */
-	private function recordOutcome(BulkJobMember $member, BulkActionOutcomeInterface $result, bool $written = false): void {
+	private function recordOutcome(BulkJobMember $member, BulkActionOutcomeInterface $result): void {
 		$member->setOutcome($result->getOutcome());
 		$member->setReason($result->getReason());
 
-		if ($written === true) {
+		$this->stores->memberMapper->save($member);
+	}//end recordOutcome()
+
+	/**
+	 * Persist a committed member's outcome, stamping it when a real write landed.
+	 *
+	 * The write stamp is the idempotence key. It is read off the commit's own
+	 * outcome only: a preview records its outcome through recordOutcome() and
+	 * never stamps.
+	 *
+	 * @param BulkJobMember              $member The member.
+	 * @param BulkActionOutcomeInterface $result The commit outcome.
+	 *
+	 * @return void
+	 */
+	private function recordCommitted(BulkJobMember $member, BulkActionOutcomeInterface $result): void {
+		if ($result->isApplied() === true) {
 			$member->setAppliedAt(new DateTime());
 		}
 
-		$this->memberMapper->save($member);
-	}//end recordOutcome()
+		$this->recordOutcome(member: $member, result: $result);
+	}//end recordCommitted()
 
 	/**
 	 * Write the member's own audit entry, referencing the job.
@@ -511,7 +457,7 @@ class BulkJobExecutor {
 	 */
 	private function recordAudit(BulkJob $job, ObjectEntity $object): void {
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
+			$this->stores->auditTrailMapper->createAuditTrailEntry(
 				object: $object,
 				action: 'bulk.applied',
 				context: [
@@ -561,7 +507,7 @@ class BulkJobExecutor {
 		$job->setReport($report);
 		$job->setState(BulkJob::STATE_CANCELLED);
 		$this->stampReversalDeadline(job: $job);
-		$this->jobMapper->save($job);
+		$this->stores->jobMapper->save($job);
 	}//end stopAtBoundary()
 
 	/**
@@ -599,7 +545,7 @@ class BulkJobExecutor {
 			return null;
 		}
 
-		return $this->userManager->get($uid);
+		return $this->services->userManager->get($uid);
 	}//end actorOf()
 
 	/**

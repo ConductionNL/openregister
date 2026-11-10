@@ -34,6 +34,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\Register;
@@ -114,7 +116,7 @@ class FlowTriggerIndexSlugNormalisationTest extends TestCase {
 
 		return new FlowTriggerIndex(
 			$mapper,
-			new FlowTriggerSources(new FlowTriggerDerivation(), new FlowTriggerSlugs($registers, $schemas, new NullLogger()), $published),
+			new FlowTriggerSources(new FlowTriggerDerivation(), new FlowTriggerSlugs(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), new NullLogger()), $published),
 			new NullLogger()
 		);
 	}

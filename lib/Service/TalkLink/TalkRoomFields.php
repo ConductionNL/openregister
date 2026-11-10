@@ -131,9 +131,10 @@ final class TalkRoomFields {
 			$needle = mb_strtolower(trim($search));
 		}
 
+		$run = new RoomPickerRun(userUid: $userUid, needle: $needle, participantService: $participantService);
 		$out = [];
 		foreach ($rooms as $room) {
-			$row = $this->pickerRow(room: $room, userUid: $userUid, needle: $needle, participantService: $participantService);
+			$row = $this->pickerRow(run: $run, room: $room);
 			if ($row !== null) {
 				$out[] = $row;
 			}
@@ -158,15 +159,13 @@ final class TalkRoomFields {
 	/**
 	 * One picker row, or null when the room is left out.
 	 *
-	 * @param object      $room               Talk Room entity.
-	 * @param string      $userUid            User UID.
-	 * @param string|null $needle             Lower-cased, trimmed search, or null.
-	 * @param object|null $participantService Talk's ParticipantService, when resolvable.
+	 * @param RoomPickerRun $run  The picker pass: user, search and participant service.
+	 * @param object        $room Talk Room entity.
 	 *
 	 * @return array{token:string,name:string,type:?int,participantCount:?int}|null
 	 */
-	private function pickerRow(object $room, string $userUid, ?string $needle, ?object $participantService): ?array {
-		$row = $this->pickerIdentity(room: $room, userUid: $userUid, needle: $needle);
+	private function pickerRow(RoomPickerRun $run, object $room): ?array {
+		$row = $this->pickerIdentity(run: $run, room: $room);
 		if ($row === null) {
 			return null;
 		}
@@ -178,7 +177,7 @@ final class TalkRoomFields {
 		}
 
 		$row['type'] = $type;
-		$row['participantCount'] = $this->participantCount(participantService: $participantService, room: $room);
+		$row['participantCount'] = $this->participantCount(participantService: $run->participantService, room: $room);
 
 		return $row;
 	}//end pickerRow()
@@ -186,20 +185,19 @@ final class TalkRoomFields {
 	/**
 	 * The token and cleaned name of a picker room, or null when it has no token or misses the search.
 	 *
-	 * @param object      $room    Talk Room entity.
-	 * @param string      $userUid User UID.
-	 * @param string|null $needle  Lower-cased, trimmed search, or null.
+	 * @param RoomPickerRun $run  The picker pass: user and search.
+	 * @param object        $room Talk Room entity.
 	 *
 	 * @return array{token:string,name:string}|null
 	 */
-	private function pickerIdentity(object $room, string $userUid, ?string $needle): ?array {
+	private function pickerIdentity(RoomPickerRun $run, object $room): ?array {
 		$token = $this->token(room: $room);
 		if ($token === '') {
 			return null;
 		}
 
-		$name = $this->displayName(room: $room, userUid: $userUid);
-		if ($this->matchesSearch(name: $name, needle: $needle) === false) {
+		$name = $this->displayName(room: $room, userUid: $run->userUid);
+		if ($this->matchesSearch(name: $name, needle: $run->needle) === false) {
 			return null;
 		}
 

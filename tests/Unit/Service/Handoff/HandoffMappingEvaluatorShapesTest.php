@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Handoff;
 
 use OCA\OpenRegister\Service\Handoff\HandoffMappingEvaluator;
+use OCA\OpenRegister\Service\Handoff\HandoffMappingSource;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -41,8 +42,7 @@ class HandoffMappingEvaluatorShapesTest extends TestCase {
 				'subject' => ['from' => 'naam'],
 				'note'    => ['from' => 'opmerking', 'default' => '-'],
 			],
-			['naam' => 'Jansen'],
-			['source' => 'zaak-1']
+			new HandoffMappingSource(['naam' => 'Jansen'], ['source' => 'zaak-1'])
 		);
 
 		$this->assertSame(['status' => 'new', 'subject' => 'Jansen', 'note' => '-'], $result);

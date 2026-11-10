@@ -138,46 +138,50 @@ class ShippedBaselineStore {
 	 * fail an upgrade. A missing baseline degrades to today's behaviour, which
 	 * is the state every instance is in before this ships.
 	 *
-	 * @param string               $subject    The subject reference.
-	 * @param array<string, mixed> $definition What the app ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 * @param string               $configKey  Which baseline.
+	 * @param string            $subject The subject reference.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
 	 *
 	 * @return bool True when it was recorded.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function record(
-		string $subject,
-		array $definition,
-		string $app,
-		string $appVersion,
-		string $configKey = self::KEY_SCHEMA
-	): bool {
+	public function record(string $subject, ShippedDefinition $shipped): bool {
+		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: self::KEY_SCHEMA);
+
+		return $this->recordAt(address: $address, shipped: $shipped);
+	}//end record()
+
+	/**
+	 * Record what an app shipped at one subject address.
+	 *
+	 * Returns whether it was written. NEVER THROWS, for the reason
+	 * {@see self::record()} gives.
+	 *
+	 * @param ConfigurationAddress $address The subject-layer address of the baseline.
+	 * @param ShippedDefinition    $shipped What the app ships, and which release.
+	 *
+	 * @return bool True when it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordAt(ConfigurationAddress $address, ShippedDefinition $shipped): bool {
+		$value = [
+			'definition' => $shipped->definition,
+			'app' => $shipped->app,
+			'appVersion' => $shipped->appVersion,
+			'recordedAt' => (new DateTime())->format(DATE_ATOM),
+		];
 		try {
-			$this->values->write(
-				address: new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: $configKey),
-				write: new ConfigurationWrite(
-					value: [
-						'definition' => $definition,
-						'app' => $app,
-						'appVersion' => $appVersion,
-						'recordedAt' => (new DateTime())->format(DATE_ATOM),
-					],
-					deploymentUuid: null,
-					actor: null
-				)
-			);
+			$this->values->write(address: $address, write: new ConfigurationWrite(value: $value, deploymentUuid: null, actor: null));
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'[ShippedBaselineStore] baseline not recorded for ' . $subject . ': ' . $e->getMessage()
+				'[ShippedBaselineStore] baseline not recorded for ' . $address->layerRef . ': ' . $e->getMessage()
 			);
 			return false;
 		}
 
 		return true;
-	}//end record()
+	}//end recordAt()
 
 	/**
 	 * The subject reference of a schema slug.

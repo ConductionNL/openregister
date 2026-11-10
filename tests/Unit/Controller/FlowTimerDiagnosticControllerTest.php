@@ -207,7 +207,7 @@ class FlowTimerDiagnosticControllerTest extends TestCase {
 		}
 
 		$this->assertSame(
-			['string', IRequest::class, IUserSession::class, IGroupManager::class, TermDiagnosticInterface::class, WorkingCalendarDefinitionsInterface::class],
+			[IRequest::class, IUserSession::class, IGroupManager::class, TermDiagnosticInterface::class, WorkingCalendarDefinitionsInterface::class],
 			$types,
 			'a mapper or a connection here would be something that could arm a timer or write a ledger row'
 		);

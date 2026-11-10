@@ -11,6 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\Tool;
 
 use BadMethodCallException;
 use OCA\OpenRegister\Mcp\Tool\AbstractTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +29,7 @@ class AbstractToolCallCoercionCharacterisationTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tool = new class($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)) extends AbstractTool {
+        $this->tool = new class(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class))) extends AbstractTool {
             public function getName(): string
             {
                 return 'probe';

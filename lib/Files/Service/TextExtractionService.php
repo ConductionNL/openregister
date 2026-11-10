@@ -133,20 +133,6 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private const FIXED_SIZE = 'FIXED_SIZE';
 
 	/**
-	 * The file and database stores.
-	 *
-	 * @var TextExtractionStorage
-	 */
-	private readonly TextExtractionStorage $storage;
-
-	/**
-	 * The object, schema and register mappers.
-	 *
-	 * @var TextExtractionObjects
-	 */
-	private readonly TextExtractionObjects $objects;
-
-	/**
 	 * Constructor
 	 *
 	 * @param TextExtractionSources  $sources     The file stores and the object mappers.
@@ -155,13 +141,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @param TextExtractionReaders  $readers     The document readers.
 	 */
 	public function __construct(
-		TextExtractionSources $sources,
+		private readonly TextExtractionSources $sources,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly TextExtractionAnalysis $analysis,
 		private readonly TextExtractionReaders $readers,
 	) {
-		$this->storage = $sources->storage;
-		$this->objects = $sources->objects;
 	}//end __construct()
 
 	/**
@@ -188,12 +172,29 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function extractFile(int $fileId, bool $forceReExtract = false, ?array $entityTypes = null): void {
+		$this->extractFileWith(fileId: $fileId, options: new FileExtractionOptions(forceReExtract: $forceReExtract, entityTypes: $entityTypes));
+	}//end extractFile()
+
+	/**
+	 * Extract text from a file, chunk it and detect entities, unless its chunks are up to date.
+	 *
+	 * @param int                   $fileId  The Nextcloud file id.
+	 * @param FileExtractionOptions $options Whether to ignore up-to-date chunks and which entity types to detect.
+	 *
+	 * @throws NotFoundException If the file does not exist.
+	 * @throws Exception If the extraction fails.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function extractFileWith(int $fileId, FileExtractionOptions $options): void {
 		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Starting file extraction',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 		);
 
-		$ncFile = $this->storage->fileMapper->getFile($fileId);
+		$ncFile = $this->sources->storage->fileMapper->getFile($fileId);
 		if ($ncFile === null) {
 			throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
 		}
@@ -202,12 +203,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		// Check if chunks are up-to-date.
 		$isUpToDate = $this->isSourceUpToDate(
-			sourceId: $fileId,
-			sourceType: 'file',
-			sourceTimestamp: $sourceTimestamp,
-			forceReExtract: $forceReExtract
+			stamp: new SourceStamp(sourceType: 'file', sourceId: $fileId, timestamp: $sourceTimestamp),
+			forceReExtract: $options->forceReExtract
 		);
-		if ($forceReExtract === false && $isUpToDate === true) {
+		if ($options->forceReExtract === false && $isUpToDate === true) {
 			// File is up-to-date and all chunks are still valid.
 			$this->analysis->logger->debug(
 				message: '[TextExtractionService] File already processed and up-to-date',
@@ -220,8 +219,8 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$payload = $this->extractSourceText(
 			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: 'llphant')
 		);
-		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), entityTypes: $entityTypes);
-	}//end extractFile()
+		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), entityTypes: $options->entityTypes);
+	}//end extractFileWith()
 
 	/**
 	 * Index text another app extracted from a file, such as OCR of a scan (#2033)
@@ -245,17 +244,33 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	public function extractFromProvidedText(int $fileId, string $text, ?array $entityTypes = null, string $method = 'ocr'): void {
-		$ncFile = $this->storage->fileMapper->getFile($fileId);
+		$this->indexProvidedText(request: new ProvidedTextRequest(fileId: $fileId, text: $text, entityTypes: $entityTypes, method: $method));
+	}//end extractFromProvidedText()
+
+	/**
+	 * Index text a caller already extracted as the content of a file.
+	 *
+	 * @param ProvidedTextRequest $request The file, the text, the entity types to detect and the method to record.
+	 *
+	 * @throws NotFoundException If the file does not exist.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function indexProvidedText(ProvidedTextRequest $request): void {
+		$ncFile = $this->sources->storage->fileMapper->getFile($request->fileId);
 		if ($ncFile === null) {
-			throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
+			throw new NotFoundException("File with ID {$request->fileId} not found in Nextcloud");
 		}
 
 		$payload = $this->payloadFromText(
-			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: $method),
-			rawText: $text
+			source: new ExtractionSource(sourceType: 'file', sourceId: $request->fileId, sourceMeta: $ncFile, method: $request->method),
+			rawText: $request->text
 		);
-		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time())), entityTypes: $entityTypes);
-	}//end extractFromProvidedText()
+		$text = new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time()));
+		$this->indexFilePayload(text: $text, entityTypes: $request->entityTypes);
+	}//end indexProvidedText()
 
 	/**
 	 * Chunk, store and run entity recognition over a file's text payload
@@ -485,9 +500,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		$sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
 		$isUpToDate = $this->isSourceUpToDate(
-			sourceId: $objectId,
-			sourceType: 'object',
-			sourceTimestamp: $sourceTimestamp,
+			stamp: new SourceStamp(sourceType: 'object', sourceId: $objectId, timestamp: $sourceTimestamp),
 			forceReExtract: $forceReExtract
 		);
 		if ($forceReExtract === false && $isUpToDate === true) {
@@ -514,7 +527,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function findObjectToExtract(int $objectId): ?ObjectEntity {
 		try {
-			return $this->objects->objectEntityMapper->find($objectId);
+			return $this->sources->objects->objectEntityMapper->find($objectId);
 		} catch (DoesNotExistException $e) {
 			// Info, deliberately: this explains why queued work did NOT happen
 			// — the object was deleted between queueing and extraction. Silence
@@ -535,7 +548,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function newObjectHandler(): ObjectHandler {
 		return new ObjectHandler(
-			objects: $this->objects,
+			objects: $this->sources->objects,
 			chunkMapper: $this->chunkMapper,
 			logger: $this->analysis->logger
 		);
@@ -625,32 +638,27 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Determine whether the latest chunks already reflect the current source state.
 	 *
-	 * Checks if chunks exist and if their checksum matches the current source checksum.
+	 * True when the newest chunk stored for the source is not older than the
+	 * source, and the caller did not force a re-extraction.
 	 *
-	 * @param int $sourceId Identifier of the source (file/object/etc).
-	 * @param string $sourceType Source type key.
-	 * @param int $sourceTimestamp Source modification timestamp.
-	 * @param bool $forceReExtract Force flag coming from the caller.
-	 *
-	 * @phpstan-param non-empty-string $sourceType
-	 * @psalm-param   non-empty-string $sourceType
+	 * @param SourceStamp $stamp          The source and the time it last changed.
+	 * @param bool        $forceReExtract Force flag coming from the caller.
 	 *
 	 * @return bool
 	 */
-	private function isSourceUpToDate(int $sourceId, string $sourceType, int $sourceTimestamp, bool $forceReExtract): bool {
+	private function isSourceUpToDate(SourceStamp $stamp, bool $forceReExtract): bool {
 		if ($forceReExtract === true) {
 			// Caller explicitly asked to ignore cached data.
 			return false;
 		}
 
 		// Look at the newest chunk timestamp for this source.
-		$latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: $sourceType, sourceId: $sourceId);
-
+		$latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: $stamp->sourceType, sourceId: $stamp->sourceId);
 		if ($latestChunkTimestamp === null) {
 			return false;
 		}
 
-		return $latestChunkTimestamp >= $sourceTimestamp;
+		return $latestChunkTimestamp >= $stamp->timestamp;
 	}//end isSourceUpToDate()
 
 	/**
@@ -834,7 +842,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function persistChunksForSource(SourceText $text, array $chunks): void {
 		$source = $text->chunkSource();
-		$this->storage->db->beginTransaction();
+		$this->sources->storage->db->beginTransaction();
 
 		try {
 			// Remove all existing chunks for this source to avoid stale data.
@@ -848,9 +856,9 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 			$this->persistMetadataChunk(source: $source, payload: $text->payload);
 
-			$this->storage->db->commit();
+			$this->sources->storage->db->commit();
 		} catch (Throwable $throwable) {
-			$this->storage->db->rollBack();
+			$this->sources->storage->db->rollBack();
 			throw $throwable;
 		}//end try
 	}//end persistChunksForSource()
@@ -1101,7 +1109,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$nodes = $this->nodesInOwnerFolder(fileId: $fileId, owner: $owner);
 		if (empty($nodes) === true) {
 			// No owner, or the owner's folder did not hold the file.
-			$nodes = $this->storage->rootFolder->getById($fileId);
+			$nodes = $this->sources->storage->rootFolder->getById($fileId);
 		}
 
 		if (empty($nodes) === true) {
@@ -1131,7 +1139,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		try {
 			// Sets up the user's mounts as a side effect: the whole point.
-			return $this->storage->rootFolder->getUserFolder($owner)->getById($fileId);
+			return $this->sources->storage->rootFolder->getUserFolder($owner)->getById($fileId);
 		} catch (Throwable $e) {
 			// An unknown or disabled user must not abort the extraction; the root lookup follows.
 			$this->analysis->logger->warning(
@@ -1164,7 +1172,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		try {
 			// Get untracked files from Nextcloud (files without chunks).
-			return $this->discoverFiles(untrackedFiles: $this->storage->fileMapper->findUntrackedFiles($limit));
+			return $this->discoverFiles(untrackedFiles: $this->sources->storage->fileMapper->findUntrackedFiles($limit));
 		} catch (Exception $e) {
 			$this->analysis->logger->error(
 				message: '[TextExtractionService] Discovery failed',
@@ -1300,7 +1308,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @return bool Whether another window may hold pending files.
 	 */
 	private function extractPendingWindow(PendingExtractionWalk $walk): bool {
-		$untrackedFiles = $this->storage->fileMapper->findUntrackedFiles(limit: $walk->limit, offset: $walk->offset);
+		$untrackedFiles = $this->sources->storage->fileMapper->findUntrackedFiles(limit: $walk->limit, offset: $walk->offset);
 		$walk->windows++;
 		$walk->lastWindowSize = count($untrackedFiles);
 
@@ -1388,7 +1396,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		);
 
 		// Get files without chunks or with old chunks.
-		$untrackedFiles = $this->storage->fileMapper->findUntrackedFiles($limit);
+		$untrackedFiles = $this->sources->storage->fileMapper->findUntrackedFiles($limit);
 		$retried        = 0;
 		foreach ($untrackedFiles as $ncFile) {
 			if ($this->extractListedFile(ncFile: $ncFile, force: true) === true) {
@@ -1415,7 +1423,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getStats(): array {
-		$untrackedCount = $this->storage->fileMapper->countUntrackedFiles();
+		$untrackedCount = $this->sources->storage->fileMapper->countUntrackedFiles();
 		$chunkCount = $this->getTableCountSafe(tableName: 'openregister_chunks');
 		$entityCount = $this->getTableCountSafe(tableName: 'openregister_entities');
 
@@ -1436,7 +1444,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function getTableCountSafe(string $tableName): int {
 		try {
-			$qb = $this->storage->db->getQueryBuilder();
+			$qb = $this->sources->storage->db->getQueryBuilder();
 			$qb->selectAlias($qb->createFunction('COUNT(*)'), 'cnt')
 				->from($tableName);
 
@@ -1633,8 +1641,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		// Clean the text first, then split it with the chosen strategy and respect the max chunks limit.
 		$chunks = $this->splitText(
 			text: $this->cleanText(text: $text),
-			strategy: $strategy,
-			sizing: new ChunkSizing(size: $chunkSize, overlap: $chunkOverlap)
+			plan: new ChunkingPlan(strategy: $strategy, sizing: new ChunkSizing(size: $chunkSize, overlap: $chunkOverlap))
 		);
 		$chunks = $this->capChunks(chunks: $chunks);
 
@@ -1645,18 +1652,17 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Split cleaned text with a chunking strategy; any strategy but FIXED_SIZE splits recursively.
 	 *
-	 * @param string      $text     The cleaned text.
-	 * @param mixed       $strategy The chunking strategy.
-	 * @param ChunkSizing $sizing   The target chunk size and the overlap between chunks.
+	 * @param string       $text The cleaned text.
+	 * @param ChunkingPlan $plan The chunking strategy and the target chunk sizing.
 	 *
 	 * @return array The chunks.
 	 */
-	private function splitText(string $text, mixed $strategy, ChunkSizing $sizing): array {
-		if ($strategy === self::FIXED_SIZE) {
-			return $this->chunkFixedSize(text: $text, sizing: $sizing);
+	private function splitText(string $text, ChunkingPlan $plan): array {
+		if ($plan->strategy === self::FIXED_SIZE) {
+			return $this->chunkFixedSize(text: $text, sizing: $plan->sizing);
 		}
 
-		return $this->chunkRecursive(text: $text, sizing: $sizing);
+		return $this->chunkRecursive(text: $text, sizing: $plan->sizing);
 	}//end splitText()
 
 	/**
@@ -1854,65 +1860,61 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			// Words.
 		];
 
-		return $this->recursiveSplit(text: $text, separators: $separators, sizing: $sizing);
+		return $this->recursiveSplit(text: $text, level: new SplitLevel(separators: $separators, sizing: $sizing));
 	}//end chunkRecursive()
 
 	/**
 	 * Recursively split text using different separators
 	 *
-	 * @param string      $text       Text to split
-	 * @param array       $separators Array of separators to try
-	 * @param ChunkSizing $sizing     Target chunk size and overlap size
+	 * @param string     $text  Text to split
+	 * @param SplitLevel $level The separators still to try and the target chunk sizing
 	 *
 	 * @return (int|mixed|string)[][] Array of chunk objects with text, start_offset, end_offset
 	 *
 	 * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
 	 *
 	 */
-	private function recursiveSplit(string $text, array $separators, ChunkSizing $sizing): array {
-		if (strlen($text) <= $sizing->size) {
+	private function recursiveSplit(string $text, SplitLevel $level): array {
+		if (strlen($text) <= $level->sizing->size) {
 			return $this->wholeTextChunk(text: $text);
 		}
 
-		if ($separators === []) {
-			return $this->chunkFixedSize(text: $text, sizing: $sizing);
+		if ($level->separators === []) {
+			return $this->chunkFixedSize(text: $text, sizing: $level->sizing);
 		}
 
-		$separator = array_shift($separators);
-		$pass = new TextSplitPass(separator: $separator, chunkSize: $sizing->size, chunkOverlap: $sizing->overlap);
+		$separator = $level->separators[0];
+		$pass = new TextSplitPass(separator: $separator, chunkSize: $level->sizing->size, chunkOverlap: $level->sizing->overlap);
 		foreach (explode($separator, $text) as $piece) {
-			$this->splitPiece(pass: $pass, piece: $piece, deeper: fn (string $text): array => $this->recursiveSplit(
-				text: $text,
-				separators: $separators,
-				sizing: $sizing
-			));
+			if ($this->placePiece(pass: $pass, piece: $piece) === false) {
+				// A single piece larger than a chunk is split on the next separator.
+				$pass->addSplitPiece(piece: $piece, subChunks: $this->recursiveSplit(text: $piece, level: $level->deeper()));
+			}
 		}
 
 		return $pass->chunks();
 	}//end recursiveSplit()
 
 	/**
-	 * Add one piece to a split pass: appended, closing the current chunk, or split deeper.
+	 * Place one piece in a split pass: appended, or closing the current chunk.
 	 *
-	 * @param TextSplitPass $pass   The pass over one separator.
-	 * @param string        $piece  The piece.
-	 * @param callable      $deeper Splits a piece larger than a chunk on the next separators.
+	 * @param TextSplitPass $pass  The pass over one separator.
+	 * @param string        $piece The piece.
 	 *
-	 * @return void
+	 * @return bool False when the piece is larger than a chunk and must be split on the next separator.
 	 */
-	private function splitPiece(TextSplitPass $pass, string $piece, callable $deeper): void {
+	private function placePiece(TextSplitPass $pass, string $piece): bool {
 		if ($pass->append(piece: $piece) === true) {
-			return;
+			return true;
 		}
 
 		if ($pass->hasCurrent() === true) {
 			$pass->closeWith(piece: $piece);
-			return;
+			return true;
 		}
 
-		// A single piece larger than a chunk is split on the next separator.
-		$pass->addSplitPiece(piece: $piece, subChunks: $deeper($piece));
-	}//end splitPiece()
+		return false;
+	}//end placePiece()
 
 	/**
 	 * Check if MIME type is a Word document

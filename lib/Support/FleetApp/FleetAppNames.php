@@ -33,37 +33,32 @@ final class FleetAppNames {
 	/**
 	 * The `/apps/<id>[/suffix]` path under the resolved id.
 	 *
-	 * @param IAppManager $appManager The app manager to ask.
-	 * @param string $canonical Canonical (new) app name.
-	 * @param string $suffix Optional path below the app.
+	 * @param IAppManager  $appManager The app manager to ask.
+	 * @param FleetAppPath $path       The app and the path below it.
 	 *
 	 * @return string|null The path, or null when the app is absent.
 	 */
-	public static function appPath(IAppManager $appManager, string $canonical, string $suffix = ''): ?string {
-		$id = FleetAppProbe::resolve(appManager: $appManager, canonical: $canonical);
+	public static function appPath(IAppManager $appManager, FleetAppPath $path): ?string {
+		$id = FleetAppProbe::resolve(appManager: $appManager, canonical: $path->canonical);
 		if ($id === null) {
 			return null;
 		}
 
-		$path = '/apps/' . $id;
-		if ($suffix !== '') {
-			$path .= '/' . ltrim($suffix, '/');
-		}
-
-		return $path;
+		$suffix = ltrim($path->suffix, '/');
+		return '/apps/' . $id . ($path->suffix !== '' ? '/' . $suffix : '');
 	}//end appPath()
 
 	/**
 	 * The FQCN of a cross-app class under the installed id, falling back to
 	 * the canonical spelling when neither id is installed.
 	 *
-	 * @param IAppManager $appManager The app manager to ask.
-	 * @param string $canonical Canonical (new) app name.
-	 * @param string $relativeClass Class path below the namespace.
+	 * @param IAppManager   $appManager The app manager to ask.
+	 * @param FleetAppClass $class      The app and the class path below its namespace.
 	 *
 	 * @return string|null The FQCN, or null when no namespace was read.
 	 */
-	public static function className(IAppManager $appManager, string $canonical, string $relativeClass): ?string {
+	public static function className(IAppManager $appManager, FleetAppClass $class): ?string {
+		$canonical = $class->canonical;
 		if (FleetAppCatalogue::hasNamespaces(canonical: $canonical) === false) {
 			return null;
 		}
@@ -73,7 +68,7 @@ final class FleetAppNames {
 			$id = FleetAppCatalogue::namespacedIds(canonical: $canonical)[0];
 		}
 
-		return FleetAppCatalogue::namespaceForId(canonical: $canonical, id: $id) . $relativeClass;
+		return FleetAppCatalogue::namespaceForId(canonical: $canonical, id: $id) . $class->relativeClass;
 	}//end className()
 
 }//end class

@@ -55,6 +55,13 @@ final class ClassAliasMap {
 	private static array $lazy = [];
 
 	/**
+	 * Eager old names not aliased yet, while aliasClasses() works through them.
+	 *
+	 * @var array<string, string>
+	 */
+	private static array $pending = [];
+
+	/**
 	 * Whether the lazy autoloader is registered.
 	 *
 	 * @var boolean
@@ -131,16 +138,23 @@ final class ClassAliasMap {
 	}//end apply()
 
 	/**
-	 * Alias every eager entry now and hand the lazy ones to the autoloader.
+	 * Hand the lazy entries to the autoloader, then alias every eager entry.
+	 *
+	 * The lazy names go first: aliasing an eager entry loads its new class, and a
+	 * class that still implements or extends a moved type by its old name asks the
+	 * autoloader for that name while it loads. That name may also be an eager entry
+	 * further down the map, so while the eager entries are aliased the autoloader
+	 * serves them too; a map with only eager entries leaves no autoloader behind.
 	 *
 	 * Safe to call more than once: a name that already exists is left alone.
 	 *
 	 * @return void
 	 */
 	public function aliasClasses(): void {
+		$eager = [];
 		foreach ($this->entries as $old => $entry) {
 			if ($entry['eager'] === true) {
-				self::alias(old: $old, new: $entry['class']);
+				$eager[$old] = $entry['class'];
 				continue;
 			}
 
@@ -150,6 +164,27 @@ final class ClassAliasMap {
 		if (self::$lazy !== [] && self::$autoloaderRegistered === false) {
 			spl_autoload_register([self::class, 'autoload']);
 			self::$autoloaderRegistered = true;
+		}
+
+		if ($eager === []) {
+			return;
+		}
+
+		$temporary = (self::$autoloaderRegistered === false);
+		if ($temporary === true) {
+			spl_autoload_register([self::class, 'autoload']);
+		}
+
+		self::$pending = $eager;
+		try {
+			foreach ($eager as $old => $new) {
+				self::alias(old: $old, new: $new);
+			}
+		} finally {
+			self::$pending = [];
+			if ($temporary === true) {
+				spl_autoload_unregister([self::class, 'autoload']);
+			}
 		}
 	}//end aliasClasses()
 
@@ -183,6 +218,11 @@ final class ClassAliasMap {
 	public static function autoload(string $class): void {
 		if (isset(self::$lazy[$class]) === true) {
 			self::alias(old: $class, new: self::$lazy[$class]);
+			return;
+		}
+
+		if (isset(self::$pending[$class]) === true) {
+			self::alias(old: $class, new: self::$pending[$class]);
 		}
 	}//end autoload()
 

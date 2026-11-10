@@ -56,7 +56,6 @@ class EmailsControllerTest extends TestCase {
 		);
 
 		$this->controller = new EmailsController(
-			'openregister',
 			$this->request,
 			new EmailsControllerServices(
 				new EmailsDomain($this->emailService, $this->emailLinkService),
@@ -286,7 +285,6 @@ class EmailsControllerTest extends TestCase {
 			[['inReplyTo', '', '<a@x>'], ['references', '', ['<b@x>']]]
 		);
 		$controller = new EmailsController(
-			'openregister',
 			$this->request,
 			new EmailsControllerServices(
 				new EmailsDomain($this->emailService, $this->emailLinkService),
