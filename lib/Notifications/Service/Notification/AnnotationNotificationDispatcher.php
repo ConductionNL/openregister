@@ -667,17 +667,23 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				// The shared channel units, the same classes the flow messaging
 				// service invokes; the declarative path stays best-effort, so
 				// their outcomes are not escalated here.
-				$this->ncSender()->send(
-					uid: $delivery->uid,
-					object: $firing->object,
-					subjectKey: $firing->subjectKey,
-					name: $firing->ruleId,
-					subject: $subject,
-					message: $delivery->message,
-					context: $firing->context,
-					originApp: $firing->originApp,
-					actions: $firing->actions,
-					webPushActive: $firing->hasChannel('web-push')
+				$this->ncSender()->notify(
+					notice: new InAppNotice(
+						uid: $delivery->uid,
+						object: $firing->object,
+						rule: new NoticeRule(
+							name: $firing->ruleId,
+							originApp: $firing->originApp,
+							actions: $firing->actions,
+							webPushActive: $firing->hasChannel('web-push')
+						),
+						content: new NoticeContent(
+							subjectKey: $firing->subjectKey,
+							subject: $subject,
+							message: $delivery->message,
+							context: $firing->context
+						)
+					)
 				);
 			} elseif ($channel === 'email') {
 				$this->emailSender()->send(uid: $delivery->uid, subject: $subject, body: $subject);
@@ -1014,17 +1020,23 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$detail = new DeliveryDetail(subject: $subject, locale: $locale);
 
 		if (in_array('nc-notification', $channels, true) === true) {
-			$this->ncSender()->send(
-				uid: $recipient,
-				object: $object,
-				subjectKey: (string)($payload['subjectKey'] ?? $this->canonicalSubject(trigger: 'updated')),
-				name: $name,
-				subject: $subject,
-				message: $message,
-				context: [],
-				originApp: (string)($payload['originApp'] ?? 'openregister'),
-				actions: (array)($payload['actions'] ?? []),
-				webPushActive: false
+			$this->ncSender()->notify(
+				notice: new InAppNotice(
+					uid: $recipient,
+					object: $object,
+					rule: new NoticeRule(
+						name: $name,
+						originApp: (string)($payload['originApp'] ?? 'openregister'),
+						actions: (array)($payload['actions'] ?? []),
+						webPushActive: false
+					),
+					content: new NoticeContent(
+						subjectKey: (string)($payload['subjectKey'] ?? $this->canonicalSubject(trigger: 'updated')),
+						subject: $subject,
+						message: $message,
+						context: []
+					)
+				)
 			);
 			$this->recordHistory(
 				origin: $origin,
@@ -2118,19 +2130,18 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		// The shared ride-along unit — the same class the flow messaging
 		// service rides web-push along with. Recipients are pre-verified here
 		// so the unit's own check is a second, cheap gate.
-		$this->ncSender()->enqueueWebPush(
-			recipients: array_values(
-				array_filter(
-					$firing->recipients,
-					fn (mixed $uid): bool => is_string($uid) === true && $uid !== '' && $this->userExists(uid: $uid) === true
-				)
-			),
-			ruleId: $firing->ruleId,
-			originApp: $firing->originApp,
-			subject: $firing->broadcastSubject,
-			message: $firing->broadcastMessage,
-			actions: $firing->actions,
-			object: $firing->object
+		$this->ncSender()->enqueuePush(
+			push: new PushRideAlong(
+				recipients: array_values(
+					array_filter(
+						$firing->recipients,
+						fn (mixed $uid): bool => is_string($uid) === true && $uid !== '' && $this->userExists(uid: $uid) === true
+					)
+				),
+				object: $firing->object,
+				rule: new NoticeRule(name: $firing->ruleId, originApp: $firing->originApp, actions: $firing->actions),
+				content: new NoticeContent(subjectKey: '', subject: $firing->broadcastSubject, message: $firing->broadcastMessage)
+			)
 		);
 	}//end enqueueWebPush()
 
