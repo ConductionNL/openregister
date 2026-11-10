@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Service\Export\ExportRequest;
+use OCA\OpenRegister\Service\Export\RowsTable;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -215,7 +217,7 @@ class ExportServicePdfTest extends TestCase {
 		$method = $reflection->getMethod('buildPdfSection');
 		$method->setAccessible(true);
 
-		return $method->invoke($this->service, $register, $schema, $objects, $currentUser);
+		return $method->invoke($this->service, new ExportRequest(register: $register, schema: $schema, currentUser: $currentUser), $objects);
 	}
 
 	// --- exportToPdf: happy path ---
@@ -518,11 +520,11 @@ class ExportServicePdfTest extends TestCase {
 	 * and a list of column keys doubles as their labels.
 	 */
 	public function testRowsSectionFollowsTheColumnsAndEscapesEveryCell(): void {
-		$html = (new RowsPdfSection())->build(
+		$html = (new RowsPdfSection())->build(table: new RowsTable(
 			title: 'Cases <b>',
 			columns: ['status', 'title'],
 			rows: [['title' => '<script>x</script>', 'status' => ['open', 'late'], 'extra' => 'not a column'], ['status' => true]]
-		);
+		));
 
 		$this->assertStringContainsString('<h1>Cases &lt;b&gt;</h1>', $html);
 		$this->assertStringContainsString('<th>status</th><th>title</th>', $html);
