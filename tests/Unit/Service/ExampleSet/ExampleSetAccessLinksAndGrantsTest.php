@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
@@ -251,11 +252,13 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->caseWith(links: [$this->sanneLink()]);
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 		$outside = $this->services[AccessLinkService::class]->mint(
-			userId: 'esra.demir',
-			subjectType: 'object',
-			subjectId: $this->caseId(),
-			terms: new AccessLinkTerms(
-				expiresAt: '+10 years'
+			new LinkMintRequest(
+				minter: 'esra.demir',
+				subjectType: 'object',
+				subjectId: $this->caseId(),
+				terms: new AccessLinkTerms(
+					expiresAt: '+10 years'
+				)
 			)
 		);
 
