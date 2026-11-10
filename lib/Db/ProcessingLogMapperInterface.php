@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 
 /**
  * The methods of ProcessingLogMapper that callers outside the Db component use.
@@ -45,40 +46,31 @@ interface ProcessingLogMapperInterface {
 	public function insertBatch(array $entries): int;
 
 	/**
-	 * Find entries by an arbitrary filter set (FG inquiry / VNG API).
+	 * Find one page of entries by an arbitrary filter set (FG inquiry / VNG API), newest first.
 	 *
 	 * A subject filter covers single reads and list reads. An entry stays whole
 	 * here: unlike the per-subject extract, it goes to the FG or the auditor.
 	 *
-	 * @param array<string, mixed> $filters register_id, schema_id, activity_id, actor, action, subject_id_type, subject_id_value.
-	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery              $query The filters (register_id, schema_id, activity_id, actor, action,
+	 *                                      subject_id_type, subject_id_value), the limit and the offset.
+	 * @param ProcessingLogReadScope $scope Period, tenant scope and confidentiality; the defaults when omitted.
 	 *
 	 * @return ProcessingLogEntry[]
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	public function findFiltered(
-		array $filters = [],
-		?ProcessingLogReadScope $scope = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array;
+	public function findListed(ListQuery $query, ProcessingLogReadScope $scope=new ProcessingLogReadScope()): array;
 
 	/**
-	 * Find entries by data-subject identifier within a period.
+	 * Find entries by data-subject identifier within a read scope.
 	 *
 	 * Covers single reads (`subject_id_*`) and list reads (`subject_ids`); a
 	 * list entry comes back reduced to this subject.
 	 *
-	 * @param string $idType Subject identifier type (e.g. `BSN`).
-	 * @param string $idValue Subject identifier value.
-	 * @param ProcessingLogReadScope|null $scope Period, tenant scope and confidentiality; null for the defaults.
+	 * @param ProcessingLogSubject   $subject The subject, type and value both given (e.g. `BSN`, `111`).
+	 * @param ProcessingLogReadScope $scope   Period, tenant scope and confidentiality; the defaults when omitted.
 	 *
 	 * @return ProcessingLogEntry[]
 	 */
-	public function findBySubject(string $idType, string $idValue, ?ProcessingLogReadScope $scope = null): array;
+	public function findForSubject(ProcessingLogSubject $subject, ProcessingLogReadScope $scope=new ProcessingLogReadScope()): array;
 
 	/**
 	 * Count entries attributed to each activity, optionally per register.

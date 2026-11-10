@@ -27,8 +27,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\ProcessingLogReadScope;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
@@ -55,20 +57,20 @@ class ProcessingLogMapperScopeGoldenTest extends TestCase {
 
 		return [
 			'subject, tenant scoped, confidential refused' =>
-				static fn (ProcessingLogMapper $m): array => $m->findBySubject('BSN', '111', new ProcessingLogReadScope(null, null, 'org-1', false)),
+				static fn (ProcessingLogMapper $m): array => $m->findForSubject(new ProcessingLogSubject('BSN', '111'), new ProcessingLogReadScope(null, null, 'org-1', false)),
 			'subject, all tenants, confidential allowed' =>
-				static fn (ProcessingLogMapper $m): array => $m->findBySubject('BSN', '111', new ProcessingLogReadScope(null, null, null, true)),
+				static fn (ProcessingLogMapper $m): array => $m->findForSubject(new ProcessingLogSubject('BSN', '111'), new ProcessingLogReadScope(null, null, null, true)),
 			'subject, empty tenant, confidential refused' =>
-				static fn (ProcessingLogMapper $m): array => $m->findBySubject('BSN', '111', new ProcessingLogReadScope(null, null, '', false)),
+				static fn (ProcessingLogMapper $m): array => $m->findForSubject(new ProcessingLogSubject('BSN', '111'), new ProcessingLogReadScope(null, null, '', false)),
 			'subject, period, tenant scoped, confidential allowed' =>
-				static fn (ProcessingLogMapper $m): array => $m->findBySubject('BSN', '111', new ProcessingLogReadScope($from, $to, 'org-2', true)),
-			'subject, lower bound only' => static fn (ProcessingLogMapper $m): array => $m->findBySubject('BSN', '111', new ProcessingLogReadScope($from)),
+				static fn (ProcessingLogMapper $m): array => $m->findForSubject(new ProcessingLogSubject('BSN', '111'), new ProcessingLogReadScope($from, $to, 'org-2', true)),
+			'subject, lower bound only' => static fn (ProcessingLogMapper $m): array => $m->findForSubject(new ProcessingLogSubject('BSN', '111'), new ProcessingLogReadScope($from)),
 			'filtered, tenant scoped, confidential refused' =>
-				static fn (ProcessingLogMapper $m): array => $m->findFiltered(['actor' => 'anna'], new ProcessingLogReadScope(null, null, 'org-1', false), 10, 20),
+				static fn (ProcessingLogMapper $m): array => $m->findListed(new ListQuery(limit: 10, offset: 20, filters: ['actor' => 'anna']), new ProcessingLogReadScope(null, null, 'org-1', false)),
 			'filtered, all tenants, confidential allowed' =>
-				static fn (ProcessingLogMapper $m): array => $m->findFiltered([], new ProcessingLogReadScope(null, null, null, true)),
-			'filtered, period, defaults' => static fn (ProcessingLogMapper $m): array => $m->findFiltered(['register_id' => 3], new ProcessingLogReadScope($from, $to)),
-			'filtered, upper bound only, tenant scoped' => static fn (ProcessingLogMapper $m): array => $m->findFiltered([], new ProcessingLogReadScope(null, $to, 'org-3')),
+				static fn (ProcessingLogMapper $m): array => $m->findListed(new ListQuery(limit: 100, offset: 0), new ProcessingLogReadScope(null, null, null, true)),
+			'filtered, period, defaults' => static fn (ProcessingLogMapper $m): array => $m->findListed(new ListQuery(limit: 100, offset: 0, filters: ['register_id' => 3]), new ProcessingLogReadScope($from, $to)),
+			'filtered, upper bound only, tenant scoped' => static fn (ProcessingLogMapper $m): array => $m->findListed(new ListQuery(limit: 100, offset: 0), new ProcessingLogReadScope(null, $to, 'org-3')),
 		];
 	}//end reads()
 
