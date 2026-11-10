@@ -301,7 +301,13 @@ final class ScheduledNotificationJob extends TimedJob {
 		try {
 			$this->stateCache->set($this->stateKey(fire: $fire), $fire->nowDt->getTimestamp(), (60 * 60 * 24 * 30));
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// The cache only suppresses repeats; a lost write is not escalated.
+			$this->delivery->logger->debug(
+				message: '[ScheduledNotificationJob] Could not mark the fire in the state cache',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end markFired()
 
@@ -487,6 +493,13 @@ final class ScheduledNotificationJob extends TimedJob {
 			$this->upsertState(fire: $fire, dispatched: false);
 		} catch (\Throwable $e) {
 			// Non-fatal — sweep will reclaim eventually.
+			$this->delivery->logger->warning(
+				message: '[ScheduledNotificationJob] Could not touch the dedupe state, the sweep reclaims it',
+				context: [
+					'objectUuid' => $fire->objectUuid,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		$fire->deduplicated++;

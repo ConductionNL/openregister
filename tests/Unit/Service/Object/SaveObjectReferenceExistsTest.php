@@ -133,10 +133,8 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $unified,
-						schemaMapper: $schemas,
-						registerMapper: $registers
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $unified
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),

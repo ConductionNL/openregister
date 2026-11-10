@@ -29,7 +29,6 @@ use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
-use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -65,7 +64,6 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		$this->service = new SchemaVersioningService(
-			new SchemaDiffService(),
 			$this->changelogMapper,
 			new SchemaPopulationRuns($this->runMapper, $this->runEntryMapper, $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			$userSession,

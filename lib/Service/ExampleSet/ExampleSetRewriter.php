@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Writes a kept object's declared values over its stored row.
  *
@@ -141,7 +143,7 @@ class ExampleSetRewriter {
 			return ['id' => $id, 'unchanged' => true, 'error' => ''];
 		}
 
-		$error = $run['store']->update(register: $run['object']['register'], schema: $run['object']['schema'], id: $id, data: $data);
+		$error = $run['store']->update(ref: new ObjectRef(register: $run['object']['register'], schema: $run['object']['schema'], id: $id), data: $data);
 
 		return ['id' => $id, 'unchanged' => false, 'error' => $error];
 	}//end send()
@@ -167,7 +169,7 @@ class ExampleSetRewriter {
 
 		$report['types'][$type]['refreshed'] = (($report['types'][$type]['refreshed'] ?? 0) + 1);
 
-		return ($run['store']->get(register: $object['register'], schema: $object['schema'], id: $sent['id']) ?? $run['row']);
+		return ($run['store']->row(ref: new ObjectRef(register: $object['register'], schema: $object['schema'], id: $sent['id'])) ?? $run['row']);
 	}//end counted()
 
 	/**
@@ -227,7 +229,7 @@ class ExampleSetRewriter {
 		$store  = $rewrite->run['store'];
 		$object = $rewrite->run['object'];
 		$owner  = ($rewrite->resolved['owner'] ?? null);
-		if ($owner === null || $store->ownerOf(register: $object['register'], schema: $object['schema'], id: $id) === $owner) {
+		if ($owner === null || $store->ownerOf(ref: new ObjectRef(register: $object['register'], schema: $object['schema'], id: $id)) === $owner) {
 			return '';
 		}
 

@@ -125,10 +125,8 @@ final class SaveObjectScanForRelationsTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),

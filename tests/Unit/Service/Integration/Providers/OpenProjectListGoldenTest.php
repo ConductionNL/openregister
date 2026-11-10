@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
@@ -41,12 +42,7 @@ final class OpenProjectListGoldenTest extends TestCase {
 		$router = $this->createMock(ExternalIntegrationRouter::class);
 		$router->method('call')->willReturn($answer);
 
-		return new OpenProjectProvider(
-			router: $router,
-			appManager: $this->createMock(IAppManager::class),
-			l10n: $this->createMock(IL10N::class),
-			linkMapper: $mapper
-		);
+		return new OpenProjectProvider(routing: new ConnectorRouting(router: $router, appManager: $this->createMock(IAppManager::class), l10n: $this->createMock(IL10N::class)), linkMapper: $mapper);
 	}//end provider()
 
 	private function row(string $id): array {

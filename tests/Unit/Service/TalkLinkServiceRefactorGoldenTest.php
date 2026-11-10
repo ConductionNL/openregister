@@ -7,12 +7,14 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Service\TalkLink\LinkedObject;
+use OCA\OpenRegister\Service\TalkLink\RoomCreation;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -396,35 +398,35 @@ class TalkLinkServiceRefactorGoldenTest extends TestCase {
 		$plainServices = new TalkLinkServiceRefactorGoldenTestBag('plain', []);
 
 		return [
-			'link: no user' => [fn (self $t) => $t->service(['user' => null])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: duplicate' => [fn (self $t) => $t->service(['existing' => self::link('tok', null, null)])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: talk disabled' => [fn (self $t) => $t->service(['talk' => false])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: manager unresolvable' => [fn (self $t) => $t->service([])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: room not found anywhere' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $boom, 'getRoomByToken' => $boom]))])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: full room' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r1')]))])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: fallback lookup, bare room' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['getRoomForUserByToken' => $boom, 'getRoomByToken' => $bare('b1', ['getId' => $boom, 'getName' => '[or:x] Bare', 'getType' => '6'])])]])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: old manager, room odd' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => new TalkLinkServiceRefactorGoldenTestOldManager('old', ['getRoomByToken' => $room('r2', ['getName' => $boom, 'getDisplayName' => '', 'getType' => $boom, 'getDescription' => 'Beschrijving', 'getLastActivity' => 'not a date', 'getLastMessage' => 'none'])]), 'OCA\\Talk\\Service\\ParticipantService' => $plainServices]])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: display name throws, types' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r3', ['getDisplayName' => $boom, 'getType' => '1', 'getLastActivity' => $boom, 'getLastMessage' => $boom])]))])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: type 4, actor count throws, bare comment' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['getRoomForUserByToken' => $room('r4', ['getType' => '4', 'getDescription' => $boom, 'getLastMessage' => $bare('c', [])])]), 'OCA\\Talk\\Service\\ParticipantService' => new TalkLinkServiceRefactorGoldenTestServices('svc', ['getNumberOfActors' => $boom])]])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: type 9, comment date throws' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r5', ['getType' => '9', 'getLastMessage' => new TalkLinkServiceRefactorGoldenTestComment('cm', ['getMessage' => 5, 'getActorType' => 'guests', 'getActorId' => 'g1', 'getCreationDateTime' => $boom])])]))])->linkRoom('abc-1', 1, 2, 'tok')],
-			'link: comment date not a date' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r6', ['getLastMessage' => new TalkLinkServiceRefactorGoldenTestComment('cm', ['getMessage' => '', 'getActorType' => '', 'getActorId' => '', 'getCreationDateTime' => '2026'])])]))])->linkRoom('abc-1', 1, 2, 'tok')],
+			'link: no user' => [fn (self $t) => $t->service(['user' => null])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: duplicate' => [fn (self $t) => $t->service(['existing' => self::link('tok', null, null)])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: talk disabled' => [fn (self $t) => $t->service(['talk' => false])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: manager unresolvable' => [fn (self $t) => $t->service([])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: room not found anywhere' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $boom, 'getRoomByToken' => $boom]))])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: full room' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r1')]))])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: fallback lookup, bare room' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['getRoomForUserByToken' => $boom, 'getRoomByToken' => $bare('b1', ['getId' => $boom, 'getName' => '[or:x] Bare', 'getType' => '6'])])]])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: old manager, room odd' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => new TalkLinkServiceRefactorGoldenTestOldManager('old', ['getRoomByToken' => $room('r2', ['getName' => $boom, 'getDisplayName' => '', 'getType' => $boom, 'getDescription' => 'Beschrijving', 'getLastActivity' => 'not a date', 'getLastMessage' => 'none'])]), 'OCA\\Talk\\Service\\ParticipantService' => $plainServices]])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: display name throws, types' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r3', ['getDisplayName' => $boom, 'getType' => '1', 'getLastActivity' => $boom, 'getLastMessage' => $boom])]))])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: type 4, actor count throws, bare comment' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['getRoomForUserByToken' => $room('r4', ['getType' => '4', 'getDescription' => $boom, 'getLastMessage' => $bare('c', [])])]), 'OCA\\Talk\\Service\\ParticipantService' => new TalkLinkServiceRefactorGoldenTestServices('svc', ['getNumberOfActors' => $boom])]])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: type 9, comment date throws' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r5', ['getType' => '9', 'getLastMessage' => new TalkLinkServiceRefactorGoldenTestComment('cm', ['getMessage' => 5, 'getActorType' => 'guests', 'getActorId' => 'g1', 'getCreationDateTime' => $boom])])]))])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
+			'link: comment date not a date' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r6', ['getLastMessage' => new TalkLinkServiceRefactorGoldenTestComment('cm', ['getMessage' => '', 'getActorType' => '', 'getActorId' => '', 'getCreationDateTime' => '2026'])])]))])->linkRoom(new LinkedObject('abc-1', 1, 2), 'tok')],
 			'rooms: none linked' => [fn (self $t) => $t->service([])->getLinkedRooms('abc-1')],
 			'rooms: no talk, stale rows kept' => [fn (self $t) => $t->service(['talk' => false, 'links' => [self::link('a', null, null)]])->getLinkedRooms('abc-1')],
 			'rooms: no user' => [fn (self $t) => $t->service(['user' => null, 'services' => self::talk($manager([])), 'links' => [self::link('a', null, null)]])->getLinkedRooms('abc-1')],
 			'rooms: refresh stale, keep fresh' => [fn (self $t) => $t->service(['services' => self::talk($manager(['getRoomForUserByToken' => $room('r7')])), 'links' => [self::link('stale', '2000-01-01T00:00:00+00:00', null), self::link('fresh', '2999-01-01T00:00:00+00:00', null), self::link('neverActive', null, '2000-01-01T00:00:00+00:00'), self::link('linkedFuture', null, '2999-01-01T00:00:00+00:00')]])->getLinkedRooms('abc-1')],
 			'rooms: room gone' => [fn (self $t) => $t->service(['services' => self::talk(new TalkLinkServiceRefactorGoldenTestBag('nomethods', [])), 'links' => [self::link('gone', null, null)]])->getLinkedRooms('abc-1')],
 			'rooms: update throws' => [fn (self $t) => $t->service(['updateThrows' => true, 'services' => self::talk($manager(['getRoomForUserByToken' => $room('r8')])), 'links' => [self::link('x', null, null)]])->getLinkedRooms('abc-1')],
-			'create: no user' => [fn (self $t) => $t->service(['user' => null])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', null, 2)],
-			'create: bad type' => [fn (self $t) => $t->service([])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', null, 1)],
-			'create: no talk' => [fn (self $t) => $t->service(['talk' => false])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', null, 3)],
-			'create: createRoom throws' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $boom]))])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', 'D', 2)],
-			'create: createRoom not object' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => 'x']))])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', 'D', 2)],
-			'create: full' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $created]))])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', 'Over de zaak', 3)],
-			'create: empty description, services missing' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['createRoom' => $bare('nb', ['getToken' => 'tk', 'getName' => '', 'getId' => '3', 'getType' => $boom])])]])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', '', 2)],
-			'create: services without methods' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['createRoom' => $room('nm')]), 'OCA\\Talk\\Service\\RoomService' => $plainServices, 'OCA\\Talk\\Service\\ParticipantService' => $plainServices]])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', 'D', 2)],
-			'create: description and invite throw' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['createRoom' => $room('th')]), 'OCA\\Talk\\Service\\RoomService' => new TalkLinkServiceRefactorGoldenTestServices('rs', ['setDescription' => $boom]), 'OCA\\Talk\\Service\\ParticipantService' => new TalkLinkServiceRefactorGoldenTestServices('ps', ['addUsers' => $boom, 'getNumberOfActors' => 1])]])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', 'D', 2)],
-			'create: token throws' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $room('tt', ['getToken' => $boom])]))])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', null, 2)],
-			'create: token empty' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $room('te', ['getToken' => ''])]))])->createAndLinkRoom('abc-1', 1, 2, 'Zaak', null, 2)],
+			'create: no user' => [fn (self $t) => $t->service(['user' => null])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', null, 2))],
+			'create: bad type' => [fn (self $t) => $t->service([])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', null, 1))],
+			'create: no talk' => [fn (self $t) => $t->service(['talk' => false])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', null, 3))],
+			'create: createRoom throws' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $boom]))])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', 'D', 2))],
+			'create: createRoom not object' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => 'x']))])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', 'D', 2))],
+			'create: full' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $created]))])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', 'Over de zaak', 3))],
+			'create: empty description, services missing' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['createRoom' => $bare('nb', ['getToken' => 'tk', 'getName' => '', 'getId' => '3', 'getType' => $boom])])]])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', '', 2))],
+			'create: services without methods' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['createRoom' => $room('nm')]), 'OCA\\Talk\\Service\\RoomService' => $plainServices, 'OCA\\Talk\\Service\\ParticipantService' => $plainServices]])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', 'D', 2))],
+			'create: description and invite throw' => [fn (self $t) => $t->service(['services' => ['OCA\\Talk\\Manager' => $manager(['createRoom' => $room('th')]), 'OCA\\Talk\\Service\\RoomService' => new TalkLinkServiceRefactorGoldenTestServices('rs', ['setDescription' => $boom]), 'OCA\\Talk\\Service\\ParticipantService' => new TalkLinkServiceRefactorGoldenTestServices('ps', ['addUsers' => $boom, 'getNumberOfActors' => 1])]])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', 'D', 2))],
+			'create: token throws' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $room('tt', ['getToken' => $boom])]))])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', null, 2))],
+			'create: token empty' => [fn (self $t) => $t->service(['services' => self::talk($manager(['createRoom' => $room('te', ['getToken' => ''])]))])->createAndLinkRoom(new RoomCreation(new LinkedObject('abc-1', 1, 2), 'Zaak', null, 2))],
 			'available: no talk' => [fn (self $t) => $t->service(['talk' => false])->getAvailableRoomsForUser()],
 			'available: no user' => [fn (self $t) => $t->service(['user' => null])->getAvailableRoomsForUser()],
 			'available: no manager' => [fn (self $t) => $t->service([])->getAvailableRoomsForUser()],

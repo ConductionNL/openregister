@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
@@ -93,8 +94,7 @@ class AuditTrailObjectLogsCharacterisationTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
 			new AuditTrailPageService(
-				$this->createMock(AuditTrailPageQuery::class),
-				$this->logService,
+				new AuditExportSource($this->createMock(AuditTrailPageQuery::class), $this->logService),
 				$this->createMock(IJobList::class)
 			),
 			$this->history

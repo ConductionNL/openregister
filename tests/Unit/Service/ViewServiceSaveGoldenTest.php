@@ -29,6 +29,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 /**
  * Every presentation shape create() accepts or refuses, with the message;
@@ -176,7 +177,13 @@ final class ViewServiceSaveGoldenTest extends TestCase {
 	 */
 	public function testUpdateNullLeavesFieldsUntouched(): void {
 		$stored = self::stored(true);
-		$view = $this->service($stored)->update(5, 'New', 'New desc', 'alice', true, true, ['q' => 1]);
+		$view = $this->service($stored)->revise(
+			id: 5,
+			edit: new ViewEdit(
+				definition: new ViewDefinition(name: 'New', description: 'New desc', query: ['q' => 1]),
+				audience: new ViewAudience(owner: 'alice', isPublic: true, isDefault: true)
+			)
+		);
 
 		$this->assertSame(['find', 'update:true'], $this->calls);
 		$this->assertSame(['New', 'New desc', true, true, ['q' => 1]], [$view->getName(), $view->getDescription(), $view->getIsPublic(), $view->getIsDefault(), $view->getQuery()]);
@@ -192,17 +199,23 @@ final class ViewServiceSaveGoldenTest extends TestCase {
 	 */
 	public function testUpdateGivenFieldsReplace(): void {
 		$stored = self::stored(false);
-		$view = $this->service($stored)->update(
-			5,
-			'New',
-			'New desc',
-			'alice',
-			false,
-			true,
-			[],
-			[],
-			['viewType' => 'table'],
-			['k' => ['group' => 'h', 'mode' => 'write']]
+		$view = $this->service($stored)->revise(
+			id: 5,
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: 'New',
+					description: 'New desc',
+					query: [],
+					presentation: ['viewType' => 'table']
+				),
+				audience: new ViewAudience(
+					owner: 'alice',
+					isPublic: false,
+					isDefault: true,
+					sharedWith: ['k' => ['group' => 'h', 'mode' => 'write']]
+				),
+				favoredBy: []
+			)
 		);
 
 		$this->assertSame(['find', 'findAll', 'update:true'], $this->calls);

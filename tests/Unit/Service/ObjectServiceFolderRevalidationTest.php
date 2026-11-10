@@ -34,6 +34,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -57,6 +58,8 @@ class ObjectServiceFolderRevalidationTest extends TestCase
 
     private Schema $schema;
 
+    private LoggerInterface&MockObject $logger;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,6 +68,7 @@ class ObjectServiceFolderRevalidationTest extends TestCase
         $this->mapper   = $this->createMock(MagicMapper::class);
         $this->register = new Register();
         $this->schema   = new Schema();
+        $this->logger   = $this->createMock(LoggerInterface::class);
 
         $reflection    = new ReflectionClass(ObjectService::class);
         $this->service = $reflection->newInstanceWithoutConstructor();
@@ -73,6 +77,7 @@ class ObjectServiceFolderRevalidationTest extends TestCase
             'objectMapper'    => $this->mapper,
             'currentRegister' => $this->register,
             'currentSchema'   => $this->schema,
+            'logger'          => $this->logger,
         ] as $name => $value) {
             $reflection->getProperty($name)->setValue($this->service, $value);
         }
@@ -168,6 +173,10 @@ class ObjectServiceFolderRevalidationTest extends TestCase
     public function testAnotherLookupErrorLeavesTheSaveToCreateIt(): void
     {
         $this->mapper->method('find')->willThrowException(new Exception('down'));
+        $this->logger->expects($this->once())->method('debug')->with(
+            $this->stringContains('Folder binding not re-validated'),
+            ['uuid' => 'uuid-1', 'exception' => 'down']
+        );
 
         $this->assertNull($this->ensure());
     }

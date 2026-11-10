@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange as HardeningAuditChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -101,12 +102,9 @@ class HardeningAuditWriter {
 	 */
 	private function write(HardeningFact $change, ?string $refusal): void {
 		try {
-			$this->auditTrailMapper->createHardeningChangeEntry(
-				control: $change->fact,
-				before: $change->before,
-				after: $change->after,
-				accepted: $refusal === null,
-				refusal: ($refusal ?? ''),
+			$this->auditTrailMapper->recordHardeningChange(
+				change: new HardeningAuditChange(control: $change->fact, before: $change->before, after: $change->after, refusal: ($refusal ?? '')),
+				accepted: $refusal === null
 			);
 		} catch (Throwable $failure) {
 			$this->logger->error(

@@ -65,6 +65,8 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -74,6 +76,7 @@ use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
@@ -3688,6 +3691,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             throw $e;
         } catch (Exception $e) {
             // A missing object or any other error: let SaveObject handle the creation.
+            $this->logger->debug(
+                message: '[ObjectService] Folder binding not re-validated, object not loadable',
+                context: [
+                    'uuid' => $uuid,
+                    'exception' => $e->getMessage(),
+                ]
+            );
         }//end try
     }//end revalidateFolderBinding()
 
@@ -3830,35 +3840,59 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?IUser $currentUser=null,
         bool $permanent=false
     ): bool {
-        // A DELETE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
-        // Same contract as find() and saveObject(); see restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
-
-        try {
-            $this->discardPendingSchemaRef();
-            // Explicit acting user for the permission check; null keeps today's
-            // session-resolved behaviour for every existing caller.
-            $request = new ObjectDeleteRequest(
-                uuid: $uuid,
-                rbac: $_rbac,
-                multitenancy: $_multitenancy,
-                retentionSweep: $_retentionSweep,
-                currentUser: $currentUser,
-                scoped: ($register !== null && $schema !== null)
-            );
-
-            $this->applyDeleteScope(register: $register, schema: $schema);
-
-            if ($_retentionSweep === true) {
-                return (new RetentionDestruction())->run(fn (): bool => $this->deleteWithinScope(request: $request, permanent: $permanent));
-            }
-
-            return $this->deleteWithinScope(request: $request, permanent: $permanent);
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        $request = new ObjectDeleteRequest(
+            uuid: $uuid,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            retentionSweep: $_retentionSweep,
+            currentUser: $currentUser,
+            scoped: ($register !== null && $schema !== null)
+        );
+        return $this->preservingScope(operation: function () use ($request, $register, $schema, $permanent): bool {
+            $this->enterDeleteScope(register: $register, schema: $schema);
+            return $this->deleteRequested(request: $request, permanent: $permanent);
+        });
     }//end deleteObject()
+
+    /**
+     * Open the scope of one delete: drop a pending schema reference and apply the caller's register and schema.
+     *
+     * A DELETE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. deleteObject() runs this inside
+     * preservingScope(), the same contract as find() and saveObject(); see restoreScopeContext().
+     *
+     * @param Register|string|int|null $register The register object or its ID/UUID.
+     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function enterDeleteScope(Register | string | int | null $register, Schema | string | int | null $schema): void
+    {
+        $this->discardPendingSchemaRef();
+        $this->applyDeleteScope(register: $register, schema: $schema);
+    }//end enterDeleteScope()
+
+    /**
+     * Run one delete in the scope deleteObject() opened, under the retention sweep's destruction marker when it calls.
+     *
+     * @param ObjectDeleteRequest $request   The delete and its policy flags.
+     * @param bool                $permanent Whether to remove the row for good.
+     *
+     * @return bool Whether the deletion was successful.
+     *
+     * @throws \Exception If the delete is refused or fails.
+     *
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     */
+    private function deleteRequested(ObjectDeleteRequest $request, bool $permanent): bool
+    {
+        if ($request->retentionSweep === true) {
+            return (new RetentionDestruction())->run(fn (): bool => $this->deleteWithinScope(request: $request, permanent: $permanent));
+        }
+
+        return $this->deleteWithinScope(request: $request, permanent: $permanent);
+    }//end deleteRequested()
 
     /**
      * Run one delete inside the scope deleteObject() opened: refuse, dispatch to an object
@@ -3902,14 +3936,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->refuseDeletingSomebodyElsesDraft(request: $request, object: $objectToDelete);
 
         return $this->deleteHandler->deleteObject(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            uuid: $request->uuid,
-            originalObjectId: null,
+            request: new DeletionRequest(
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                uuid: $request->uuid,
+                options: new DeletionOptions(scoped: $request->scoped, permanent: $permanent)
+            ),
             _rbac: $request->rbac,
-            _multitenancy: $request->multitenancy,
-            scoped: $request->scoped,
-            permanent: $permanent
+            _multitenancy: $request->multitenancy
         );
     }//end deleteWithinScope()
 
@@ -4367,13 +4401,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         );
 
         return $this->deleteHandler->deleteObject(
-            register: $this->currentRegister,
-            schema: $schema,
-            uuid: $request->uuid,
-            originalObjectId: null,
+            request: new DeletionRequest(
+                register: $this->currentRegister,
+                schema: $schema,
+                uuid: $request->uuid,
+                options: new DeletionOptions(scoped: $request->scoped)
+            ),
             _rbac: $request->rbac,
-            _multitenancy: $request->multitenancy,
-            scoped: $request->scoped
+            _multitenancy: $request->multitenancy
         );
     }//end deleteFromObjectSource()
 
@@ -5538,6 +5573,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 $schemas[] = $schema->jsonSerialize();
             } catch (\Exception $e) {
                 // Skip schemas that cannot be found.
+                $this->logger->debug(
+                    message: '[ObjectService] Skipping a register schema that cannot be loaded',
+                    context: [
+                        'schemaId' => $schemaId,
+                        'exception' => $e->getMessage(),
+                    ]
+                );
             }
         }
 
@@ -6715,14 +6757,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function callDeleteHandler(array $scope, array $run): bool
     {
         return $this->deleteHandler->deleteObject(
-            register: $scope['register'],
-            schema: $scope['schema'],
-            uuid: $scope['uuid'],
-            originalObjectId: null,
+            request: new DeletionRequest(
+                register: $scope['register'],
+                schema: $scope['schema'],
+                uuid: $scope['uuid'],
+                options: new DeletionOptions(preResolved: $scope['preResolved'], permanent: $scope['draft'])
+            ),
             _rbac: $run['_rbac'],
-            _multitenancy: $run['_multitenancy'],
-            preResolved: $scope['preResolved'],
-            permanent: $scope['draft']
+            _multitenancy: $run['_multitenancy']
         ) === true;
     }//end callDeleteHandler()
 
@@ -7523,37 +7565,50 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_multitenancy=true,
         ?IUser $currentUser=null
     ): ObjectEntity {
-        // A PATCH SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
-        // The saveObject() it delegates to restores too, so without this the only
-        // context left behind would be the one patchObject() set itself.
-        // See restoreScopeContext().
-        return $this->preservingScope(
-            operation: function () use ($objectId, $data, $register, $schema, $_rbac, $_multitenancy, $currentUser): ObjectEntity {
-                // Resolve the caller's scope onto the service context first, so the
-                // lookup below and the save that follows both see the same one.
-                $this->setContextFromParameters(register: $register, schema: $schema);
-
-                $existing = $this->findPatchTarget(
-                    objectId: $objectId,
-                    target: new ObjectFindTarget(register: $register, schema: $schema)
-                );
-
-                // Address the save at the object we actually resolved, not at whatever
-                // form of the identifier the caller happened to hold.
-                $merged       = $this->patchedBody(existing: $existing, data: $data);
-                $merged['id'] = ($existing->getUuid() ?? $objectId);
-
-                return $this->saveObject(
-                    object: $merged,
-                    register: $register,
-                    schema: $schema,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy,
-                    currentUser: $currentUser
-                );
-            }
-        );
+        $target = new ObjectFindTarget(register: $register, schema: $schema);
+        $patch  = new ObjectPatch(objectId: $objectId, data: $data, target: $target, currentUser: $currentUser);
+        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
+        return $this->preservingScope(operation: fn (): ObjectEntity => $this->patchWithinScope(patch: $patch, access: $access));
     }//end patchObject()
+
+    /**
+     * Apply one patch in the scope patchObject() keeps: resolve the target, merge the change and save it.
+     *
+     * A PATCH SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. The saveObject() it delegates
+     * to restores too, so without preservingScope() the only context left behind would be the
+     * one this patch set itself. See restoreScopeContext().
+     *
+     * @param ObjectPatch $patch  The object, the change, where to find it and who acts.
+     * @param AccessFlags $access The caller's RBAC and multitenancy flags.
+     *
+     * @return ObjectEntity The saved object.
+     *
+     * @throws \Exception If the object is not found or the save fails.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function patchWithinScope(ObjectPatch $patch, AccessFlags $access): ObjectEntity
+    {
+        // Resolve the caller's scope onto the service context first, so the
+        // lookup below and the save that follows both see the same one.
+        $this->setContextFromParameters(register: $patch->target->register, schema: $patch->target->schema);
+
+        $existing = $this->findPatchTarget(objectId: $patch->objectId, target: $patch->target);
+
+        // Address the save at the object we actually resolved, not at whatever
+        // form of the identifier the caller happened to hold.
+        $merged       = $this->patchedBody(existing: $existing, data: $patch->data);
+        $merged['id'] = ($existing->getUuid() ?? $patch->objectId);
+
+        return $this->saveObject(
+            object: $merged,
+            register: $patch->target->register,
+            schema: $patch->target->schema,
+            _rbac: $access->rbac,
+            _multitenancy: $access->multitenancy,
+            currentUser: $patch->currentUser
+        );
+    }//end patchWithinScope()
 
     /**
      * Finds the stored object a patch applies to.
