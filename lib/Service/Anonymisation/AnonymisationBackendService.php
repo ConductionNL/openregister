@@ -130,6 +130,17 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private readonly ConnectionReporter $connectionReporter;
 
 	/**
+	 * The next step an unconfigured OpenAnonymiser connection reports, by probe error.
+	 *
+	 * @var array<string, string>
+	 */
+	private const OPENANONYMISER_NEXT_STEPS = [
+		ProbeResult::ERROR_APPAPI_MISSING => 'AppAPI is not installed. Install AppAPI, then the OpenAnonymiser ExApp.',
+		ProbeResult::ERROR_EXAPP_NOT_INSTALLED => 'The OpenAnonymiser ExApp is not installed. Install it through AppAPI.',
+		ProbeResult::ERROR_EXAPP_DISABLED => 'The OpenAnonymiser ExApp is installed and disabled. Enable it through AppAPI.',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param AnonymisationBackendPlatform      $platform      App manager, app config, cache factory and HTTP clients.
@@ -161,26 +172,28 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 */
 	public function getState(): BackendState {
 		$settings = $this->fileSettingsHandler->getFileSettingsOnly();
-		$enabled = (bool)($settings['entityRecognitionEnabled'] ?? false);
-		$stored = (string)($settings['entityRecognitionMethod'] ?? BackendState::METHOD_AUTO);
 
-		// Probe the atomic backends (cached) and build their info records.
-		$backends = [];
+		return $this->resolveState(
+			enabled: (bool)($settings['entityRecognitionEnabled'] ?? false),
+			stored: (string)($settings['entityRecognitionMethod'] ?? BackendState::METHOD_AUTO)
+		);
+	}//end getState()
 
-		$probeMethods = [
-			BackendState::METHOD_REGEX,
-			BackendState::METHOD_PRESIDIO,
-			BackendState::METHOD_OPENANONYMISER,
-			BackendState::METHOD_LLM,
-		];
-		foreach ($probeMethods as $method) {
-			$backends[$method] = $this->buildBackendInfo(method: $method, probe: $this->probe(method: $method));
-		}
+	/**
+	 * The backend selection state for the stored settings.
+	 *
+	 * @param bool   $enabled Whether entity recognition is enabled.
+	 * @param string $stored  The stored entity-recognition method.
+	 *
+	 * @return BackendState The fully-resolved state.
+	 */
+	private function resolveState(bool $enabled, string $stored): BackendState {
+		$backends = $this->atomicBackends();
 
 		// Hybrid availability is the logical AND of its composed backends.
 		$backends[BackendState::METHOD_HYBRID] = $this->buildHybridInfo(backends: $backends);
 
-		$activeMethod = $this->resolveActiveMethod(stored: $stored, backends: $backends);
+		$activeMethod    = $this->resolveActiveMethod(stored: $stored, backends: $backends);
 		$effectiveMethod = BackendState::METHOD_REGEX;
 		if ($enabled === true) {
 			$effectiveMethod = $this->resolveEffectiveMethod(activeMethod: $activeMethod, backends: $backends);
@@ -192,7 +205,28 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			effectiveMethod: $effectiveMethod,
 			backends: $backends,
 		);
-	}//end getState()
+	}//end resolveState()
+
+	/**
+	 * Probe the atomic backends (cached) and build their info records.
+	 *
+	 * @return array<string, mixed> The info record per atomic method.
+	 */
+	private function atomicBackends(): array {
+		$probeMethods = [
+			BackendState::METHOD_REGEX,
+			BackendState::METHOD_PRESIDIO,
+			BackendState::METHOD_OPENANONYMISER,
+			BackendState::METHOD_LLM,
+		];
+
+		$backends = [];
+		foreach ($probeMethods as $method) {
+			$backends[$method] = $this->buildBackendInfo(method: $method, probe: $this->probe(method: $method));
+		}
+
+		return $backends;
+	}//end atomicBackends()
 
 	/**
 	 * Issue a fresh probe for a single method, bypassing and refreshing the cache.
@@ -229,32 +263,50 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
 	private function reportOpenAnonymiser(ProbeResult $result): void {
-		if ($result->reachable === true) {
-			$this->connectionReporter->report(
-				key: 'anonymiser',
-				status: 'configured',
-				message: 'The OpenAnonymiser ExApp is enabled and detected through AppAPI.'
-			);
-			return;
-		}
-
-		$unconfigured = [
-			ProbeResult::ERROR_APPAPI_MISSING => 'AppAPI is not installed. Install AppAPI, then the OpenAnonymiser ExApp.',
-			ProbeResult::ERROR_EXAPP_NOT_INSTALLED => 'The OpenAnonymiser ExApp is not installed. Install it through AppAPI.',
-			ProbeResult::ERROR_EXAPP_DISABLED => 'The OpenAnonymiser ExApp is installed and disabled. Enable it through AppAPI.',
-		];
-
-		if ($result->error !== null && isset($unconfigured[$result->error]) === true) {
-			$this->connectionReporter->report(key: 'anonymiser', status: 'unconfigured', message: $unconfigured[$result->error]);
-			return;
-		}
-
 		$this->connectionReporter->report(
 			key: 'anonymiser',
-			status: 'error',
-			message: 'The OpenAnonymiser connection test failed: ' . ($result->error ?? 'unknown error') . '.'
+			status: $this->openAnonymiserStatus(result: $result),
+			message: $this->openAnonymiserMessage(result: $result)
 		);
 	}//end reportOpenAnonymiser()
+
+	/**
+	 * The connection status an OpenAnonymiser test found: configured, unconfigured (a next step is known) or error.
+	 *
+	 * @param ProbeResult $result The fresh probe result.
+	 *
+	 * @return string The connection status.
+	 */
+	private function openAnonymiserStatus(ProbeResult $result): string {
+		if ($result->reachable === true) {
+			return 'configured';
+		}
+
+		if ($result->error !== null && isset(self::OPENANONYMISER_NEXT_STEPS[$result->error]) === true) {
+			return 'unconfigured';
+		}
+
+		return 'error';
+	}//end openAnonymiserStatus()
+
+	/**
+	 * What an OpenAnonymiser test found, and the next step when one is known.
+	 *
+	 * @param ProbeResult $result The fresh probe result.
+	 *
+	 * @return string The message.
+	 */
+	private function openAnonymiserMessage(ProbeResult $result): string {
+		if ($result->reachable === true) {
+			return 'The OpenAnonymiser ExApp is enabled and detected through AppAPI.';
+		}
+
+		if ($result->error !== null && isset(self::OPENANONYMISER_NEXT_STEPS[$result->error]) === true) {
+			return self::OPENANONYMISER_NEXT_STEPS[$result->error];
+		}
+
+		return 'The OpenAnonymiser connection test failed: ' . ($result->error ?? 'unknown error') . '.';
+	}//end openAnonymiserMessage()
 
 	/**
 	 * Probe a method, consuming the cache when a fresh-enough entry exists.
@@ -716,6 +768,27 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * @return ProbeResult|null The cached result, or null.
 	 */
 	private function readCache(string $method): ?ProbeResult {
+		$data = $this->cachedProbeData(method: $method);
+		if ($data === null) {
+			return null;
+		}
+
+		return new ProbeResult(
+			reachable: (bool)($data['reachable'] ?? false),
+			latencyMs: $this->nullableInt(value: ($data['latencyMs'] ?? null)),
+			error: $this->nullableString(value: ($data['error'] ?? null)),
+			probedAt: (string)($data['probedAt'] ?? $this->now()),
+		);
+	}//end readCache()
+
+	/**
+	 * The decoded cache entry of a method, or null when there is no cache, no entry or no readable one.
+	 *
+	 * @param string $method One of BackendState::METHODS.
+	 *
+	 * @return array<string, mixed>|null The decoded entry.
+	 */
+	private function cachedProbeData(string $method): ?array {
 		if ($this->cache === null) {
 			return null;
 		}
@@ -730,23 +803,38 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			return null;
 		}
 
-		$latencyMs = null;
-		if (($data['latencyMs'] ?? null) !== null) {
-			$latencyMs = (int)$data['latencyMs'];
+		return $data;
+	}//end cachedProbeData()
+
+	/**
+	 * A cached value as an int, keeping null.
+	 *
+	 * @param mixed $value The cached value.
+	 *
+	 * @return int|null The int, or null.
+	 */
+	private function nullableInt(mixed $value): ?int {
+		if ($value === null) {
+			return null;
 		}
 
-		$error = null;
-		if (($data['error'] ?? null) !== null) {
-			$error = (string)$data['error'];
+		return (int)$value;
+	}//end nullableInt()
+
+	/**
+	 * A cached value as a string, keeping null.
+	 *
+	 * @param mixed $value The cached value.
+	 *
+	 * @return string|null The string, or null.
+	 */
+	private function nullableString(mixed $value): ?string {
+		if ($value === null) {
+			return null;
 		}
 
-		return new ProbeResult(
-			reachable: (bool)($data['reachable'] ?? false),
-			latencyMs: $latencyMs,
-			error: $error,
-			probedAt: (string)($data['probedAt'] ?? $this->now()),
-		);
-	}//end readCache()
+		return (string)$value;
+	}//end nullableString()
 
 	/**
 	 * Write a probe result to the cache with the configured TTL.
