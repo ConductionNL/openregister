@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Translation\LanguageCoverageCheck;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -61,7 +62,7 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 	 * @return Translation Persisted translation row.
 	 */
 	public function upsert(TranslationSlot $slot, TranslationEdit $edit): Translation {
-		$existing = $this->findOne(objectUuid: $slot->objectUuid, property: $slot->property, language: $slot->language);
+		$existing = $this->findOne(slot: $slot);
 		$entity = $existing ?? new Translation();
 		$entity->setObjectUuid($slot->objectUuid);
 		$entity->setProperty($slot->property);
@@ -90,19 +91,17 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 	/**
 	 * Find a single translation slot by its natural key.
 	 *
-	 * @param string $objectUuid UUID of the object being translated.
-	 * @param string $property Property path within the object.
-	 * @param string $language BCP-47 language tag of the slot.
+	 * @param TranslationSlot $slot The object, property and language.
 	 *
 	 * @return Translation|null Matching row, or null when not found.
 	 */
-	public function findOne(string $objectUuid, string $property, string $language): ?Translation {
+	public function findOne(TranslationSlot $slot): ?Translation {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_translations')
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($property)))
-			->andWhere($qb->expr()->eq('language', $qb->createNamedParameter($language)))
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($slot->objectUuid)))
+			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($slot->property)))
+			->andWhere($qb->expr()->eq('language', $qb->createNamedParameter($slot->language)))
 			->setMaxResults(1);
 
 		return $this->findOneOrNull(qb: $qb);
@@ -222,22 +221,20 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 	 * human_reviewed, machine_translated)`. Rows already in `outdated` or
 	 * `draft` are not re-flipped.
 	 *
-	 * @param string $objectUuid UUID of the object whose translations to flip.
-	 * @param string $property Property whose derived translations to flip.
-	 * @param string $sourceLanguage Source language for the property (never flipped).
+	 * @param TranslationSlot $source The object, the property and its source language (never flipped).
 	 *
 	 * @return int Number of rows transitioned to `outdated`.
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
 	 */
-	public function markDerivedOutdated(string $objectUuid, string $property, string $sourceLanguage): int {
+	public function markDerivedOutdated(TranslationSlot $source): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update('openregister_translations')
 			->set('status', $qb->createNamedParameter(Translation::STATUS_OUTDATED))
 			->set('updated', $qb->createNamedParameter((new DateTime())->format('Y-m-d H:i:s')))
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($property)))
-			->andWhere($qb->expr()->neq('language', $qb->createNamedParameter($sourceLanguage)))
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($source->objectUuid)))
+			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($source->property)))
+			->andWhere($qb->expr()->neq('language', $qb->createNamedParameter($source->language)))
 			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(Translation::FLIPPABLE_STATUSES, IQueryBuilder::PARAM_STR_ARRAY)));
 
 		return $qb->executeStatement();
@@ -402,13 +399,14 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 	 * Finds the (uuid, property) pairs that DO have the language and subtracts
 	 * them from the (uuid × property) cross-product to get the missing slots.
 	 *
-	 * @param string $language BCP-47 language tag to test for completeness.
-	 * @param string[] $properties Property paths required for completeness.
-	 * @param string[] $candidateUuids Restrict to these uuids (e.g. to scope to a register/schema).
+	 * @param LanguageCoverageCheck $check The language, the required properties and the candidate uuids.
 	 *
 	 * @return string[] List of object_uuids missing at least one translation
 	 */
-	public function findObjectsMissingLanguage(string $language, array $properties, array $candidateUuids): array {
+	public function findObjectsMissingLanguage(LanguageCoverageCheck $check): array {
+		$language = $check->language;
+		$properties = $check->properties;
+		$candidateUuids = $check->candidateUuids;
 		if (count($properties) === 0 || count($candidateUuids) === 0) {
 			return [];
 		}

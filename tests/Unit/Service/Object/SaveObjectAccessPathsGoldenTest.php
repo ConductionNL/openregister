@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
@@ -305,9 +306,9 @@ class SaveObjectAccessPathsGoldenTest extends TestCase {
 
 		$shares = $this->createMock(SharedMasterDataService::class);
 		$shares->method('assertWritable')->willReturnCallback(
-			function (string $table, ?int $id, array $activeOrgUuids) use ($refuseTable): void {
-				$this->asked[] = [$table, $id, $activeOrgUuids];
-				if ($table === $refuseTable) {
+			function (DeclaredRow $row, array $activeOrgUuids) use ($refuseTable): void {
+				$this->asked[] = [$row->table, $row->id, $activeOrgUuids];
+				if ($row->table === $refuseTable) {
 					throw new SharedMasterDataWriteException(holderUuid: 'org-holder');
 				}
 			}

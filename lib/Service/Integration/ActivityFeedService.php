@@ -199,9 +199,7 @@ class ActivityFeedService {
 	 */
 	private function auditRows(ActivityFeedObject $object, int $bound): array {
 		$page = $this->history->page(
-			register: $object->register,
-			schema: $object->schema,
-			id: $object->id,
+			ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 			params: ['limit' => $bound]
 		);
 		if ($page === null) {

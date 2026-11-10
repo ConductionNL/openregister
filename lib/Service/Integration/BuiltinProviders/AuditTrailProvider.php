@@ -152,9 +152,7 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	private function historyOf(ObjectRef $ref): array {
 		try {
 			$page = $this->history->page(
-				register: (string)$ref->register,
-				schema: (string)$ref->schema,
-				id: $ref->id,
+				ref: $ref,
 				params: ['limit' => PHP_INT_MAX]
 			);
 		} catch (Throwable $e) {

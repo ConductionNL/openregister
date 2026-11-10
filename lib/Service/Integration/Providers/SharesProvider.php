@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata;
 // Getters mirror the contract in the interface.
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\Files\Folder;
 use OCP\IL10N;
@@ -403,7 +404,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 *
 	 * The payload selects the kind of thing to create:
 	 *   - `type: 'public-token'` (or `type` omitted) — mint a case token
-	 *     bound to the object via {@see CaseTokenService::mint()}. Optional
+	 *     bound to the object via {@see CaseTokenService::mintFor()}. Optional
 	 *     `label` (string) and `ttlSeconds` (int) tune the link. Returns
 	 *     the token metadata + the public resolve URL.
 	 *
@@ -446,15 +447,17 @@ class SharesProvider extends AbstractIntegrationProvider {
 		}
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
-		if ($service === null || method_exists($service, 'mint') === false) {
+		if ($service === null || method_exists($service, 'mintFor') === false) {
 			return parent::create(ref: $ref, payload: $payload);
 		}
 
-		return $service->mint(
-			objectUuid: $ref->id,
-			registerId: $this->numericOrNull(value: (string)$ref->register),
-			schemaId: $this->numericOrNull(value: (string)$ref->schema),
-			label: self::mintLabel(payload: $payload),
+		return $service->mintFor(
+			target: new CaseTokenTarget(
+				objectUuid: $ref->id,
+				registerId: $this->numericOrNull(value: (string)$ref->register),
+				schemaId: $this->numericOrNull(value: (string)$ref->schema),
+				label: self::mintLabel(payload: $payload)
+			),
 			ttlSeconds: self::mintTtl(payload: $payload)
 		);
 	}//end mintCaseTokenFor()

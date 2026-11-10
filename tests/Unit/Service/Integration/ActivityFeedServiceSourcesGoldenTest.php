@@ -65,8 +65,8 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 			->onlyMethods(['page'])
 			->getMock();
 		$history->method('page')->willReturnCallback(
-			function (string $register, string $schema, string $id) use ($historyFails): array {
-				$this->calls[] = ['history', $register, $schema, $id];
+			function (ObjectRef $ref) use ($historyFails): array {
+				$this->calls[] = ['history', $ref->register, $ref->schema, $ref->id];
 				if ($historyFails === true) {
 					throw new RuntimeException('trail down');
 				}
