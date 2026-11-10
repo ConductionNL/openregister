@@ -196,4 +196,19 @@ class ObjectSearchResultFormatterGoldenTest extends TestCase {
 		$this->assertSame('Nm', $entry['title']);
 		$this->assertSame('App', $entry['subline']);
 	}//end testClaimedPairIsRoundedAndKeepsItsDeepLink()
+	/**
+	 * The subline names the owner, then the register and the schema, each only when the hit carries its id.
+	 *
+	 * @return void
+	 */
+	public function testSublineNamesRegisterAndSchemaOnlyWhenKnown(): void {
+		$this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+		$formatter = $this->formatter();
+
+		$both = $formatter->format(['@self' => ['id' => 'u1', 'register' => 7, 'schema' => 9]], null)->jsonSerialize()['subline'];
+		$schemaOnly = $formatter->format(['@self' => ['id' => 'u2', 'schema' => 9]], null)->jsonSerialize()['subline'];
+		$neither = $formatter->format(['@self' => ['id' => 'u3']], null)->jsonSerialize()['subline'];
+
+		$this->assertSame(['Open Register · Unknown Register · Unknown Schema', 'Open Register · Unknown Schema', 'Open Register'], [$both, $schemaOnly, $neither]);
+	}//end testSublineNamesRegisterAndSchemaOnlyWhenKnown()
 }//end class
