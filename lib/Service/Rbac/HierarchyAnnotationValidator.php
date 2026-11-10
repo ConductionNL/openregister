@@ -108,10 +108,7 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 
 		$parent = trim((string)($annotation['parent'] ?? ($annotation['parentField'] ?? '')));
 		if ($parent === '') {
-			$findings[] = $this->error(
-				code: 'hierarchy.no-parent',
-				message: 'A hierarchy must name the property that points at the parent.'
-			);
+			$findings[] = $this->noParentError();
 			return $findings;
 		}
 
@@ -293,6 +290,18 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 
 		return ($identities !== [] && $this->targetsSelf(target: $target, identities: $identities) === false);
 	}//end pointsElsewhere()
+
+	/**
+	 * The finding for a hierarchy that names no parent property.
+	 *
+	 * @return array{code: string, message: string, severity: string}
+	 */
+	private function noParentError(): array {
+		return $this->error(
+			code: 'hierarchy.no-parent',
+			message: 'A hierarchy must name the property that points at the parent.'
+		);
+	}//end noParentError()
 
 	/**
 	 * The finding for a parent property the schema does not declare.
