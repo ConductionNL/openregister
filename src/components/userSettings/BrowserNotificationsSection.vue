@@ -76,6 +76,45 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 
+/**
+ * Subscribe or unsubscribe through the push client.
+ *
+ * @param {object} client The WebPush client
+ * @param {boolean} checked The requested toggle state
+ * @return {Promise<boolean>} Whether push is now enabled
+ */
+async function switchPush(client, checked) {
+	if (checked === true) {
+		await client.enablePush()
+		return true
+	}
+	await client.disablePush()
+	return false
+}
+
+/**
+ * The message shown while the push client script has not run yet.
+ *
+ * @param {object} vm The section, for its translator
+ * @return {string} The message
+ */
+function clientLoadingMessage(vm) {
+	return vm.t(
+		'openregister',
+		'Browser notification client is still loading — please try again in a moment.',
+	)
+}
+
+/**
+ * The message shown when a toggle failed without a message of its own.
+ *
+ * @param {object} vm The section, for its translator
+ * @return {string} The message
+ */
+function toggleFailedMessage(vm) {
+	return vm.t('openregister', 'Could not change browser notification settings.')
+}
+
 export default {
 	name: 'BrowserNotificationsSection',
 	components: {
@@ -182,29 +221,15 @@ export default {
 		async onToggle(checked) {
 			const client = this.client()
 			if (client === null) {
-				this.error = this.t(
-					'openregister',
-					'Browser notification client is still loading — please try again in a moment.',
-				)
+				this.error = clientLoadingMessage(this)
 				return
 			}
 			this.busy = true
 			this.error = null
 			try {
-				if (checked === true) {
-					await client.enablePush()
-					this.enabled = true
-				} else {
-					await client.disablePush()
-					this.enabled = false
-				}
+				this.enabled = await switchPush(client, checked)
 			} catch (e) {
-				this.error =
-					e.message
-					|| this.t(
-						'openregister',
-						'Could not change browser notification settings.',
-					)
+				this.error = e.message || toggleFailedMessage(this)
 				// Revert the optimistic state on failure.
 				this.enabled = !checked
 			} finally {
