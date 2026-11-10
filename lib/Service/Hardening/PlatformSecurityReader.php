@@ -149,41 +149,63 @@ class PlatformSecurityReader {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	public function bruteForceState(): array {
-		$enabled = null;
-		try {
-			$raw = $this->platform->config->getSystemValue('auth.bruteforce.protection.enabled', true);
-			$enabled = 0;
-			if ($raw === true || $raw === 'true' || $raw === 1 || $raw === '1') {
-				$enabled = 1;
-			}
-		} catch (Throwable) {
-			$enabled = null;
-		}
-
-		$delay = 0;
-		$attempts = 0;
-		$bypass = false;
-		try {
-			$address = $this->request->getRemoteAddress();
-			if ($address !== '') {
-				$delay = $this->throttler->getDelay($address);
-				$attempts = $this->throttler->getAttempts($address);
-				$bypass = $this->throttler->isBypassListed($address);
-			}
-		} catch (Throwable) {
-			$delay = 0;
-			$attempts = 0;
-			$bypass = false;
-		}
+		$enabled  = $this->throttlerEnabled();
+		$throttle = $this->throttleOfCaller();
 
 		return [
 			'throttlerEnabled' => $enabled,
-			'delayMilliseconds' => $delay,
-			'attempts' => $attempts,
-			'bypassListed' => $bypass,
+			'delayMilliseconds' => $throttle['delay'],
+			'attempts' => $throttle['attempts'],
+			'bypassListed' => $throttle['bypass'],
 		];
 
 	}//end bruteForceState()
+
+	/**
+	 * Whether brute-force protection is switched on.
+	 *
+	 * @return int|null 1 when on, 0 when off, null when the system config cannot be read.
+	 */
+	private function throttlerEnabled(): ?int {
+		try {
+			$raw = $this->platform->config->getSystemValue('auth.bruteforce.protection.enabled', true);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($raw === true || $raw === 'true' || $raw === 1 || $raw === '1') {
+			return 1;
+		}
+
+		return 0;
+
+	}//end throttlerEnabled()
+
+	/**
+	 * The throttle on the address the request came from.
+	 *
+	 * @return array{delay: int, attempts: int, bypass: bool} The delay, the attempts and
+	 *                                                       whether the address is bypass-listed;
+	 *                                                       zeros when there is no address or the throttler cannot answer.
+	 */
+	private function throttleOfCaller(): array {
+		$none = ['delay' => 0, 'attempts' => 0, 'bypass' => false];
+		try {
+			$address = $this->request->getRemoteAddress();
+			if ($address === '') {
+				return $none;
+			}
+
+			return [
+				'delay' => $this->throttler->getDelay($address),
+				'attempts' => $this->throttler->getAttempts($address),
+				'bypass' => $this->throttler->isBypassListed($address),
+			];
+		} catch (Throwable) {
+			return $none;
+		}
+
+	}//end throttleOfCaller()
 
 	/**
 	 * Read one integer from the password policy app.
