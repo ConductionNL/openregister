@@ -45,7 +45,8 @@ class ForcedChannelPolicyValidateGoldenTest extends TestCase {
 	private static function forcesExternal(string $channels): array {
 		return [
 			'code' => 'notification-internal-only-forces-external-channel',
-			'message' => 'An internal-only kind forces ' . $channels . ', which can carry it outside the organisation. The two declarations contradict each other.',
+			'message' => 'An internal-only kind forces ' . $channels
+				. ', which can carry it outside the organisation. The two declarations contradict each other.',
 		];
 	}
 
@@ -66,7 +67,11 @@ class ForcedChannelPolicyValidateGoldenTest extends TestCase {
 				[],
 			],
 			'internal, forced external' => [
-				['internalOnly' => true, 'channels' => ['nc-notification'], 'forcedChannels' => ['channels' => ['email', 'web-push', 'activity'], 'reason' => 'r']],
+				[
+					'internalOnly' => true,
+					'channels' => ['nc-notification'],
+					'forcedChannels' => ['channels' => ['email', 'web-push', 'activity'], 'reason' => 'r'],
+				],
 				[self::forcesExternal('email, web-push')],
 			],
 			'all three' => [
