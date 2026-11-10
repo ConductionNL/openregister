@@ -636,7 +636,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueComplexTemplate(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willReturn('John Doe');
 
 		$result = $this->invokePrivate('resolveDefaultTemplateValue', [
@@ -666,7 +666,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueExceptionReturnsNull(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$result = $this->invokePrivate('resolveDefaultTemplateValue', [
@@ -1528,7 +1528,7 @@ class SaveObjectAdditionalTest extends TestCase {
 			],
 		];
 
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$entity = $this->createEntity(1, 'test-uuid');

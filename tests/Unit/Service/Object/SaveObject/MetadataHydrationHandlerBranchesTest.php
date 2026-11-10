@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * What each path through the metadata hydration decides.
@@ -151,7 +152,7 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 		);
 		$handler = $this->handler();
 
-		$this->assertSame(self::UUID, $handler->processTwigLikeTemplate(['owner' => self::UUID], '{{ owner }}', $properties));
+		$this->assertSame(self::UUID, $handler->renderTemplate(template: '{{ owner }}', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: $properties)));
 		$this->assertSame(self::UUID, $handler->processFieldWithFallbacks(['owner' => self::UUID], 'owner', $properties));
 	}//end testAnUnresolvedRelationKeepsItsUuid()
 
@@ -163,9 +164,9 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 	public function testTemplatesRenderOnlyWhenSomethingIsFilled(): void {
 		$handler = $this->handler();
 
-		$this->assertNull($handler->processTwigLikeTemplate(['a' => 'x'], 'no placeholders'));
-		$this->assertNull($handler->processTwigLikeTemplate(['a' => ''], '{{ a }} {{ b }}'));
-		$this->assertSame('x - y', $handler->processTwigLikeTemplate(['a' => ' x ', 'b' => 'y'], "{{ a }}   -\n {{ b }}"));
+		$this->assertNull($handler->renderTemplate(template: 'no placeholders', source: new TemplateSource(data: ['a' => 'x'], schemaProperties: [])));
+		$this->assertNull($handler->renderTemplate(template: '{{ a }} {{ b }}', source: new TemplateSource(data: ['a' => ''], schemaProperties: [])));
+		$this->assertSame('x - y', $handler->renderTemplate(template: "{{ a }}   -\n {{ b }}", source: new TemplateSource(data: ['a' => ' x ', 'b' => 'y'], schemaProperties: [])));
 	}//end testTemplatesRenderOnlyWhenSomethingIsFilled()
 
 	/**
@@ -177,13 +178,13 @@ class MetadataHydrationHandlerBranchesTest extends TestCase {
 		$handler = $this->handler();
 		$data = ['vip' => 'yes', 'none' => '', 'list' => [], 'code' => 'nl', 'other' => 'de', 'b' => 'Bee'];
 
-		$this->assertSame('Gold', $handler->processTwigLikeTemplate($data, '{{ vip | ifFilled: Gold, Basic }}'));
-		$this->assertSame('Basic', $handler->processTwigLikeTemplate($data, '{{ none | ifFilled: Gold, Basic }}'));
-		$this->assertSame('Basic', $handler->processTwigLikeTemplate($data, '{{ list | ifFilled: Gold, Basic }}'));
-		$this->assertSame('Nederlands', $handler->processTwigLikeTemplate($data, '{{ code | map: nl=Nederlands, en=English }}'));
-		$this->assertSame('de', $handler->processTwigLikeTemplate($data, '{{ other | map: nl=Nederlands }}'));
-		$this->assertSame('Nederlands', $handler->processTwigLikeTemplate($data, '{{ none | map: nl=Nederlands, en=English }}'));
-		$this->assertSame('Bee', $handler->processTwigLikeTemplate($data, '{{ a | b }}'));
+		$this->assertSame('Gold', $handler->renderTemplate(template: '{{ vip | ifFilled: Gold, Basic }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Basic', $handler->renderTemplate(template: '{{ none | ifFilled: Gold, Basic }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Basic', $handler->renderTemplate(template: '{{ list | ifFilled: Gold, Basic }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Nederlands', $handler->renderTemplate(template: '{{ code | map: nl=Nederlands, en=English }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('de', $handler->renderTemplate(template: '{{ other | map: nl=Nederlands }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Nederlands', $handler->renderTemplate(template: '{{ none | map: nl=Nederlands, en=English }}', source: new TemplateSource(data: $data, schemaProperties: [])));
+		$this->assertSame('Bee', $handler->renderTemplate(template: '{{ a | b }}', source: new TemplateSource(data: $data, schemaProperties: [])));
 	}//end testTemplateFilters()
 
 	/**
