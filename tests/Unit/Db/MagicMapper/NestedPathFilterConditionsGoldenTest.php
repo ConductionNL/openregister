@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\NestedPathFilter;
+use OCA\OpenRegister\Db\MagicMapper\NestedPathTarget;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -112,7 +113,7 @@ final class NestedPathFilterConditionsGoldenTest extends TestCase {
 			return ':b'.(count($seen) - 1);
 		};
 
-		$actual = (new NestedPathFilter())->conditions(expression: 'E', value: $value, bind: $bind, isPostgres: $isPostgres);
+		$actual = (new NestedPathFilter())->conditions(target: new NestedPathTarget(expression: 'E', bind: $bind, isPostgres: $isPostgres), value: $value);
 
 		$this->assertSame($conditions, $actual);
 		$this->assertSame($bound, $seen);

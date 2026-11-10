@@ -92,9 +92,11 @@ final class MapperWiring {
 			schemaMapper: $container->get(SchemaMapperInterface::class),
 			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 			container: $container,
-			organisationMapper: $container->get(OrganisationMapperInterface::class),
-			userSession: $container->get('OCP\IUserSession'),
-			groupManager: $container->get('OCP\IGroupManager'),
+			tenancy: new TenancyServices(
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
+				userSession: $container->get('OCP\IUserSession'),
+				groupManager: $container->get('OCP\IGroupManager')
+			),
 			appConfig: $container->get('OCP\IAppConfig'),
 			// Explicitly wired: this factory overrides autowiring, so an
 			// argument omitted here is never supplied at all. That is how

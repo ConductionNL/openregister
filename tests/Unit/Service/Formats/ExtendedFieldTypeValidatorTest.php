@@ -49,7 +49,7 @@ class ExtendedFieldTypeValidatorTest extends TestCase {
 	 * @dataProvider colorProvider
 	 */
 	public function testValidateColor(mixed $value, ?string $format, ?string $expected, string $message): void {
-		$this->assertSame($expected, $this->validator->validateColor($value, $format, 'accent'), $message);
+		$this->assertSame($expected, $this->validator->validateColorProperty($value, new FormattedProperty('accent', $format)), $message);
 	}//end testValidateColor()
 
 	public static function colorProvider(): array {
@@ -105,7 +105,7 @@ class ExtendedFieldTypeValidatorTest extends TestCase {
 	public function testMaterialiseOccurrencesReturnsRequestedCount(): void {
 		// Anchor on a fixed Monday so the result is deterministic.
 		$start = new DateTimeImmutable('2026-01-05T00:00:00Z');
-		$occurrences = $this->validator->materialiseOccurrences('FREQ=WEEKLY;BYDAY=MO;COUNT=10', 3, $start);
+		$occurrences = $this->validator->occurrencesIn(new RecurrenceWindow('FREQ=WEEKLY;BYDAY=MO;COUNT=10', 3, $start));
 
 		$this->assertCount(3, $occurrences, 'exactly 3 occurrences requested');
 		$this->assertSame('2026-01-05T00:00:00+00:00', $occurrences[0], 'first Monday is the anchor date');
@@ -115,7 +115,7 @@ class ExtendedFieldTypeValidatorTest extends TestCase {
 
 	public function testMaterialiseOccurrencesClampsToMax(): void {
 		$start = new DateTimeImmutable('2026-01-05T00:00:00Z');
-		$occurrences = $this->validator->materialiseOccurrences('FREQ=DAILY', 1000, $start);
+		$occurrences = $this->validator->occurrencesIn(new RecurrenceWindow('FREQ=DAILY', 1000, $start));
 
 		$this->assertCount(
 			ExtendedFieldTypeValidator::MAX_OCCURRENCES,
@@ -126,7 +126,7 @@ class ExtendedFieldTypeValidatorTest extends TestCase {
 
 	public function testMaterialiseOccurrencesFallsBackToDefaultForZero(): void {
 		$start = new DateTimeImmutable('2026-01-05T00:00:00Z');
-		$occurrences = $this->validator->materialiseOccurrences('FREQ=DAILY', 0, $start);
+		$occurrences = $this->validator->occurrencesIn(new RecurrenceWindow('FREQ=DAILY', 0, $start));
 
 		$this->assertCount(
 			ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES,
@@ -134,23 +134,4 @@ class ExtendedFieldTypeValidatorTest extends TestCase {
 			'a zero count falls back to the default occurrence count'
 		);
 	}//end testMaterialiseOccurrencesFallsBackToDefaultForZero()
-
-	public function testValidateColorPropertyAnswersAsValidateColor(): void {
-		foreach ([['#ff0000', null], ['rgba(1,2,3)', 'rgba'], [12, null], ['oklch(0.5 0.1 120)', 'oklch'], ['red', 'hex']] as [$value, $format]) {
-			$this->assertSame(
-				$this->validator->validateColor($value, $format, 'accent'),
-				$this->validator->validateColorProperty($value, new FormattedProperty('accent', $format))
-			);
-		}
-	}//end testValidateColorPropertyAnswersAsValidateColor()
-
-	public function testOccurrencesInAnswersAsMaterialiseOccurrences(): void {
-		$start = new DateTimeImmutable('2026-01-05T00:00:00Z');
-		foreach ([['FREQ=WEEKLY;BYDAY=MO;COUNT=10', 3], ['FREQ=DAILY', 0], ['not a rule', 2]] as [$rrule, $count]) {
-			$this->assertSame(
-				$this->validator->materialiseOccurrences($rrule, $count, $start),
-				$this->validator->occurrencesIn(new RecurrenceWindow($rrule, $count, $start))
-			);
-		}
-	}//end testOccurrencesInAnswersAsMaterialiseOccurrences()
 }//end class

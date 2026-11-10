@@ -232,7 +232,8 @@ class DecisionOwnershipTest extends TestCase {
 				decisions: new DecisionService(decisionMapper: $decisionMapper),
 				groupManager: $groups,
 				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)
-			)
+			),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end controllerAs()
 

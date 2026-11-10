@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths;
@@ -50,7 +51,7 @@ class ExampleSetChangeReadBackRevertTest extends TestCase {
 	 */
 	private function revert(array $row, array $set): array {
 		$store = $this->createMock(ExampleSetStore::class);
-		$store->method('read')->with('cases', 'case', 'c-1')->willReturn(['row' => $row, 'error' => '']);
+		$store->method('readRow')->with(new ObjectRef(register: 'cases', schema: 'case', id: 'c-1'))->willReturn(['row' => $row, 'error' => '']);
 		$fields  = $this->createMock(ExampleSetChangeFields::class);
 		$fields->method('textFields')->willReturn([]);
 		$written = null;

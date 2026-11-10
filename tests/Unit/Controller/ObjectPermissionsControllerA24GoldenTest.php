@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Controller\ObjectPermissionsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -69,10 +70,10 @@ class ObjectPermissionsControllerA24GoldenTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('case-1');
 		$gate = $this->createMock(AccessReviewGate::class);
-		$gate->method('resolve')->with('r', 's', 'case-1')->willReturn(null);
+		$gate->method('resolve')->with(new ObjectRef('r', 's', 'case-1'))->willReturn(null);
 		if ($readable === true) {
 			$gate = $this->createMock(AccessReviewGate::class);
-			$gate->method('resolve')->with('r', 's', 'case-1')->willReturn($object);
+			$gate->method('resolve')->with(new ObjectRef('r', 's', 'case-1'))->willReturn($object);
 			$gate->expects($this->atLeastOnce())->method('mayReviewAccess')->willReturn($mayReview);
 		} else {
 			$gate->expects($this->never())->method('mayReviewAccess');

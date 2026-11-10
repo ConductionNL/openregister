@@ -97,17 +97,14 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	/**
 	 * Arm the timers of an item that just became active.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string|null $actor The identity that moved it.
-	 * @param DateTimeInterface|null $now The clock; null is the real clock.
+	 * @param CaseItem     $item The item.
+	 * @param FlowTimerAct $act  The identity that moved it and the clock.
 	 *
 	 * @return int How many timers were armed.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	public function onEntered(CaseItem $item, ?string $actor, ?DateTimeInterface $now = null): int {
-		$act = new FlowTimerAct(actor: $actor, now: DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable()));
-
+	public function onEntered(CaseItem $item, FlowTimerAct $act): int {
 		return $this->armDeadlines(item: $item, act: $act);
 	}//end onEntered()
 

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportDossierSources;
 use OCA\OpenRegister\Service\Gdpr\Export\OneTimeDownloadTokenStore;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportQueue;
 use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
@@ -426,7 +427,7 @@ final class ExportGoldenTest extends TestCase {
 	}//end subjectService()
 
 	public function testRequestQueuesAndAuditsBothNames(): void {
-		$export = $this->subjectService(null, null)->request('  jan@example.org ', 'email', 'DSR-1');
+		$export = $this->subjectService(null, null)->requestFor(new SubjectExportRequest('  jan@example.org ', 'email', 'DSR-1'));
 
 		self::assertSame('export-new', $export->getUuid());
 		self::assertSame(

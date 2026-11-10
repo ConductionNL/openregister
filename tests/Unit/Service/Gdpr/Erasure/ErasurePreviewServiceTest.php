@@ -188,7 +188,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			scope: ['files' => 2, 'timeline' => 3]
 		);
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
 		self::assertSame(12, $preview['matchedCount']);
 		self::assertSame(8, $preview['counts'][ErasureBucket::ERASABLE][ErasureBucket::OBJECTS]);
@@ -217,7 +217,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 		$service = $this->service(hits: [$this->hit($object)]);
 
 		$before = $object->getObject();
-		$service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
+		$service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
 
 		// The payload the preview walked is byte-for-byte what it was. The
 		// object was never handed to a mapper either: the collaborators that can
@@ -238,7 +238,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			}
 		);
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
 		self::assertSame(0, $preview['counts'][ErasureBucket::ERASABLE][ErasureBucket::OBJECTS]);
 		self::assertSame(1, $preview['counts'][ErasureBucket::PROTECTED][ErasureBucket::OBJECTS]);
@@ -257,7 +257,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			}
 		);
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
 		self::assertSame(ErasureBucket::GROUND_UNRESOLVABLE, $preview['protected'][0]['ground']);
 	}//end testAnUnresolvableImmutabilityCheckIsAlsoProtected()
@@ -268,7 +268,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			immutable: static fn (ObjectEntity $object): ?string => 'vernietigd'
 		);
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
 		self::assertSame(ErasureBucket::GROUND_IMMUTABLE, $preview['protected'][0]['ground']);
 		self::assertStringContainsString('vernietigd', $preview['protected'][0]['basis']);
@@ -283,7 +283,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			]
 		);
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
 		self::assertSame(0, $preview['counts'][ErasureBucket::ERASABLE][ErasureBucket::OBJECTS]);
 		self::assertSame(1, $preview['counts'][ErasureBucket::PSEUDONYMISED][ErasureBucket::OBJECTS]);
@@ -300,7 +300,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 			coRows: [['type' => 'email', 'value' => strtoupper(self::SUBJECT)]]
 		);
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
 		self::assertSame(1, $preview['counts'][ErasureBucket::ERASABLE][ErasureBucket::OBJECTS]);
 	}//end testTheSubjectsOwnSecondIdentifierIsNotASecondPerson()
@@ -321,7 +321,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 
 		$service = $this->service(hits: [$this->hit($this->object('zaak-rollen', $payload))]);
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
 
 		self::assertSame(2, $preview['counts'][ErasureBucket::PSEUDONYMISED][ErasureBucket::PARTIES]);
 	}//end testPartyRecordsNamingTheSubjectAreCounted()
@@ -329,8 +329,8 @@ final class ErasurePreviewServiceTest extends TestCase {
 	public function testTheDigestAgreesAcrossTwoReadingsOfAnUnchangedWorld(): void {
 		$service = $this->service(hits: [$this->hit($this->object('zaak-1'))]);
 
-		$first = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
-		$second = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
+		$first = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
+		$second = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
 
 		self::assertSame($first['digest'], $second['digest']);
 		// The generatedAt differs between the two and is deliberately outside the
@@ -348,8 +348,8 @@ final class ErasurePreviewServiceTest extends TestCase {
 		);
 
 		self::assertNotSame(
-			$one->preview(self::SUBJECT)['digest'],
-			$two->preview(self::SUBJECT)['digest']
+			$one->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT))['digest'],
+			$two->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT))['digest']
 		);
 	}//end testTheDigestMovesWhenTheWorldDoes()
 
@@ -370,7 +370,7 @@ final class ErasurePreviewServiceTest extends TestCase {
 				new NullLogger()
 			), new ErasureCounters(new CoSubjectProbe($db, $parties, new NullLogger()), new ErasureScopeCounter($scopeService, new ErasureSchemaResolver($this->createMock(SchemaMapper::class)), new NullLogger()), $parties));
 
-		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$preview = $service->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 
 		self::assertSame(1, $preview['counts'][ErasureBucket::PSEUDONYMISED][ErasureBucket::OBJECTS]);
 		self::assertSame(0, $preview['counts'][ErasureBucket::ERASABLE][ErasureBucket::OBJECTS]);

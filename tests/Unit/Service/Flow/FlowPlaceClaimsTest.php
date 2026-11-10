@@ -94,14 +94,14 @@ class FlowPlaceClaimsTest extends TestCase {
 	}//end setUp()
 
 	public function testPlacesAreClaimedInOneFixedBytewiseOrder(): void {
-		$taken = $this->claims->acquire(runUuid: 'r', streamId: 's', transition: 'T', places: ['c', 'a', 'b'], owner: 'A');
+		$taken = $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's', transition: 'T', places: ['c', 'a', 'b']), pass: new ClaimPass(owner: 'A'));
 		$this->assertSame(['a', 'b', 'c'], $taken);
 		$this->assertSame(['a', 'b', 'c'], $this->attempts);
 	}//end testPlacesAreClaimedInOneFixedBytewiseOrder()
 
 	public function testTwoWorkersOnTheSamePlaceExactlyOneWins(): void {
-		$first = $this->claims->acquire(runUuid: 'r', streamId: 's', transition: 'T1', places: ['a', 'c'], owner: 'A');
-		$second = $this->claims->acquire(runUuid: 'r', streamId: 's', transition: 'T1', places: ['a', 'c'], owner: 'B');
+		$first = $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's', transition: 'T1', places: ['a', 'c']), pass: new ClaimPass(owner: 'A'));
+		$second = $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's', transition: 'T1', places: ['a', 'c']), pass: new ClaimPass(owner: 'B'));
 
 		$this->assertSame(['a', 'c'], $first);
 		$this->assertNull($second);
@@ -110,25 +110,25 @@ class FlowPlaceClaimsTest extends TestCase {
 	}//end testTwoWorkersOnTheSamePlaceExactlyOneWins()
 
 	public function testDisjointBranchesBothProceed(): void {
-		$this->assertSame(['a', 'c'], $this->claims->acquire(runUuid: 'r', streamId: 's1', transition: 'T1', places: ['a', 'c'], owner: 'A'));
-		$this->assertSame(['b', 'd'], $this->claims->acquire(runUuid: 'r', streamId: 's2', transition: 'T2', places: ['b', 'd'], owner: 'B'));
+		$this->assertSame(['a', 'c'], $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's1', transition: 'T1', places: ['a', 'c']), pass: new ClaimPass(owner: 'A')));
+		$this->assertSame(['b', 'd'], $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's2', transition: 'T2', places: ['b', 'd']), pass: new ClaimPass(owner: 'B')));
 	}//end testDisjointBranchesBothProceed()
 
 	public function testARefusalReleasesWhatTheAttemptTookAndTheFiringStaysClaimable(): void {
 		// B holds c. A wants {a, c}: takes a, is refused c, releases a.
-		$this->claims->acquire(runUuid: 'r', streamId: 's2', transition: 'T2', places: ['c'], owner: 'B');
-		$this->assertNull($this->claims->acquire(runUuid: 'r', streamId: 's1', transition: 'T1', places: ['a', 'c'], owner: 'A'));
+		$this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's2', transition: 'T2', places: ['c']), pass: new ClaimPass(owner: 'B'));
+		$this->assertNull($this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's1', transition: 'T1', places: ['a', 'c']), pass: new ClaimPass(owner: 'A')));
 		$this->assertArrayNotHasKey('r|a', $this->index);
 
 		// Once B releases c, A's next attempt succeeds — the firing was skipped, never lost.
 		$this->claims->release(runUuid: 'r', places: ['c']);
-		$this->assertSame(['a', 'c'], $this->claims->acquire(runUuid: 'r', streamId: 's1', transition: 'T1', places: ['a', 'c'], owner: 'A'));
+		$this->assertSame(['a', 'c'], $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's1', transition: 'T1', places: ['a', 'c']), pass: new ClaimPass(owner: 'A')));
 	}//end testARefusalReleasesWhatTheAttemptTookAndTheFiringStaysClaimable()
 
 	public function testATwelveTokenMarkingHoldsAtMostFiveClaimsPerRun(): void {
 		$held = 0;
 		for ($i = 0; $i < 12; $i++) {
-			$taken = $this->claims->acquire(runUuid: 'r', streamId: 's' . $i, transition: 'T' . $i, places: ['p' . $i], owner: 'W');
+			$taken = $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's' . $i, transition: 'T' . $i, places: ['p' . $i]), pass: new ClaimPass(owner: 'W'));
 			if ($taken !== null) {
 				$held++;
 			}
@@ -150,18 +150,18 @@ class FlowPlaceClaimsTest extends TestCase {
 		// One pass holding passCap() claims across many runs is refused the next.
 		$cap = FlowPlaceClaims::passCap();
 		for ($i = 0; $i < $cap; $i++) {
-			$this->assertNotNull($this->claims->acquire(runUuid: 'run' . $i, streamId: 's', transition: 'T', places: ['p'], owner: 'pass'));
+			$this->assertNotNull($this->claims->claim(firing: new FiringClaim(runUuid: 'run' . $i, streamId: 's', transition: 'T', places: ['p']), pass: new ClaimPass(owner: 'pass')));
 		}
 
-		$this->assertNull($this->claims->acquire(runUuid: 'run-extra', streamId: 's', transition: 'T', places: ['p'], owner: 'pass'));
+		$this->assertNull($this->claims->claim(firing: new FiringClaim(runUuid: 'run-extra', streamId: 's', transition: 'T', places: ['p']), pass: new ClaimPass(owner: 'pass')));
 		// Another pass is unaffected.
-		$this->assertNotNull($this->claims->acquire(runUuid: 'run-extra', streamId: 's', transition: 'T', places: ['p'], owner: 'other-pass'));
+		$this->assertNotNull($this->claims->claim(firing: new FiringClaim(runUuid: 'run-extra', streamId: 's', transition: 'T', places: ['p']), pass: new ClaimPass(owner: 'other-pass')));
 	}//end testAPassIsBoundedAcrossRuns()
 
 	public function testAcquiringInsideATransactionIsRefusedLoudly(): void {
 		$this->inTransaction = true;
 		$this->expectException(LogicException::class);
-		$this->claims->acquire(runUuid: 'r', streamId: 's', transition: 'T', places: ['a'], owner: 'A');
+		$this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's', transition: 'T', places: ['a']), pass: new ClaimPass(owner: 'A'));
 	}//end testAcquiringInsideATransactionIsRefusedLoudly()
 
 	public function testOwnerTokensAreUniquePerPass(): void {
@@ -170,7 +170,7 @@ class FlowPlaceClaimsTest extends TestCase {
 	}//end testOwnerTokensAreUniquePerPass()
 
 	public function testEachClaimRowNamesTheRunPlaceOwnerStreamTransitionAndOneClaimTime(): void {
-		$this->claims->acquire(runUuid: 'r', streamId: 's7', transition: 'T7', places: ['b', 'a'], owner: 'A');
+		$this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's7', transition: 'T7', places: ['b', 'a']), pass: new ClaimPass(owner: 'A'));
 
 		$this->assertSame(['r|a', 'r|b'], array_keys($this->index));
 		$first = $this->index['r|a'];
@@ -190,11 +190,11 @@ class FlowPlaceClaimsTest extends TestCase {
 	}//end testEachClaimRowNamesTheRunPlaceOwnerStreamTransitionAndOneClaimTime()
 
 	public function testDuplicatePlacesAreClaimedOnceAndNoPlacesClaimNothing(): void {
-		$this->assertSame(['1', 'a'], $this->claims->acquire(runUuid: 'r', streamId: 's', transition: 'T', places: ['a', 1, 'a', '1'], owner: 'A'));
+		$this->assertSame(['1', 'a'], $this->claims->claim(firing: new FiringClaim(runUuid: 'r', streamId: 's', transition: 'T', places: ['a', 1, 'a', '1']), pass: new ClaimPass(owner: 'A')));
 		$this->assertSame(['1', 'a'], $this->attempts);
 
 		$this->attempts = [];
-		$this->assertSame([], $this->claims->acquire(runUuid: 'r2', streamId: 's', transition: 'T', places: [], owner: 'A'));
+		$this->assertSame([], $this->claims->claim(firing: new FiringClaim(runUuid: 'r2', streamId: 's', transition: 'T', places: []), pass: new ClaimPass(owner: 'A')));
 		$this->assertSame([], $this->attempts);
 	}//end testDuplicatePlacesAreClaimedOnceAndNoPlacesClaimNothing()
 
