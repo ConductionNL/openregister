@@ -214,7 +214,7 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function giveInEveryOrganisation(SpecialRightGrant $grant): array {
+	public function giveGrantInEveryOrganisation(SpecialRightGrant $grant): array {
 		$answer = ['organisations' => 0, 'changed' => 0];
 		$offset = 0;
 		do {
@@ -230,6 +230,22 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 		} while ($read === self::PAGE);
 
 		return $answer;
+	}//end giveGrantInEveryOrganisation()
+
+	/**
+	 * Give a group a special right in every organisation, by the loose values other apps pass.
+	 *
+	 * @param string             $right    The special right.
+	 * @param string             $group    The group that holds it.
+	 * @param string|null        $register The register it is narrowed to, or null.
+	 * @param array<int, string> $schemas  The schemas it is narrowed to, or null.
+	 *
+	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	public function giveInEveryOrganisation(string $right, string $group, ?string $register=null, ?array $schemas=null): array {
+		return $this->giveGrantInEveryOrganisation(grant: new SpecialRightGrant(right: $right, group: $group, register: $register, schemas: $schemas));
 	}//end giveInEveryOrganisation()
 
 	/**

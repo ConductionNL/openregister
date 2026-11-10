@@ -266,7 +266,7 @@ class OrganisationSpecialRightsTest extends TestCase {
 		);
 		$this->organisations->expects($this->once())->method('update')->with($lacks)->willReturnArgument(0);
 
-		$answer = $this->rights->giveInEveryOrganisation(new SpecialRightGrant(self::RIGHT, 'svc', 'dossiq', ['reviewBatch']));
+		$answer = $this->rights->giveGrantInEveryOrganisation(new SpecialRightGrant(self::RIGHT, 'svc', 'dossiq', ['reviewBatch']));
 
 		$this->assertSame(['organisations' => 2, 'changed' => 1], $answer);
 		$this->assertSame(
@@ -278,4 +278,24 @@ class OrganisationSpecialRightsTest extends TestCase {
 	public function testANewOrganisationDeclaresTheRightWithNobodyHoldingIt(): void {
 		$this->assertSame([], (new Organisation())->getAuthorization()[self::RIGHT]);
 	}//end testANewOrganisationDeclaresTheRightWithNobodyHoldingIt()
+
+	public function testTheLooseValueSignatureAnswersByNameAndPositionally(): void {
+		$lacks = new Organisation();
+		$lacks->setUuid('org-lacks');
+		$other = new Organisation();
+		$other->setUuid('org-other');
+		$this->organisations->method('findAll')->willReturnOnConsecutiveCalls([$lacks], [$other]);
+		$this->organisations->method('findByUuid')->willReturnCallback(
+			static fn (string $uuid): Organisation => ['org-lacks' => $lacks, 'org-other' => $other][$uuid]
+		);
+		$this->organisations->expects($this->exactly(2))->method('update')->willReturnArgument(0);
+
+		$named = $this->rights->giveInEveryOrganisation(right: self::RIGHT, group: 'svc', register: 'dossiq', schemas: ['reviewBatch']);
+		$positional = $this->rights->giveInEveryOrganisation(self::RIGHT, 'svc');
+
+		$this->assertSame(['organisations' => 1, 'changed' => 1], $named);
+		$this->assertSame(['organisations' => 1, 'changed' => 1], $positional);
+		$this->assertSame([['group' => 'svc', 'register' => 'dossiq', 'schemas' => ['reviewBatch']]], $lacks->getAuthorization()[self::RIGHT]);
+		$this->assertSame(['svc'], $other->getAuthorization()[self::RIGHT]);
+	}//end testTheLooseValueSignatureAnswersByNameAndPositionally()
 }//end class

@@ -91,5 +91,5 @@ interface OrganisationSpecialRightsInterface {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function giveInEveryOrganisation(SpecialRightGrant $grant): array;
+	public function giveGrantInEveryOrganisation(SpecialRightGrant $grant): array;
 }//end interface
