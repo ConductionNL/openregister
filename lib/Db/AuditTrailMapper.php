@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics;
-use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
@@ -37,7 +36,6 @@ use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
-use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailStatistics;
 use DateTime;
 use DateTimeInterface;
@@ -94,7 +92,7 @@ use Throwable;
  *   for the same reason: this is the one place an audit row is written, and every entry
  *   point that writes one has to go through it or the hash chain has a second author.
  * @SuppressWarnings(PHPMD.ExcessivePublicCount) Same reason: the slug backfill's run entry
- *   (createSlugBackfillEntry) is one more entry point that must seal into the hash chain here.
+ *   (recordSlugBackfill) is one more entry point that must seal into the hash chain here.
  */
 class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
@@ -213,7 +211,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// Attribution is applied here as well as in buildAuditTrail(), which
 		// covers the entry points that do NOT build their row there —
 		// createAuditTrailEntry() (archival/retention) and
-		// createToolInvocationEntry() (MCP). Both can be reached from inside a
+		// recordToolInvocation() (MCP). Both can be reached from inside a
 		// flow. Re-applying to a row the builder already stamped is idempotent:
 		// it reads the same ambient frame and writes the same three values.
 		//
@@ -2940,46 +2938,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end stampIpAddress()
 
 	/**
-	 * Create one immutable, hash-chained audit record for an MCP tool
-	 * invocation (ADR-063 chain 2/3, EU AI Act art.12/14).
-	 *
-	 * Reuses the existing `AuditTrail` table and `AuditHashService` hash
-	 * chain unchanged — `action` is namespaced `mcp.{verb}` (e.g.
-	 * `mcp.search`) so it never collides with the plain `create` / `update`
-	 * / `delete` / `read` object-CRUD actions that statistics code buckets
-	 * on. Acting identity is resolved from the ambient Nextcloud session,
-	 * exactly like {@see createAuditTrail()} — the IMcpToolProvider ABI does
-	 * not thread an acting-agent identity into `invokeTool()`, so a
-	 * non-human agent principal cannot be distinguished from the session's
-	 * human user yet (tracked as a DEFERRED_QUESTION coordinated with
-	 * Hermiq's `agent-tool-governance-and-disclosure` change).
-	 *
-	 * @param string $toolId Full namespaced tool id, e.g. `pipelinq.lead.search`.
-	 * @param string $paramsDigest SHA-256 hex digest of the invocation's canonical arguments (never raw values).
-	 * @param array $resultSummary Structured outcome summary (count/ids/isError/errorClass).
-	 * @param AuditedObject $about The register, schema and object the invocation touched, each when known.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
-	 *
-	 */
-	public function createToolInvocationEntry(
-		string $toolId,
-		string $paramsDigest,
-		array $resultSummary,
-		AuditedObject $about = new AuditedObject(),
-	): AuditTrail {
-		$invocation = new ToolInvocation(toolId: $toolId, paramsDigest: $paramsDigest, resultSummary: $resultSummary, about: $about);
-
-		return $this->recordToolInvocation(invocation: $invocation);
-	}//end createToolInvocationEntry()
-
-	/**
 	 * Record one MCP tool invocation.
-	 *
-	 * The typed form of {@see createToolInvocationEntry()}, which keeps its signature for other apps.
 	 *
 	 * @param ToolInvocation $invocation The tool id, argument digest, outcome summary and what it touched.
 	 *
@@ -3244,69 +3203,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end andActionIs()
 
 	/**
-	 * Create one immutable, hash-chained audit record for a write that was
-	 * refused because the resource is shared master data held by another
-	 * organisation.
-	 *
-	 * A gemeenschappelijke regeling shares its code lists, its case types and
-	 * its parties across several legal entities, and the read path now hands a
-	 * consumer the holder's rows. The moment a consumer can SEE the holder's
-	 * code list, "they tried to change it" becomes a question an auditor asks
-	 * and a 403 alone cannot answer. This is the answer.
-	 *
-	 * Object-less by construction, following
-	 * {@see createPartyQueryRefusalEntry()}: there is no object, because the
-	 * write never happened. `object` has been nullable since
-	 * Version1Date20260423100000 for exactly this shape of row.
-	 *
-	 * 🔑 THE ACTOR IS PSEUDONYMOUS AND THE CONTEXT IS REDACTED BEFORE IT
-	 * ARRIVES. This method persists what it is handed; REQ-SLE-003 is enforced
-	 * by {@see \OCA\OpenRegister\Service\TenantLogRedactor} at the call site,
-	 * because the same context also goes to the log and the two must not
-	 * disagree about what a line may carry.
-	 *
-	 * @param string $holderOrganisation UUID of the organisation that holds the shared resource.
-	 * @param string $sourceOrganisation UUID of the organisation that attempted the write.
-	 * @param string $resourceType Either `register` or `schema`.
-	 * @param array $context Already-redacted refusal context.
-	 * @param int|null $register Register id the write targeted, when known.
-	 * @param int|null $schema Schema id the write targeted, when known.
-	 * @param string|null $objectUuid Object uuid the caller named, when it named one.
-	 * @param string|null $actorId Acting user id, or null for a system context.
-	 * @param string|null $actorReference Pseudonymous actor reference for the `user_name` column.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one column of the refusal record.
-	 *
-	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
-	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
-	 */
-	public function createSharedMasterDataRefusalEntry(
-		string $holderOrganisation,
-		string $sourceOrganisation,
-		string $resourceType,
-		array $context = [],
-		int|null $register = null,
-		int|null $schema = null,
-		string|null $objectUuid = null,
-		string|null $actorId = null,
-		string|null $actorReference = null,
-	): AuditTrail {
-		$target = new AuditedObject(register: $register, schema: $schema, objectUuid: $objectUuid);
-		$options = new SharedMasterDataRefusalOptions(context: $context, target: $target, actor: new NamedActor(id: $actorId, name: $actorReference));
-
-		$parties = ['holderOrganisation' => $holderOrganisation, 'sourceOrganisation' => $sourceOrganisation, 'resourceType' => $resourceType];
-
-		return $this->recordSharedMasterDataRefusal(refusal: new SharedMasterDataRefusal(...$parties, options: $options));
-	}//end createSharedMasterDataRefusalEntry()
-
-	/**
 	 * Record a write refused because the resource is shared master data another organisation holds.
 	 *
-	 * The typed form of {@see createSharedMasterDataRefusalEntry()}, which keeps its
-	 * signature for other apps. The actor is pseudonymous and the context is
-	 * redacted before it arrives, as there.
+	 * The actor is pseudonymous and the context is redacted before it arrives;
+	 * {@see AuditTrailMapperInterface::recordSharedMasterDataRefusal()} explains why.
 	 *
 	 * @param SharedMasterDataRefusal $refusal The organisations, the resource type, and the context, target and actor.
 	 *
@@ -3401,41 +3301,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end recordPartyQueryRefusal()
 
 	/**
-	 * Create one immutable, hash-chained audit record for a read that was
-	 * refused because it named no usable purpose.
-	 *
-	 * The refusal is the interesting event, exactly as it is for a party query
-	 * over the cap: "who tried to read the BRP without naming a grondslag" is
-	 * a question the functionaris gegevensbescherming asks, and a refusal that
-	 * leaves no trace answers it with silence.
-	 *
-	 * The purpose is quoted back verbatim. It is a short administered code the
-	 * caller itself sent, not a record about a person.
-	 *
-	 * @param string      $rule     Which refusal it was, one of PurposeRefusedException's RULE_ constants.
-	 * @param string|null $purpose  The purpose the caller named, or null when none was.
-	 * @param int|null    $register The register that was being read, when known.
-	 * @param int|null    $schema   The schema that was being read, when known.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	public function createPurposeRefusalEntry(
-		string $rule,
-		?string $purpose = null,
-		?int $register = null,
-		?int $schema = null,
-	): AuditTrail {
-		$target = new AuditedObject(register: $register, schema: $schema);
-
-		return $this->recordPurposeRefusal(refusal: new PurposeRefusal(rule: $rule, purpose: $purpose, target: $target));
-	}//end createPurposeRefusalEntry()
-
-	/**
 	 * Record a read refused for want of a usable purpose.
-	 *
-	 * The typed form of {@see createPurposeRefusalEntry()}, which keeps its signature for other apps.
 	 *
 	 * @param PurposeRefusal $refusal The rule, the purpose named, and the register and schema read.
 	 *
@@ -3650,44 +3516,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * Record one change to a security control, or one refused attempt at a change.
 	 *
-	 * WHY THE REFUSAL IS AUDITED TOO. A weakening that was refused is the most
-	 * interesting row on the page: somebody tried to turn the lockout down, and
-	 * the instance said no. An audit trail that only holds the changes that
-	 * succeeded cannot tell a security officer that anybody tried.
-	 *
-	 * No object, no register and no schema: a control is instance-wide, and
-	 * attaching it to an arbitrary object would put it on that object's timeline
-	 * where it does not belong. Same shape as
-	 * {@see createPartyQueryRefusalEntry()}.
-	 *
-	 * @param string $control The control identifier.
-	 * @param int|string|array $before The value before the change.
-	 * @param int|string|array $after The value asked for.
-	 * @param bool $accepted Whether the change was made.
-	 * @param string $refusal The refusal, when the change was not made.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
-	 *
-	 */
-	public function createHardeningChangeEntry(
-		string $control,
-		int|string|array $before,
-		int|string|array $after,
-		bool $accepted,
-		string $refusal = '',
-	): AuditTrail {
-		$change = new HardeningChange(control: $control, before: $before, after: $after, refusal: $refusal);
-
-		return $this->recordHardeningChange(change: $change, accepted: $accepted);
-	}//end createHardeningChangeEntry()
-
-	/**
-	 * Record one change to a security control, or one refused attempt at a change.
-	 *
-	 * The typed form of {@see createHardeningChangeEntry()}, which keeps its signature for other apps.
-	 *
 	 * @param HardeningChange $change   The control, the values before and asked for, and the refusal.
 	 * @param bool            $accepted Whether the change was made.
 	 *
@@ -3722,47 +3550,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		return 'hardening.refused';
 	}//end hardeningAction()
 	/**
-	 * Create one immutable, hash-chained audit record for an export.
-	 *
-	 * An export is the moment data leaves the instance, so it belongs on the
-	 * trail beside the writes. The entry names the actor, the profile, the row
-	 * count and the time, which is the set an incident is reconstructed from.
-	 *
-	 * A REFUSAL is recorded on the same terms and for the same reason: "who
-	 * tried to take this register off the instance" is a question a functionaris
-	 * gegevensbescherming asks, and a trail that only holds the successes cannot
-	 * answer it.
-	 *
-	 * The entry hangs on a register and a schema rather than on an object,
-	 * because an export has no single object. Same shape as
-	 * {@see createPartyQueryRefusalEntry()}.
-	 *
-	 * @param string $outcome Either `completed` or `refused`.
-	 * @param array<string, mixed> $summary Profile, format, value mode, row count and, on a refusal, the reason.
-	 * @param int|null $register Register id exported, when known.
-	 * @param int|null $schema Schema id exported, when known.
-	 * @param string|null $actorId The principal the export ran as, when it is not the session user.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	public function createExportEntry(
-		string $outcome,
-		array $summary,
-		?int $register = null,
-		?int $schema = null,
-		?string $actorId = null,
-	): AuditTrail {
-		$target = new AuditedObject(register: $register, schema: $schema);
-
-		return $this->recordExport(export: new ExportOutcome(outcome: $outcome, summary: $summary, target: $target, actorId: $actorId));
-	}//end createExportEntry()
-
-	/**
 	 * Record one export, completed or refused.
-	 *
-	 * The typed form of {@see createExportEntry()}, which keeps its signature for other apps.
 	 *
 	 * @param ExportOutcome $export The outcome, the summary, the register and schema, and the actor.
 	 *
@@ -3794,41 +3582,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end exportActor()
 
 	/**
-	 * Create one immutable, hash-chained audit record for a slug backfill run.
-	 *
-	 * The backfill (`occ openregister:backfill-slugs`) writes the slug column directly: no per-object version and no
-	 * per-object audit row. This single entry per run keeps the change
-	 * reconstructable: it lists the objects whose slug changed with the old and
-	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
-	 * {@see createExportEntry()}.
-	 *
-	 * The run mode is always `fill`: a set slug is never rewritten.
-	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
-	 * @param array<string, mixed> $summary The run's counters.
-	 * @param int|null $register Register id.
-	 * @param int|null $schema Schema id.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
-	 *
-	 */
-	public function createSlugBackfillEntry(
-		array $changes,
-		array $summary,
-		?int $register = null,
-		?int $schema = null,
-	): AuditTrail {
-		$target = new AuditedObject(register: $register, schema: $schema);
-
-		return $this->recordSlugBackfill(backfill: new SlugBackfill(changes: $changes, summary: $summary, target: $target));
-	}//end createSlugBackfillEntry()
-
-	/**
 	 * Record one slug backfill run.
-	 *
-	 * The typed form of {@see createSlugBackfillEntry()}, which keeps its signature for other apps.
 	 *
 	 * @param SlugBackfill $backfill The slugs the run wrote, its counters, and its register and schema.
 	 *
@@ -3847,30 +3601,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end recordSlugBackfill()
 
 	/**
-	 * What a slug backfill entry stores: the counters and a bounded change list.
-	 *
-	 * The entry is hash-chained and cannot be edited afterwards, and the slugs
-	 * come from the schema's `objectSlugField`, which can be a name. So only the
-	 * first {@see SLUG_BACKFILL_MAX_CHANGES} changes are kept, each reduced to
-	 * uuid, old and new slug, next to the total count; the caller logs the full
-	 * list.
-	 *
-	 * @param string $mode    The run mode, `fill`.
-	 * @param array  $changes Every slug the run wrote.
-	 * @param array  $summary The run's counters.
-	 *
-	 * @return array<string, mixed> The result summary of the entry.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
-	 */
-	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array {
-		return $this->slugBackfillSummary(backfill: new SlugBackfill(changes: $changes, summary: $summary), mode: $mode);
-	}//end slugBackfillResultSummary()
-
-	/**
 	 * The result summary of a slug backfill entry, with the change list bounded.
-	 *
-	 * The typed form of {@see slugBackfillResultSummary()}, which keeps its signature for other apps.
 	 *
 	 * @param SlugBackfill $backfill The slugs the run wrote and its counters.
 	 * @param string       $mode     The run mode, `fill`.

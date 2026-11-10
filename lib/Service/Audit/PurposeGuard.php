@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -195,11 +197,9 @@ class PurposeGuard implements PurposeGuardInterface {
 	 */
 	private function recordRefusal(PurposeRefusedException $refusal, PurposeReadScope $scope): void {
 		try {
-			$this->audit->createPurposeRefusalEntry(
-				rule: $refusal->getRule(),
-				purpose: $refusal->getPurpose(),
-				register: $scope->register?->getId(),
-				schema: $scope->schema?->getId()
+			$target = new AuditedObject(register: $scope->register?->getId(), schema: $scope->schema?->getId());
+			$this->audit->recordPurposeRefusal(
+				refusal: new PurposeRefusal(rule: $refusal->getRule(), purpose: $refusal->getPurpose(), target: $target)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

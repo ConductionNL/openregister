@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hardening;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange as HardeningAuditChange;
 use Throwable;
 
 /**
@@ -237,12 +238,9 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 	 */
 	private function record(HardeningChange $change, ?string $refusal = null): void {
 		try {
-			$this->posture->store->auditTrailMapper->createHardeningChangeEntry(
-				control: $change->control,
-				before: $change->before,
-				after: $change->after,
-				accepted: $refusal === null,
-				refusal: ($refusal ?? ''),
+			$this->posture->store->auditTrailMapper->recordHardeningChange(
+				change: new HardeningAuditChange(control: $change->control, before: $change->before, after: $change->after, refusal: ($refusal ?? '')),
+				accepted: $refusal === null
 			);
 		} catch (Throwable $failure) {
 			$this->posture->store->logger->error(

@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -156,12 +158,9 @@ class ExportAuditRecorder implements ExportAuditRecorderInterface {
 	 */
 	private function write(ExportAuditEntry $entry): void {
 		try {
-			$this->auditTrailMapper->createExportEntry(
-				outcome: $entry->outcome,
-				summary: $entry->summary,
-				register: $entry->scope->register,
-				schema: $entry->scope->schema,
-				actorId: $entry->scope->actorId
+			$target = new AuditedObject(register: $entry->scope->register, schema: $entry->scope->schema);
+			$this->auditTrailMapper->recordExport(
+				export: new ExportOutcome(outcome: $entry->outcome, summary: $entry->summary, target: $target, actorId: $entry->scope->actorId)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
