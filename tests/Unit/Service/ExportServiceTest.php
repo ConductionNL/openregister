@@ -630,9 +630,16 @@ class ExportServiceTest extends TestCase {
 		$spreadsheet = $this->service->exportToExcel(null, $schema);
 
 		$sheet = $spreadsheet->getActiveSheet();
-		// Boolean true should be converted to "true" string.
-		$cellValue = $sheet->getCell('B2')->getValue();
-		$this->assertNotNull($cellValue);
+		$activeCol = null;
+		for ($col = 'A'; $col !== 'ZZ'; $col++) {
+			if ($sheet->getCell($col . '1')->getValue() === 'active') {
+				$activeCol = $col;
+				break;
+			}
+		}
+
+		$this->assertNotNull($activeCol);
+		$this->assertSame('true', $sheet->getCell($activeCol . '2')->getValue());
 	}
 
 	public function testExportToExcelHandlesNestedObjectValues(): void {

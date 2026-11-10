@@ -1313,6 +1313,10 @@ class ExportService implements ObjectExporterInterface {
 			return null;
 		}
 
+		if (is_bool($value) === true) {
+			return var_export($value, true);
+		}
+
 		if (is_scalar($value) === true) {
 			return (string)$value;
 		}
