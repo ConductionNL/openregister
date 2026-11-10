@@ -233,13 +233,24 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 			return 0;
 		}
 
-		$objectQuery = new TablesObjectQuery(query: $query);
-		if ($objectQuery->isNarrowing() === true && $target->scope->tableId !== 0) {
-			return count($this->matching(target: $target, query: $objectQuery));
+		return $this->countIn(target: $target, query: new TablesObjectQuery(query: $query));
+	}//end countTargeted()
+
+	/**
+	 * Count a table's or view's objects: by matching when a narrowing query hits a table, else by row count.
+	 *
+	 * @param TablesObjectTarget $target The target, naming a table or a view.
+	 * @param TablesObjectQuery  $query  The parsed query.
+	 *
+	 * @return int The count.
+	 */
+	private function countIn(TablesObjectTarget $target, TablesObjectQuery $query): int {
+		if ($query->isNarrowing() === true && $target->scope->tableId !== 0) {
+			return count($this->matching(target: $target, query: $query));
 		}
 
 		return $this->parts->reader->countRows(scope: $target->scope);
-	}//end countTargeted()
+	}//end countIn()
 
 	/**
 	 * Resolve a virtual object by a numeric row id or a derived UUID.
