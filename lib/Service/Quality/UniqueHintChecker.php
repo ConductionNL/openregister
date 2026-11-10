@@ -135,7 +135,7 @@ class UniqueHintChecker {
 		$allUuids = $this->uuidsExcludingSelf(holders: $all, selfUuid: $selfUuid);
 
 		if (count($visibleUuids) > 0) {
-			$this->warnings->record(property: $property, matches: $visibleUuids, visible: true);
+			$this->warnings->recordVisible(property: $property, matches: $visibleUuids);
 			return;
 		}
 
@@ -150,7 +150,7 @@ class UniqueHintChecker {
 		// says "somewhere in this schema, one exists", which is exactly what a
 		// database unique constraint would have leaked anyway, and nothing
 		// about whose it is or what else it holds.
-		$this->warnings->record(property: $property, matches: [], visible: false);
+		$this->warnings->recordHidden(property: $property);
 	}//end checkOne()
 
 	/**
