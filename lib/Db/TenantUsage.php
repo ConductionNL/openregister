@@ -6,6 +6,9 @@
  * Tracks per-organisation resource usage (requests, bandwidth, storage)
  * for quota enforcement and dashboard display.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -48,88 +51,100 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor
  */
-class TenantUsage extends Entity implements JsonSerializable
-{
+class TenantUsage extends Entity implements JsonSerializable {
 
-    /**
-     * Organisation UUID.
-     *
-     * @var string Organisation UUID
-     */
-    protected string $organisationUuid = '';
+	/**
+	 * Organisation UUID.
+	 *
+	 * @var string Organisation UUID
+	 */
+	protected string $organisationUuid = '';
 
-    /**
-     * Usage period (hourly bucket).
-     *
-     * @var DateTime Usage period (hourly bucket)
-     */
-    protected ?DateTime $period = null;
+	/**
+	 * Usage period (hourly bucket).
+	 *
+	 * @var DateTime Usage period (hourly bucket)
+	 */
+	protected ?DateTime $period = null;
 
-    /**
-     * Number of API requests.
-     *
-     * @var integer Number of API requests
-     */
-    protected int $requestCount = 0;
+	/**
+	 * Number of API requests.
+	 *
+	 * @var integer Number of API requests
+	 */
+	protected int $requestCount = 0;
 
-    /**
-     * Bandwidth in bytes.
-     *
-     * @var integer Bandwidth in bytes
-     */
-    protected int $bandwidthBytes = 0;
+	/**
+	 * Bandwidth in bytes.
+	 *
+	 * @var integer Bandwidth in bytes
+	 */
+	protected int $bandwidthBytes = 0;
 
-    /**
-     * Storage in bytes.
-     *
-     * @var integer Storage in bytes
-     */
-    protected int $storageBytes = 0;
+	/**
+	 * Storage in bytes.
+	 *
+	 * @var integer Storage in bytes
+	 */
+	protected int $storageBytes = 0;
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null Creation timestamp
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null Creation timestamp
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Last update timestamp.
-     *
-     * @var DateTime|null Last update timestamp
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Last update timestamp.
+	 *
+	 * @var DateTime|null Last update timestamp
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Constructor
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'organisation_uuid', type: 'string');
-        $this->addType(fieldName: 'period', type: 'datetime');
-        $this->addType(fieldName: 'request_count', type: 'integer');
-        $this->addType(fieldName: 'bandwidth_bytes', type: 'integer');
-        $this->addType(fieldName: 'storage_bytes', type: 'integer');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Constructor
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'organisation_uuid', type: 'string');
+		$this->addType(fieldName: 'period', type: 'datetime');
+		$this->addType(fieldName: 'request_count', type: 'integer');
+		$this->addType(fieldName: 'bandwidth_bytes', type: 'integer');
+		$this->addType(fieldName: 'storage_bytes', type: 'integer');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+	}//end __construct()
 
-    /**
-     * JSON serialization
-     *
-     * @return array Serialized usage data
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'id'               => $this->id,
-            'organisationUuid' => $this->organisationUuid,
-            'period'           => $this->period instanceof DateTime ? $this->period->format('c') : null,
-            'requestCount'     => $this->requestCount,
-            'bandwidthBytes'   => $this->bandwidthBytes,
-            'storageBytes'     => $this->storageBytes,
-            'created'          => $this->created instanceof DateTime ? $this->created->format('c') : null,
-            'updated'          => $this->updated instanceof DateTime ? $this->updated->format('c') : null,
-        ];
-    }//end jsonSerialize()
+	/**
+	 * JSON serialization
+	 *
+	 * @return array Serialized usage data
+	 */
+	public function jsonSerialize(): array {
+		$period = null;
+		if ($this->period instanceof DateTime) {
+			$period = $this->period->format('c');
+		}
+
+		$created = null;
+		if ($this->created instanceof DateTime) {
+			$created = $this->created->format('c');
+		}
+
+		$updated = null;
+		if ($this->updated instanceof DateTime) {
+			$updated = $this->updated->format('c');
+		}
+
+		return [
+			'id' => $this->id,
+			'organisationUuid' => $this->organisationUuid,
+			'period' => $period,
+			'requestCount' => $this->requestCount,
+			'bandwidthBytes' => $this->bandwidthBytes,
+			'storageBytes' => $this->storageBytes,
+			'created' => $created,
+			'updated' => $updated,
+		];
+	}//end jsonSerialize()
 }//end class

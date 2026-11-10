@@ -6,6 +6,9 @@
  * Assembles SIP (Submission Information Package) archives conforming to the
  * OAIS reference model (ISO 14721) for e-Depot transfer.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *
@@ -17,446 +20,312 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
+ * @spec openspec/specs/edepot-transfer/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot;
 
-use DateTime;
-use DOMDocument;
-use DOMElement;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
 use OCP\ITempManager;
 use Psr\Log\LoggerInterface;
-use ZipArchive;
 
 /**
  * Builder for SIP (Submission Information Package) archives.
  *
  * Creates ZIP archives containing per-object directories with MDTO XML metadata,
  * object data snapshots, associated content files, and package-level METS/PREMIS
- * structural and preservation metadata.
+ * structural and preservation metadata. Supports a ZIP default and an RFC 8493
+ * BagIt serializer branch.
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @spec openspec/changes/archival-transfer-hardening/specs/edepot-bagit-output/spec.md
  */
-class SipPackageBuilder
-{
+class SipPackageBuilder {
 
-    /**
-     * Default maximum package size in bytes (2 GB).
-     */
-    public const DEFAULT_MAX_PACKAGE_SIZE = 2147483648;
+	/**
+	 * Default maximum package size in bytes (2 GB).
+	 */
+	public const DEFAULT_MAX_PACKAGE_SIZE = 2147483648;
 
-    /**
-     * METS namespace URI.
-     */
-    private const METS_NAMESPACE = 'http://www.loc.gov/METS/';
+	/**
+	 * Writes the zip or BagIt archive.
+	 *
+	 * @var SipArchiveWriter
+	 */
+	private readonly SipArchiveWriter $archives;
 
-    /**
-     * PREMIS namespace URI.
-     */
-    private const PREMIS_NAMESPACE = 'info:lc/xmlns/premis-v2';
+	/**
+	 * Constructor.
+	 *
+	 * @param MdtoXmlGenerator $mdtoGenerator The MDTO XML generator.
+	 * @param IAppConfig       $appConfig     The app configuration.
+	 * @param ITempManager     $tempManager   Temporary file manager.
+	 * @param LoggerInterface  $logger        Logger.
+	 */
+	public function __construct(
+		private readonly MdtoXmlGenerator $mdtoGenerator,
+		private readonly IAppConfig $appConfig,
+		ITempManager $tempManager,
+		private readonly LoggerInterface $logger,
+	) {
+		$this->archives = new SipArchiveWriter(tempManager: $tempManager);
+	}//end __construct()
 
-    /**
-     * Constructor.
-     *
-     * @param MdtoXmlGenerator $mdtoGenerator The MDTO XML generator.
-     * @param IAppConfig       $appConfig     The app configuration.
-     * @param ITempManager     $tempManager   Temporary file manager.
-     * @param LoggerInterface  $logger        Logger.
-     */
-    public function __construct(
-        private readonly MdtoXmlGenerator $mdtoGenerator,
-        private readonly IAppConfig $appConfig,
-        private readonly ITempManager $tempManager,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Build SIP package(s) for a list of objects.
+	 *
+	 * Returns an array of file paths to generated ZIP archives. Multiple archives
+	 * are created when the combined file size exceeds the maximum package size.
+	 *
+	 * @param string $transferId       The transfer list UUID.
+	 * @param array  $objectsWithFiles Objects and their file metadata (object, files[]).
+	 * @param int    $maxPackageSize   Maximum package size in bytes.
+	 * @param string $format           Output format: `zip` (default) or `bagit` (RFC 8493).
+	 *
+	 * @return array<int, string> Array of file paths to generated SIP archives.
+	 *
+	 * @throws InvalidArgumentException If no objects are provided or the format is unknown.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-bagit-output/spec.md
+	 *   (Requirement: BagIt is a serialization option on the existing builder)
+	 */
+	public function build(string $transferId, array $objectsWithFiles, int $maxPackageSize = 0, string $format = 'zip'): array {
+		return $this->package(request: new TransferPackageRequest(
+			transferId: $transferId, objectsWithFiles: $objectsWithFiles, maxPackageSize: $maxPackageSize, format: $format
+		));
+	}//end build()
 
-    /**
-     * Build SIP package(s) for a list of objects.
-     *
-     * Returns an array of file paths to generated ZIP archives. Multiple archives
-     * are created when the combined file size exceeds the maximum package size.
-     *
-     * @param string $transferId       The transfer list UUID.
-     * @param array  $objectsWithFiles Objects and their file metadata (object, files[]).
-     * @param int    $maxPackageSize   Maximum package size in bytes.
-     *
-     * @return array<int, string> Array of file paths to generated SIP ZIP archives.
-     *
-     * @throws InvalidArgumentException If no objects are provided.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
-     */
-    public function build(string $transferId, array $objectsWithFiles, int $maxPackageSize=0): array
-    {
-        if (empty($objectsWithFiles) === true) {
-            throw new InvalidArgumentException('No objects provided for SIP package');
-        }
+	/**
+	 * Build SIP package(s) for a transfer: more than one when its files exceed the maximum package size.
+	 *
+	 * @param TransferPackageRequest $request The transfer's objects, size limit and format.
+	 *
+	 * @return array<int, string> Array of file paths to generated SIP archives.
+	 *
+	 * @throws InvalidArgumentException If no objects are provided or the format is unknown.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-bagit-output/spec.md
+	 *   (Requirement: BagIt is a serialization option on the existing builder)
+	 */
+	public function package(TransferPackageRequest $request): array {
+		self::assertBuildable(objectsWithFiles: $request->objectsWithFiles, format: $request->format);
 
-        if ($maxPackageSize <= 0) {
-            $maxPackageSize = (int) $this->appConfig->getValueString(
-                'openregister',
-                'edepot_max_package_size',
-                (string) self::DEFAULT_MAX_PACKAGE_SIZE
-            );
-        }
+		$maxSize  = $this->maxPackageSize(requested: $request->maxPackageSize);
+		$batches  = self::splitIntoBatches(objectsWithFiles: $request->objectsWithFiles, maxSize: $maxSize);
+		$sipFiles = [];
+		foreach ($batches as $index => $batch) {
+			$part       = new SipPart(
+				transferId: $request->transferId,
+				sequenceNumber: ($index + 1),
+				totalPackages: count($batches),
+				format: $request->format
+			);
+			$sipFiles[] = $this->buildSinglePackage(run: new SipPackageRun(part: $part, objectsWithFiles: $batch));
+		}
 
-        $batches      = $this->splitIntoBatches(objectsWithFiles: $objectsWithFiles, maxSize: $maxPackageSize);
-        $totalBatches = count($batches);
-        $sipFiles     = [];
+		return $sipFiles;
+	}//end package()
 
-        foreach ($batches as $index => $batch) {
-            $sipFiles[] = $this->buildSinglePackage(
-                transferId: $transferId,
-                objectsWithFiles: $batch,
-                sequenceNumber: ($index + 1),
-                totalPackages: $totalBatches
-            );
-        }
+	/**
+	 * Refuse an empty transfer and an unknown format.
+	 *
+	 * @param array  $objectsWithFiles Objects and their file metadata.
+	 * @param string $format           The output format.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If no objects are provided or the format is unknown.
+	 */
+	private static function assertBuildable(array $objectsWithFiles, string $format): void {
+		if (empty($objectsWithFiles) === true) {
+			throw new InvalidArgumentException('No objects provided for SIP package');
+		}
 
-        return $sipFiles;
-    }//end build()
+		if (in_array($format, ['zip', 'bagit'], true) === false) {
+			throw new InvalidArgumentException("Unknown SIP output format '{$format}' (expected 'zip' or 'bagit')");
+		}
+	}//end assertBuildable()
 
-    /**
-     * Split objects into batches based on maximum package size.
-     *
-     * @param array $objectsWithFiles Objects and their file metadata.
-     * @param int   $maxSize          Maximum package size in bytes.
-     *
-     * @return array<int, array> Array of batches.
-     */
-    private function splitIntoBatches(array $objectsWithFiles, int $maxSize): array
-    {
-        $batches      = [];
-        $currentBatch = [];
-        $currentSize  = 0;
+	/**
+	 * The maximum package size: the requested one, else the configured one.
+	 *
+	 * @param int $requested The requested size, or 0 or less for the configured one.
+	 *
+	 * @return int The size in bytes.
+	 */
+	private function maxPackageSize(int $requested): int {
+		if ($requested > 0) {
+			return $requested;
+		}
 
-        foreach ($objectsWithFiles as $item) {
-            $itemSize = 0;
-            foreach ($item['files'] as $file) {
-                $itemSize += $file['size'];
-            }
+		return (int)$this->appConfig->getValueString(
+			'openregister',
+			'edepot_max_package_size',
+			(string)self::DEFAULT_MAX_PACKAGE_SIZE
+		);
+	}//end maxPackageSize()
 
-            if (empty($currentBatch) === false && ($currentSize + $itemSize) > $maxSize) {
-                $batches[]    = $currentBatch;
-                $currentBatch = [];
-                $currentSize  = 0;
-            }
+	/**
+	 * Split objects into batches that each fit within the maximum package size.
+	 *
+	 * An object is never split: one larger than the maximum gets a batch of its own.
+	 *
+	 * @param array $objectsWithFiles Objects with file metadata (never empty).
+	 * @param int   $maxSize          Maximum batch size in bytes.
+	 *
+	 * @return array<int, array> Array of batches.
+	 */
+	private static function splitIntoBatches(array $objectsWithFiles, int $maxSize): array {
+		$batches     = [[]];
+		$currentSize = 0;
+		foreach ($objectsWithFiles as $item) {
+			$itemSize = array_sum(array_column($item['files'], 'size'));
+			if (end($batches) !== [] && ($currentSize + $itemSize) > $maxSize) {
+				$batches[]   = [];
+				$currentSize = 0;
+			}
 
-            $currentBatch[] = $item;
-            $currentSize   += $itemSize;
-        }
+			$batches[array_key_last($batches)][] = $item;
+			$currentSize += $itemSize;
+		}
 
-        if (empty($currentBatch) === false) {
-            $batches[] = $currentBatch;
-        }
+		return $batches;
+	}//end splitIntoBatches()
 
-        return $batches;
-    }//end splitIntoBatches()
+	/**
+	 * Build one SIP package.
+	 *
+	 * @param SipPackageRun $run The package: its part, its objects and its contents.
+	 *
+	 * @return string Path to the generated archive.
+	 *
+	 * @throws InvalidArgumentException When an object misses a transfer precondition or the archive cannot be written.
+	 */
+	private function buildSinglePackage(SipPackageRun $run): string {
+		$contents = $run->contents;
+		foreach ($run->objectsWithFiles as $item) {
+			$this->addObject(contents: $contents, item: $item);
+		}
 
-    /**
-     * Build a single SIP package ZIP archive.
-     *
-     * @param string $transferId       The transfer list UUID.
-     * @param array  $objectsWithFiles Objects in this batch.
-     * @param int    $sequenceNumber   This package's position in the sequence.
-     * @param int    $totalPackages    Total number of packages.
-     *
-     * @return string Path to the generated ZIP file.
-     */
-    private function buildSinglePackage(
-        string $transferId,
-        array $objectsWithFiles,
-        int $sequenceNumber,
-        int $totalPackages
-    ): string {
-        $suffix  = $totalPackages > 1 ? "-part{$sequenceNumber}" : '';
-        $zipPath = $this->tempManager->getTemporaryFile(".sip{$suffix}.zip");
+		$contents->addDocument(path: 'mets.xml', content: self::metsXml(run: $run));
+		$contents->addDocument(path: 'premis.xml', content: self::premisXml(run: $run));
+		if ($run->part->isSplit() === true) {
+			$contents->addDocument(path: 'sip-sequence.json', content: $run->part->sequenceJson());
+		}
 
-        $zip    = new ZipArchive();
-        $result = $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        if ($result !== true) {
-            throw new InvalidArgumentException("Failed to create ZIP archive: error code {$result}");
-        }
+		$archivePath = $this->archives->write(part: $run->part, entries: $contents->entries());
+		$this->logBuilt(run: $run, archivePath: $archivePath);
 
-        $manifest = [];
+		return $archivePath;
+	}//end buildSinglePackage()
 
-        foreach ($objectsWithFiles as $item) {
-            $object    = $item['object'];
-            $files     = $item['files'];
-            $uuid      = $object->getUuid();
-            $objectDir = "objects/{$uuid}";
+	/**
+	 * Add one object: its MDTO document, its data snapshot and its content files.
+	 *
+	 * The retention period is required to TRANSFER, though MDTO allows the
+	 * element to be absent. Asking here keeps the export endpoint able to
+	 * serialise a record whose period is unknown.
+	 *
+	 * @param SipContents          $contents The package contents.
+	 * @param array<string, mixed> $item     The object with its files.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the object misses a transfer precondition.
+	 */
+	private function addObject(SipContents $contents, array $item): void {
+		$object    = $item['object'];
+		$uuid      = $object->getUuid();
+		$objectDir = "objects/{$uuid}";
+		$this->mdtoGenerator->assertTransferPreconditions($object);
 
-            $mdtoXml = $this->mdtoGenerator->generate($object, $files);
-            $zip->addFromString("{$objectDir}/mdto.xml", $mdtoXml);
-            $manifest[] = $this->createManifestEntry(path: "{$objectDir}/mdto.xml", content: $mdtoXml);
+		$mdtoXml = $this->mdtoGenerator->generate($object, $item['files']);
+		$contents->addMetadataDocument(uuid: $uuid, path: "{$objectDir}/mdto.xml", content: $mdtoXml);
+		$metadataJson = json_encode($object->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+		$contents->addDocument(path: "{$objectDir}/metadata.json", content: $metadataJson);
+		$this->addContentFiles(contents: $contents, item: $item);
+	}//end addObject()
 
-            $metadataJson = json_encode($object->jsonSerialize(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            $zip->addFromString("{$objectDir}/metadata.json", $metadataJson);
-            $manifest[] = $this->createManifestEntry(path: "{$objectDir}/metadata.json", content: $metadataJson);
+	/**
+	 * Add the object's content files that are on disk, each with its MDTO bestand sidecar.
+	 *
+	 * @param SipContents          $contents The package contents.
+	 * @param array<string, mixed> $item     The object with its files.
+	 *
+	 * @return void
+	 */
+	private function addContentFiles(SipContents $contents, array $item): void {
+		$object = $item['object'];
+		foreach ($item['files'] as $file) {
+			if (file_exists($file['path']) === false) {
+				continue;
+			}
 
-            if (empty($files) === false) {
-                foreach ($files as $file) {
-                    $subDir   = ($file['isRendition'] === true) ? 'rendition' : 'original';
-                    $filePath = "{$objectDir}/content/{$subDir}/{$file['name']}";
+			$filePath = "objects/{$object->getUuid()}/content/".SipLayout::subDir(file: $file)."/{$file['name']}";
+			$contents->addFile(path: $filePath, file: $file);
+			$sidecar = $this->mdtoGenerator->generateBestand($object, $file);
+			$contents->addMetadataDocument(uuid: $object->getUuid(), path: $filePath.MdtoBestandGenerator::SIDECAR_SUFFIX, content: $sidecar);
+		}
+	}//end addContentFiles()
 
-                    if (file_exists($file['path']) === true) {
-                        $zip->addFile($file['path'], $filePath);
-                        $manifest[] = [
-                            'path'     => $filePath,
-                            'size'     => $file['size'],
-                            'checksum' => $file['checksum'],
-                        ];
-                    }
-                }
-            }
-        }//end foreach
+	/**
+	 * The package's mets.xml.
+	 *
+	 * @param SipPackageRun $run The package, with its contents for the MDTO documents.
+	 *
+	 * @return string The document.
+	 */
+	private static function metsXml(SipPackageRun $run): string {
+		$mets = new SipMetsDocument(transferId: $run->part->transferId);
+		foreach ($run->objectsWithFiles as $item) {
+			$mets->addObject(item: $item, contents: $run->contents);
+		}
 
-        $metsXml = $this->generateMetsXml(transferId: $transferId, objectsWithFiles: $objectsWithFiles);
-        $zip->addFromString('mets.xml', $metsXml);
-        $manifest[] = $this->createManifestEntry(path: 'mets.xml', content: $metsXml);
+		return $mets->xml();
+	}//end metsXml()
 
-        $premisXml = $this->generatePremisXml(transferId: $transferId, objectsWithFiles: $objectsWithFiles);
-        $zip->addFromString('premis.xml', $premisXml);
-        $manifest[] = $this->createManifestEntry(path: 'premis.xml', content: $premisXml);
+	/**
+	 * The package's premis.xml.
+	 *
+	 * @param SipPackageRun $run The package.
+	 *
+	 * @return string The document.
+	 */
+	private static function premisXml(SipPackageRun $run): string {
+		$premis = new SipPremisDocument(transferId: $run->part->transferId);
+		foreach ($run->objectsWithFiles as $item) {
+			foreach ($item['files'] as $file) {
+				$premis->addFile(uuid: $item['object']->getUuid(), file: $file);
+			}
+		}
 
-        if ($totalPackages > 1) {
-            $sequenceJson = json_encode(
-                    [
-                        'transferId'     => $transferId,
-                        'sequenceNumber' => $sequenceNumber,
-                        'totalPackages'  => $totalPackages,
-                    ],
-                    JSON_PRETTY_PRINT
-                    );
-            $zip->addFromString('sip-sequence.json', $sequenceJson);
-            $manifest[] = $this->createManifestEntry(path: 'sip-sequence.json', content: $sequenceJson);
-        }
+		return $premis->xml();
+	}//end premisXml()
 
-        $manifestJson = json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $zip->addFromString('sip-manifest.json', $manifestJson);
-
-        $zip->close();
-
-        $this->logger->info(
-            message: '[SipPackageBuilder] Built SIP package',
-            context: [
-                'transferId' => $transferId,
-                'sequence'   => "{$sequenceNumber}/{$totalPackages}",
-                'objects'    => count($objectsWithFiles),
-                'path'       => $zipPath,
-            ]
-        );
-
-        return $zipPath;
-    }//end buildSinglePackage()
-
-    /**
-     * Create a manifest entry for a content string.
-     *
-     * @param string $path    The relative path in the ZIP.
-     * @param string $content The file content.
-     *
-     * @return array{path: string, size: int, checksum: string} The manifest entry.
-     */
-    private function createManifestEntry(string $path, string $content): array
-    {
-        return [
-            'path'     => $path,
-            'size'     => strlen($content),
-            'checksum' => hash('sha256', $content),
-        ];
-    }//end createManifestEntry()
-
-    /**
-     * Generate METS XML structural metadata.
-     *
-     * @param string                         $transferId       The transfer list UUID.
-     * @param array<int,array<string,mixed>> $objectsWithFiles Objects and their file metadata.
-     *
-     * @return string The METS XML string.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
-     */
-    private function generateMetsXml(string $transferId, array $objectsWithFiles): string
-    {
-        $dom = new DOMDocument('1.0', 'UTF-8');
-        $dom->formatOutput = true;
-
-        $mets = $dom->createElementNS(self::METS_NAMESPACE, 'mets:mets');
-        $mets->setAttribute('OBJID', $transferId);
-        $mets->setAttribute('TYPE', 'SIP');
-        $dom->appendChild($mets);
-
-        $fileSec = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fileSec');
-        $mets->appendChild($fileSec);
-
-        $originalGrp = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fileGrp');
-        $originalGrp->setAttribute('USE', 'ORIGINAL');
-        $fileSec->appendChild($originalGrp);
-
-        $renditionGrp = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fileGrp');
-        $renditionGrp->setAttribute('USE', 'RENDITION');
-        $fileSec->appendChild($renditionGrp);
-
-        $structMap = $dom->createElementNS(self::METS_NAMESPACE, 'mets:structMap');
-        $structMap->setAttribute('TYPE', 'physical');
-        $mets->appendChild($structMap);
-
-        $rootDiv = $dom->createElementNS(self::METS_NAMESPACE, 'mets:div');
-        $rootDiv->setAttribute('LABEL', 'SIP-'.$transferId);
-        $structMap->appendChild($rootDiv);
-
-        $fileCounter = 1;
-        foreach ($objectsWithFiles as $item) {
-            $object = $item['object'];
-            $files  = $item['files'];
-            $uuid   = $object->getUuid();
-
-            $objectDiv = $dom->createElementNS(self::METS_NAMESPACE, 'mets:div');
-            $objectDiv->setAttribute('LABEL', $uuid);
-            $objectDiv->setAttribute('TYPE', 'object');
-            $rootDiv->appendChild($objectDiv);
-
-            foreach ($files as $file) {
-                $fileId = 'FILE-'.$fileCounter;
-                $fileCounter++;
-
-                $isRendition = ($file['isRendition'] === true);
-                $subDir      = ($isRendition === true) ? 'rendition' : 'original';
-                $filePath    = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
-
-                $fileElement = $dom->createElementNS(self::METS_NAMESPACE, 'mets:file');
-                $fileElement->setAttribute('ID', $fileId);
-                $fileElement->setAttribute('SIZE', (string) $file['size']);
-                $fileElement->setAttribute('MIMETYPE', $file['format']);
-                $fileElement->setAttribute('CHECKSUM', $file['checksum']);
-                $fileElement->setAttribute('CHECKSUMTYPE', 'SHA-256');
-
-                $fLocat = $dom->createElementNS(self::METS_NAMESPACE, 'mets:FLocat');
-                $fLocat->setAttribute('LOCTYPE', 'URL');
-                $fLocat->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $filePath);
-                $fileElement->appendChild($fLocat);
-
-                if ($isRendition === true) {
-                    $renditionGrp->appendChild($fileElement);
-                } else {
-                    $originalGrp->appendChild($fileElement);
-                }
-
-                $fptr = $dom->createElementNS(self::METS_NAMESPACE, 'mets:fptr');
-                $fptr->setAttribute('FILEID', $fileId);
-                $objectDiv->appendChild($fptr);
-            }//end foreach
-        }//end foreach
-
-        return $dom->saveXML();
-    }//end generateMetsXml()
-
-    /**
-     * Generate PREMIS XML preservation metadata.
-     *
-     * @param string                         $transferId       The transfer list UUID.
-     * @param array<int,array<string,mixed>> $objectsWithFiles Objects and their file metadata.
-     *
-     * @return string The PREMIS XML string.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
-     */
-    private function generatePremisXml(string $transferId, array $objectsWithFiles): string
-    {
-        $dom = new DOMDocument('1.0', 'UTF-8');
-        $dom->formatOutput = true;
-
-        $premis = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:premis');
-        $premis->setAttribute('version', '2.0');
-        $dom->appendChild($premis);
-
-        $event = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:event');
-        $premis->appendChild($event);
-
-        $eventId     = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:eventIdentifier');
-        $eventIdType = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:eventIdentifierType');
-        $eventIdType->textContent = 'UUID';
-        $eventId->appendChild($eventIdType);
-        $eventIdValue = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:eventIdentifierValue');
-        $eventIdValue->textContent = $transferId;
-        $eventId->appendChild($eventIdValue);
-        $event->appendChild($eventId);
-
-        $eventType = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:eventType');
-        $eventType->textContent = 'creation';
-        $event->appendChild($eventType);
-
-        $eventDateTime = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:eventDateTime');
-        $eventDateTime->textContent = (new DateTime())->format('c');
-        $event->appendChild($eventDateTime);
-
-        foreach ($objectsWithFiles as $item) {
-            $object = $item['object'];
-            $files  = $item['files'];
-            $uuid   = $object->getUuid();
-
-            foreach ($files as $file) {
-                $premisObject = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:object');
-                $premisObject->setAttributeNS(
-                    'http://www.w3.org/2001/XMLSchema-instance',
-                    'xsi:type',
-                    'premis:file'
-                );
-                $premis->appendChild($premisObject);
-
-                $objId     = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:objectIdentifier');
-                $objIdType = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:objectIdentifierType');
-                $objIdType->textContent = 'filepath';
-                $objId->appendChild($objIdType);
-
-                $subDir     = ($file['isRendition'] === true) ? 'rendition' : 'original';
-                $objIdValue = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:objectIdentifierValue');
-                $objIdValue->textContent = "objects/{$uuid}/content/{$subDir}/{$file['name']}";
-                $objId->appendChild($objIdValue);
-                $premisObject->appendChild($objId);
-
-                $objChar = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:objectCharacteristics');
-
-                $fixity = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:fixity');
-                $algo   = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:messageDigestAlgorithm');
-                $algo->textContent = 'SHA-256';
-                $fixity->appendChild($algo);
-                $digest = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:messageDigest');
-                $digest->textContent = $file['checksum'];
-                $fixity->appendChild($digest);
-                $objChar->appendChild($fixity);
-
-                $size = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:size');
-                $size->textContent = (string) $file['size'];
-                $objChar->appendChild($size);
-
-                $format            = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:format');
-                $formatDesignation = $dom->createElementNS(
-                    self::PREMIS_NAMESPACE,
-                    'premis:formatDesignation'
-                );
-                $formatName        = $dom->createElementNS(self::PREMIS_NAMESPACE, 'premis:formatName');
-                $formatName->textContent = $file['format'];
-                $formatDesignation->appendChild($formatName);
-                $format->appendChild($formatDesignation);
-                $objChar->appendChild($format);
-
-                $premisObject->appendChild($objChar);
-            }//end foreach
-        }//end foreach
-
-        return $dom->saveXML();
-    }//end generatePremisXml()
+	/**
+	 * Log a built package.
+	 *
+	 * @param SipPackageRun $run         The package.
+	 * @param string        $archivePath Where it was written.
+	 *
+	 * @return void
+	 */
+	private function logBuilt(SipPackageRun $run, string $archivePath): void {
+		$part = $run->part;
+		$this->logger->info(
+			message: '[SipPackageBuilder] Built SIP package',
+			context: [
+				'transferId' => $part->transferId,
+				'sequence' => "{$part->sequenceNumber}/{$part->totalPackages}",
+				'objects' => count($run->objectsWithFiles),
+				'format' => $part->format,
+				'path' => $archivePath,
+			]
+		);
+	}//end logBuilt()
 }//end class

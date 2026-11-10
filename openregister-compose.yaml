@@ -1,0 +1,250 @@
+# OpenRegister — local demo environment
+#
+#   docker compose -f openregister-compose.yaml up -d
+#
+# Then open  http://localhost:8601/apps/openregister/
+# Admin UI:  http://localhost:8601  (admin / admin)
+#
+# Tear down, including all data:
+#   docker compose -f openregister-compose.yaml down -v
+#
+# ---------------------------------------------------------------------------
+# THIS IS A DEMO ENVIRONMENT, NOT A DEVELOPMENT ENVIRONMENT.
+#
+# Nothing here is bind-mounted from your working copy, and that is deliberate
+# rather than merely simpler. Nextcloud installs and updates an app by DELETING
+# its directory and extracting a fresh archive over it. Measured 2026-08-27 on
+# a development machine: `\OC\Updater::upgradeAppStoreApp` fired on a container
+# restart and removed every top-level file from a bind-mounted checkout —
+# including its `.git` directory — leaving only the subdirectories it lacked
+# permission to unlink. A demo rig has no business pointing at a checkout, so
+# this one owns its apps in a named volume.
+#
+# If you want to work ON these apps rather than WITH them, use the development
+# environment instead. This file cannot serve that purpose and should not try.
+#
+# ---------------------------------------------------------------------------
+# WHY RELEASE TARBALLS RATHER THAN `git clone`
+#
+# A release tarball is a COMPLETE app: it carries `vendor/` and the built `js/`
+# bundle. A git checkout carries neither, and a Nextcloud app whose `vendor/`
+# is missing does not fail loudly — `include_once` warns and the app keeps
+# loading, so the app appears installed while every service that needs a
+# dependency is absent.
+#
+# ---------------------------------------------------------------------------
+# WHAT IS INSTALLED, AND WHY MORE THAN ONE APP
+#
+#   openregister   REQUIRED. Every Connext app declares its registers and
+#                  schemas against OpenRegister. Note that this dependency is
+#                  NOT declared in appinfo/info.xml — no app in the fleet
+#                  declares an <app> dependency — so nothing stops the App
+#                  Store installing openregister without it. It would then load
+#                  and find no register to attach to.
+#   thematiq       Optional. Government theming. Absent, the UI renders
+#                  unthemed rather than wrong.
+#   integriq       Optional. The connector, for feeding data in from systems
+#                  you do not control.
+#   openregister   the app this file is for.
+#
+# Versions float to the newest release by default, pre-releases included,
+# because most Connext apps do not yet publish a stable one. Pin any of them:
+#
+#   OPENREGISTER_VERSION=1.2.3 docker compose -f openregister-compose.yaml up -d
+#
+# The Nextcloud image is pinned to a MAJOR tag rather than `:latest`. A demo
+# that is stopped and restarted weeks later would otherwise boot a drifted
+# Nextcloud over its existing data volume, which lands the instance in
+# maintenance mode with its apps disabled.
+
+name: openregister-demo
+
+volumes:
+  db:
+  nextcloud:
+  apps:
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: nextcloud
+      POSTGRES_DB: nextcloud
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Downloads each app's release tarball into the shared `apps` volume before
+  # Nextcloud starts. It runs to completion and exits; Nextcloud waits for that
+  # exit via `condition: service_completed_successfully`, so there is no window
+  # in which Nextcloud boots against a half-populated app directory.
+  #
+  # Idempotent: an app whose appinfo/info.xml is already present is skipped, so
+  # `up` on an existing demo does not re-download 100MB per app.
+  app-installer:
+    image: alpine:3.20
+    restart: "no"
+    environment:
+      OPENREGISTER_VERSION: ${OPENREGISTER_VERSION:-}
+      THEMATIQ_VERSION: ${THEMATIQ_VERSION:-}
+      INTEGRIQ_VERSION: ${INTEGRIQ_VERSION:-}
+    volumes:
+      - apps:/apps
+    configs:
+      - source: install-apps
+        target: /install-apps.sh
+        mode: "0755"
+    command: ["/bin/sh", "/install-apps.sh"]
+
+  nextcloud:
+    image: nextcloud:34-apache
+    restart: unless-stopped
+    ports:
+      - "${DEMO_PORT:-8601}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+      app-installer:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: nextcloud
+      POSTGRES_DB: nextcloud
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: admin
+      # The port has to appear here as well as in `ports:`. Nextcloud rejects a
+      # request whose Host header names a domain it does not trust, and
+      # "localhost" and "localhost:8601" are different entries.
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost localhost:${DEMO_PORT:-8601} 127.0.0.1 127.0.0.1:${DEMO_PORT:-8601}"
+      # OVERWRITECLIURL IS LOAD-BEARING, NOT COSMETIC. Apps that federate
+      # advertise this address to peers. It is a local address here, and a
+      # local address is refused rather than broadcast — which is what keeps a
+      # demo on somebody's laptop out of the national directory.
+      OVERWRITECLIURL: "http://localhost:${DEMO_PORT:-8601}"
+      OVERWRITEPROTOCOL: http
+    volumes:
+      - nextcloud:/var/www/html
+      - apps:/var/www/html/custom_apps
+    configs:
+      - source: enable-apps
+        target: /docker-entrypoint-hooks.d/post-installation/10-enable-connext-apps.sh
+        mode: "0755"
+
+configs:
+  # EVERY SHELL VARIABLE BELOW IS WRITTEN `$$name`, NOT `$name`.
+  #
+  # Compose interpolates `$name` inside `configs.content` before the file is
+  # written, so an un-escaped shell variable arrives as an EMPTY STRING and the
+  # script runs on silently. Measured while building this file: `$version` was
+  # blanked, which made the "no version pinned" branch look true for an app
+  # whose version WAS pinned, and the resulting error named no repository —
+  # `could not resolve a release for ` — because `$repo` had been blanked too.
+  #
+  # `$$` is the escape that survives interpolation and reaches /bin/sh as `$`.
+  # `${DEMO_PORT:-8601}` is deliberately NOT escaped: that one is Compose's
+  # to substitute.
+  install-apps:
+    content: |
+      #!/bin/sh
+      set -eu
+      apk add --no-cache curl tar jq >/dev/null
+
+      # RESOLVING "NEWEST" TAKES TWO CORRECTIONS, NOT ONE.
+      #
+      # 1. The GitHub "latest release" endpoint EXCLUDES prereleases and answers
+      #    404 for a repository that has only ever shipped them — which reads
+      #    exactly like "no such app". Ask the releases LIST instead.
+      #
+      # 2. THE LIST IS NOT ORDERED BY CREATION DATE. Taking the first entry looks
+      #    correct and is not. Measured 2026-08-27 on openregister:
+      #
+      #      v1.1.6                          created 10:17:45   <- returned first
+      #      v1.1.6-unstable.20260827110807  created 11:09:37   <- actually newest
+      #
+      #    Taking the first entry installs an OLDER build than intended, and the
+      #    failure surfaces far from the cause — as a missing CLASS in a
+      #    different app, not as a version complaint.
+      #
+      # Sorting by created_at explicitly is the fix; jq is here for that.
+      resolve_latest() {
+        curl -fsSL "https://api.github.com/repos/ConductionNL/$$1/releases?per_page=50" \
+          | jq -r '[.[] | select(.draft | not)] | sort_by(.created_at) | last | .tag_name // empty' \
+          | sed 's/^v//'
+      }
+
+      install_app() {
+        repo="$$1"; appid="$$2"; version="$$3"; asset="$$4"
+
+        if [ -f "/apps/$$appid/appinfo/info.xml" ]; then
+          echo "==> $$appid already present, skipping"
+          return 0
+        fi
+
+        if [ -z "$$version" ]; then
+          version="$$(resolve_latest "$$repo")"
+          [ -n "$$version" ] || { echo "!! could not resolve a release for $$repo"; return 1; }
+          echo "==> $$appid: no version pinned, resolved $$version"
+        fi
+
+        url="https://github.com/ConductionNL/$$repo/releases/download/v$$version/$$asset-$$version.tar.gz"
+        echo "==> installing $$appid $$version"
+
+        # Extract into a staging directory rather than straight into /apps.
+        # The archive's own top-level directory name is not guaranteed to equal
+        # the Nextcloud app id — Nextcloud resolves an app by its DIRECTORY
+        # name, so an archive that unpacks under the old name after a rename
+        # yields an app that is silently never loaded. Several Connext apps were
+        # renamed in August 2026, so this is a live concern, not a hypothetical.
+        rm -rf /tmp/stage && mkdir -p /tmp/stage
+        curl -fsSL "$$url" | tar -xz -C /tmp/stage
+
+        top="$$(ls /tmp/stage | head -n1)"
+        if [ "$$top" != "$$appid" ]; then
+          echo "    archive unpacked as '$$top', installing it as '$$appid'"
+        fi
+        mv "/tmp/stage/$$top" "/apps/$$appid"
+        rm -rf /tmp/stage
+      }
+
+      # OpenRegister is not optional. If it could not be fetched, stop here
+      # rather than let Nextcloud boot into a dozen confusing downstream
+      # failures instead of one clear one.
+      install_app openregister     openregister     "$$OPENREGISTER_VERSION"    openregister
+      install_app thematiq         thematiq         "$$THEMATIQ_VERSION"        thematiq
+      install_app integriq         integriq         "$$INTEGRIQ_VERSION"        integriq
+
+      [ -f /apps/openregister/appinfo/info.xml ] || { echo "!! openregister missing; aborting"; exit 1; }
+
+      # 33 is www-data inside the Nextcloud image.
+      chown -R 33:33 /apps
+      echo "==> apps present: $$(ls /apps | tr '\n' ' ')"
+
+  enable-apps:
+    content: |
+      #!/bin/sh
+      set -eu
+      # Runs once, after Nextcloud has installed itself.
+      #
+      # ORDER IS NOT ARBITRARY. OpenRegister owns the registers and schemas the
+      # other apps declare against, and a leaf app enabled before it finds no
+      # register to attach to. Enabling them in dependency order is what makes
+      # a first boot produce a working instance instead of an empty one.
+      for app in openregister thematiq integriq; do
+        echo "==> enabling $$app"
+        php /var/www/html/occ app:enable "$$app" || echo "!! failed to enable $$app"
+      done
+
+      # Several apps ship a schema whose slug is not unique across the
+      # instance. OpenRegister resolves a duplicate slug by tie-break and warns,
+      # which means a leaf app can silently read another app's schema. This is a
+      # no-op on a clean install and a repair on one that has drifted.
+      php /var/www/html/occ openregister:schemas:dedup || true
+
+      echo "==> OpenRegister demo: http://localhost:${DEMO_PORT:-8601}/apps/openregister/"

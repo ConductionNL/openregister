@@ -1,11 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 # Deletion Audit Trail
 
-
 # Deletion Audit Trail
 ## Purpose
+
+@e2e exclude backend audit/lifecycle service — covered by PHPUnit
 
 Provide a comprehensive audit and lifecycle management system for all deletion operations in OpenRegister, encompassing soft delete (marking objects as deleted without physical removal), configurable retention before permanent purge, restore from soft delete, cascade delete tracking, and full GDPR-compliant audit trail entries. The spec ensures that every deletion -- whether user-initiated, cascade-triggered, or system-scheduled -- is recorded with sufficient context to reconstruct what happened, why, and by whom, satisfying Dutch government compliance requirements (BIO, AVG/GDPR Article 30, Archiefwet 1995, NEN-ISO 16175-1:2020).
 
@@ -114,6 +115,14 @@ The `DeletedController` MUST provide endpoints for listing, restoring, and perma
 - **GIVEN** 5 UUIDs are submitted for restoration, 3 are deleted, 1 is not deleted, 1 does not exist
 - **WHEN** `POST /api/deleted/restore` is called with the 5 UUIDs
 - **THEN** the response MUST include `{"restored": 3, "failed": 2, "notFound": 1}`
+
+#### Scenario: The trash routes that write ask for the request token
+- **GIVEN** a user signed in to the web interface
+- **WHEN** `POST /api/deleted/{id}/restore`, `POST /api/deleted/restore`, `DELETE /api/deleted/{id}` or `DELETE /api/deleted` arrives with the session cookie but without a valid `requesttoken`
+- **THEN** Nextcloud refuses it before the controller runs
+- **AND** the trash page sends the token on each of these calls
+- **AND** a client that sends `OCS-APIRequest: true` (a script signing in with basic auth or an app password) is not asked for it; without that header and without the token the call is refused
+- @e2e exclude {request-token check is Nextcloud middleware; DeletedControllerCsrfTest pins the route annotations and the store golden pins the token header}
 
 ### Requirement 4: Permanent deletion (purge) MUST require prior soft delete and authorization
 
@@ -469,6 +478,165 @@ The NO_ACTION `onDelete` behavior means no referential integrity action is taken
 - **THEN** CASCADE audit entries MUST be created for the orders
 - **AND** NO integrity audit entries MUST be created for the tasks
 - **AND** the tasks MUST retain their now-broken references (eventual consistency)
+
+### Requirement: Batched integrity-cascade deletions MUST be audited with one multi-row INSERT
+
+`ReferentialIntegrityService::applyDeletionActions()` SHALL persist the audit
+rows of CASCADE targets soft-deleted through its batched path with ONE
+multi-row INSERT (`AuditTrailMapper::insertAuditTrails()`), each row pre-built
+through the shared `buildAuditTrail()` row builder with action
+`referential_integrity.cascade_delete` and a cascade context folded into the
+`changed` column in the exact shape `createAuditTrail()` uses:
+`changed.triggeredBy` = `referential_integrity` and `changed.cascadeContext`
+with keys `triggerObject` (root object UUID), `triggerSchema` (root schema
+slug), `action_type` (`referential_integrity.cascade_delete`) and `property`
+(the referencing property from the analysis target).
+
+Audit persistence SHALL remain fail-soft: a failed row build or a failed
+multi-row INSERT logs a warning and never aborts the cascade. Targets handled
+by the per-object fallback pipeline keep their existing single-row audit
+insert and legacy `changed` shape unchanged.
+
+#### Scenario: One multi-row INSERT for N batch-handled cascade targets
+- **GIVEN** N CASCADE targets soft-deleted through the batched integrity path
+- **WHEN** the audit rows are written
+- **THEN** exactly one multi-row INSERT persists N rows
+- **AND** each row has action `referential_integrity.cascade_delete` and a
+  `changed.cascadeContext` with `triggerObject`, `triggerSchema`,
+  `action_type` and `property`
+
+#### Scenario: Audit failure never aborts the cascade
+- **GIVEN** the multi-row audit INSERT throws
+- **WHEN** the batched integrity cascade continues
+- **THEN** a warning is logged and the soft-deleted targets stay deleted
+- **AND** no exception escapes `applyDeletionActions()`
+
+### Requirement: Cascade trigger context MUST be written in the initial audit INSERT
+
+Audit entries for referential-integrity-triggered deletions SHALL carry their
+trigger context (`changed.triggeredBy`, `changed.cascadeContext` with
+triggerObject, triggerSchema, action_type and property) in the row as initially
+inserted. A post-insert UPDATE to attach context SHALL NOT be used: the ADR-003
+hash-chain seal is computed over the inserted row, and any later mutation of
+`changed` (or the size recomputation it entailed) breaks chain verification for
+that row.
+
+#### Scenario: Cascade-tagged delete writes exactly one audit statement
+- **GIVEN** a delete carrying referential-integrity cascade context
+- **WHEN** its audit entry is created
+- **THEN** one INSERT persists the row including `changed.triggeredBy:
+  referential_integrity` and the full `cascadeContext` key set
+- **AND** no subsequent UPDATE mutates the row
+- **AND** hash-chain verification over the row succeeds
+
+### Requirement: Bulk deletion paths MAY persist per-object audit rows with one multi-row INSERT
+
+Bulk deletion paths (batched legacy cascade, bulk operations) SHALL still produce
+one audit entry per deleted object, but MAY persist those entries with a single
+multi-row INSERT. Rows persisted this way MUST have the same column shape as
+individually-inserted rows and MUST be sealed into the ADR-003 hash chain in
+ascending id order so every row's `previousHash` references an already-sealed
+predecessor. Sealing remains fail-soft: a hashing failure leaves the row
+persisted but unhashed.
+
+#### Scenario: Batched cascade audit rows are hash-chained
+- **GIVEN** a legacy cascade that soft-deletes M children in one batch
+- **WHEN** their audit entries are persisted
+- **THEN** M rows land via one INSERT statement, each with action `delete` and the
+  full pre-removal object snapshot semantics of the per-object path
+- **AND** the rows are sealed in ascending id order and verify against the chain
+
+### Requirement: The recovery window is published, not only computed (REQ-DWD-001)
+
+A soft-deleted object SHALL publish the date from which it may be
+destroyed and the number of days remaining. The value SHALL appear on the
+object's deletion metadata, in the trash listing and in the refusal a
+caller receives when reading the object through the normal path. A restore
+before that date SHALL remain a single act and SHALL be recorded with its
+actor.
+
+#### Scenario: a caseworker sees how long they have
+
+- **GIVEN** an object soft-deleted today under a 30-day retention
+- **WHEN** the trash is listed
+- **THEN** the entry names the destroyable-from date and 30 days remaining
+
+#### Scenario: the refusal says where the object went
+
+- **GIVEN** the same object
+- **WHEN** a user reads it through the normal object path
+- **THEN** the refusal states that it is deleted and names the destroyable-from date
+
+### Requirement: Destruction is a named right and a recorded act (REQ-DWD-002)
+
+Permanently destroying an object SHALL require a right declared in the
+permission catalogue rather than an administrator check, and a refusal
+SHALL name the rule that refused it. The act SHALL record the actor, the
+time, the scope destroyed and the rule it ran under, and that record SHALL
+survive the object it describes.
+
+#### Scenario: a caseworker cannot destroy
+
+- **GIVEN** a soft-deleted document and a user without the destroy right
+- **WHEN** the user tries to destroy it
+- **THEN** the refusal names the missing right and the object is unchanged
+
+#### Scenario: the record outlives the object
+
+- **GIVEN** a record manager who destroys a soft-deleted object
+- **WHEN** the destruction record is read afterwards
+- **THEN** it names the actor, the time and what was destroyed
+- **AND** the object itself is gone
+
+### Requirement: Destruction has a declared scope (REQ-DWD-003)
+
+A schema SHALL be able to declare what is destroyed with an object: its
+versions, its notes, its files, its tasks, its timeline entries and the
+audit rows that carry its content. The act SHALL preview that scope with
+counts before it runs and SHALL report what was destroyed afterwards. The
+evidence that the destruction happened SHALL NOT be inside the scope.
+
+#### Scenario: what hangs off the object goes with it
+
+- **GIVEN** an object with four notes, two files and eleven timeline entries, all inside the declared scope
+- **WHEN** it is destroyed
+- **THEN** the preview names 4, 2 and 11
+- **AND** afterwards none of them resolves
+
+#### Scenario: the proof of destruction remains
+
+- **GIVEN** the same destruction
+- **WHEN** the audit trail is read
+- **THEN** the destruction entry is present and readable
+- @e2e exclude {audit path, covered by unit tests}
+
+### Requirement: The AVG clock and the Archiefwet clock stay apart (REQ-DWD-004)
+
+An object SHALL carry the date its personal data loses its lawful purpose
+and the date its archive retention expires, each with the rule that
+produced it. Where the two disagree the object SHALL NOT be destroyed and
+the conflict SHALL be reported for a person to decide. An object under a
+legal hold SHALL be exempt from both clocks.
+
+#### Scenario: the two dates are readable and separate
+
+- **GIVEN** an object whose processing activity gives an AVG date of 2027 and whose selectielijst gives an archive date of 2032
+- **WHEN** the object is read
+- **THEN** both dates are returned, each naming its rule
+
+#### Scenario: a disagreement is reported, not resolved silently
+
+- **GIVEN** the same object when the AVG date has passed and the archive date has not
+- **WHEN** the retention pass runs
+- **THEN** the object is not destroyed and the conflict is reported naming both rules
+- @e2e exclude {background pass, covered by unit tests}
+
+#### Scenario: a hold outranks both clocks
+
+- **GIVEN** an object under a legal hold with both dates in the past
+- **WHEN** the retention pass runs
+- **THEN** the object is untouched and the hold is named as the reason
+- @e2e exclude {background pass, covered by unit tests}
 
 ## Current Implementation Status
 - **Fully implemented:**

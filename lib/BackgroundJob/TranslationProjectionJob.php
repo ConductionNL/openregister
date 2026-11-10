@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * OpenRegister TranslationProjectionJob
+ *
+ * Actor-forwarded background job carrying the deferred work of
+ * TranslationProjectionListener (created/updated/transitioned events): keeps
+ * the `openregister_translations` sidecar in sync with the JSONB property
+ * data. Runs under the forwarded actor so
+ * TranslationProjectionService::project()'s translator attribution records
+ * the user who actually made the change, not null/System.
+ *
+ * Idempotent: project() reconciles a desired set (upsert + prune) against
+ * the CURRENT object state, so re-runs and out-of-order chunks converge.
+ * Entries whose object is gone or soft-deleted are stale no-ops.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @psalm-suppress UnusedClass
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\BackgroundJob;
+
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
+use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
+use OCA\OpenRegister\Service\TranslationProjectionServiceInterface;
+use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
+
+/**
+ * Deferred translation-sidecar projection under the forwarded actor.
+ *
+ * @spec openspec/specs/event-driven-architecture/spec.md
+ */
+class TranslationProjectionJob extends ActorForwardedJob {
+	/**
+	 * Wire the projection collaborators on top of the actor plumbing.
+	 *
+	 * @param ITimeFactory $time Time factory for the parent job class.
+	 * @param ActorForwardingServices $actor The identity plumbing the parent job runs the work as.
+	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
+	 * @param TranslationProjectionServiceInterface $projection Projection service doing the real work.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		ActorForwardingServices $actor,
+		private readonly DeferredEntryObjectResolverInterface $resolver,
+		private readonly TranslationProjectionServiceInterface $projection,
+	) {
+		parent::__construct(
+			time: $time,
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
+		);
+	}//end __construct()
+
+	/**
+	 * Project every still-live entry's current state into the sidecar.
+	 *
+	 * Per-entry failures are logged and do not abort the chunk.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	protected function runDeferred(DeferredListenerContext $context): void {
+		foreach ($context->getEntries() as $entry) {
+			$object = $this->resolver->resolve(entry: $entry);
+			if ($object === null) {
+				continue;
+			}
+
+			try {
+				$this->projection->project($object);
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[TranslationProjectionJob] Projection failed for entry',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'uuid' => ($entry['uuid'] ?? null),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
+		}//end foreach
+	}//end runDeferred()
+}//end class

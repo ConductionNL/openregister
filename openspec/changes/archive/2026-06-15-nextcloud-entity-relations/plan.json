@@ -1,0 +1,149 @@
+{
+  "change": "nextcloud-entity-relations",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1095,
+  "parent_issue": 1003,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Database migration and link entities",
+      "github_issue": 1071,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#storage-model",
+      "acceptance_criteria": [
+        "Migration creates openregister_email_links, openregister_contact_links, openregister_deck_links tables",
+        "EmailLink, ContactLink, DeckLink entities with jsonSerialize()",
+        "EmailLinkMapper, ContactLinkMapper, DeckLinkMapper with findByObjectUuid()",
+        "php -l passes on all files"
+      ],
+      "files_likely_affected": [
+        "lib/Migration/Version1Date20260325120000.php",
+        "lib/Db/EmailLink.php",
+        "lib/Db/EmailLinkMapper.php",
+        "lib/Db/ContactLink.php",
+        "lib/Db/ContactLinkMapper.php",
+        "lib/Db/DeckLink.php",
+        "lib/Db/DeckLinkMapper.php"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "EmailService and EmailsController",
+      "github_issue": 1079,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-email-relations-via-nextcloud-mail",
+      "acceptance_criteria": [
+        "GIVEN object, WHEN POST /emails with valid mailMessageId, THEN link created HTTP 201",
+        "GIVEN object with emails, WHEN GET /emails, THEN results sorted by date desc",
+        "GIVEN email link, WHEN DELETE, THEN link removed, email untouched",
+        "GIVEN duplicate link, THEN HTTP 409",
+        "GIVEN Mail app not installed, THEN HTTP 501",
+        "Email search by sender works"
+      ],
+      "files_likely_affected": [
+        "lib/Service/EmailService.php",
+        "lib/Controller/EmailsController.php"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "CalendarEventService and CalendarEventsController",
+      "github_issue": 1083,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-calendar-event-relations-via-caldav-vevent",
+      "acceptance_criteria": [
+        "GIVEN object, WHEN POST /events, THEN VEVENT created with X-OPENREGISTER-* and LINK",
+        "GIVEN existing event, WHEN POST /events/link, THEN event updated with properties",
+        "GIVEN linked event, WHEN DELETE, THEN X-OPENREGISTER-* removed, event preserved",
+        "Calendar selection finds first VEVENT-supporting calendar"
+      ],
+      "files_likely_affected": [
+        "lib/Service/CalendarEventService.php",
+        "lib/Controller/CalendarEventsController.php"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "ContactService and ContactsController",
+      "github_issue": 1084,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-contact-relations-via-carddav",
+      "acceptance_criteria": [
+        "GIVEN object, WHEN POST /contacts with addressbookId/contactUri/role, THEN dual storage created",
+        "GIVEN POST /contacts with fullName/email, THEN new vCard created and linked",
+        "GIVEN contact link, WHEN PUT with new role, THEN role updated in DB and vCard",
+        "GIVEN contact link, WHEN DELETE, THEN DB + vCard properties cleaned",
+        "GET /contacts/{uid}/objects returns all linked objects"
+      ],
+      "files_likely_affected": [
+        "lib/Service/ContactService.php",
+        "lib/Controller/ContactsController.php"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "DeckCardService and DeckController",
+      "github_issue": 1085,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-deck-card-relations-via-nextcloud-deck-api",
+      "acceptance_criteria": [
+        "GIVEN object + Deck installed, WHEN POST /deck with boardId/stackId/title, THEN card created",
+        "GIVEN existing card, WHEN POST /deck with cardId, THEN card linked",
+        "GIVEN deck link, WHEN DELETE, THEN link removed, card preserved",
+        "GET /deck/boards/{boardId}/objects returns linked objects",
+        "GIVEN Deck not installed, THEN HTTP 501"
+      ],
+      "files_likely_affected": [
+        "lib/Service/DeckCardService.php",
+        "lib/Controller/DeckController.php"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "RelationsController and unified endpoint",
+      "github_issue": 1087,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-unified-relations-api",
+      "acceptance_criteria": [
+        "GET /relations returns all relation types grouped",
+        "?types=emails,contacts filters response",
+        "?view=timeline returns flat sorted array",
+        "Missing apps gracefully omitted"
+      ],
+      "files_likely_affected": [
+        "lib/Controller/RelationsController.php"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "ObjectCleanupListener extension and events",
+      "github_issue": 1089,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-object-deletion-cleanup-for-new-entity-types",
+      "acceptance_criteria": [
+        "On object delete: email links deleted, events unlinked, contacts cleaned, deck cleaned",
+        "Partial failure does not block deletion",
+        "CloudEvents dispatched for *.linked and *.unlinked"
+      ],
+      "files_likely_affected": [
+        "lib/Listener/ObjectCleanupListener.php",
+        "lib/AppInfo/Application.php"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Routes and service registration",
+      "github_issue": 1090,
+      "status": "done",
+      "spec_ref": "openspec/changes/nextcloud-entity-relations/design.md#api-routes",
+      "acceptance_criteria": [
+        "All routes from design doc added to routes.php",
+        "Routes ordered correctly",
+        "All requirements constraints correct"
+      ],
+      "files_likely_affected": [
+        "appinfo/routes.php"
+      ]
+    }
+  ]
+}

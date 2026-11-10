@@ -1,0 +1,510 @@
+<?php
+
+/**
+ * OpenRegister SearchTermParser
+ *
+ * Parses a full-text search term into a boolean tree: `AND`, `OR`, `NOT`,
+ * grouping with brackets, quoted phrases and leading or trailing wildcards.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Search
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Search;
+
+use OCA\OpenRegister\Exception\SearchTermSyntaxException;
+
+/**
+ * Turns a search term into a tree of {@see SearchTermNode}.
+ *
+ * Two properties decide the shape of this class.
+ *
+ * A term that carries no operator, bracket, quote or wildcard is NOT parsed at
+ * all: {@see needsParsing()} answers false and the caller keeps the substring
+ * match this search has always done. That is what keeps `dakkapel geweigerd`
+ * meaning the same thing it meant before this change, rather than silently
+ * becoming a conjunction.
+ *
+ * A term that does carry one and cannot be read is refused, never evaluated as
+ * a literal. A literal fallback returns zero rows, which on screen is
+ * indistinguishable from a search that legitimately found nothing.
+ *
+ * Operators are recognised in upper case only, so a search for the Dutch word
+ * `en` or the English `not` keeps finding the word.
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)           The parser builds nodes through
+ * SearchTermNode's named constructors, which exist because the node's own
+ * constructor is private. Injecting a factory for four calls to `all`, `any`,
+ * `not` and `term` would add a seam nothing else would ever use.
+ */
+final class SearchTermParser implements SearchTermParserInterface {
+	/**
+	 * Token type for a literal word or quoted phrase.
+	 */
+	private const TOKEN_TERM = 'term';
+
+	/**
+	 * Token type for an opening bracket.
+	 */
+	private const TOKEN_OPEN = 'open';
+
+	/**
+	 * Token type for a closing bracket.
+	 */
+	private const TOKEN_CLOSE = 'close';
+
+	/**
+	 * The boolean keywords, upper case only.
+	 *
+	 * @var string[]
+	 */
+	private const KEYWORDS = ['AND', 'OR', 'NOT'];
+
+	/**
+	 * The bracket characters, each with its token type.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BRACKETS = ['(' => self::TOKEN_OPEN, ')' => self::TOKEN_CLOSE];
+
+	/**
+	 * Characters other than whitespace that end a bare word.
+	 *
+	 * @var string[]
+	 */
+	private const WORD_BREAKS = ['(', ')', '"'];
+
+	/**
+	 * Whether this term needs the boolean parser at all.
+	 *
+	 * Answering false is the backwards-compatibility guarantee: the caller then
+	 * applies exactly the substring match it applied before this change.
+	 *
+	 * @param string $term The raw search term.
+	 *
+	 * @return bool True when the term carries an operator, bracket, quote or wildcard.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	public function needsParsing(string $term): bool {
+		foreach (['(', ')', '"', '*'] as $marker) {
+			if (str_contains($term, $marker) === true) {
+				return true;
+			}
+		}
+
+		return preg_match('/(?:^|\s)(?:AND|OR|NOT)(?:\s|$)/', $term) === 1;
+	}//end needsParsing()
+
+	/**
+	 * Parse a term into a node tree.
+	 *
+	 * @param string $term The raw search term.
+	 *
+	 * @throws SearchTermSyntaxException When the term cannot be read.
+	 *
+	 * @return SearchTermNode The root node.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	public function parse(string $term): SearchTermNode {
+		$stream = new SearchTokenStream(tokens: $this->tokenize(term: $term), term: $term);
+		if (empty($stream->tokens) === true) {
+			throw $stream->refuse(reason: 'The search term is empty', position: 1);
+		}
+
+		$cursor = 0;
+		$node = $this->parseOr(stream: $stream, cursor: $cursor);
+
+		if ($cursor < count($stream->tokens)) {
+			throw $stream->refuse(reason: 'Unexpected closing bracket', position: $stream->tokens[$cursor]['position']);
+		}
+
+		return $node;
+	}//end parse()
+
+	/**
+	 * Split the term into tokens, each carrying its 1-based position.
+	 *
+	 * @param string $term The raw search term.
+	 *
+	 * @throws SearchTermSyntaxException When a quote is never closed or a wildcard stands alone.
+	 *
+	 * @return array<int, array{type: string, value: string, position: int, leading: bool, trailing: bool}> The tokens.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 */
+	private function tokenize(string $term): array {
+		$tokens = [];
+		$run = new TokenizeRun(term: $term, length: mb_strlen($term));
+		$index = 0;
+
+		while ($index < $run->length) {
+			[$token, $index] = $this->tokenAt(run: $run, index: $index);
+			if ($token !== null) {
+				$tokens[] = $token;
+			}
+		}
+
+		return $tokens;
+	}//end tokenize()
+
+	/**
+	 * Read the token starting at one offset, and where the next one may start.
+	 *
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset to read at.
+	 *
+	 * @throws SearchTermSyntaxException When the term is malformed at this offset.
+	 *
+	 * @return array{0: array{type: string, value: string, position: int, leading: bool, trailing: bool}|null, 1: int}
+	 *     The token (null for whitespace) and the next offset.
+	 */
+	private function tokenAt(TokenizeRun $run, int $index): array {
+		$character = mb_substr($run->term, $index, 1);
+
+		if (trim($character) === '') {
+			return [null, ($index + 1)];
+		}
+
+		if (isset(self::BRACKETS[$character]) === true) {
+			return [$this->markerToken(marker: $character, position: ($index + 1)), ($index + 1)];
+		}
+
+		if ($character === '"') {
+			$token = $this->readPhrase(run: $run, index: $index);
+			// Skip past the closing quote; readPhrase() proved it exists.
+			return [$token, (mb_strpos($run->term, '"', ($index + 1)) + 1)];
+		}
+
+		$token = $this->readWord(run: $run, index: $index);
+		return [$token, $this->wordEnd(run: $run, index: $index)];
+	}//end tokenAt()
+
+	/**
+	 * Build a term token, with neither wildcard flag set.
+	 *
+	 * A wildcarded word sets its flags on the returned array; see readWord().
+	 *
+	 * @param string $value    The literal text.
+	 * @param int    $position 1-based position in the term.
+	 *
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
+	 */
+	private function termToken(string $value, int $position): array {
+		return [
+			'type' => self::TOKEN_TERM,
+			'value' => $value,
+			'position' => $position,
+			'leading' => false,
+			'trailing' => false,
+		];
+	}//end termToken()
+
+	/**
+	 * Build a bracket or keyword token: the marker is its value, and its type
+	 * is the bracket's token type or the keyword itself.
+	 *
+	 * @param string $marker   The bracket character or the keyword.
+	 * @param int    $position 1-based position in the term.
+	 *
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
+	 */
+	private function markerToken(string $marker, int $position): array {
+		$token = $this->termToken(value: $marker, position: $position);
+		$token['type'] = (self::BRACKETS[$marker] ?? $marker);
+
+		return $token;
+	}//end markerToken()
+
+	/**
+	 * Read a quoted phrase starting at the opening quote.
+	 *
+	 * A `*` inside quotes is a literal asterisk: the quotes are what the user
+	 * reaches for to say "this exact run of characters".
+	 *
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset of the opening quote.
+	 *
+	 * @throws SearchTermSyntaxException When the phrase is unterminated or empty.
+	 *
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
+	 */
+	private function readPhrase(TokenizeRun $run, int $index): array {
+		$closing = mb_strpos($run->term, '"', ($index + 1));
+		if ($closing === false) {
+			throw new SearchTermSyntaxException(
+				reason: 'Unterminated quoted phrase opened',
+				position: ($index + 1),
+				term: $run->term
+			);
+		}
+
+		$value = mb_substr($run->term, ($index + 1), ($closing - $index - 1));
+		if (trim($value) === '') {
+			throw new SearchTermSyntaxException(
+				reason: 'Empty quoted phrase',
+				position: ($index + 1),
+				term: $run->term
+			);
+		}
+
+		return $this->termToken(value: $value, position: ($index + 1));
+	}//end readPhrase()
+
+	/**
+	 * The offset just past the word starting at $index.
+	 *
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset of the word's first character.
+	 *
+	 * @return int
+	 */
+	private function wordEnd(TokenizeRun $run, int $index): int {
+		$end = $index;
+		while ($end < $run->length) {
+			$character = mb_substr($run->term, $end, 1);
+			if (trim($character) === '' || in_array($character, self::WORD_BREAKS, true) === true) {
+				break;
+			}
+
+			$end++;
+		}
+
+		return $end;
+	}//end wordEnd()
+
+	/**
+	 * Read a bare word, which may be a keyword or a wildcarded term.
+	 *
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset of the word's first character.
+	 *
+	 * @throws SearchTermSyntaxException When the word is a lone wildcard.
+	 *
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
+	 */
+	private function readWord(TokenizeRun $run, int $index): array {
+		$raw = mb_substr($run->term, $index, ($this->wordEnd(run: $run, index: $index) - $index));
+		$position = ($index + 1);
+
+		if (in_array($raw, self::KEYWORDS, true) === true) {
+			return $this->markerToken(marker: $raw, position: $position);
+		}
+
+		$value = trim($raw, '*');
+		if ($value === '') {
+			throw new SearchTermSyntaxException(reason: 'A wildcard needs a term beside it', position: $position, term: $run->term);
+		}
+
+		$token = $this->termToken(value: $value, position: $position);
+		$token['leading'] = str_starts_with($raw, '*');
+		$token['trailing'] = str_ends_with($raw, '*');
+
+		return $token;
+	}//end readWord()
+
+	/**
+	 * Parse a disjunction, the loosest binding level.
+	 *
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
+	 *
+	 * @throws SearchTermSyntaxException When an operand is missing.
+	 *
+	 * @return SearchTermNode The parsed node.
+	 */
+	private function parseOr(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$operands = [$this->parseAnd(stream: $stream, cursor: $cursor)];
+
+		while ($stream->typeAt(cursor: $cursor) === 'OR') {
+			$this->stepPastOperator(stream: $stream, cursor: $cursor);
+			$operands[] = $this->parseAnd(stream: $stream, cursor: $cursor);
+		}
+
+		return SearchTermNode::any(children: $operands);
+	}//end parseOr()
+
+	/**
+	 * Parse a conjunction. Two terms side by side are a conjunction too.
+	 *
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
+	 *
+	 * @throws SearchTermSyntaxException When an operand is missing.
+	 *
+	 * @return SearchTermNode The parsed node.
+	 */
+	private function parseAnd(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$operands = [$this->parseNot(stream: $stream, cursor: $cursor)];
+
+		while ($this->continuesConjunction(type: $stream->typeAt(cursor: $cursor)) === true) {
+			if ($stream->typeAt(cursor: $cursor) === 'AND') {
+				$this->stepPastOperator(stream: $stream, cursor: $cursor);
+			}
+
+			$operands[] = $this->parseNot(stream: $stream, cursor: $cursor);
+		}
+
+		return SearchTermNode::all(children: $operands);
+	}//end parseAnd()
+
+	/**
+	 * Whether the token type after an operand continues the conjunction.
+	 *
+	 * @param string|null $type The next token type, or null at the end.
+	 *
+	 * @return bool False at the end, at an OR and at a closing bracket.
+	 */
+	private function continuesConjunction(?string $type): bool {
+		return ($type !== null && $type !== 'OR' && $type !== self::TOKEN_CLOSE);
+	}//end continuesConjunction()
+
+	/**
+	 * Step past a binary or unary operator, refusing when no operand follows it.
+	 *
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
+	 *
+	 * @throws SearchTermSyntaxException When the operator has no operand after it.
+	 *
+	 * @return void
+	 */
+	private function stepPastOperator(SearchTokenStream $stream, int &$cursor): void {
+		$operator = $stream->tokens[$cursor];
+		$cursor++;
+		if ($this->startsOperand(token: $stream->tokenAt(cursor: $cursor)) === false) {
+			throw $stream->refuse(reason: $operator['type'] . ' needs a term after it', position: $operator['position']);
+		}
+	}//end stepPastOperator()
+
+	/**
+	 * Parse an optionally negated primary.
+	 *
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
+	 *
+	 * @throws SearchTermSyntaxException When an operand is missing.
+	 *
+	 * @return SearchTermNode The parsed node.
+	 */
+	private function parseNot(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		if ($stream->typeAt(cursor: $cursor) !== 'NOT') {
+			return $this->parsePrimary(stream: $stream, cursor: $cursor);
+		}
+
+		$this->stepPastOperator(stream: $stream, cursor: $cursor);
+
+		return SearchTermNode::not(child: $this->parseNot(stream: $stream, cursor: $cursor));
+	}//end parseNot()
+
+	/**
+	 * Parse a bracketed group or a single term.
+	 *
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
+	 *
+	 * @throws SearchTermSyntaxException When a bracket is unbalanced or a term is missing.
+	 *
+	 * @return SearchTermNode The parsed node.
+	 */
+	private function parsePrimary(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$token = $stream->tokenAt(cursor: $cursor);
+		$this->refuseNonOperand(stream: $stream, token: $token);
+
+		if ($token['type'] === self::TOKEN_OPEN) {
+			return $this->parseGroup(stream: $stream, cursor: $cursor);
+		}
+
+		$cursor++;
+
+		return SearchTermNode::literal(
+			literal: new SearchTermLiteral(value: $token['value'], leadingWildcard: $token['leading'], trailingWildcard: $token['trailing'])
+		);
+	}//end parsePrimary()
+
+	/**
+	 * Refuse a token that cannot begin an operand where one is expected.
+	 *
+	 * @param SearchTokenStream                                                                    $stream The tokens and the raw term.
+	 * @param array{type: string, value: string, position: int, leading: bool, trailing: bool}|null $token  The token, or null at the end.
+	 *
+	 * @throws SearchTermSyntaxException When the term ends, a bracket closes or a keyword stands first.
+	 *
+	 * @return void
+	 */
+	private function refuseNonOperand(SearchTokenStream $stream, ?array $token): void {
+		if ($token === null) {
+			throw $stream->refuse(reason: 'The search term ends where a word was expected', position: (mb_strlen($stream->term) + 1));
+		}
+
+		if ($token['type'] === self::TOKEN_CLOSE) {
+			throw $stream->refuse(reason: 'Unexpected closing bracket', position: $token['position']);
+		}
+
+		if (in_array($token['type'], self::KEYWORDS, true) === true) {
+			throw $stream->refuse(reason: $token['type'] . ' needs a term before it', position: $token['position']);
+		}
+	}//end refuseNonOperand()
+
+	/**
+	 * Parse a bracketed group, the cursor sitting on the opening bracket.
+	 *
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
+	 *
+	 * @throws SearchTermSyntaxException When the group is empty or never closed.
+	 *
+	 * @return SearchTermNode The parsed node.
+	 */
+	private function parseGroup(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$opening = $stream->tokens[$cursor];
+		$cursor++;
+		if ($stream->typeAt(cursor: $cursor) === self::TOKEN_CLOSE) {
+			throw $stream->refuse(reason: 'Empty group opened', position: $opening['position']);
+		}
+
+		$node = $this->parseOr(stream: $stream, cursor: $cursor);
+		if ($stream->typeAt(cursor: $cursor) !== self::TOKEN_CLOSE) {
+			throw $stream->refuse(reason: 'Unbalanced opening bracket', position: $opening['position']);
+		}
+
+		$cursor++;
+		return $node;
+	}//end parseGroup()
+
+	/**
+	 * Whether a token can begin an operand.
+	 *
+	 * @param array{type: string, value: string, position: int, leading: bool, trailing: bool}|null $token The token, or null at the end.
+	 *
+	 * @return bool True when the token can start an operand.
+	 */
+	private function startsOperand(?array $token): bool {
+		if ($token === null) {
+			return false;
+		}
+
+		return ($token['type'] === self::TOKEN_TERM
+			|| $token['type'] === self::TOKEN_OPEN
+			|| $token['type'] === 'NOT');
+	}//end startsOperand()
+}//end class

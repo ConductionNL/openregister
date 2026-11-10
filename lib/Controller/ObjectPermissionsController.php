@@ -1,0 +1,311 @@
+<?php
+
+/**
+ * Who holds which right on one object, and how that set changed.
+ *
+ * The other direction of the `GET /api/scopes` read (design D-10).
+ * `/api/scopes` answers one caller's question about themselves; this answers the
+ * auditor's question about everybody: which principals hold which verbs on this
+ * dossier, and which rule put each of them there.
+ *
+ * WHO MAY ASK. The object is resolved through `ObjectService`, so a caller who
+ * cannot read it gets 404 and learns nothing, not even that it exists. Reading
+ * WHO ELSE has access is a second question and takes a second right: the owner,
+ * an administrator, or a caller holding `manage` through a rule somebody
+ * actually wrote. An ordinary reader of a dossier has no business enumerating
+ * the case workers on it.
+ *
+ * WHY THE WORK IS NOT IN HERE. The blocks in play, the role definitions and the
+ * trail are assembled in {@see \OCA\OpenRegister\Service\Rbac\ObjectAccessReport}.
+ * A controller that interpreted the rules itself would be a second reading of
+ * them, and the two would only ever meet in a support ticket.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/specs/rbac-scopes/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReportInterface;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices;
+
+/**
+ * The per-object access set and its history.
+ *
+ * @spec openspec/specs/rbac-scopes/spec.md
+ */
+class ObjectPermissionsController extends Controller {
+
+	/**
+	 * Names the register and schema the request resolved.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Assembles the answer.
+	 *
+	 * @var ObjectAccessReportInterface
+	 */
+	private readonly ObjectAccessReportInterface $report;
+
+	/**
+	 * Resolves the object and decides who may ask.
+	 *
+	 * @var AccessReviewGateInterface
+	 */
+	private readonly AccessReviewGateInterface $gate;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param string             $appName       Application identifier.
+	 * @param IRequest           $request       Active HTTP request.
+	 * @param ObjectPermissionsControllerServices $services The services, bundled.
+	 * @param LoggerInterface    $logger        Records why an access set could not be assembled.
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		ObjectPermissionsControllerServices $services,
+		private readonly LoggerInterface $logger,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->objectService;
+		$this->report = $services->report;
+		$this->gate = $services->gate;
+
+	}//end __construct()
+
+	/**
+	 * The principals holding rights on one object, each with the rule behind it.
+	 *
+	 * Response shape:
+	 *
+	 *   {
+	 *     "object": "<uuid>",
+	 *     "holders": [
+	 *       {"principal": "behandelaars", "verbs": ["read", "update"],
+	 *        "rules": [{"action": "read", "level": "schema", "role": null, "rule": ["behandelaars"]}]}
+	 *     ],
+	 *     "denied": [{"principal": "waarnemers", "action": "read", "level": "object", ...}],
+	 *     "denyEnforcement": "staging"
+	 *   }
+	 *
+	 * The denies are reported beside the grants rather than subtracted from
+	 * them, and the enforcement mode is reported with them, because below
+	 * `enforcing` a deny is a rule that has not started biting yet and an
+	 * auditor reading a subtraction that has not happened would be misled in the
+	 * one direction that matters.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema   Schema slug or id.
+	 * @param string $id       Object uuid.
+	 *
+	 * @return JSONResponse The access set.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->accessSetAnswer(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * How this object's access set changed, and what it was at a past moment.
+	 *
+	 * The `at` query parameter asks the auditor's actual question: not "what
+	 * changed" but "who could open this in March", which a list of changes
+	 * answers only after somebody replays it by hand.
+	 *
+	 * @param string      $register Register slug or id.
+	 * @param string      $schema   Schema slug or id.
+	 * @param string      $id       Object uuid.
+	 * @param string|null $at       An ISO-8601 moment to report the set as of.
+	 *
+	 * @return JSONResponse The history.
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable)
+	 * Reason: `at` is the query parameter's name, and Nextcloud binds a request
+	 *         parameter to the method argument that shares it. Renaming the
+	 *         argument renames the endpoint's contract.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function history(string $register, string $schema, string $id, ?string $at = null): JSONResponse {
+		return $this->historyAnswer(ref: new ObjectRef(register: $register, schema: $schema, id: $id), at: $at);
+	}//end history()
+
+	/**
+	 * Who holds which right on the named record, for a caller who may review its access.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The access set, or the refusal.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function accessSetAnswer(ObjectRef $ref): JSONResponse {
+		$object = $this->reviewableObject(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		try {
+			return new JSONResponse($this->accessSetOf(object: $object));
+		} catch (\Throwable $e) {
+			// An access set that could not be assembled is reported as exactly
+			// that. Left to the framework it is a 500 carrying a stack trace, on
+			// an endpoint a non-admin owner may call, and an empty set in its
+			// place would read as "nobody holds any right on this", which is
+			// the one answer an auditor must not be given by accident. The cause
+			// goes to the log, so the caller's generic message is not the only
+			// trace of it.
+			return $this->unassembled(exception: $e, id: $ref->id);
+		}
+	}//end accessSetAnswer()
+
+	/**
+	 * How the rights on the named record changed, as of a moment, for a caller who may review its access.
+	 *
+	 * @param ObjectRef   $ref The record the route names.
+	 * @param string|null $at  The moment to read the rights at, or null for now.
+	 *
+	 * @return JSONResponse The history, or the refusal.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function historyAnswer(ObjectRef $ref, ?string $at): JSONResponse {
+		$object = $this->reviewableObject(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		try {
+			return new JSONResponse($this->report->historyFor(object: $object, moment: $at));
+		} catch (\Throwable $e) {
+			// An unreadable trail is reported as unreadable. Answering "no
+			// changes" would be the same shape as "nothing ever changed", which
+			// is the one answer an auditor must not be given by accident.
+			return new JSONResponse(
+				['message' => 'The audit trail for this object could not be read'],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
+	}//end historyAnswer()
+
+	/**
+	 * The object, once the caller may both read it and review its access.
+	 *
+	 * The read is checked first (404), the review right second (403), and both
+	 * before anything about the access set is read.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the refusal.
+	 */
+	private function reviewableObject(ObjectRef $ref): ObjectEntity|JSONResponse {
+		$object = $this->resolveObject(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		return ($this->requireAccessReview(object: $object) ?? $object);
+	}//end reviewableObject()
+
+	/**
+	 * The access set of the object, in the register and schema the request resolved.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array The access set.
+	 */
+	private function accessSetOf(ObjectEntity $object): array {
+		return $this->report->setFor(
+			object: $object,
+			registerRef: $this->objectService->getRegister(),
+			schemaRef: $this->objectService->getSchema()
+		);
+	}//end accessSetOf()
+
+	/**
+	 * Log why an access set could not be assembled, and answer a generic 500.
+	 *
+	 * @param \Throwable $exception The failure.
+	 * @param string     $id        Object uuid.
+	 *
+	 * @return JSONResponse The 500.
+	 */
+	private function unassembled(\Throwable $exception, string $id): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectPermissionsController] The access set for {uuid} could not be assembled: {error}',
+			context: ['uuid' => $id, 'error' => $exception->getMessage(), 'exception' => $exception]
+		);
+		return new JSONResponse(
+			['message' => 'The access set for this object could not be assembled'],
+			Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unassembled()
+
+	/**
+	 * Refuse a caller who may read the object but not review its access.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the caller may ask.
+	 */
+	private function requireAccessReview(ObjectEntity $object): ?JSONResponse {
+		if ($this->gate->mayReviewAccess(object: $object) === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			['message' => 'Reading who holds rights on this object needs the manage permission'],
+			Http::STATUS_FORBIDDEN
+		);
+	}//end requireAccessReview()
+
+	/**
+	 * Resolve the object through the RBAC boundary.
+	 *
+	 * An object the caller cannot read resolves to nothing and answers 404, so
+	 * existence is not leaked. Same guard, same reason, as the sharing endpoints
+	 * beside this one.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the refusal.
+	 */
+	private function resolveObject(ObjectRef $ref): ObjectEntity|JSONResponse {
+		return ($this->gate->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id) ?? ObjectSharingEndpoint::notFound());
+	}//end resolveObject()
+}//end class

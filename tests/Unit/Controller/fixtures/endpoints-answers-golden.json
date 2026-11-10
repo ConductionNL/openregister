@@ -1,0 +1,1360 @@
+{
+    "allLogs by a non-admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "endpointMapper.findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "endpointLogMapper.findPageWithin": [
+                    [
+                        5
+                    ],
+                    null,
+                    50,
+                    0
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "allLogs fails": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error retrieving endpoint logs: boom",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve endpoint logs: boom"
+        }
+    },
+    "allLogs for one endpoint": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointLogMapper.findByEndpoint": [
+                    5,
+                    50,
+                    0
+                ]
+            },
+            {
+                "endpointLogMapper.findByEndpoint": [
+                    5,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "allLogs for one endpoint fails": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointLogMapper.findByEndpoint": [
+                    5,
+                    50,
+                    0
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error retrieving endpoint logs: boom",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve endpoint logs: boom"
+        }
+    },
+    "allLogs not found": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error retrieving endpoint logs: none",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve endpoint logs: none"
+        }
+    },
+    "allLogs succeeds": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "allLogs with an empty endpoint": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "allLogs with endpoint 0": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    50,
+                    0
+                ]
+            },
+            {
+                "endpointLogMapper.findAll": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "create by a non-admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "create fails": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.createFromArray": [
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "id": 9,
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error creating endpoint: boom",
+                    {
+                        "data": {
+                            "name": "Ep",
+                            "endpoint": "/ep",
+                            "id": 9,
+                            "_route": "x",
+                            "data": {
+                                "q": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to create endpoint: boom"
+        }
+    },
+    "create not found": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.createFromArray": [
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "id": 9,
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error creating endpoint: none",
+                    {
+                        "data": {
+                            "name": "Ep",
+                            "endpoint": "/ep",
+                            "id": 9,
+                            "_route": "x",
+                            "data": {
+                                "q": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to create endpoint: none"
+        }
+    },
+    "create succeeds": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.createFromArray": [
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "id": 9,
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[EndpointsController] Endpoint created",
+                    {
+                        "id": 5,
+                        "name": "Ep",
+                        "path": "/ep"
+                    }
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "id": 5,
+            "\u0000OCP\\AppFramework\\Db\\Entity\u0000_updatedFields": {
+                "id": true,
+                "name": true,
+                "endpoint": true
+            },
+            "\u0000*\u0000_fieldTypes": {
+                "id": "integer",
+                "uuid": "string",
+                "name": "string",
+                "description": "string",
+                "reference": "string",
+                "version": "string",
+                "endpoint": "string",
+                "endpointArray": "json",
+                "endpointRegex": "string",
+                "method": "string",
+                "targetType": "string",
+                "targetId": "string",
+                "conditions": "json",
+                "inputMapping": "string",
+                "outputMapping": "string",
+                "rules": "json",
+                "configurations": "json",
+                "slug": "string",
+                "groups": "json",
+                "organisation": "string",
+                "created": "datetime",
+                "updated": "datetime"
+            },
+            "\u0000*\u0000uuid": null,
+            "\u0000*\u0000name": "Ep",
+            "\u0000*\u0000description": null,
+            "\u0000*\u0000reference": null,
+            "\u0000*\u0000version": "0.0.0",
+            "\u0000*\u0000endpoint": "/ep",
+            "\u0000*\u0000endpointArray": [],
+            "\u0000*\u0000endpointRegex": null,
+            "\u0000*\u0000method": null,
+            "\u0000*\u0000targetType": null,
+            "\u0000*\u0000targetId": null,
+            "\u0000*\u0000conditions": [],
+            "\u0000*\u0000inputMapping": null,
+            "\u0000*\u0000outputMapping": null,
+            "\u0000*\u0000rules": [],
+            "\u0000*\u0000configurations": [],
+            "\u0000*\u0000slug": null,
+            "\u0000*\u0000groups": [],
+            "\u0000*\u0000organisation": null,
+            "\u0000*\u0000created": null,
+            "\u0000*\u0000updated": null
+        }
+    },
+    "create without a name": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Name and endpoint path are required"
+        }
+    },
+    "create without an endpoint path": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Name and endpoint path are required"
+        }
+    },
+    "destroy by a non-admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "destroy fails": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error deleting endpoint: boom",
+                    {
+                        "id": 5
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to delete endpoint"
+        }
+    },
+    "destroy not found": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Endpoint not found"
+        }
+    },
+    "destroy succeeds": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointMapper.delete": [
+                    {
+                        "endpoint": 5
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[EndpointsController] Endpoint deleted",
+                    {
+                        "id": 5,
+                        "name": "Ep"
+                    }
+                ]
+            }
+        ],
+        "status": 204,
+        "data": []
+    },
+    "index by a non-admin": {
+        "calls": [
+            {
+                "endpointMapper.findAll": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "name": "Ep",
+                    "description": null,
+                    "reference": null,
+                    "version": "0.0.0",
+                    "endpoint": "/ep",
+                    "endpointArray": [],
+                    "endpointRegex": null,
+                    "method": null,
+                    "targetType": null,
+                    "targetId": null,
+                    "conditions": [],
+                    "inputMapping": null,
+                    "outputMapping": null,
+                    "rules": [],
+                    "configurations": [],
+                    "slug": "ep",
+                    "groups": [],
+                    "organisation": null,
+                    "created": null,
+                    "updated": null
+                }
+            ],
+            "total": 1
+        }
+    },
+    "index fails": {
+        "calls": [
+            {
+                "endpointMapper.findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error listing endpoints: boom",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to list endpoints"
+        }
+    },
+    "index not found": {
+        "calls": [
+            {
+                "endpointMapper.findAll": [
+                    null,
+                    null
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error listing endpoints: none",
+                    []
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to list endpoints"
+        }
+    },
+    "index succeeds": {
+        "calls": [
+            {
+                "endpointMapper.findAll": [
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 5,
+                    "uuid": null,
+                    "name": "Ep",
+                    "description": null,
+                    "reference": null,
+                    "version": "0.0.0",
+                    "endpoint": "/ep",
+                    "endpointArray": [],
+                    "endpointRegex": null,
+                    "method": null,
+                    "targetType": null,
+                    "targetId": null,
+                    "conditions": [],
+                    "inputMapping": null,
+                    "outputMapping": null,
+                    "rules": [],
+                    "configurations": [],
+                    "slug": "ep",
+                    "groups": [],
+                    "organisation": null,
+                    "created": null,
+                    "updated": null
+                }
+            ],
+            "total": 1
+        }
+    },
+    "logStats by a non-admin": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointLogMapper.getStatistics": [
+                    5
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total": 1
+        }
+    },
+    "logStats fails": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error retrieving endpoint log statistics: boom",
+                    {
+                        "id": 5
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve endpoint log statistics"
+        }
+    },
+    "logStats not found": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Endpoint not found"
+        }
+    },
+    "logStats succeeds": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointLogMapper.getStatistics": [
+                    5
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total": 1
+        }
+    },
+    "logs by a non-admin": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointLogMapper.findByEndpoint": [
+                    5,
+                    50,
+                    0
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "logs fails": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error retrieving endpoint logs: boom",
+                    {
+                        "id": 5
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve endpoint logs"
+        }
+    },
+    "logs not found": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Endpoint not found"
+        }
+    },
+    "logs succeeds": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointLogMapper.findByEndpoint": [
+                    5,
+                    50,
+                    0
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0
+        }
+    },
+    "patch by a non-admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "patch fails": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.updateFromArray": [
+                    5,
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error updating endpoint: boom",
+                    {
+                        "id": 5,
+                        "data": {
+                            "name": "Ep",
+                            "endpoint": "/ep",
+                            "id": 9,
+                            "_route": "x",
+                            "data": {
+                                "q": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to update endpoint: boom"
+        }
+    },
+    "patch not found": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.updateFromArray": [
+                    5,
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Endpoint not found"
+        }
+    },
+    "patch succeeds": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.updateFromArray": [
+                    5,
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[EndpointsController] Endpoint updated",
+                    {
+                        "id": 5,
+                        "name": "Ep"
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 5,
+            "\u0000OCP\\AppFramework\\Db\\Entity\u0000_updatedFields": {
+                "id": true,
+                "name": true,
+                "endpoint": true
+            },
+            "\u0000*\u0000_fieldTypes": {
+                "id": "integer",
+                "uuid": "string",
+                "name": "string",
+                "description": "string",
+                "reference": "string",
+                "version": "string",
+                "endpoint": "string",
+                "endpointArray": "json",
+                "endpointRegex": "string",
+                "method": "string",
+                "targetType": "string",
+                "targetId": "string",
+                "conditions": "json",
+                "inputMapping": "string",
+                "outputMapping": "string",
+                "rules": "json",
+                "configurations": "json",
+                "slug": "string",
+                "groups": "json",
+                "organisation": "string",
+                "created": "datetime",
+                "updated": "datetime"
+            },
+            "\u0000*\u0000uuid": null,
+            "\u0000*\u0000name": "Ep",
+            "\u0000*\u0000description": null,
+            "\u0000*\u0000reference": null,
+            "\u0000*\u0000version": "0.0.0",
+            "\u0000*\u0000endpoint": "/ep",
+            "\u0000*\u0000endpointArray": [],
+            "\u0000*\u0000endpointRegex": null,
+            "\u0000*\u0000method": null,
+            "\u0000*\u0000targetType": null,
+            "\u0000*\u0000targetId": null,
+            "\u0000*\u0000conditions": [],
+            "\u0000*\u0000inputMapping": null,
+            "\u0000*\u0000outputMapping": null,
+            "\u0000*\u0000rules": [],
+            "\u0000*\u0000configurations": [],
+            "\u0000*\u0000slug": null,
+            "\u0000*\u0000groups": [],
+            "\u0000*\u0000organisation": null,
+            "\u0000*\u0000created": null,
+            "\u0000*\u0000updated": null
+        }
+    },
+    "show by a non-admin": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 5,
+            "\u0000OCP\\AppFramework\\Db\\Entity\u0000_updatedFields": {
+                "id": true,
+                "name": true,
+                "endpoint": true
+            },
+            "\u0000*\u0000_fieldTypes": {
+                "id": "integer",
+                "uuid": "string",
+                "name": "string",
+                "description": "string",
+                "reference": "string",
+                "version": "string",
+                "endpoint": "string",
+                "endpointArray": "json",
+                "endpointRegex": "string",
+                "method": "string",
+                "targetType": "string",
+                "targetId": "string",
+                "conditions": "json",
+                "inputMapping": "string",
+                "outputMapping": "string",
+                "rules": "json",
+                "configurations": "json",
+                "slug": "string",
+                "groups": "json",
+                "organisation": "string",
+                "created": "datetime",
+                "updated": "datetime"
+            },
+            "\u0000*\u0000uuid": null,
+            "\u0000*\u0000name": "Ep",
+            "\u0000*\u0000description": null,
+            "\u0000*\u0000reference": null,
+            "\u0000*\u0000version": "0.0.0",
+            "\u0000*\u0000endpoint": "/ep",
+            "\u0000*\u0000endpointArray": [],
+            "\u0000*\u0000endpointRegex": null,
+            "\u0000*\u0000method": null,
+            "\u0000*\u0000targetType": null,
+            "\u0000*\u0000targetId": null,
+            "\u0000*\u0000conditions": [],
+            "\u0000*\u0000inputMapping": null,
+            "\u0000*\u0000outputMapping": null,
+            "\u0000*\u0000rules": [],
+            "\u0000*\u0000configurations": [],
+            "\u0000*\u0000slug": null,
+            "\u0000*\u0000groups": [],
+            "\u0000*\u0000organisation": null,
+            "\u0000*\u0000created": null,
+            "\u0000*\u0000updated": null
+        }
+    },
+    "show fails": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error retrieving endpoint: boom",
+                    {
+                        "id": 5
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve endpoint"
+        }
+    },
+    "show not found": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Endpoint not found"
+        }
+    },
+    "show succeeds": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 5,
+            "\u0000OCP\\AppFramework\\Db\\Entity\u0000_updatedFields": {
+                "id": true,
+                "name": true,
+                "endpoint": true
+            },
+            "\u0000*\u0000_fieldTypes": {
+                "id": "integer",
+                "uuid": "string",
+                "name": "string",
+                "description": "string",
+                "reference": "string",
+                "version": "string",
+                "endpoint": "string",
+                "endpointArray": "json",
+                "endpointRegex": "string",
+                "method": "string",
+                "targetType": "string",
+                "targetId": "string",
+                "conditions": "json",
+                "inputMapping": "string",
+                "outputMapping": "string",
+                "rules": "json",
+                "configurations": "json",
+                "slug": "string",
+                "groups": "json",
+                "organisation": "string",
+                "created": "datetime",
+                "updated": "datetime"
+            },
+            "\u0000*\u0000uuid": null,
+            "\u0000*\u0000name": "Ep",
+            "\u0000*\u0000description": null,
+            "\u0000*\u0000reference": null,
+            "\u0000*\u0000version": "0.0.0",
+            "\u0000*\u0000endpoint": "/ep",
+            "\u0000*\u0000endpointArray": [],
+            "\u0000*\u0000endpointRegex": null,
+            "\u0000*\u0000method": null,
+            "\u0000*\u0000targetType": null,
+            "\u0000*\u0000targetId": null,
+            "\u0000*\u0000conditions": [],
+            "\u0000*\u0000inputMapping": null,
+            "\u0000*\u0000outputMapping": null,
+            "\u0000*\u0000rules": [],
+            "\u0000*\u0000configurations": [],
+            "\u0000*\u0000slug": null,
+            "\u0000*\u0000groups": [],
+            "\u0000*\u0000organisation": null,
+            "\u0000*\u0000created": null,
+            "\u0000*\u0000updated": null
+        }
+    },
+    "test by a non-admin": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointService.testEndpoint": [
+                    {
+                        "endpoint": 5
+                    },
+                    {
+                        "q": 1
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Test endpoint executed successfully",
+            "statusCode": 200,
+            "response": {
+                "ok": true
+            }
+        }
+    },
+    "test fails": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error testing endpoint: boom",
+                    {
+                        "id": 5
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to test endpoint: boom"
+        }
+    },
+    "test not found": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Endpoint not found"
+        }
+    },
+    "test succeeds": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointService.testEndpoint": [
+                    {
+                        "endpoint": 5
+                    },
+                    {
+                        "q": 1
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Test endpoint executed successfully",
+            "statusCode": 200,
+            "response": {
+                "ok": true
+            }
+        }
+    },
+    "test with a failing endpoint": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointService.testEndpoint": [
+                    {
+                        "endpoint": 5
+                    },
+                    {
+                        "q": 1
+                    }
+                ]
+            }
+        ],
+        "status": 502,
+        "data": {
+            "success": false,
+            "message": "upstream",
+            "statusCode": 502
+        }
+    },
+    "test with a truthy non-boolean success": {
+        "calls": [
+            {
+                "endpointMapper.find": [
+                    5
+                ]
+            },
+            {
+                "endpointService.testEndpoint": [
+                    {
+                        "endpoint": 5
+                    },
+                    {
+                        "q": 1
+                    }
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "success": false,
+            "message": "Test endpoint execution failed",
+            "statusCode": 201
+        }
+    },
+    "update by a non-admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Admin privileges required"
+        }
+    },
+    "update fails": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.updateFromArray": [
+                    5,
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.error": [
+                    "[EndpointsController] Error updating endpoint: boom",
+                    {
+                        "id": 5,
+                        "data": {
+                            "name": "Ep",
+                            "endpoint": "/ep",
+                            "id": 9,
+                            "_route": "x",
+                            "data": {
+                                "q": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to update endpoint: boom"
+        }
+    },
+    "update not found": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.updateFromArray": [
+                    5,
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Endpoint not found"
+        }
+    },
+    "update succeeds": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "endpointMapper.updateFromArray": [
+                    5,
+                    {
+                        "name": "Ep",
+                        "endpoint": "/ep",
+                        "_route": "x",
+                        "data": {
+                            "q": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[EndpointsController] Endpoint updated",
+                    {
+                        "id": 5,
+                        "name": "Ep"
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 5,
+            "\u0000OCP\\AppFramework\\Db\\Entity\u0000_updatedFields": {
+                "id": true,
+                "name": true,
+                "endpoint": true
+            },
+            "\u0000*\u0000_fieldTypes": {
+                "id": "integer",
+                "uuid": "string",
+                "name": "string",
+                "description": "string",
+                "reference": "string",
+                "version": "string",
+                "endpoint": "string",
+                "endpointArray": "json",
+                "endpointRegex": "string",
+                "method": "string",
+                "targetType": "string",
+                "targetId": "string",
+                "conditions": "json",
+                "inputMapping": "string",
+                "outputMapping": "string",
+                "rules": "json",
+                "configurations": "json",
+                "slug": "string",
+                "groups": "json",
+                "organisation": "string",
+                "created": "datetime",
+                "updated": "datetime"
+            },
+            "\u0000*\u0000uuid": null,
+            "\u0000*\u0000name": "Ep",
+            "\u0000*\u0000description": null,
+            "\u0000*\u0000reference": null,
+            "\u0000*\u0000version": "0.0.0",
+            "\u0000*\u0000endpoint": "/ep",
+            "\u0000*\u0000endpointArray": [],
+            "\u0000*\u0000endpointRegex": null,
+            "\u0000*\u0000method": null,
+            "\u0000*\u0000targetType": null,
+            "\u0000*\u0000targetId": null,
+            "\u0000*\u0000conditions": [],
+            "\u0000*\u0000inputMapping": null,
+            "\u0000*\u0000outputMapping": null,
+            "\u0000*\u0000rules": [],
+            "\u0000*\u0000configurations": [],
+            "\u0000*\u0000slug": null,
+            "\u0000*\u0000groups": [],
+            "\u0000*\u0000organisation": null,
+            "\u0000*\u0000created": null,
+            "\u0000*\u0000updated": null
+        }
+    }
+}

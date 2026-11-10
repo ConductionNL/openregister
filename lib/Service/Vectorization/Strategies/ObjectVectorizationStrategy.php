@@ -5,6 +5,9 @@
  *
  * Strategy for vectorizing OpenRegister objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -19,8 +22,8 @@
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -35,351 +38,338 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class ObjectVectorizationStrategy implements VectorizationStrategyInterface
-{
+class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterface {
 
-    /**
-     * Object service
-     *
-     * @var ObjectService
-     */
-    private ObjectService $objectService;
+	/**
+	 * Constructor
+	 *
+	 * @param ObjectOperationsInterface $objectService Object service
+	 * @param SettingsServiceInterface $settingsService Settings service
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly SettingsServiceInterface $settingsService,
+		private readonly LoggerInterface $logger,
+	) {
 
-    /**
-     * Settings service
-     *
-     * @var SettingsService
-     */
-    private SettingsService $settingsService;
+	}//end __construct()
 
-    /**
-     * Logger
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
+	/**
+	 * Fetch objects to vectorize based on views
+	 *
+	 * @param array $options Options: views, batch_size
+	 *
+	 * @return \OCA\OpenRegister\Db\ObjectEntity[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function fetchEntities(array $options): array {
+		$views = $options['views'] ?? null;
+		$limit = $options['batch_size'] ?? 25;
 
-    /**
-     * Constructor
-     *
-     * @param ObjectService   $objectService   Object service
-     * @param SettingsService $settingsService Settings service
-     * @param LoggerInterface $logger          Logger
-     */
-    public function __construct(
-        ObjectService $objectService,
-        SettingsService $settingsService,
-        LoggerInterface $logger
-    ) {
-        $this->objectService   = $objectService;
-        $this->settingsService = $settingsService;
-        $this->logger          = $logger;
-    }//end __construct()
+		$this->logger->debug(
+			message: '[ObjectVectorizationStrategy] Fetching objects',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'views' => $views,
+				'limit' => $limit,
+			]
+		);
 
-    /**
-     * Fetch objects to vectorize based on views
-     *
-     * @param array $options Options: views, batch_size
-     *
-     * @return \OCA\OpenRegister\Db\ObjectEntity[]
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
-     */
-    public function fetchEntities(array $options): array
-    {
-        $views = $options['views'] ?? null;
-        $limit = $options['batch_size'] ?? 25;
+		// Get objects using ObjectService with view support.
+		$result = $this->objectService->searchObjects(
+			query: [
+				'_limit' => $limit,
+				'_source' => 'database',
+			],
+			_rbac: false,
+			_multitenancy: false,
+			ids: null,
+			uses: null,
+			views: $views,
+			// The job has no session, so ViewMapper::find() denied, the view was
+			// logged and skipped, and the vectoriser indexed whatever the
+			// unbounded query returned instead of the view it was told to index.
+			// With the flag the view resolves exempt - a background job carries its
+			// own authorization exactly as a publication link does - and a view
+			// that cannot be applied fails the run rather than silently widening it.
+			_viewScopeRequired: true
+		);
 
-        $this->logger->debug(
-            message: '[ObjectVectorizationStrategy] Fetching objects',
-            context: [
-                'file'  => __FILE__,
-                'line'  => __LINE__,
-                'views' => $views,
-                'limit' => $limit,
-            ]
-        );
+		// SearchObjects can return array|int, but we need array for vectorization (@var array $objects).
+		$objects = [];
+		if (is_array($result) === true) {
+			$objects = $result;
+		}
 
-        // Get objects using ObjectService with view support.
-        $result = $this->objectService->searchObjects(
-            query: [
-                '_limit'  => $limit,
-                '_source' => 'database',
-            ],
-            _rbac: false,
-            _multitenancy: false,
-            ids: null,
-            uses: null,
-            views: $views
-        );
+		$count = count($objects);
 
-        // SearchObjects can return array|int, but we need array for vectorization (@var array $objects).
-        $objects = [];
-        if (is_array($result) === true) {
-            $objects = $result;
-        }
+		$this->logger->debug(
+			message: '[ObjectVectorizationStrategy] Fetched objects',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'count' => $count,
+			]
+		);
 
-        $count = count($objects);
+		return $objects;
+	}//end fetchEntities()
 
-        $this->logger->debug(
-            message: '[ObjectVectorizationStrategy] Fetched objects',
-            context: [
-                'file'  => __FILE__,
-                'line'  => __LINE__,
-                'count' => $count,
-            ]
-        );
+	/**
+	 * Extract text from object by serializing it
+	 *
+	 * @param mixed $entity ObjectEntity
+	 *
+	 * @return (int|string)[][] Array with single item containing serialized object
+	 *
+	 * @psalm-return list{array{text: string, index: 0}}
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function extractVectorizationItems($entity): array {
+		// Get object data.
+		$objectData = $entity->jsonSerialize();
+		if (is_array($entity) === true) {
+			$objectData = $entity;
+		}
 
-        return $objects;
-    }//end fetchEntities()
+		// Get vectorization config.
+		$config = $this->settingsService->getObjectSettingsOnly();
 
-    /**
-     * Extract text from object by serializing it
-     *
-     * @param mixed $entity ObjectEntity
-     *
-     * @return (int|string)[][] Array with single item containing serialized object
-     *
-     * @psalm-return list{array{text: string, index: 0}}
-     */
-    public function extractVectorizationItems($entity): array
-    {
-        // Get object data.
-        if (is_array($entity) === true) {
-            $objectData = $entity;
-        } else {
-            $objectData = $entity->jsonSerialize();
-        }
+		// Serialize object to text.
+		$text = $this->serializeObject(object: $objectData, config: $config);
 
-        // Get vectorization config.
-        $config = $this->settingsService->getObjectSettingsOnly();
+		// Objects produce a single vectorization item.
+		return [
+			[
+				'text' => $text,
+				'index' => 0,
+			],
+		];
+	}//end extractVectorizationItems()
 
-        // Serialize object to text.
-        $text = $this->serializeObject(object: $objectData, config: $config);
+	/**
+	 * Prepare metadata for object vector
+	 *
+	 * @param mixed $entity ObjectEntity
+	 * @param array $item Vectorization item
+	 *
+	 * @return ((mixed|null|string)[]|int|string)[] Metadata for storage
+	 *
+	 * @psalm-return array{
+	 *     entity_type: 'object',
+	 *     entity_id: string,
+	 *     chunk_index: 0,
+	 *     total_chunks: 1,
+	 *     chunk_text: string,
+	 *     additional_metadata: array{
+	 *         object_id: 'unknown'|mixed,
+	 *         object_title: mixed|string,
+	 *         title: mixed|string,
+	 *         name: mixed|string,
+	 *         description: ''|mixed,
+	 *         register: mixed|null,
+	 *         register_id: mixed|null,
+	 *         schema: mixed|null,
+	 *         schema_id: mixed|null,
+	 *         uuid: mixed|null,
+	 *         uri: mixed|null
+	 *     }
+	 * }
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function prepareVectorMetadata($entity, array $item): array {
+		$objectData = $entity->jsonSerialize();
+		if (is_array($entity) === true) {
+			$objectData = $entity;
+		}
 
-        // Objects produce a single vectorization item.
-        return [
-            [
-                'text'  => $text,
-                'index' => 0,
-            ],
-        ];
-    }//end extractVectorizationItems()
+		$objectId = 'unknown';
+		if (($objectData['id'] ?? null) !== null) {
+			$objectId = $objectData['id'];
+		}
 
-    /**
-     * Prepare metadata for object vector
-     *
-     * @param mixed $entity ObjectEntity
-     * @param array $item   Vectorization item
-     *
-     * @return ((mixed|null|string)[]|int|string)[] Metadata for storage
-     *
-     * @psalm-return array{
-     *     entity_type: 'object',
-     *     entity_id: string,
-     *     chunk_index: 0,
-     *     total_chunks: 1,
-     *     chunk_text: string,
-     *     additional_metadata: array{
-     *         object_id: 'unknown'|mixed,
-     *         object_title: mixed|string,
-     *         title: mixed|string,
-     *         name: mixed|string,
-     *         description: ''|mixed,
-     *         register: mixed|null,
-     *         register_id: mixed|null,
-     *         schema: mixed|null,
-     *         schema_id: mixed|null,
-     *         uuid: mixed|null,
-     *         uri: mixed|null
-     *     }
-     * }
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
-     */
-    public function prepareVectorMetadata($entity, array $item): array
-    {
-        if (is_array($entity) === true) {
-            $objectData = $entity;
-        } else {
-            $objectData = $entity->jsonSerialize();
-        }
+		// DEBUG: Log what we're receiving.
+		$this->logger->debug(
+			message: '[ObjectVectorizationStrategy] Preparing metadata',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'object_id' => $objectId,
+				'has_@self' => isset($objectData['@self']) === true,
+				'@self_keys' => $this->extractSelfKeys(objectData: $objectData),
+				'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
+				'register_@self' => $objectData['@self']['register'] ?? 'none',
+			]
+		);
 
-        if (($objectData['id'] ?? null) !== null) {
-            $objectId = $objectData['id'];
-        } else {
-            $objectId = 'unknown';
-        }
+		// Extract title/name - check multiple possible fields.
+		$title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'];
+		if ($title === null) {
+			$title = $this->extractFirstStringField(objectData: $objectData);
+		}
 
-        // DEBUG: Log what we're receiving.
-        $this->logger->debug(
-            message: '[ObjectVectorizationStrategy] Preparing metadata',
-            context: [
-                'file'            => __FILE__,
-                'line'            => __LINE__,
-                'object_id'       => $objectId,
-                'has_@self'       => isset($objectData['@self']) === true,
-                '@self_keys'      => $this->extractSelfKeys(objectData: $objectData),
-                'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
-                'register_@self'  => $objectData['@self']['register'] ?? 'none',
-            ]
-        );
+		if ($title === null) {
+			$title = 'Object #' . $objectId;
+		}
 
-        // Extract title/name - check multiple possible fields.
-        $title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'];
-        if ($title === null) {
-            $title = $this->extractFirstStringField(objectData: $objectData);
-        }
+		// Extract description - check common variants.
+		$description = $objectData['description'] ?? $objectData['_description'] ?? $objectData['Beschrijving'];
+		if ($description === null) {
+			$description = $objectData['beschrijving'] ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
+		}
 
-        if ($title === null) {
-            $title = 'Object #'.$objectId;
-        }
+		// No "extract @self keys for logging" call here: extractSelfKeys() is
+		// pure, nothing consumed its result, and the metadata builder above
+		// already calls it for the '@self_keys' field that is actually stored.
 
-        // Extract description - check common variants.
-        $description = $objectData['description'] ?? $objectData['_description'] ?? $objectData['Beschrijving'];
-        if ($description === null) {
-            $description = $objectData['beschrijving'] ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
-        }
+		// Extract register and schema IDs from multiple possible locations.
+		$selfData = $objectData['@self'] ?? [];
+		$registerId = $objectData['_register'] ?? $objectData['register'] ?? $selfData['register'] ?? null;
+		$schemaId = $objectData['_schema'] ?? $objectData['schema'] ?? $selfData['schema'] ?? null;
+		$uuid = $objectData['uuid'] ?? $objectData['_uuid'] ?? $selfData['id'] ?? null;
+		$uri = $objectData['uri'] ?? $objectData['_uri'] ?? $selfData['uri'] ?? null;
 
-        // Extract @self keys for logging.
-        $this->extractSelfKeys(objectData: $objectData);
+		return [
+			'entity_type' => 'object',
+			'entity_id' => (string)$objectId,
+			'chunk_index' => 0,
+			'total_chunks' => 1,
+			'chunk_text' => substr($item['text'], 0, 500),
+			'additional_metadata' => [
+				'object_id' => $objectId,
+				'object_title' => $title,
+				'title' => $title,
+				'name' => $title,
+				'description' => $description,
+				'register' => $registerId,
+				'register_id' => $registerId,
+				'schema' => $schemaId,
+				'schema_id' => $schemaId,
+				'uuid' => $uuid,
+				'uri' => $uri,
+			],
+		];
+	}//end prepareVectorMetadata()
 
-        // Extract register and schema IDs from multiple possible locations.
-        $selfData   = $objectData['@self'] ?? [];
-        $registerId = $objectData['_register'] ?? $objectData['register'] ?? $selfData['register'] ?? null;
-        $schemaId   = $objectData['_schema'] ?? $objectData['schema'] ?? $selfData['schema'] ?? null;
-        $uuid       = $objectData['uuid'] ?? $objectData['_uuid'] ?? $selfData['id'] ?? null;
-        $uri        = $objectData['uri'] ?? $objectData['_uri'] ?? $selfData['uri'] ?? null;
+	/**
+	 * Extract @self keys from object data
+	 *
+	 * @param array $objectData Object data
+	 *
+	 * @return array<string> Array of @self keys
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	private function extractSelfKeys(array $objectData): array {
+		if (isset($objectData['@self']) === false || is_array($objectData['@self']) === false) {
+			return [];
+		}
 
-        return [
-            'entity_type'         => 'object',
-            'entity_id'           => (string) $objectId,
-            'chunk_index'         => 0,
-            'total_chunks'        => 1,
-            'chunk_text'          => substr($item['text'], 0, 500),
-            'additional_metadata' => [
-                'object_id'    => $objectId,
-                'object_title' => $title,
-                'title'        => $title,
-                'name'         => $title,
-                'description'  => $description,
-                'register'     => $registerId,
-                'register_id'  => $registerId,
-                'schema'       => $schemaId,
-                'schema_id'    => $schemaId,
-                'uuid'         => $uuid,
-                'uri'          => $uri,
-            ],
-        ];
-    }//end prepareVectorMetadata()
+		return array_keys($objectData['@self']);
+	}//end extractSelfKeys()
 
-    /**
-     * Extract @self keys from object data
-     *
-     * @param array $objectData Object data
-     *
-     * @return array<string> Array of @self keys
-     */
-    private function extractSelfKeys(array $objectData): array
-    {
-        if (isset($objectData['@self']) === false || is_array($objectData['@self']) === false) {
-            return [];
-        }
+	/**
+	 * Extract the first suitable string field from object data
+	 *
+	 * This is a fallback when standard title/name fields don't exist.
+	 * Looks for short, meaningful string values that could serve as identifiers.
+	 *
+	 * @param array $objectData Object data
+	 *
+	 * @return string|null First suitable string field value
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field type checks required
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field validation paths
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	private function extractFirstStringField(array $objectData): ?string {
+		// Skip metadata fields (prefixed with _ or @).
+		// Look for short, meaningful strings (< 100 chars).
+		foreach ($objectData as $key => $value) {
+			// Skip metadata and system fields.
+			if (str_starts_with($key, '_') === true || str_starts_with($key, '@') === true) {
+				continue;
+			}
 
-        return array_keys($objectData['@self']);
-    }//end extractSelfKeys()
+			// Skip known non-title fields.
+			$skipFields = ['id', 'uuid', 'description', 'Beschrijving', 'beschrijving', 'content', 'text'];
+			if (in_array(strtolower($key), array_map('strtolower', $skipFields), true) === true) {
+				continue;
+			}
 
-    /**
-     * Extract the first suitable string field from object data
-     *
-     * This is a fallback when standard title/name fields don't exist.
-     * Looks for short, meaningful string values that could serve as identifiers.
-     *
-     * @param array $objectData Object data
-     *
-     * @return string|null First suitable string field value
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field type checks required
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field validation paths
-     */
-    private function extractFirstStringField(array $objectData): ?string
-    {
-        // Skip metadata fields (prefixed with _ or @).
-        // Look for short, meaningful strings (< 100 chars).
-        foreach ($objectData as $key => $value) {
-            // Skip metadata and system fields.
-            if (str_starts_with($key, '_') === true || str_starts_with($key, '@') === true) {
-                continue;
-            }
+			// Check if it's a short string (likely a title/identifier).
+			if (is_string($value) === true && strlen($value) > 0 && strlen($value) < 100) {
+				return $value;
+			}
+		}
 
-            // Skip known non-title fields.
-            $skipFields = ['id', 'uuid', 'description', 'Beschrijving', 'beschrijving', 'content', 'text'];
-            if (in_array(strtolower($key), array_map('strtolower', $skipFields), true) === true) {
-                continue;
-            }
+		return null;
+	}//end extractFirstStringField()
 
-            // Check if it's a short string (likely a title/identifier).
-            if (is_string($value) === true && strlen($value) > 0 && strlen($value) < 100) {
-                return $value;
-            }
-        }
+	/**
+	 * Get object ID as identifier
+	 *
+	 * @param mixed $entity ObjectEntity
+	 *
+	 * @return string|int Object ID
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function getEntityIdentifier($entity) {
+		$objectData = $entity->jsonSerialize();
+		if (is_array($entity) === true) {
+			$objectData = $entity;
+		}
 
-        return null;
-    }//end extractFirstStringField()
+		if (($objectData['id'] ?? null) !== null) {
+			return $objectData['id'];
+		}
 
-    /**
-     * Get object ID as identifier
-     *
-     * @param mixed $entity ObjectEntity
-     *
-     * @return string|int Object ID
-     */
-    public function getEntityIdentifier($entity)
-    {
-        if (is_array($entity) === true) {
-            $objectData = $entity;
-        } else {
-            $objectData = $entity->jsonSerialize();
-        }
+		return 'unknown';
+	}//end getEntityIdentifier()
 
-        if (($objectData['id'] ?? null) !== null) {
-            return $objectData['id'];
-        }
+	/**
+	 * Serialize object to text for vectorization
+	 *
+	 * @param array $object Object data
+	 * @param array $config Vectorization configuration
+	 *
+	 * @return false|string Serialized text
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	private function serializeObject(array $object, array $config): string|false {
+		// TODO: Implement configurable serialization.
+		// For now, just JSON encode with pretty print for readability.
+		$includeMetadata = $config['includeMetadata'] ?? true;
+		$includeRelations = $config['includeRelations'] ?? true;
+		$maxNestingDepth = $config['maxNestingDepth'] ?? 10;
 
-        return 'unknown';
-    }//end getEntityIdentifier()
+		$this->logger->debug(
+			message: '[ObjectVectorizationStrategy] Serializing object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'objectId' => $object['id'] ?? 'unknown',
+				'includeMetadata' => $includeMetadata,
+				'includeRelations' => $includeRelations,
+				'maxNestingDepth' => $maxNestingDepth,
+			]
+		);
 
-    /**
-     * Serialize object to text for vectorization
-     *
-     * @param array $object Object data
-     * @param array $config Vectorization configuration
-     *
-     * @return false|string Serialized text
-     */
-    private function serializeObject(array $object, array $config): string|false
-    {
-        // TODO: Implement configurable serialization.
-        // For now, just JSON encode with pretty print for readability.
-        $includeMetadata  = $config['includeMetadata'] ?? true;
-        $includeRelations = $config['includeRelations'] ?? true;
-        $maxNestingDepth  = $config['maxNestingDepth'] ?? 10;
-
-        $this->logger->debug(
-            message: '[ObjectVectorizationStrategy] Serializing object',
-            context: [
-                'file'             => __FILE__,
-                'line'             => __LINE__,
-                'objectId'         => $object['id'] ?? 'unknown',
-                'includeMetadata'  => $includeMetadata,
-                'includeRelations' => $includeRelations,
-                'maxNestingDepth'  => $maxNestingDepth,
-            ]
-        );
-
-        // Simple JSON serialization.
-        // Future enhancement: smart serialization based on schema.
-        return json_encode($object, JSON_PRETTY_PRINT);
-    }//end serializeObject()
+		// Simple JSON serialization.
+		// Future enhancement: smart serialization based on schema.
+		return json_encode($object, JSON_PRETTY_PRINT);
+	}//end serializeObject()
 }//end class

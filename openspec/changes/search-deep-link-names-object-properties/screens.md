@@ -1,0 +1,1 @@
+- No screen: server-side link building for Nextcloud's unified search; the search box itself is Nextcloud's.

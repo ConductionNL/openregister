@@ -1,0 +1,554 @@
+{
+    "testCospendLinkGolden bill": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "entryType": "bill",
+                "projectId": "p-1",
+                "billId": 6,
+                "name": "Dinner",
+                "amount": 12.5,
+                "currency": "EUR",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "amount",
+                "billId",
+                "currency",
+                "entryType",
+                "linkedAt",
+                "linkedBy",
+                "name",
+                "objectUuid",
+                "projectId",
+                "registerId",
+                "schemaId"
+            ]
+        }
+    },
+    "testCospendLinkGolden created project": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "entryType": "project",
+                "projectId": "p-1",
+                "billId": null,
+                "name": "Trip",
+                "amount": null,
+                "currency": "EUR",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "currency",
+                "entryType",
+                "linkedAt",
+                "linkedBy",
+                "name",
+                "objectUuid",
+                "projectId",
+                "registerId",
+                "schemaId"
+            ]
+        }
+    },
+    "testCospendLinkGolden created project, no schema": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 0,
+                "entryType": "project",
+                "projectId": "p-1",
+                "billId": null,
+                "name": "Trip",
+                "amount": null,
+                "currency": "EUR",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "currency",
+                "entryType",
+                "linkedAt",
+                "linkedBy",
+                "name",
+                "objectUuid",
+                "projectId",
+                "registerId",
+                "schemaId"
+            ]
+        }
+    },
+    "testCospendLinkGolden project": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "entryType": "project",
+                "projectId": "p-1",
+                "billId": null,
+                "name": "Trip",
+                "amount": null,
+                "currency": "EUR",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "currency",
+                "entryType",
+                "linkedAt",
+                "linkedBy",
+                "name",
+                "objectUuid",
+                "projectId",
+                "registerId",
+                "schemaId"
+            ]
+        }
+    },
+    "testCreateAndLinkBookmarkGolden no schema": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 0,
+                "bookmarkId": 55,
+                "title": "Docs",
+                "url": "https://x.nl",
+                "description": "",
+                "tags": [
+                    "a"
+                ],
+                "addedAt": "now",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "addedAt",
+                "bookmarkId",
+                "description",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "tags",
+                "title",
+                "url"
+            ]
+        }
+    },
+    "testCreateAndLinkBookmarkGolden schema 4": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "bookmarkId": 55,
+                "title": "Docs",
+                "url": "https://x.nl",
+                "description": "",
+                "tags": [
+                    "a"
+                ],
+                "addedAt": "now",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "addedAt",
+                "bookmarkId",
+                "description",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "tags",
+                "title",
+                "url"
+            ]
+        }
+    },
+    "testLinkBookmarkGolden no schema": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 0,
+                "bookmarkId": 8,
+                "title": "Docs",
+                "url": "https://x.nl",
+                "description": "d",
+                "tags": [
+                    "a",
+                    "b"
+                ],
+                "addedAt": "2026-01-01T00:00:00+00:00",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "addedAt",
+                "bookmarkId",
+                "description",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "tags",
+                "title",
+                "url"
+            ]
+        }
+    },
+    "testLinkBookmarkGolden schema 4": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "bookmarkId": 8,
+                "title": "Docs",
+                "url": "https://x.nl",
+                "description": "d",
+                "tags": [
+                    "a",
+                    "b"
+                ],
+                "addedAt": "2026-01-01T00:00:00+00:00",
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "addedAt",
+                "bookmarkId",
+                "description",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "tags",
+                "title",
+                "url"
+            ]
+        }
+    },
+    "testLinkCardGolden no schema": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 0,
+                "boardId": 12,
+                "stackId": 7,
+                "cardId": 21,
+                "cardTitle": "Card",
+                "dueDate": null,
+                "labels": null,
+                "assignees": null,
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "boardId",
+                "cardId",
+                "cardTitle",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "stackId"
+            ]
+        }
+    },
+    "testLinkCardGolden schema 4": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "boardId": 12,
+                "stackId": 7,
+                "cardId": 21,
+                "cardTitle": "Card",
+                "dueDate": null,
+                "labels": null,
+                "assignees": null,
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "boardId",
+                "cardId",
+                "cardTitle",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "stackId"
+            ]
+        }
+    },
+    "testLinkPoiGolden no schema": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 0,
+                "favoriteId": 9,
+                "name": "Dam",
+                "category": "square",
+                "lat": 52.37,
+                "lng": 4.89,
+                "comment": null,
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "category",
+                "favoriteId",
+                "lat",
+                "linkedAt",
+                "linkedBy",
+                "lng",
+                "name",
+                "objectUuid",
+                "registerId",
+                "schemaId"
+            ]
+        }
+    },
+    "testLinkPoiGolden schema 4": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "favoriteId": 9,
+                "name": "Dam",
+                "category": "square",
+                "lat": 52.37,
+                "lng": 4.89,
+                "comment": null,
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "category",
+                "favoriteId",
+                "lat",
+                "linkedAt",
+                "linkedBy",
+                "lng",
+                "name",
+                "objectUuid",
+                "registerId",
+                "schemaId"
+            ]
+        }
+    },
+    "testLinkPollGolden no schema": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 0,
+                "pollId": 5,
+                "pollTitle": "When?",
+                "pollType": "datePoll",
+                "deadline": "2026-01-01T00:00:00+00:00",
+                "voterCount": 2,
+                "optionCount": 3,
+                "closed": true,
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "closed",
+                "deadline",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "optionCount",
+                "pollId",
+                "pollTitle",
+                "pollType",
+                "registerId",
+                "schemaId",
+                "voterCount"
+            ]
+        }
+    },
+    "testLinkPollGolden schema 4": {
+        "result": {
+            "fields": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "pollId": 5,
+                "pollTitle": "When?",
+                "pollType": "datePoll",
+                "deadline": "2026-01-01T00:00:00+00:00",
+                "voterCount": 2,
+                "optionCount": 3,
+                "closed": true,
+                "linkedBy": "alice",
+                "linkedAt": "now"
+            },
+            "updated": [
+                "closed",
+                "deadline",
+                "linkedAt",
+                "linkedBy",
+                "objectUuid",
+                "optionCount",
+                "pollId",
+                "pollTitle",
+                "pollType",
+                "registerId",
+                "schemaId",
+                "voterCount"
+            ]
+        }
+    },
+    "testPhotoLinkGolden no schema": {
+        "result": {
+            "linked": {
+                "fields": {
+                    "id": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 0,
+                    "albumId": 31,
+                    "albumName": "Summer 2026",
+                    "coverPhotoUrl": "/apps/photos/albums/Summer%202026",
+                    "photoCount": 3,
+                    "lastEdited": "2026-01-01T00:00:00+00:00",
+                    "linkedBy": "alice",
+                    "linkedAt": "now"
+                },
+                "updated": [
+                    "albumId",
+                    "albumName",
+                    "coverPhotoUrl",
+                    "lastEdited",
+                    "linkedAt",
+                    "linkedBy",
+                    "objectUuid",
+                    "photoCount",
+                    "registerId",
+                    "schemaId"
+                ]
+            },
+            "created": {
+                "fields": {
+                    "id": null,
+                    "objectUuid": "obj-2",
+                    "registerId": 3,
+                    "schemaId": 0,
+                    "albumId": 31,
+                    "albumName": "Summer 2026",
+                    "coverPhotoUrl": null,
+                    "photoCount": 0,
+                    "lastEdited": "now",
+                    "linkedBy": "alice",
+                    "linkedAt": "now"
+                },
+                "updated": [
+                    "albumId",
+                    "albumName",
+                    "lastEdited",
+                    "linkedAt",
+                    "linkedBy",
+                    "objectUuid",
+                    "photoCount",
+                    "registerId",
+                    "schemaId"
+                ]
+            }
+        }
+    },
+    "testPhotoLinkGolden schema 4": {
+        "result": {
+            "linked": {
+                "fields": {
+                    "id": null,
+                    "objectUuid": "obj-1",
+                    "registerId": 3,
+                    "schemaId": 4,
+                    "albumId": 31,
+                    "albumName": "Summer 2026",
+                    "coverPhotoUrl": "/apps/photos/albums/Summer%202026",
+                    "photoCount": 3,
+                    "lastEdited": "2026-01-01T00:00:00+00:00",
+                    "linkedBy": "alice",
+                    "linkedAt": "now"
+                },
+                "updated": [
+                    "albumId",
+                    "albumName",
+                    "coverPhotoUrl",
+                    "lastEdited",
+                    "linkedAt",
+                    "linkedBy",
+                    "objectUuid",
+                    "photoCount",
+                    "registerId",
+                    "schemaId"
+                ]
+            },
+            "created": {
+                "fields": {
+                    "id": null,
+                    "objectUuid": "obj-2",
+                    "registerId": 3,
+                    "schemaId": 4,
+                    "albumId": 31,
+                    "albumName": "Summer 2026",
+                    "coverPhotoUrl": null,
+                    "photoCount": 0,
+                    "lastEdited": "now",
+                    "linkedBy": "alice",
+                    "linkedAt": "now"
+                },
+                "updated": [
+                    "albumId",
+                    "albumName",
+                    "lastEdited",
+                    "linkedAt",
+                    "linkedBy",
+                    "objectUuid",
+                    "photoCount",
+                    "registerId",
+                    "schemaId"
+                ]
+            }
+        }
+    }
+}

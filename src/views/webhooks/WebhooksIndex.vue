@@ -1,204 +1,108 @@
 <template>
-	<NcAppContent :show-details="sidebarOpen" @update:showDetails="toggleSidebar">
+	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Webhooks') }}
-					</h1>
-					<NcButton
-						type="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{ sidebarOpen ? t('openregister', 'Hide Filters') : t('openregister', 'Show Filters') }}
-					</NcButton>
-				</div>
-				<p>
-					{{ t('openregister', 'Manage webhooks for event-driven integrations') }}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Webhooks')"
+				:description="
+					t(
+						'openregister',
+						'Manage webhooks for event-driven integrations',
+					)
+				"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="webhooksList.length" class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} webhooks', {
-							showing: webhooksList.length,
-							total: totalWebhooks
-						}) }}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcButton
-						type="primary"
-						@click="openCreateDialog">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Create Webhook') }}
-					</NcButton>
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshWebhooks">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+			<ListActionsBar
+				:summary="
+					webhooksList.length
+						? t(
+								'openregister',
+								'Showing {showing} of {total} webhooks',
+								{
+									showing: webhooksList.length,
+									total: totalWebhooks,
+								},
+							)
+						: ''
+				"
+				:actions="[refreshAction(refreshWebhooks)]">
+				<NcButton variant="primary" @click="openCreateDialog">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					{{ t('openregister', 'Create Webhook') }}
+				</NcButton>
+			</ListActionsBar>
 
 			<!-- Webhooks Table -->
-			<div class="tableContainer" :class="{ 'is-loading': loading }">
-				<div v-if="loading" class="loadingWrapper">
-					<NcLoadingIcon :size="64" />
-				</div>
+			<ListTableStates
+				:loading="loading"
+				:empty="!webhooksList.length"
+				:emptyName="t('openregister', 'No webhooks found')"
+				:emptyDescription="
+					t('openregister', 'No webhooks have been configured yet')
+				">
+				<template #emptyIcon>
+					<Webhook :size="64" />
+				</template>
 
-				<NcEmptyContent
-					v-else-if="!webhooksList.length"
-					:name="t('openregister', 'No webhooks found')"
-					:description="t('openregister', 'No webhooks have been configured yet')">
-					<template #icon>
-						<Webhook :size="64" />
+				<CnDataTable :columns="webhookColumns" :rows="webhooksList">
+					<template #column-name="{ row }">
+						<div class="webhook-name-cell">
+							<Webhook :size="20" class="webhook-icon" />
+							<span class="webhook-name">{{ row.name }}</span>
+						</div>
 					</template>
-				</NcEmptyContent>
+					<template #column-url="{ row }">
+						<span class="webhook-url">{{ truncateUrl(row.url) }}</span>
+					</template>
+					<template #column-method="{ row }">
+						<span class="badge badge-method">{{ row.method }}</span>
+					</template>
+					<template #column-enabled="{ row }">
+						<span
+							class="badge"
+							:class="'badge-status-' + (row.enabled ? 'enabled' : 'disabled')">
+							{{
+								row.enabled
+									? t('openregister', 'Enabled')
+									: t('openregister', 'Disabled')
+							}}
+						</span>
+					</template>
+					<template #column-lastTriggeredAt="{ row }">
+						{{ formatDate(row.lastTriggeredAt) }}
+					</template>
+					<template #column-successRate="{ row }">
+						{{ formatSuccessRate(row) }}
+					</template>
+					<template #actions-header>
+						{{ t('openregister', 'Actions') }}
+					</template>
+					<template #row-actions="{ row }">
+						<ActionMenu :actions="webhookActions(row)" />
+					</template>
+				</CnDataTable>
 
-				<table v-else class="webhooksTable">
-					<thead>
-						<tr>
-							<th class="column-name">
-								{{ t('openregister', 'Name') }}
-							</th>
-							<th class="column-url">
-								{{ t('openregister', 'URL') }}
-							</th>
-							<th class="column-method">
-								{{ t('openregister', 'Method') }}
-							</th>
-							<th class="column-status">
-								{{ t('openregister', 'Status') }}
-							</th>
-							<th class="column-last-triggered">
-								{{ t('openregister', 'Last Triggered') }}
-							</th>
-							<th class="column-success-rate">
-								{{ t('openregister', 'Success Rate') }}
-							</th>
-							<th class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="webhook in webhooksList" :key="webhook.id">
-							<td class="column-name">
-								<div class="webhook-name-cell">
-									<Webhook :size="20" class="webhook-icon" />
-									<span class="webhook-name">{{ webhook.name }}</span>
-								</div>
-							</td>
-							<td class="column-url">
-								<span class="webhook-url">{{ truncateUrl(webhook.url) }}</span>
-							</td>
-							<td class="column-method">
-								<span class="badge badge-method">{{ webhook.method }}</span>
-							</td>
-							<td class="column-status">
-								<span class="badge" :class="'badge-status-' + (webhook.enabled ? 'enabled' : 'disabled')">
-									{{ webhook.enabled ? t('openregister', 'Enabled') : t('openregister', 'Disabled') }}
-								</span>
-							</td>
-							<td class="column-last-triggered">
-								{{ formatDate(webhook.lastTriggeredAt) }}
-							</td>
-							<td class="column-success-rate">
-								{{ formatSuccessRate(webhook) }}
-							</td>
-							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										close-after-click
-										@click="editWebhook(webhook)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										{{ t('openregister', 'Edit') }}
-									</NcActionButton>
-									<NcActionButton
-										close-after-click
-										@click="testWebhook(webhook.id)">
-										<template #icon>
-											<PlayOutline :size="20" />
-										</template>
-										{{ t('openregister', 'Test') }}
-									</NcActionButton>
-									<NcActionButton
-										close-after-click
-										@click="viewLogs(webhook.id)">
-										<template #icon>
-											<FileDocumentOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Logs') }}
-									</NcActionButton>
-									<NcActionButton
-										close-after-click
-										@click="toggleWebhook(webhook)">
-										<template #icon>
-											<PauseCircleOutline v-if="webhook.enabled" :size="20" />
-											<PlayOutline v-else :size="20" />
-										</template>
-										{{ webhook.enabled ? t('openregister', 'Disable') : t('openregister', 'Enable') }}
-									</NcActionButton>
-									<NcActionButton
-										close-after-click
-										@click="deleteWebhook(webhook.id)">
-										<template #icon>
-											<DeleteOutline :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<!-- Pagination -->
-				<div v-if="totalWebhooks > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalWebhooks"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
-			</div>
+				<template #footer>
+					<!-- Pagination -->
+					<OffsetPager
+						:offset="offset"
+						:limit="limit"
+						:total="totalWebhooks"
+						@previous="previousPage"
+						@next="nextPage" />
+				</template>
+			</ListTableStates>
 		</div>
 
 		<!-- Search Sidebar -->
 		<template #details>
 			<WebhooksSidebar
-				:search.sync="searchQuery"
-				:enabled.sync="enabledFilter"
+				v-model:search="searchQuery"
+				v-model:enabled="enabledFilter"
 				@update:search="handleSearchUpdate"
 				@update:enabled="handleEnabledUpdate" />
 		</template>
@@ -206,35 +110,35 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
  */
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
-
 import {
 	NcAppContent,
-	NcActions,
-	NcActionButton,
 	NcButton,
-	NcLoadingIcon,
-	NcEmptyContent,
 } from '@nextcloud/vue'
-
-import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
-
-import Webhook from 'vue-material-design-icons/Webhook.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
-import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
+import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import Webhook from 'vue-material-design-icons/Webhook.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
+import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+import ListTableStates from '../ListTableStates.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { editAction, refreshAction } from '../../services/menuActions.js'
+import { navigationStore, webhookStore } from '../../store/store.js'
+import { offsetPaging } from '../offsetPaging.js'
 
 /**
  * Main view for managing webhooks
@@ -242,28 +146,23 @@ import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.v
 export default {
 	name: 'WebhooksIndex',
 	components: {
+		ActionMenu,
+		CnDataTable,
+		ListActionsBar,
+		OffsetPager,
+		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
 		NcButton,
-		NcLoadingIcon,
-		NcEmptyContent,
+		ListTableStates,
 		Webhook,
-		Refresh,
-		FilterVariant,
-		PlayOutline,
-		PauseCircleOutline,
-		Pencil,
-		DeleteOutline,
 		Plus,
-		FileDocumentOutline,
 		WebhooksSidebar,
 	},
+
+	mixins: [offsetPaging('totalWebhooks')],
+
 	data() {
 		return {
-			webhooksList: [],
-			loading: false,
-			totalWebhooks: 0,
 			limit: 50,
 			offset: 0,
 			sidebarOpen: false,
@@ -271,23 +170,78 @@ export default {
 			enabledFilter: null,
 		}
 	},
+
 	computed: {
 		/**
-		 * Get current page number
-		 *
-		 * @return {number} Current page
+		 * @spec exclude UI plumbing — static column definitions for the webhooks table
+		 * @return {Array<object>}
 		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
+		webhookColumns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name'), class: 'column-name', cellClass: 'cn-cell--wrap' },
+				{ key: 'url', label: t('openregister', 'URL'), class: 'column-url' },
+				{ key: 'method', label: t('openregister', 'Method'), class: 'column-method' },
+				{ key: 'enabled', label: t('openregister', 'Status'), class: 'column-status' },
+				{ key: 'lastTriggeredAt', label: t('openregister', 'Last Triggered'), class: 'column-last-triggered' },
+				{ key: 'successRate', label: t('openregister', 'Success Rate'), class: 'column-success-rate' },
+			]
 		},
 
 		/**
-		 * Get total number of pages
+		 * Whether the webhook list is being fetched.
 		 *
-		 * @return {number} Total pages
+		 * @spec exclude UI plumbing — store loading flag passthrough.
+		 * @return {boolean} True while a fetch is in flight
 		 */
-		totalPages() {
-			return Math.ceil(this.totalWebhooks / this.limit)
+		loading() {
+			return webhookStore.loading
+		},
+
+		/**
+		 * The store's webhooks narrowed by the sidebar's search and enabled
+		 * filters. Filtering is client-side because the list endpoint returns
+		 * every webhook in one page.
+		 *
+		 * @spec exclude UI plumbing — client-side filter over the store list; webhook contract owned by webhook-payload-mapping.
+		 * @return {Array} Filtered webhooks
+		 */
+		filteredWebhooks() {
+			let webhooks = webhookStore.webhookList
+
+			if (this.searchQuery) {
+				const query = this.searchQuery.toLowerCase()
+				webhooks = webhooks.filter(
+					(w) =>
+						w.name.toLowerCase().includes(query)
+						|| w.url.toLowerCase().includes(query),
+				)
+			}
+
+			if (this.enabledFilter !== null) {
+				webhooks = webhooks.filter((w) => w.enabled === this.enabledFilter)
+			}
+
+			return webhooks
+		},
+
+		/**
+		 * Number of webhooks matching the active filters (pre-pagination).
+		 *
+		 * @spec exclude UI plumbing — derived count for the actions bar.
+		 * @return {number} Filtered webhook count
+		 */
+		totalWebhooks() {
+			return this.filteredWebhooks.length
+		},
+
+		/**
+		 * The webhooks shown on the current page.
+		 *
+		 * @spec exclude UI plumbing — client-side pagination slice; admin list contract owned by admin-list-views.
+		 * @return {Array} Current page of webhooks
+		 */
+		webhooksList() {
+			return this.filteredWebhooks.slice(this.offset, this.offset + this.limit)
 		},
 
 		/**
@@ -295,7 +249,7 @@ export default {
 		 *
 		 * @return {Array} Array of property options
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-80
+		 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 		 */
 		selectedEventProperties() {
 			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {
@@ -304,104 +258,114 @@ export default {
 
 			// Get unique properties from all selected events.
 			const propertiesSet = new Set()
-			this.newWebhook.events.forEach(eventClass => {
-				const event = this.availableEvents.find(e => e.class === eventClass)
+			this.newWebhook.events.forEach((eventClass) => {
+				const event = this.availableEvents.find(
+					(e) => e.class === eventClass,
+				)
 				if (event && event.properties) {
-					event.properties.forEach(prop => propertiesSet.add(prop))
+					event.properties.forEach((prop) => propertiesSet.add(prop))
 				}
 			})
 
-			return Array.from(propertiesSet).map(prop => ({
+			return Array.from(propertiesSet).map((prop) => ({
 				value: prop,
 				label: prop,
 			}))
 		},
 	},
+
 	mounted() {
 		this.loadWebhooks()
 	},
+
 	methods: {
-		t,
+		refreshAction,
 
 		/**
-		 * Toggle sidebar visibility
+		 * The row menu of a webhook.
 		 *
-		 * @return {void}
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} webhook The webhook
+		 * @return {Array<object>} The ActionMenu entries
 		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
+		webhookActions(webhook) {
+			return [
+				editAction(() => this.editWebhook(webhook)),
+				{
+					label: t('openregister', 'Test'),
+					icon: PlayOutline,
+					run: () => this.testWebhook(webhook.id),
+				},
+				{
+					label: t('openregister', 'View Logs'),
+					icon: FileDocumentOutline,
+					run: () => this.viewLogs(webhook.id),
+				},
+				{
+					label: webhook.enabled
+						? t('openregister', 'Disable')
+						: t('openregister', 'Enable'),
+
+					icon: webhook.enabled ? PauseCircleOutline : PlayOutline,
+					run: () => this.toggleWebhook(webhook),
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: DeleteOutline,
+					run: () => this.deleteWebhook(webhook.id),
+				},
+			]
 		},
+
+		t,
+
+		...sidebarToggle,
 
 		/**
 		 * Handle search query update
 		 *
+		 * @spec exclude UI plumbing — local filter state + reload; webhook contract owned by webhook-payload-mapping.
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
 		handleSearchUpdate(query) {
 			this.searchQuery = query
+			// Filtering is a computed over the store list — no refetch needed.
 			this.offset = 0
-			this.loadWebhooks()
 		},
 
 		/**
 		 * Handle enabled filter update
 		 *
+		 * @spec exclude UI plumbing — local filter state + reload; webhook contract owned by webhook-payload-mapping.
 		 * @param {boolean|null} enabled - Enabled filter
 		 * @return {void}
 		 */
 		handleEnabledUpdate(enabled) {
 			this.enabledFilter = enabled
+			// Filtering is a computed over the store list — no refetch needed.
 			this.offset = 0
-			this.loadWebhooks()
 		},
 
 		/**
-		 * Load webhooks from the API
+		 * Load webhooks into the store
 		 *
+		 * @spec exclude UI plumbing — delegates the list load to webhookStore.
 		 * @return {Promise<void>}
 		 */
 		async loadWebhooks() {
-			this.loading = true
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/webhooks'),
-				)
-
-				if (response.data.results) {
-					let webhooks = response.data.results
-
-					// Apply search filter
-					if (this.searchQuery) {
-						const query = this.searchQuery.toLowerCase()
-						webhooks = webhooks.filter(w =>
-							w.name.toLowerCase().includes(query)
-							|| w.url.toLowerCase().includes(query),
-						)
-					}
-
-					// Apply enabled filter
-					if (this.enabledFilter !== null) {
-						webhooks = webhooks.filter(w => w.enabled === this.enabledFilter)
-					}
-
-					// Apply pagination
-					this.totalWebhooks = webhooks.length
-					const start = this.offset
-					const end = start + this.limit
-					this.webhooksList = webhooks.slice(start, end)
-				}
+				await webhookStore.refreshWebhookList()
 			} catch (error) {
 				console.error('Failed to load webhooks:', error)
 				showError(t('openregister', 'Failed to load webhooks'))
-			} finally {
-				this.loading = false
 			}
 		},
 
 		/**
 		 * Refresh the webhooks list
 		 *
+		 * @spec exclude UI plumbing — delegates to loadWebhooks.
 		 * @return {void}
 		 */
 		refreshWebhooks() {
@@ -409,32 +373,9 @@ export default {
 		},
 
 		/**
-		 * Go to previous page
-		 *
-		 * @return {void}
-		 */
-		previousPage() {
-			if (this.offset > 0) {
-				this.offset = Math.max(0, this.offset - this.limit)
-				this.loadWebhooks()
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalWebhooks) {
-				this.offset += this.limit
-				this.loadWebhooks()
-			}
-		},
-
-		/**
 		 * Test a webhook
 		 *
+		 * @spec exclude UI plumbing — thin POST + toast + list refresh; delivery contract owned by webhook-payload-mapping.
 		 * @param {number} webhookId - Webhook ID
 		 * @return {Promise<void>}
 		 */
@@ -447,14 +388,20 @@ export default {
 				if (response.data && response.data.success === true) {
 					showSuccess(t('openregister', 'Test webhook sent successfully'))
 				} else {
-					const message = response.data?.message || response.data?.error || t('openregister', 'Test webhook delivery failed')
+					const message =
+						response.data?.message
+						|| response.data?.error
+						|| t('openregister', 'Test webhook delivery failed')
 					showError(message)
 				}
 				// Always refresh webhook list to show updated statistics (last triggered, success rate).
 				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to test webhook:', error)
-				const errorMessage = error.response?.data?.error || error.response?.data?.message || t('openregister', 'Failed to test webhook')
+				const errorMessage =
+					error.response?.data?.error
+					|| error.response?.data?.message
+					|| t('openregister', 'Failed to test webhook')
 				showError(errorMessage)
 				// Refresh even on error to show any partial updates.
 				this.loadWebhooks()
@@ -464,6 +411,7 @@ export default {
 		/**
 		 * View logs for a webhook
 		 *
+		 * @spec exclude UI plumbing — transfer-data set + router navigation.
 		 * @param {number} webhookId - Webhook ID
 		 * @return {void}
 		 */
@@ -475,17 +423,14 @@ export default {
 		/**
 		 * Toggle webhook enabled status
 		 *
+		 * @spec exclude UI plumbing — thin PUT + toast + list refresh; webhook contract owned by webhook-payload-mapping.
 		 * @param {object} webhook - Webhook object
 		 * @return {Promise<void>}
 		 */
 		async toggleWebhook(webhook) {
 			try {
-				await axios.put(
-					generateUrl(`/apps/openregister/api/webhooks/${webhook.id}`),
-					{ enabled: !webhook.enabled },
-				)
+				await webhookStore.toggleWebhookEnabled(webhook)
 				showSuccess(t('openregister', 'Webhook updated'))
-				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to toggle webhook:', error)
 				showError(t('openregister', 'Failed to update webhook'))
@@ -495,16 +440,14 @@ export default {
 		/**
 		 * Delete a webhook
 		 *
+		 * @spec exclude UI plumbing — thin DELETE + toast + list refresh; webhook contract owned by webhook-payload-mapping.
 		 * @param {number} webhookId - Webhook ID
 		 * @return {Promise<void>}
 		 */
 		async deleteWebhook(webhookId) {
 			try {
-				await axios.delete(
-					generateUrl(`/apps/openregister/api/webhooks/${webhookId}`),
-				)
+				await webhookStore.deleteWebhook(webhookId)
 				showSuccess(t('openregister', 'Webhook deleted'))
-				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to delete webhook:', error)
 				showError(t('openregister', 'Failed to delete webhook'))
@@ -514,6 +457,7 @@ export default {
 		/**
 		 * Open create webhook dialog
 		 *
+		 * @spec exclude UI plumbing — transfer-data set + modal dispatch.
 		 * @return {void}
 		 */
 		openCreateDialog() {
@@ -524,6 +468,7 @@ export default {
 		/**
 		 * Open edit webhook dialog
 		 *
+		 * @spec exclude UI plumbing — transfer-data set + modal dispatch.
 		 * @param {object} webhook - Webhook object to edit
 		 * @return {void}
 		 */
@@ -535,6 +480,7 @@ export default {
 		/**
 		 * Format success rate
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {object} webhook - Webhook object
 		 * @return {string} Formatted success rate
 		 */
@@ -542,13 +488,15 @@ export default {
 			if (!webhook.totalDeliveries || webhook.totalDeliveries === 0) {
 				return '-'
 			}
-			const rate = (webhook.successfulDeliveries / webhook.totalDeliveries) * 100
+			const rate =
+				(webhook.successfulDeliveries / webhook.totalDeliveries) * 100
 			return `${Math.round(rate)}%`
 		},
 
 		/**
 		 * Truncate URL for display
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {string} url - Full URL
 		 * @return {string} Truncated URL
 		 */
@@ -558,147 +506,17 @@ export default {
 			return url.substring(0, 37) + '...'
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
-
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
+@include view-container-2;
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
-
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow-x: auto;
-	overflow-y: visible;
-	min-height: 200px;
-}
-
-.tableContainer.is-loading {
-	overflow: hidden;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.loadingWrapper {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	padding: 40px;
-}
-
-.webhooksTable {
-	width: 100%;
-	border-collapse: collapse;
-	min-width: 100%;
-}
-
-.webhooksTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
-
-.webhooksTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.webhooksTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.webhooksTable tbody tr:hover {
-	background: var(--color-background-hover);
-}
-
-.webhooksTable thead .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-background-hover);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable tbody .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-main-background);
-	z-index: 5;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
+@include table-container-2-rules;
 
 .webhook-name-cell {
 	display: flex;
@@ -713,9 +531,6 @@ export default {
 
 .webhook-name {
 	font-weight: 500;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 
 .webhook-url {
@@ -724,14 +539,7 @@ export default {
 	font-size: 12px;
 }
 
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
+@include badge;
 
 .badge-method {
 	background: var(--color-background-dark);
@@ -748,73 +556,25 @@ export default {
 	color: var(--color-warning);
 }
 
-.column-name {
+:deep(.column-name),
+:deep(.column-url) {
 	min-width: 200px;
 }
 
-.column-url {
-	min-width: 200px;
-}
-
-.column-method {
+:deep(.column-method) {
 	width: 100px;
 }
 
-.column-status {
+:deep(.column-status) {
 	width: 120px;
 }
 
-.column-last-triggered {
+:deep(.column-last-triggered) {
 	width: 180px;
 }
 
-.column-success-rate {
+:deep(.column-success-rate) {
 	width: 120px;
 	text-align: center;
-}
-
-.column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-main-background);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable thead .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-background-hover);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable tbody .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-main-background);
-	z-index: 5;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	border-top: 1px solid var(--color-border);
-}
-
-.pagination-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
 }
 </style>

@@ -1,0 +1,201 @@
+<?php
+
+/**
+ * OpenRegister MergeController
+ *
+ * HTTP entry point for the RBAC-scoped MDM merge surface: preview, execute,
+ * and reverse. Every method delegates entirely to
+ * {@see \OCA\OpenRegister\Service\Merge\MergeService} — no merge logic lives
+ * here. RBAC/tenant scoping comes from `ObjectService` inside the service
+ * (the same posture as {@see DuplicateController} / {@see QualityController}):
+ * a caller who cannot read/write the target objects gets a forbidden/not-found
+ * response rather than a successful merge.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <dev@conduction.nl>
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\MergeControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
+use OCA\OpenRegister\Exception\MergeDecisionException;
+use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use OCP\IUserSession;
+use RuntimeException;
+
+class MergeController extends Controller {
+	/**
+	 * MDM merge engine.
+	 *
+	 * @var ObjectMergerInterface
+	 */
+	private readonly ObjectMergerInterface $mergeService;
+
+	/**
+	 * Current user session, for actor attribution.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest                $request  The current request.
+	 * @param MergeControllerServices $services The controller's collaborators.
+	 */
+	public function __construct(
+		IRequest $request,
+		MergeControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->mergeService = $services->mergeService;
+		$this->userSession = $services->userSession;
+	}//end __construct()
+
+	/**
+	 * Side-effect-free preview of a merge: projected survivor golden record,
+	 * provenance and reversal deadline. No object, mergeOperation, or event
+	 * is written.
+	 *
+	 * @return JSONResponse JSON response with the preview payload.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
+	 */
+	public function preview(): JSONResponse {
+		$from = (string)$this->request->getParam('from', '');
+		$into = (string)$this->request->getParam('into', '');
+
+		try {
+			$result = $this->mergeService->previewMerge(from: $from, into: $into);
+		} catch (MergeNotFullyReadableException $e) {
+			// MUST be caught before the RuntimeException below, which answers
+			// 404. A merge refused because the caller cannot read a restricted
+			// property is a permissions answer, and reporting it as "not found"
+			// would send a handler looking for a missing record instead of the
+			// group they are not in. The properties travel with it; their
+			// values never do.
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				Http::STATUS_FORBIDDEN
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse($result);
+	}//end preview()
+
+	/**
+	 * Execute a merge atomically: relink source records, recompute the
+	 * survivor, persist a `mergeOperation` audit row, and dispatch
+	 * `ObjectsMergedEvent`.
+	 *
+	 * @return JSONResponse JSON response with the persisted `mergeOperation`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
+	 */
+	public function execute(): JSONResponse {
+		$from = (string)$this->request->getParam('from', '');
+		$into = (string)$this->request->getParam('into', '');
+		$reason = (string)$this->request->getParam('reason', '');
+
+		$mergedBy = ((string)($this->userSession->getUser()?->getUID() ?? ''));
+
+		// Absent, the merge behaves exactly as it did before this change: the
+		// resolver's proposal applies and no payload property is rewritten.
+		$decisions = $this->request->getParam('decisions');
+		if (is_array($decisions) === false) {
+			$decisions = null;
+		}
+
+		try {
+			$result = $this->mergeService->executeMerge(
+				from: $from,
+				into: $into,
+				reason: $reason,
+				mergedBy: $mergedBy,
+				decisions: $decisions
+			);
+		} catch (MergeDecisionException $e) {
+			// 422, not 404 and not 403: the objects exist and the caller may
+			// merge them, but the map they approved does not describe the merge
+			// they were shown. Naming the properties is the whole value of the
+			// refusal; "invalid decision map" would leave a reviewer guessing
+			// which of twenty fields they missed.
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		} catch (MergeNotFullyReadableException $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				Http::STATUS_FORBIDDEN
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse($result);
+	}//end execute()
+
+	/**
+	 * Reverse a merge within its reversal window, restoring both objects
+	 * from the snapshot and flipping the operation to `reversible: false`.
+	 *
+	 * @param string $id The `mergeOperation` uuid.
+	 *
+	 * @return JSONResponse JSON response with the updated `mergeOperation`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/mdm-merge-engine/tasks.md#5.1
+	 */
+	public function reverse(string $id): JSONResponse {
+		$reversedBy = ((string)($this->userSession->getUser()?->getUID() ?? ''));
+
+		try {
+			$result = $this->mergeService->reverseMerge(mergeOperationId: $id, reversedBy: $reversedBy);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException | DoesNotExistException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse($result);
+	}//end reverse()
+}//end class

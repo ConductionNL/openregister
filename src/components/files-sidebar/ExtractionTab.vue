@@ -6,29 +6,22 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<TabErrorState
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load extraction data')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- No extraction data -->
-		<NcEmptyContent v-else-if="status.extractionStatus === 'none'"
+		<NcEmptyContent
+			v-else-if="status.extractionStatus === 'none'"
 			:name="t('openregister', 'No extraction data available for this file')">
 			<template #icon>
 				<FileSearchOutline :size="44" />
 			</template>
 			<template #action>
-				<NcButton :disabled="extracting"
-					type="primary"
-					@click="triggerExtraction">
-					<template v-if="extracting" #icon>
-						<NcLoadingIcon :size="20" />
-					</template>
-					{{ t('openregister', 'Extract Now') }}
-				</NcButton>
+				<ExtractNowButton
+					:extracting="extracting"
+					@extract="triggerExtraction" />
 			</template>
 		</NcEmptyContent>
 
@@ -40,7 +33,8 @@
 					{{ t('openregister', 'Status') }}
 				</span>
 				<span class="extraction-tab__value">
-					<span class="extraction-tab__badge extraction-tab__badge--status">
+					<span
+						class="extraction-tab__badge extraction-tab__badge--status">
 						{{ statusLabel }}
 					</span>
 				</span>
@@ -58,7 +52,8 @@
 
 			<!-- Entity count (expandable) -->
 			<div class="extraction-tab__row extraction-tab__row--expandable">
-				<button class="extraction-tab__expand-button"
+				<button
+					class="extraction-tab__expand-button"
 					:aria-expanded="String(entitiesExpanded)"
 					@click="entitiesExpanded = !entitiesExpanded">
 					<span class="extraction-tab__label">
@@ -66,19 +61,30 @@
 					</span>
 					<span class="extraction-tab__value">
 						{{ status.entityCount }}
-						<span class="extraction-tab__chevron" :class="{ 'extraction-tab__chevron--open': entitiesExpanded }">
+						<span
+							class="extraction-tab__chevron"
+							:class="{
+								'extraction-tab__chevron--open': entitiesExpanded,
+							}">
 							&#9656;
 						</span>
 					</span>
 				</button>
 
 				<!-- Entity type breakdown -->
-				<ul v-if="entitiesExpanded && status.entities.length > 0" class="extraction-tab__entity-list">
-					<li v-for="entity in status.entities"
+				<ul
+					v-if="entitiesExpanded && status.entities.length > 0"
+					class="extraction-tab__entity-list">
+					<li
+						v-for="entity in status.entities"
 						:key="entity.type"
 						class="extraction-tab__entity-item">
-						<span class="extraction-tab__entity-type">{{ entity.type }}</span>
-						<span class="extraction-tab__entity-count">{{ entity.count }}</span>
+						<span class="extraction-tab__entity-type">{{
+							entity.type
+						}}</span>
+						<span class="extraction-tab__entity-count">{{
+							entity.count
+						}}</span>
 					</li>
 				</ul>
 			</div>
@@ -89,7 +95,8 @@
 					{{ t('openregister', 'Risk level') }}
 				</span>
 				<span class="extraction-tab__value">
-					<span class="extraction-tab__badge"
+					<span
+						class="extraction-tab__badge"
 						:class="riskBadgeClass"
 						:title="riskLabel">
 						{{ riskLabel }}
@@ -113,64 +120,57 @@
 					{{ t('openregister', 'Anonymized') }}
 				</span>
 				<span class="extraction-tab__value">
-					<span v-if="status.anonymized" class="extraction-tab__badge extraction-tab__badge--success">
+					<span
+						v-if="status.anonymized"
+						class="extraction-tab__badge extraction-tab__badge--success">
 						{{ t('openregister', 'Yes') }}
 					</span>
-					<span v-else class="extraction-tab__badge extraction-tab__badge--neutral">
+					<span
+						v-else
+						class="extraction-tab__badge extraction-tab__badge--neutral">
 						{{ t('openregister', 'No') }}
 					</span>
 				</span>
 			</div>
 
 			<!-- Re-extract button for failed extractions -->
-			<div v-if="status.extractionStatus === 'failed'" class="extraction-tab__actions">
-				<NcButton :disabled="extracting"
-					type="primary"
-					@click="triggerExtraction">
-					<template v-if="extracting" #icon>
-						<NcLoadingIcon :size="20" />
-					</template>
-					{{ t('openregister', 'Extract Now') }}
-				</NcButton>
+			<div
+				v-if="status.extractionStatus === 'failed'"
+				class="extraction-tab__actions">
+				<ExtractNowButton
+					:extracting="extracting"
+					@extract="triggerExtraction" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import ExtractNowButton from './ExtractNowButton.vue'
+import { fetchFileTab, fileTab } from './fileTabFetch.js'
 
 export default {
 	name: 'ExtractionTab',
 
 	components: {
-		NcButton,
+		TabErrorState,
+		ExtractNowButton,
 		NcEmptyContent,
 		NcLoadingIcon,
-		AlertCircleOutline,
 		FileSearchOutline,
 	},
 
-	props: {
-		fileId: {
-			type: Number,
-			required: true,
-		},
-	},
+	mixins: [fileTab('fetchExtractionStatus')],
 
 	data() {
 		return {
-			loading: false,
 			extracting: false,
-			error: false,
-			errorMessage: '',
 			entitiesExpanded: false,
 			status: {
 				fileId: 0,
@@ -192,6 +192,7 @@ export default {
 		 * Human-readable extraction status label.
 		 *
 		 * @return {string}
+		 * @spec exclude computed status-label display helper, UI plumbing
 		 */
 		statusLabel() {
 			const labels = {
@@ -201,13 +202,16 @@ export default {
 				completed: t('openregister', 'Completed'),
 				failed: t('openregister', 'Failed'),
 			}
-			return labels[this.status.extractionStatus] || this.status.extractionStatus
+			return (
+				labels[this.status.extractionStatus] || this.status.extractionStatus
+			)
 		},
 
 		/**
 		 * Human-readable risk level label.
 		 *
 		 * @return {string}
+		 * @spec exclude computed risk-label display helper, UI plumbing
 		 */
 		riskLabel() {
 			const labels = {
@@ -224,6 +228,7 @@ export default {
 		 * CSS class for risk level badge.
 		 *
 		 * @return {string}
+		 * @spec exclude computed risk-badge CSS-class display helper, UI plumbing
 		 */
 		riskBadgeClass() {
 			const classes = {
@@ -240,6 +245,7 @@ export default {
 		 * Formatted extraction date.
 		 *
 		 * @return {string}
+		 * @spec exclude computed date-format display helper, UI plumbing
 		 */
 		formattedDate() {
 			if (!this.status.extractedAt) {
@@ -253,59 +259,42 @@ export default {
 		},
 	},
 
-	watch: {
-		fileId: {
-			handler(newVal) {
-				if (newVal) {
-					this.fetchExtractionStatus()
-				}
-			},
-			immediate: true,
-		},
-	},
-
 	methods: {
 		t,
 
 		/**
 		 * Fetch extraction status from the API.
+		 *
+		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
 		 */
 		async fetchExtractionStatus() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
-
-			try {
-				const url = generateUrl('/apps/openregister/api/files/{fileId}/extraction-status', {
-					fileId: this.fileId,
-				})
-				const response = await axios.get(url)
-
-				if (response.data?.success) {
-					this.status = response.data.data
-				} else {
-					this.error = true
-					this.errorMessage = response.data?.error || t('openregister', 'Unknown error')
-				}
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message
-				console.error('[ExtractionTab] Failed to fetch extraction status:', err)
-			} finally {
-				this.loading = false
+			const failure = await fetchFileTab(
+				this,
+				'/apps/openregister/api/files/{fileId}/extraction-status',
+				(data) => {
+					this.status = data
+				},
+			)
+			if (failure) {
+				console.error('[ExtractionTab] Failed to fetch extraction status:', failure)
 			}
 		},
 
 		/**
 		 * Trigger text extraction for this file.
+		 *
+		 * @spec exclude API passthrough triggering extraction + refresh; extraction contract owned by text-extraction capability
 		 */
 		async triggerExtraction() {
 			this.extracting = true
 
 			try {
-				const url = generateUrl('/apps/openregister/api/files/{fileId}/extract', {
-					fileId: this.fileId,
-				})
+				const url = generateUrl(
+					'/apps/openregister/api/files/{fileId}/extract',
+					{
+						fileId: this.fileId,
+					},
+				)
 				await axios.post(url)
 
 				// Refresh the extraction status after triggering extraction.
@@ -320,7 +309,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .extraction-tab {
 	padding: 10px;
 }
@@ -462,13 +453,11 @@ export default {
 	justify-content: center;
 }
 
-.material-design-icon {
-	display: inline-flex;
-}
+@include material-design-icon-block;
 
-.material-design-icon :deep(svg) {
-	width: 64px;
-	height: 64px;
-	fill: currentColor;
+@media (prefers-reduced-motion: reduce) {
+	.extraction-tab__chevron {
+		transition: none;
+	}
 }
 </style>

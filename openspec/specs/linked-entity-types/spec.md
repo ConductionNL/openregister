@@ -1,10 +1,14 @@
 ---
-status: implemented
+status: done
+retrofit_extensions:
+  - REQ-001
 ---
 
 # Linked Entity Types
 
 ## Purpose
+
+@e2e exclude backend schema property type extension — covered by PHPUnit
 
 Unified system for linking Nextcloud entities (mail, contacts, calendar events, notes, todos, Talk conversations, Deck cards) to OpenRegister objects and entities. Provides schema-level `configuration.linkedTypes` declarations, Nc\* property types for typed field-level references, lean `_` metadata columns on both magic and entity tables, a generic API for ad-hoc linking and reverse lookups, read-time enrichment via `_extend`, and sidebar injection based on linkedTypes.
 
@@ -319,3 +323,162 @@ Controllers MUST accept entity reference strings instead of numeric link IDs for
 - **GIVEN** an object with `_deck: ["3/42"]`
 - **WHEN** a DELETE request is sent to `/api/objects/{register}/{schema}/{id}/deck/3%2F42`
 - **THEN** `"3/42"` MUST be removed from `_deck`
+
+### REQ-001: The system SHALL run a non-destructive repair step that warns when schema `linkedTypes` reference unregistered integrations
+
+The system SHALL run a non-destructive repair step that warns when schema `linkedTypes` reference unregistered integrations.
+
+> Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
+
+`OCA\OpenRegister\Repair\LogDanglingLinkedTypes` implements `OCP\Migration\IRepairStep` and is registered via `appinfo/info.xml`. Nextcloud invokes it on every `occ app:enable` / `occ maintenance:repair` / app upgrade. The step's `getName()` returns `"Log schemas with linkedTypes referencing unregistered integrations"`, which appears in the occ output and the admin Repair UI.
+
+`run(IOutput $output)` is the entry point. It:
+1. Writes `[OpenRegister] Scanning schemas for dangling linkedTypes...` via `$output->info()`.
+2. Resolves the SchemaMapper lazily through the DI `ContainerInterface` (`$this->container->get('OCA\\OpenRegister\\Db\\SchemaMapper')`). Hard-binding the mapper would create a circular dependency at app boot; lazy resolution avoids that.
+3. If the mapper cannot be resolved (or `findAll()` is absent / returns non-array), `loadSchemas()` returns null. The step writes `Schema mapper unavailable — scan skipped (this is normal on first install).` and returns immediately. The throwable (if any) is logged at DEBUG via `LoggerInterface`.
+4. Calls `IntegrationRegistry::listIds()` to get the set of currently-registered integration ids.
+5. Calls `scan(schemas, registeredIds)` to walk every schema, pull its `linkedTypes` array via `extractLinkedTypes()`, and collect string entries not present in `registeredIds`. Each dangling row carries `slug`, `id`, `danglingType`.
+6. Empty result → writes `All schemas linkedTypes are covered by registered integrations.` and returns.
+7. Non-empty result → for each row writes both `LoggerInterface::warning(...)` AND `$output->warning(...)` with the message `Schema "<slug>" (id=<id>) declares linkedType "<type>" which is not registered. Add the matching IntegrationProvider before the deprecated VALID_LINKED_TYPES fallback is removed.`
+
+`extractLinkedTypes(schema)` tolerates two accessor variants: it prefers `getLinkedTypes()` when present (must return an array), otherwise falls back to `getConfiguration()['linkedTypes']` when both the configuration array and the `linkedTypes` sub-key exist. Any accessor throwable returns `[]` for that schema (skip-and-continue).
+
+The step is strictly informational — it never throws and never modifies data. The goal is operational visibility so admins can plan provider installation before the deprecated `VALID_LINKED_TYPES` fallback disappears.
+
+#### Scenario: First-install run with no schemas yet
+- **GIVEN** a fresh OpenRegister install where the database schema is being prepared and the SchemaMapper is not yet wired
+- **WHEN** Nextcloud invokes `run()` as part of `occ app:enable`
+- **THEN** `loadSchemas()` returns null
+- **AND** the step writes `Schema mapper unavailable — scan skipped (this is normal on first install).` via `$output->info()`
+- **AND** the step exits without throwing or writing any WARNING
+
+#### Scenario: All linkedTypes are registered
+- **GIVEN** the schemas in the register declare `linkedTypes: ["files", "mail", "contacts"]` and the `IntegrationRegistry` lists all three ids
+- **WHEN** `run()` executes the scan
+- **THEN** `scan()` produces an empty dangling list
+- **AND** the step writes `All schemas linkedTypes are covered by registered integrations.` via `$output->info()`
+- **AND** no warnings are emitted
+
+#### Scenario: A linkedType references an unregistered integration
+- **GIVEN** schema `meldingen` (id `42`) declares `linkedTypes: ["files", "xwiki-pages"]`
+- **AND** `IntegrationRegistry::listIds()` returns `["files", "mail", "contacts"]` (no `xwiki-pages`)
+- **WHEN** `run()` executes the scan
+- **THEN** the dangling list contains one row: `{ slug: 'meldingen', id: '42', danglingType: 'xwiki-pages' }`
+- **AND** both `LoggerInterface::warning()` and `$output->warning()` are called with `Schema "meldingen" (id=42) declares linkedType "xwiki-pages" which is not registered. Add the matching IntegrationProvider before the deprecated VALID_LINKED_TYPES fallback is removed.`
+- **AND** the step exits normally — no exception is thrown
+
+#### Scenario: A schema accessor throws
+- **GIVEN** a malformed schema where `getLinkedTypes()` throws (e.g. JSON decode error in the configuration column)
+- **WHEN** `extractLinkedTypes()` calls `$schema->getLinkedTypes()`
+- **THEN** the throwable is swallowed and the loop tries `getConfiguration()` next
+- **AND** if both throw, the method returns `[]` and the schema is silently skipped
+- **AND** the scan continues with the next schema
+
+#### Scenario: Non-string entries in linkedTypes are silently skipped
+- **GIVEN** a schema whose `linkedTypes` contains `["mail", 42, null]`
+- **WHEN** `scan()` iterates the values
+- **THEN** the non-string entries fail the `is_string($type) === false` guard and are skipped
+- **AND** only `"mail"` is evaluated against the registry
+
+### Requirement: Any object reads the records that reference it (REQ-OHC-001)
+
+The system SHALL answer, for any object, which objects reference it,
+grouped by schema, each carrying its title, its status and when it last
+changed. The answer SHALL respect the caller's access, SHALL be paged per
+group, and SHALL require no change to either schema.
+
+#### Scenario: an address has a history
+
+- **GIVEN** an address object referenced by a melding, an inspection and a permit case
+- **WHEN** the address is read with its referencing records
+- **THEN** the three are returned, grouped by schema, each with its status
+
+#### Scenario: the reverse view obeys access
+
+- **GIVEN** a caller who may read only one of the three
+- **WHEN** they make the same read
+- **THEN** only that one is returned
+
+### Requirement: A lens property reads a referenced object's field live (REQ-OHC-002)
+
+A property MAY declare a lens: a reference property on this schema and a
+property to read through it. The value SHALL be resolved at read time,
+SHALL NOT be stored, and SHALL be read-only. A write to a lens property
+SHALL be refused. When the referenced object's value changes, the lens
+SHALL reflect it with no write to this object.
+
+#### Scenario: the besluit's date on the bezwaar, without a copy
+
+- **GIVEN** a bezwaar referencing a besluit, with a lens onto the besluit's date
+- **WHEN** the besluit's date changes
+- **THEN** reading the bezwaar returns the new date, and the bezwaar was not written
+
+#### Scenario: a lens cannot be written
+
+- **GIVEN** the same lens property
+- **WHEN** a client sends a value for it
+- **THEN** the write is refused, naming the property
+
+### Requirement: A lens over an unreadable object renders as withheld (REQ-OHC-003)
+
+When the caller may not read the referenced object, the lens SHALL render
+as withheld, distinguishable from absent. The referenced object's other
+values SHALL NOT be disclosed.
+
+#### Scenario: withheld is not the same as empty
+
+- **GIVEN** a lens onto an object the caller may not read
+- **WHEN** the object carrying the lens is read
+- **THEN** the property is marked withheld rather than returned empty
+
+### Requirement: Every schema declares its list columns and search fields (REQ-OHC-004)
+
+A schema MAY declare the columns a list surface shows and the fields it
+searches on. The generic list surface SHALL render them for any schema, so
+no object type needs a list page of its own. A schema declaring none SHALL
+keep the current default columns.
+
+#### Scenario: an object type is as usable as a case list
+
+- **GIVEN** a schema declaring four columns and two search fields
+- **WHEN** its list surface is opened
+- **THEN** the four columns render and the two fields are searchable
+
+### Requirement: An intake source is an administered object (REQ-OHC-005)
+
+A watched folder, a mailbox or an inbound endpoint SHALL be an object in a
+register rather than a value in a settings screen. There SHALL be able to
+be more than one, each SHALL be switchable off, and each SHALL carry the
+access rules and audit any object carries.
+
+#### Scenario: a second mailbox is configuration, not code
+
+- **GIVEN** one configured mailbox source
+- **WHEN** an administrator adds a second
+- **THEN** both are listed and both are polled
+
+#### Scenario: a source is switched off without being deleted
+
+- **GIVEN** two sources
+- **WHEN** one is disabled
+- **THEN** it stops being polled and stays listed
+
+### Requirement: Geographic features are inherited with their provenance (REQ-OHC-006)
+
+A schema MAY declare that a record collects geographic features from the
+objects and parties it references. Each inherited feature SHALL name the
+relation it arrived through. A feature the record holds itself SHALL
+outrank an inherited one for the same purpose.
+
+#### Scenario: the case shows the address it is about
+
+- **GIVEN** a case referencing an address object that holds a point
+- **WHEN** the case's features are read
+- **THEN** the point is returned, naming the reference it came from
+
+#### Scenario: a corrected location wins
+
+- **GIVEN** the same case holding its own point
+- **WHEN** its features are read
+- **THEN** the case's own point is used and the inherited one is marked as superseded
+- @e2e exclude {collector behaviour, covered by unit tests}

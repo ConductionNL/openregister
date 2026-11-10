@@ -1,7 +1,12 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { deletedStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import formatBytes from '../../services/formatBytes.js'
+import {
+	deletedStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -12,68 +17,62 @@ import formatBytes from '../../services/formatBytes.js'
 				<h1 class="viewHeaderTitleIndented">
 					{{ t('openregister', 'Soft Deleted Items') }}
 				</h1>
-				<p>{{ t('openregister', 'Manage and restore soft deleted items from your registers') }}</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Manage and restore soft deleted items from your registers',
+						)
+					}}
+				</p>
 			</div>
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} deleted items', { showing: paginatedItems.length, total: deletedStore.deletedPagination.total }) }}
-					</span>
-					<span v-if="selectedItems.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedItems.length }) }})
-					</span>
-				</div>
-				<div class="viewActions">
-					<!-- Mass Actions Dropdown -->
-					<NcActions
-						:force-name="true"
+			<ListActionsBar
+				:summary="
+					t('openregister', 'Showing {showing} of {total} deleted items', {
+						showing: paginatedItems.length,
+						total: deletedStore.deletedPagination.total,
+					})
+				"
+				:selectedCount="selectedItems.length"
+				:actions="[refreshAction(refreshItems)]">
+				<NcActions
+					:forceName="true"
+					:disabled="selectedItems.length === 0"
+					:title="
+						selectedItems.length === 0
+							? 'Select one or more objects to use mass actions'
+							: `Mass actions (${selectedItems.length} selected)`
+					"
+					:menuName="`Mass Actions (${selectedItems.length})`">
+					<template #icon>
+						<FormatListChecks :size="20" />
+					</template>
+					<NcActionButton
 						:disabled="selectedItems.length === 0"
-						:title="selectedItems.length === 0 ? 'Select one or more objects to use mass actions' : `Mass actions (${selectedItems.length} selected)`"
-						:menu-name="`Mass Actions (${selectedItems.length})`">
+						closeAfterClick
+						@click="bulkRestore">
 						<template #icon>
-							<FormatListChecks :size="20" />
+							<Restore :size="20" />
 						</template>
-						<NcActionButton
-							:disabled="selectedItems.length === 0"
-							close-after-click
-							@click="bulkRestore">
-							<template #icon>
-								<Restore :size="20" />
-							</template>
-							Restore
-						</NcActionButton>
-						<NcActionButton
-							:disabled="selectedItems.length === 0"
-							close-after-click
-							@click="bulkDelete">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							Purge
-						</NcActionButton>
-					</NcActions>
-
-					<!-- Regular Actions -->
-					<NcActions
-						:force-name="true"
-						:inline="1"
-						menu-name="Actions">
-						<NcActionButton
-							close-after-click
-							@click="refreshItems">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						Restore
+					</NcActionButton>
+					<NcActionButton
+						:disabled="selectedItems.length === 0"
+						closeAfterClick
+						@click="bulkDelete">
+						<template #icon>
+							<Delete :size="20" />
+						</template>
+						Purge
+					</NcActionButton>
+				</NcActions>
+			</ListActionsBar>
 
 			<!-- Items Table -->
-			<NcEmptyContent v-if="deletedStore.deletedLoading || !filteredItems.length"
+			<NcEmptyContent
+				v-if="deletedStore.deletedLoading || !filteredItems.length"
 				:name="emptyContentName"
 				:description="emptyContentDescription">
 				<template #icon>
@@ -82,156 +81,180 @@ import formatBytes from '../../services/formatBytes.js'
 				</template>
 			</NcEmptyContent>
 
-			<div v-else class="viewTableContainer">
-				<table class="viewTable itemsTable">
-					<thead>
-						<tr>
-							<th class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="allSelected"
-									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
-							</th>
-							<th>{{ t('openregister', 'Title') }}</th>
-							<th class="tableColumnConstrained">
-								{{ t('openregister', 'Register') }}
-							</th>
-							<th class="tableColumnConstrained">
-								{{ t('openregister', 'Schema') }}
-							</th>
-							<th>{{ t('openregister', 'Deleted Date') }}</th>
-							<th>{{ t('openregister', 'Deleted By') }}</th>
-							<th>{{ t('openregister', 'Purge Date') }}</th>
-							<th class="tableColumnActions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="item in paginatedItems"
-							:key="item.id"
-							class="viewTableRow itemRow table-row-selectable"
-							:class="{ 'viewTableRowSelected table-row-selected': selectedItems.includes(item.id) }"
-							@click="handleRowClick(item.id, $event)">
-							<td class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="selectedItems.includes(item.id)"
-									@update:checked="(checked) => toggleItemSelection(item.id, checked)" />
-							</td>
-							<td class="tableColumnTitle">
-								<div class="titleContent">
-									<strong>{{ getItemTitle(item) }}</strong>
-									<span v-if="getItemDescription(item)" class="textDescription textEllipsis">{{ getItemDescription(item) }}</span>
-								</div>
-							</td>
-							<td class="tableColumnConstrained">
-								{{ getRegisterName(item['@self']?.register) }}
-							</td>
-							<td class="tableColumnConstrained">
-								{{ getSchemaName(item['@self']?.schema) }}
-							</td>
-							<td>
-								<span v-if="item['@self']?.deleted?.deleted">{{ formatPurgeDate(item['@self'].deleted.deleted) }}</span>
-								<span v-else>{{ t('openregister', 'Unknown') }}</span>
-							</td>
-							<td>{{ item['@self']?.deleted?.deletedBy || t('openregister', 'Unknown') }}</td>
-							<td>
-								<span v-if="item['@self']?.deleted?.purgeDate">{{ formatPurgeDate(item['@self'].deleted.purgeDate) }}</span>
-								<span v-else>{{ t('openregister', 'No purge date set') }}</span>
-							</td>
-							<td class="tableColumnActions">
-								<NcActions>
-									<NcActionButton close-after-click @click="restoreItem(item)">
-										<template #icon>
-											<Restore :size="20" />
-										</template>
-										{{ t('openregister', 'Restore') }}
-									</NcActionButton>
-									<NcActionButton close-after-click @click="permanentlyDelete(item)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openregister', 'Permanently Delete') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<CnDataTable
+				v-else
+				class="itemsTable"
+				:columns="columns"
+				:rows="paginatedItems"
+				selectable
+				:selectedIds="selectedItems"
+				:selectAllLabel="t('openregister', 'Select All')"
+				@select="selectedItems = $event">
+				<template #column-title="{ row: item }">
+					<div class="titleContent">
+						<strong>{{ getItemTitle(item) }}</strong>
+						<span
+							v-if="getItemDescription(item)"
+							class="textDescription textEllipsis"
+							>{{ getItemDescription(item) }}</span
+						>
+					</div>
+				</template>
+				<template #column-register="{ row: item }">
+					{{ getRegisterName(item['@self']?.register) }}
+				</template>
+				<template #column-schema="{ row: item }">
+					{{ getSchemaName(item['@self']?.schema) }}
+				</template>
+				<template #column-deleted="{ row: item }">
+					{{
+						item['@self']?.deleted?.deleted
+							? formatPurgeDate(item['@self'].deleted.deleted)
+							: t('openregister', 'Unknown')
+					}}
+				</template>
+				<template #column-deletedBy="{ row: item }">
+					{{ item['@self']?.deleted?.deletedBy || t('openregister', 'Unknown') }}
+				</template>
+				<template #column-destroyableFrom="{ row: item }">
+					{{
+						destroyableFrom(item)
+							? formatPurgeDate(destroyableFrom(item))
+							: t('openregister', 'No purge date set')
+					}}
+				</template>
+				<template #column-daysLeft="{ row: item }">
+					{{ daysLeftLabel(item) }}
+				</template>
+				<template #actions-header>
+					{{ t('openregister', 'Actions') }}
+				</template>
+				<template #row-actions="{ row: item }">
+					<ActionMenu :actions="itemActions(item)" />
+				</template>
+			</CnDataTable>
 
 			<!-- Pagination -->
 			<PaginationComponent
-				:current-page="currentPage"
-				:total-pages="totalPages"
-				:total-items="deletedStore.deletedPagination.total"
-				:current-page-size="deletedStore.deletedPagination.limit || 20"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
+				:currentPage="currentPage"
+				:totalPages="totalPages"
+				:totalItems="deletedStore.deletedPagination.total"
+				:currentPageSize="deletedStore.deletedPagination.limit || 20"
+				:minItemsToShow="10"
+				@pageChanged="onPageChanged"
+				@pageSizeChanged="onPageSizeChanged" />
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import {
+	NcActionButton,
+	NcActions,
 	NcAppContent,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcCheckboxRadioSwitch,
-	NcActions,
-	NcActionButton,
 } from '@nextcloud/vue'
-import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
-import Restore from 'vue-material-design-icons/Restore.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
-
+import Restore from 'vue-material-design-icons/Restore.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
+import eventBus from '../../eventBus.js'
+import { refreshAction } from '../../services/menuActions.js'
+import { storePaging } from '../storePaging.js'
 
 export default {
 	name: 'DeletedIndex',
 	components: {
+		ActionMenu,
+		CnDataTable,
+		ListActionsBar,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
 		DeleteEmpty,
 		Restore,
 		Delete,
-		Refresh,
 		FormatListChecks,
 		PaginationComponent,
 	},
+
+	mixins: [
+		storePaging({
+			fetch: (options) => deletedStore.fetchDeleted(options),
+			limit: () => deletedStore.deletedPagination.limit,
+			selection: 'selectedItems',
+			logPageError: false,
+		}),
+	],
+
 	data() {
 		return {
 			selectedItems: [],
 		}
 	},
+
 	computed: {
+		/**
+		 * The trash table columns; the row menu adds the "Actions" column.
+		 *
+		 * @spec exclude list-view table layout
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'title', label: t('openregister', 'Title'), cellClass: 'cn-cell--wrap' },
+				{ key: 'register', label: t('openregister', 'Register'), class: 'tableColumnConstrained' },
+				{ key: 'schema', label: t('openregister', 'Schema'), class: 'tableColumnConstrained' },
+				{ key: 'deleted', label: t('openregister', 'Deleted Date') },
+				{ key: 'deletedBy', label: t('openregister', 'Deleted By') },
+				{ key: 'destroyableFrom', label: t('openregister', 'Destroyable from') },
+				{ key: 'daysLeft', label: t('openregister', 'Days left'), class: 'tableColumnConstrained' },
+			]
+		},
+
+		/**
+		 * @spec exclude list-view store passthrough for filtered deleted items (computed; archivering-vernietiging contract)
+		 */
 		filteredItems() {
 			// Items are already filtered by the store based on sidebar filters
 			return deletedStore.deletedList || []
 		},
+
+		/**
+		 * @spec exclude list-view store passthrough for paginated deleted items (computed)
+		 */
 		paginatedItems() {
 			// Items are already paginated by the store
 			return this.filteredItems
 		},
+
+		/**
+		 * @spec exclude list-view pagination total-pages helper (computed)
+		 */
 		totalPages() {
 			return deletedStore.deletedPagination.pages || 1
 		},
+
+		/**
+		 * @spec exclude list-view pagination current-page helper (computed)
+		 */
 		currentPage() {
 			return deletedStore.deletedPagination.page || 1
 		},
-		allSelected() {
-			return this.paginatedItems.length > 0 && this.paginatedItems.every(item => this.selectedItems.includes(item.id))
-		},
-		someSelected() {
-			return this.selectedItems.length > 0 && !this.allSelected
-		},
+
+
+
+		/**
+		 * @spec exclude list-view empty-state title text helper (computed)
+		 */
 		emptyContentName() {
 			if (deletedStore.deletedLoading) {
 				return t('openregister', 'Loading deleted items...')
@@ -240,23 +263,45 @@ export default {
 			}
 			return ''
 		},
+
+		/**
+		 * @spec exclude list-view empty-state description text helper (computed)
+		 */
 		emptyContentDescription() {
 			if (deletedStore.deletedLoading) {
-				return t('openregister', 'Please wait while we fetch your deleted items.')
+				return t(
+					'openregister',
+					'Please wait while we fetch your deleted items.',
+				)
 			} else if (!this.filteredItems.length) {
-				return t('openregister', 'There are no deleted items matching your current filters.')
+				return t(
+					'openregister',
+					'There are no deleted items matching your current filters.',
+				)
 			}
 			return ''
 		},
 	},
+
 	watch: {
+		/**
+		 * @spec exclude list-view watcher; re-emits counts when the selection changes
+		 */
 		selectedItems() {
 			this.updateCounts()
 		},
+
+		/**
+		 * @spec exclude list-view watcher re-emitting counts when filtered items change
+		 */
 		filteredItems() {
 			this.updateCounts()
 		},
 	},
+
+	/**
+	 * @spec exclude list-view lifecycle; loads data and registers sidebar/modal event listeners on mount
+	 */
 	async mounted() {
 		// Load initial data
 		await this.loadItems()
@@ -265,26 +310,63 @@ export default {
 		this.updateCounts()
 
 		// Listen for filter changes from sidebar
-		this.$root.$on('deleted-filters-changed', this.handleFiltersChanged)
-		this.$root.$on('deleted-bulk-restore', this.bulkRestore)
-		this.$root.$on('deleted-bulk-delete', this.bulkDelete)
-		this.$root.$on('deleted-export-filtered', this.exportFiltered)
+		eventBus.on('deleted-filters-changed', this.handleFiltersChanged)
+		eventBus.on('deleted-bulk-restore', this.bulkRestore)
+		eventBus.on('deleted-bulk-delete', this.bulkDelete)
+		// Pre-existing typo, surfaced by the move off `$root.$on`: the method is
+		// `exportFilteredItems`. `this.exportFiltered` is undefined, so this
+		// channel had been subscribed to nothing since it was written. (The
+		// target is itself a documented stub, so no behaviour changes — but the
+		// wiring now says what it means instead of silently pointing at
+		// nothing.)
+		eventBus.on('deleted-export-filtered', this.exportFilteredItems)
 
 		// Listen for deletion events from modals
-		this.$root.$on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
-		this.$root.$on('deleted-objects-restored', this.handleObjectsRestored)
+		eventBus.on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
+		eventBus.on('deleted-objects-restored', this.handleObjectsRestored)
 	},
-	beforeDestroy() {
-		this.$root.$off('deleted-filters-changed')
-		this.$root.$off('deleted-bulk-restore')
-		this.$root.$off('deleted-bulk-delete')
-		this.$root.$off('deleted-export-filtered')
-		this.$root.$off('deleted-objects-permanently-deleted')
-		this.$root.$off('deleted-objects-restored')
+
+	/**
+	 * @spec exclude list-view lifecycle; tears down sidebar/modal event listeners on destroy
+	 */
+	beforeUnmount() {
+		eventBus.off('deleted-filters-changed')
+		eventBus.off('deleted-bulk-restore')
+		eventBus.off('deleted-bulk-delete')
+		eventBus.off('deleted-export-filtered')
+		eventBus.off('deleted-objects-permanently-deleted')
+		eventBus.off('deleted-objects-restored')
 	},
+
 	methods: {
+		refreshAction,
+
+		/**
+		 * The row menu of a deleted item.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} item The item
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		itemActions(item) {
+			return [
+				{
+					label: t('openregister', 'Restore'),
+					icon: Restore,
+					run: () => this.restoreItem(item),
+				},
+				{
+					label: t('openregister', 'Permanently Delete'),
+					icon: Delete,
+					run: () => this.permanentlyDelete(item),
+				},
+			]
+		},
+
 		/**
 		 * Load deleted items from store
+		 *
+		 * @spec exclude list-view store fetch plumbing (archivering-vernietiging contract)
 		 * @return {Promise<void>}
 		 */
 		async loadItems() {
@@ -292,18 +374,16 @@ export default {
 				await deletedStore.fetchDeleted()
 
 				// Load register and schema data if not already loaded
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
-				}
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
-				}
+				await ensureRegisterAndSchemaLists()
 			} catch (error) {
 				console.error('Error loading deleted items:', error)
 			}
 		},
+
 		/**
 		 * Handle filter changes from sidebar
+		 *
+		 * @spec exclude list-view filter-change handler; converts and re-fetches via store
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
 		 */
@@ -326,8 +406,11 @@ export default {
 				console.error('Error applying filters:', error)
 			}
 		},
+
 		/**
 		 * Convert sidebar filters to API format using @self.deleted notation
+		 *
+		 * @spec exclude list-view filter-shape mapping helper for display/query only
 		 * @param {object} filters - Sidebar filters
 		 * @return {object} API filters
 		 */
@@ -356,114 +439,117 @@ export default {
 
 			return apiFilters
 		},
+
 		/**
 		 * Get item title from object data
+		 *
+		 * @spec exclude list-view title-resolution display helper
 		 * @param {object} item - The deleted item
 		 * @return {string} The item title
 		 */
 		getItemTitle(item) {
 			// Try various title fields, fallback to ID without "Object" prefix
-			return item.title || item.fileName || item.name || item.object?.title || item.object?.name || item.id
+			return (
+				item.title
+				|| item.fileName
+				|| item.name
+				|| item.object?.title
+				|| item.object?.name
+				|| item.id
+			)
 		},
+
 		/**
 		 * Get item description from object data
+		 *
 		 * @param {object} item - The deleted item
 		 * @return {string} The item description
 		 */
 		getItemDescription(item) {
-			return item.description || item.object?.description || item.object?.summary || null
+			return (
+				item.description
+				|| item.object?.description
+				|| item.object?.summary
+				|| null
+			)
 		},
+
 		/**
 		 * Get register name by ID
+		 *
+		 * @spec exclude list-view id-to-name lookup display helper
 		 * @param {string|number} registerId - The register ID
 		 * @return {string} The register name
 		 */
 		getRegisterName(registerId) {
 			if (!registerId) return t('openregister', 'Unknown Register')
 
-			const register = registerStore.registerList.find(r => r.id === parseInt(registerId))
+			const register = registerStore.registerList.find(
+				(r) => r.id === parseInt(registerId),
+			)
 			return register?.title || `Register ${registerId}`
 		},
+
 		/**
 		 * Get schema name by ID
+		 *
+		 * @spec exclude list-view id-to-name lookup display helper
 		 * @param {string|number} schemaId - The schema ID
 		 * @return {string} The schema name
 		 */
 		getSchemaName(schemaId) {
 			if (!schemaId) return t('openregister', 'Unknown Schema')
 
-			const schema = schemaStore.schemaList.find(s => s.id === parseInt(schemaId))
+			const schema = schemaStore.schemaList.find(
+				(s) => s.id === parseInt(schemaId),
+			)
 			return schema?.title || `Schema ${schemaId}`
 		},
-		/**
-		 * Toggle selection for all items on current page
-		 * @param {boolean} checked - Whether to select or deselect all
-		 * @return {void}
-		 */
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.paginatedItems.forEach(item => {
-					if (!this.selectedItems.includes(item.id)) {
-						this.selectedItems.push(item.id)
-					}
-				})
-			} else {
-				this.paginatedItems.forEach(item => {
-					const index = this.selectedItems.indexOf(item.id)
-					if (index > -1) {
-						this.selectedItems.splice(index, 1)
-					}
-				})
-			}
-		},
-		/**
-		 * Toggle selection for individual item
-		 * @param {string} itemId - ID of the item to toggle
-		 * @param {boolean} checked - Whether to select or deselect
-		 * @return {void}
-		 */
-		toggleItemSelection(itemId, checked) {
-			if (checked) {
-				if (!this.selectedItems.includes(itemId)) {
-					this.selectedItems.push(itemId)
-				}
-			} else {
-				const index = this.selectedItems.indexOf(itemId)
-				if (index > -1) {
-					this.selectedItems.splice(index, 1)
-				}
-			}
-		},
+
+
+
 		/**
 		 * Restore selected items using dialog
+		 *
+		 * @spec exclude list-view bulk-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @return {void}
 		 */
 		bulkRestore() {
 			if (this.selectedItems.length === 0) return
 
 			// Get selected objects data
-			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
+			const selectedObjects = this.paginatedItems.filter((item) =>
+				this.selectedItems.includes(item.id),
+			)
 
 			// Set data in deletedStore and open dialog
 			deletedStore.setSelectedForBulkAction(selectedObjects)
 			navigationStore.setDialog('restoreMultiple')
 		},
+
 		/**
 		 * Permanently delete selected items using dialog
+		 *
+		 * @spec exclude list-view bulk-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @return {void}
 		 */
 		bulkDelete() {
 			if (this.selectedItems.length === 0) return
 
 			// Get selected objects data
-			const selectedObjects = this.paginatedItems.filter(item => this.selectedItems.includes(item.id))
+			const selectedObjects = this.paginatedItems.filter((item) =>
+				this.selectedItems.includes(item.id),
+			)
 
 			// Set data in deletedStore and open dialog
 			deletedStore.setSelectedForBulkAction(selectedObjects)
 			navigationStore.setDialog('permanentlyDeleteMultiple')
 		},
+
 		/**
 		 * Restore individual item using dialog
+		 *
+		 * @spec exclude list-view row-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @param {object} item - Item to restore
 		 * @return {void}
 		 */
@@ -472,8 +558,11 @@ export default {
 			deletedStore.setSelectedForBulkAction([item])
 			navigationStore.setDialog('restoreMultiple')
 		},
+
 		/**
 		 * Permanently delete individual item using dialog
+		 *
+		 * @spec exclude list-view row-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @param {object} item - Item to delete
 		 * @return {void}
 		 */
@@ -485,29 +574,36 @@ export default {
 
 		/**
 		 * Handle multiple objects deletion event
+		 *
+		 * @spec exclude list-view event handler; clears selection and reloads after modal delete
 		 * @param {Array<string>} objectIds - IDs of deleted objects
 		 * @return {Promise<void>}
 		 */
 		async handleObjectsDeleted(objectIds) {
-			// Remove from selection if they were selected
-			objectIds.forEach(id => {
-				const index = this.selectedItems.indexOf(id)
-				if (index > -1) {
-					this.selectedItems.splice(index, 1)
-				}
-			})
-
-			// Refresh the list
-			await this.loadItems()
+			await this.deselectAndReload(objectIds)
 		},
+
 		/**
 		 * Handle multiple objects restoration event
+		 *
+		 * @spec exclude list-view event handler; clears selection and reloads after modal restore
 		 * @param {Array<string>} objectIds - IDs of restored objects
 		 * @return {Promise<void>}
 		 */
 		async handleObjectsRestored(objectIds) {
+			await this.deselectAndReload(objectIds)
+		},
+
+		/**
+		 * Drop these objects from the selection, then reload the list.
+		 *
+		 * @spec exclude list-view event handler; clears selection and reloads after a bulk modal action
+		 * @param {Array<string>} objectIds - IDs of the objects the modal handled
+		 * @return {Promise<void>}
+		 */
+		async deselectAndReload(objectIds) {
 			// Remove from selection if they were selected
-			objectIds.forEach(id => {
+			objectIds.forEach((id) => {
 				const index = this.selectedItems.indexOf(id)
 				if (index > -1) {
 					this.selectedItems.splice(index, 1)
@@ -517,96 +613,47 @@ export default {
 			// Refresh the list
 			await this.loadItems()
 		},
+
 		/**
 		 * Export filtered items with specified options
+		 *
+		 * @spec exclude list-view export stub (not yet implemented)
 		 * @param {object} options - Export options
-		 * @param _options
+		 * @param {object} _options
 		 * @return {void}
 		 */
 		exportFilteredItems(_options) {
 			// TODO: Implement export functionality for deleted items
 		},
-		/**
-		 * Handle page change from pagination component
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 */
-		async onPageChanged(page) {
-			try {
-				await deletedStore.fetchDeleted({
-					page,
-					limit: deletedStore.deletedPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedItems = []
-			} catch (error) {
-				// Handle error silently
-			}
-		},
-		/**
-		 * Handle page size change from pagination component
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await deletedStore.fetchDeleted({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedItems = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
-			}
-		},
+
 		/**
 		 * Refresh items list
+		 *
+		 * @spec exclude list-view manual refresh plumbing
 		 * @return {Promise<void>}
 		 */
 		async refreshItems() {
 			await this.loadItems()
 			this.selectedItems = []
 		},
+
 		/**
 		 * Update counts for sidebar
+		 *
+		 * @spec exclude list-view count-emit plumbing for the sidebar
 		 * @return {void}
 		 */
 		updateCounts() {
-			this.$root.$emit('deleted-selection-count', this.selectedItems.length)
-			this.$root.$emit('deleted-filtered-count', this.filteredItems.length)
+			eventBus.emit('deleted-selection-count', this.selectedItems.length)
+			eventBus.emit('deleted-filtered-count', this.filteredItems.length)
 		},
-		/**
-		 * Handle row click for selection
-		 * @param {string} id - Item ID
-		 * @param {Event} event - Click event
-		 * @return {void}
-		 */
-		handleRowClick(id, event) {
-			// Don't select if clicking on the checkbox, actions button, or inside actions menu
-			if (event.target.closest('.tableColumnCheckbox')
-				|| event.target.closest('.tableColumnActions')
-				|| event.target.closest('.actionsButton')) {
-				return
-			}
 
-			// Toggle selection on row click
-			this.handleSelectItem(id)
-		},
-		/**
-		 * Handle item selection toggle
-		 * @param {string} id - Item ID
-		 * @return {void}
-		 */
-		handleSelectItem(id) {
-			if (this.selectedItems.includes(id)) {
-				this.selectedItems = this.selectedItems.filter(item => item !== id)
-			} else {
-				this.selectedItems.push(id)
-			}
-		},
+
+
 		/**
 		 * Format purge date in ISO format yyyy:mm:dd hh:mm
+		 *
+		 * @spec exclude list-view date-formatting display helper
 		 * @param {string} timestamp - The purge date timestamp
 		 * @return {string} Formatted purge date
 		 */
@@ -620,41 +667,56 @@ export default {
 
 			return `${year}:${month}:${day} ${hours}:${minutes}`
 		},
+
+		/**
+		 * The date this object becomes destroyable, from the published window.
+		 *
+		 * Falls back to the raw purge date so a row deleted before the window
+		 * was published still shows the only date it has.
+		 *
+		 * @spec openspec/specs/deletion-audit-trail/spec.md
+		 * @param {object} item - The trash row.
+		 * @return {string|null} The ISO date, or null when the row carries none.
+		 */
+		destroyableFrom(item) {
+			return (
+				item?.deletionWindow?.destroyableFrom
+				|| item?.['@self']?.deleted?.destroyableFrom
+				|| item?.['@self']?.deleted?.purgeDate
+				|| null
+			)
+		},
+
+		/**
+		 * How long the caseworker has, in words.
+		 *
+		 * A window that only exists as a date makes every reader do the
+		 * subtraction, and the answer they most need is the one they are
+		 * worst at computing under pressure.
+		 *
+		 * @spec openspec/specs/deletion-audit-trail/spec.md
+		 * @param {object} item - The trash row.
+		 * @return {string} The label to render.
+		 */
+		daysLeftLabel(item) {
+			const days = item?.deletionWindow?.daysRemaining
+			if (days === undefined || days === null) {
+				return t('openregister', 'Unknown')
+			}
+
+			if (days === 0) {
+				return t('openregister', 'Destroyable now')
+			}
+
+			return n('openregister', '%n day left', '%n days left', days)
+		},
+
 		formatBytes,
 	},
 }
 </script>
 
 <style scoped>
-/* Fix checkbox layout in table */
-.tableColumnCheckbox {
-	padding: 8px !important;
-}
-
-.tableColumnCheckbox :deep(.checkbox-radio-switch) {
-	margin: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.tableColumnCheckbox :deep(.checkbox-radio-switch__content) {
-	margin: 0;
-}
-
-/* Row selection styling */
-.table-row-selectable {
-	cursor: pointer;
-}
-
-.table-row-selectable:hover {
-	background-color: var(--color-background-hover);
-}
-
-.table-row-selected {
-	background-color: var(--color-primary-light) !important;
-}
-
 /* Actions button styling */
 .actionsButton > div > button {
 	margin-top: 0px !important;

@@ -9,7 +9,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
@@ -23,9 +23,9 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
-use OCP\IDBConnection;
 
 /**
  * Migration to add groups field to organisations
@@ -33,104 +33,93 @@ use OCP\IDBConnection;
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  */
-class Version1Date20250102000000 extends SimpleMigrationStep
-{
+class Version1Date20250102000000 extends SimpleMigrationStep {
 
-    /**
-     * Database connection
-     *
-     * @var IDBConnection
-     */
-    private IDBConnection $connection;
+	/**
+	 * Database connection
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $connection;
 
-    /**
-     * Constructor
-     *
-     * @param IDBConnection $connection Database connection
-     */
-    public function __construct(IDBConnection $connection)
-    {
-        $this->connection = $connection;
-    }//end __construct()
+	/**
+	 * Constructor
+	 *
+	 * @param IDBConnection $connection Database connection
+	 */
+	public function __construct(IDBConnection $connection) {
+		$this->connection = $connection;
+	}//end __construct()
 
-    /**
-     * Pre-schema change operations
-     *
-     * @param IOutput                   $output        Output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array                     $options       Migration options
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @return void
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // No pre-schema changes required.
-    }//end preSchemaChange()
+	/**
+	 * Pre-schema change operations
+	 *
+	 * @param IOutput $output Output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		// No pre-schema changes required.
+	}//end preSchemaChange()
 
-    /**
-     * Apply schema changes to add roles field
-     *
-     * @param IOutput                   $output        Output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array                     $options       Migration options
-     *
-     * @return ISchemaWrapper
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        // Get schema wrapper instance from closure.
-        $schema = $schemaClosure();
+	/**
+	 * Apply schema changes to add roles field
+	 *
+	 * @param IOutput $output Output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// Get schema wrapper instance from closure.
+		$schema = $schemaClosure();
 
-        // Add groups field to organisations table.
-        if ($schema->hasTable('openregister_organisations') === true) {
-            $table = $schema->getTable('openregister_organisations');
+		// Add groups field to organisations table.
+		if ($schema->hasTable('openregister_organisations') === true) {
+			$table = $schema->getTable('openregister_organisations');
 
-            // Add groups field (JSON array of Nextcloud group IDs).
-            if ($table->hasColumn('groups') === false) {
-                $table->addColumn(
-                    'groups',
-                    Types::JSON,
-                    [
-                        'notnull' => false,
-                        'default' => '[]',
-                        'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
-                    ]
-                );
-                $output->info(message: 'Added groups column to organisations table');
-            }
-        }
+			// Add groups field (JSON array of Nextcloud group IDs).
+			if ($table->hasColumn('groups') === false) {
+				$table->addColumn(
+					'groups',
+					Types::JSON,
+					[
+						'notnull' => false,
+						'default' => '[]',
+						'comment' => 'Array of Nextcloud group IDs that have access to this organisation',
+					]
+				);
+				$output->info(message: 'Added groups column to organisations table');
+			}
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Post-schema change operations
-     *
-     * @param IOutput                   $output        Output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-        // Initialize groups to empty array for existing organisations.
-        $qb = $this->connection->getQueryBuilder();
+	/**
+	 * Post-schema change operations
+	 *
+	 * @param IOutput $output Output interface
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+		// Initialize groups to empty array for existing organisations.
+		$qb = $this->connection->getQueryBuilder();
 
-        $qb->update('openregister_organisations')
-            ->set('groups', $qb->createNamedParameter('[]'))
-            ->where($qb->expr()->isNull('groups'));
+		$qb->update('openregister_organisations')
+			->set('groups', $qb->createNamedParameter('[]'))
+			->where($qb->expr()->isNull('groups'));
 
-        $affected = $qb->executeStatement();
+		$affected = $qb->executeStatement();
 
-        if ($affected > 0) {
-            $output->info(message: "Initialized groups field for {$affected} existing organisations");
-        }
-    }//end postSchemaChange()
+		if ($affected > 0) {
+			$output->info(message: "Initialized groups field for {$affected} existing organisations");
+		}
+	}//end postSchemaChange()
 }//end class

@@ -1,0 +1,1537 @@
+<?php
+
+/**
+ * FlowController — the flow surface every app's builder talks to.
+ *
+ * Two halves. The catalog endpoints expose the triggers a flow may subscribe to
+ * and the node types the engine can execute, so a builder populates its palette
+ * from the backend rather than a hard-coded list — the catalog is
+ * authoritative, and a builder that invents its own ids produces flows the
+ * engine cannot run. The CRUD endpoints read and write the flow definitions
+ * themselves, which live in one native store shared by every app and are scoped
+ * per app by `app`.
+ *
+ * Every CRUD method goes through `FlowService`, never `FlowMapper`, because the
+ * service is where the organisation scoping and the per-flow guard live. A
+ * controller method that reached for the mapper directly would be reproducing
+ * the unguarded lookups this subsystem already shipped once.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
+ * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowControllerServices;
+use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
+use OCA\OpenRegister\Exception\BpmnImportRefused;
+use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
+use OCA\OpenRegister\Exception\FlowRunRefused;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
+use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
+use OCA\OpenRegister\Service\Flow\FlowAdoptionRefusedInterface;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunAuthorizationInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunVersionPinInterface;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\DataDownloadResponse;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use OCP\WorkflowEngine\IManager;
+use Throwable;
+
+/**
+ * Catalog and CRUD endpoints for flows.
+ *
+ * Ten of the eleven public methods are routed endpoints — the class's public
+ * surface IS the flow API, so the count measures how many routes flows have
+ * rather than how much this class does. Splitting the catalogue reads off the
+ * resource writes would put two controllers behind one `/api/flows` prefix and
+ * make the routes file the only place the API's shape is visible.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
+ * Coupling is 13 for the same reason: this class IS the flow API surface, so it
+ * names the two catalogues, the preflight, the registry, the state mapper, the
+ * service and the entity, plus the framework's own request/response/attribute
+ * types. Twelve of the thirteen are already required to serve the routes; the
+ * thirteenth is `FlowDeadEnd`, and refusing it would mean the run endpoint goes
+ * back to letting that refusal escape as an HTML 500. Splitting the class to
+ * lower the number would put two controllers behind one `/api/flows` prefix,
+ * which costs more than it buys.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * Overall complexity is 53 against a threshold of 50, for the third instance of
+ * the same reason. The class sat exactly AT 50 before `saveOrRefuse()` was added,
+ * so any endpoint gaining a branch trips it — and the branch in question turns an
+ * author's malformed trigger config from an HTML 500 into a 400 that names the
+ * key, which is worth more than the number. Extracting the helper did not help:
+ * a private method moves complexity within the class rather than out of it, and
+ * the only real remedy is splitting the controller — which the two suppressions
+ * above already argue against, because it puts two controllers behind one
+ * `/api/flows` prefix and makes the routes file the only place the API's shape is
+ * visible. Revisit if this class gains a genuinely separable second concern.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * Length (1,012 lines against 1,000) and method count (26 against 25) tripped
+ * together when `adopt()` was added — the fourth and fifth instances of the
+ * same trade. Adoption is one more verb on the same `/api/flows/{id}` resource
+ * the other lifecycle verbs (publish, draft, deprecate) live on; a controller
+ * of its own would be the two-controllers-behind-one-prefix split every
+ * suppression above declines, this time for a single method. The lines are
+ * mostly documentation, and trimming the explanations to duck a line counter
+ * is the corrosive direction. Revisit alongside the complexity note above if a
+ * genuinely separable second concern appears.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ *
+ * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+ */
+class FlowController extends Controller {
+	/**
+	 * The flow trigger catalog.
+	 *
+	 * @var EventCatalogServiceInterface
+	 */
+	private readonly EventCatalogServiceInterface $eventCatalog;
+
+	/**
+	 * The registered flow-step types.
+	 *
+	 * @var FlowNodeRegistryInterface
+	 */
+	private readonly FlowNodeRegistryInterface $nodes;
+
+	/**
+	 * Reads state a flow keeps between runs.
+	 *
+	 * @var FlowStateMapperInterface
+	 */
+	private readonly FlowStateMapperInterface $flowState;
+
+	/**
+	 * Resolves a document's step types.
+	 *
+	 * @var FlowNodePreflightInterface
+	 */
+	private readonly FlowNodePreflightInterface $preflight;
+
+	/**
+	 * Reads, writes and runs flow definitions.
+	 *
+	 * @var FlowServiceInterface
+	 */
+	private readonly FlowServiceInterface $flows;
+
+	/**
+	 * Who may do what with a flow.
+	 *
+	 * @var FlowAccessInterface
+	 */
+	private readonly FlowAccessInterface $access;
+
+	/**
+	 * Reads, publishes, drafts and deprecates versions.
+	 *
+	 * @var FlowVersionServiceInterface
+	 */
+	private readonly FlowVersionServiceInterface $flowVersionService;
+
+	/**
+	 * BPMN 2.0 export and import.
+	 *
+	 * @var FlowBpmnInterchangeInterface
+	 */
+	private readonly FlowBpmnInterchangeInterface $bpmn;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request HTTP request.
+	 * @param FlowControllerServices $services The flow controller services.
+	 */
+	public function __construct(
+		IRequest $request,
+		FlowControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->eventCatalog = $services->catalogue->eventCatalog;
+		$this->nodes = $services->catalogue->nodes;
+		$this->flowState = $services->catalogue->flowState;
+		$this->preflight = $services->catalogue->preflight;
+		$this->flows = $services->definitions->flows;
+		$this->access = $services->definitions->access;
+		$this->flowVersionService = $services->definitions->flowVersionService;
+		$this->bpmn = $services->catalogue->bpmn;
+	}//end __construct()
+
+	/**
+	 * Refuse unless the caller holds the named right.
+	 *
+	 * Returns a RESPONSE rather than throwing, because every method here
+	 * answers in JSON and an OCS exception escaping a plain `Controller`
+	 * surfaces as a 500 — a right that reads as a server fault is one nobody
+	 * can act on.
+	 *
+	 * These four rights are seeded `@authenticated`, which is exactly the
+	 * access that existed before them: the flow endpoints were
+	 * `@NoAdminRequired` and scoped only by organisation. So this changes
+	 * nothing on an untouched instance, and gives an admin something to
+	 * tighten.
+	 *
+	 * @param string $action The action name.
+	 *
+	 * @return JSONResponse|null A 403 when refused, null when allowed.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-creating-editing-and-running-a-flow-are-named-rights
+	 */
+	private function denyUnless(string $action): ?JSONResponse {
+		$user = $this->access->currentUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->access->may(user: $user, action: $action) === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			['error' => sprintf('You do not have the "%s" right.', $action)],
+			Http::STATUS_FORBIDDEN
+		);
+
+	}//end denyUnless()
+
+	/**
+	 * Whether the calling user is a Nextcloud administrator.
+	 *
+	 * Fails CLOSED: an unresolvable session answers false, so the reduced
+	 * SCOPE_USER palette is what gets served rather than the admin one.
+	 *
+	 * @return boolean Whether the caller is an administrator.
+	 */
+	private function callerIsAdmin(): bool {
+		// Delegated rather than reimplemented: FlowAccess owns the fail-closed
+		// rule (an unresolvable session is NOT an administrator), and having it
+		// in one place is the point of the extraction.
+		return $this->access->callerIsAdmin();
+	}//end callerIsAdmin()
+
+	/**
+	 * Return the declarative-flow trigger catalog.
+	 *
+	 * @return JSONResponse `{ results: [{id,label,group,legacy?}], total }`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
+	 */
+	public function eventCatalog(): JSONResponse {
+		$results = $this->eventCatalog->getCatalog();
+
+		return new JSONResponse(
+			[
+				'results' => $results,
+				'total' => count($results),
+			]
+		);
+	}//end eventCatalog()
+
+	/**
+	 * Return the flow NODE catalog — the step types a flow may use.
+	 *
+	 * The trigger catalog above answers "what can start a flow"; this answers
+	 * "what can a flow do", which had no HTTP surface at all. A flow is authored
+	 * as an object whose `edges[].type` names a registered node, so without this
+	 * a builder has to hardcode the list — and that list goes stale silently the
+	 * moment an app contributes a leaf, because an unknown type only surfaces
+	 * when the flow RUNS (FlowNodeRegistry::get() throws). Apps really do
+	 * contribute: openconnector ships source-call and synchronization-run,
+	 * hermiq ships agent-step.
+	 *
+	 * Scope-filtered, so a non-administrator is never offered a step they could
+	 * not run. Every node implements `isAvailableForScope()` already.
+	 *
+	 * The scope is derived from the CALLER, not from a request parameter. It
+	 * used to default to SCOPE_ADMIN and drop to SCOPE_USER only when the
+	 * request said `?scope=user`, which meant the docblock claim above was
+	 * false in the one direction that matters: a non-administrator who simply
+	 * omitted the parameter — the default for anything that is not deliberately
+	 * asking for the reduced view — was served the ADMIN palette. The parameter
+	 * was the caller's to set, so it could never have been a privilege check.
+	 *
+	 * An administrator may still pass `?scope=user` to preview what a
+	 * non-administrator sees; that direction only ever narrows the result. A
+	 * non-administrator is pinned to SCOPE_USER regardless of what they send.
+	 *
+	 * @return JSONResponse `{ results: [{id,displayName,description,icon}], total }`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
+	 */
+	public function nodeCatalog(): JSONResponse {
+		$scope = IManager::SCOPE_USER;
+		if ($this->callerIsAdmin() === true && $this->request->getParam('scope') !== 'user') {
+			$scope = IManager::SCOPE_ADMIN;
+		}
+
+		$results = $this->nodes->palette(scope: $scope);
+
+		return new JSONResponse(
+			[
+				'results' => $results,
+				'total' => count($results),
+			]
+		);
+	}//end nodeCatalog()
+
+	/**
+	 * The links one run-log entry earns, from the node that wrote it.
+	 *
+	 * The editor sends the entry and gets back whatever the contributing app
+	 * says it points at — an openconnector call's source and call log, an agent
+	 * step's session. OpenRegister does not know what any of those are, which
+	 * is the whole point: the app that ships the node ships its links.
+	 *
+	 * POST, not GET. A log entry carries the run's payload, and a GET would put
+	 * that data in a URL — and therefore in every access log, proxy and browser
+	 * history it passes through.
+	 *
+	 * Never fails on a bad entry: an unknown node type, a removed app or a
+	 * provider that throws all yield an empty list. This decorates a log an
+	 * operator is already reading, and losing the log to decorate it would be
+	 * the worse outcome.
+	 *
+	 * @return JSONResponse `{ results: [{label, href, icon?}] }`.
+	 *
+	 * @no-admin-idor-exempt This endpoint dereferences nothing. The log entry is
+	 *       the caller's own POST body, and the only thing read on this side is
+	 *       the node registry — `FlowNodeRegistry::logActions()` looks the entry's
+	 *       `type` up and forwards the entry to that node, returning an empty list
+	 *       for an unknown type. There is no stored object addressed by id here, so
+	 *       there is no reference to substitute for another user's. Where a
+	 *       contributing app's node DOES resolve something (openconnector's call
+	 *       log, an agent session), that node authorises it — a requirement now
+	 *       stated on IFlowNodeLogActions::logActions() rather than left implied,
+	 *       because a guard added here could only check ids this app does not
+	 *       understand.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function logActions(): JSONResponse {
+		$entry = (array)($this->request->getParam('entry') ?? []);
+
+		return new JSONResponse(['results' => $this->nodes->logActions(entry: $entry)]);
+	}//end logActions()
+
+	/**
+	 * What a flow is currently holding between its runs.
+	 *
+	 * The state itself has existed since #2219 and nodes can write it since
+	 * #2221, but nothing could READ it from outside the engine — so a slot
+	 * table was live data nobody could render. This is the surface a dashboard
+	 * needs to answer "which slot is running what, and since when".
+	 *
+	 * A flow with no state yet returns an empty map rather than 404: "nothing
+	 * claimed" is a perfectly good answer, and a widget should not have to
+	 * special-case a flow's first tick.
+	 *
+	 * `?list=<key>` additionally serves that key as `results` — a LIST, one
+	 * entry per slot, each carrying its own `slot` number. That exists because
+	 * the state's natural shape and a table's required shape genuinely differ:
+	 * a slot table is keyed by slot number so a claim is one lookup, while a
+	 * manifest `object-table` requires an array at its `responsePath`. Without
+	 * this a dashboard has to reshape the payload in code, which is the thing
+	 * manifest-driven widgets exist to avoid.
+	 *
+	 * It is opt-in and names its key explicitly. Nothing is inferred from the
+	 * shape of the data — a flow's state is arbitrary and "looks like a slot
+	 * table" is not a contract.
+	 *
+	 * The flow is resolved through `FlowService` FIRST, and the state is only
+	 * read once that resolution succeeds. This method used to hand the
+	 * client-supplied `{flowId}` straight to `FlowStateMapper`, which applies no
+	 * organisation scoping at all — so any authenticated user could read any
+	 * other organisation's flow state by uuid. It was also the one method in
+	 * this class that broke the invariant stated at the top of the file ("every
+	 * CRUD method goes through FlowService, never FlowMapper"). A flow the
+	 * caller may not see now 404s exactly like a flow that does not exist,
+	 * which is the same non-oracle refusal `FlowService::find()` gives
+	 * everywhere else.
+	 *
+	 * @param string $flowId The flow's uuid.
+	 *
+	 * @return JSONResponse `{ flowId, state, updated }`, plus `{ key, results, total }` with `?list=`, or 404.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	public function state(string $flowId): JSONResponse {
+		try {
+			$this->flows->find(uuid: $flowId);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		$body = ['flowId' => $flowId] + $this->storedState(flowId: $flowId);
+		$list = trim((string)$this->request->getParam('list', ''));
+		if ($list !== '') {
+			$results = $this->asList(value: ($body['state'][$list] ?? []));
+			$body   += ['key' => $list, 'results' => $results, 'total' => count($results)];
+		}
+
+		return new JSONResponse($body);
+	}//end state()
+
+	/**
+	 * The stored state of a flow and when it was last updated.
+	 *
+	 * @param string $flowId The flow UUID
+	 *
+	 * @return array{state: array, updated: mixed} Empty state and null when none is stored
+	 */
+	private function storedState(string $flowId): array {
+		$stored = $this->flowState->findByFlow(flowId: $flowId);
+		if ($stored === null) {
+			return ['state' => [], 'updated' => null];
+		}
+
+		$payload = $stored->jsonSerialize();
+		return ['state' => (array)($payload['state'] ?? []), 'updated' => ($payload['updated'] ?? null)];
+	}//end storedState()
+
+	/**
+	 * Resolve a flow document's step types without saving it.
+	 *
+	 * The listener that guards the save path answers "may this be stored"; this
+	 * answers "would it run", which a CI job, an editor and a deployment check
+	 * all need to ask about a document they are not writing. It is the same
+	 * FlowNodePreflight, so the two answers cannot drift.
+	 *
+	 * Always 200 with a verdict — a document that cannot run is a valid answer,
+	 * not a failed request. `valid` is false only for findings no install can
+	 * fix; a step type owned by an app this instance has not enabled comes back
+	 * under `warnings` with `valid` still true, because installing that app is
+	 * the fix and the document is not wrong.
+	 *
+	 * @return JSONResponse `{ valid, blocking, warnings, message? }`.
+	 *
+	 * @no-admin-idor-exempt Nothing stored is read or written. The document under
+	 *       inspection arrives whole in the request body — `validate()` never
+	 *       loads a flow by id, and pointedly does not, since the callers that
+	 *       need it (a CI job, the editor, a deployment check) are asking about a
+	 *       document they are NOT writing. `FlowNodePreflight::inspect()` walks
+	 *       that literal array and compares each node's `type` against the node
+	 *       registry. With no direct object reference in the request there is
+	 *       nothing to substitute, which is the same structural argument the gate
+	 *       recognises for session-scoped endpoints.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 */
+	public function validate(): JSONResponse {
+		$flow = $this->request->getParam('flow');
+		if (is_array($flow) === false) {
+			$flow = $this->request->getParams();
+		}
+
+		if ($this->preflight->looksLikeFlow(data: $flow) === false) {
+			return $this->notAFlowGraph();
+		}
+
+		$report = $this->preflight->inspect(flow: $flow);
+		$body   = ['valid' => ($report['blocking'] === []), 'blocking' => $report['blocking'], 'warnings' => $report['warnings']];
+		if ($report['blocking'] !== []) {
+			$body['message'] = $this->preflight->describe(flow: (string)($flow['name'] ?? 'flow'), blocking: $report['blocking']);
+		}
+
+		return new JSONResponse($body);
+	}//end validate()
+
+	/**
+	 * The 400 answer to a body that does not describe a flow graph.
+	 *
+	 * @return JSONResponse The response
+	 */
+	private function notAFlowGraph(): JSONResponse {
+		return new JSONResponse(
+			[
+				'valid' => false,
+				'blocking' => [],
+				'warnings' => [],
+				'message' => 'Body does not describe a flow graph: it needs a non-empty "nodes" list whose '
+					. 'entries carry an "id", and a non-empty "edges" list whose entries carry "from"/"to".',
+			],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end notAFlowGraph()
+
+	/**
+	 * One state key as a list, with each entry carrying the key it was under.
+	 *
+	 * A FREE slot is emitted too, as `{slot: n, holder: null, …}` — not skipped.
+	 * "Slot 3 of 10 is empty" is what an operator needs to see, and a table that
+	 * silently omits free slots reads as a smaller pool rather than an idle one.
+	 * That is also why the node materialises the whole table rather than storing
+	 * only what is taken.
+	 *
+	 * @param mixed $value The state value.
+	 *
+	 * @return array<int, array> The list.
+	 */
+	private function asList(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		$results = [];
+		foreach ($value as $key => $entry) {
+			$results[] = $this->slotRow(key: $key, entry: $entry);
+		}
+
+		return $results;
+	}//end asList()
+
+	/**
+	 * One slot of a keyed state list: an array entry is merged in, any other
+	 * non-null entry becomes its holder.
+	 *
+	 * @param int|string $key   The slot
+	 * @param mixed      $entry The entry
+	 *
+	 * @return array The row
+	 */
+	private function slotRow(int|string $key, mixed $entry): array {
+		$row = ['slot' => $key];
+		if (is_array($entry) === true) {
+			return array_merge($row, $entry);
+		}
+
+		if ($entry !== null) {
+			$row['holder'] = $entry;
+		}
+
+		return $row;
+	}//end slotRow()
+
+	/**
+	 * List flows, newest first.
+	 *
+	 * `app` is the per-app scoping key: OpenConnector's index passes
+	 * `openconnector`, hermiq passes `hermiq`, and OpenRegister's own index
+	 * passes nothing and sees every app's flows. `applicationSlug` is narrower
+	 * still — one Nextcloud app can host several OpenBuild virtual apps — and
+	 * composes with `app` as an AND. Organisation scoping is not a
+	 * parameter — `FlowService` applies it unconditionally.
+	 *
+	 * @return JSONResponse `{ results, total, limit, offset }`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function index(): JSONResponse {
+		$limit      = min(200, max(1, (int)$this->request->getParam('limit', 100)));
+		$offset     = max(0, (int)$this->request->getParam('offset', 0));
+		$appFilter  = $this->trimmedFilter(key: 'app');
+		$slugFilter = $this->trimmedFilter(key: 'applicationSlug');
+		$enabled    = $this->enabledFilter();
+		$flows      = $this->flows->findAll(app: $appFilter, applicationSlug: $slugFilter, enabled: $enabled, limit: $limit, offset: $offset);
+
+		return new JSONResponse([
+			'results' => array_map(static fn (Flow $flow): array => $flow->jsonSerialize(), $flows),
+			'total' => $this->flows->count(app: $appFilter, applicationSlug: $slugFilter),
+			'limit' => $limit,
+			'offset' => $offset,
+		]);
+	}//end index()
+
+	/**
+	 * The `enabled` filter of a list request.
+	 *
+	 * @return bool|null The filter, or null when absent or empty
+	 */
+	private function enabledFilter(): ?bool {
+		$enabled = $this->request->getParam('enabled');
+		if ($enabled === null || $enabled === '') {
+			return null;
+		}
+
+		return filter_var($enabled, FILTER_VALIDATE_BOOLEAN);
+	}//end enabledFilter()
+
+	/**
+	 * Read a request parameter, treating an absent or whitespace-only value
+	 * as unset.
+	 *
+	 * Shared by `app` and `applicationSlug`, which both filter `index()` the
+	 * same way: a caller-supplied value narrows the list, and anything empty
+	 * MUST behave exactly as if nothing were passed at all.
+	 *
+	 * @param string $key The request parameter name.
+	 *
+	 * @return string|null The trimmed-nonempty value, or null.
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	private function trimmedFilter(string $key): ?string {
+		$value = $this->request->getParam($key);
+		if ($value !== null && trim((string)$value) !== '') {
+			return (string)$value;
+		}
+
+		return null;
+	}//end trimmedFilter()
+
+	/**
+	 * Read one flow.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The flow, or 404.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	/**
+	 * A flow as BPMN 2.0 XML, for a modeller or an auditor.
+	 *
+	 * Read-guarded: `flow.read` is what lets a caller see the flow at all, and
+	 * exporting shows nothing a reader could not already read. It does NOT go
+	 * through the run authorization — reading a flow and running one are
+	 * different questions, and asking the run question here would refuse an
+	 * auditor who is meant to read it and never run it.
+	 *
+	 * 🔑 THE FILE IS VALIDATED AGAINST THE VENDORED OMG XSD BEFORE IT IS SENT.
+	 * A document that does not validate never leaves: the caller gets an error
+	 * naming the element and the line instead of a file their modeller refuses
+	 * to open, because "Camunda cannot open this" is not something a user can
+	 * act on.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The XML, or a refusal.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	#[NoAdminRequired]
+	public function exportBpmn(string $id): DataDownloadResponse|JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => 'No such flow: ' . $id], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->bpmnDownload(flow: $flow, id: $id);
+	}//end exportBpmn()
+
+	/**
+	 * A flow as a BPMN 2.0 download.
+	 *
+	 * @param Flow   $flow The flow
+	 * @param string $id   The flow UUID, the file name when the flow has no name
+	 *
+	 * @return DataDownloadResponse|JSONResponse The download, or 500 when our own output fails the schema
+	 */
+	private function bpmnDownload(Flow $flow, string $id): DataDownloadResponse|JSONResponse {
+		try {
+			$xml = $this->bpmn->export(flow: $flow);
+		} catch (BpmnSchemaInvalid $invalid) {
+			// Our own output failed the standard's schema, which is a bug in
+			// the serializer rather than anything the caller did — so it is
+			// reported as one, with the element that broke it.
+			return new JSONResponse(
+				['error' => $invalid->getMessage(), 'element' => $invalid->getElement(), 'line' => $invalid->getViolationLine()],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
+
+		return new DataDownloadResponse($xml, sprintf('%s.bpmn', ($flow->getName() ?? $id)), 'application/xml');
+	}//end bpmnDownload()
+
+	/**
+	 * A BPMN 2.0 file as a new flow, plus the report of everything it lost.
+	 *
+	 * Guarded by `flow.create`, because it creates one.
+	 *
+	 * 🔴 THE REPORT IS RETURNED WHETHER THE IMPORT SUCCEEDED OR NOT. A lenient
+	 * import that dropped three constructs and answers 201 with a flow and no
+	 * list is the failure this whole change is written against; and a strict
+	 * refusal still owes the author the list, or they have to bisect the file
+	 * by hand.
+	 *
+	 * @return JSONResponse The created flow and the report, or a refusal with the report.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	#[NoAdminRequired]
+	public function importBpmn(): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.create');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		$xml = $this->requestedBpmn();
+		if ($xml instanceof JSONResponse) {
+			return $xml;
+		}
+
+		$result = $this->mapBpmn(xml: $xml, strict: $this->strictRequested());
+		if ($result instanceof JSONResponse) {
+			return $result;
+		}
+
+		return $this->storeImportedFlow(result: $result);
+	}//end importBpmn()
+
+	/**
+	 * The BPMN document of an import: the `xml` parameter, else the uploaded
+	 * `file`, else the raw request body.
+	 *
+	 * @return string|JSONResponse The document, or 400 for a failed upload
+	 */
+	private function requestedBpmn(): string|JSONResponse {
+		$xml = (string)$this->request->getParam('xml', '');
+		if (trim($xml) !== '') {
+			return $xml;
+		}
+
+		$upload = $this->readBpmnUpload();
+		if ($upload instanceof JSONResponse) {
+			return $upload;
+		}
+
+		return $upload ?? (string)file_get_contents('php://input');
+	}//end requestedBpmn()
+
+	/**
+	 * Whether the import must refuse unless every construct maps.
+	 *
+	 * 🔴 `(bool)'false'` IS TRUE, and a query string carries `?strict=false`
+	 * rather than a JSON boolean — so a bare cast would turn every refusal
+	 * into a failed import for a caller who asked for the opposite.
+	 *
+	 * @return bool Whether `strict` is true, or a string 1/true/yes
+	 */
+	private function strictRequested(): bool {
+		$strictParam = $this->request->getParam('strict', false);
+		return ($strictParam === true
+			|| (is_string($strictParam) === true
+				&& in_array(strtolower(trim($strictParam)), ['1', 'true', 'yes'], true) === true));
+	}//end strictRequested()
+
+	/**
+	 * Map a BPMN document onto a flow.
+	 *
+	 * The two importer calls are separate, not a flag: "import it and tell me
+	 * what was lost" and "refuse unless everything maps" are two requests, and
+	 * a flag dropped in the middle silently turns the second into the first.
+	 *
+	 * @param string $xml    The document
+	 * @param bool   $strict Whether to refuse unless everything maps
+	 *
+	 * @return array|JSONResponse The flow and report, or 422 for a malformed or refused document
+	 */
+	private function mapBpmn(string $xml, bool $strict): array|JSONResponse {
+		try {
+			return match ($strict) {
+				true => $this->bpmn->importStrictly(xml: $xml),
+				false => $this->bpmn->import(xml: $xml),
+			};
+		} catch (BpmnSchemaInvalid $invalid) {
+			return $this->malformedBpmn(invalid: $invalid);
+		} catch (BpmnImportRefused $refused) {
+			$body = ['error' => $refused->getMessage(), 'malformed' => false, 'report' => $refused->getReport()?->jsonSerialize()];
+			return new JSONResponse($body, Http::STATUS_UNPROCESSABLE_ENTITY);
+		}
+	}//end mapBpmn()
+
+	/**
+	 * The answer to a document that is not valid BPMN.
+	 *
+	 * 🔴 A DIFFERENT ANSWER FROM A REFUSAL, deliberately. There is no report
+	 * here and there must not be one: nothing was mapped, so every sentence a
+	 * report could carry would be about constructs when the problem is the
+	 * document. `malformed` is what tells the caller which of the two answers
+	 * they got.
+	 *
+	 * @param BpmnSchemaInvalid $invalid The schema violation
+	 *
+	 * @return JSONResponse The 422 response
+	 */
+	private function malformedBpmn(BpmnSchemaInvalid $invalid): JSONResponse {
+		return new JSONResponse(
+			['error' => $invalid->getMessage(), 'malformed' => true, 'element' => $invalid->getElement(), 'line' => $invalid->getViolationLine()],
+			Http::STATUS_UNPROCESSABLE_ENTITY
+		);
+	}//end malformedBpmn()
+
+	/**
+	 * Store a mapped flow.
+	 *
+	 * `save()`, not `create()` — FlowService has no `create()`, and a call to
+	 * one would have been a fatal at runtime that `php -l` cannot see and no
+	 * double would catch, because a mock invents the method it is asked for.
+	 * Asserted structurally in the test.
+	 *
+	 * @param array $result The mapped flow and its report
+	 *
+	 * @return JSONResponse The stored flow and report (201), or 422 when it cannot be stored
+	 */
+	private function storeImportedFlow(array $result): JSONResponse {
+		try {
+			$flow = $this->flows->save(data: $result['flow']);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				[
+					'error' => sprintf('The file was read but the flow could not be stored: %s', $e->getMessage()),
+					'report' => $result['report']->jsonSerialize(),
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return new JSONResponse(['flow' => $flow->jsonSerialize(), 'report' => $result['report']->jsonSerialize()], Http::STATUS_CREATED);
+	}//end storeImportedFlow()
+
+	/**
+	 * The BPMN document sent as a multipart upload in the field `file`.
+	 *
+	 * A browser's file picker posts a form, not an XML body. A failed upload
+	 * is answered 400 and names the upload: passed on as an empty document it
+	 * would come back as "malformed" and send the user hunting in a file that
+	 * is fine.
+	 *
+	 * @return string|JSONResponse|null The file's content, a 400 refusal, or null when no file was sent.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function readBpmnUpload(): string|JSONResponse|null {
+		$file = $this->request->getUploadedFile('file');
+		if (is_array($file) === false || $file === []) {
+			return null;
+		}
+
+		$tmpName = (string)($file['tmp_name'] ?? '');
+		$error   = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+		if ($this->uploadArrived(error: $error, tmpName: $tmpName) === false) {
+			$message = sprintf('The upload of the BPMN file did not arrive (upload error %d). Send the file again.', $error);
+			return new JSONResponse(['error' => $message, 'malformed' => false], Http::STATUS_BAD_REQUEST);
+		}
+
+		return (string)file_get_contents($tmpName);
+	}//end readBpmnUpload()
+
+	/**
+	 * Whether an upload arrived: no upload error and a readable temporary file.
+	 *
+	 * @param int    $error   The upload error code
+	 * @param string $tmpName The temporary file
+	 *
+	 * @return bool Whether the file can be read
+	 */
+	private function uploadArrived(int $error, string $tmpName): bool {
+		return $error === UPLOAD_ERR_OK && $tmpName !== '' && is_readable($tmpName) === true;
+	}//end uploadArrived()
+
+	/**
+	 * One flow, by its uuid.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The flow, or 404 when no flow carries that uuid.
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function show(string $id): JSONResponse {
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse($flow->jsonSerialize());
+	}//end show()
+
+	/**
+	 * Create a flow.
+	 *
+	 * @return JSONResponse The stored flow, 201.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt No caller-supplied id to confuse: a create takes no
+	 * uuid. `FlowService::flowToSave()` stamps `owner` from the session and
+	 * `organisation` from the active one, and neither is in
+	 * `applyEditableFields()`'s allowlist — so a payload cannot claim another
+	 * user's identity. The allowlist IS the boundary here.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	#[NoAdminRequired]
+	public function create(): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.create');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		$data = $this->flowPayload();
+
+		if (trim((string)($data['name'] ?? '')) === '') {
+			return new JSONResponse(['error' => 'A flow needs a name.'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$flow = $this->saveOrRefuse(data: $data);
+		if ($flow instanceof JSONResponse) {
+			return $flow;
+		}
+
+		return new JSONResponse($this->savedBody(flow: $flow), Http::STATUS_CREATED);
+	}//end create()
+
+	/**
+	 * Save a flow, turning an author's mistake into a 400 rather than a 500.
+	 *
+	 * A trigger node rejecting its own config is the AUTHOR's error, not the
+	 * server's. Letting `InvalidArgumentException` escape produced an HTML 500,
+	 * which reads as "the instance is broken" and sends the reader to the logs —
+	 * when the node's message already names the key and says what to do about it.
+	 *
+	 * Shared by create() and update() so the two cannot drift into answering the
+	 * same mistake with different statuses.
+	 *
+	 * @param array       $data The flow payload.
+	 * @param string|null $uuid The flow to update, or null to create.
+	 *
+	 * @return Flow|JSONResponse The stored flow, or the refusal to return.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function saveOrRefuse(array $data, ?string $uuid = null): Flow|JSONResponse {
+		try {
+			return $this->flows->save(data: $data, uuid: $uuid);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			// 409, not 400. The request is well-formed; the flow's STATE is
+			// what refuses it, and that state can change — the author creates
+			// a draft and the identical request then succeeds. A 400 would
+			// tell the editor to fix the payload, which is the wrong advice.
+			return $this->refusal(refusal: $e);
+		}
+	}//end saveOrRefuse()
+
+	/**
+	 * A lifecycle refusal as a 409 the editor can act on.
+	 *
+	 * 🔑 THE REASON IS A FIELD, NOT PROSE. "This version is published, create a
+	 * draft" and "this flow has no published version, publish one" want
+	 * opposite buttons from the author; parsing an English sentence to tell
+	 * them apart is how a UI ends up offering the wrong one.
+	 *
+	 * @param FlowLifecycleRefusedInterface $refusal The refusal.
+	 *
+	 * @return JSONResponse The 409.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	private function refusal(FlowLifecycleRefusedInterface $refusal): JSONResponse {
+		return new JSONResponse(
+			[
+				'error' => $refusal->getMessage(),
+				'reason' => $refusal->getReason(),
+				'lifecycleStatus' => $refusal->getState(),
+				'flowId' => $refusal->getFlowId(),
+			],
+			Http::STATUS_CONFLICT
+		);
+	}//end refusal()
+
+	/**
+	 * The stored flow, plus any warning the author should see about it.
+	 *
+	 * The save SUCCEEDS and then warns. A half-wired graph is the normal state
+	 * of one being authored, so refusing to store it would force the author to
+	 * build the graph in an order that is never disconnected — which no editor
+	 * can require. The refusal happens at RUN time instead, where the cost of a
+	 * silent stop is actually paid ({@see FlowDeadEnd}).
+	 *
+	 * `warnings` is added ALONGSIDE the flow's own fields rather than wrapping
+	 * them, so a client that ignores it keeps working unchanged.
+	 *
+	 * @param Flow $flow The stored flow.
+	 *
+	 * @return array The response body.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function savedBody(Flow $flow): array {
+		$body = $flow->jsonSerialize();
+
+		$report = $this->preflight->inspect(
+			flow: [
+				'nodes' => ($flow->getNodes() ?? []),
+				'edges' => ($flow->getEdges() ?? []),
+			]
+		);
+
+		$body['warnings'] = $report['warnings'];
+
+		return $body;
+	}//end savedBody()
+
+	/**
+	 * Update a flow.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The stored flow, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: `FlowService::flowToSave()`
+	 * resolves the uuid through `find()`, so an update to a flow the caller
+	 * cannot see is refused with the same "no such flow" as one that does not
+	 * exist — the id is never trusted to select the row. `owner` and
+	 * `organisation` are outside `applyEditableFields()`'s allowlist, so an
+	 * update cannot reassign ownership either.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	#[NoAdminRequired]
+	public function update(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.update');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->saveOrRefuse(data: $this->flowPayload(), uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($flow instanceof JSONResponse) {
+			return $flow;
+		}
+
+		return new JSONResponse($this->savedBody(flow: $flow));
+	}//end update()
+
+	/**
+	 * Delete a flow.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse An empty 200, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	#[NoAdminRequired]
+	public function destroy(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.delete');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$this->flows->delete(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse([]);
+	}//end destroy()
+
+	/**
+	 * Queue a manual run of a flow.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The queued run 201, 404, or 409 when unrunnable.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	#[NoAdminRequired]
+	public function run(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.run');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		$subject = $this->request->getParam('subject', []);
+		$context = $this->request->getParam('context', []);
+
+		return $this->queueTestRun(id: $id, input: ['subject' => (array)$subject, 'context' => (array)$context, 'sync' => $this->syncRequested()]);
+	}//end run()
+
+	/**
+	 * Whether the run executes inline.
+	 *
+	 * `sync` executes the run inline and answers with the FINISHED run
+	 * rather than a queued one. Two callers want it: a person pressing Run
+	 * in the editor, who should see the outcome instead of a row that says
+	 * `queued`; and any test, which otherwise has to keep a background
+	 * worker alive and poll — a harness whose absence makes a perfectly
+	 * healthy engine look stuck.
+	 *
+	 * Accepts the string forms too: a query string carries `?sync=true`,
+	 * not a JSON boolean, and `(bool) 'false'` is TRUE — so reading this
+	 * with a bare cast would make sync=false run synchronously.
+	 *
+	 * @return bool Whether `sync` is true, 'true', '1' or 1
+	 */
+	private function syncRequested(): bool {
+		$syncParam = $this->request->getParam('sync', false);
+		return ($syncParam === true || $syncParam === 'true' || $syncParam === '1' || $syncParam === 1);
+	}//end syncRequested()
+
+	/**
+	 * Queue the editor's interactive test run of a flow.
+	 *
+	 * THIS ENDPOINT IS THE EDITOR'S "RUN NOW", and that is the interactive
+	 * draft test run — the one documented exception to "a draft cannot back a
+	 * run" (`FlowPublishedGraph::overlayOnto`). Versioning (#3047) made every
+	 * other trigger require a published version, correctly. But this path
+	 * queued as MANUAL, so pressing Run in the editor on a flow that had never
+	 * been published was refused — the exception the design carves out could
+	 * not be reached from the only screen that needs it. Naming the trigger
+	 * here is what connects the two.
+	 *
+	 * Every refusal below is a refusal, not a fault: uncaught, each became an
+	 * HTML 500 that threw away the reason the caller needed.
+	 *
+	 * @param string $id    The flow UUID
+	 * @param array  $input The subject, context and sync flag
+	 *
+	 * @return JSONResponse The run (201), 404, or 409 with the reason
+	 */
+	private function queueTestRun(string $id, array $input): JSONResponse {
+		try {
+			$flowRun = $this->flows->run(uuid: $id, subject: $input['subject'], context: $input['context'],
+				sync: $input['sync'], trigger: FlowRunVersionPinInterface::TRIGGER_TEST);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			// Carries `reason` and `lifecycleStatus` so the editor can offer the right button.
+			return $this->refusal(refusal: $e);
+		} catch (FlowRunRefused $e) {
+			// "Run now" on an imported flow (which arrives with no owner).
+			return $this->runRefusal(refusal: $e);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		} catch (FlowDeadEndInterface $e) {
+			return $this->deadEnd(deadEnd: $e);
+		}
+
+		return new JSONResponse($flowRun->jsonSerialize(), Http::STATUS_CREATED);
+	}//end queueTestRun()
+
+	/**
+	 * The answer to a flow whose token cannot leave one of its nodes.
+	 *
+	 * `FlowRunService::queue()` declines to run such a flow, and that is a
+	 * verdict about the caller's document — the caller can fix it by wiring
+	 * the node or ending it deliberately. Uncaught, it left the dispatcher to
+	 * turn it into a bare 500 with an HTML body, so the one thing the author
+	 * needed — WHICH node dead-ends — never reached them. Measured against the
+	 * flow editor: pressing "Run now" on a single-step flow produced exactly
+	 * that 500, and the UI showed nothing at all.
+	 *
+	 * 409 rather than 400: the document was understood and stored perfectly
+	 * well: it is the flow's current STATE that conflicts with running it,
+	 * which is also why the refusal is recorded on the flow itself
+	 * (`status: error`) before this point.
+	 *
+	 * @param FlowDeadEndInterface $deadEnd The refusal
+	 *
+	 * @return JSONResponse The 409 response naming the nodes
+	 */
+	private function deadEnd(FlowDeadEndInterface $deadEnd): JSONResponse {
+		return new JSONResponse(['error' => $deadEnd->getMessage(), 'nodes' => $deadEnd->getNodeIds()], Http::STATUS_CONFLICT);
+	}//end deadEnd()
+
+	/**
+	 * A run refusal as the answer the page can show, mapped the way
+	 * FlowRunnableGuard maps it: 401 without a session, 403 otherwise.
+	 *
+	 * @param FlowRunRefused $refusal The refusal.
+	 *
+	 * @return JSONResponse The 401 or 403 with `error` and `verdict`.
+	 *
+	 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+	 */
+	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
+		$status = Http::STATUS_FORBIDDEN;
+		if ($refusal->getVerdict() === FlowRunAuthorizationInterface::NO_SESSION) {
+			$status = Http::STATUS_UNAUTHORIZED;
+		}
+
+		return new JSONResponse(['error' => $refusal->getMessage(), 'verdict' => $refusal->getVerdict()], $status);
+	}//end runRefusal()
+
+	/**
+	 * List a flow's versions, newest first.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The versions, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: the flow is resolved through
+	 * `FlowService::find()`, which is organisation-scoped, so versions of a
+	 * flow the caller cannot see are refused as "no such flow".
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function versions(string $id): JSONResponse {
+		return $this->withFlow(
+			right: 'flow.read',
+			id: $id,
+			then: function (Flow $flow): JSONResponse {
+				$rows = $this->flowVersionService->versionsOf(flowUuid: (string)$flow->getUuid());
+				return new JSONResponse(['results' => array_map(static fn ($row): array => $row->jsonSerialize(), $rows), 'total' => count($rows)]);
+			}
+		);
+	}//end versions()
+
+	/**
+	 * Run an action on a flow: the caller must hold the right first (401
+	 * anonymous, 403 without it), then the flow must exist (404).
+	 *
+	 * @param string   $right The action right (flow.read or flow.update)
+	 * @param string   $id    The flow UUID
+	 * @param callable $then  The action, given the flow
+	 *
+	 * @return JSONResponse The action's response or the refusal
+	 */
+	private function withFlow(string $right, string $id, callable $then): JSONResponse {
+		$denied = $this->denyUnless(action: $right);
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		}
+
+		return $then($flow);
+	}//end withFlow()
+
+	/**
+	 * Read one version of a flow, including the graph it names.
+	 *
+	 * @param string  $id      The flow uuid.
+	 * @param integer $version The version number.
+	 *
+	 * @return JSONResponse The version and its graph, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function version(string $id, int $version): JSONResponse {
+		return $this->withFlow(
+			right: 'flow.read',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => $this->versionWithGraph(flow: $flow, version: $version)
+		);
+	}//end version()
+
+	/**
+	 * One version of a flow with its graph.
+	 *
+	 * @param Flow $flow    The flow
+	 * @param int  $version The version number
+	 *
+	 * @return JSONResponse The version, or 404 when it does not exist
+	 */
+	private function versionWithGraph(Flow $flow, int $version): JSONResponse {
+		$row = $this->flowVersionService->versionOf(flowUuid: (string)$flow->getUuid(), number: $version);
+		if ($row === null) {
+			return new JSONResponse(['error' => 'No such version'], Http::STATUS_NOT_FOUND);
+		}
+
+		$body = $row->jsonSerialize();
+		$body['graph'] = $this->flowVersionService->graphOfVersion(version: $row);
+
+		return new JSONResponse($body);
+	}//end versionWithGraph()
+
+	/**
+	 * What publishing this flow would be called, without publishing it.
+	 *
+	 * A GET, and it changes nothing. The author is asking a question before
+	 * they commit to an answer, so it neither refuses nor requires a `bump`:
+	 * the refusal belongs at the publish, where something has been asserted.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The preview, or 404.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
+	 */
+	#[NoAdminRequired]
+	public function versionPreview(string $id): JSONResponse {
+		return $this->withFlow(
+			right: 'flow.read',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => new JSONResponse($this->flowVersionService->previewPublish(flow: $flow))
+		);
+	}//end versionPreview()
+
+	/**
+	 * Publish the flow's draft head.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The published version, 404, or 409.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function publish(string $id): JSONResponse {
+		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
+	}//end publish()
+
+	/**
+	 * Publish the draft version of a flow.
+	 *
+	 * @param Flow $flow The flow
+	 *
+	 * @return JSONResponse The published version, or 409 when refused
+	 */
+	private function publishVersion(Flow $flow): JSONResponse {
+		try {
+			$version = $this->flowVersionService->publish(
+				flow: $flow,
+				// From FlowAccess, which already holds the session — a second
+				// IUserSession here would push this constructor past the
+				// parameter limit for one string.
+				publishedBy: $this->access->currentUser()?->getUID(),
+				// The author may RAISE the derived verdict and never lower it.
+				// A refusal to call a removal minor is an
+				// UnexpectedValueException rather than a lifecycle refusal:
+				// the flow's state is fine, the request is not.
+				bump: $this->request->getParam('bump')
+			);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return $this->refusal(refusal: $e);
+		} catch (\UnexpectedValueException $e) {
+			return new JSONResponse(['error' => $e->getMessage(), 'kind' => 'version-bump-refused'], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse($version->jsonSerialize());
+	}//end publishVersion()
+
+	/**
+	 * Create a draft version from the published one.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The new draft version, 404, or 409.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function draft(string $id): JSONResponse {
+		return $this->withFlow(
+			right: 'flow.update',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
+				step: fn () => $this->flowVersionService->createDraft(flow: $flow),
+				status: Http::STATUS_CREATED
+			)
+		);
+	}//end draft()
+
+	/**
+	 * Run a lifecycle step that yields a version.
+	 *
+	 * @param callable $step   The step
+	 * @param int      $status The status of the success response
+	 *
+	 * @return JSONResponse The version, or 409 when the lifecycle refuses
+	 */
+	private function lifecycleStep(callable $step, int $status): JSONResponse {
+		try {
+			$version = $step();
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return $this->refusal(refusal: $e);
+		}
+
+		return new JSONResponse($version->jsonSerialize(), $status);
+	}//end lifecycleStep()
+
+	/**
+	 * Retire the published version, so the flow backs no new runs.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The deprecated version, 404, or 409.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: see versions().
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	#[NoAdminRequired]
+	public function deprecate(string $id): JSONResponse {
+		return $this->withFlow(
+			right: 'flow.update',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
+				step: fn () => $this->flowVersionService->deprecate(flow: $flow),
+				status: Http::STATUS_OK
+			)
+		);
+	}//end deprecate()
+
+	/**
+	 * Adopt a flow: the CALLING user becomes its owner.
+	 *
+	 * The missing half of the shipped-flow lifecycle. An imported flow arrives
+	 * `enabled=false, owner=null` and `Flow::canDispatch()` fails closed on
+	 * the missing owner — correct — but no endpoint could supply one: `owner`
+	 * is deliberately not an editable field, so "until somebody adopts it" had
+	 * no mechanism and the only route on a live instance was raw SQL.
+	 *
+	 * The body is IGNORED. The new owner is the session's user, never a uid a
+	 * request names — an endpoint that accepted one would let any caller with
+	 * `flow.update` volunteer a colleague's identity for unattended execution.
+	 * Enabling stays separate: adoption answers "whose flow", the `enabled`
+	 * flag answers "may it run", and the flow becomes dispatchable only when
+	 * both are true.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The adopted flow, 401, 404, or 409 when it already
+	 *                      belongs to someone else.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: `FlowService::find()` applies
+	 * the organisation scope (a foreign flow answers the same 404 as a missing
+	 * one), and `adopt()` writes only the CALLER's uid — there is no
+	 * caller-chosen object state to abuse.
+	 *
+	 * @spec openspec/specs/flow-storage/spec.md
+	 */
+	#[NoAdminRequired]
+	public function adopt(string $id): JSONResponse {
+		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
+	}//end adopt()
+
+	/**
+	 * Adopt a flow.
+	 *
+	 * @param Flow $flow The flow
+	 *
+	 * @return JSONResponse The adopted flow, or 409 when adoption is refused
+	 */
+	private function adoptFlow(Flow $flow): JSONResponse {
+		try {
+			$adopted = $this->flows->adopt(flow: $flow);
+		} catch (FlowAdoptionRefusedInterface $e) {
+			return new JSONResponse(['error' => $e->getMessage(), 'reason' => $e->getReason()], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse($adopted->jsonSerialize());
+	}//end adoptFlow()
+
+	/**
+	 * The flow fields carried on a create or update request.
+	 *
+	 * Read as a whole body rather than field by field so a partial update can
+	 * be distinguished from one that blanks a field: `FlowService` only touches
+	 * keys that are actually present, which it cannot do if absent keys arrive
+	 * as nulls manufactured here.
+	 *
+	 * @return array<string, mixed> The submitted fields.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function flowPayload(): array {
+		$body = $this->request->getParams();
+
+		// Route placeholders and framework noise are not flow fields.
+		unset($body['id'], $body['_route']);
+
+		return $body;
+	}//end flowPayload()
+}//end class

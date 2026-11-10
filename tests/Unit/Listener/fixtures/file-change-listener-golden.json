@@ -1,0 +1,587 @@
+{
+    "anonymized file": [
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "folder node": [
+        [
+            "settingsReads",
+            0
+        ]
+    ],
+    "objects/background/add-ok": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background mode - queueing extraction job",
+            {
+                "file_id": 42,
+                "file_name": "test.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background extraction job queued",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/background/add-throw": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background mode - queueing extraction job",
+            {
+                "file_id": 42,
+                "file_name": "test.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "log",
+            "error",
+            "[FileChangeListener] Failed to queue background job",
+            {
+                "file_id": 42,
+                "error": "job list down"
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/cron/add-ok": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Cron mode - skipping, will be processed by scheduled job",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/cron/add-throw": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Cron mode - skipping, will be processed by scheduled job",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/immediate/add-ok": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Immediate mode - queueing extraction job",
+            {
+                "file_id": 42,
+                "file_name": "test.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Immediate-mode extraction job queued",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/immediate/add-throw": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Immediate mode - queueing extraction job",
+            {
+                "file_id": 42,
+                "file_name": "test.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "log",
+            "error",
+            "[FileChangeListener] Failed to queue immediate-mode extraction job",
+            {
+                "file_id": 42,
+                "error": "job list down"
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/manual/add-ok": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Manual mode - skipping, requires manual trigger",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/manual/add-throw": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Manual mode - skipping, requires manual trigger",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/unknown-mode/add-ok": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "warning",
+            "[FileChangeListener] Unknown extraction mode, defaulting to background",
+            {
+                "file_id": 42,
+                "extraction_mode": "unknown-mode"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "objects/unknown-mode/add-throw": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 42,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "warning",
+            "[FileChangeListener] Unknown extraction mode, defaulting to background",
+            {
+                "file_id": 42,
+                "extraction_mode": "unknown-mode"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 42
+            }
+        ],
+        [
+            "log",
+            "error",
+            "[FileChangeListener] Error determining extraction mode",
+            {
+                "file_id": 42,
+                "error": "job list down"
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "other event": [
+        [
+            "settingsReads",
+            0
+        ]
+    ],
+    "scope all, outside path": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeWrittenEvent",
+                "file_id": 9,
+                "file_name": "x.pdf",
+                "file_path": "/u/files/Documents/x.pdf",
+                "extraction_scope": "all"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background mode - queueing extraction job",
+            {
+                "file_id": 9,
+                "file_name": "x.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 9
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background extraction job queued",
+            {
+                "file_id": 9
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "scope none": [
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "scope objects, outside path": [
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "settings cached across events": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 13,
+                "file_name": "one.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "all"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Immediate mode - queueing extraction job",
+            {
+                "file_id": 13,
+                "file_name": "one.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 13
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Immediate-mode extraction job queued",
+            {
+                "file_id": 13
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeWrittenEvent",
+                "file_id": 14,
+                "file_name": "two.pdf",
+                "file_path": "/u/files/Documents/two.pdf",
+                "extraction_scope": "all"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Immediate mode - queueing extraction job",
+            {
+                "file_id": 14,
+                "file_name": "two.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 14
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Immediate-mode extraction job queued",
+            {
+                "file_id": 14
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "settings empty, defaults": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeWrittenEvent",
+                "file_id": 8,
+                "file_name": "a.txt",
+                "file_path": "/u/files/OpenRegister/files/a.txt",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background mode - queueing extraction job",
+            {
+                "file_id": 8,
+                "file_name": "a.txt"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 8
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background extraction job queued",
+            {
+                "file_id": 8
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ],
+    "settings throw, defaults": [
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] File event detected - processing",
+            {
+                "event_type": "OCP\\Files\\Events\\Node\\NodeCreatedEvent",
+                "file_id": 7,
+                "file_name": "test.pdf",
+                "file_path": "/admin/files/Open Registers/test.pdf",
+                "extraction_scope": "objects"
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background mode - queueing extraction job",
+            {
+                "file_id": 7,
+                "file_name": "test.pdf"
+            }
+        ],
+        [
+            "add",
+            "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            {
+                "file_id": 7
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[FileChangeListener] Background extraction job queued",
+            {
+                "file_id": 7
+            }
+        ],
+        [
+            "settingsReads",
+            1
+        ]
+    ]
+}

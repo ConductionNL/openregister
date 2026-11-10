@@ -1,184 +1,200 @@
 [
   {
-    "slug": "archival-destruction-workflow",
-    "title": "Archival Destruction Workflow",
-    "summary": "Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen.",
+    "slug": "runtime-schema-api",
+    "title": "Schema-driven registers",
+    "summary": "Model your data as registers and object types, without writing code.",
     "status": "stable",
-    "docsUrl": "openspec/specs/archival-destruction-workflow/spec.md"
+    "docsUrl": "openspec/specs/runtime-schema-api/spec.md",
+    "title_nl": "Schemagestuurde registers",
+    "summary_nl": "Je modelleert je data als registers en objecttypen, zonder code te schrijven."
   },
   {
-    "slug": "archivering-vernietiging",
-    "title": "Archivering Vernietiging",
-    "summary": "Implement archiving and destruction lifecycle management for register objects, conforming to MDTO (Metagegevens Duurzaam Toegankelijke Overheidsinformatie), NEN 2082 records management, and e-Depot export standards.",
-    "status": "soon",
-    "docsUrl": "openspec/specs/archivering-vernietiging/spec.md"
-  },
-  {
-    "slug": "content-versioning",
-    "title": "Content Versioning",
-    "summary": "Content versioning provides a complete lifecycle for register objects, enabling users to track every change as a numbered version, create named draft versions for work-in-progress edits, compare any two versions with field-level diffs, and roll back to any previous state.",
+    "slug": "audit-hash-chain",
+    "title": "Immutable audit trail",
+    "summary": "You prove who changed what, with a tamper-evident hash chain.",
     "status": "stable",
-    "docsUrl": "openspec/specs/content-versioning/spec.md"
+    "docsUrl": "openspec/specs/audit-hash-chain/spec.md",
+    "title_nl": "Onveranderbaar auditspoor",
+    "summary_nl": "Je bewijst wie wat wijzigde, met een manipulatiebestendige hashketen."
   },
   {
-    "slug": "data-import-export",
-    "title": "Data Import and Export",
-    "summary": "Document and extend OpenRegister's existing import/export infrastructure.",
+    "slug": "rbac-scopes",
+    "title": "Access control to the property level",
+    "summary": "You grant access per register, per object, or per field.",
     "status": "stable",
-    "docsUrl": "openspec/specs/data-import-export/spec.md"
+    "docsUrl": "openspec/specs/rbac-scopes/spec.md",
+    "title_nl": "Toegangsbeheer tot op veldniveau",
+    "summary_nl": "Je verleent toegang per register, per object of per veld."
   },
   {
-    "slug": "datetime-input-handling",
-    "title": "Datetime Input Handling",
-    "summary": "Defines how OpenRegister converts user-supplied datetime input at every stage of the object lifecycle.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/datetime-input-handling/spec.md"
-  },
-  {
-    "slug": "deep-link-registry",
-    "title": "Deep Link Registry",
-    "summary": "The Deep Link Registry enables consuming Nextcloud apps (Procest, Pipelinq, OpenCatalogi, etc.) to claim ownership of specific OpenRegister (register, schema) combinations by registering URL templates at boot time.",
+    "slug": "saas-multi-tenant",
+    "title": "Organisation multi-tenancy",
+    "summary": "You keep each organisation's data isolated, with quotas per tenant.",
     "status": "stable",
-    "docsUrl": "openspec/specs/deep-link-registry/spec.md"
+    "docsUrl": "openspec/specs/saas-multi-tenant/spec.md",
+    "title_nl": "Organisatie-isolatie per huurder",
+    "summary_nl": "Je houdt de data van elke organisatie gescheiden, met quota per huurder."
   },
   {
-    "slug": "deletion-audit-trail",
-    "title": "Deletion Audit Trail",
-    "summary": "Provide a comprehensive audit and lifecycle management system for all deletion operations in OpenRegister, encompassing soft delete (marking objects as deleted without physical removal), configurable retention before permanent purge, restore from soft delete, cascade delete tracking, and full GDPR-compliant audit trail entries.",
+    "slug": "object-interactions",
+    "title": "REST and bulk API for every object",
+    "summary": "You read and write any record, one at a time or thousands in one call.",
     "status": "stable",
-    "docsUrl": "openspec/specs/deletion-audit-trail/spec.md"
-  },
-  {
-    "slug": "deprecate-published-metadata",
-    "title": "Deprecate Published/Depublished Object Metadata",
-    "summary": "",
-    "status": "stable",
-    "docsUrl": "openspec/specs/deprecate-published-metadata/spec.md"
-  },
-  {
-    "slug": "event-driven-architecture",
-    "title": "Event-Driven Architecture",
-    "summary": "OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's IEventDispatcher (OCP\\EventDispatcher\\IEventDispatcher) that enables loose coupling between internal components and external systems.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/event-driven-architecture/spec.md"
-  },
-  {
-    "slug": "faceting-configuration",
-    "title": "Faceting Configuration",
-    "summary": "Provides a comprehensive, backend-agnostic faceting system for OpenRegister that enables per-property facet definition on schema properties, supports multiple facet types (terms, date histogram, range), and delivers configurable facet metadata (title, description, order, aggregation control) through the REST and GraphQL APIs.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/faceting-configuration/spec.md"
+    "docsUrl": "openspec/specs/object-interactions/spec.md",
+    "title_nl": "REST- en bulk-API voor elk object",
+    "summary_nl": "Je leest en schrijft elk record, los of met duizenden tegelijk in één aanroep."
   },
   {
     "slug": "graphql-api",
     "title": "GraphQL API",
-    "summary": "Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching.",
+    "summary": "You ask for exactly the fields you need in one round-trip.",
     "status": "stable",
-    "docsUrl": "openspec/specs/graphql-api/spec.md"
+    "docsUrl": "openspec/specs/graphql-api/spec.md",
+    "title_nl": "GraphQL-API",
+    "summary_nl": "Je vraagt precies de velden op die je nodig hebt in één aanroep."
   },
   {
-    "slug": "linked-entity-types",
-    "title": "Linked Entity Types",
-    "summary": "Unified system for linking Nextcloud entities (mail, contacts, calendar events, notes, todos, Talk conversations, Deck cards) to OpenRegister objects and entities.",
+    "slug": "content-versioning",
+    "title": "Time-travel and restore",
+    "summary": "You view any past version and roll a record back in seconds.",
     "status": "stable",
-    "docsUrl": "openspec/specs/linked-entity-types/spec.md"
-  },
-  {
-    "slug": "mail-sidebar",
-    "title": "Mail Sidebar",
-    "summary": "Provide a sidebar panel inside the Nextcloud Mail app that displays OpenRegister objects related to the currently viewed email.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/mail-sidebar/spec.md"
-  },
-  {
-    "slug": "mcp-discovery",
-    "title": "MCP Discovery",
-    "summary": "Provides AI agents and MCP-compatible clients with two complementary interfaces to the OpenRegister platform: a tiered REST-based discovery API for token-efficient API exploration, and a full MCP standard protocol endpoint implementing JSON-RPC 2.0 over Streamable HTTP for native tool and resource access.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/mcp-discovery/spec.md"
-  },
-  {
-    "slug": "mock-registers",
-    "title": "Mock Registers",
-    "summary": "Provide self-contained mock registers for the five Dutch base registries, BRP (persons), KVK (businesses), BAG (addresses/buildings), DSO (environmental permits), and ORI (council information), so that Procest, Pipelinq, and other consuming apps can develop and demonstrate integrations without external API credentials, government certificates, or network access.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/mock-registers/spec.md"
-  },
-  {
-    "slug": "notificatie-engine",
-    "title": "Notificatie Engine",
-    "summary": "Extend OpenRegister's existing CloudEvent-based event system with user-facing notification delivery.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/notificatie-engine/spec.md"
-  },
-  {
-    "slug": "object-interactions",
-    "title": "Object Interactions",
-    "summary": "OpenRegister objects require rich interaction capabilities.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/object-interactions/spec.md"
-  },
-  {
-    "slug": "rbac-scopes",
-    "title": "RBAC Scopes",
-    "summary": "Validate and extend OpenRegister's existing three-level RBAC system.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/rbac-scopes/spec.md"
-  },
-  {
-    "slug": "retention-management",
-    "title": "Retention Management",
-    "summary": "Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/retention-management/spec.md"
-  },
-  {
-    "slug": "schema-driven-read-coercion",
-    "title": "Schema-Driven Read Coercion",
-    "summary": "Defines how OpenRegister coerces database column values to JSON-Schema-typed PHP values when reconstructing an ObjectEntity from a magic-table row.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/schema-driven-read-coercion/spec.md"
-  },
-  {
-    "slug": "schema-hooks",
-    "title": "Schema Hooks",
-    "summary": "Schema hooks enable per-schema configuration of workflow callbacks that fire on object lifecycle events, allowing external systems to validate, enrich, transform, or reject data before or after persistence.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/schema-hooks/spec.md"
-  },
-  {
-    "slug": "webhook-payload-mapping",
-    "title": "Webhook Payload Mapping",
-    "summary": "Extend OpenRegister's existing CloudEvent-based event and webhook infrastructure with configurable payload mapping.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/webhook-payload-mapping/spec.md"
-  },
-  {
-    "slug": "workflow-engine-abstraction",
-    "title": "Workflow Engine Abstraction",
-    "summary": "Provides an engine-agnostic interface for OpenRegister to interact with workflow engines (n8n, Windmill, and future engines), enabling the system to deploy, execute, monitor, and manage workflows without coupling to any specific engine's API.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/workflow-engine-abstraction/spec.md"
-  },
-  {
-    "slug": "workflow-in-import",
-    "title": "Workflow in Import",
-    "summary": "Extends the OpenRegister JSON configuration import pipeline to deploy workflow definitions to external engines (n8n, Windmill), wire them as schema hooks, track them for versioning and idempotent re-import, and include them in configuration exports, all from a single import file.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/workflow-in-import/spec.md"
-  },
-  {
-    "slug": "workflow-integration",
-    "title": "Workflow Integration",
-    "summary": "Integrate BPMN-style workflow automation with register operations via n8n (primary) and other pluggable workflow engines (Windmill, future).",
-    "status": "stable",
-    "docsUrl": "openspec/specs/workflow-integration/spec.md"
+    "docsUrl": "openspec/specs/content-versioning/spec.md",
+    "title_nl": "Tijdreizen en herstellen",
+    "summary_nl": "Je bekijkt elke eerdere versie en zet een record in seconden terug."
   },
   {
     "slug": "zoeken-filteren",
-    "title": "Zoeken en Filteren",
-    "summary": "Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails.",
+    "title": "Full-text search with faceting",
+    "summary": "You find records instantly, with no Elasticsearch to run.",
     "status": "stable",
-    "docsUrl": "openspec/specs/zoeken-filteren/spec.md"
+    "docsUrl": "openspec/specs/zoeken-filteren/spec.md",
+    "title_nl": "Zoeken op volledige tekst met facetten",
+    "summary_nl": "Je vindt records direct, zonder een aparte Elasticsearch te draaien."
+  },
+  {
+    "slug": "avg-verwerkingsregister",
+    "title": "AVG processing register and DSAR",
+    "summary": "You meet GDPR duties: processing register, retention, and anonymisation.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/avg-verwerkingsregister/spec.md",
+    "title_nl": "AVG-verwerkingsregister en inzageverzoeken",
+    "summary_nl": "Je voldoet aan de AVG: verwerkingsregister, bewaartermijnen en anonimisering."
+  },
+  {
+    "slug": "edepot-transfer",
+    "title": "Dutch archiving to e-Depot",
+    "summary": "You transfer records to an e-Depot with TMLO and MDTO metadata.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/edepot-transfer/spec.md",
+    "title_nl": "Archiveren naar het e-Depot",
+    "summary_nl": "Je draagt records over aan een e-Depot met TMLO- en MDTO-metadata."
+  },
+  {
+    "slug": "data-sync-harvesting",
+    "title": "Source sync and webhooks",
+    "summary": "You keep data at its source and react to every change with webhooks.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/data-sync-harvesting/spec.md",
+    "title_nl": "Bronsynchronisatie en webhooks",
+    "summary_nl": "Je houdt data bij de bron en reageert met webhooks op elke wijziging."
+  },
+  {
+    "slug": "integration-registry",
+    "title": "Integration registry",
+    "summary": "You link records to Deck, Calendar, Maps, Talk, and more Nextcloud apps.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/integration-registry/spec.md",
+    "title_nl": "Integratieregister",
+    "summary_nl": "Je koppelt records aan Deck, Agenda, Maps, Talk en meer Nextcloud-apps."
+  },
+  {
+    "slug": "schema-import",
+    "title": "Schema import",
+    "summary": "You import Schema.org, OpenAPI, or GGM models with automatic dialect detection.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/schema-import/spec.md",
+    "title_nl": "Schema importeren",
+    "summary_nl": "Je importeert Schema.org-, OpenAPI- of GGM-modellen met automatische dialectherkenning."
+  },
+  {
+    "slug": "oas-generation",
+    "title": "OpenAPI and JSON-LD output",
+    "summary": "Every register self-documents as an OpenAPI spec and as linked data.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/oas-generation/spec.md",
+    "title_nl": "OpenAPI- en JSON-LD-uitvoer",
+    "summary_nl": "Elk register documenteert zichzelf als OpenAPI-spec en als linked data."
+  },
+  {
+    "slug": "ai-mcp",
+    "title": "AI access over MCP",
+    "summary": "You let LLM agents read and act on your register data over MCP.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/ai-mcp/spec.md",
+    "title_nl": "AI-toegang via MCP",
+    "summary_nl": "Je laat AI-assistenten via MCP je registerdata lezen en bewerken."
+  },
+  {
+    "slug": "saved-search-views",
+    "title": "Saved search views",
+    "summary": "You save a search and share it as a named, public view.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/saved-search-views/spec.md",
+    "title_nl": "Opgeslagen zoekweergaven",
+    "summary_nl": "Je bewaart een zoekopdracht en deelt die als benoemde, openbare weergave."
+  },
+  {
+    "slug": "register-i18n",
+    "title": "Translations of stored data",
+    "summary": "You translate records in bulk with built-in AI.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/register-i18n/spec.md",
+    "title_nl": "Vertalingen van opgeslagen data",
+    "summary_nl": "Je vertaalt records in bulk met ingebouwde AI."
+  },
+  {
+    "slug": "vector-embeddings",
+    "title": "Semantic search",
+    "summary": "You find records by meaning using vector embeddings, on PostgreSQL.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/vector-embeddings/spec.md",
+    "title_nl": "Semantisch zoeken",
+    "summary_nl": "Je vindt records op betekenis met vector-embeddings, op PostgreSQL."
+  },
+  {
+    "slug": "rapportage-bi-export",
+    "title": "Reporting and BI export",
+    "summary": "You build dashboards and export data for your BI tooling.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/rapportage-bi-export/spec.md",
+    "title_nl": "Rapportage en BI-export",
+    "summary_nl": "Je bouwt dashboards en exporteert data voor je BI-tooling."
+  },
+  {
+    "slug": "dcat-publishing",
+    "title": "DCAT data catalog publishing",
+    "summary": "You publish registers as an open data catalog in DCAT.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/dcat-publishing/spec.md",
+    "title_nl": "DCAT-datacatalogus publiceren",
+    "summary_nl": "Je publiceert registers als open datacatalogus in DCAT."
+  },
+  {
+    "slug": "no-code-app-builder",
+    "title": "Low-code app builder",
+    "summary": "You build a UI over your register data with the OpenBuild app.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/no-code-app-builder/spec.md",
+    "title_nl": "Low-code app-bouwer",
+    "summary_nl": "Je bouwt een interface over je registerdata met de OpenBuild-app."
+  },
+  {
+    "slug": "stuf-soap-coupling",
+    "title": "StUF and SOAP coupling",
+    "summary": "You connect to StUF/XML and SOAP services for ZGW landscapes.",
+    "status": "soon",
+    "docsUrl": "openspec/specs/stuf-soap-coupling/spec.md",
+    "title_nl": "StUF- en SOAP-koppeling",
+    "summary_nl": "Je koppelt aan StUF/XML- en SOAP-diensten voor ZGW-landschappen."
   }
 ]

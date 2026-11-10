@@ -1,10 +1,16 @@
 ---
-status: implemented
+status: in-progress
 ---
 
 # Event-Driven Architecture
 
+**OpenSpec changes**
+- `actor-forwarded-listener-jobs` (active, implemented — not yet archived) — the actor-forwarding deferral contract: `ListenerDeferralService`, `DeferredListenerContext`, `DeferredEntryObjectResolver` and the abstract `ActorForwardedJob` (capture-at-dispatch, re-establish-in-job, guaranteed `finally` restore, chunk-level enqueueing, stale no-op idempotency). Defers `TranslationProjectionListener`, `AnnotationNotificationListener` and `AggregationThresholdListener`.
+- `object-event-sync-async-split` (active) — applies the ADR-078 fleet rule to OpenRegister's own 21 listener classes / 51 registrations: post-`*ed` listener work is asynchronous by default, synchronous execution is reserved for pre-`*ing` veto/mutate listeners plus four closed exception categories (`realtime`, `sapi-memory`, `cheap-bounded`, `correctness`), delete-path deferral requires an explicit payload contract, trigger/flow resolution must filter at query time (`OpenRegisterFlowResolver::flowsForTrigger()`), and the classification is mechanically enforced by hydra gate 61.
+
 ## Purpose
+
+@e2e exclude PHP event dispatcher backend — covered by PHPUnit
 OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's `IEventDispatcher` (OCP\EventDispatcher\IEventDispatcher) that enables loose coupling between internal components and external systems. Every mutation across all entity types -- Objects, Registers, Schemas, Sources, Configurations, Views, Agents, Applications, Conversations, and Organisations -- dispatches a typed PHP event that can be consumed by any Nextcloud app, delivered to external systems via webhooks in CloudEvents v1.0 format, or pushed to real-time subscribers via GraphQL SSE. The architecture distinguishes between pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) that implement `StoppableEventInterface` to allow hooks to reject or modify operations, and post-mutation events (ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent) that notify downstream systems after persistence is complete.
 
 **Source**: Gap identified in cross-platform analysis; four platforms implement event-driven architectures. Core implementation exists with 39+ typed event classes in `lib/Event/`, 8 event listeners in `lib/Listener/`, and webhook delivery infrastructure.
@@ -72,23 +78,23 @@ Pre-mutation event classes (`ObjectCreatingEvent`, `ObjectUpdatingEvent`, `Objec
 - **AND** the old object state from `$event->getOldObject()` MUST be preserved
 
 ### Requirement: Event listeners MUST be registered in Application.php via registerEventListener
-All event listener bindings MUST be declared in `Application::registerEventListeners()` using `IRegistrationContext::registerEventListener()`. This ensures Nextcloud's lazy-loading mechanism defers listener instantiation until the event is actually dispatched.
+All event listener bindings MUST be declared in `ListenerRegistrar::register()` using `IRegistrationContext::registerEventListener()`. This ensures Nextcloud's lazy-loading mechanism defers listener instantiation until the event is actually dispatched.
 
 #### Scenario: SolrEventListener registers for object and schema lifecycle events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `SolrEventListener::class` MUST be registered for `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, `SchemaCreatedEvent`, `SchemaUpdatedEvent`, and `SchemaDeletedEvent`
 - **AND** these registrations MUST use `$context->registerEventListener(EventClass::class, ListenerClass::class)` to enable lazy instantiation
 
 #### Scenario: HookListener registers for both pre and post mutation events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `HookListener::class` MUST be registered for all six object lifecycle events: `ObjectCreatingEvent`, `ObjectUpdatingEvent`, `ObjectDeletingEvent`, `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`
 - **AND** the HookListener MUST delegate execution to `HookExecutor` which loads hooks from the schema's `getHooks()` configuration
 
 #### Scenario: WebhookEventListener registers for object creation events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `WebhookEventListener::class` MUST be registered for `ObjectCreatedEvent`
 - **AND** it MUST dispatch events to `WebhookService::dispatchEvent()` with the extracted payload
 
@@ -232,6 +238,50 @@ Other Nextcloud apps (opencatalogi, docudesk, zaakafhandelapp, pipelinq, procest
 - **THEN** Nextcloud's event dispatcher MUST invoke all registered listeners
 - **AND** OpenRegister MUST NOT need any configuration or awareness of which external apps are listening
 - **AND** listener instantiation MUST be lazy (deferred until event dispatch)
+
+### Requirement: Filtered object-event subscriptions MUST be declared from boot() and MUST honour both slugs and ids
+A leaf app narrowing an object-event listener to specific registers/schemas MUST declare the subscription from its `Application::boot()` via `ObjectEventSubscription::subscribe()`, taking the live `IEventDispatcher` from the server container. It MUST NOT declare it from `Application::register()`.
+
+Declaration tokens MUST accept both register/schema slugs and numeric ids. A token consisting only of digits MUST be treated as an id and compared directly against the id the written `ObjectEntity` carries; any other token MUST be resolved as a slug. Neither kind may be silently dropped. An entirely numeric slug is therefore NOT supported.
+
+#### Scenario: An app that boots before OpenRegister still gets a filtered subscription
+- **GIVEN** `docudesk` is app 21 of 92 and `openregister` is app 52, and Nextcloud enables each app's autoloader immediately before calling that app's own `register()`
+- **WHEN** docudesk declares its subscription from `boot()` rather than `register()`
+- **THEN** `class_exists('\OCA\OpenRegister\Event\ObjectEventSubscription')` MUST resolve true, because `boot()` runs only after every app's `register()` has completed
+- **AND** the listener MUST appear in `ObjectEventSubscription::subscribedListeners()`
+- **AND** it MUST be invoked for a write to a register/schema it declared
+
+#### Scenario: Falling back to an unfiltered registration MUST be loud
+- **GIVEN** OpenRegister is absent or its subscription class cannot be autoloaded
+- **WHEN** a leaf app's guard falls back to a plain `addServiceListener()` registration
+- **THEN** it MUST log a warning naming the app, the listener and the event
+- **AND** the fallback MUST NOT be silent, because a silent fallback is indistinguishable from a working narrowing
+
+#### Scenario: A declaration by numeric id matches the written object
+- **GIVEN** a subscription declared as `registers: ['7'], schemas: ['228']`
+- **WHEN** an object is written whose register id is `7` and schema id is `228`
+- **THEN** the subscription MUST be invoked
+- **AND** the numeric token MUST NOT be resolved as a slug, which would match no row and silently disable the listener
+- **AND** normalisation MUST NOT coerce the token to `int`, which would make `strtolower()` a fatal `TypeError` under `strict_types`
+
+#### Scenario: A filtered subscription holds for every object event class
+- **GIVEN** a subscription declared as `schemas: ['62']` on any object event class that carries an object (created, creating, updating, updated, deleting, deleted, locked, unlocked, reverted, transitioned)
+- **WHEN** that event is dispatched for an object whose schema id is `99`
+- **THEN** the subscription MUST NOT be invoked, whichever accessor the event class carries its object behind (`getObject()` or `getNewObject()`)
+- **AND** a new object event class MUST be covered by the same test before it ships, because an unread accessor is how a listener filtered to humaniq's `managerdeputy` schema ran on every update instance-wide and refused every lifecycle transition (live defect H1, 3 Oct 2026)
+
+#### Scenario: A filtered subscription fails closed on an object without a register or schema
+- **GIVEN** a subscription declared with a schema (or register) filter
+- **WHEN** an event carries an object whose schema (or register) is not set
+- **THEN** the subscription MUST NOT be invoked, because that object is not in the declared schema
+- **AND** an unfiltered subscription MUST still be invoked for it
+- **AND** an event that carries no object at all (`ObjectsMergedEvent`) MUST still invoke a filtered subscription, because no filter can be applied to it and skipping would leave the listener silently dead
+
+#### Scenario: The declared subscription count is observable
+- **GIVEN** an operator needs to tell a working narrowing from an inert one
+- **WHEN** they read `ObjectEventSubscription::subscriptionCount()` or the proxy trace line
+- **THEN** the number of registered subscriptions MUST be reported
+- **AND** a declared-versus-registered mismatch MUST therefore be detectable rather than invisible
 
 ### Requirement: GraphQL subscription listeners MUST push events for real-time SSE delivery
 The `GraphQLSubscriptionListener` MUST listen for `ObjectCreatedEvent`, `ObjectUpdatedEvent`, and `ObjectDeletedEvent` and push event data to the `SubscriptionService` buffer for Server-Sent Events (SSE) delivery to connected GraphQL subscription clients.
@@ -399,12 +449,459 @@ The `WebhookService::interceptRequest()` method MUST find webhooks configured wi
 - **WHEN** `interceptRequest()` is called
 - **THEN** it MUST return the original request params immediately without any HTTP calls
 
+### Requirement: State-machine transitions MUST dispatch a typed ObjectTransitionedEvent
+When an object's lifecycle field is changed through a declared transition (per `x-openregister-lifecycle`), the system MUST dispatch an `ObjectTransitionedEvent` carrying the post-transition `ObjectEntity` together with the transition metadata. This lets listeners (notifications, cascades, calculation re-materialisation, audit enrichment) react to the specific transition without inferring the action from the generic `ObjectUpdatedEvent`.
+
+#### Scenario: Transition event carries object and transition metadata
+- **GIVEN** schema `besluiten` declares a lifecycle transition `publish` from state `concept` to state `vastgesteld`
+- **WHEN** the `publish` transition is applied to an object and persisted
+- **THEN** an `ObjectTransitionedEvent` MUST be dispatched after the lifecycle-field update
+- **AND** `getObject()` MUST return the `ObjectEntity` in its post-transition state
+- **AND** `getAction()` MUST return `"publish"`, `getFrom()` MUST return `"concept"`, and `getTo()` MUST return `"vastgesteld"`
+- **AND** `getRegister()` and `getSchema()` MUST return the object's register and schema slugs
+
+#### Scenario: System-applied transition reports a null caller
+- **GIVEN** a transition is applied by a background process rather than an interactive user
+- **WHEN** the `ObjectTransitionedEvent` is constructed
+- **THEN** `getUserId()` MUST return `null`
+- **AND** when the transition was applied by an authenticated user, `getUserId()` MUST return that user's uid
+
+### Requirement: Object unlock MUST dispatch a typed ObjectUnlockedEvent
+Symmetric to the lock operation, releasing a lock on an object MUST dispatch an `ObjectUnlockedEvent` carrying the affected `ObjectEntity`. This completes the lock/unlock pair so listeners can observe both halves of the locking lifecycle.
+
+#### Scenario: Unlock dispatches the unlocked object
+- **GIVEN** object `obj-1` is currently locked
+- **WHEN** the lock on `obj-1` is released
+- **THEN** an `ObjectUnlockedEvent` MUST be dispatched
+- **AND** `getObject()` MUST return the `ObjectEntity` whose lock was released
+
+### Requirement: Schemas MAY declare a state machine via `x-openregister-lifecycle`
+
+A schema MAY include a top-level `x-openregister-lifecycle` block with `field`, `initial`, and a `transitions` map (action → `{from[], to, requires?, description?}`), and when present the schema-save validator MUST verify the annotation against the schema's `properties[field]` enum and reject malformed annotations with HTTP 422.
+
+**Uniqueness constraint.** Within a single schema's `transitions`
+map, no two transitions MAY share the same `(from, to)` pair (i.e.
+for any pair `(F, T)`, at most one action has both
+`F ∈ transitions[action].from` and `transitions[action].to == T`).
+Schema-save validation MUST reject duplicates with HTTP 422 and
+`{ code: "lifecycle-duplicate-from-to", from: F, to: T, actions: [a, b] }`.
+This makes the action name uniquely resolvable when
+`ObjectTransitionedEvent` fires from a direct PATCH (where the
+client did not supply an action name) — the implementation MUST
+resolve `event.action` deterministically by looking up the unique
+transition matching `(from, to)`.
+
+#### Scenario: Duplicate (from, to) pair is rejected
+- GIVEN a schema declaring `open: {from: ["draft"], to: "opened"}` and `expedite: {from: ["draft"], to: "opened"}`
+- WHEN the schema is saved
+- THEN the save MUST fail with HTTP 422
+- AND the response body MUST include `{ code: "lifecycle-duplicate-from-to", from: "draft", to: "opened", actions: ["open", "expedite"] }`
+
+### Requirement: The pre-save validator MUST reject invalid transitions via `ObjectUpdatingEvent`
+
+The implementation MUST register an `IEventListener` against
+`ObjectUpdatingEvent`. When the event's schema has an
+`x-openregister-lifecycle` annotation AND the proposed new value
+of `field` is not equal to the existing value, the listener MUST
+verify the new value is `transitions[action].to` for some `action`
+whose `from` list includes the existing value. If not, the
+listener MUST call `Event::stopPropagation()` and attach a
+structured rejection reason via the existing
+`ObjectUpdatingEvent::setErrors(array $errors)` API.
+
+**Rejection-metadata contract.** The implementation reuses the
+existing rejection-metadata API on `ObjectUpdatingEvent`:
+`setErrors(array $errors): void` and `getErrors(): array` (already
+shipped). After `stopPropagation()` is called,
+`ObjectService::saveObject` MUST detect the stopped event, read
+`getErrors()`, and translate any non-empty value into HTTP 422
+with the array as the response body. The lifecycle listener MUST
+NOT introduce a new setter/getter pair — renaming the
+publicly-exposed event API would be a breaking change for
+third-party listeners that already call `setErrors()`.
+
+#### Scenario: An invalid transition is rejected via setErrors
+- GIVEN a meeting object with `lifecycle = "draft"` and no transition declares `from: ["draft"], to: "closed"`
+- WHEN a client PATCHes `lifecycle = "closed"`
+- THEN the lifecycle listener MUST call `event->stopPropagation()`
+- AND the listener MUST call `event->setErrors([...])` with `{ code: "invalid-transition", from: "draft", attempted: "closed" }`
+- AND `ObjectService::saveObject` MUST translate the stopped event's `getErrors()` into HTTP 422 with that body
+- AND the object's stored value MUST remain `draft`
+
+### Requirement: Initial lifecycle state MUST be enforced on object creation
+
+The implementation MUST register an `IEventListener` against
+`ObjectCreatingEvent` that, when the schema has an
+`x-openregister-lifecycle` annotation, force-sets
+`object[field] = initial` regardless of the supplied value. The
+override MUST be logged at debug level when the supplied value
+differs from `initial`.
+
+#### Scenario: Creation forces the initial state
+- **GIVEN** a schema with `x-openregister-lifecycle.initial = "draft"`
+- **WHEN** a client POSTs a new object with `lifecycle = "published"`
+- **THEN** the listener MUST overwrite the field with `"draft"` before persistence
+- **AND** the override MUST be logged at debug level with the supplied + initial values
+
+### Requirement: The system MUST expose a sugar transition endpoint
+
+The system MUST expose `POST /apps/openregister/api/objects/{id}/transition?register=<app>&schema=<type>` with body `{action: "<name>"}` as a sugar wrapper that loads the object, looks up `transitions[action]`, patches `field = transitions[action].to`, and saves through `ObjectService::saveObject` (so the existing event chain fires, audit trail records, RBAC applies).
+
+**Auth contract.** The endpoint MUST be annotated
+`#[NoAdminRequired]` — accessible to any authenticated Nextcloud
+user, NOT admin-only. Authorization MUST be enforced by (a) the
+per-object RBAC write check and (b) any registered
+`LifecycleGuardInterface`, NOT by admin status. The endpoint MUST
+NOT be annotated `#[NoCSRFRequired]` — Nextcloud's standard CSRF
+middleware MUST apply. State-mutating POSTs without a valid CSRF
+token MUST be rejected by the framework before the controller
+runs.
+
+**Response codes:** 401 for unauthenticated requests (no NC
+session) — emitted by NC's auth middleware before the controller
+runs; 403 for authenticated users lacking write permission on the
+object OR for guard denial; 404 for missing object; 422 for
+unknown action OR from-state mismatch (caught by the listener
+above) OR malformed body.
+
+#### Scenario: Missing CSRF token is rejected by the framework
+- GIVEN an authenticated user without a valid CSRF token (no `requesttoken` header / cookie)
+- WHEN they POST to the transition endpoint
+- THEN Nextcloud's CSRF middleware MUST reject before the controller runs
+- AND the controller method MUST NOT carry `@NoCSRFRequired` / `#[NoCSRFRequired]`
+
+#### Scenario: Unauthenticated request returns 401
+- GIVEN no Nextcloud session is established
+- WHEN a client POSTs to the transition endpoint
+- THEN Nextcloud's auth middleware MUST reject with HTTP 401 before the controller runs
+
+### Requirement: Apps MAY register `LifecycleGuardInterface` implementations for transition-specific authorization
+
+A transition's `requires` field MUST resolve to a Nextcloud DI
+service tag implementing
+`OCA\OpenRegister\Lifecycle\LifecycleGuardInterface`. The
+transition endpoint MUST call the guard before applying the
+transition; a `GuardResult::deny(message)` MUST short-circuit
+with HTTP 403 and the deny message.
+
+#### Scenario: A registered guard denies a transition
+- GIVEN a transition whose `requires` resolves to a registered `LifecycleGuardInterface` that returns `GuardResult::deny("not allowed")`
+- WHEN an authenticated user POSTs that action to the transition endpoint
+- THEN the endpoint MUST call the guard before applying the transition
+- AND the request MUST be short-circuited with HTTP 403 and the deny message `not allowed`
+
+### Requirement: Direct-PATCH lifecycle changes MUST resolve `ObjectTransitionedEvent.action` deterministically via the (from, to) lookup
+
+When `ObjectTransitionedEvent` is dispatched from a direct PATCH (not the sugar endpoint, where the client did not supply an action name), `event.action` MUST be resolved by looking up the unique transition matching the observed `(from, to)` pair in the schema's `transitions` map.
+Because the uniqueness constraint
+above forbids two transitions sharing the same `(from, to)`, this
+lookup is deterministic. If no transition matches `(from, to)`
+(the field was changed in violation of the lifecycle), the
+listener MUST have already rejected the save —
+`ObjectTransitionedEvent` MUST NOT fire for invalid transitions.
+
+#### Scenario: A direct lifecycle PATCH dispatches the event with the resolved action
+- **GIVEN** a schema with `open: {from: ["draft"], to: "opened"}` (the unique transition matching that pair)
+- **AND** a client PATCHes `lifecycle = "opened"` on a draft object
+- **WHEN** the save completes
+- **THEN** `ObjectTransitionedEvent` MUST fire exactly once
+- **AND** `event.action` MUST equal `"open"` (resolved deterministically by the (from, to) lookup)
+
+### Requirement: The system MUST expose `available-actions` for UI rendering
+
+The system MUST expose `GET /apps/openregister/api/objects/{id}/available-actions?register=<app>&schema=<type>`, which MUST return the current state, the list of applicable transitions (those whose `from` includes the current state), and per-transition `allowed: bool` (with optional `denyMessage` when a registered guard pre-emptively denies).
+
+#### Scenario: available-actions lists applicable transitions for the current state
+- GIVEN an object whose current lifecycle state is `draft` and a schema declaring `open: {from: ["draft"], to: "opened"}`
+- WHEN an authenticated user GETs the available-actions endpoint for that object
+- THEN the response MUST include the current state `draft`
+- AND the response MUST list the `open` transition with `allowed: true`
+- AND a transition pre-emptively denied by a registered guard MUST carry `allowed: false` with a `denyMessage`
+
+### Requirement: Initial state MUST be enforced on object creation
+
+The implementation MUST register an `IEventListener` against
+`ObjectCreatingEvent` that, when the schema has an
+`x-openregister-lifecycle` annotation, force-sets
+`object[field] = initial` regardless of the supplied value. The
+override MUST be logged at debug level when the supplied value
+differs from `initial`.
+
+#### Scenario: Initial state is forced on creation
+- GIVEN a schema with `x-openregister-lifecycle` declaring `initial: "draft"`
+- WHEN a client creates an object supplying `lifecycle = "closed"`
+- THEN the listener MUST force-set the stored `lifecycle` value to `draft`
+- AND the override MUST be logged at debug level because the supplied value differed from `initial`
+
+### Requirement: The system MUST dispatch `ObjectTransitionedEvent` after a successful transition
+
+After a transition is applied via the endpoint OR via a direct write that flips the lifecycle field, the implementation MUST dispatch `ObjectTransitionedEvent` after the successful transition via
+`IEventDispatcher::dispatchTyped()` with payload
+`{object, action, from, to, userId, register, schema}`. The event
+joins the existing event-driven-architecture catalog and is
+automatically routable through the existing
+webhook-payload-mapping infrastructure.
+
+**Action resolution for direct PATCH.** When the event is
+dispatched from a direct PATCH (not the sugar endpoint, where the
+client did not supply an action name), `event.action` MUST be
+resolved by looking up the unique transition matching the observed
+`(from, to)` pair in the schema's `transitions` map. Because the
+uniqueness constraint above forbids two transitions sharing the
+same `(from, to)`, this lookup is deterministic. If no transition
+matches `(from, to)` (the field was changed in violation of the
+lifecycle), the listener MUST have already rejected the save —
+`ObjectTransitionedEvent` MUST NOT fire for invalid transitions.
+
+#### Scenario: A direct lifecycle PATCH dispatches the event with the resolved action
+- GIVEN a schema with `open: {from: ["draft"], to: "opened"}` (the unique transition matching that pair)
+- AND a client PATCHes `lifecycle = "opened"` on a draft object
+- WHEN the save completes
+- THEN `ObjectTransitionedEvent` MUST fire exactly once
+- AND `event.action` MUST equal `"open"` (resolved deterministically by the (from, to) lookup)
+
+### Requirement: Webhook delivery does not block the object-write response
+
+Webhook delivery triggered by an object lifecycle event SHALL be performed
+asynchronously via a background job, including the first delivery attempt. The
+latency of an object create/update/delete response SHALL NOT depend on the
+availability or response time of any webhook target.
+
+#### Scenario: Slow webhook targets do not slow the write
+
+- **WHEN** an object is created and N webhooks subscribed to the event are slow
+  or unreachable
+- **THEN** the write response returns promptly after enqueuing delivery
+- **AND** its latency does not scale with N or with the webhook timeout
+
+#### Scenario: Delivery still occurs with correct semantics
+
+- **WHEN** the delivery job runs
+- **THEN** the webhook is delivered with the same payload and signature as the
+  synchronous path
+- **AND** retry/backoff behaviour is unchanged
+
+### Requirement: No webhook work when nothing subscribes
+
+An object write SHALL NOT serialize a webhook payload or query webhook
+subscriptions when no webhook matches the app/event. A cheap, cached check SHALL
+short-circuit before any payload serialization.
+
+#### Scenario: Zero-webhook instance does no webhook work per write
+
+- **WHEN** an object is written on an instance with no webhooks configured
+- **THEN** no payload is serialized for webhook purposes
+- **AND** no per-write webhook-subscription query is executed
+
+### Requirement: Deferred listeners MUST forward the acting context to their background jobs
+
+Heavy post-save object-event listeners moved off the write path MUST capture
+the acting context at dispatch time (session user id
+and active organisation uuid, both nullable) into a serializable
+`DeferredListenerContext`, and their background jobs MUST extend
+`ActorForwardedJob`, which re-establishes the captured user via
+`IUserManager::get()` + `IUserSession::setUser()` before the deferred work
+runs and restores the previous session user in a `finally` block — including
+when the deferred work throws — so a cron worker never leaks one job's
+identity into the next. Organisation context re-derives from the restored
+user's persistent configuration; a captured-vs-current drift is logged and
+the job proceeds under the user's current authority.
+
+#### Scenario: Job runs the deferred work as the captured user and restores the session
+
+- **GIVEN** an object save dispatched by user `alice` deferred listener work into a job
+- **WHEN** the job runs in a session-less cron worker
+- **THEN** the job resolves `alice` through `IUserManager` and sets her on `IUserSession` before executing
+- **AND** the deferred work observes `alice` as the session user (e.g. translator attribution records `alice`)
+- **AND** after execution the session user is restored to its pre-job value (null in cron)
+
+#### Scenario: Session user is restored even when the deferred work throws
+
+- **GIVEN** a job whose deferred work throws midway
+- **WHEN** the job runs
+- **THEN** the previous session user is restored in a `finally` block before the exception propagates
+
+#### Scenario: A job for a deleted or unresolvable user never runs under a wrong identity
+
+- **GIVEN** a job captured for a user that no longer exists
+- **WHEN** the job runs
+- **THEN** the deferred work is skipped with a log entry and no impersonation occurs
+
+#### Scenario: A context captured without a session runs without impersonation
+
+- **GIVEN** an object written from occ/cron with no session user
+- **WHEN** the deferral captures a null userId and the job later runs
+- **THEN** the deferred work executes without calling `setUser()` — identical to the inline session-less behaviour
+
+### Requirement: Deferred listener jobs MUST be chunk-level, idempotent, and stale-safe
+
+Listeners deferring through `ListenerDeferralService` MUST enqueue chunk-level
+jobs (buffered entries flushed per chunk and at request shutdown), never one
+job per object of a bulk save. Jobs MUST treat delivery as at-least-once:
+re-fetch each entry's object by (uuid, register, schema), skip entries whose
+object is gone or soft-deleted, and reconcile against current state so a
+re-run converges. Entries MAY declare a dedupe key so writes that share an
+evaluation target (e.g. threshold triggers per schema) coalesce into one
+entry.
+
+#### Scenario: Bulk save enqueues chunked jobs, not per-object jobs
+
+- **GIVEN** a bulk save of 250 objects on a schema with a deferred listener and a chunk size of 100
+- **WHEN** the request completes
+- **THEN** at most ⌈250/100⌉ = 3 jobs are enqueued for that listener, each carrying an entry array
+
+#### Scenario: A job entry whose object was deleted no-ops
+
+- **GIVEN** an enqueued projection entry for object `X`
+- **AND** `X` is deleted before cron runs
+- **WHEN** the job processes the entry
+- **THEN** the entry is skipped (no sidecar rows are resurrected, no notification is dispatched)
+
+#### Scenario: Threshold evaluations coalesce per schema
+
+- **GIVEN** 50 objects of schema `S` saved in one request, where `S` declares a threshold notification
+- **WHEN** the deferral buffers the entries with the (register, schema) dedupe key
+- **THEN** exactly one threshold evaluation entry for `S` is enqueued
+
+#### Scenario: The kill switch restores inline execution
+
+- **GIVEN** app config `openregister/listenerDeferral` set to `inline`
+- **WHEN** an object event fires on a schema using a deferred listener's feature
+- **THEN** the listener performs its work synchronously as before this change and enqueues nothing
+
+### Requirement: Translation projection, annotation notifications and threshold evaluation MUST run via actor-forwarded jobs
+
+Three listeners MUST perform their heavy work in actor-forwarded jobs:
+`TranslationProjectionListener` (created/updated/transitioned),
+`AnnotationNotificationListener` (all triggers) and
+`AggregationThresholdListener` (created/updated/transitioned), keeping only a
+request-cached schema-config gate inline so schemas without the respective
+feature enqueue nothing. Delete-time work stays inline for
+`TranslationProjectionListener` (sidecar purge) and
+`AggregationThresholdListener` (the entity is not re-fetchable post-delete).
+The deferred job MUST produce the same effect the inline listener produced:
+projected translation rows record the acting user as translator; update
+notifications evaluate field-change and calculatedChange conditions against
+the pre-update snapshot captured at dispatch time and the current object
+data; threshold crossings dispatch on the rising edge only.
+
+#### Scenario: Deferred projection matches the inline effect including translator attribution
+
+- **GIVEN** user `alice` updates an object with translatable properties
+- **WHEN** the enqueued `TranslationProjectionJob` runs in cron
+- **THEN** the translations sidecar contains the same rows an inline `project()` would have written, with `alice` recorded as translator
+
+#### Scenario: Deferred update notification keeps old/new condition context
+
+- **GIVEN** an update event with a real pre-update state on a schema with notification rules
+- **WHEN** the enqueued `AnnotationNotificationDispatchJob` runs
+- **THEN** the dispatcher receives trigger `updated` with `_oldData` from the captured snapshot and `_newData` from the re-fetched current object
+- **AND** a `calculatedChange` dispatch follows with the same context, mirroring the inline listener
+
+#### Scenario: Deferred threshold evaluation dispatches on the rising edge
+
+- **GIVEN** a schema with a threshold notification whose aggregation value crosses the boundary
+- **WHEN** the enqueued `AggregationThresholdJob` runs
+- **THEN** the notification is dispatched once and the state cache records `above`, exactly as the inline evaluation did
+
+### Requirement: A schema save that changes nothing publishes nothing
+
+The system SHALL dispatch `SchemaUpdatedEvent` from `SchemaMapper::update()` only
+when the stored schema differs from the schema before the save, ignoring the
+`updated` timestamp. A save that changes nothing SHALL NOT write a
+`schema_updated` activity, SHALL NOT send a `schema-changed` notification and
+SHALL NOT fire a schema webhook. A real change SHALL still do all three.
+
+#### Scenario: an app re-imports an identical schema
+
+- **GIVEN** the pipelinq `lead` schema is installed and unchanged
+- **WHEN** pipelinq imports its register again
+- **THEN** no `SchemaUpdatedEvent` is dispatched for `lead`
+- @e2e exclude {covered by SchemaMapperUpdateEventTest, which drives the real update() with real Schema and SchemaUpdatedEvent classes}
+
+#### Scenario: an import adds a property
+
+- **GIVEN** the stored `lead` schema
+- **WHEN** an import adds the property `stage`
+- **THEN** exactly one `SchemaUpdatedEvent` is dispatched, carrying the old and the new schema
+- @e2e exclude {covered by SchemaMapperUpdateEventTest}
+
+### Requirement: An import of an unchanged schema still installs what it declares
+
+The system SHALL run the flow importer and the notification webhook installer
+for an imported schema whose saves dispatched no `SchemaUpdatedEvent`, so a
+shipped flow or webhook that was deleted, or never installed, arrives on the
+next import. When the import's saves dispatched an event, the import SHALL NOT
+run them again.
+
+#### Scenario: a deleted shipped flow comes back on re-import
+
+- **GIVEN** a schema declaring the flow `Qualify` in `x-openregister-flows`, and no stored flow by that name
+- **WHEN** the app imports the identical schema
+- **THEN** the flow `Qualify` is stored, disabled and unowned, as on a first import
+- @e2e exclude {covered by ImportHandlerUnchangedSchemaInstallsTest with the real SchemaFlowImportListener}
+
+#### Scenario: a changed import does not install twice
+
+- **GIVEN** an import whose save dispatched a `SchemaUpdatedEvent`
+- **WHEN** the import finishes
+- **THEN** the import itself installs nothing, because the listeners already did
+- @e2e exclude {covered by ImportHandlerUnchangedSchemaInstallsTest}
+
+### Requirement: Object CRUD fires object events only
+
+Creating, updating, patching, deleting, bulk-saving or importing objects SHALL
+dispatch object events (and the object notification) only. It SHALL NOT write a
+schema or a register entity and SHALL NOT dispatch a schema or register event.
+No listener of an object event SHALL do so either.
+
+#### Scenario: a user edits a lead
+
+- **GIVEN** a lead in the pipelinq register
+- **WHEN** the user PATCHes it
+- **THEN** one object update is published and no `SchemaUpdatedEvent` or `RegisterUpdatedEvent` is dispatched
+- @e2e exclude {pinned by ObjectCrudFiresOnlyObjectEventsTest over the object path and every object-event listener; checked live on 2026-10-06 with one object_updated activity per PATCH}
+
+### Requirement: A PATCH leaves an untouched translatable property as it is
+
+A PATCH that does not name a translatable property SHALL save that property's
+locale map unchanged.
+
+#### Scenario: PATCHing a lead's stage keeps its title
+
+- **GIVEN** a lead whose translatable `title` is stored as `{"nl": "[Demo] Webshop"}`
+- **WHEN** the client PATCHes only `stage`
+- **THEN** the title is still `{"nl": "[Demo] Webshop"}`, not the string `'{"nl":"[Demo] Webshop"}'`
+- @e2e exclude {covered by SchemaTypeConverterTest::testAnUntouchedTranslatablePropertyKeepsItsLocaleMap}
+
+### Requirement: A deferred listener chunk fits the job argument limit
+
+The listener deferral service SHALL enqueue a buffered chunk as one or more background jobs whose JSON-encoded argument each stays within the running Nextcloud's job argument limit (4,000 characters on Nextcloud 32 and 33, 32,000 from 34; read from the server when it names the limit, 4,000 otherwise), keeping every entry once and in order. An entry that alone exceeds the limit SHALL be enqueued without its `oldData` and the reduction logged, naming that conditioned `updated` rules and `calculatedChange` rules are skipped for that object (they fail closed without the previous data); an entry that still exceeds it SHALL be left out and logged with its job class and uuid. The other entries of its chunk SHALL still be enqueued.
+
+#### Scenario: Twenty-five updates of large cases
+- GIVEN a schema that declares update notifications and 25 updates of cases of about 2,000 characters each in one request
+- WHEN the buffer is flushed
+- THEN every update reaches the job list once, in order, spread over more than one job, and no job argument is longer than the active limit (checked at 4,000 and at 32,000)
+- @e2e exclude pinned through `AnnotationNotificationListener` by `DeferredChunksFitTheJobLimitTest::testAChunkOfLargeUpdatesIsSpreadOverJobsTheListTakes`
+
+#### Scenario: An entry too large for the active limit is kept without its previous data
+- GIVEN an update whose previous data alone makes its entry longer than the active limit
+- WHEN the buffer is flushed
+- THEN the entry is enqueued without `oldData`, and the log names its uuid and says that conditioned `updated` rules and `calculatedChange` rules are skipped for this object
+- @e2e exclude pinned by `DeferredChunksFitTheJobLimitTest::testAnOversizedUpdateIsKeptWithoutItsOldData`
+
+#### Scenario: One entry too large for any job
+- GIVEN three updates of which the middle one is larger than a job may carry
+- WHEN the buffer is flushed
+- THEN the other two are enqueued and the log names the uuid of the one left out
+- @e2e exclude pinned by `DeferredChunksFitTheJobLimitTest::testAnEntryTooLargeForAnyJobIsNamedAndTheRestGo`
+
 ## Current Implementation Status
 - **Implemented:**
   - 39+ typed event classes in `lib/Event/` covering all entity types with Created/Updated/Deleted patterns, plus specialized events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent with StoppableEventInterface; ObjectLockedEvent, ObjectUnlockedEvent, ObjectRevertedEvent; ToolRegistrationEvent, DeepLinkRegistrationEvent, UserProfileUpdatedEvent)
   - 8 event listeners in `lib/Listener/`: WebhookEventListener, HookListener, ObjectChangeListener, ObjectCleanupListener, FileChangeListener, GraphQLSubscriptionListener, CommentsEntityListener, ToolRegistrationListener
   - 3 event listeners in `lib/EventListener/`: SolrEventListener, AbstractNodeFolderEventListener, AbstractNodesFolderEventListener
-  - Full event registration in `Application::registerEventListeners()` with lazy loading via `IRegistrationContext`
+  - Full event registration in `ListenerRegistrar::register()` with lazy loading via `IRegistrationContext`
   - `CloudEventFormatter` (`lib/Service/Webhook/CloudEventFormatter.php`) producing CloudEvents v1.0 payloads with UUID v4 IDs
   - `WebhookService` with three payload strategies (Mapping, CloudEvents, Standard), HMAC signing, filter matching with dot-notation
   - `Webhook` entity with events, filters, retry policy (exponential/linear/fixed), max retries, timeout, HMAC secret, mapping reference, and delivery statistics
@@ -447,7 +944,7 @@ The `WebhookService::interceptRequest()` method MUST find webhooks configured wi
 
 **Status**: Implemented
 
-**Existing Implementation**: The event-driven architecture is built on 39+ custom typed event classes in `lib/Event/` covering Object, Register, Schema, Source, Configuration, View, Agent, Application, Conversation, and Organisation lifecycle operations. Eleven listeners handle these events across two namespaces (`lib/Listener/` and `lib/EventListener/`) for webhooks, Solr indexing, schema hook execution, text extraction, GraphQL subscriptions, note/task cleanup, file change detection, and tool registration. All event listener bindings are declared in `Application::registerEventListeners()` using Nextcloud's lazy-loading `IRegistrationContext`. Pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) implement `StoppableEventInterface` to allow hooks to reject or modify operations before persistence. Post-mutation events carry the full entity state for downstream consumption.
+**Existing Implementation**: The event-driven architecture is built on 39+ custom typed event classes in `lib/Event/` covering Object, Register, Schema, Source, Configuration, View, Agent, Application, Conversation, and Organisation lifecycle operations. Eleven listeners handle these events across two namespaces (`lib/Listener/` and `lib/EventListener/`) for webhooks, Solr indexing, schema hook execution, text extraction, GraphQL subscriptions, note/task cleanup, file change detection, and tool registration. All event listener bindings are declared in `ListenerRegistrar::register()` using Nextcloud's lazy-loading `IRegistrationContext`. Pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) implement `StoppableEventInterface` to allow hooks to reject or modify operations before persistence. Post-mutation events carry the full entity state for downstream consumption.
 
 **Nextcloud Core Integration**: All custom events extend `OCP\EventDispatcher\Event` and are dispatched via `IEventDispatcher::dispatchTyped()`. Listeners implement `OCP\EventDispatcher\IEventListener`. This makes every OpenRegister event natively consumable by any other Nextcloud app by simply registering a listener in their `Application::register()`. The typed event approach ensures compile-time type safety and IDE discoverability. Webhook delivery uses Nextcloud's `IJobList` with `QueuedJob` (WebhookDeliveryJob) and `TimedJob` (WebhookRetryJob) for async processing. The pre-mutation pattern (Creating/Updating/Deleting events with StoppableEventInterface) follows PSR-14 and integrates cleanly with Nextcloud's event propagation model.
 

@@ -1,0 +1,676 @@
+<?php
+
+/**
+ * Evaluate a decision table against every item.
+ *
+ * The flow engine's rule step: the table travels inline in the step's
+ * configuration, the shared {@see DecisionTableEvaluator} does the deciding,
+ * and the outputs land on the item so the next node can route on them. This
+ * node never suspends and never asks anybody anything: a decision that needs
+ * a person is `openregister.user-task`, not a rule.
+ *
+ * The configuration vocabulary (`inputMapping`/`outputMapping` with a
+ * same-name default) is dossiq's `evaluateDecision` handler's, kept verbatim
+ * so retiring the app-side copy is a mechanical rewrite rather than a
+ * translation.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Flow\Nodes
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/flow-decision-tables/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Flow\Nodes;
+
+use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Flow\FlowFieldPath;
+use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
+use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCP\IL10N;
+use OCP\IURLGenerator;
+use UnexpectedValueException;
+
+/**
+ * Decides each item by its decision table, inline or stored and named by tableRef.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Every branch is a save-time refusal the
+ *   step owes its author (mappings, defaults, paths, inline or stored table); splitting them
+ *   across classes would scatter one contract.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The flow-node interfaces account for four of
+ *   the thirteen; the rest are the evaluator, validator, store and flow item helpers it runs.
+ *
+ * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+ */
+class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTableNodeInterface,
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy
+{
+
+	/**
+	 * The step type.
+	 *
+	 * @var string
+	 */
+	public const NODE_ID = 'openregister.decision-table';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param DecisionTableEvaluator $engine The shared evaluator; all deciding is delegated to it.
+	 * @param DecisionTableValidator $validator Refuses a table the evaluator could not execute.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
+	 * @param DecisionTableStore|null $store Reads a stored table named by tableRef.
+	 */
+	public function __construct(
+		private readonly DecisionTableEvaluator $engine,
+		private readonly DecisionTableValidator $validator,
+		FlowNodePresentation $presentation,
+		private readonly ?DecisionTableStore $store = null,
+	) {
+		parent::__construct(l10n: $presentation->l10n, urls: $presentation->urls);
+	}//end __construct()
+
+	/**
+	 * The step type.
+	 *
+	 * @return string The id.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
+	 */
+	public function getId(): string {
+		return self::NODE_ID;
+	}//end getId()
+
+	/**
+	 * Palette name.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 */
+	public function getDisplayName(): string {
+		return $this->l10n->t('Evaluate a decision table');
+	}//end getDisplayName()
+
+	/**
+	 * Palette description.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 */
+	public function getDescription(): string {
+		return $this->l10n->t('Apply a table of rules to each item and write the outcome onto it.');
+	}//end getDescription()
+
+	/**
+	 * Palette icon.
+	 *
+	 * @return string The icon URL.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 */
+	public function getIcon(): string {
+		return $this->urls->imagePath('core', 'actions/checkmark.svg');
+	}//end getIcon()
+
+	/**
+	 * The config vocabulary of a decision-table step.
+	 *
+	 * @return array<int, string> The accepted config keys.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 */
+	public function configKeys(): array {
+		return ['table', 'tableRef', 'inputMapping', 'outputMapping', 'defaultOutputs', 'resultKey'];
+	}//end configKeys()
+
+	/**
+	 * The fields this node is edited through.
+	 *
+	 * The table itself is edited as JSON for now; the raw pane is the honest
+	 * fallback until the canvas grows a table editor, and the save path
+	 * refuses anything the evaluator could not execute either way.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'table',
+				'label' => $this->l10n->t('Decision table'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t(
+					'The table as JSON: hit policy, inputs, outputs and rules. Saving refuses a table the engine cannot run. Leave empty to use a stored table.'
+				),
+			],
+			[
+				'key' => 'tableRef',
+				'label' => $this->l10n->t('Stored decision table'),
+				'type' => 'select',
+				'optionsFrom' => '/apps/openregister/api/objects/'.DecisionTableStore::REGISTER.'/'.DecisionTableStore::SCHEMA,
+				'help' => $this->l10n->t('A table from the decision-tables register. Use this or an inline table, not both.'),
+			],
+			[
+				'key' => 'inputMapping',
+				'label' => $this->l10n->t('Input fields'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t(
+					'Where each table input is read from, as input name to field path. An input without an entry reads the field with its own name.'
+				),
+			],
+			[
+				'key' => 'outputMapping',
+				'label' => $this->l10n->t('Output fields'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t(
+					'Where each table output is written, as output name to field path. An output without an entry writes the field with its own name.'
+				),
+			],
+			[
+				'key' => 'defaultOutputs',
+				'label' => $this->l10n->t('When no rule matches'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t('Values to write when no rule matches, one per output. Leave empty to fail the step instead.'),
+			],
+			[
+				'key' => 'resultKey',
+				'label' => $this->l10n->t('Record the evaluation under'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Optional field path for the evaluation record: which rules matched and under which hit policy.'),
+			],
+		];
+	}//end configForm()
+
+	/**
+	 * Refuse a configuration the evaluator could not execute, when the flow
+	 * is saved or imported rather than when a run reaches the step.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the table or the mappings are refused.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 */
+	public function validateConfig(array $config): void {
+		$check = new TableConfigCheck(config: $config, table: $this->resolveTable(config: $config));
+
+		$this->assertMapping(check: $check, side: 'input');
+		$this->assertMapping(check: $check, side: 'output');
+		$this->assertDefaults(check: $check);
+
+		if (array_key_exists('resultKey', $config) === true) {
+			$this->assertPath(path: $config['resultKey'], where: 'resultKey');
+		}
+
+	}//end validateConfig()
+
+	/**
+	 * Decide every item: map the inputs in, evaluate, map the outputs back.
+	 *
+	 * Deterministic by construction: no I/O, no clock, no state. The same
+	 * item and the same configuration decide the same way every firing, and
+	 * the node never suspends: a rule step completes in the firing that
+	 * reached it.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata (unused: the decision reads only the item).
+	 *
+	 * @return array The output items, one per input item.
+	 *
+	 * @throws UnexpectedValueException When the configuration is refused.
+	 * @throws DecisionEvaluationException When an item cannot be decided and no default row is configured.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-step-is-deterministic-and-never-suspends
+	 */
+	public function execute(array $items, array $config, array $context): array {
+		return $this->decideItems(step: new NodeInvocation(items: $items, config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Decide every item; see {@see self::execute()}. The run metadata is not read.
+	 *
+	 * @param NodeInvocation $step The items and the step configuration.
+	 *
+	 * @return array The output items, one per input item.
+	 *
+	 * @throws UnexpectedValueException When the configuration is refused.
+	 * @throws DecisionEvaluationException When an item cannot be decided and no default row is configured.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-step-is-deterministic-and-never-suspends
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowItems::item()` is the engine's canonical constructor.
+	 */
+	private function decideItems(NodeInvocation $step): array {
+		if ($step->items === []) {
+			return [];
+		}
+
+		// A flow written by hand or imported past the editor must meet the
+		// same bar as one saved through it, so the refusals run here too —
+		// the same belt-and-braces ObjectReadNode wears.
+		$this->validateConfig(config: $step->config);
+
+		$plan = new DecisionTablePlan(table: $this->resolveTable(config: $step->config), config: $step->config);
+
+		$out = [];
+		foreach ($step->items as $index => $item) {
+			$out[] = FlowItems::item(
+				json: $this->decidedRecord(plan: $plan, json: (array)($item[FlowItems::JSON] ?? [])),
+				binary: (array)($item[FlowItems::BINARY] ?? []),
+				fromItemIndex: $index
+			);
+		}
+
+		return $out;
+	}//end decideItems()
+
+	/**
+	 * One item's record with the decision written into it.
+	 *
+	 * @param DecisionTablePlan    $plan The table and the step's mappings.
+	 * @param array<string, mixed> $json The item's record.
+	 *
+	 * @return array<string, mixed> The record carrying the outputs and, when asked, the summary.
+	 *
+	 * @throws DecisionEvaluationException When the item cannot be decided and no default row exists.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
+	 */
+	private function decidedRecord(DecisionTablePlan $plan, array $json): array {
+		$table         = $plan->table;
+		$outputMapping = $plan->outputMapping();
+		$resultKey     = $plan->resultKey();
+		$result        = $this->decide(plan: $plan, json: $json);
+
+		foreach ($this->columnNames(columns: (array)($table['outputs'] ?? [])) as $name) {
+			FlowFieldPath::assign(
+				json: $json,
+				path: (string)($outputMapping[$name] ?? $name),
+				value: ($result['outputs'][$name] ?? null)
+			);
+		}
+
+		if ($resultKey !== '') {
+			FlowFieldPath::assign(
+				json: $json,
+				path: $resultKey,
+				value: [
+					'hitPolicy' => $result['hitPolicy'],
+					'matchedRuleIds' => $result['matchedRuleIds'],
+					'defaulted' => $result['defaulted'],
+					'tableName' => (string)($table['name'] ?? ''),
+					'tableKey' => (string)($table['key'] ?? ''),
+				]
+			);
+		}
+
+		return $json;
+	}//end decidedRecord()
+
+	/**
+	 * The table a step runs: inline, or stored and named by `tableRef`.
+	 *
+	 * Exactly one of the two. Both would leave a reader guessing which one
+	 * decided; neither is a step that cannot decide anything.
+	 *
+	 * @param array<string, mixed> $config The step configuration.
+	 *
+	 * @return array<string, mixed> An executable table.
+	 *
+	 * @throws UnexpectedValueException When the configuration names no executable table.
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+	 */
+	private function resolveTable(array $config): array {
+		$table     = ($config['table'] ?? null);
+		$reference = trim((string)($config['tableRef'] ?? ''));
+		$hasInline = $this->isInlineTable(table: $table);
+
+		if ($hasInline === true && $reference !== '') {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A decision-table step takes an inline table or a stored table, not both.')
+			);
+		}
+
+		if ($reference !== '') {
+			return $this->storedTable(reference: $reference);
+		}
+
+		return $this->validatedInlineTable(table: $table);
+	}//end resolveTable()
+
+	/**
+	 * Whether a config's `table` is a non-empty inline table.
+	 *
+	 * @param mixed $table The configured table.
+	 *
+	 * @return bool True for a non-empty array.
+	 *
+	 * @phpstan-assert-if-true array $table
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function isInlineTable(mixed $table): bool {
+		return is_array($table) === true && $table !== [];
+	}//end isInlineTable()
+
+	/**
+	 * The inline table, refused when it is missing or the validator finds problems.
+	 *
+	 * @param mixed $table The configured table.
+	 *
+	 * @return array The table.
+	 *
+	 * @throws UnexpectedValueException When there is no table, or it cannot be run.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function validatedInlineTable(mixed $table): array {
+		if ($this->isInlineTable(table: $table) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A decision-table step needs a table.')
+			);
+		}
+
+		$problems = $this->validator->validate(table: $table);
+		if ($problems !== []) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The decision table cannot be run: %s.', [implode('; ', $problems)])
+			);
+		}
+
+		return $table;
+	}//end validatedInlineTable()
+
+	/**
+	 * Read a stored table, which the store has already validated.
+	 *
+	 * @param string $reference The table's key or id.
+	 *
+	 * @return array<string, mixed> The table.
+	 *
+	 * @throws UnexpectedValueException When the store is absent or the reference names no executable table.
+	 */
+	private function storedTable(string $reference): array {
+		if ($this->store === null) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('Stored decision tables are not available here, so "%s" cannot be used.', [$reference])
+			);
+		}
+
+		return $this->store->find(reference: $reference);
+	}//end storedTable()
+
+	/**
+	 * Decide one item: build the inputs, run the evaluator, apply the
+	 * author's no-match choice.
+	 *
+	 * @param DecisionTablePlan    $plan The table, its input mapping and the default row.
+	 * @param array<string, mixed> $json The item's record.
+	 *
+	 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string, defaulted: bool}
+	 *
+	 * @throws DecisionEvaluationException When the item cannot be decided and no default row exists.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowValueTemplate::render()` is the
+	 * engine's canonical dotted-path read.
+	 */
+	private function decide(DecisionTablePlan $plan, array $json): array {
+		$table        = $plan->table;
+		$inputMapping = $plan->inputMapping();
+		$inputs       = [];
+		foreach ($this->columnNames(columns: (array)($table['inputs'] ?? [])) as $name) {
+			$path = (string)($inputMapping[$name] ?? $name);
+			// A value that is exactly one placeholder keeps its type, so a
+			// number stays a number on its way into the coercion.
+			$inputs[$name] = FlowValueTemplate::render(value: ('{{' . $path . '}}'), json: $json);
+		}
+
+		try {
+			$result = $this->engine->evaluate(decisionTable: $table, inputs: $inputs);
+
+			return [
+				'outputs' => $result['outputs'],
+				'matchedRuleIds' => $result['matchedRuleIds'],
+				'hitPolicy' => $result['hitPolicy'],
+				'defaulted' => false,
+			];
+		} catch (DecisionEvaluationException $e) {
+			$defaults = $plan->defaultOutputs();
+			if ($e->getErrorCode() !== 'no_rule_matched' || is_array($defaults) === false) {
+				// Everything else — a missing input, a type mismatch, a hit
+				// policy violation — is a fault, not a no-match, and the
+				// step's onError policy is the place that decides what a
+				// fault costs. Catching it here would report a completed
+				// decision that never happened.
+				throw $e;
+			}
+
+			return [
+				'outputs' => $defaults,
+				'matchedRuleIds' => [],
+				'hitPolicy' => strtoupper((string)($table['hitPolicy'] ?? 'UNIQUE')),
+				'defaulted' => true,
+			];
+		}//end try
+	}//end decide()
+
+	/**
+	 * The declared column names, in declaration order.
+	 *
+	 * @param array<int, mixed> $columns The declared `inputs` or `outputs`.
+	 *
+	 * @return array<int, string> The names.
+	 */
+	private function columnNames(array $columns): array {
+		$names = [];
+		foreach ($columns as $column) {
+			if (is_array($column) === false) {
+				continue;
+			}
+
+			$name = trim((string)($column['name'] ?? ''));
+			if ($name !== '') {
+				$names[] = $name;
+			}
+		}
+
+		return $names;
+	}//end columnNames()
+
+	/**
+	 * Refuse a mapping the step would otherwise silently ignore.
+	 *
+	 * A mapping entry for a name the table does not declare is configuration
+	 * that looks like behaviour and is not; a templated path would let item
+	 * data choose the write position on a RULE step, which no migrating
+	 * table needs and which is refused rather than half-supported.
+	 *
+	 * @param TableConfigCheck $check The step configuration and its table.
+	 * @param string           $side  `input` or `output`: checks `<side>Mapping`
+	 *                                against the table's declared `<side>s`.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the mapping is refused.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 */
+	private function assertMapping(TableConfigCheck $check, string $side): void {
+		$config = $check->config;
+		$key    = $side . 'Mapping';
+		if (array_key_exists($key, $config) === false) {
+			return;
+		}
+
+		if (is_array($config[$key]) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The %s must be an object of name to field path.', [$key])
+			);
+		}
+
+		$declared = $this->columnNames(columns: (array)($check->table[$side . 's'] ?? []));
+		foreach ($config[$key] as $name => $path) {
+			if (in_array((string)$name, $declared, true) === false) {
+				throw new UnexpectedValueException(
+					$this->l10n->t('The %1$s names "%2$s", which the table does not declare. The step would silently ignore it.', [$key, (string)$name])
+				);
+			}
+
+			$this->assertPath(path: $path, where: ($key . ' "' . (string)$name . '"'));
+		}
+
+	}//end assertMapping()
+
+	/**
+	 * Refuse the author's default row unless it is complete, and refuse it
+	 * entirely on COLLECT.
+	 *
+	 * A partial default writes half a decision and nulls for the rest, which
+	 * is the silent shape this node exists to refuse. On COLLECT the empty
+	 * list is a real answer, so a default would be unreachable configuration
+	 * that looks like behaviour.
+	 *
+	 * @param TableConfigCheck $check The step configuration and its table.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the defaults are refused.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
+	 */
+	private function assertDefaults(TableConfigCheck $check): void {
+		if (array_key_exists('defaultOutputs', $check->config) === false) {
+			return;
+		}
+
+		$defaults = $check->config['defaultOutputs'];
+		$this->assertDefaultsShape(defaults: $defaults, table: $check->table);
+		$this->assertDefaultsCover(defaults: $defaults, outputNames: $this->columnNames(columns: (array)($check->table['outputs'] ?? [])));
+
+	}//end assertDefaults()
+
+	/**
+	 * Refuse a default row that is not a map, or one on a COLLECT table.
+	 *
+	 * @param mixed $defaults The configured `defaultOutputs`.
+	 * @param array $table    The resolved table.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the default row cannot be used.
+	 *
+	 * @phpstan-assert array $defaults
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function assertDefaultsShape(mixed $defaults, array $table): void {
+		if (is_array($defaults) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The defaultOutputs must be an object of output name to value.')
+			);
+		}
+
+		if (strtoupper(trim((string)($table['hitPolicy'] ?? 'UNIQUE'))) === 'COLLECT') {
+			throw new UnexpectedValueException(
+				$this->l10n->t('A COLLECT table never fails to match: its empty list is the answer. Remove defaultOutputs.')
+			);
+		}
+
+	}//end assertDefaultsShape()
+
+	/**
+	 * Refuse a default row that misses a declared output or names an undeclared one.
+	 *
+	 * @param array              $defaults    The default row.
+	 * @param array<int, string> $outputNames The table's declared outputs.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException On a partial or over-wide default row.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function assertDefaultsCover(array $defaults, array $outputNames): void {
+		foreach ($outputNames as $name) {
+			if (array_key_exists($name, $defaults) === false) {
+				throw new UnexpectedValueException(
+					$this->l10n->t('The defaultOutputs are missing a value for output "%s". A partial default writes half a decision.', [$name])
+				);
+			}
+		}
+
+		foreach (array_keys($defaults) as $name) {
+			if (in_array((string)$name, $outputNames, true) === false) {
+				throw new UnexpectedValueException(
+					$this->l10n->t('The defaultOutputs name "%s", which the table does not declare. The step would silently ignore it.', [(string)$name])
+				);
+			}
+		}
+
+	}//end assertDefaultsCover()
+
+	/**
+	 * Refuse a field path that is empty, not a string, or templated.
+	 *
+	 * @param mixed $path The configured path.
+	 * @param string $where Which configuration entry it came from, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the path is refused.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 */
+	private function assertPath(mixed $path, string $where): void {
+		if (is_string($path) === false || trim($path) === '') {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The field path for %s is empty. A position is never empty.', [$where])
+			);
+		}
+
+		if (str_contains($path, '{{') === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The field path for %s is templated. A rule step reads and writes the positions its author named, literally.', [$where])
+			);
+		}
+
+	}//end assertPath()
+
+	/**
+	 * What kind of step this is. Evaluates a decision table.
+	 *
+	 * @return string The BPMN kind.
+	 *
+	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 */
+	public function getKind(): string {
+		return IFlowNodeTaxonomy::KIND_BUSINESS_RULE_TASK;
+
+	}//end getKind()
+}//end class

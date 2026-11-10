@@ -1,5 +1,11 @@
 # Tasks: Deprecate Published/Depublished Object Metadata
 
+> **Status note (2026-06-15):** All **OpenRegister-core** scope is COMPLETE — columns dropped by migration `lib/Migration/Version1Date20260313130000.php`, removal locked by `tests/Unit/Service/ImportServicePublishDeprecationTest.php`, frontend cleaned (Phases 1–3, 8). The lingering open `[ ]` items below are **Phases 4–7: downstream cleanup in SEPARATE repos** (OpenCatalogi / Softwarecatalogus / decidesk), which this change cannot tick from the OR repo. That downstream cleanup is **now being done** in those repos (opencatalogi `fix/publish-rbac`; softwarecatalog + decidesk anon-publish builds, 2026-06-15), migrating publication visibility to the live RBAC model (public-group read with `publicatiedatum <= $now`). These items are tracked there, not forgotten.
+>
+> **Archive readiness:** All OR-core tasks are done, and the only remaining items are out-of-scope downstream tasks now tracked in their own repos. This change is therefore a candidate to **archive** — but the archive decision is left FLAGGED here (not forced) until the downstream `fix/publish-rbac` / anon-publish PRs land. Do NOT fake-tick the cross-repo `[ ]` items in OR.
+>
+> See also: the retired `BUG-OBJ-3` entry in `CODE-REVIEW-IMPROVEMENT-PLAN.md` — re-adding object-level `setPublished()` would revert this breaking change and must not be implemented.
+
 ## Phase 1: OpenRegister Core Cleanup (COMPLETED - already done prior to this change)
 
 ### MagicMapper Column and Metadata Removal

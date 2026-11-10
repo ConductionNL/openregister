@@ -3,55 +3,52 @@
 		name="Role Based Access Control (RBAC)"
 		description="Configure access permissions and user groups"
 		:loading="loading"
-		loading-message="Loading RBAC settings...">
+		:loadingMessage="t('openregister', 'Loading RBAC settings...')">
 		<template #actions>
-			<NcButton
-				type="error"
-				:disabled="loading || saving || rebasing"
-				@click="showRebaseDialog">
-				<template #icon>
-					<NcLoadingIcon v-if="rebasing" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				Rebase
-			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="loading || saving || rebasing"
-				@click="saveSettings">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<Save v-else :size="20" />
-				</template>
-				Save
-			</NcButton>
+			<SectionSaveActions v-bind="saveActions" />
 		</template>
 
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
-				Role Based Access Control (RBAC) allows you to control who can access and modify different parts of your Open Register.
-				When enabled, users are assigned to specific Nextcloud groups that determine their permissions for registers, schemas, and objects.
-				Note: This system uses Nextcloud's built-in group functionality rather than separate roles.
+				Role Based Access Control (RBAC) allows you to control who can access
+				and modify different parts of your Open Register. When enabled, users
+				are assigned to specific Nextcloud groups that determine their
+				permissions for registers, schemas, and objects. Note: This system
+				uses Nextcloud's built-in group functionality rather than separate
+				roles.
 			</p>
 			<p class="toggle-status">
 				<strong>Current Status:</strong>
-				<span :class="rbacOptions.enabled ? 'status-enabled' : 'status-disabled'">
-					{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+				<span
+					:class="
+						rbacOptions.enabled ? 'status-enabled' : 'status-disabled'
+					">
+					{{
+						rbacOptions.enabled
+							? 'Role Based Access Control enabled'
+							: 'Role Based Access Control disabled'
+					}}
 				</span>
 			</p>
 			<p class="impact-description">
-				<strong>{{ rbacOptions.enabled ? 'Disabling' : 'Enabling' }} RBAC will:</strong><br>
+				<strong
+					>{{ rbacOptions.enabled ? 'Disabling' : 'Enabling' }} RBAC
+					will:</strong
+				><br />
 				<span v-if="!rbacOptions.enabled">
-					• Provide fine-grained access control over registers and schemas<br>
-					• Allow you to assign users to specific Nextcloud groups (Viewer, Editor, Admin)<br>
-					• Enable secure multi-user environments with proper permission boundaries<br>
+					• Provide fine-grained access control over registers and
+					schemas<br />
+					• Allow you to assign users to specific Nextcloud groups (Viewer,
+					Editor, Admin)<br />
+					• Enable secure multi-user environments with proper permission
+					boundaries<br />
 					• Require group assignment for new users accessing the system
 				</span>
 				<span v-else>
-					• Remove all group-based restrictions and permissions<br>
-					• Grant all users full access to all registers and schemas<br>
-					• Simplify user management but reduce security controls<br>
+					• Remove all group-based restrictions and permissions<br />
+					• Grant all users full access to all registers and schemas<br />
+					• Simplify user management but reduce security controls<br />
 					• Allow unrestricted access to sensitive data and configurations
 				</span>
 			</p>
@@ -60,45 +57,36 @@
 		<!-- Enable RBAC Toggle -->
 		<div class="option-section">
 			<NcCheckboxRadioSwitch
-				:checked.sync="rbacOptions.enabled"
+				v-model="rbacOptions.enabled"
 				:disabled="saving"
 				type="switch">
-				{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
+				{{
+					rbacOptions.enabled
+						? 'Role Based Access Control enabled'
+						: 'Role Based Access Control disabled'
+				}}
 			</NcCheckboxRadioSwitch>
 
 			<!-- Admin Override -->
 			<div v-if="rbacOptions.enabled">
 				<NcCheckboxRadioSwitch
-					:checked.sync="rbacOptions.adminOverride"
+					v-model="rbacOptions.adminOverride"
 					:disabled="saving"
 					type="switch">
-					{{ rbacOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}
+					{{
+						rbacOptions.adminOverride
+							? 'Admin override enabled'
+							: 'Admin override disabled'
+					}}
 				</NcCheckboxRadioSwitch>
 				<p class="option-description">
 					Allow administrators to bypass all RBAC restrictions
 				</p>
 
-				<!-- Inherit-from-public default -->
-				<NcCheckboxRadioSwitch
-					:checked.sync="rbacOptions.inheritFromPublicDefault"
-					:disabled="saving"
-					type="switch">
-					{{ rbacOptions.inheritFromPublicDefault
-						? 'Authenticated users inherit public group rights (default)'
-						: 'Authenticated users do NOT inherit public group rights (default)' }}
-				</NcCheckboxRadioSwitch>
-				<p class="option-description">
-					Tenant-wide default for the schema-level <code>inheritFromPublic</code> flag.
-					When on (default), authenticated users qualify for any rule that targets the
-					<code>public</code> group across all schemas — unless an individual schema or
-					register opts out via its <code>inheritFromPublic</code> field. When off,
-					authenticated users must qualify via their own group memberships everywhere
-					the flag is not explicitly set. Anonymous users are unaffected either way.
-				</p>
-
 				<h4>Default User Groups</h4>
 				<p class="option-description">
-					Configure which Nextcloud groups different types of users are assigned to by default
+					Configure which Nextcloud groups different types of users are
+					assigned to by default
 				</p>
 
 				<div class="groups-table">
@@ -106,14 +94,15 @@
 						<div class="group-label">
 							<strong>Anonymous Users</strong>
 							<p class="user-type-description">
-								Unidentified, non-logged-in users who access public content without authentication
+								Unidentified, non-logged-in users who access public
+								content without authentication
 							</p>
 						</div>
 						<div class="group-select">
 							<NcSelect
 								v-model="rbacOptions.anonymousGroup"
 								:options="groupOptions"
-								input-label="Anonymous Group"
+								:inputLabel="t('openregister', 'Anonymous Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -122,14 +111,15 @@
 						<div class="group-label">
 							<strong>Default New Users</strong>
 							<p class="user-type-description">
-								Authenticated users who have logged in but haven't been assigned to specific groups yet
+								Authenticated users who have logged in but haven't
+								been assigned to specific groups yet
 							</p>
 						</div>
 						<div class="group-select">
 							<NcSelect
 								v-model="rbacOptions.defaultNewUserGroup"
 								:options="groupOptions"
-								input-label="New User Group"
+								:inputLabel="t('openregister', 'New User Group')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -138,14 +128,15 @@
 						<div class="group-label">
 							<strong>Default Object Owner</strong>
 							<p class="user-type-description">
-								Default user assigned as owner when creating new objects without explicit ownership
+								Default user assigned as owner when creating new
+								objects without explicit ownership
 							</p>
 						</div>
 						<div class="group-select">
 							<NcSelect
 								v-model="rbacOptions.defaultObjectOwner"
 								:options="userOptions"
-								input-label="Default Owner"
+								:inputLabel="t('openregister', 'Default Owner')"
 								:disabled="loading || saving" />
 						</div>
 					</div>
@@ -156,41 +147,42 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
+import {
+	NcCheckboxRadioSwitch,
+	NcSelect,
+} from '@nextcloud/vue'
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
  */
-import { mapStores } from 'pinia'
-import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Save from 'vue-material-design-icons/ContentSave.vue'
+import SectionSaveActions from './SectionSaveActions.vue'
+import { settingsSectionState } from './settingsSectionState.js'
 
 export default {
 	name: 'RbacConfiguration',
 
 	components: {
+		SectionSaveActions,
 		SettingsSection,
-		NcButton,
-		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcSelect,
-		Refresh,
-		Save,
 	},
 
-	computed: {
-		...mapStores(useSettingsStore),
+	mixins: [settingsSectionState],
 
+	computed: {
 		rbacOptions: {
 			/**
-			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 			 */
 			get() {
 				return this.settingsStore.rbacOptions
 			},
+
 			/**
-			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+			 * @param {object} value
+			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 			 */
 			set(value) {
 				this.settingsStore.rbacOptions = value
@@ -198,51 +190,23 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		groupOptions() {
 			return this.settingsStore.groupOptions
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		userOptions() {
 			return this.settingsStore.userOptions
-		},
-
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
-		 */
-		loading() {
-			return this.settingsStore.loading
-		},
-
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
-		 */
-		saving() {
-			return this.settingsStore.saving
-		},
-
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
-		 */
-		rebasing() {
-			return this.settingsStore.rebasing
 		},
 	},
 
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
-		 */
-		showRebaseDialog() {
-			this.settingsStore.showRebaseDialog()
-		},
-
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRbacSettings(this.rbacOptions)
@@ -251,118 +215,16 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
-.section-description-full {
-	margin-bottom: 24px;
-	padding: 16px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
-
-.main-description {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
-
-.toggle-status {
-	margin: 0 0 12px 0;
-	color: var(--color-text-light);
-}
-
-.impact-description {
-	margin: 0;
-	color: var(--color-text-light);
-	line-height: 1.5;
-}
-
-.status-enabled {
-	color: var(--color-success);
-	font-weight: 500;
-}
-
-.status-disabled {
-	color: var(--color-text-maxcontrast);
-	font-weight: 500;
-}
+@include section-description-full-2-rules;
 
 .option-section {
 	margin: 24px 0;
 }
 
-.option-description {
-	color: var(--color-text-maxcontrast);
-	margin: 8px 0 16px 0;
-	line-height: 1.4;
-}
-
-.option-section h4 {
-	color: var(--color-text-light);
-	margin: 24px 0 16px 0;
-	font-size: 16px;
-}
-
-.groups-table {
-	display: flex;
-	flex-direction: column;
-	gap: 20px;
-	margin-top: 16px;
-}
-
-.groups-row {
-	display: grid;
-	grid-template-columns: 1fr 300px;
-	gap: 20px;
-	align-items: start;
-	padding: 16px;
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-}
-
-.group-label strong {
-	color: var(--color-text-light);
-	font-weight: 500;
-	display: block;
-	margin-bottom: 4px;
-}
-
-.user-type-description {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	margin: 0;
-	line-height: 1.3;
-}
-
-.group-select {
-	display: flex;
-	align-items: center;
-}
-
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
-
-@media (max-width: 768px) {
-	.groups-row {
-		grid-template-columns: 1fr;
-		gap: 12px;
-	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
-}
+@include option-description-rules;
 </style>

@@ -4,52 +4,41 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteEndpoint'"
+	<ConfirmDialogFrame
+		v-if="navigationStore.dialog === 'deleteEndpoint'"
 		name="Delete Endpoint"
-		:can-close="true"
-		@update:open="navigationStore.setDialog(false)">
+		size="small"
+		closable
+		closeLabel="Cancel"
+		confirmLabel="Delete"
+		showConfirm
+		@cancel="navigationStore.setDialog(false)"
+		@confirm="deleteEndpoint()">
 		<div class="modal">
 			<p>
-				Are you sure you want to delete the endpoint <b>{{ endpointStore.endpointItem?.name }}</b>?
+				Are you sure you want to delete the endpoint
+				<b>{{ endpointStore.endpointItem?.name }}</b
+				>?
 			</p>
-			<p>This action cannot be undone.</p>
+			<p>{{ t('openregister', 'This action cannot be undone.') }}</p>
 		</div>
-		<template #actions>
-			<NcButton @click="navigationStore.setDialog(false)">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
-			<NcButton type="error" @click="deleteEndpoint()">
-				<template #icon>
-					<TrashCanOutline :size="20" />
-				</template>
-				Delete
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import {
-	NcDialog,
-	NcButton,
-} from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 
 export default {
 	name: 'DeleteEndpoint',
-	components: {
-		NcDialog,
-		NcButton,
-		Cancel,
-		TrashCanOutline,
-	},
+	components: { ConfirmDialogFrame },
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		deleteEndpoint() {
-			endpointStore.deleteEndpoint(endpointStore.endpointItem)
+			endpointStore
+				.deleteEndpoint(endpointStore.endpointItem)
 				.then(() => {
 					navigationStore.setDialog(false)
 					OCP.Toast.success('Endpoint deleted successfully')

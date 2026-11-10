@@ -1,15 +1,42 @@
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
+import {
+	copiedResults,
+	getRequest,
+	listPageQuery,
+	listPagination,
+	statisticsOrEmpty,
+	storeRequest,
+	withoutIds,
+} from '../../services/listPage.js'
 
 const apiUrl = '/index.php/apps/openregister/api'
+
+/**
+ * The statistics with every count at 0.
+ *
+ * @return {object} Every count at 0.
+ * @spec exclude Client-side empty state of the statistics; no backend contract.
+ */
+function emptyStatistics() {
+	return {
+		total: 0,
+		create: 0,
+		update: 0,
+		delete: 0,
+		read: 0,
+	}
+}
 
 /**
  * Store for managing audit trail logs
  * Provides functionality for retrieving, filtering, and managing audit trail entries
  */
+let pendingRefresh = null
+let requestInFlight = null
+
 export const useAuditTrailStore = defineStore('auditTrail', {
 	state: () => ({
 		// Loading states
@@ -21,331 +48,260 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		auditTrailItem: null,
 
 		// Pagination
-		auditTrailPagination: {
-			total: 0,
-			page: 1,
-			pages: 1,
-			limit: 50,
-			offset: 0,
-		},
+		auditTrailPagination: listPagination({}, 50),
 
 		// Statistics
-		statistics: {
-			total: 0,
-			create: 0,
-			update: 0,
-			delete: 0,
-			read: 0,
-		},
+		statistics: emptyStatistics(),
 
 		// Filters
 		auditTrailFilters: {},
 		auditTrailSearch: '',
+
+		// Sort: `{ field: 'ASC' | 'DESC' }`, empty for the server default
+		// (newest first). Kept here so paging keeps the order a header chose.
+		auditTrailSort: {},
 	}),
 
 	actions: {
 		/**
 		 * Set audit trail list
+		 *
 		 * @param {Array} auditTrailList - The audit trail list to set
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailList(auditTrailList) {
 			// Ensure we have a clean array without reactive references
-			this.auditTrailList = Array.isArray(auditTrailList) ? [...auditTrailList] : []
-			console.info('Audit trail list set to:', this.auditTrailList.length, 'items')
+			this.auditTrailList = Array.isArray(auditTrailList)
+				? [...auditTrailList]
+				: []
 		},
 
 		/**
 		 * Set audit trail item
+		 *
 		 * @param {object} auditTrailItem - The audit trail item to set
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem
-			console.info('Audit trail item set to:', auditTrailItem)
 		},
 
 		/**
 		 * Set audit trail pagination
+		 *
 		 * @param {object} pagination - The pagination object
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailPagination(pagination) {
 			this.auditTrailPagination = {
 				...this.auditTrailPagination,
 				...pagination,
 			}
-			console.info('Audit trail pagination set to:', this.auditTrailPagination)
 		},
 
 		/**
 		 * Set statistics
+		 *
 		 * @param {object} stats - The statistics object
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setStatistics(stats) {
 			this.statistics = {
 				...this.statistics,
 				...stats,
 			}
-			console.info('Statistics set to:', this.statistics)
 		},
 
 		/**
 		 * Set audit trail filters
+		 *
 		 * @param {object} filters - The filters to set
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailFilters(filters) {
 			this.auditTrailFilters = filters
-			console.info('Audit trail filters set to:', filters)
 		},
 
 		/**
 		 * Set audit trail search
+		 *
 		 * @param {string} search - The search term
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailSearch(search) {
 			this.auditTrailSearch = search
-			console.info('Audit trail search set to:', search)
+		},
+
+		/**
+		 * Set the sort the list is fetched in.
+		 *
+		 * @param {object} sort `{ field: 'ASC' | 'DESC' }`, or `{}` for the default.
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md
+		 */
+		setAuditTrailSort(sort) {
+			this.auditTrailSort = sort && typeof sort === 'object' ? { ...sort } : {}
 		},
 
 		/**
 		 * Fetch audit trails with optional filtering and pagination
+		 *
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async fetchAuditTrails(options = {}) {
-			this.auditTrailLoading = true
-
-			try {
-				console.info('Fetching audit trails with options:', options)
-
-				// Build query parameters
-				const params = new URLSearchParams()
-
-				// Add pagination
-				if (options.limit) params.append('limit', options.limit)
-				if (options.offset) params.append('offset', options.offset)
-				if (options.page) params.append('page', options.page)
-
-				// Add search
-				if (options.search || this.auditTrailSearch) {
-					params.append('search', options.search || this.auditTrailSearch)
-				}
-
-				// Add filters
-				const filters = { ...this.auditTrailFilters, ...options.filters }
-				Object.entries(filters).forEach(([key, value]) => {
-					if (value !== null && value !== undefined && value !== '') {
-						params.append(key, value)
-					}
-				})
-
-				// Add sort
-				if (options.sort) {
-					Object.entries(options.sort).forEach(([field, direction]) => {
-						params.append('sort', field)
-						params.append('order', direction)
-					})
-				}
-
-				const url = `${apiUrl}/audit-trails?${params.toString()}`
-				console.info('Fetching from URL:', url)
-
-				const response = await fetch(url, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				const data = await response.json()
-				console.info('Audit trail fetch response:', data)
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch audit trails')
-				}
-
-				// Update store state - ensure we pass clean data
-				this.setAuditTrailList(data.results ? JSON.parse(JSON.stringify(data.results)) : [])
-				this.setAuditTrailPagination({
-					total: data.total || 0,
-					page: data.page || 1,
-					pages: data.pages || 1,
-					limit: data.limit || 50,
-					offset: data.offset || 0,
-				})
-
-				return data
-			} catch (error) {
-				console.error('Error fetching audit trails:', error)
-				throw error
-			} finally {
-				this.auditTrailLoading = false
-			}
-		},
-
-		/**
-		 * Fetch audit trail statistics
-		 * @return {Promise<object>} The statistics data
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		async fetchStatistics() {
-			this.statisticsLoading = true
-
-			try {
-				console.info('Fetching audit trail statistics')
-
-				const response = await fetch(`${apiUrl}/audit-trails/statistics`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				const data = await response.json()
-				console.info('Statistics response:', data)
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to fetch statistics')
-				}
-
-				this.setStatistics(data)
-				return data
-			} catch (error) {
-				console.error('Error fetching statistics:', error)
-				throw error
-			} finally {
-				this.statisticsLoading = false
-			}
-		},
-
-		/**
-		 * Delete a single audit trail
-		 * @param {string|number} id - The ID of the audit trail to delete
-		 * @return {Promise<object>} The response data
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		async deleteAuditTrail(id) {
-			try {
-				console.info('Deleting audit trail:', id)
-
-				const response = await fetch(`${apiUrl}/audit-trails/${id}`, {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-				})
-
-				const data = await response.json()
-				console.info('Delete response:', data)
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to delete audit trail')
-				}
-
-				// Remove from audit trail list
-				this.auditTrailList = this.auditTrailList.filter(item => item.id !== id)
-
-				return data
-			} catch (error) {
-				console.error('Error deleting audit trail:', error)
-				throw error
-			}
-		},
-
-		/**
-		 * Delete multiple audit trails
-		 * @param {Array} ids - Array of audit trail IDs to delete
-		 * @return {Promise<object>} The response data
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		async deleteMultipleAuditTrails(ids) {
-			try {
-				console.info('Deleting multiple audit trails:', ids)
-
-				const response = await fetch(`${apiUrl}/audit-trails`, {
-					method: 'DELETE',
-					headers: {
-						'Content-Type': 'application/json',
-						requesttoken: OC.requestToken,
-					},
-					body: JSON.stringify({ ids }),
-				})
-
-				const data = await response.json()
-				console.info('Bulk delete response:', data)
-
-				if (!response.ok) {
-					throw new Error(data.error || 'Failed to delete audit trails')
-				}
-
-				// Remove deleted audit trails from list
-				this.auditTrailList = this.auditTrailList.filter(item => !ids.includes(item.id))
-
-				return data
-			} catch (error) {
-				console.error('Error deleting audit trails:', error)
-				throw error
-			}
-		},
-
-		/**
-		 * Refresh audit trail list with current filters
-		 * @return {Promise} The refresh promise
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		async refreshAuditTrailList() {
-			return this.fetchAuditTrails({
-				limit: this.auditTrailPagination.limit,
-				page: this.auditTrailPagination.page,
+			const query = listPageQuery(options, {
+				search: this.auditTrailSearch,
+				filters: this.auditTrailFilters,
+				sort: this.auditTrailSort,
+			})
+			return storeRequest(this, {
+				flag: 'auditTrailLoading',
+				url: `${apiUrl}/audit-trails?${query}`,
+				request: getRequest('Failed to fetch audit trails'),
+				log: (error) => console.error('Error fetching audit trails:', error),
+				keep: (data) => {
+					this.setAuditTrailList(copiedResults(data))
+					this.setAuditTrailPagination(listPagination(data, 50))
+				},
 			})
 		},
 
 		/**
+		 * Fetch audit trail statistics
+		 *
+		 * @return {Promise<object>} The statistics data
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		async fetchStatistics() {
+			return storeRequest(this, {
+				flag: 'statisticsLoading',
+				url: `${apiUrl}/audit-trails/statistics`,
+				request: { method: 'GET', failure: 'Failed to fetch statistics' },
+				log: (error) => console.error('Error fetching statistics:', error),
+				keep: (data) => this.setStatistics(data),
+			})
+		},
+
+		/**
+		 * Delete a single audit trail
+		 *
+		 * @param {string|number} id - The ID of the audit trail to delete
+		 * @return {Promise<object>} The response data
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		async deleteAuditTrail(id) {
+			return storeRequest(this, {
+				url: `${apiUrl}/audit-trails/${id}`,
+				request: {
+					method: 'DELETE',
+					failure: 'Failed to delete audit trail',
+				},
+				log: (error) => console.error('Error deleting audit trail:', error),
+				keep: () => {
+					this.auditTrailList = withoutIds(this.auditTrailList, [id])
+				},
+			})
+		},
+
+		/**
+		 * Delete multiple audit trails
+		 *
+		 * @param {Array} ids - Array of audit trail IDs to delete
+		 * @return {Promise<object>} The response data
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		async deleteMultipleAuditTrails(ids) {
+			return storeRequest(this, {
+				url: `${apiUrl}/audit-trails`,
+				request: {
+					method: 'DELETE',
+					body: { ids },
+					failure: 'Failed to delete audit trails',
+				},
+				log: (error) => console.error('Error deleting audit trails:', error),
+				keep: () => {
+					this.auditTrailList = withoutIds(this.auditTrailList, ids)
+				},
+			})
+		},
+
+		/**
+		 * Refresh audit trail list with current filters. The page and its
+		 * sidebar both ask for this while mounting, so the refreshes of one
+		 * tick share one request, which reads the filters as they end up.
+		 *
+		 * @return {Promise} The refresh promise
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		refreshAuditTrailList() {
+			pendingRefresh ??= Promise.resolve().then(() => {
+				pendingRefresh = null
+				return this.sharedListRequest()
+			})
+			return pendingRefresh
+		},
+
+		/**
+		 * The list request for the current query: one already on its way is
+		 * shared, so a sidebar and a page that mount a moment apart ask once.
+		 *
+		 * @return {Promise} The request
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-has
+		 */
+		sharedListRequest() {
+			const { limit, page } = this.auditTrailPagination
+			const key = JSON.stringify([
+				this.auditTrailFilters,
+				this.auditTrailSearch,
+				this.auditTrailSort,
+				limit,
+				page,
+			])
+			if (requestInFlight?.key === key) {
+				return requestInFlight.promise
+			}
+			const request = { key }
+			request.promise = this.fetchAuditTrails({ limit, page }).finally(() => {
+				if (requestInFlight === request) requestInFlight = null
+			})
+			requestInFlight = request
+			return request.promise
+		},
+
+		/**
 		 * Get audit trail statistics
+		 *
 		 * @return {Promise<object>} The statistics
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async getStatistics() {
-			try {
-				await this.fetchStatistics()
-				return this.statistics
-			} catch (error) {
-				console.error('Error getting statistics:', error)
-				return {
-					total: 0,
-					create: 0,
-					update: 0,
-					delete: 0,
-					read: 0,
-				}
-			}
+			return statisticsOrEmpty(this, {
+				empty: emptyStatistics,
+				log: (error) => console.error('Error getting statistics:', error),
+			})
 		},
 
 		/**
 		 * Get action distribution data
+		 *
 		 * @return {Promise<Array>} The action distribution
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async getActionDistribution() {
 			try {
@@ -353,14 +309,19 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				const actions = ['create', 'update', 'delete', 'read']
 				const total = this.auditTrailList.length
 
-				return actions.map(action => {
-					const count = this.auditTrailList.filter(item => item.action === action).length
-					return {
-						action,
-						count,
-						percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-					}
-				}).filter(item => item.count > 0)
+				return actions
+					.map((action) => {
+						const count = this.auditTrailList.filter(
+							(item) => item.action === action,
+						).length
+						return {
+							action,
+							count,
+							percentage:
+								total > 0 ? Math.round((count / total) * 100) : 0,
+						}
+					})
+					.filter((item) => item.count > 0)
 			} catch (error) {
 				console.error('Error getting action distribution:', error)
 				return []
@@ -369,17 +330,19 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 
 		/**
 		 * Get top objects by audit trail count
+		 *
 		 * @return {Promise<Array>} The top objects
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async getTopObjects() {
 			try {
 				// Count audit trails per object
 				const objectCounts = {}
-				this.auditTrailList.forEach(item => {
+				this.auditTrailList.forEach((item) => {
 					if (item.object) {
-						objectCounts[item.object] = (objectCounts[item.object] || 0) + 1
+						objectCounts[item.object] =
+							(objectCounts[item.object] || 0) + 1
 					}
 				})
 
@@ -401,28 +364,15 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		/**
 		 * Clear all audit trail store data
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		clearAuditTrailStore() {
 			this.auditTrailList = []
 			this.auditTrailItem = null
-			this.auditTrailPagination = {
-				total: 0,
-				page: 1,
-				pages: 1,
-				limit: 50,
-				offset: 0,
-			}
-			this.statistics = {
-				total: 0,
-				create: 0,
-				update: 0,
-				delete: 0,
-				read: 0,
-			}
+			this.auditTrailPagination = listPagination({}, 50)
+			this.statistics = emptyStatistics()
 			this.auditTrailFilters = {}
 			this.auditTrailSearch = ''
-			console.info('Audit trail store cleared')
 		},
 	},
 })

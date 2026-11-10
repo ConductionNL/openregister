@@ -78,6 +78,29 @@ Events related to validation:
 - **ValidationSucceededEvent**: Triggered when validation succeeds
 - **ValidationFailedEvent**: Triggered when validation fails
 
+### 6. Action Events
+
+- **ActionEvaluatedEvent**: Dispatched every time a permission decision is
+  reached — for every action, canonical or schema-declared, carrying the schema,
+  register, action, object id, actor and verdict.
+
+It fires on **refusals as well as grants**, and the refusal half is the point: an
+event that fires only on success can report what happened but never *who tried*,
+which is the question an audit rule is usually asked. Both verdicts travel on the
+same event so a listener cannot subscribe to only the flattering half.
+
+Three properties worth knowing before you write a listener:
+
+- **It is telemetry, not a vote.** Dispatched after the verdict is final. A
+  listener that throws is caught and logged and the verdict is unaffected —
+  audit must never be able to change an access decision, in either direction.
+  To *contribute* a verdict for a declared action, use `CustomScopeEvaluatingEvent`.
+- **It marks a decision, not an attempt.** Verdicts are memoised per request, so
+  repeated identical checks within one request produce one event. A listener
+  counting attempts will under-count; one recording decisions is exact.
+- **No listener is registered by default.** Volume is opt-in on purpose: actions
+  fire per object operation, and a bulk import is loud.
+
 ### Schema Events
 
 #### SchemaCreatedEvent

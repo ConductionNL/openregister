@@ -182,21 +182,21 @@ A new spec aimed at people running the platform goes into Beheer.
   top-level peers).** Rejected: the platform's *unit of work* is the
   registry primitive, not the capability — admins start with "which
   register" before they start with "which policy".
-- **Hide Beheer behind Instellingen** (mydash pattern). Rejected:
+- **Hide Beheer behind Instellingen** (launchpad pattern). Rejected:
   openregister's admin surface is large enough (~28 specs) to warrant a
-  dedicated menu rather than a settings tab; mydash's admin surface is much
+  dedicated menu rather than a settings tab; launchpad's admin surface is much
   smaller.
 
 ## Source
 
 Distilled from the cross-app information-architecture analysis at
-`/tmp/ia-mydash-openregister.md` (openregister section, §B–§F), which
+`/tmp/ia-launchpad-openregister.md` (openregister section, §B–§F), which
 catalogues all 114 openregister specs against this 8-item menu and the
 per-primitive tab templates above.
 
 ## Related
 
-- mydash mirrors the same discipline with a 7-item menu (Dashboards,
+- launchpad mirrors the same discipline with a 7-item menu (Dashboards,
   Templates, Reports, Comments, Beheer, Catalog, Instellingen) and the
   parallel rule that widget types are catalog entries, not menu items.
 - Hydra ADR-022 (`apps-consume-or-abstractions`) — informs why Beheer for OR

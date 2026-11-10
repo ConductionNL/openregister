@@ -1,0 +1,194 @@
+{
+    "cospend project duplicate / found": {
+        "result": "OCA\\OpenRegister\\Db\\CospendLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = project, 2",
+            "#1 expr.eq(entry_type, :p2, NULL)",
+            "#1 andWhere(eq(entry_type, :p2, NULL))",
+            "#1 param :p3 = p-7, 2",
+            "#1 expr.eq(project_id, :p3, NULL)",
+            "#1 andWhere(eq(project_id, :p3, NULL))",
+            "#1 expr.isNull(bill_id)",
+            "#1 andWhere(isNull(bill_id))",
+            "#1 executeQuery()"
+        ]
+    },
+    "cospend project duplicate / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = project, 2",
+            "#1 expr.eq(entry_type, :p2, NULL)",
+            "#1 andWhere(eq(entry_type, :p2, NULL))",
+            "#1 param :p3 = p-7, 2",
+            "#1 expr.eq(project_id, :p3, NULL)",
+            "#1 andWhere(eq(project_id, :p3, NULL))",
+            "#1 expr.isNull(bill_id)",
+            "#1 andWhere(isNull(bill_id))",
+            "#1 executeQuery()"
+        ]
+    },
+    "cospend bill duplicate / found": {
+        "result": "OCA\\OpenRegister\\Db\\CospendLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = bill, 2",
+            "#1 expr.eq(entry_type, :p2, NULL)",
+            "#1 andWhere(eq(entry_type, :p2, NULL))",
+            "#1 param :p3 = p-7, 2",
+            "#1 expr.eq(project_id, :p3, NULL)",
+            "#1 andWhere(eq(project_id, :p3, NULL))",
+            "#1 param :p4 = 31, 1",
+            "#1 expr.eq(bill_id, :p4, NULL)",
+            "#1 andWhere(eq(bill_id, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "cospend bill duplicate / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = bill, 2",
+            "#1 expr.eq(entry_type, :p2, NULL)",
+            "#1 andWhere(eq(entry_type, :p2, NULL))",
+            "#1 param :p3 = p-7, 2",
+            "#1 expr.eq(project_id, :p3, NULL)",
+            "#1 andWhere(eq(project_id, :p3, NULL))",
+            "#1 param :p4 = 31, 1",
+            "#1 expr.eq(bill_id, :p4, NULL)",
+            "#1 andWhere(eq(bill_id, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "form link / found": {
+        "result": "OCA\\OpenRegister\\Db\\FormLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 5, 1",
+            "#1 expr.eq(form_id, :p2, NULL)",
+            "#1 andWhere(eq(form_id, :p2, NULL))",
+            "#1 expr.isNull(submission_id)",
+            "#1 andWhere(isNull(submission_id))",
+            "#1 executeQuery()"
+        ]
+    },
+    "form link / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 5, 1",
+            "#1 expr.eq(form_id, :p2, NULL)",
+            "#1 andWhere(eq(form_id, :p2, NULL))",
+            "#1 expr.isNull(submission_id)",
+            "#1 andWhere(isNull(submission_id))",
+            "#1 executeQuery()"
+        ]
+    },
+    "form submission link / found": {
+        "result": "OCA\\OpenRegister\\Db\\FormLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 5, 1",
+            "#1 expr.eq(form_id, :p2, NULL)",
+            "#1 andWhere(eq(form_id, :p2, NULL))",
+            "#1 param :p3 = 77, 1",
+            "#1 expr.eq(submission_id, :p3, NULL)",
+            "#1 andWhere(eq(submission_id, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "form submission link / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = 5, 1",
+            "#1 expr.eq(form_id, :p2, NULL)",
+            "#1 andWhere(eq(form_id, :p2, NULL))",
+            "#1 param :p3 = 77, 1",
+            "#1 expr.eq(submission_id, :p3, NULL)",
+            "#1 andWhere(eq(submission_id, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "deck by id / found": {
+        "result": "OCA\\OpenRegister\\Db\\DeckLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "deck by id / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "deck by board / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\DeckLink#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = 4, 1",
+            "#1 expr.eq(board_id, :p1, NULL)",
+            "#1 where(eq(board_id, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "deck by board / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = 4, 1",
+            "#1 expr.eq(board_id, :p1, NULL)",
+            "#1 where(eq(board_id, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    }
+}

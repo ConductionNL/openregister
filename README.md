@@ -67,11 +67,12 @@ It is the shared data backbone for apps like [OpenCatalogi](https://github.com/C
 
 ### Integrations
 
+- **Pluggable integration registry** — Object surfaces (sidebar tabs, dashboard widgets, detail pages, reference properties) are driven by a registry of `IntegrationProvider`s. Five built-ins ship out of the box (Files, Notes, Tags, Tasks, Audit Trail); apps add their own — including OpenConnector-backed external integrations like xWiki — without touching OpenRegister core. See [docs/Integrations/pluggable-integration-registry.md](docs/Integrations/pluggable-integration-registry.md) for the "how to add an integration" walkthrough.
 - **SOLR Integration** — Optional Apache Solr for advanced search scenarios
 - **Source Synchronization** — Keep registers in sync with external data sources
-- **Schema Import** — Import schemas from Schema.org, OpenAPI, and GGM standards
+- **Schema Import** — Import schemas from Schema.org types and GGM (Gemeentelijk Gegevensmodel) objecttypes from bundled, versioned snapshots: datatype mapping, Dutch metadata preserved, pre-filled JSON-LD vocabulary, import provenance, and a guarded update-from-source flow. The upload path also detects (or is told) its dialect (`json-schema` / `openapi` / `schema.org` / `ggm`) and rejects unidentifiable input with HTTP 422. OpenAPI/JSON Schema ingestion is unchanged. See [docs/Features/schema-import.md](docs/Features/schema-import.md).
 - **CalDAV Tasks** — Attach Nextcloud tasks and comments directly to data objects
-- **JSON-LD and Linked Data** — Standards-compliant output for the open data ecosystem
+- **JSON-LD and Linked Data** — Opt-in read-side JSON-LD output via content negotiation (`Accept: application/ld+json`) on the object read endpoints, with `@id` set to the canonical object URI, a `@context` derived from the schema definition, and dereferenceable `/api/contexts/*` documents. Schema.org alignment is per-schema mapping (opt-in via the schema's `configuration.jsonld` block); zero-config schemas still emit valid JSON-LD with OpenRegister-local terms. Read-side only — no JSON-LD ingest. See [docs/Features/json-ld.md](docs/Features/json-ld.md).
 
 ## Architecture
 
@@ -91,14 +92,14 @@ graph TD
 
 ### Data Model
 
-| Entity         | Description                                                      |
-| -------------- | ---------------------------------------------------------------- |
-| Register       | Collection of schemas with shared configuration and access rules |
-| Schema         | JSON Schema definition that validates and types objects          |
-| Object         | Data record validated against a schema, stored in a register     |
-| AuditTrail     | Immutable change log entry for an object                         |
-| ObjectRelation | Typed link between two objects (within or across registers)      |
-| File           | Attachment with text extraction, chunking, and vector embeddings |
+| Entity | Description |
+|--------|-------------|
+| Register | Collection of schemas with shared configuration and access rules |
+| Schema | JSON Schema definition that validates and types objects |
+| Object | Data record validated against a schema, stored in a register |
+| AuditTrail | Immutable change log entry for an object |
+| ObjectRelation | Typed link between two objects (within or across registers) |
+| File | Attachment with text extraction, chunking, and vector embeddings |
 
 ### Directory Structure
 
@@ -122,12 +123,12 @@ openregister/
 
 ## Requirements
 
-| Dependency | Version                                      |
-| ---------- | -------------------------------------------- |
-| Nextcloud  | 28 – 33                                      |
-| PHP        | 8.1+                                         |
+| Dependency | Version |
+|-----------|---------|
+| Nextcloud | 28 – 33 |
+| PHP | 8.1+ |
 | PostgreSQL | 12+ (recommended, with pgvector and pg_trgm) |
-| MySQL      | 8.0+ (alternative, no vector search)         |
+| MySQL | 8.0+ (alternative, no vector search) |
 
 ## Installation
 
@@ -170,10 +171,14 @@ npm run build      # Production build
 ### Code quality
 
 ```bash
-# PHP
-composer phpcs          # Check coding standards
-composer cs:fix         # Auto-fix issues
-composer phpmd          # Mess detection
+# Authoritative gate (same as CI) — must pass before pushing
+composer check:strict   # phpcs + phpmd + phpstan + psalm + all tests
+
+# Individual tools
+composer phpcs          # Check coding standards (0 errors required)
+composer cs:fix         # Auto-fix coding-standard issues
+composer phpmd          # Mess detection (52 violations tracked in openspec/changes/openregister-legacy-quality-cleanup/)
+composer phpstan        # Static analysis (baseline: 1371 entries, tracked in phpstan-baseline.neon)
 composer phpmetrics     # HTML metrics report
 
 # Frontend
@@ -183,32 +188,32 @@ npm run stylelint       # CSS linting
 
 ## Tech Stack
 
-| Layer    | Technology                                         |
-| -------- | -------------------------------------------------- |
-| Frontend | Vue 2.7, Pinia, @nextcloud/vue                     |
-| Build    | Webpack 5, @nextcloud/webpack-vue-config           |
-| Backend  | PHP 8.1+, Nextcloud App Framework                  |
-| Database | PostgreSQL 16 with pgvector + pg_trgm              |
-| Search   | Magic tables (SQL), Solr (optional)                |
-| AI       | Ollama, OpenAI, Fireworks AI, Azure OpenAI         |
-| UX       | @conduction/nextcloud-vue                          |
-| Quality  | PHPCS, PHPMD, phpmetrics, Psalm, ESLint, Stylelint |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Vue 2.7, Pinia, @nextcloud/vue |
+| Build | Webpack 5, @nextcloud/webpack-vue-config |
+| Backend | PHP 8.1+, Nextcloud App Framework |
+| Database | PostgreSQL 16 with pgvector + pg_trgm |
+| Search | Magic tables (SQL), Solr (optional) |
+| AI | Ollama, OpenAI, Fireworks AI, Azure OpenAI |
+| UX | @conduction/nextcloud-vue |
+| Quality | PHPCS, PHPMD, phpmetrics, Psalm, ESLint, Stylelint |
 
 ## Documentation
 
 Full documentation is available at **[openregisters.app](https://openregisters.app)**
 
-| Page                                                        | Description                                                     |
-| ----------------------------------------------------------- | --------------------------------------------------------------- |
-| [Installation](https://openregisters.app/docs/installation) | Complete installation and configuration guide                   |
-| [Features](website/docs/Features/)                          | Feature documentation (objects, schemas, registers, search, AI) |
-| [Developer Guide](website/docs/development/)                | Development setup, Docker profiles, PostgreSQL search           |
-| [API Reference](website/docs/api/)                          | REST API endpoints and bulk operations                          |
-| [Testing](tests/integration/README.md)                      | Integration test suite (Newman/Postman)                         |
+| Page | Description |
+|------|-------------|
+| [Installation](https://openregisters.app/docs/installation) | Complete installation and configuration guide |
+| [Features](website/docs/Features/) | Feature documentation (objects, schemas, registers, search, AI) |
+| [Developer Guide](website/docs/development/) | Development setup, Docker profiles, PostgreSQL search |
+| [API Reference](website/docs/api/) | REST API endpoints and bulk operations |
+| [Testing](tests/integration/README.md) | Integration test suite (Newman/Postman) |
 
 ## Standards & Compliance
 
-- **Data standard:** JSON Schema, JSON-LD, Schema.org
+- **Data standard:** JSON Schema; JSON-LD read-side output (opt-in via content negotiation); Schema.org alignment per-schema mapping (opt-in) — see [docs/Features/json-ld.md](docs/Features/json-ld.md)
 - **API standard:** NLGov REST API Design Rules (Logius)
 - **Dutch interoperability:** Common Ground principles, VNG standards
 - **Accessibility:** WCAG AA (Dutch government requirement)

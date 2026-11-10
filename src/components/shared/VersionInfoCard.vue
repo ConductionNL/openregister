@@ -2,15 +2,15 @@
 	<SettingsSection
 		:name="title"
 		:description="description"
-		:doc-url="docUrl"
+		:docUrl="docUrl"
 		:loading="loading"
-		loading-message="Loading version information...">
+		loadingMessage="Loading version information...">
 		<!-- Actions slot -->
 		<template #actions>
 			<!-- Update Button -->
 			<NcButton
 				v-if="showUpdateButton"
-				:type="updateButtonType"
+				:variant="updateButtonType"
 				:disabled="updateButtonDisabled"
 				@click="handleUpdateClick">
 				<template #icon>
@@ -45,14 +45,21 @@
 
 					<!-- Configured Version (if provided) -->
 					<div v-if="configuredVersion" class="version-item">
-						<span class="version-label">{{ labels.configuredVersion }}:</span>
+						<span class="version-label"
+							>{{ labels.configuredVersion }}:</span
+						>
 						<span class="version-value">{{ configuredVersion }}</span>
 					</div>
 
 					<!-- Additional items -->
-					<div v-for="item in additionalItems" :key="item.label" class="version-item">
+					<div
+						v-for="item in additionalItems"
+						:key="item.label"
+						class="version-item">
 						<span class="version-label">{{ item.label }}:</span>
-						<span class="version-value" :class="item.statusClass">{{ item.value }}</span>
+						<span class="version-value" :class="item.statusClass">{{
+							item.value
+						}}</span>
 					</div>
 
 					<!-- Optional additional items slot -->
@@ -70,10 +77,10 @@
 </template>
 
 <script>
-import SettingsSection from './SettingsSection.vue'
-import { NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Check from 'vue-material-design-icons/Check.vue'
 import Update from 'vue-material-design-icons/Update.vue'
+import SettingsSection from './SettingsSection.vue'
 
 /**
  * Reusable version information card component for displaying application information
@@ -99,6 +106,7 @@ export default {
 	props: {
 		/**
 		 * Section title
+		 *
 		 * @default 'Version Information'
 		 */
 		title: {
@@ -124,6 +132,7 @@ export default {
 
 		/**
 		 * Card title/heading with emoji
+		 *
 		 * @default '📦 Application Information'
 		 */
 		cardTitle: {
@@ -212,11 +221,11 @@ export default {
 	emits: ['update'],
 
 	computed: {
-
 		/**
 		 * Update button type based on status
 		 *
 		 * @return {string}
+		 * @spec exclude computed button-type display helper, UI plumbing
 		 */
 		updateButtonType() {
 			if (this.isUpToDate) {
@@ -229,6 +238,7 @@ export default {
 		 * Update button should be disabled if up to date or updating
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed button-disabled display flag, UI plumbing
 		 */
 		updateButtonDisabled() {
 			return this.isUpToDate || this.updating
@@ -238,6 +248,7 @@ export default {
 		 * Update button text based on status
 		 *
 		 * @return {string}
+		 * @spec exclude computed button-text display helper, UI plumbing
 		 */
 		updateButtonText() {
 			if (this.updating) {
@@ -255,6 +266,7 @@ export default {
 		 * Handle update button click
 		 *
 		 * @return {void}
+		 * @spec exclude emit UI handler dispatching update event, UI plumbing
 		 */
 		handleUpdateClick() {
 			if (!this.updateButtonDisabled) {

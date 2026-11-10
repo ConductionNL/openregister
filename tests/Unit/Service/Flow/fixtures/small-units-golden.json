@@ -1,0 +1,338 @@
+{
+    "readings": {
+        "startEvent": {
+            "verdict": "mapped",
+            "type": "openregister.trigger-manual",
+            "note": ""
+        },
+        "timerStartEvent": {
+            "verdict": "mapped",
+            "type": "openregister.trigger-schedule",
+            "note": ""
+        },
+        "conditionalStartEvent": {
+            "verdict": "mapped",
+            "type": "openregister.trigger-object",
+            "note": ""
+        },
+        "exclusiveGateway": {
+            "verdict": "mapped",
+            "type": "openregister.switch",
+            "note": ""
+        },
+        "intermediateCatchEvent:message": {
+            "verdict": "mapped",
+            "type": "openregister.await-signal",
+            "note": ""
+        },
+        "intermediateCatchEvent:timer": {
+            "verdict": "mapped",
+            "type": "openregister.wait",
+            "note": ""
+        },
+        "callActivity": {
+            "verdict": "mapped",
+            "type": "openregister.sub-flow",
+            "note": ""
+        },
+        "endEvent": {
+            "verdict": "mapped",
+            "type": "openregister.end",
+            "note": ""
+        },
+        "userTask": {
+            "verdict": "approximated",
+            "type": "openregister.await-signal",
+            "note": "a user task becomes a signal the flow waits for; the form and the assignee are not imported."
+        },
+        "inclusiveGateway": {
+            "verdict": "approximated",
+            "type": "openregister.route",
+            "note": "an inclusive gateway becomes a route, which takes ONE branch; a file expecting several to run needs splitting by hand."
+        },
+        "terminateEndEvent": {
+            "verdict": "approximated",
+            "type": "openregister.end",
+            "note": "a terminate end ends this path only; it does not cancel work already running elsewhere in the flow."
+        },
+        "boundaryEvent": {
+            "verdict": "approximated",
+            "type": "",
+            "note": "the engine has no boundary events; this one is recorded as a note on the node it was attached to and does nothing."
+        },
+        "subProcess:event": {
+            "verdict": "refused",
+            "type": "",
+            "note": "an event sub-process has no equivalent: the engine has no way to start work from inside a running flow."
+        },
+        "compensation": {
+            "verdict": "refused",
+            "type": "",
+            "note": "compensation has no equivalent: the engine does not undo completed steps."
+        },
+        "transaction": {
+            "verdict": "refused",
+            "type": "",
+            "note": "a transaction boundary has no equivalent: the engine commits each step as it completes."
+        },
+        "collaboration": {
+            "verdict": "refused",
+            "type": "",
+            "note": "collaboration and choreography describe several participants; a flow is one process."
+        },
+        "process:multiple": {
+            "verdict": "refused",
+            "type": "",
+            "note": "the file declares more than one process; import one process per file so it is clear which became the flow."
+        },
+        "serviceTask": {
+            "verdict": "approximated",
+            "type": "",
+            "note": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+        },
+        "madeUpThing": {
+            "verdict": "refused",
+            "type": "",
+            "note": "\"madeUpThing\" is not a construct this importer reads; it was dropped."
+        },
+        "": {
+            "verdict": "refused",
+            "type": "",
+            "note": "\"\" is not a construct this importer reads; it was dropped."
+        }
+    },
+    "ranks": [
+        [],
+        {
+            "2": 1,
+            "1": 2,
+            "3": 3
+        },
+        {
+            "4": 1
+        },
+        {
+            "7": 1,
+            "8": 2,
+            "9": 3
+        }
+    ],
+    "verdicts": [
+        [
+            null,
+            null,
+            "nl",
+            "depends"
+        ],
+        [
+            null,
+            null,
+            "org-cal",
+            "independent"
+        ],
+        [
+            null,
+            null,
+            "",
+            "independent"
+        ],
+        [
+            null,
+            "org-1",
+            "nl",
+            "independent"
+        ],
+        [
+            null,
+            "org-1",
+            "org-cal",
+            "depends"
+        ],
+        [
+            null,
+            "org-1",
+            "",
+            "independent"
+        ],
+        [
+            "",
+            null,
+            "nl",
+            "depends"
+        ],
+        [
+            "",
+            null,
+            "org-cal",
+            "independent"
+        ],
+        [
+            "",
+            null,
+            "",
+            "independent"
+        ],
+        [
+            "",
+            "org-1",
+            "nl",
+            "independent"
+        ],
+        [
+            "",
+            "org-1",
+            "org-cal",
+            "depends"
+        ],
+        [
+            "",
+            "org-1",
+            "",
+            "independent"
+        ],
+        [
+            " nl ",
+            null,
+            "nl",
+            "depends"
+        ],
+        [
+            " nl ",
+            null,
+            "org-cal",
+            "independent"
+        ],
+        [
+            " nl ",
+            null,
+            "",
+            "independent"
+        ],
+        [
+            " nl ",
+            "org-1",
+            "nl",
+            "depends"
+        ],
+        [
+            " nl ",
+            "org-1",
+            "org-cal",
+            "independent"
+        ],
+        [
+            " nl ",
+            "org-1",
+            "",
+            "independent"
+        ],
+        [
+            "nl",
+            null,
+            "nl",
+            "depends"
+        ],
+        [
+            "nl",
+            null,
+            "org-cal",
+            "independent"
+        ],
+        [
+            "nl",
+            null,
+            "",
+            "independent"
+        ],
+        [
+            "nl",
+            "org-1",
+            "nl",
+            "depends"
+        ],
+        [
+            "nl",
+            "org-1",
+            "org-cal",
+            "independent"
+        ],
+        [
+            "nl",
+            "org-1",
+            "",
+            "independent"
+        ],
+        [
+            "org-cal",
+            null,
+            "nl",
+            "independent"
+        ],
+        [
+            "org-cal",
+            null,
+            "org-cal",
+            "depends"
+        ],
+        [
+            "org-cal",
+            null,
+            "",
+            "independent"
+        ],
+        [
+            "org-cal",
+            "org-1",
+            "nl",
+            "independent"
+        ],
+        [
+            "org-cal",
+            "org-1",
+            "org-cal",
+            "depends"
+        ],
+        [
+            "org-cal",
+            "org-1",
+            "",
+            "independent"
+        ],
+        [
+            "boom",
+            null,
+            "nl",
+            "unresolvable"
+        ],
+        [
+            "boom",
+            null,
+            "org-cal",
+            "unresolvable"
+        ],
+        [
+            "boom",
+            null,
+            "",
+            "unresolvable"
+        ],
+        [
+            "boom",
+            "org-1",
+            "nl",
+            "unresolvable"
+        ],
+        [
+            "boom",
+            "org-1",
+            "org-cal",
+            "unresolvable"
+        ],
+        [
+            "boom",
+            "org-1",
+            "",
+            "unresolvable"
+        ]
+    ]
+}

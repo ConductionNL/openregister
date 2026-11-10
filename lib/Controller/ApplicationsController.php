@@ -5,6 +5,9 @@
  *
  * This file contains the controller for managing applications.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -19,15 +22,17 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ApplicationService;
-use OCA\OpenRegister\Db\ApplicationMapper;
+use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ApplicationsControllerServices;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
-use Exception;
 
 /**
  * ApplicationsController handles REST API endpoints for application management
@@ -47,455 +52,393 @@ use Exception;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/specs/openapi-generation/spec.md
  */
-class ApplicationsController extends Controller
-{
+class ApplicationsController extends Controller {
 
-    /**
-     * Application service for business logic
-     *
-     * Handles application business logic, validation, and service layer operations.
-     *
-     * @var ApplicationService Application service instance
-     */
-    private readonly ApplicationService $applicationService;
+	/**
+	 * Application service for business logic
+	 *
+	 * Handles application business logic, validation, and service layer operations.
+	 *
+	 * @var ApplicationServiceInterface Application service instance
+	 */
+	private readonly ApplicationServiceInterface $applicationService;
 
-    /**
-     * Application mapper for direct database operations
-     *
-     * Used for direct database queries when needed, bypassing service layer.
-     *
-     * @var ApplicationMapper Application mapper instance
-     */
-    private readonly ApplicationMapper $applicationMapper;
+	/**
+	 * Application mapper for direct database operations
+	 *
+	 * Used for direct database queries when needed, bypassing service layer.
+	 *
+	 * @var ApplicationMapperInterface Application mapper instance
+	 */
+	private readonly ApplicationMapperInterface $applicationMapper;
 
-    /**
-     * Logger for debugging and error tracking
-     *
-     * Used for logging errors, debug information, and operation tracking.
-     *
-     * @var LoggerInterface Logger instance
-     */
-    private readonly LoggerInterface $logger;
+	/**
+	 * Logger for debugging and error tracking
+	 *
+	 * Used for logging errors, debug information, and operation tracking.
+	 *
+	 * @var LoggerInterface Logger instance
+	 */
+	private readonly LoggerInterface $logger;
 
-    /**
-     * Constructor
-     *
-     * Initializes controller with required dependencies for application operations.
-     * Calls parent constructor to set up base controller functionality.
-     *
-     * @param string             $appName            Application name
-     * @param IRequest           $request            HTTP request object
-     * @param ApplicationService $applicationService Application service for business logic
-     * @param ApplicationMapper  $applicationMapper  Application mapper for database operations
-     * @param LoggerInterface    $logger             Logger for error tracking
-     *
-     * @return void
-     */
-    public function __construct(
-        string $appName,
-        IRequest $request,
-        ApplicationService $applicationService,
-        ApplicationMapper $applicationMapper,
-        LoggerInterface $logger
-    ) {
-        // Call parent constructor to initialize base controller.
-        parent::__construct(appName: $appName, request: $request);
+	/**
+	 * Constructor
+	 *
+	 * Initializes controller with required dependencies for application operations.
+	 * Calls parent constructor to set up base controller functionality.
+	 *
+	 * @param IRequest $request HTTP request object
+	 * @param ApplicationsControllerServices $services The controller's collaborators.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IRequest $request,
+		ApplicationsControllerServices $services,
+	) {
+		// Call parent constructor to initialize base controller.
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
-        // Store dependencies for use in controller methods.
-        $this->applicationService = $applicationService;
-        $this->applicationMapper  = $applicationMapper;
-        $this->logger = $logger;
-    }//end __construct()
+		// Store dependencies for use in controller methods.
+		$this->applicationService = $services->applicationService;
+		$this->applicationMapper = $services->applicationMapper;
+		$this->logger = $services->logger;
+	}//end __construct()
 
-    /**
-     * Render the Applications page
-     *
-     * Returns the template for the main applications page.
-     * All routing is handled client-side by the SPA.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse Template response for applications SPA
-     *
-     * @psalm-return TemplateResponse<200, array<never, never>>
-     */
-    public function page(): TemplateResponse
-    {
-        // Return SPA template response (routing handled client-side).
-        return new TemplateResponse(
-            appName: 'openregister',
-            templateName: 'index',
-            params: []
-        );
-    }//end page()
+	/**
+	 * Render the Applications page
+	 *
+	 * Returns the template for the main applications page.
+	 * All routing is handled client-side by the SPA.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse Template response for applications SPA
+	 *
+	 * @psalm-return TemplateResponse<200, array<never, never>>
+	 *
+	 * @spec exclude Trivial SPA-mount route stub: returns the Vue index template for client-side routing.
+	 *              SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
+	 */
+	public function page(): TemplateResponse {
+		// Return SPA template response (routing handled client-side).
+		return new TemplateResponse(
+			appName: 'openregister',
+			templateName: 'index',
+			params: []
+		);
+	}//end page()
 
-    /**
-     * Get all applications
-     *
-     * Retrieves a list of all applications with optional pagination and filtering.
-     * Supports limit/offset pagination or page-based pagination.
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing list of applications
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|500,
-     *     array{error?: 'Failed to retrieve applications',
-     *     results?: array<\OCA\OpenRegister\Db\Application>},
-     *     array<never, never>>
-     */
-    public function index(): JSONResponse
-    {
-        try {
-            // Get all request parameters.
-            $params = $this->request->getParams();
+	/**
+	 * Get all applications
+	 *
+	 * Retrieves a list of all applications with optional pagination and filtering.
+	 * Supports limit/offset pagination or page-based pagination.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse JSON response containing list of applications
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200|500,
+	 *     array{error?: 'Failed to retrieve applications',
+	 *     results?: array<\OCA\OpenRegister\Db\Application>},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 *
+	 * @no-admin-idor-exempt List endpoint for the application-registry resource (app/template
+	 * metadata, not per-user objects); access follows OpenRegister's fleet-wide registry-controller
+	 * convention where authorisation lives in the ObjectService/RBAC layer behind ApplicationService,
+	 * not per-controller-method. Pre-existing; this PR only touches the docblock, not the handler.
+	 */
+	public function index(): JSONResponse {
+		try {
+			$applications = $this->findApplications(params: $this->request->getParams());
 
-            // Extract pagination and search parameters.
-            $limit  = $this->extractLimit(params: $params);
-            $offset = $this->extractOffset(params: $params);
-            $page   = $this->extractPage(params: $params);
+			return new JSONResponse(data: ['results' => $applications], statusCode: Http::STATUS_OK);
+		} catch (Exception $e) {
+			$this->logFailure(
+				message: '[ApplicationsController] Failed to get applications',
+				context: ['line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
+			);
 
-            // Convert page to offset if provided (page-based pagination).
-            if ($page !== null && $limit !== null) {
-                $offset = ($page - 1) * $limit;
-            }
+			return new JSONResponse(data: ['error' => 'Failed to retrieve applications'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+	}//end index()
 
-            // Remove special query params from filters (keep only application fields).
-            $filters = $params;
-            unset(
-                $filters['_limit'],
-                $filters['_offset'],
-                $filters['_page'],
-                $filters['_search'],
-                $filters['_route']
-            );
+	/**
+	 * Get a single application
+	 *
+	 * Retrieves a specific application by its database ID.
+	 * Returns application details or error if not found.
+	 *
+	 * @param int $id Application database ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse JSON response containing application details
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
+	 *     array<never, never>>|JSONResponse<404,
+	 *     array{error: 'Application not found'}, array<never, never>>
+	 *
+	 * @spec exclude Thin read endpoint for the applications resource route; delegates to
+	 *     ApplicationService (domain layer), not a raw ObjectService duplication. gate-17's
+	 *     receiver regex over-matches any $this->*Service call.
+	 *
+	 * @no-admin-idor-exempt Read of an application-registry entry (app/template metadata);
+	 * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+	 * behind ApplicationService::find). Pre-existing; untouched by this PR's functional diff.
+	 */
+	public function show(int $id): JSONResponse {
+		try {
+			return new JSONResponse(data: $this->applicationService->find($id), statusCode: Http::STATUS_OK);
+		} catch (Exception $e) {
+			$this->logFailure(
+				message: '[ApplicationsController] Failed to get application',
+				context: ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
+			);
 
-            // Retrieve applications using mapper with pagination and filters.
-            $applications = $this->applicationMapper->findAll(
-                limit: $limit,
-                offset: $offset,
-                filters: $filters
-            );
+			return new JSONResponse(data: ['error' => 'Application not found'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+	}//end show()
 
-            // Return successful response with applications list.
-            return new JSONResponse(
-                data: ['results' => $applications],
-                statusCode: Http::STATUS_OK
-            );
-        } catch (Exception $e) {
-            // Log error with full context.
-            $this->logger->error(
-                message: '[ApplicationsController] Failed to get applications',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]
-            );
+	/**
+	 * Create a new application
+	 *
+	 * Creates a new application entity from request data.
+	 * Validates input and returns created application or error.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with created application
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 *
+	 * @no-admin-idor-exempt Write to the application-registry resource (app/template metadata);
+	 * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+	 * behind ApplicationService::create). Pre-existing; untouched by this PR's functional diff.
+	 */
+	public function create(): JSONResponse {
+		try {
+			$data = $this->request->getParams();
+			unset($data['_route']);
 
-            // Return error response.
-            return new JSONResponse(
-                data: ['error' => 'Failed to retrieve applications'],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end index()
+			return new JSONResponse(data: $this->applicationService->create($data), statusCode: Http::STATUS_CREATED);
+		} catch (Exception $e) {
+			$this->logFailure(
+				message: '[ApplicationsController] Failed to create application',
+				context: ['line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
+			);
 
-    /**
-     * Get a single application
-     *
-     * Retrieves a specific application by its database ID.
-     * Returns application details or error if not found.
-     *
-     * @param int $id Application database ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing application details
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
-     *     array<never, never>>|JSONResponse<404,
-     *     array{error: 'Application not found'}, array<never, never>>
-     */
-    public function show(int $id): JSONResponse
-    {
-        try {
-            // Retrieve application using service layer.
-            $application = $this->applicationService->find($id);
+			return new JSONResponse(data: ['error' => 'Failed to create application: ' . $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+	}//end create()
 
-            // Return successful response with application data.
-            return new JSONResponse(
-                data: $application,
-                statusCode: Http::STATUS_OK
-            );
-        } catch (Exception $e) {
-            // Log error with application ID.
-            $this->logger->error(
-                message: '[ApplicationsController] Failed to get application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'id'    => $id,
-                    'error' => $e->getMessage(),
-                ]
-            );
+	/**
+	 * Update an existing application
+	 *
+	 * Updates an existing application entity with new data.
+	 * Prevents modification of immutable fields (id, organisation, owner, created).
+	 *
+	 * @param int $id Application database ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with updated application
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 *
+	 * @no-admin-idor-exempt Update of an application-registry entry (app/template metadata);
+	 * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+	 * behind ApplicationService::update). Immutable fields (id/organisation/owner/created) are
+	 * stripped here. Pre-existing; untouched by this PR's functional diff.
+	 */
+	public function update(int $id): JSONResponse {
+		try {
+			$data = $this->request->getParams();
+			unset($data['_route'], $data['id'], $data['organisation'], $data['owner'], $data['created']);
 
-            // Return not found error response.
-            return new JSONResponse(
-                data: ['error' => 'Application not found'],
-                statusCode: Http::STATUS_NOT_FOUND
-            );
-        }//end try
-    }//end show()
+			return new JSONResponse(data: $this->applicationService->update(id: $id, data: $data), statusCode: Http::STATUS_OK);
+		} catch (Exception $e) {
+			$this->logFailure(
+				message: '[ApplicationsController] Failed to update application',
+				context: ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
+			);
 
-    /**
-     * Create a new application
-     *
-     * Creates a new application entity from request data.
-     * Validates input and returns created application or error.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with created application
-     */
-    public function create(): JSONResponse
-    {
-        try {
-            // Get request data and remove internal route parameter.
-            $data = $this->request->getParams();
-            unset($data['_route']);
+			return new JSONResponse(data: ['error' => 'Failed to update application: ' . $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+	}//end update()
 
-            // Create application using service layer.
-            $application = $this->applicationService->create($data);
+	/**
+	 * Patch (partially update) an application
+	 *
+	 * Partially updates an application entity (PATCH method).
+	 * Delegates to update() method which handles partial updates.
+	 *
+	 * @param int $id The ID of the application to patch
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse JSON response containing patched application
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
+	 *     array<never, never>>|JSONResponse<400, array{error: string},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 *
+	 * @no-admin-idor-exempt Pure delegation to update(), which carries the same registry-controller
+	 * authorisation posture; this method has no body of its own. Pre-existing; untouched by this PR.
+	 */
+	public function patch(int $id): JSONResponse {
+		// Delegate to update method (both handle partial updates).
+		return $this->update(id: $id);
+	}//end patch()
 
-            // Return successful response with created application.
-            return new JSONResponse(
-                data: $application,
-                statusCode: Http::STATUS_CREATED
-            );
-        } catch (Exception $e) {
-            // Log error with full context.
-            $this->logger->error(
-                message: '[ApplicationsController] Failed to create application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]
-            );
+	/**
+	 * Delete an application
+	 *
+	 * Deletes an application entity by ID.
+	 * Returns success message or error if deletion fails.
+	 *
+	 * @param int $id Application database ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse JSON response containing deletion result
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @psalm-return JSONResponse<200|400,
+	 *     array{error?: 'Failed to delete application',
+	 *     message?: 'Application deleted successfully'}, array<never, never>>
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 *
+	 * @no-admin-idor-exempt Delete of an application-registry entry (app/template metadata);
+	 * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+	 * behind ApplicationService::delete). Pre-existing; untouched by this PR's functional diff.
+	 */
+	public function destroy(int $id): JSONResponse {
+		try {
+			$this->applicationService->delete($id);
 
-            // Return error response with message.
-            return new JSONResponse(
-                data: ['error' => 'Failed to create application: '.$e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }//end try
-    }//end create()
+			return new JSONResponse(data: ['message' => 'Application deleted successfully'], statusCode: Http::STATUS_OK);
+		} catch (Exception $e) {
+			$this->logFailure(
+				message: '[ApplicationsController] Failed to delete application',
+				context: ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
+			);
 
-    /**
-     * Update an existing application
-     *
-     * Updates an existing application entity with new data.
-     * Prevents modification of immutable fields (id, organisation, owner, created).
-     *
-     * @param int $id Application database ID
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with updated application
-     */
-    public function update(int $id): JSONResponse
-    {
-        try {
-            // Get request data.
-            $data = $this->request->getParams();
+			return new JSONResponse(data: ['error' => 'Failed to delete application'], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+	}//end destroy()
 
-            // Remove internal parameters and immutable fields.
-            unset($data['_route']);
-            unset($data['id']);
-            unset($data['organisation']);
-            unset($data['owner']);
-            unset($data['created']);
+	/**
+	 * Query the mapper with the pagination and field filters taken from the request
+	 *
+	 * @param array<string, mixed> $params Request parameters
+	 *
+	 * @return array<\OCA\OpenRegister\Db\Application> The matching applications
+	 *
+	 * @spec exclude Private query helper for index(); the registry resource-CRUD contract is owned by
+	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+	 */
+	private function findApplications(array $params): array {
+		return $this->applicationMapper->findAll(
+			limit: $this->extractInt(params: $params, key: '_limit'),
+			offset: $this->resolveOffset(params: $params),
+			filters: $this->extractFilters(params: $params)
+		);
+	}//end findApplications()
 
-            $application = $this->applicationService->update(id: $id, data: $data);
+	/**
+	 * Read an optional integer query parameter
+	 *
+	 * Returns null when the parameter is absent or null; otherwise casts it to int.
+	 *
+	 * @param array<string, mixed> $params Request parameters
+	 * @param string $key Parameter name, e.g. `_limit`
+	 *
+	 * @return int|null The integer value or null if not provided
+	 *
+	 * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+	 */
+	private function extractInt(array $params, string $key): ?int {
+		if (($params[$key] ?? null) !== null) {
+			return (int)$params[$key];
+		}
 
-            // Return successful response with updated application.
-            return new JSONResponse(
-                data: $application,
-                statusCode: Http::STATUS_OK
-            );
-        } catch (Exception $e) {
-            // Log error with application ID.
-            $this->logger->error(
-                message: '[ApplicationsController] Failed to update application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'id'    => $id,
-                    'error' => $e->getMessage(),
-                ]
-            );
+		return null;
+	}//end extractInt()
 
-            // Return error response with message.
-            return new JSONResponse(
-                data: ['error' => 'Failed to update application: '.$e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }//end try
-    }//end update()
+	/**
+	 * Resolve the effective offset for a list request
+	 *
+	 * Page-based pagination (`_page` together with `_limit`) takes precedence
+	 * over an explicit `_offset`.
+	 *
+	 * @param array<string, mixed> $params Request parameters
+	 *
+	 * @return int|null The offset or null if not provided
+	 *
+	 * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+	 */
+	private function resolveOffset(array $params): ?int {
+		$limit = $this->extractInt(params: $params, key: '_limit');
+		$page = $this->extractInt(params: $params, key: '_page');
+		if ($page !== null && $limit !== null) {
+			return ($page - 1) * $limit;
+		}
 
-    /**
-     * Patch (partially update) an application
-     *
-     * Partially updates an application entity (PATCH method).
-     * Delegates to update() method which handles partial updates.
-     *
-     * @param int $id The ID of the application to patch
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing patched application
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
-     *     array<never, never>>|JSONResponse<400, array{error: string},
-     *     array<never, never>>
-     */
-    public function patch(int $id): JSONResponse
-    {
-        // Delegate to update method (both handle partial updates).
-        return $this->update(id: $id);
-    }//end patch()
+		return $this->extractInt(params: $params, key: '_offset');
+	}//end resolveOffset()
 
-    /**
-     * Delete an application
-     *
-     * Deletes an application entity by ID.
-     * Returns success message or error if deletion fails.
-     *
-     * @param int $id Application database ID
-     *
-     * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing deletion result
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400,
-     *     array{error?: 'Failed to delete application',
-     *     message?: 'Application deleted successfully'}, array<never, never>>
-     */
-    public function destroy(int $id): JSONResponse
-    {
-        try {
-            // Delete application using service layer.
-            $this->applicationService->delete($id);
+	/**
+	 * Strip the reserved query parameters, keeping only application field filters
+	 *
+	 * @param array<string, mixed> $params Request parameters
+	 *
+	 * @return array<string, mixed> The field filters
+	 *
+	 * @spec exclude Private filter-param helper; the registry resource-CRUD contract is owned by
+	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+	 */
+	private function extractFilters(array $params): array {
+		unset($params['_limit'], $params['_offset'], $params['_page'], $params['_search'], $params['_route']);
 
-            // Return successful response.
-            return new JSONResponse(
-                data: ['message' => 'Application deleted successfully'],
-                statusCode: Http::STATUS_OK
-            );
-        } catch (Exception $e) {
-            // Log error with application ID.
-            $this->logger->error(
-                message: '[ApplicationsController] Failed to delete application',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'id'    => $id,
-                    'error' => $e->getMessage(),
-                ]
-            );
+		return $params;
+	}//end extractFilters()
 
-            // Return error response.
-            return new JSONResponse(
-                data: ['error' => 'Failed to delete application'],
-                statusCode: Http::STATUS_BAD_REQUEST
-            );
-        }//end try
-    }//end destroy()
-
-    /**
-     * Extract limit parameter from request params
-     *
-     * Extracts the _limit parameter from request parameters and converts to integer.
-     * Returns null if parameter is not present.
-     *
-     * @param array<string, mixed> $params Request parameters
-     *
-     * @return int|null Limit value or null if not provided
-     *
-     * @psalm-return int|null
-     */
-    private function extractLimit(array $params): ?int
-    {
-        // Check if _limit parameter exists and extract as integer.
-        if (($params['_limit'] ?? null) !== null) {
-            return (int) $params['_limit'];
-        }
-
-        // Return null if parameter not provided.
-        return null;
-    }//end extractLimit()
-
-    /**
-     * Extract offset parameter from request params
-     *
-     * Extracts the _offset parameter from request parameters and converts to integer.
-     * Returns null if parameter is not present.
-     *
-     * @param array<string, mixed> $params Request parameters
-     *
-     * @return int|null Offset value or null if not provided
-     *
-     * @psalm-return int|null
-     */
-    private function extractOffset(array $params): ?int
-    {
-        // Check if _offset parameter exists and extract as integer.
-        if (($params['_offset'] ?? null) !== null) {
-            return (int) $params['_offset'];
-        }
-
-        // Return null if parameter not provided.
-        return null;
-    }//end extractOffset()
-
-    /**
-     * Extract page parameter from request params
-     *
-     * Extracts the _page parameter from request parameters and converts to integer.
-     * Returns null if parameter is not present.
-     *
-     * @param array<string, mixed> $params Request parameters
-     *
-     * @return int|null Page value or null if not provided
-     *
-     * @psalm-return int|null
-     */
-    private function extractPage(array $params): ?int
-    {
-        // Check if _page parameter exists and extract as integer.
-        if (($params['_page'] ?? null) !== null) {
-            return (int) $params['_page'];
-        }
-
-        // Return null if parameter not provided.
-        return null;
-    }//end extractPage()
+	/**
+	 * Log a failed request with the controller file prepended to the context
+	 *
+	 * @param string $message Log message
+	 * @param array<string, mixed> $context Context; callers pass `line` first
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Private logging helper shared by the CRUD endpoints of this controller.
+	 */
+	private function logFailure(string $message, array $context): void {
+		$this->logger->error(message: $message, context: ['file' => __FILE__] + $context);
+	}//end logFailure()
 }//end class

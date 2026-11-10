@@ -1,0 +1,1401 @@
+{
+    "aggregate fails": {
+        "code": 1,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "  ! aggregate n on uuid-0: boom",
+            "Touched 0, unchanged 1, failed 1",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ]
+        ]
+    },
+    "aggregates empty": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 0, unchanged 1, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "n",
+                    "@self"
+                ]
+            ]
+        ]
+    },
+    "aggregates resolved": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 1, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "n": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ]
+        ]
+    },
+    "changed row not materialised": {
+        "code": 1,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "  saved uuid-0 but the save did not materialise: a",
+            "Touched 0, unchanged 0, failed 1",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "changed row saved and materialised": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "date value": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 1, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "date",
+                [
+                    "id",
+                    "d",
+                    "@self"
+                ]
+            ],
+            [
+                "evaluate",
+                "date",
+                [
+                    "id",
+                    "d",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-1",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-1",
+                    "d": "old"
+                },
+                "5",
+                "7",
+                "uuid-1",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "dry run": {
+        "code": 0,
+        "output": [
+            "Rematerialising 2 calculation(s) on reg/sch (dry run)",
+            "Touched 1, unchanged 1, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "evaluate",
+                "const:1",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "evaluate",
+                "const:1",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ]
+        ]
+    },
+    "empty calculations": {
+        "code": 0,
+        "output": [
+            "Schema declares no x-openregister-calculations \u2014 nothing to do.",
+            ""
+        ],
+        "calls": []
+    },
+    "evaluation throws": {
+        "code": 1,
+        "output": [
+            "Rematerialising 2 calculation(s) on reg/sch",
+            "  ! a on uuid-0: bad expression",
+            "Touched 1, unchanged 0, failed 1",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "throw",
+                [
+                    "id",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "evaluate",
+                "const:5",
+                [
+                    "id",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "b": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "evaluation throws only": {
+        "code": 1,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "  ! a on uuid-0: bad expression",
+            "Touched 0, unchanged 1, failed 1",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "throw",
+                [
+                    "id",
+                    "@self"
+                ]
+            ]
+        ]
+    },
+    "fallback kept by save": {
+        "code": 0,
+        "output": [
+            "Rematerialising 2 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "evaluate",
+                "const:4",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1,
+                    "b": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "fallback only": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "many rows mixed": {
+        "code": 1,
+        "output": [
+            "Rematerialising 2 calculation(s) on reg/sch",
+            "  ! aggregate n on uuid-2: boom",
+            "  save failed on uuid-3: Cannot save",
+            "  uuid-4 already materialised by an earlier save in this run",
+            "Touched 2, unchanged 1, failed 2",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-1",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-1",
+                    "a": 1,
+                    "n": 3
+                },
+                "5",
+                "7",
+                "uuid-1",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-3",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-3",
+                    "a": 1,
+                    "n": 3
+                },
+                "5",
+                "7",
+                "uuid-3",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ],
+            [
+                "aggregates",
+                {
+                    "n": {
+                        "schema": "y"
+                    }
+                },
+                "5"
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "evaluate",
+                "agg",
+                [
+                    "id",
+                    "a",
+                    "n",
+                    "@self",
+                    "@aggregate"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-4",
+                false,
+                false
+            ]
+        ]
+    },
+    "no calculations": {
+        "code": 0,
+        "output": [
+            "Schema declares no x-openregister-calculations \u2014 nothing to do.",
+            ""
+        ],
+        "calls": []
+    },
+    "no rows": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 0, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ]
+        ]
+    },
+    "no slugs": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on 5/7",
+            "Touched 0, unchanged 1, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:1",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ]
+        ]
+    },
+    "non-materialised mixed in": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1,
+                    "b": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "nothing materialised": {
+        "code": 0,
+        "output": [
+            "No materialised calculations declared \u2014 nothing to do.",
+            ""
+        ],
+        "calls": []
+    },
+    "references empty": {
+        "code": 1,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "  saved uuid-0 but the save did not materialise: r",
+            "Touched 0, unchanged 0, failed 1",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "ref",
+                [
+                    "id",
+                    "r",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "r": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "references not an array": {
+        "code": 1,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "  saved uuid-0 but the save did not materialise: r",
+            "Touched 0, unchanged 0, failed 1",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "ref",
+                [
+                    "id",
+                    "r",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "r": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "references resolved": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "references",
+                {
+                    "a": {
+                        "schema": "x"
+                    }
+                },
+                "5",
+                "org-1"
+            ],
+            [
+                "evaluate",
+                "ref",
+                [
+                    "id",
+                    "r",
+                    "@self",
+                    "@ref"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "r": null
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "register missing": {
+        "code": 1,
+        "output": [
+            "Register not found",
+            ""
+        ],
+        "calls": []
+    },
+    "reread already materialised": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "  uuid-0 already materialised by an earlier save in this run",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ]
+        ]
+    },
+    "reread fails": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "reread partly materialised": {
+        "code": 0,
+        "output": [
+            "Rematerialising 2 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "evaluate",
+                "const:3",
+                [
+                    "id",
+                    "a",
+                    "b",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 2,
+                    "b": 1,
+                    "c": "x"
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "save throws": {
+        "code": 1,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "  save failed on uuid-0: Cannot save",
+            "Touched 0, unchanged 0, failed 1",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "self payload": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "self",
+                [
+                    "id",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0"
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "sequence skipped": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 0, unchanged 1, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ]
+        ]
+    },
+    "string typed value restored": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 1, unchanged 0, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:2",
+                [
+                    "id",
+                    "a",
+                    "blob",
+                    "@self"
+                ]
+            ],
+            [
+                "reread",
+                "uuid-0",
+                false,
+                false
+            ],
+            [
+                "save",
+                {
+                    "id": "uuid-0",
+                    "a": 1,
+                    "blob": "{\"k\":\"v\"}"
+                },
+                "5",
+                "7",
+                "uuid-0",
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            ]
+        ]
+    },
+    "unchanged row": {
+        "code": 0,
+        "output": [
+            "Rematerialising 1 calculation(s) on reg/sch",
+            "Touched 0, unchanged 1, failed 0",
+            ""
+        ],
+        "calls": [
+            [
+                "findAll",
+                100000
+            ],
+            [
+                "evaluate",
+                "const:1",
+                [
+                    "id",
+                    "a",
+                    "@self"
+                ]
+            ]
+        ]
+    }
+}

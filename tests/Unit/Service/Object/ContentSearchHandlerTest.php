@@ -14,15 +14,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;

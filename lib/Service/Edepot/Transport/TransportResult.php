@@ -5,6 +5,9 @@
  *
  * Value object representing the result of a SIP transport operation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -29,181 +32,162 @@ namespace OCA\OpenRegister\Service\Edepot\Transport;
  *
  * @psalm-suppress UnusedClass
  */
-class TransportResult
-{
+class TransportResult {
 
-    /**
-     * Whether the transport succeeded overall.
-     *
-     * @var boolean
-     */
-    private bool $success;
+	/**
+	 * Whether the transport succeeded overall.
+	 *
+	 * @var boolean
+	 */
+	private bool $success = false;
 
-    /**
-     * Per-object results mapping UUID to acceptance status.
-     *
-     * @var array<string, array{accepted: bool, reference: string|null, error: string|null}>
-     */
-    private array $objectResults;
+	/**
+	 * Per-object results mapping UUID to acceptance status.
+	 *
+	 * @var array<string, array{accepted: bool, reference: string|null, error: string|null}>
+	 */
+	private array $objectResults = [];
 
-    /**
-     * Error message if the transport failed entirely.
-     *
-     * @var string|null
-     */
-    private ?string $errorMessage;
+	/**
+	 * Error message if the transport failed entirely.
+	 *
+	 * @var string|null
+	 */
+	private ?string $errorMessage = null;
 
-    /**
-     * The e-Depot's reference identifier for the transfer.
-     *
-     * @var string|null
-     */
-    private ?string $transferReference;
+	/**
+	 * The e-Depot's reference identifier for the transfer.
+	 *
+	 * @var string|null
+	 */
+	private ?string $transferReference = null;
 
-    /**
-     * Constructor.
-     *
-     * @param bool                                                                             $success           Overall success.
-     * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
-     * @param string|null                                                                      $errorMessage      Error message.
-     * @param string|null                                                                      $transferReference Transfer reference.
-     */
-    public function __construct(
-        bool $success=false,
-        array $objectResults=[],
-        ?string $errorMessage=null,
-        ?string $transferReference=null
-    ) {
-        $this->success           = $success;
-        $this->objectResults     = $objectResults;
-        $this->errorMessage      = $errorMessage;
-        $this->transferReference = $transferReference;
-    }//end __construct()
+	/**
+	 * A transfer the e-Depot took: successful unless it rejected an object.
+	 * Use failed() for a transfer that failed as a whole.
+	 *
+	 * @param string|null                                                                       $transferReference The e-Depot's reference.
+	 * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function __construct(?string $transferReference = null, array $objectResults = []) {
+		$this->transferReference = $transferReference;
+		$this->objectResults = $objectResults;
+		$this->success = $this->hasRejections() === false;
+	}//end __construct()
 
-    /**
-     * Check if the transport succeeded.
-     *
-     * @return bool True if successful.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function isSuccess(): bool
-    {
-        return $this->success;
-    }//end isSuccess()
+	/**
+	 * This result as a transfer that failed as a whole.
+	 *
+	 * @param string $errorMessage Why it failed.
+	 *
+	 * @return self A failed copy.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function failed(string $errorMessage): self {
+		$result = clone $this;
+		$result->success = false;
+		$result->errorMessage = $errorMessage;
 
-    /**
-     * Check if the result is a partial success (some objects accepted, some rejected).
-     *
-     * @return bool True if partially successful.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function isPartialSuccess(): bool
-    {
-        if ($this->success === true) {
-            return false;
-        }
+		return $result;
+	}//end failed()
 
-        $accepted = 0;
-        $rejected = 0;
-        foreach ($this->objectResults as $result) {
-            if ($result['accepted'] === true) {
-                $accepted++;
-            } else {
-                $rejected++;
-            }
-        }
+	/**
+	 * Whether the e-Depot rejected at least one object.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function hasRejections(): bool {
+		return count($this->withAcceptance(accepted: false)) > 0;
+	}//end hasRejections()
 
-        return ($accepted > 0 && $rejected > 0);
-    }//end isPartialSuccess()
+	/**
+	 * The per-object results with the given acceptance.
+	 *
+	 * @param bool $accepted The acceptance to match.
+	 *
+	 * @return array<string, array{accepted: bool, reference: string|null, error: string|null}>
+	 */
+	private function withAcceptance(bool $accepted): array {
+		return array_filter($this->objectResults, static fn (array $result): bool => $result['accepted'] === $accepted);
+	}//end withAcceptance()
 
-    /**
-     * Get per-object results.
-     *
-     * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function getObjectResults(): array
-    {
-        return $this->objectResults;
-    }//end getObjectResults()
+	/**
+	 * Check if the transport succeeded.
+	 *
+	 * @return bool True if successful.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function isSuccess(): bool {
+		return $this->success;
+	}//end isSuccess()
 
-    /**
-     * Get the error message.
-     *
-     * @return string|null The error message.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function getErrorMessage(): ?string
-    {
-        return $this->errorMessage;
-    }//end getErrorMessage()
+	/**
+	 * Check if the result is a partial success (some objects accepted, some rejected).
+	 *
+	 * @return bool True if partially successful.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function isPartialSuccess(): bool {
+		if ($this->success === true) {
+			return false;
+		}
 
-    /**
-     * Get the transfer reference.
-     *
-     * @return string|null The e-Depot transfer reference.
-     */
-    public function getTransferReference(): ?string
-    {
-        return $this->transferReference;
-    }//end getTransferReference()
+		return count($this->withAcceptance(accepted: true)) > 0 && $this->hasRejections() === true;
+	}//end isPartialSuccess()
 
-    /**
-     * Get UUIDs of accepted objects.
-     *
-     * @return array<int, string> UUIDs of accepted objects.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function getAcceptedUuids(): array
-    {
-        $uuids = [];
-        foreach ($this->objectResults as $uuid => $result) {
-            if ($result['accepted'] === true) {
-                $uuids[] = $uuid;
-            }
-        }
+	/**
+	 * Get per-object results.
+	 *
+	 * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getObjectResults(): array {
+		return $this->objectResults;
+	}//end getObjectResults()
 
-        return $uuids;
-    }//end getAcceptedUuids()
+	/**
+	 * Get the error message.
+	 *
+	 * @return string|null The error message.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getErrorMessage(): ?string {
+		return $this->errorMessage;
+	}//end getErrorMessage()
 
-    /**
-     * Get UUIDs of rejected objects.
-     *
-     * @return array<int, string> UUIDs of rejected objects.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function getRejectedUuids(): array
-    {
-        $uuids = [];
-        foreach ($this->objectResults as $uuid => $result) {
-            if ($result['accepted'] === false) {
-                $uuids[] = $uuid;
-            }
-        }
+	/**
+	 * Get the transfer reference.
+	 *
+	 * @return string|null The e-Depot transfer reference.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md
+	 */
+	public function getTransferReference(): ?string {
+		return $this->transferReference;
+	}//end getTransferReference()
 
-        return $uuids;
-    }//end getRejectedUuids()
-
-    /**
-     * Serialize to array.
-     *
-     * @return array<string,mixed> Serialized result.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function toArray(): array
-    {
-        return [
-            'success'           => $this->success,
-            'objectResults'     => $this->objectResults,
-            'errorMessage'      => $this->errorMessage,
-            'transferReference' => $this->transferReference,
-        ];
-    }//end toArray()
+	/**
+	 * Serialize to array.
+	 *
+	 * @return array<string,mixed> Serialized result.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function toArray(): array {
+		return [
+			'success' => $this->success,
+			'objectResults' => $this->objectResults,
+			'errorMessage' => $this->errorMessage,
+			'transferReference' => $this->transferReference,
+		];
+	}//end toArray()
 }//end class

@@ -25,7 +25,8 @@ The access control system integrates with:
 Access can be controlled at multiple levels:
 - Register level - Control access to entire registers
 - Schema level - Manage permissions for specific register/schema combinations
-- Object level - Set permissions on individual objects
+- Object level - Set permissions on individual objects, make one object `private`,
+  and invite a principal to it (see [Object Sharing](./object-sharing.md))
 - Property level - Fine-grained, conditional control over specific object properties (see [Property Authorization](./property-authorization.md))
 
 ## Permission Types
@@ -223,6 +224,162 @@ graph TB
     style EXCEPTION fill:#F5A623
     style ADMIN fill:#E74C3C
 ```
+
+### A schema with no authorization block is readable by every account that can log in
+
+Read this before you decide your schema does not need a block.
+
+**An absent `authorization` block does not mean "no access". It means open.**
+A schema that declares nothing answers `GET /api/objects/{register}/{schema}`
+with every non-private row, to every caller the login accepted. There is no
+group check, because there is no rule to check against.
+
+This surprises people, so here is the shape of it:
+
+| The schema declares | A list read returns |
+|---|---|
+| No `authorization` at all | Every non-private row, to anyone authenticated |
+| `"read": ["some-group"]` | Rows only to members of that group |
+| `"read": []` | Nothing. An empty list means "grant to nobody" |
+| A block with no `read` key | Nothing, beyond the caller's own rows |
+
+The last two rows are the fail-closed half. Once your block is non-empty,
+OpenRegister denies any action you did not name. So `{"read": ["admins"]}` on
+its own does not leave `create`, `update` and `delete` as they were. It closes
+them to owners and admins. **Name all four actions, or accept that you changed
+the write posture too.**
+
+#### Why the anonymous check reassures you and should not
+
+Point an anonymous request at an unprotected schema and you get an empty list.
+That looks like a working boundary. It is not one. Anonymous callers are empty
+for a different reason: they own no rows and belong to no organisation. Log in
+as any account, including one in no groups at all, and the same endpoint
+returns everything.
+
+Measured on a fleet app in September 2026: an account created with
+`occ user:add` and given no group membership read ten rows of admin-only
+integration status. A wrong password returned 401 and anonymous returned an
+empty list, so the instance looked correctly locked from both ends anyone had
+checked. Access control held at the login line and nowhere past it.
+
+**Test the boundary with an authenticated account that should not pass it.** An
+anonymous probe cannot tell an enforced schema from an open one.
+
+#### `"rbac": true` in the response is not evidence of filtering
+
+The `@self.rbac` field echoes what was asked for, not what happened. It reads
+`true` whenever the caller is not an admin. A schema with no block returns
+`"rbac": true` alongside every row it holds.
+
+To find out whether a schema is actually protected, read the schema itself.
+The schemas API returns the stored block, and `null` there is the open case:
+
+```bash
+curl -s -u admin:… -H 'OCS-APIRequest: true' \
+  'https://your-instance/index.php/apps/openregister/api/schemas?_limit=500' \
+  | jq '.results[] | select(.slug=="yourSchema") | {slug, authorization}'
+```
+
+See [Check Authorization Config](#check-authorization-config) for the same
+lookup through `SchemaMapper` when you are already inside the container.
+
+#### A guard on the page does not guard the data
+
+Leaf apps put admin-only configuration in a register and then hide the page
+behind a route guard or a `permission: "admin"` manifest entry. Both stop the
+page from rendering. Neither narrows a list read, because the rows come from
+OpenRegister and a client cannot restrict a server. If the page is admin-only,
+the schema behind it needs `read` restricted too.
+
+#### The list path evaluates `read`, never `list`
+
+`list` is a real action in the vocabulary, but `GET /api/objects/{register}/{schema}`
+does not use it. It filters on `read`. A block that grants `{"list": [...]}`
+and omits `read` falls into the fail-closed branch and returns the caller's own
+rows only.
+
+A denial on a list is `HTTP 200` with an empty `results` array, not a `403`.
+OpenRegister narrows a list in SQL rather than refusing it, so that enumerating
+a schema cannot tell you what you were not allowed to see.
+
+#### This default is scheduled to change
+
+The `rbac-default-authenticated` change proposes flipping the absent-block
+default, and `rbac-unmarked-schema-audit.md` tracks which schemas still declare
+nothing. Do not wait for it. A schema that names its groups today keeps the
+same behaviour after the flip; one that says nothing gets whatever the flip
+decides.
+
+Next: pick the groups your schema should answer to, then write the block using
+the samples under [Code Examples](#code-examples) below.
+
+### The action vocabulary: closed by default, extensible by declaration
+
+An `authorization` block may name `create`, `read`, `update` or `delete`, plus
+any action the schema **declares** for itself:
+
+```json
+"x-openregister-action": {
+  "sendMail": {
+    "name": "Send mail",
+    "description": "Send a message as the acting user."
+  }
+}
+```
+
+With that declaration in the schema's `configuration`, `"sendMail": ["staff"]`
+is a legal authorization rule. Without it, the import **fails**, naming the
+offending action and listing what is allowed.
+
+That refusal is the point, not a safety rail bolted onto it. An open vocabulary
+would let a typo — `raed` for `read` — save cleanly as a permission that is
+never granted and never errors: a rule that appears to protect something and
+protects nothing. A schema that declares a permission nobody can satisfy is the
+bug being prevented.
+
+Declaring an action **grants and enforces nothing**. It defines a *name* that an
+authorization block, an event listener and the grantable-rights index can all
+refer to; the app still enforces its own operation. A declaration with no
+`description` is ignored, because an action that reaches a permission matrix
+without telling the person granting it what they are agreeing to is worse than
+no entry at all.
+
+### The `mcp` scope: what may be OFFERED, never what is HELD
+
+`mcp` sits beside `public`, `authenticated` and `admin`, and means: *this action,
+on this schema, may be offered to an agent.*
+
+It does **not** mean an agent has it. RBAC resolves through Nextcloud groups,
+which are per **user** — two agents owned by one person are indistinguishable to
+it. Whether a specific agent holds a right stays resolved in Hermiq against that
+agent's own grants, where the request-and-approve flow already lives. The
+relationship is: **`mcp` bounds the menu, Hermiq picks from it.**
+
+**It never grants.** An administrator can create a real Nextcloud group called
+`mcp`; without a guard, its members would inherit every action any schema ever
+documented as an agent surface. The evaluator refuses the match outright, in both
+the bare-string and `{"group": "mcp"}` rule forms, in both rule interpreters.
+
+⚠️ **Writing `mcp` into `authorization` DOES opt the schema into authorization.**
+A block is fail-closed once non-empty, so `{"read": ["mcp"]}` denies every action
+it does not list — including `read` itself, since the scope satisfies nobody. If
+you want to record an agent surface *without* changing enforcement, use the
+`x-openregister-mcp` dialect instead. That is where the surface belongs, and
+where every live declaration on this instance already is.
+
+That rule was chosen after the alternative was measured and rejected. Treating an
+offers-only block as *absent* — so the annotation changed nothing — sounds like
+the right reading of a descriptive token, but "absent" means **default-open**: the
+schema became readable by every authenticated user and by anonymous callers. An
+author documenting an agent surface would have published the schema instead of
+restricting it. Between a fail-safe and a fail-open reading of an ambiguous block,
+the block gets the fail-safe one: a denial is loud and quickly fixed, a silent
+grant to anonymous is a breach.
+
+An **explicitly empty** rule list (`"read": []"`) means *grant this action to
+nobody* and is preserved for the same reason — it is the strictest rule the
+grammar can express, and reading it as "no rule" would flip it to default-open.
 
 ### Authorization Exception System
 
@@ -534,10 +691,53 @@ Schema-level, object-level, and property-level `authorization` blocks all accept
 
 All three enforcement points route conditional match evaluation through the shared `ConditionMatcher` service. The operator set and dynamic-variable set listed below therefore apply uniformly:
 
-- **Operators**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`.
+- **Operators**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$contains`, `$exists`, `$memberOf`.
 - **Dynamic variables** resolved at evaluation time: `$organisation` / `$activeOrganisation`, `$userId` / `$user`, `$now`.
 
 A schema authored with `{ "read": [{ "group": "public", "match": { "publishDate": { "$lte": "$now" } } }] }` returns the same object set from `GET /api/objects/{register}/{schema}` (list) and `GET /api/objects/{register}/{schema}/{id}` (find). List-vs-find drift caused by differing grammar is no longer possible.
+
+#### Access that follows membership records (`$memberOf`)
+
+Some apps scope their data by something that is not a Nextcloud organisation: an administration, a case team, a school, a project. Who belongs to it is a record in another schema. `$memberOf` admits an object when the value of one of its fields is in the set of values that the caller's rows in that membership schema hold.
+
+```json
+"authorization": {
+  "read": [
+    {
+      "group": "shillinq_bookkeeper",
+      "match": {
+        "administrationId": {
+          "$memberOf": {
+            "schema": "administration-membership",
+            "register": "shillinq",
+            "property": "administrationId",
+            "match": "userId",
+            "where": { "role": { "$in": ["boekhouder", "controller"] } },
+            "current": { "from": "validFrom", "until": "validUntil" }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+| key | required | meaning |
+|---|---|---|
+| `schema` | yes | slug or id of the membership schema |
+| `register` | no | slug or id of its register; default: the first register that holds the schema |
+| `property` | yes | membership field whose values form the set; a list contributes each value |
+| `match` | no, default `userId` | membership field that holds the caller's Nextcloud uid |
+| `where` | no | literal filters on membership fields: a value (strict equality) or an operator object. No dynamic variables |
+| `current` | no | `{ "from": <field>, "until": <field> }`; a row counts when `from` is empty or on or before today and `until` is empty or on or after today |
+
+How it behaves:
+
+- The set is resolved by `ConditionMatcher` into `$in`, so the list, its count and pages, the single-object check, property-level rules and deny rules all use the same set. The list predicate is in the SQL `WHERE`, so counts are exact.
+- The membership rows are read without the membership schema's own RBAC and multitenancy, once per request for each caller and operand, capped at 500 rows.
+- Everything that goes wrong denies: nobody signed in, a malformed operand (logged as a warning), a membership schema that cannot be found or read, a caller with no rows.
+- Like every conditional rule on a field other than `_organisation`, a caller it admits is no longer held to the organisation filter on that schema. To keep both, add `"_organisation": "$organisation"` to the same `match`.
+- Admins bypass RBAC and see every row, as with every other rule.
 
 ### Disabling public-group inheritance for authenticated users (`inheritFromPublic`)
 
@@ -849,6 +1049,21 @@ ORDER BY priority DESC;
 5. **Unauthenticated Access**
    - Unauthenticated users only see objects with 'public' in read permissions
    - Fallback to published object filtering can be enabled (currently disabled)
+
+## Restricting OpenRegister to a user group
+
+Nextcloud administrators can limit OpenRegister to specific groups via **Apps → OpenRegister → Limit to groups** (or `occ app:enable openregister --groups <group>`). Because Nextcloud gates app routes by `IAppManager::isEnabledForUser()`, this blocks **every non-public route** for any user outside those groups — including admins who are not members, and other apps calling OpenRegister on a user's behalf. Only routes marked `#[PublicPage]` bypass the restriction.
+
+OpenRegister is a data platform whose register, schema, and object **read** endpoints are consumed by other apps for all users. To keep those reachable while limiting **management** to the restriction group, the read surface is public-by-route and write/management endpoints are not:
+
+| Operation | Route visibility | Behaviour under app-group restriction |
+|-----------|------------------|----------------------------------------|
+| Read registers / schemas / objects (`index`, `show`) | `#[PublicPage]` | Reachable by all users (and consuming apps), in or out of the group |
+| Create / update / delete registers & schemas | not public | Blocked for users outside the group (and additionally gated to admin / manage-permission) |
+
+**Anonymous access to the public read endpoints is limited to *published* resources.** A register or schema is only returned to an unauthenticated caller when its `published` field is set and it has not been depublished; an anonymous request for an unpublished register/schema returns `401`. Authenticated users are unaffected and continue to receive results scoped by the RBAC rules described above. Object reads remain governed by `ObjectService` / `PermissionHandler` regardless of the resolved identity.
+
+Net effect: group-restricting OpenRegister hides the management UI and write operations from non-group users while leaving the consumed read APIs (and published catalogue data) available. See also the register/schema write-authorization rules below and in `RegistersController` / `SchemasController`.
 
 ## Authorization Exceptions
 

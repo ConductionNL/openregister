@@ -1,0 +1,264 @@
+---
+title: OpenRegister Push Events
+sidebar_position: 1
+description: OpenRegister's own notify_push events emitted on object lifecycle changes
+keywords:
+  - OpenRegister
+  - notify_push
+  - real-time
+  - WebSocket
+  - SSE
+  - push events
+---
+
+# OpenRegister Push Events
+
+OpenRegister emits its own `notify_custom` push events on every object lifecycle event so frontend consumers can subscribe and refresh affected views without polling. This document describes the event shapes, fan-out semantics, and how to subscribe.
+
+For Deck-, Calendar-, or other integration-emitted events, see the per-integration pages (e.g. [Deck](./Deck.md)).
+
+## Event constants
+
+All event-string prefixes live in `OCA\OpenRegister\Push\PushEvents`:
+
+```php
+namespace OCA\OpenRegister\Push;
+
+class PushEvents
+{
+    public const OR_OBJECT     = 'or-object';     // suffixed with -{uuid}
+    public const OR_COLLECTION = 'or-collection'; // suffixed with -{register-slug}-{schema-slug}
+}
+```
+
+The constants are mirrored — by convention — in any frontend client that subscribes (consumers should not hardcode the strings).
+
+## Events emitted
+
+| Event string | Fired on | Payload | Used by |
+|---|---|---|---|
+| `or-object-{uuid}` | every `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent` | `{action, register, schema, uuid, version}` | Detail-view subscribers watching one object |
+| `or-collection-{register-slug}-{schema-slug}` | `ObjectCreatedEvent` and `ObjectDeletedEvent` only — **NOT** on field edits | `{action, register, schema, uuid, version}` | List-view subscribers watching a whole collection |
+
+**Why no collection event on update?** A field edit on one object should not cause every list watcher to refetch its entire list — that's the "list-refetch storm" failure mode. Field edits emit only `or-object-{uuid}`. Frontends with a list re-render the changed item from the per-object event without a refetch.
+
+### Payload schema
+
+```json
+{
+  "action":   "create | update | delete",
+  "register": "zaken",
+  "schema":   "meldingen",
+  "uuid":     "550e8400-e29b-41d4-a716-446655440000",
+  "version":  3
+}
+```
+
+The payload deliberately excludes the full object body. Two reasons:
+
+1. **Permission drift** — between the moment OR builds the payload and the moment the client receives it, ACLs may change. Sending the full object risks leaking data to a user whose access was just revoked. Sending only the UUID forces the client to refetch through the normal RBAC-aware REST path, which always returns the current authoritative permissions.
+2. **Payload size** — `notify_push` is a thin notification channel, not a data bus. Large payloads bloat the WebSocket frame budget. UUID-only stays well under the limit regardless of object size.
+
+Clients refetch via the standard REST endpoints when a payload arrives.
+
+## Fan-out: per-user routing
+
+Pushes are emitted **per authorised user**, not broadcast. The listener resolves the list of users with read access to the object via `PermissionHandler::getReadableByUsers(ObjectEntity $object)` and, per user, calls `IQueue::push('notify_custom', ['user' => $user, 'message' => $eventName, 'body' => $payload])` — matching the canonical `notify_custom` wire format used by Deck, Calendar, and other NC apps. The `message` field is the event name clients filter on (e.g. `or-object-{uuid}`); `body` is the payload object.
+
+```
+ObjectUpdatedEvent (fires once)
+        │
+        ▼
+NotifyPushListener::handle()
+        │
+        ▼
+PermissionHandler::getReadableByUsers($object)
+        │
+        ▼
+[user-a, user-b, user-c]
+        │
+        ▼
+3 × IQueue::push('notify_custom', [
+        'user'    => $userId,
+        'message' => 'or-object-' . $uuid,
+        'body'    => ['action' => …, 'register' => …, 'schema' => …, 'uuid' => …, 'version' => …],
+    ])
+```
+
+This means an object change costs `N` pushes where `N` = the number of users who can read it. For typical small-to-medium organisations this is correct and efficient. For installations where a single object has more than ~1,000 readers, consider a broadcast-channel approach (out of scope for v1; see the [realtime-updates spec](../../openspec/specs/realtime-updates/spec.md)).
+
+### Open / public schemas
+
+When `PermissionHandler::getReadableByUsers()` returns `[]` (the schema's permission model is open or anonymous), no per-user fan-out is performed. A future broadcast-channel emission may cover this case; for now, open-schema changes are not pushed.
+
+## Soft-fail when notify_push is absent
+
+`notify_push` is an optional Nextcloud app. When it is not installed (or `IQueue` cannot be resolved from the container), `NotifyPushListener::handle()` returns silently:
+
+- No exception propagates.
+- No `WARNING` or `ERROR` log entry.
+- At most one `DEBUG` log per request when `IQueue` resolution fails partway (e.g. partial install).
+- The object save flow completes normally.
+
+This means OR works identically with or without `notify_push`. Clients that do not see push events fall back to polling (handled by the `useLiveUpdates` plugin in `@conduction/nextcloud-vue`).
+
+The admin settings page surfaces the live status of `notify_push` so administrators can confirm the transport is healthy. See **Settings → Administration → OpenRegister → Push notifications** for the three-state status badge (not installed / installed but unreachable / active).
+
+## Per-request deduplication
+
+If a single HTTP request causes the same `(uuid, action)` pair to fire more than once (e.g. save logic calls `saveObject()` twice for the same object), the listener emits only **one** push per authorised user for that pair. The deduplication is per-request and resets on the next request.
+
+Worst case without dedup: `k` saves × `N` users = `kN` pushes per request. With dedup: `1 push × N users` per request.
+
+## Batch mode for bulk imports
+
+Bulk-import paths in OR (`ImportService`) wrap their save loop in batch mode:
+
+```php
+NotifyPushListener::setBatchMode(true);
+try {
+    foreach ($rows as $row) {
+        $this->objectService->saveObject($row);
+    }
+} finally {
+    NotifyPushListener::flushBatch($queue, $permissionHandler);
+    NotifyPushListener::setBatchMode(false);
+}
+```
+
+In batch mode:
+- Per-object `or-object-{uuid}` pushes are **suppressed** for the duration of the batch.
+- The listener accumulates the set of `(register-slug, schema-slug)` pairs touched during the batch.
+- `flushBatch()` emits **one** `or-collection-{register}-{schema}` event per affected pair, per authorised user.
+
+This turns a 1,000-row import from `1000 × (N_object_per_row × N_readers + N_collection_readers)` pushes into typically 1–3 collection pushes total.
+
+## Subscribing from the frontend
+
+The full subscription API ships with the `add-live-updates-plugin` change in `@conduction/nextcloud-vue`. Quick reference:
+
+```js
+import { useObjectStore } from '@conduction/nextcloud-vue'
+
+const store = useObjectStore()
+
+// Subscribe to a single object
+const unsubscribe = store.subscribe('zaken/meldingen', uuid)
+// Triggers store.fetchObject(...) on receipt of `or-object-{uuid}`
+
+// Subscribe to a collection
+const unsubscribe = store.subscribe('zaken/meldingen')
+// Triggers store.fetchCollection(...) on receipt of `or-collection-zaken-meldingen`
+
+// Cleanup is automatic via `tryOnScopeDispose` when the Vue scope tears down
+// (manual cleanup also available)
+```
+
+The plugin maintains a single `notify_push` WebSocket connection per browser tab and dispatches incoming events to all interested subscribers. Multiple components subscribing to the same event key share one network listener and one refetch via in-flight deduplication.
+
+When `notify_push` is unavailable, the same `subscribe()` API silently falls back to a coalesced polling timer keyed on `(type, paramsHash)` — one timer per unique query, not per widget.
+
+## Subscription cost & guidelines
+
+A common worry when adding `subscribe()` calls liberally is "am I making the page slow?" The cost model is **event-driven**, not poll-driven, so the answer is almost always no — but it helps to understand exactly where cost comes from.
+
+### What an idle subscription costs
+
+A `store.subscribe('participant')` that never fires an event for the next 30 minutes:
+
+| Resource | Cost |
+|---|---|
+| Memory (browser) | One entry in `Map<eventKey, Set<callback>>` — a few hundred bytes total |
+| Memory (server) | Zero — the listener is registered against the event dispatcher once at app boot, not per-subscriber |
+| Network (browser) | Zero — the WebSocket is already open for any other subscription on the page; this listener piggybacks on it |
+| Network (server) | Zero — `IQueue::push` only fires when an OR object lifecycle event actually dispatches |
+| CPU | Zero |
+
+So **subscribing to a collection that doesn't change is free**. The decidesk live-meeting page subscribes to `participant` even though participants rarely change mid-meeting; if the participant list is static for the entire 90-minute meeting, that subscription emits zero pushes and costs nothing beyond a Map entry.
+
+### What an active subscription costs
+
+When an event actually fires for a subscribed key, the per-event work scales with the number of authorised readers:
+
+```
+1 ObjectUpdatedEvent
+  ├── PHP listener: 1 PermissionHandler::getReadableByUsers() call
+  ├── PHP listener: N × IQueue::push('notify_custom', …)        # N = readers
+  ├── Redis: N × PUBLISH on the notify_custom channel
+  ├── notify_push: dispatches to up-to-N WebSocket connections
+  └── Each browser tab subscribed to the matching event-name:
+       └── 1 store.fetchObject(...) call (deduplicated across all
+           components in the same tab via the in-flight Promise map —
+           5 widgets watching the same uuid → 1 fetch, not 5)
+```
+
+So the dominant cost for a single object change is `N` PHP push calls + `N` REST refetches at the API layer, where N is "readers connected and watching this object." For typical small/medium government installations N is in the tens, not thousands.
+
+### When to be careful
+
+The idle-cost-is-zero rule has three exceptions worth knowing:
+
+1. **High-frequency field edits on widely-watched objects** — e.g. someone collaboratively editing a shared note, with 50 watchers, fires `or-object-{uuid}` on every keystroke. Each push triggers 50 refetches × keystrokes-per-second. Mitigation: debounce server-side (don't fire `ObjectUpdatedEvent` per keystroke; fire once per save/save-on-blur cycle).
+2. **Bulk imports without `setBatchMode`** — a 1,000-row import without batch mode emits up to `1000 × N_readers` pushes. Mitigation: use `NotifyPushListener::setBatchMode(true)` around the loop and `flushBatch()` at the end. OR's `ImportService` already does this.
+3. **Subscribing to a collection on every list-row render** — if a list of 100 cards each calls `store.subscribe(type, item.id)` without sharing across the list, you've created 100 distinct event-key listeners. Refcounting prevents this from doubling up if the same uuid appears twice, but you still pay the per-uuid map cost. Mitigation: subscribe at the **list** level (`store.subscribe(type)` once for the collection) rather than per-card.
+
+### Decidesk LiveMeeting concretely
+
+Three subscriptions on the live meeting page:
+
+| Subscription | Event frequency during a typical meeting | Cost during meeting |
+|---|---|---|
+| `subscribe('meeting', this.id)` | Chair clicks "next item" or changes status — a few per meeting | Tiny — one push per change × N readers |
+| `subscribe('agenda-item')` | Items reorder, vote starts/ends — handful per agenda item | Tiny — collection events only on create/delete; vote start = create, vote end = update (no collection event) |
+| `subscribe('participant')` | Late joiner / drop-off — rare to never | **Zero** for the static case; `N` pushes per join/leave |
+
+For a 1-hour meeting with 12 participants and 8 agenda items, the entire live-meeting transport overhead is on the order of **20-30 pushes total per attendee** — well under what the 30s polling baseline would have done (`60min × 2 polls/min × 12 attendees = 1,440 fetches per attendee per meeting`).
+
+So the live-updates approach reduces total work by ~50× for this use case, even with three "extra" subscriptions running.
+
+---
+
+## Two-transport architecture
+
+OpenRegister ships **two complementary realtime transports**, both hanging off the same three internal events:
+
+```
+ObjectCreatedEvent / ObjectUpdatedEvent / ObjectDeletedEvent (single internal source)
+    │
+    ├── NotifyPushListener           → IQueue::push('notify_custom', …)   → notify_push WebSocket  [REST clients]
+    └── GraphQLSubscriptionListener  → SubscriptionService (APCu/Redis)   → SSE /api/graphql/subscribe  [GraphQL clients]
+```
+
+REST clients (the default for `@conduction/nextcloud-vue`'s object store) consume `notify_push`. GraphQL clients use the existing SSE transport from the [graphql-api capability](../../openspec/specs/graphql-api/spec.md). Both transports receive the same logical change at the same instant; consumers should pick one transport per page, not both.
+
+A third transport MUST NOT be added without extending the [realtime-updates spec](../../openspec/specs/realtime-updates/spec.md).
+
+## Operational
+
+| Concern | Where it lives |
+|---|---|
+| Listener implementation | `lib/Listener/NotifyPushListener.php` |
+| Constants class | `lib/Push/PushEvents.php` |
+| Permission resolution | `lib/Service/PermissionHandler.php` |
+| Listener registration | `lib/AppInfo/Application.php` |
+| Admin status probe | `lib/Settings/OpenRegisterAdmin.php` |
+| Status badge UI | `src/views/settings/sections/PushNotificationsConfiguration.vue` |
+| Bulk-import batch wrap | `lib/Service/ImportService.php` |
+| Spec (canonical) | `openspec/specs/realtime-updates/spec.md` |
+| Spec (change delta) | `openspec/changes/add-live-updates/specs/realtime-updates/spec.md` |
+
+## Configuration
+
+OpenRegister push events require:
+
+1. **`notify_push` Nextcloud app installed** — install via `occ app:install notify_push` and configure with `occ notify_push:setup`.
+2. **`OCA\NotifyPush\Queue\IQueue` reachable** — verify via Settings → Administration → OpenRegister → Push notifications. The badge shows `Realtime push active` once the first push has been delivered.
+3. **No additional config in OpenRegister** — push delivery is automatic for every object lifecycle event when notify_push is reachable.
+
+## Related documentation
+
+- [Realtime Updates capability spec](../../openspec/specs/realtime-updates/spec.md)
+- [Deck Integration](./Deck.md) — Deck's own push events that complement OR events
+- [Custom Webhooks](./custom-webhooks.md) — push to external HTTP endpoints (different mechanism)
+- [notify_push on GitHub](https://github.com/nextcloud/notify_push)
+- [`@nextcloud/notify_push` JS client](https://www.npmjs.com/package/@nextcloud/notify_push)

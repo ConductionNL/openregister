@@ -1,7 +1,11 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { auditTrailStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
-
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import {
+	auditTrailStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
@@ -13,237 +17,183 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 		:subname="t('openregister', 'Export, view, or delete audit trails')"
 		:open="navigationStore.sidebarState.auditTrail"
 		@update:open="(e) => navigationStore.setSidebarState('auditTrail', e)">
-		<NcAppSidebarTab id="filters-tab" :name="t('openregister', 'Filters')" :order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{ t('openregister', 'Register') }}</label>
-					<NcSelect
-						id="registerSelect"
-						v-bind="registerOptions"
-						:model-value="selectedRegisterValue"
-						:placeholder="t('openregister', 'All registers')"
-						:input-label="t('openregister', 'Register')"
-						:clearable="true"
-						@update:model-value="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
-					<NcSelect
-						id="schemaSelect"
-						v-bind="schemaOptions"
-						:model-value="selectedSchemaValue"
-						:placeholder="t('openregister', 'All schemas')"
-						:input-label="t('openregister', 'Schema')"
-						:disabled="!registerStore.registerItem"
-						:clearable="true"
-						@update:model-value="handleSchemaChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="actionSelect">{{ t('openregister', 'Actions') }}</label>
-					<NcSelect
-						id="actionSelect"
-						v-model="selectedActions"
-						:options="actionOptions"
-						:placeholder="t('openregister', 'All actions')"
-						:input-label="t('openregister', 'Actions')"
-						:multiple="true"
-						:clearable="true"
-						@input="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<div class="filterGroup">
-					<label for="userSelect">{{ t('openregister', 'Users') }}</label>
-					<NcSelect
-						id="userSelect"
-						v-model="selectedUsers"
-						:options="userOptions"
-						:placeholder="t('openregister', 'All users')"
-						:input-label="t('openregister', 'Users')"
-						:multiple="true"
-						:clearable="true"
-						@input="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<div class="filterGroup">
-					<label>{{ t('openregister', 'Date Range') }}</label>
-					<NcDateTimePickerNative
-						v-model="dateFrom"
-						:label="t('openregister', 'From date')"
-						type="datetime-local"
-						@input="applyFilters" />
-					<NcDateTimePickerNative
-						v-model="dateTo"
-						:label="t('openregister', 'To date')"
-						type="datetime-local"
-						@input="applyFilters" />
-				</div>
-				<div class="filterGroup">
-					<label for="objectFilter">{{ t('openregister', 'Object ID') }}</label>
-					<NcTextField
-						id="objectFilter"
-						v-model="objectFilter"
-						:label="t('openregister', 'Filter by object ID')"
-						:placeholder="t('openregister', 'Enter object ID')"
-						@update:value="handleObjectFilterChange" />
-				</div>
-				<div class="filterGroup">
-					<NcCheckboxRadioSwitch
-						v-model="showOnlyWithChanges"
-						@update:checked="applyFilters">
-						{{ t('openregister', 'Show only entries with changes') }}
-					</NcCheckboxRadioSwitch>
-				</div>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Audit Trails')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.',
+				)
+			"
+			clearable
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange"
+			@clear="clearFilters">
+			<SidebarFilterSelect
+				id="actionSelect"
+				v-model="selectedActions"
+				:options="actionOptions"
+				:placeholder="t('openregister', 'All actions')"
+				:label="t('openregister', 'Actions')"
+				multiple
+				@update:modelValue="applyFilters" />
+			<TrailUserDateFields
+				v-model:users="selectedUsers"
+				v-model:dateFrom="dateFrom"
+				v-model:dateTo="dateTo"
+				:userOptions="userOptions"
+				@change="applyFilters" />
+			<div class="filterGroup">
+				<label for="objectFilter">{{
+					t('openregister', 'Object ID')
+				}}</label>
+				<NcTextField
+					id="objectFilter"
+					v-model="objectFilter"
+					:label="t('openregister', 'Filter by object ID')"
+					:placeholder="t('openregister', 'Enter object ID')"
+					@update:modelValue="handleObjectFilterChange" />
 			</div>
-
-			<div class="actionGroup">
-				<NcButton @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openregister', 'Clear Filters') }}
-				</NcButton>
+			<div class="filterGroup">
+				<NcCheckboxRadioSwitch
+					v-model="showOnlyWithChanges"
+					@update:modelValue="applyFilters">
+					{{ t('openregister', 'Show only entries with changes') }}
+				</NcCheckboxRadioSwitch>
 			</div>
+		</ScopeFiltersTab>
 
-			<NcNoteCard type="info" class="filter-hint">
-				{{ t('openregister', 'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.') }}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab id="stats-tab" :name="t('openregister', 'Statistics')" :order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ totalAuditTrails }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Total Audit Trails') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ createCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Create Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ updateCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Update Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ deleteCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Delete Operations') }}
-					</div>
-				</div>
+				<SidebarStatCard
+					:value="totalAuditTrails"
+					:label="t('openregister', 'Total Audit Trails')" />
+				<SidebarStatCard
+					:value="createCount"
+					:label="t('openregister', 'Create Operations')" />
+				<SidebarStatCard
+					:value="updateCount"
+					:label="t('openregister', 'Update Operations')" />
+				<SidebarStatCard
+					:value="deleteCount"
+					:label="t('openregister', 'Delete Operations')" />
 			</div>
 
 			<!-- Action Distribution -->
 			<div class="actionDistribution">
 				<h4>{{ t('openregister', 'Action Distribution') }}</h4>
-				<NcListItem v-for="(action, index) in actionDistribution"
+				<CountListItem
+					v-for="(action, index) in actionDistribution"
 					:key="index"
 					:name="action.action"
-					:bold="false">
+					:subname="entriesLabel(action.count)">
 					<template #icon>
 						<Pencil v-if="action.action === 'update'" :size="32" />
 						<Plus v-else-if="action.action === 'create'" :size="32" />
 						<Delete v-else-if="action.action === 'delete'" :size="32" />
 						<Eye v-else :size="32" />
 					</template>
-					<template #subname>
-						{{ t('openregister', '{count} entries', { count: action.count }) }}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
 
 			<!-- Top Objects -->
 			<div class="topObjects">
 				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
-				<NcListItem v-for="(object, index) in topObjects"
+				<CountListItem
+					v-for="(object, index) in topObjects"
 					:key="index"
 					:name="object.name"
-					:bold="false">
+					:subname="entriesLabel(object.count)">
 					<template #icon>
 						<CogOutline :size="32" />
 					</template>
-					<template #subname>
-						{{ t('openregister', '{count} entries', { count: object.count }) }}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
 /**
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
 	NcAppSidebar,
-	NcAppSidebarTab,
-	NcSelect,
-	NcNoteCard,
-	NcButton,
-	NcListItem,
-	NcDateTimePickerNative,
-	NcTextField,
 	NcCheckboxRadioSwitch,
+	NcTextField,
 } from '@nextcloud/vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
+import { trailSidebar } from '../../composables/trailSidebar.js'
+import eventBus from '../../eventBus.js'
+import {
+	addDateRange,
+	addScope,
+	csvValues,
+	routeDate,
+} from '../../services/routeQuery.js'
+import { applyRouteScope } from '../../services/routeScope.js'
+import {
+	addJoinedValues,
+	addPresent,
+	addScopeIds,
+} from '../../services/trailFilters.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
+
+/**
+ * The user options a comma-separated route parameter names.
+ *
+ * @param {string|undefined} user The users
+ * @return {Array<object>} The selected users
+ */
+function usersFromRoute(user) {
+	if (typeof user !== 'string' || user.length === 0) {
+		return []
+	}
+	return csvValues(user).map((u) => ({ value: u, label: u }))
+}
+
+const STATISTIC_FIELDS = [
+	['totalAuditTrails', 'total'],
+	['createCount', 'create'],
+	['updateCount', 'update'],
+	['deleteCount', 'delete'],
+]
+
+/**
+ * The known option for an action value, or a new one for an unknown action.
+ *
+ * @param {Map<string, object>} byValue The known options by value
+ * @param {string} value The action
+ * @return {object} The option
+ */
+function actionOption(byValue, value) {
+	return byValue.get(value) || { value, label: value }
+}
 
 export default {
 	name: 'AuditTrailSideBar',
 	components: {
 		NcAppSidebar,
-		NcAppSidebarTab,
-		NcSelect,
-		NcNoteCard,
-		NcButton,
-		NcListItem,
-		NcDateTimePickerNative,
 		NcTextField,
 		NcCheckboxRadioSwitch,
-		FilterOutline,
-		ChartLine,
 		CogOutline,
+		Delete,
 		Plus,
 		Pencil,
 		Eye,
-		FilterOffOutline,
 	},
+
+	mixins: [
+		routeBoundFilters('/audit-trails'),
+		trailSidebar(() => auditTrailStore.auditTrailList),
+	],
+
 	data() {
 		return {
 			actionOptions: [
@@ -267,9 +217,6 @@ export default {
 
 			activeTab: 'filters-tab',
 			selectedActions: [],
-			selectedUsers: [],
-			dateFrom: null,
-			dateTo: null,
 			objectFilter: '',
 			showOnlyWithChanges: false,
 			filteredCount: 0,
@@ -282,136 +229,34 @@ export default {
 			filterTimeout: null,
 		}
 	},
-	computed: {
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		registerOptions() {
-			return {
-				options: registerStore.registerList.map(register => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-				reduce: option => option.register,
-				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.register && option.register.title) || option.label || ''
-				},
-			}
-		},
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
 
-			return {
-				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-				reduce: option => option.schema,
-				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
-				},
-			}
-		},
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
-		},
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
-		},
-		/**
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		userOptions() {
-			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
-				return []
-			}
-			// Get unique users from audit trail list
-			const users = [...new Set(auditTrailStore.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
-			return users.map(user => ({
-				label: user,
-				value: user,
-			}))
-		},
+	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		auditTrailStore: () => auditTrailStore,
 	},
+
 	watch: {
-		// React to query param changes as single source of truth (only on /audit-trails)
-		'$route.query': {
-			/**
-			 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-			 */
-			handler() {
-				if (this.$route.path !== '/audit-trails') return
-				this.applyQueryParamsFromRoute()
-			},
-			deep: true,
-		},
-		'auditTrailStore.auditTrailList'() {
+		'auditTrailStore.auditTrailList': function () {
 			this.updateFilteredCount()
 			this.loadStatistics()
 			this.loadActionDistribution()
 			this.loadTopObjects()
 		},
-		// Watch for changes in the global stores
-		'registerStore.registerItem'() {
-			// Schema should be cleared when register changes, this happens in the change handler
-			this.applyFilters()
-		},
-		'schemaStore.schemaItem'() {
-			this.applyFilters()
-		},
 	},
+
+	/**
+	 * @spec exclude Lifecycle plumbing; fire-and-forget load of lists/audit-trail data and route-seed, delegating to already-annotated methods.
+	 */
 	mounted() {
 		// Load required data
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-		}
-
-		// Load initial audit trail data and ensure it's refreshed
-		this.loadAuditTrailData()
+		this.refreshEmptyScopeLists()
 
 		this.loadStatistics()
 		this.loadActionDistribution()
 		this.loadTopObjects()
 
 		// Listen for filtered count updates
-		this.$root.$on('audit-trail-filtered-count', (count) => {
-			this.filteredCount = count
-		})
+		this.listenFilteredCount('audit-trail-filtered-count')
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
@@ -419,325 +264,225 @@ export default {
 		// Initialize from query params after lists potentially load
 		this.applyQueryParamsFromRoute()
 	},
-	beforeDestroy() {
-		this.$root.$off('audit-trail-filtered-count')
+
+	beforeUnmount() {
+		eventBus.off('audit-trail-filtered-count')
 	},
+
 	methods: {
 		/**
-		 * Load audit trail data and update filtered count
-		 * @return {Promise<void>}
+		 * "{count} entries", translated, for a row of a top list.
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
 		 */
-		async loadAuditTrailData() {
-			try {
-				await auditTrailStore.refreshAuditTrailList()
-				this.updateFilteredCount()
-			} catch (error) {
-				// Handle error silently
-			}
+		entriesLabel(count) {
+			return t('openregister', '{count} entries', { count })
 		},
-		/**
-		 * Clear filters (alias for clearAllFilters for template compatibility)
-		 * @return {void}
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		clearFilters() {
-			this.clearAllFilters()
-		},
+
+
 		/**
 		 * Handle object filter change with debouncing
+		 *
 		 * @param {string} value - The filter value
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		handleObjectFilterChange(value) {
 			this.objectFilter = value
 			this.debouncedApplyFilters()
 		},
+
 		/**
 		 * Apply filters and sync them to the URL query (single source of truth)
+		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		applyFilters() {
 			this.updateRouteQueryFromState()
 		},
-		/**
-		 * Debounced version of applyFilters for text input
-		 * @return {void}
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		debouncedApplyFilters() {
-			clearTimeout(this.filterTimeout)
-			this.filterTimeout = setTimeout(() => {
-				this.applyFilters()
-			}, 500)
-		},
+
+
 		/**
 		 * Update changes filter
+		 *
 		 * @param {boolean} value - Whether to show only entries with changes
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		updateChangesFilter(value) {
 			this.showOnlyWithChanges = value
 			this.applyFilters()
 		},
+
 		/**
 		 * Update filtered count from store
+		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		updateFilteredCount() {
 			this.filteredCount = auditTrailStore.auditTrailList.length
-			this.totalAuditTrails = auditTrailStore.auditTrailPagination.total || auditTrailStore.auditTrailList.length
+			this.totalAuditTrails =
+				auditTrailStore.auditTrailPagination.total
+				|| auditTrailStore.auditTrailList.length
 		},
+
 		/**
 		 * Load statistics
+		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadStatistics() {
 			try {
 				const stats = await auditTrailStore.getStatistics()
-				this.totalAuditTrails = stats.total || 0
-				this.createCount = stats.create || 0
-				this.updateCount = stats.update || 0
-				this.deleteCount = stats.delete || 0
-			} catch (error) {
+				for (const [field, key] of STATISTIC_FIELDS) {
+					this[field] = stats[key] || 0
+				}
+			} catch {
 				// Handle error silently
 			}
 		},
+
 		/**
 		 * Load action distribution for stats
+		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadActionDistribution() {
 			try {
 				const actionData = await auditTrailStore.getActionDistribution()
-				this.actionDistribution = actionData.map(action => ({
+				this.actionDistribution = actionData.map((action) => ({
 					action: action.action || action.name,
 					count: action.count || 0,
 					percentage: action.percentage || 0,
 				}))
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
+
 		/**
 		 * Load top objects for stats
+		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadTopObjects() {
 			try {
 				const objectData = await auditTrailStore.getTopObjects()
-				this.topObjects = objectData.map(object => ({
+				this.topObjects = objectData.map((object) => ({
 					name: object.objectId || object.name || `Object ${object.id}`,
 					count: object.count || 0,
 				}))
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
-		/**
-		 * Handle register change
-		 * @param {object} register - Selected register
-		 * @return {void}
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		handleRegisterChange(register) {
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null) // Clear schema when register changes
-			this.applyFilters()
-		},
-		/**
-		 * Handle schema change
-		 * @param {object} schema - Selected schema
-		 * @return {void}
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		handleSchemaChange(schema) {
-			schemaStore.setSchemaItem(schema)
-			this.applyFilters()
-		},
+
 		/**
 		 * Build URL query object from current sidebar state
+		 *
 		 * @return {object}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		buildQueryFromState() {
 			const query = {}
-			if (registerStore.registerItem && registerStore.registerItem.id) {
-				query.register = String(registerStore.registerItem.id)
-			}
-			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
-				query.schema = String(schemaStore.schemaItem.id)
-			}
-			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
-				query.action = this.selectedActions.map(a => a.value).join(',')
-			}
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				query.user = this.selectedUsers.map(u => u.value).join(',')
-			}
-			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
-			if (this.dateFrom) query.dateFrom = new Date(this.dateFrom).getDate() ? new Date(this.dateFrom).toISOString() : null
-			if (this.dateTo) query.dateTo = new Date(this.dateTo).getDate() ? new Date(this.dateTo).toISOString() : null
+			addScope(query, selectedScope())
+			addJoinedValues(query, ['action', this.selectedActions])
+			addJoinedValues(query, ['user', this.selectedUsers])
+			addDateRange(query, this)
 			if (this.objectFilter) query.object = this.objectFilter
 			if (this.showOnlyWithChanges) query.onlyWithChanges = '1'
 			return query
 		},
-		/**
-		 * Compare two shallow query objects (keys and stringified values)
-		 * @param {object} a - First query object to compare
-		 * @param {object} b - Second query object to compare
-		 * @return {boolean}
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		queriesEqual(a, b) {
-			const ka = Object.keys(a || {}).sort()
-			const kb = Object.keys(b || {}).sort()
-			if (ka.length !== kb.length) return false
-			for (let i = 0; i < ka.length; i++) {
-				if (ka[i] !== kb[i]) return false
-				if (String(a[ka[i]]) !== String(b[kb[i]])) return false
-			}
-			return true
-		},
-		/**
-		 * Write current state to the router query (only on /audit-trails)
-		 * @return {void}
-		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
-		 */
-		updateRouteQueryFromState() {
-			if (this.$route.path !== '/audit-trails') return
-			const nextQuery = this.buildQueryFromState()
-			if (this.queriesEqual(nextQuery, this.$route.query || {})) return
-			this.$router.replace({
-				path: this.$route.path,
-				query: nextQuery,
-			})
-		},
+
 		/**
 		 * Apply URL query params to component/store state and refresh list
+		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/audit-trails') return
-			const { register, schema, action, user, dateFrom, dateTo, object, onlyWithChanges } = this.$route.query || {}
-
-			// Set simple fields
+			const query = this.$route.query || {}
 			// JS dates are awful, so we first check if its a valid date and then create the date. (dateFrom is a ISO string)
-			this.dateFrom = dateFrom && new Date(dateFrom).getDate() ? new Date(dateFrom) : null
-			this.dateTo = dateTo && new Date(dateTo).getDate() ? new Date(dateTo) : null
-			this.objectFilter = object ? String(object) : ''
-			this.showOnlyWithChanges = !!(onlyWithChanges)
-
-			// Actions
-			if (typeof action === 'string' && action.length > 0) {
-				const values = action.split(',').map(s => s.trim()).filter(Boolean)
-				const mapByValue = Object.fromEntries(this.actionOptions.map(o => [o.value, o]))
-				this.selectedActions = values.map(v => mapByValue[v] || { value: v, label: v })
-			} else {
-				this.selectedActions = []
-			}
-
-			// Users
-			if (typeof user === 'string' && user.length > 0) {
-				const values = user.split(',').map(s => s.trim()).filter(Boolean)
-				this.selectedUsers = values.map(u => ({ value: u, label: u }))
-			} else {
-				this.selectedUsers = []
-			}
-
-			// Registers and schemas depend on lists being loaded
-			const applyRegister = () => {
-				if (!register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(r => String(r.id) === String(register))
-				if (reg) registerStore.setRegisterItem(reg)
-				return true
-			}
-			const applySchema = () => {
-				if (!schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(s => String(s.id) === String(schema))
-				if (sch) schemaStore.setSchemaItem(sch)
-				return true
-			}
-
-			const tryApply = (attempt = 0) => {
-				const regOk = applyRegister()
-				const schOk = applySchema()
-				if (regOk && schOk) {
-					// Once state is set from URL, apply to store and refresh
-					this.applyFiltersToStore()
-					return
-				}
-				if (attempt < 10) {
-					setTimeout(() => tryApply(attempt + 1), 200)
-				}
-			}
-			tryApply()
+			this.dateFrom = routeDate(query.dateFrom)
+			this.dateTo = routeDate(query.dateTo)
+			this.objectFilter = query.object ? String(query.object) : ''
+			this.showOnlyWithChanges = !!query.onlyWithChanges
+			this.selectedActions = this.actionsFromRoute(query.action)
+			this.selectedUsers = usersFromRoute(query.user)
+			// Once state is set from URL, apply to store and refresh
+			applyRouteScope(query, () => this.applyFiltersToStore())
 		},
+
 		/**
-		 * Build filters from state and push to store, then refresh list
+		 * The action options a route parameter names; unknown actions get an
+		 * option of their own.
+		 *
+		 * @param {string|undefined} action The comma-separated actions
+		 * @return {Array<object>} The selected actions
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 */
+		actionsFromRoute(action) {
+			if (typeof action !== 'string' || action.length === 0) {
+				return []
+			}
+			const byValue = new Map(this.actionOptions.map((o) => [o.value, o]))
+			return csvValues(action).map((v) => actionOption(byValue, v))
+		},
+
+		/**
+		 * Build filters from state and, when they changed, push them to the store and refresh the list
+		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		applyFiltersToStore() {
 			const filters = {}
-			if (Array.isArray(this.selectedActions) && this.selectedActions.length > 0) {
-				const actions = this.selectedActions.slice()
-				if (actions.length > 0) {
-					filters.action = actions.map(a => a.value).join(',')
-				}
-			}
-			if (registerStore.registerItem) {
-				filters.register = registerStore.registerItem.id.toString()
-			}
-			if (schemaStore.schemaItem) {
-				filters.schema = schemaStore.schemaItem.id.toString()
-			}
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				const users = this.selectedUsers.slice()
-				if (users.length > 0) {
-					filters.user = users.map(u => u.value).join(',')
-				}
-			}
-			if (this.dateFrom) filters.dateFrom = this.dateFrom
-			if (this.dateTo) filters.dateTo = this.dateTo
-			if (this.objectFilter) filters.object = this.objectFilter
+			addJoinedValues(filters, ['action', this.selectedActions])
+			addScopeIds(filters, selectedScope())
+			addJoinedValues(filters, ['user', this.selectedUsers])
+			addPresent(filters, [
+				['dateFrom', this.dateFrom],
+				['dateTo', this.dateTo],
+				['object', this.objectFilter],
+			])
 			if (this.showOnlyWithChanges) filters.onlyWithChanges = true
+
+			// The index loads the list on mount; only a change of filters needs another load.
+			if (
+				JSON.stringify(filters)
+				=== JSON.stringify(auditTrailStore.auditTrailFilters)
+			)
+				return
 
 			auditTrailStore.setAuditTrailFilters(filters)
 			auditTrailStore.refreshAuditTrailList()
-			this.$root.$emit('audit-trail-filters-changed', filters)
+			eventBus.emit('audit-trail-filters-changed', filters)
 		},
+
 		/**
 		 * Clear all filters and sync URL
+		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		clearAllFilters() {
 			// Clear component state
@@ -763,44 +508,14 @@ export default {
 }
 </script>
 
-<style scoped>
-.filterSection,
-.statsSection {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
 
-.filterSection:last-child,
-.statsSection:last-child {
-	border-bottom: none;
-}
+@include divided-sections(filterSection, statsSection);
 
-.filterSection h3,
-.statsSection h3 {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
+@include filter-group-rules;
 
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
-
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
-
-.actionGroup {
-	padding: 0 16px;
-	margin-bottom: 12px;
-}
+@include action-group;
 
 .actionOption {
 	display: flex;
@@ -824,21 +539,9 @@ export default {
 	color: var(--color-info);
 }
 
-.filter-hint {
-	margin: 8px 16px;
-}
+@include filter-hint-rules;
 
-.statsSection {
-	padding: 16px;
-}
-
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
+@include stat-card;
 
 .statCard.create {
 	border-left: 4px solid var(--color-success);
@@ -850,18 +553,6 @@ export default {
 
 .statCard.delete {
 	border-left: 4px solid var(--color-error);
-}
-
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
 }
 
 .actionDistribution,
@@ -940,5 +631,11 @@ export default {
 /* Add some spacing between select inputs */
 :deep(.v-select) {
 	margin-bottom: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.actionProgressBar {
+		transition: none;
+	}
 }
 </style>

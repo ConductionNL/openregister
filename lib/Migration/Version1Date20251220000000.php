@@ -44,45 +44,41 @@ use OCP\Migration\SimpleMigrationStep;
  * @link      https://www.OpenRegister.app
  */
 
-class Version1Date20251220000000 extends SimpleMigrationStep
-{
-    /**
-     * Change database schema
-     *
-     * @param IOutput $output        Output interface for migration messages.
-     * @param Closure $schemaClosure Schema closure that returns the current schema.
-     * @param array   $options       Additional migration options.
-     *
-     * @return ISchemaWrapper|null The modified schema or null if no changes.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251220000000 extends SimpleMigrationStep {
+	/**
+	 * Change database schema
+	 *
+	 * @param IOutput $output Output interface for migration messages.
+	 * @param Closure $schemaClosure Schema closure that returns the current schema.
+	 * @param array $options Additional migration options.
+	 *
+	 * @return ISchemaWrapper|null The modified schema or null if no changes.
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Add configuration column to openregister_registers table if it exists.
-        if ($schema->hasTable('openregister_registers') === true) {
-            $table = $schema->getTable('openregister_registers');
+		// Add configuration column to openregister_registers table if it exists.
+		if ($schema->hasTable('openregister_registers') === true) {
+			$table = $schema->getTable('openregister_registers');
 
-            // Add configuration column if it doesn't exist.
-            if ($table->hasColumn('configuration') === false) {
-                $table->addColumn(
-                    'configuration',
-                    Types::TEXT,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                    ]
-                );
-                $output->info('Added configuration column to openregister_registers table for magic mapping support.');
-            }
-        }
+			// Add configuration column if it doesn't exist.
+			if ($table->hasColumn('configuration') === false) {
+				$table->addColumn(
+					'configuration',
+					Types::TEXT,
+					[
+						'notnull' => false,
+						'default' => null,
+					]
+				);
+				$output->info('Added configuration column to openregister_registers table for magic mapping support.');
+			}
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

@@ -5,6 +5,9 @@
  *
  * Defines the contract for SIP package transport implementations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -27,37 +30,36 @@ namespace OCA\OpenRegister\Service\Edepot\Transport;
  * Implementations handle the actual transmission of SIP packages to
  * external e-Depot systems via different protocols (SFTP, REST, OpenConnector).
  */
-interface TransportInterface
-{
-    /**
-     * Send a SIP package to the e-Depot.
-     *
-     * @param string              $sipFilePath The local path to the SIP ZIP archive.
-     * @param array<string,mixed> $config      Transport configuration (endpoint, auth, etc.).
-     *
-     * @return TransportResult The result of the transport operation.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function send(string $sipFilePath, array $config): TransportResult;
+interface TransportInterface {
+	/**
+	 * Send a SIP package to the e-Depot.
+	 *
+	 * @param string $sipFilePath The local path to the SIP ZIP archive.
+	 * @param array<string,mixed> $config Transport configuration (endpoint, auth, etc.).
+	 *
+	 * @return TransportResult The result of the transport operation.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function send(string $sipFilePath, array $config): TransportResult;
 
-    /**
-     * Test the connection to the e-Depot endpoint.
-     *
-     * @param array<string,mixed> $config Transport configuration.
-     *
-     * @return bool True if connection test succeeds.
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function testConnection(array $config): bool;
+	/**
+	 * Test the connection to the e-Depot endpoint.
+	 *
+	 * @param array<string,mixed> $config Transport configuration.
+	 *
+	 * @return bool True if connection test succeeds.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function testConnection(array $config): bool;
 
-    /**
-     * Get the transport name.
-     *
-     * @return string The transport protocol name (e.g., 'sftp', 'rest_api', 'openconnector').
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
-     */
-    public function getName(): string;
+	/**
+	 * Get the transport name.
+	 *
+	 * @return string The transport protocol name (e.g., 'sftp', 'rest_api', 'openconnector').
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+	 */
+	public function getName(): string;
 }//end interface

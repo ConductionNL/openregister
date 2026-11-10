@@ -1,0 +1,217 @@
+{
+    "avg empty field": {
+        "error": "aggregation metric \"avg\" MUST specify a field"
+    },
+    "bad dateBucket beats groupBy combination": {
+        "error": "dateBucket gap MUST be one of: minute, hour, day, week, month, quarter, year (got: decade)"
+    },
+    "bad groupBy beats dateBucket combination": {
+        "error": "groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string"
+    },
+    "count": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "count with field and filter": {
+        "query": {
+            "metric": "count",
+            "field": "amount",
+            "filter": {
+                "status": "open"
+            },
+            "groupBy": null,
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "cumulative with dateBucket": {
+        "query": {
+            "metric": "sum",
+            "field": "amount",
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "month"
+            },
+            "metrics": null,
+            "cumulative": true
+        }
+    },
+    "cumulative with groupBy": {
+        "error": "cumulative MUST only be combined with a dateBucket (time-bucket) aggregation"
+    },
+    "cumulative without dateBucket": {
+        "error": "cumulative MUST only be combined with a dateBucket (time-bucket) aggregation"
+    },
+    "dateBucket bad gap": {
+        "error": "dateBucket gap MUST be one of: minute, hour, day, week, month, quarter, year (got: decade)"
+    },
+    "dateBucket empty start": {
+        "error": "dateBucket MUST include non-empty `field`, `start`, `end`, `gap`"
+    },
+    "dateBucket missing gap": {
+        "error": "dateBucket MUST include non-empty `field`, `start`, `end`, `gap`"
+    },
+    "dateBucket valid": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "month"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "field error beats metrics": {
+        "error": "aggregation metric \"sum\" MUST specify a field"
+    },
+    "groupBy and dateBucket beat cumulative": {
+        "error": "groupBy and dateBucket MUST NOT be combined — pick one bucketing strategy"
+    },
+    "groupBy duplicate": {
+        "error": "groupBy fields MUST be distinct (duplicate field in groupBy list)"
+    },
+    "groupBy empty": {
+        "error": "groupBy MUST include a non-empty `field` or a non-empty `fields` list"
+    },
+    "groupBy empty field": {
+        "error": "groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string"
+    },
+    "groupBy empty fields": {
+        "error": "groupBy MUST include a non-empty `field` or a non-empty `fields` list"
+    },
+    "groupBy field": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "groupBy fields": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "fields": [
+                    "status",
+                    "kind"
+                ]
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "groupBy list": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": [
+                "status",
+                "kind"
+            ],
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "groupBy non-string member": {
+        "error": "groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string"
+    },
+    "groupBy with dateBucket": {
+        "error": "groupBy and dateBucket MUST NOT be combined — pick one bucketing strategy"
+    },
+    "max with field": {
+        "query": {
+            "metric": "max",
+            "field": "amount",
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "metric error beats everything": {
+        "error": "aggregation metric MUST be one of: count, sum, avg, min, max (got: x)"
+    },
+    "metrics bad entry beats dateBucket": {
+        "error": "metrics entry has an invalid metric \"x\" (MUST be one of: count, sum, avg, min, max)"
+    },
+    "metrics empty": {
+        "error": "metrics list, when supplied, MUST NOT be empty"
+    },
+    "metrics entry bad metric": {
+        "error": "metrics entry has an invalid metric \"p95\" (MUST be one of: count, sum, avg, min, max)"
+    },
+    "metrics entry min empty field": {
+        "error": "metrics entry \"min\" MUST specify a field"
+    },
+    "metrics entry not an array": {
+        "error": "each metrics entry MUST be an array with a `metric` key"
+    },
+    "metrics entry sum without field": {
+        "error": "metrics entry \"sum\" MUST specify a field"
+    },
+    "metrics entry without metric": {
+        "error": "each metrics entry MUST be an array with a `metric` key"
+    },
+    "metrics valid": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": [
+                {
+                    "metric": "count"
+                },
+                {
+                    "metric": "sum",
+                    "field": "amount"
+                }
+            ],
+            "cumulative": false
+        }
+    },
+    "metrics with dateBucket": {
+        "error": "a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation"
+    },
+    "sum without field": {
+        "error": "aggregation metric \"sum\" MUST specify a field"
+    },
+    "unknown metric": {
+        "error": "aggregation metric MUST be one of: count, sum, avg, min, max (got: median)"
+    },
+    "upper-case metric": {
+        "error": "aggregation metric MUST be one of: count, sum, avg, min, max (got: SUM)"
+    }
+}

@@ -1,10 +1,12 @@
 ---
-status: in-progress
+status: done
 ---
 
 # Object Interactions
 
 ## Purpose
+
+@e2e exclude REST API convenience layer — covered by Newman
 
 OpenRegister objects require rich interaction capabilities — notes, tasks, file attachments, tags, and audit trails — that allow users to collaborate on and track the lifecycle of register data. Rather than building custom interaction systems, this spec defines a convenience API layer that wraps Nextcloud's native subsystems (CalDAV for tasks, ICommentsManager for notes, IRootFolder for files, Nextcloud tags) and links them to OpenRegister objects via standardized properties. Any consuming app (Procest, Pipelinq, OpenCatalogi, ZaakAfhandelApp) can use these unified sub-resource endpoints without knowledge of the underlying Nextcloud internals.
 
@@ -13,7 +15,6 @@ OpenRegister objects require rich interaction capabilities — notes, tasks, fil
 
 **OpenSpec changes**
 - `fix-object-files-listing-lock-and-limit` (active) — makes the object files listing endpoint resilient to Nextcloud file locks, raises the `_limit` ceiling from 100 to 1000, replaces the `getContent()` ownership probe with `isReadable()`, and adds `locked`/`lock` metadata to each file entry.
-
 
 ## Requirements
 
@@ -68,7 +69,7 @@ The system SHALL register `"openregister"` as a valid entity type with Nextcloud
 
 #### Scenario: Listener registered in Application.php
 - **GIVEN** the OpenRegister `Application` class
-- **THEN** `CommentsEntityListener` MUST be registered as a listener for `CommentsEntityEvent` in `registerEventListeners()`
+- **THEN** `CommentsEntityListener` MUST be registered as a listener for `CommentsEntityEvent` in `ListenerRegistrar::register()`
 
 ### Requirement: Tasks on Objects via CalDAV VTODO
 
@@ -154,7 +155,7 @@ The system SHALL determine which CalDAV calendar to use by finding the user's fi
 
 ### Requirement: File Attachments on Objects
 
-The system SHALL provide file attachment operations as sub-resource endpoints under objects. Files MUST be stored in Nextcloud's filesystem via `OCP\Files\IRootFolder` and linked to OpenRegister objects. The system MUST support upload, download, listing, deletion, and publish/depublish operations.
+The system SHALL provide file attachment operations as sub-resource endpoints under objects. Files MUST be stored in Nextcloud's filesystem via `OCP\Files\IRootFolder` and linked to OpenRegister objects. The system MUST support upload, download, listing, deletion, and publish/depublish operations. The listing operation MUST honour any positive user-supplied `_limit` parameter without imposing an upper cap (default 30, floor 1), MUST NOT fail when individual files are held under a Nextcloud file lock, and MUST include `locked` and optional `lock` metadata on every entry when the caller is authenticated. For unauthenticated callers the listing MUST NOT include `locked` or `lock` in any file entry.
 
 #### Scenario: Upload a file to an object
 - **GIVEN** an OpenRegister object with UUID `abc-123`
@@ -163,10 +164,88 @@ The system SHALL provide file attachment operations as sub-resource endpoints un
 - **AND** the file MUST be linked to the object
 - **AND** the response MUST return HTTP 201 with the file metadata
 
-#### Scenario: List files for an object
-- **GIVEN** object `abc-123` has 3 attached files
+#### Scenario: List files for an object (authenticated caller)
+- **GIVEN** an authenticated user and object `abc-123` with 3 attached files
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the response MUST return all 3 files with metadata including `fileId`, `name`, `mimeType`, `size`, and `locked`
+
+#### Scenario: List files for an object (anonymous caller)
+- **GIVEN** no authenticated session (`IUserSession::getUser()` returns `null`) and a publicly accessible object `abc-123` with 3 attached files
 - **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
 - **THEN** the response MUST return all 3 files with metadata including `fileId`, `name`, `mimeType`, `size`
+- **AND** NO file entry MUST include a `locked` field
+- **AND** NO file entry MUST include a `lock` sub-object
+- **AND** no call to `ILockManager::getLocks()` MUST be attempted for this request
+
+#### Scenario: List files honours user-supplied `_limit` without a ceiling
+- **GIVEN** object `abc-123` has 500 attached files
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files?_limit=500&_page=1`
+- **THEN** the response MUST return 500 file entries (not silently clamped to 100)
+- **AND** the pagination envelope MUST report `limit: 500`
+
+#### Scenario: Large `_limit` values are honoured as-is
+- **GIVEN** object `abc-123` has 2500 attached files
+- **WHEN** a GET request is sent with `?_limit=5000`
+- **THEN** the response MUST return all 2500 entries
+- **AND** the pagination envelope MUST report `limit: 5000`
+- **AND** the system MUST NOT apply any upper ceiling to the `_limit` value
+
+#### Scenario: `_limit=0` or negative is clamped to 1
+- **WHEN** a GET request is sent with `?_limit=0` or `?_limit=-10`
+- **THEN** the response MUST return at least 1 entry (or 0 if no files exist) and the pagination envelope MUST report `limit: 1`
+
+#### Scenario: Missing `_limit` uses the default
+- **WHEN** a GET request is sent with no `_limit` query parameter
+- **THEN** the pagination envelope MUST report `limit: 30`
+
+#### Scenario: Listing is resilient to Nextcloud-locked files (authenticated caller)
+- **GIVEN** an authenticated user and object `abc-123` with 5 attached files, one of which is held under a Nextcloud file lock by another user
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the response MUST return HTTP 200 with all 5 file entries
+- **AND** the locked file's entry MUST have `locked: true` and a `lock` sub-object with `type`, `scope`, `owner`, `createdAt`, and optional `expiresAt`
+- **AND** each unlocked file entry MUST have `locked: false` and no `lock` sub-object
+- **AND** one structured log line at `info` level MUST be emitted per locked file, including `fileId`, `name`, and lock owner
+
+#### Scenario: Listing is resilient to Nextcloud-locked files (anonymous caller)
+- **GIVEN** no authenticated session and a publicly accessible object `abc-123` with 5 attached files, one of which is held under a Nextcloud file lock
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the response MUST return HTTP 200 with all 5 file entries
+- **AND** NO file entry MUST include `locked` or `lock`
+- **AND** the locked file's entry MUST still be present in the result set (not silently elided)
+- **AND** one structured log line at `info` level MUST still be emitted server-side per locked file, so operators retain traceability even when the field is hidden from the caller
+
+#### Scenario: `lock.type` maps Nextcloud lock constants to string aliases
+- **GIVEN** a file is locked with `ILock::TYPE_USER`
+- **WHEN** the file is formatted in a listing response
+- **THEN** `lock.type` MUST equal `"user"`
+- **AND** `TYPE_APP` maps to `"app"`, `TYPE_TOKEN` maps to `"token"`
+- **AND** `lock.scope` MUST be `"exclusive"` for `ILock::LOCK_EXCLUSIVE` and `"shared"` for `ILock::LOCK_SHARED`
+
+#### Scenario: `lock.expiresAt` is null when the lock has no timeout
+- **GIVEN** a lock with `getTimeout()` returning `0` (no timeout)
+- **WHEN** the file is formatted in a listing response
+- **THEN** `lock.expiresAt` MUST be `null`
+- **AND** `lock.createdAt` MUST still be an ISO 8601 string
+
+#### Scenario: Lock provider is not available
+- **GIVEN** the `files_lock` app is disabled, `ILockManager::isLockProviderAvailable()` returns `false`, and the caller is authenticated
+- **WHEN** any file is formatted in a listing response
+- **THEN** each file entry MUST have `locked: false`
+- **AND** no file entry MUST include a `lock` sub-object
+- **AND** no call to `ILockManager::getLocks()` MUST be attempted
+
+#### Scenario: Listing does not read file contents to probe ownership
+- **GIVEN** object `abc-123` has attached files of varying sizes (including a 2 GB file)
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the ownership probe MUST use `$file->isReadable()` (a pure permission-bitmask check)
+- **AND** the listing MUST NOT call `$file->getContent()` or otherwise read file bytes during formatting
+- **AND** the listing MUST NOT acquire a shared lock on any file during formatting
+
+#### Scenario: Ownership repair still runs when the current user can read the file
+- **GIVEN** the current user can read file 42 (bitmask allows `PERMISSION_READ`) but is not recorded as its OpenRegister owner
+- **WHEN** the file is encountered during listing
+- **THEN** the ownership record MUST be repaired via `FileMapper::setFileOwnership($fileId, $userId)` (a direct DB write)
+- **AND** no file bytes MUST be read as part of the repair
 
 #### Scenario: Download all files as archive
 - **GIVEN** object `abc-123` has multiple attached files
@@ -390,6 +469,377 @@ All interaction endpoints SHALL follow a consistent sub-resource pattern under t
 - **AND** list responses MUST use the format `{"results": [...], "total": N}`
 
 ---
+
+### Requirement: User-Wide Task Aggregate Endpoint
+
+The system MUST expose a user-wide task aggregate endpoint that returns every
+CalDAV VTODO belonging to the current session user across all of their
+VTODO-supporting calendars, independent of any single object. `TasksController::allUserTasks()`
+MUST resolve the calendar set from the session user (`IUserSession`), never from
+a request parameter, so the endpoint cannot be used to read another user's tasks.
+It MUST accept optional `status`, `assignee`, and pagination (`_limit`/`limit`
+capped at 200, `_offset`/`offset`) filters, where `assignee` is a free-text
+filter applied within the caller's own task list and is NOT an identity claim.
+On error it MUST return HTTP 500 with an `error` message.
+
+#### Scenario: List all of the current user's tasks
+- **GIVEN** an authenticated user with VTODOs spread across multiple calendars
+- **WHEN** a GET request is sent to `/api/tasks`
+- **THEN** `TasksController::allUserTasks()` MUST return the aggregate via `TaskService::getAllUserTasks()` resolved from `IUserSession::getUser()->getUID()`
+- **AND** the response MUST NOT depend on any object register/schema/id
+
+#### Scenario: Filter the aggregate by status and assignee
+- **GIVEN** a GET request to `/api/tasks?status=needs-action&assignee=jan`
+- **WHEN** the controller reads the parameters
+- **THEN** `status` and `assignee` MUST be forwarded to `TaskService::getAllUserTasks()`
+- **AND** `assignee` MUST be applied as a free-text filter within the caller's own task list, not as an identity claim
+
+#### Scenario: Aggregate pagination caps the limit
+- **GIVEN** a GET request to `/api/tasks?_limit=500`
+- **WHEN** the controller computes the limit
+- **THEN** the effective limit MUST be capped at 200
+
+### Requirement: Deck Card Linkage on Objects
+
+The system MUST provide object-scoped Nextcloud Deck card linkage as a
+sub-resource of objects. `DeckController` MUST support listing the Deck cards
+linked to an object, creating or linking a card to an object, and a reverse
+lookup of every object linked to cards on a given board. When the Nextcloud Deck
+app is not installed, every endpoint MUST return HTTP 501 with
+`{"error": "Nextcloud Deck app is not installed", "code": "APP_NOT_AVAILABLE"}`.
+Object-scoped operations MUST validate the object exists (HTTP 404 otherwise) via
+`ObjectService` before delegating to `DeckCardService`.
+
+#### Scenario: List Deck cards for an object
+- **GIVEN** the Deck app is installed and object `abc-123` exists
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/deck`
+- **THEN** the controller MUST validate the object and return `DeckCardService::getCardsForObject()` results
+
+#### Scenario: Create or link a Deck card to an object
+- **GIVEN** the Deck app is installed and object `abc-123` exists
+- **WHEN** a POST request supplies card link/create data
+- **THEN** `DeckCardService::linkOrCreateCard()` MUST be invoked and the link returned with HTTP 201
+- **AND** a duplicate link MUST return HTTP 409, a missing target MUST return HTTP 404
+
+#### Scenario: Reverse lookup objects on a board
+- **GIVEN** the Deck app is installed
+- **WHEN** a GET request is sent for objects linked to a board id
+- **THEN** the response MUST return `{"results": [...], "total": N}` from `DeckCardService::getObjectsForBoard()`
+
+#### Scenario: Deck app not installed
+- **GIVEN** the Nextcloud Deck app is not installed
+- **WHEN** any `DeckController` endpoint is called
+- **THEN** the response MUST be HTTP 501 with `code: "APP_NOT_AVAILABLE"`
+
+### Requirement: The endpoint dispatcher MUST route execution by target type
+
+`EndpointService` MUST act as the runtime dispatcher behind the dynamic endpoint surface, routing an endpoint to a target-type-specific handler (`view`, `agent`, `webhook`, `register`, `schema`) and returning a uniform result shape `{success, statusCode, response, error?}`. A test entry point MUST allow executing an endpoint with supplied test data without a real inbound request.
+
+#### Scenario: Route by target type
+
+- **GIVEN** an `Endpoint` with a `targetType`
+- **WHEN** `executeEndpoint()` runs
+- **THEN** it MUST dispatch to the matching handler for `view`, `agent`, `webhook`, `register`, or `schema`
+- **AND** an unknown target type MUST return `{success: false, statusCode: 400, error: "Unknown target type: ..."}`
+
+#### Scenario: Test an endpoint with supplied data
+
+- **GIVEN** an endpoint and an optional `testData` array
+- **WHEN** `testEndpoint()` runs
+- **THEN** it MUST first check access via `canExecuteEndpoint()` and return `statusCode: 403` when denied
+- **AND** on success it MUST build a request from the endpoint method/path plus test data, dispatch via `executeEndpoint()`, log the call, and return the handler result
+- **AND** any thrown exception MUST be caught, logged, and surfaced as `{success: false, statusCode: 500, error: <message>}`
+
+#### Scenario: Agent endpoint executes an AI agent
+
+- **GIVEN** an endpoint with `targetType: agent` and a `targetId` resolving to an agent
+- **WHEN** `executeAgentEndpoint()` runs
+- **THEN** a missing agent MUST return `statusCode: 404` and an empty message MUST return `statusCode: 400`
+- **AND** on success it MUST resolve the agent's configured tools through `ToolRegistry` and execute the agent with the request message
+
+### Requirement: Endpoint execution MUST enforce group access and log every call
+
+Endpoint execution MUST be gated by group-based access control and MUST persist an execution log entry for audit and debugging.
+
+#### Scenario: Group-based access control
+
+- **GIVEN** an endpoint with a configured `groups` list
+- **WHEN** `canExecuteEndpoint()` evaluates the current user
+- **THEN** an unauthenticated request MUST be allowed only when the endpoint declares no groups (public)
+- **AND** a member of the `admin` group MUST always be allowed
+- **AND** an authenticated user MUST be allowed when the endpoint declares no groups, or when the user belongs to at least one of the endpoint's groups; otherwise access MUST be denied
+
+#### Scenario: Execution call is logged with a TTL
+
+- **GIVEN** any endpoint execution
+- **WHEN** `logEndpointCall()` runs
+- **THEN** it MUST persist an `EndpointLog` with a generated uuid, the endpoint id, the acting user (when present), the request and response payloads, the status code and message, a creation timestamp, and an expiry one week out
+- **AND** the entry size MUST be computed before insert
+
+### Requirement: A user can star an object without changing it
+
+The star is retired: starring is following with notifications off. For one release the system SHALL keep the favourite surface as a deprecated alias of following. `PUT .../favourite` SHALL follow the object for the current user with notifications off when they do not follow it yet, and SHALL leave an existing follow and its notification setting unchanged. `DELETE .../favourite` SHALL unfollow. Both SHALL answer with a `Deprecation: true` header and a `Link` header naming `.../watch` as `successor-version`. Object reads and lists SHALL carry `@self.favourite` with the same value as `@self.watching`. Neither route SHALL write an audit entry or a version on the object.
+
+#### Scenario: starring leaves the object untouched
+
+- **GIVEN** an object with three audit entries
+- **WHEN** a user stars it and reads it back
+- **THEN** `@self.favourite` and `@self.watching` are true, `@self.watchNotify` is false, and the object still has three audit entries
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts
+
+#### Scenario: starring an object you follow keeps your notifications
+
+- **GIVEN** a user who follows an object with notifications on
+- **WHEN** the user calls `PUT .../favourite`
+- **THEN** `@self.watchNotify` is still true and the response carries a `Deprecation` header
+- @e2e exclude {the alias is removed next release; asserted by WatcherServiceTest::testStarringAFollowedObjectKeepsItsNotifySetting}
+
+### Requirement: Favourites and recent are lenses on the object query
+
+The object query SHALL accept `_recent=true`, returning the current user's viewed objects ordered by last view descending, composing with every other filter. For one release it SHALL also accept `_favourite=true` as a deprecated alias that returns exactly what `_watching=true` returns.
+
+#### Scenario: a favourites chip on an index page
+
+- **GIVEN** a user who follows two of five cases, one of them through a former favourite
+- **WHEN** the index page queries with `_favourite=true` and `status=open`
+- **THEN** the result equals the one for `_watching=true` and `status=open`
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts
+
+#### Scenario: a recent chip composes with a filter
+
+- **GIVEN** a user who opened three cases, one of them with status `open`
+- **WHEN** the index page queries with `_recent=true` and `status=open`
+- **THEN** only that open case is returned
+- @e2e exclude {composition with a property filter is the generic `_ids` restriction; covered by SearchQueryHandlerPersonalLensesTest and the favourites e2e composition test}
+
+### Requirement: An edited note keeps what it said before and who changed it
+
+The system SHALL let a note's author, or a user with `manage` on the object,
+edit the note's message, SHALL store the previous message with the previous
+editor and time as a version before overwriting, SHALL mark the note with
+`editedAt`, `editedBy` and `versionCount`, and SHALL list a note's versions
+newest first to anyone who may read the note. A locked note SHALL refuse the
+edit with HTTP 423.
+
+#### Scenario: the previous text survives an edit
+
+- **GIVEN** a note reading "Applicant called" by user A
+- **WHEN** user A edits it to "Applicant called, will send documents"
+- **THEN** the versions list holds "Applicant called" by A, and the note carries `editedBy` A and `versionCount` 1
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
+
+#### Scenario: a locked note cannot be edited
+
+- **GIVEN** a locked note
+- **WHEN** its author tries to edit it
+- **THEN** the response is 423 and no version is written
+- @e2e exclude {nothing sets the verb yet: the lock ships with notes-leaf-rich-text-lock-export. Asserted in tests/Unit/Service/NoteServiceTest.php::testALockedNoteRefusesTheEditAndWritesNoVersion}
+
+#### Scenario: a colleague with update cannot rewrite another's note
+
+- **GIVEN** a note by user A and user B with `update` but not `manage` on the object
+- **WHEN** user B tries to edit it
+- **THEN** the response is 403
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
+
+### Requirement: A note edit is audited on the object and versions die with the note
+
+Every note edit SHALL write an audit entry on the object naming the note and
+the editor. Deleting a note SHALL delete its versions.
+
+#### Scenario: the trail records the edit, not the text
+
+- **GIVEN** an edited note
+- **WHEN** the object's audit trail is read
+- **THEN** it holds a `note.edited` entry with the note id and editor and no note text
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
+
+### Requirement: A user can watch an object they may read
+
+The system SHALL let a user who may read an object follow it and unfollow it, storing the follow per user outside the object so that following writes no audit entry and no version on the object. Every follow SHALL carry a notification switch. `PUT .../watch` SHALL accept an optional body `{"notify": true|false}`: given, it sets the switch; absent, a new follow notifies and an existing follow keeps its setting. Object reads and lists SHALL carry `@self.watching` and, when the caller follows the object, `@self.watchNotify` for the current user only.
+
+#### Scenario: following leaves the object untouched
+
+- **GIVEN** an object with three audit entries
+- **WHEN** a user watches it and reads it back
+- **THEN** `@self.watching` and `@self.watchNotify` are true and the object still has three audit entries
+- `@e2e tests/e2e/ci/object-watchers.spec.ts`
+
+#### Scenario: a user without read cannot watch
+
+- **GIVEN** an object the user may not read
+- **WHEN** the user calls the watch endpoint
+- **THEN** the response is 404 and no row is written
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and WatcherService unit tests
+
+#### Scenario: a user turns notifications off and keeps following
+
+- **GIVEN** a user who follows an object with notifications on
+- **WHEN** the user sends `PUT .../watch` with `{"notify": false}`
+- **THEN** `@self.watching` is true, `@self.watchNotify` is false, and a rule addressed to watchers no longer reaches them
+- @e2e exclude {notification delivery runs through a background job; asserted by WatcherServiceTest::testWatchWithNotifyFalseKeepsTheFollowQuiet and NotificationRecipientResolverWatchersTest}
+
+### Requirement: Watchers are a lens and a list
+
+The object query SHALL accept `_watching=true` returning the current user's followed objects, resolved inside the query as an `EXISTS` on the follow table so the page, the total and the facets see one restriction. An anonymous caller SHALL get an empty page. `GET .../watchers` SHALL list an object's followers, whatever their notification setting, for a user with `update`, without anybody's notification setting; a user with `manage` SHALL be able to add or remove another user, and any follower SHALL be able to remove themselves.
+
+#### Scenario: a team lead lists who follows a case
+
+- **GIVEN** a case followed by two users, one of them with notifications off, and a team lead with `update`
+- **WHEN** the team lead lists the watchers
+- **THEN** both users are returned with the time they subscribed and no notification setting
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/integration/openregister-object-watchers.postman_collection.json
+
+#### Scenario: the lens is resolved in the query
+
+- **GIVEN** a signed-in user
+- **WHEN** a query asks `_watching=true`
+- **THEN** the query carries the caller's uid as `_watchingFor` and no uuid list on `_ids`
+- @e2e exclude {query construction; asserted by SearchQueryHandlerWatchingLensTest}
+
+### Requirement: Deleting an object removes its watchers
+
+Deleting an object SHALL delete its watcher rows.
+
+#### Scenario: no orphan subscriptions
+
+- **GIVEN** an object with four watchers
+- **WHEN** it is deleted permanently
+- **THEN** the watcher table holds no row for it
+- @e2e exclude {deletion cleanup has no HTTP surface to read; asserted by WatcherServiceTest::testDeletingAnObjectRemovesItsWatchers and wired by WatcherPruneListener}
+
+### Requirement: Recently opened is read from the audit trail
+
+The system SHALL answer `_recent=true` from the audit trail's `read` rows of the current user: distinct objects, ordered by the latest read, capped at 100 objects before RBAC. It SHALL NOT keep a separate table of views and SHALL NOT throttle audit rows: repeated reads collapse at query time. Every object on a `_recent=true` page SHALL carry `@self.viewedAt`, the ISO 8601 moment of the current user's latest read of that object. The key `viewedAt` is a contract with consuming apps (dossiq's recent tile) and SHALL NOT be renamed. Reads SHALL be registered through `ReadHistoryService`, the one read registration for the audit trail and the AVG processing log.
+
+#### Scenario: a dashboard tile shows when each object was opened
+
+- **GIVEN** audit trails are enabled and a user opened cases A, B and C, in that order
+- **WHEN** the dashboard queries `_recent=true`
+- **THEN** the page holds C, B and A in that order
+- **AND** each object carries `@self.viewedAt` as an ISO 8601 moment
+- **AND** the response carries `@self.lenses.recent.available` = `true`
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts
+
+#### Scenario: opening an object twice lists it once
+
+- **GIVEN** a user who opened case A at 09:00 and again at 10:00
+- **WHEN** the user queries `_recent=true`
+- **THEN** case A is listed once with `@self.viewedAt` at 10:00
+- **AND** the audit trail still holds both `read` rows
+- @e2e exclude {the collapse is a GROUP BY in SQL; covered by AuditTrailMapperReadHistoryTest against the migrated table}
+
+#### Scenario: one user's history is never another's
+
+- **GIVEN** two users who opened different cases
+- **WHEN** each queries `_recent=true`
+- **THEN** each sees only the cases they opened themselves
+- **AND** a request carrying `_recentViews`, `_recentFor` or `_recentLens` cannot change that
+- @e2e exclude {per-user separation is asserted by the existing per-user e2e test; the stripping of forged keys by SearchQueryHandlerPersonalLensesTest}
+
+### Requirement: The recent lens says why it is empty
+
+Whenever `_recent=true` is asked, the list response SHALL carry `@self.lenses.recent` as `{"available": bool, "reason": string|null}`. When the lens cannot answer, `available` SHALL be `false`, the page SHALL be empty, and `reason` SHALL be one of `audit-trail-disabled` (the setting `retention.auditTrailsEnabled` is off), `anonymous` (no logged-in user) or `read-history-unavailable` (the history could not be read). With the audit trail off, the system SHALL NOT keep or read a shadow log.
+
+#### Scenario: the audit trail is switched off
+
+- **GIVEN** `retention.auditTrailsEnabled` is `false`
+- **WHEN** a user queries `_recent=true`
+- **THEN** the page is empty
+- **AND** `@self.lenses.recent` is `{"available": false, "reason": "audit-trail-disabled"}`
+- @e2e exclude {switching the instance audit setting would disturb every other e2e spec running against the shared instance; covered by ReadHistoryServiceTest and SearchQueryHandlerPersonalLensesTest}
+
+#### Scenario: an anonymous caller
+
+- **GIVEN** no logged-in user
+- **WHEN** the caller queries `_recent=true`
+- **THEN** the page is empty, never the whole register
+- **AND** `@self.lenses.recent.reason` is `anonymous`
+- @e2e exclude {an anonymous object list is usually refused before the lens runs; the lens answer is covered by ReadHistoryServiceTest and SearchQueryHandlerPersonalLensesTest}
+
+### Requirement: Only a person opening an object counts as recently opened
+
+The `_recent` lens SHALL count an audit `read` row only when its cause is `person`, or empty for a row written before causes were recorded. A read the code makes on a person's behalf (a permission guard, a relation or reference lookup, a sub-resource of a page already opened, an agent tool, a data-management operation) SHALL be written with cause `lookup` and SHALL NOT appear in the person's recent list. A read inside an import, a rule, a migration or a scheduled job keeps its own cause and SHALL NOT appear either. The audit trail SHALL keep every one of these rows: excluding a read from the recent list SHALL NOT remove it from the audit trail.
+
+#### Scenario: opening a case that resolves its client
+
+- **GIVEN** audit trails are enabled and a user who has opened nothing
+- **WHEN** the user opens case A, and rendering case A looks up its client B through `ObjectService::find()`
+- **THEN** the user's `_recent=true` page holds case A and not client B
+- **AND** the audit trail holds a `read` row for A with cause `person` and a `read` row for B with cause `lookup`
+- @e2e exclude {which internal reads a page triggers depends on the schema's relations; the cause stamping is covered by WriteCauseTest and the call-site tests, the history filter by AuditTrailMapperReadHistoryTest against the migrated table}
+
+#### Scenario: a guard before an action is not an open
+
+- **GIVEN** a user who uploads a file to object A without opening it
+- **WHEN** the file controller checks the user may read A
+- **THEN** A is not on the user's `_recent=true` page
+- **AND** the audit trail holds the guard's `read` row for A with cause `lookup`
+- @e2e exclude {asserted from the caller in RecentLensLookupCallSitesTest; an e2e upload would also open the record page}
+
+#### Scenario: a read inside an import keeps its cause
+
+- **GIVEN** an import running with cause `import`
+- **WHEN** code inside it reads an object through a lookup site
+- **THEN** the `read` row carries cause `import`, not `lookup`
+- @e2e exclude {ambient frame behaviour; covered by WriteCauseTest}
+
+### Requirement: Cross-table searches honour the recent lens like one schema
+
+A `_recent=true` search over several schemas or registers, and one over no register or schema at all, SHALL return only the objects in the caller's read history, ordered by the latest read descending unless the caller gives `_order`, paged after that ordering, with `@self.viewedAt` on every object, exactly as a single-schema search does. The cross-table list response SHALL carry `@self.lenses.recent`.
+
+#### Scenario: a dashboard tile over two schemas
+
+- **GIVEN** a user who opened case A in schema `zaak`, then task B in schema `taak`, then case C in schema `zaak`
+- **WHEN** the dashboard queries both schemas with `_recent=true`
+- **THEN** the page holds C, B and A in that order, and no object the user did not open
+- **AND** each carries `@self.viewedAt`
+- **AND** the response carries `@self.lenses.recent.available` = `true`
+- @e2e exclude {the cross-table paths are covered by MagicMapperRecentLensTest (UNION order keys, sequential merge, global `_ids` page) and MagicSearchHandlerIdsSqlTest; the e2e instance has no second schema with read history to spare}
+
+#### Scenario: an explicit order wins
+
+- **GIVEN** the same user and history
+- **WHEN** the dashboard queries both schemas with `_recent=true` and `_order[@self.name]=asc`
+- **THEN** the page holds the three objects ordered by name
+- **AND** each still carries `@self.viewedAt`
+- @e2e exclude {precedence rule; covered by MagicMapperRecentLensTest}
+
+#### Scenario: the second page continues the history
+
+- **GIVEN** a user whose history across two schemas holds five objects
+- **WHEN** the user asks `_recent=true` with `_limit=2` and `_offset=2`
+- **THEN** the page holds the third and fourth most recently read objects
+- @e2e exclude {paging after ordering; covered by MagicMapperRecentLensTest}
+
+### Requirement: Favourites became follows with notifications off
+
+The upgrade that ships this change SHALL move every favourite into the follow table with notifications off and SHALL then drop the favourites table. When a user had both starred and followed an object, the follow SHALL keep notifications on.
+
+#### Scenario: a favourite survives the upgrade as a quiet follow
+
+- **GIVEN** a user who starred case A and both starred and followed case B
+- **WHEN** the instance upgrades
+- **THEN** the user follows A with notifications off and B with notifications on, and `openregister_favourites` no longer exists
+- @e2e exclude {an upgrade step has no HTTP surface; asserted by Version1Date20261009130000Test}
+
+### Requirement: Being assigned an object follows it with notifications on
+
+When a create or update sets the property a schema marks `x-openregister-role: assignee` to a Nextcloud user who may read the object, the system SHALL make that user follow the object with notifications on, switching an existing quiet follow on. A value that is not a Nextcloud user SHALL be skipped. A reassignment SHALL NOT unfollow the previous assignee. `WatcherService::followAssigned()` SHALL offer the same act to apps whose assignment is not an object property.
+
+#### Scenario: a handler is assigned a case
+
+- **GIVEN** a case schema whose `assignee` property carries `x-openregister-role: assignee`
+- **WHEN** a case is saved with `assignee` set to `jan`, who may read it
+- **THEN** `jan` follows the case with notifications on
+- @e2e exclude {an event listener; asserted by AssigneeFollowListenerTest::testANewAssigneeFollowsWithNotificationsOn}
+
+#### Scenario: a group in the assignee property is not a follower
+
+- **GIVEN** the same schema
+- **WHEN** a case is saved with `assignee` set to the group id `behandelaars`
+- **THEN** no follow is written
+- @e2e exclude {asserted by AssigneeFollowListenerTest::testAValueThatIsNotAUserIsSkipped}
 
 ## Non-Functional Requirements
 

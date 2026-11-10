@@ -40,139 +40,136 @@ use OCP\Migration\SimpleMigrationStep;
  * organization boundaries, similar to how objects already support this feature.
  */
 
-class Version1Date20251202000000 extends SimpleMigrationStep
-{
-    /**
-     * Add publication fields to schemas and registers tables
-     *
-     * @param IOutput $output        Migration output interface
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
-     *
-     * @return ISchemaWrapper|null Updated schema
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Database migration requires checking many columns
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+class Version1Date20251202000000 extends SimpleMigrationStep {
+	/**
+	 * Add publication fields to schemas and registers tables
+	 *
+	 * @param IOutput $output Migration output interface
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null Updated schema
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Database migration requires checking many columns
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        $output->info('🔧 Adding publication fields to schemas and registers tables...');
+		$output->info('🔧 Adding publication fields to schemas and registers tables...');
 
-        // Add columns to schemas table.
-        if ($schema->hasTable('openregister_schemas') === true) {
-            $schemasTable = $schema->getTable('openregister_schemas');
+		// Add columns to schemas table.
+		if ($schema->hasTable('openregister_schemas') === true) {
+			$schemasTable = $schema->getTable('openregister_schemas');
 
-            // Add published field (datetime) - publication timestamp.
-            if ($schemasTable->hasColumn('published') === false) {
-                $comment  = 'Publication timestamp. When set, schema becomes publicly accessible ';
-                $comment .= 'regardless of organisation restrictions.';
-                $schemasTable->addColumn(
-                    'published',
-                    Types::DATETIME,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => $comment,
-                    ]
-                );
+			// Add published field (datetime) - publication timestamp.
+			if ($schemasTable->hasColumn('published') === false) {
+				$comment = 'Publication timestamp. When set, schema becomes publicly accessible ';
+				$comment .= 'regardless of organisation restrictions.';
+				$schemasTable->addColumn(
+					'published',
+					Types::DATETIME,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => $comment,
+					]
+				);
 
-                $output->info('   ✓ Added published column to schemas table');
-            }
+				$output->info('   ✓ Added published column to schemas table');
+			}
 
-            if ($schemasTable->hasColumn('published') === true) {
-                $output->info('   ⚠️  published column already exists in schemas table');
-            }
+			if ($schemasTable->hasColumn('published') === true) {
+				$output->info('   ⚠️  published column already exists in schemas table');
+			}
 
-            // Add depublished field (datetime) - depublication timestamp.
-            if ($schemasTable->hasColumn('depublished') === false) {
-                $schemasTable->addColumn(
-                    'depublished',
-                    Types::DATETIME,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Depublication timestamp. When set, schema becomes inaccessible after this date/time.',
-                    ]
-                );
+			// Add depublished field (datetime) - depublication timestamp.
+			if ($schemasTable->hasColumn('depublished') === false) {
+				$schemasTable->addColumn(
+					'depublished',
+					Types::DATETIME,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => 'Depublication timestamp. When set, schema becomes inaccessible after this date/time.',
+					]
+				);
 
-                $output->info('   ✓ Added depublished column to schemas table');
-            }
+				$output->info('   ✓ Added depublished column to schemas table');
+			}
 
-            if ($schemasTable->hasColumn('depublished') === true) {
-                $output->info('   ⚠️  depublished column already exists in schemas table');
-            }
-        }//end if
+			if ($schemasTable->hasColumn('depublished') === true) {
+				$output->info('   ⚠️  depublished column already exists in schemas table');
+			}
+		}//end if
 
-        if ($schema->hasTable('openregister_schemas') === false) {
-            $output->info('⚠️  Schemas table does not exist!');
-        }
+		if ($schema->hasTable('openregister_schemas') === false) {
+			$output->info('⚠️  Schemas table does not exist!');
+		}
 
-        // Add columns to registers table.
-        if ($schema->hasTable('openregister_registers') === true) {
-            $registersTable = $schema->getTable('openregister_registers');
+		// Add columns to registers table.
+		if ($schema->hasTable('openregister_registers') === true) {
+			$registersTable = $schema->getTable('openregister_registers');
 
-            // Add published field (datetime) - publication timestamp.
-            if ($registersTable->hasColumn('published') === false) {
-                $comment  = 'Publication timestamp. When set, register becomes publicly accessible ';
-                $comment .= 'regardless of organisation restrictions.';
-                $registersTable->addColumn(
-                    'published',
-                    Types::DATETIME,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => $comment,
-                    ]
-                );
+			// Add published field (datetime) - publication timestamp.
+			if ($registersTable->hasColumn('published') === false) {
+				$comment = 'Publication timestamp. When set, register becomes publicly accessible ';
+				$comment .= 'regardless of organisation restrictions.';
+				$registersTable->addColumn(
+					'published',
+					Types::DATETIME,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => $comment,
+					]
+				);
 
-                $output->info('   ✓ Added published column to registers table');
-            }
+				$output->info('   ✓ Added published column to registers table');
+			}
 
-            if ($registersTable->hasColumn('published') === true) {
-                $output->info('   ⚠️  published column already exists in registers table');
-            }
+			if ($registersTable->hasColumn('published') === true) {
+				$output->info('   ⚠️  published column already exists in registers table');
+			}
 
-            // Add depublished field (datetime) - depublication timestamp.
-            if ($registersTable->hasColumn('depublished') === false) {
-                $comment  = 'Depublication timestamp. When set, register becomes inaccessible ';
-                $comment .= 'after this date/time.';
-                $registersTable->addColumn(
-                    'depublished',
-                    Types::DATETIME,
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => $comment,
-                    ]
-                );
+			// Add depublished field (datetime) - depublication timestamp.
+			if ($registersTable->hasColumn('depublished') === false) {
+				$comment = 'Depublication timestamp. When set, register becomes inaccessible ';
+				$comment .= 'after this date/time.';
+				$registersTable->addColumn(
+					'depublished',
+					Types::DATETIME,
+					[
+						'notnull' => false,
+						'default' => null,
+						'comment' => $comment,
+					]
+				);
 
-                $output->info('   ✓ Added depublished column to registers table');
-            }
+				$output->info('   ✓ Added depublished column to registers table');
+			}
 
-            if ($registersTable->hasColumn('depublished') === true) {
-                $output->info('   ⚠️  depublished column already exists in registers table');
-            }
-        }//end if
+			if ($registersTable->hasColumn('depublished') === true) {
+				$output->info('   ⚠️  depublished column already exists in registers table');
+			}
+		}//end if
 
-        if ($schema->hasTable('openregister_registers') === false) {
-            $output->info('⚠️  Registers table does not exist!');
-        }
+		if ($schema->hasTable('openregister_registers') === false) {
+			$output->info('⚠️  Registers table does not exist!');
+		}
 
-        $output->info('✅ Publication fields added successfully');
-        $output->info('🎯 Features enabled:');
-        $output->info('   • Publication timestamps for schemas and registers');
-        $output->info('   • Depublication timestamps for schemas and registers');
-        $output->info('   • Publication-based multi-tenancy bypass support');
-        $output->info('   • Consistent publication handling across objects, schemas, and registers');
+		$output->info('✅ Publication fields added successfully');
+		$output->info('🎯 Features enabled:');
+		$output->info('   • Publication timestamps for schemas and registers');
+		$output->info('   • Depublication timestamps for schemas and registers');
+		$output->info('   • Publication-based multi-tenancy bypass support');
+		$output->info('   • Consistent publication handling across objects, schemas, and registers');
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 }//end class

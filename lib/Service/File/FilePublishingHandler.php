@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -17,13 +21,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
-use OCP\Files\NotFoundException;
-use OCP\IUser;
+use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
 use ZipArchive;
 
@@ -38,638 +43,524 @@ use ZipArchive;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
-class FilePublishingHandler
-{
-
-    /**
-     * Reference to FileService for cross-handler coordination (circular dependency break).
-     *
-     * @var FileService|null
-     */
-    private ?FileService $fileService = null;
-
-    /**
-     * Constructor for FilePublishingHandler.
-     *
-     * @param MagicMapper     $objectEntityMapper Object entity mapper for fetching objects.
-     * @param FileMapper      $fileMapper         File mapper for share operations.
-     * @param LoggerInterface $logger             Logger for logging operations.
-     */
-    public function __construct(
-        private readonly MagicMapper $objectEntityMapper,
-        private readonly FileMapper $fileMapper,
-        private readonly LoggerInterface $logger
-    ) {
-    }//end __construct()
-
-    /**
-     * Set the FileService instance for cross-handler coordination.
-     *
-     * @param FileService $fileService The file service instance.
-     *
-     * @return void
-     */
-    public function setFileService(FileService $fileService): void
-    {
-        $this->fileService = $fileService;
-    }//end setFileService()
-
-    /**
-     * Publish a file by creating a public share link.
-     *
-     * This method makes a file publicly accessible by creating a public share link.
-     * It handles both file IDs and file paths, creating appropriate shares and tags.
-     *
-     * @param ObjectEntity|string $object The object entity or ID.
-     * @param string|int          $file   The file ID or path.
-     *
-     * @return File The published file node.
-     *
-     * @throws Exception         If publishing fails.
-     * @throws NotFoundException If the file is not found.
-     *
-     * @phpstan-return File
-     * @psalm-return   File
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and sharing requires extensive code
-     */
-    public function publishFile(ObjectEntity | string $object, string | int $file): File
-    {
-        // If string ID provided, try to find the object entity.
-        if (is_string($object) === true) {
-            $object = $this->objectEntityMapper->find($object);
-        }
-
-        // Debug logging - original file parameter.
-        $originalFile = $file;
-        $this->logger->info(
-            message: "[FilePublishingHandler] publishFile: Original file parameter received: '$originalFile'",
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
-        // Initialize fileNode before conditional assignment.
-        $fileNode = null;
-
-        // If $file is an integer (file ID), try to find the file directly by ID.
-        if (is_int($file) === true) {
-            $this->logger->info(
-                message: "[FilePublishingHandler] publishFile: File ID provided: $file",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            // Try to find the file in the object's folder by ID.
-            $fileNode = $this->fileService->getFile(object: $object, file: $file);
-            if ($fileNode === null) {
-                $this->logger->error(
-                    message: "[FilePublishingHandler] publishFile: No file found with ID: $file",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                throw new Exception("File with ID $file does not exist");
-            }
-
-            $foundMsg  = "[FilePublishingHandler] publishFile: Found file by ID: ".$fileNode->getName();
-            $foundMsg .= " (ID: ".$fileNode->getId().")";
-            $this->logger->info(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-        }//end if
-
-        if (is_int($file) === false) {
-            // Handle string file paths (existing logic).
-            // Clean file path and extract filename using utility method.
-            $pathInfo = $this->fileService->extractFileNameFromPath($file);
-            $filePath = $pathInfo['cleanPath'];
-            $fileName = $pathInfo['fileName'];
-
-            $this->logger->info(
-                message: "[FilePublishingHandler] publishFile: After cleaning: '$filePath'",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            if ($fileName !== $filePath) {
-                $extractMsg  = "[FilePublishingHandler] publishFile:";
-                $extractMsg .= " Extracted filename from path: '$fileName' (from '$filePath')";
-                $this->logger->info(
-                    message: $extractMsg,
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }
-
-            // Get the object folder (this is where the files actually are).
-            $objectFolder = $this->fileService->getObjectFolder($object);
-
-            if ($objectFolder === null) {
-                $objectId = $object->getId();
-                $this->logger->error(
-                    message: "[FilePublishingHandler] publishFile: Could not get object folder for object: $objectId",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                throw new Exception('Object folder not found.');
-            }
-
-            $this->logger->info(
-                message: "[FilePublishingHandler] publishFile: Object folder path: ".$objectFolder->getPath(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            // Debug: List all files in the object folder.
-            try {
-                $objectFiles     = $objectFolder->getDirectoryListing();
-                $objectFileNames = array_map(
-                    function ($file) {
-                        return $file->getName();
-                    },
-                    $objectFiles
-                );
-                $this->logger->info(
-                    message: "[FilePublishingHandler] publishFile: Files in object folder: ".json_encode($objectFileNames),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            } catch (Exception $e) {
-                $this->logger->error(
-                    message: "[FilePublishingHandler] publishFile: Error listing object folder contents: ".$e->getMessage(),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }
-
-            try {
-                $this->logger->info(
-                    message: "[FilePublishingHandler] publishFile: Attempting to get file '$fileName' from object folder",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $fileNode      = $objectFolder->get($fileName);
-                $foundFileMsg  = "[FilePublishingHandler] publishFile: Successfully found file: ".$fileNode->getName();
-                $foundFileMsg .= " at ".$fileNode->getPath();
-                $this->logger->info(message: $foundFileMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            } catch (NotFoundException $e) {
-                // Try with full path if filename didn't work.
-                try {
-                    $attemptMsg  = "[FilePublishingHandler] publishFile:";
-                    $attemptMsg .= " Attempting to get file '$filePath' (full path) from object folder";
-                    $this->logger->info(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                    $fileNode    = $objectFolder->get($filePath);
-                    $nodeName    = $fileNode->getName();
-                    $nodePath    = $fileNode->getPath();
-                    $successMsg  = "[FilePublishingHandler] publishFile:";
-                    $successMsg .= " Successfully found file using full path: $nodeName at $nodePath";
-                    $this->logger->info(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                } catch (NotFoundException $e2) {
-                    $errDetail = $e2->getMessage();
-                    $prefix    = '[FilePublishingHandler] publishFile:';
-                    $errMsg    = "$prefix File '$fileName' and '$filePath' not found";
-                    $errMsg   .= " in object folder. NotFoundException: $errDetail";
-                    $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                    throw new Exception('File not found.');
-                }
-            } catch (Exception $e) {
-                $errMsg  = "[FilePublishingHandler] publishFile:";
-                $errMsg .= " Unexpected error getting file from object folder: ";
-                $errMsg .= $e->getMessage();
-                $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                throw new Exception('File not found.');
-            }//end try
-        }//end if
-
-        // Verify file exists and is a File instance.
-        if ($fileNode instanceof File === false) {
-            $nodeClass = get_class($fileNode);
-            $this->logger->error(
-                message: "[FilePublishingHandler] publishFile: Found node is not a File instance, it's a: $nodeClass",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            throw new Exception('File not found.');
-        }
-
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->fileService->checkOwnership($fileNode);
-
-        $this->logger->info(
-            message: "[FilePublishingHandler] publishFile: Creating share link for file: ".$fileNode->getPath(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
-        // Use FileMapper to create the share directly in the database.
-        try {
-            $openRegisterUser = $this->fileService->getUser();
-            $shareInfo        = $this->fileMapper->publishFile(
-                fileId: $fileNode->getId(),
-                sharedBy: $openRegisterUser->getUID(),
-                shareOwner: $openRegisterUser->getUID(),
-                // Read only.
-            );
-
-            $shareId  = $shareInfo['id'];
-            $token    = $shareInfo['token'];
-            $url      = $shareInfo['accessUrl'];
-            $message  = "[FilePublishingHandler] publishFile: Successfully created public share via FileMapper";
-            $message .= " - ID: {$shareId}, Token: {$token}, URL: {$url}";
-            $this->logger->info(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
-        } catch (Exception $e) {
-            $errMsg = "[FilePublishingHandler] publishFile: Failed to create share via FileMapper: ".$e->getMessage();
-            $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            throw new Exception('Failed to create share link: '.$e->getMessage());
-        }
-
-        $this->logger->info(
-            message: "[FilePublishingHandler] publishFile: Successfully published file: ".$fileNode->getName(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-        return $fileNode;
-    }//end publishFile()
-
-    /**
-     * Unpublish a file by removing public share links.
-     *
-     * This method removes public accessibility from a file by deleting its public
-     * share links and associated tags.
-     *
-     * @param ObjectEntity|string $object   The object entity or ID.
-     * @param string|int          $filePath The file ID or path.
-     *
-     * @return File The unpublished file node.
-     *
-     * @throws Exception         If unpublishing fails.
-     * @throws NotFoundException If the file is not found.
-     *
-     * @phpstan-return File
-     * @psalm-return   File
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  File lookup requires handling ID vs path scenarios
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple file resolution paths with fallback logic
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file lookup and unsharing requires extensive code
-     */
-    public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
-    {
-        // If string ID provided, try to find the object entity.
-        if (is_string($object) === true) {
-            $object = $this->objectEntityMapper->find($object);
-        }
-
-        // Debug logging - original file path.
-        $originalFilePath = $filePath;
-        $this->logger->info(
-            message: "[FilePublishingHandler] unpublishFile: Original file path received: '$originalFilePath'",
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
-        // Initialize file before conditional assignment.
-        $file = null;
-
-        // If $filePath is an integer (file ID), try to find the file directly by ID.
-        if (is_int($filePath) === true) {
-            $this->logger->info(
-                message: "[FilePublishingHandler] unpublishFile: File ID provided: $filePath",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            // Try to find the file in the object's folder by ID.
-            $file = $this->fileService->getFile(object: $object, file: $filePath);
-            if ($file === null) {
-                $this->logger->error(
-                    message: "[FilePublishingHandler] unpublishFile: No file found with ID: $filePath",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                throw new Exception("File with ID $filePath does not exist");
-            }
-
-            $foundMsg  = "[FilePublishingHandler] unpublishFile: Found file by ID: ".$file->getName();
-            $foundMsg .= " (ID: ".$file->getId().")";
-            $this->logger->info(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-        }//end if
-
-        if (is_int($filePath) === false) {
-            // Handle string file paths (existing logic).
-            // Clean file path and extract filename using utility method.
-            $pathInfo = $this->fileService->extractFileNameFromPath($filePath);
-            $filePath = $pathInfo['cleanPath'];
-            $fileName = $pathInfo['fileName'];
-
-            $this->logger->info(
-                message: "[FilePublishingHandler] unpublishFile: After cleaning: '$filePath'",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            if ($fileName !== $filePath) {
-                $extractMsg  = "[FilePublishingHandler] unpublishFile:";
-                $extractMsg .= " Extracted filename from path: '$fileName' (from '$filePath')";
-                $this->logger->info(
-                    message: $extractMsg,
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }
-
-            // Get the object folder (this is where the files actually are).
-            $objectFolder = $this->fileService->getObjectFolder($object);
-
-            if ($objectFolder === null) {
-                $objectId = $object->getId();
-                $this->logger->error(
-                    message: "[FilePublishingHandler] unpublishFile: Could not get object folder for object: $objectId",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                throw new Exception('Object folder not found.');
-            }
-
-            $this->logger->info(
-                message: "[FilePublishingHandler] unpublishFile: Object folder path: ".$objectFolder->getPath(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            // Debug: List all files in the object folder.
-            try {
-                $objectFiles     = $objectFolder->getDirectoryListing();
-                $objectFileNames = array_map(
-                    function ($file) {
-                        return $file->getName();
-                    },
-                    $objectFiles
-                );
-                $this->logger->info(
-                    message: "[FilePublishingHandler] unpublishFile: Files in object folder: ".json_encode($objectFileNames),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            } catch (Exception $e) {
-                $errDetail = $e->getMessage();
-                $this->logger->error(
-                    message: "[FilePublishingHandler] unpublishFile: Error listing object folder contents: $errDetail",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }
-
-            try {
-                $this->logger->info(
-                    message: "[FilePublishingHandler] unpublishFile: Attempting to get file '$fileName' from object folder",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $file          = $objectFolder->get($fileName);
-                $foundFileMsg  = "[FilePublishingHandler] unpublishFile: Successfully found file: ".$file->getName();
-                $foundFileMsg .= " at ".$file->getPath();
-                $this->logger->info(message: $foundFileMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            } catch (NotFoundException $e) {
-                // Try with full path if filename didn't work.
-                try {
-                    $attemptMsg  = "[FilePublishingHandler] unpublishFile:";
-                    $attemptMsg .= " Attempting to get file '$filePath' (full path) from object folder";
-                    $this->logger->info(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                    $file        = $objectFolder->get($filePath);
-                    $successMsg  = "[FilePublishingHandler] unpublishFile: Successfully found file";
-                    $successMsg .= " using full path: ".$file->getName()." at ".$file->getPath();
-                    $this->logger->info(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                } catch (NotFoundException $e2) {
-                    $errDetail = $e2->getMessage();
-                    $prefix    = '[FilePublishingHandler] unpublishFile:';
-                    $errMsg    = "$prefix File '$fileName' and '$filePath' not found";
-                    $errMsg   .= " in object folder. NotFoundException: $errDetail";
-                    $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                    throw new Exception('File not found.');
-                }
-            } catch (Exception $e) {
-                $errMsg  = "[FilePublishingHandler] unpublishFile:";
-                $errMsg .= " Unexpected error getting file from object folder: ";
-                $errMsg .= $e->getMessage();
-                $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                throw new Exception('File not found.');
-            }//end try
-        }//end if
-
-        // Verify file exists and is a File instance.
-        if ($file instanceof File === false) {
-            $fileClass = get_class($file);
-            $this->logger->error(
-                message: "[FilePublishingHandler] unpublishFile: Found node is not a File instance, it's a: $fileClass",
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            throw new Exception('File not found.');
-        }
-
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->fileService->checkOwnership($file);
-
-        $this->logger->info(
-            message: "[FilePublishingHandler] unpublishFile: Removing share links for file: ".$file->getPath(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
-        // Use FileMapper to remove all public shares directly from the database.
-        try {
-            $deletionInfo = $this->fileMapper->depublishFile($file->getId());
-
-            $deletedShares = $deletionInfo['deleted_shares'];
-            $fileId        = $deletionInfo['file_id'];
-            $message       = "[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - ";
-            $message      .= "Deleted shares: {$deletedShares}, File ID: {$fileId}";
-            $this->logger->info(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
-
-            if ($deletionInfo['deleted_shares'] === 0) {
-                $noSharesMsg  = "[FilePublishingHandler] unpublishFile: No public shares were found to delete for file: ";
-                $noSharesMsg .= $file->getName();
-                $this->logger->info(message: $noSharesMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            }
-        } catch (Exception $e) {
-            $errMsg = "[FilePublishingHandler] unpublishFile: Failed to remove shares via FileMapper: ".$e->getMessage();
-            $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            throw new Exception('Failed to remove share links: '.$e->getMessage());
-        }
-
-        $this->logger->info(
-            message: "[FilePublishingHandler] unpublishFile: Successfully unpublished file: ".$file->getName(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-        return $file;
-    }//end unpublishFile()
-
-    /**
-     * Create a ZIP archive of all files for an object.
-     *
-     * This method collects all files associated with an object and creates a ZIP
-     * archive containing them. The archive is stored in the system temporary directory.
-     *
-     * @param ObjectEntity|string $object  The object entity or ID.
-     * @param string|null         $zipName Optional custom name for the ZIP file.
-     *
-     * @return (int|string)[]
-     *
-     * @throws Exception If ZIP creation fails.
-     *
-     * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
-     *
-     * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  ZIP creation requires handling multiple file and error scenarios
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple paths for file processing and error handling
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) ZIP archive creation with file processing requires extensive code
-     */
-    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
-    {
-        // If string ID provided, try to find the object entity.
-        if (is_string($object) === true) {
-            try {
-                $object = $this->objectEntityMapper->find($object);
-            } catch (Exception $e) {
-                throw new Exception("Object not found: ".$e->getMessage());
-            }
-        }
-
-        $this->logger->info(
-            message: "[FilePublishingHandler] Creating ZIP archive for object: ".$object->getId(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
-        // Check if ZipArchive extension is available.
-        if (class_exists('ZipArchive') === false) {
-            throw new Exception('PHP ZipArchive extension is not available');
-        }
-
-        // Get all files for the object.
-        $files = $this->fileService->getFiles($object);
-
-        if (empty($files) === true) {
-            throw new Exception('No files found for this object');
-        }
-
-        $this->logger->info(
-            message: "[FilePublishingHandler] Found ".count($files)." files for object ".$object->getId(),
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
-        // Generate ZIP filename.
-        if ($zipName === null) {
-            $objectIdentifier = $object->getUuid() ?? (string) $object->getId();
-            $zipName          = 'object_'.$objectIdentifier.'_files_'.date('Y-m-d_H-i-s').'.zip';
-        } else if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
-            $zipName .= '.zip';
-        }
-
-        // Create temporary file for the ZIP.
-        $tempZipPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$zipName;
-
-        // Create new ZIP archive.
-        $zip    = new ZipArchive();
-        $result = $zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
-        if ($result !== true) {
-            throw new Exception("Cannot create ZIP file: ".$this->getZipErrorMessage(errorCode: $result));
-        }
-
-        $addedFiles   = 0;
-        $skippedFiles = 0;
-
-        // Add each file to the ZIP archive.
-        foreach ($files as $file) {
-            try {
-                if ($file instanceof \OCP\Files\File === false) {
-                    $this->logger->warning(
-                        message: "[FilePublishingHandler] Skipping non-file node: ".$file->getName(),
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-                    $skippedFiles++;
-                    continue;
-                }
-
-                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-                $this->fileService->checkOwnership($file);
-
-                // Get file content.
-                $fileContent = $file->getContent();
-                $fileName    = $file->getName();
-
-                // Add file to ZIP with its original name.
-                $added = $zip->addFromString($fileName, $fileContent);
-
-                if ($added === false) {
-                    $this->logger->error(
-                        message: "[FilePublishingHandler] Failed to add file to ZIP: ".$fileName,
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-                    $skippedFiles++;
-                    continue;
-                }
-
-                $addedFiles++;
-                $this->logger->debug(
-                    message: "[FilePublishingHandler] Added file to ZIP: ".$fileName,
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            } catch (Exception $e) {
-                $this->logger->error(
-                    message: "[FilePublishingHandler] Error processing file ".$file->getName().": ".$e->getMessage(),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $skippedFiles++;
-                continue;
-            }//end try
-        }//end foreach
-
-        // Close the ZIP archive.
-        $closeResult = $zip->close();
-        if ($closeResult === false) {
-            throw new Exception("Failed to finalize ZIP archive");
-        }
-
-        $zipMsg = "[FilePublishingHandler] ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files";
-        $this->logger->info(
-            message: $zipMsg,
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
-        // Check if ZIP file was created successfully.
-        if (file_exists($tempZipPath) === false) {
-            throw new Exception("ZIP file was not created successfully");
-        }
-
-        $fileSize = filesize($tempZipPath);
-        if ($fileSize === false) {
-            throw new Exception("Cannot determine ZIP file size");
-        }
-
-        return [
-            'path'     => $tempZipPath,
-            'filename' => $zipName,
-            'size'     => $fileSize,
-            'mimeType' => 'application/zip',
-        ];
-    }//end createObjectFilesZip()
-
-    /**
-     * Get a human-readable error message for ZipArchive error codes.
-     *
-     * @param int $errorCode The ZipArchive error code.
-     *
-     * @return string
-     *
-     * @psalm-return   string
-     * @phpstan-return string
-     */
-    private function getZipErrorMessage(int $errorCode): string
-    {
-        return match ($errorCode) {
-            \ZipArchive::ER_OK => 'No error',
-            \ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
-            \ZipArchive::ER_RENAME => 'Renaming temporary file failed',
-            \ZipArchive::ER_CLOSE => 'Closing zip archive failed',
-            \ZipArchive::ER_SEEK => 'Seek error',
-            \ZipArchive::ER_READ => 'Read error',
-            \ZipArchive::ER_WRITE => 'Write error',
-            \ZipArchive::ER_CRC => 'CRC error',
-            \ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
-            \ZipArchive::ER_NOENT => 'No such file',
-            \ZipArchive::ER_EXISTS => 'File already exists',
-            \ZipArchive::ER_OPEN => 'Can\'t open file',
-            \ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
-            \ZipArchive::ER_ZLIB => 'Zlib error',
-            \ZipArchive::ER_MEMORY => 'Memory allocation failure',
-            \ZipArchive::ER_CHANGED => 'Entry has been changed',
-            \ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
-            \ZipArchive::ER_EOF => 'Premature EOF',
-            \ZipArchive::ER_INVAL => 'Invalid argument',
-            \ZipArchive::ER_NOZIP => 'Not a zip archive',
-            \ZipArchive::ER_INTERNAL => 'Internal error',
-            \ZipArchive::ER_INCONS => 'Zip archive inconsistent',
-            \ZipArchive::ER_REMOVE => 'Can\'t remove file',
-            \ZipArchive::ER_DELETED => 'Entry has been deleted',
-            default => "Unknown error code: $errorCode"
-        };//end match
-    }//end getZipErrorMessage()
+class FilePublishingHandler {
+
+	/**
+	 * Human-readable messages for the ZipArchive error codes.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ZIP_ERRORS = [
+		\ZipArchive::ER_OK => 'No error',
+		\ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
+		\ZipArchive::ER_RENAME => 'Renaming temporary file failed',
+		\ZipArchive::ER_CLOSE => 'Closing zip archive failed',
+		\ZipArchive::ER_SEEK => 'Seek error',
+		\ZipArchive::ER_READ => 'Read error',
+		\ZipArchive::ER_WRITE => 'Write error',
+		\ZipArchive::ER_CRC => 'CRC error',
+		\ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
+		\ZipArchive::ER_NOENT => 'No such file',
+		\ZipArchive::ER_EXISTS => 'File already exists',
+		\ZipArchive::ER_OPEN => 'Can\'t open file',
+		\ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
+		\ZipArchive::ER_ZLIB => 'Zlib error',
+		\ZipArchive::ER_MEMORY => 'Memory allocation failure',
+		\ZipArchive::ER_CHANGED => 'Entry has been changed',
+		\ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
+		\ZipArchive::ER_EOF => 'Premature EOF',
+		\ZipArchive::ER_INVAL => 'Invalid argument',
+		\ZipArchive::ER_NOZIP => 'Not a zip archive',
+		\ZipArchive::ER_INTERNAL => 'Internal error',
+		\ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+		\ZipArchive::ER_REMOVE => 'Can\'t remove file',
+		\ZipArchive::ER_DELETED => 'Entry has been deleted',
+	];
+
+	/**
+	 * Reference to FileService for cross-handler coordination (circular dependency break).
+	 *
+	 * @var FileHandlerSupportInterface|null
+	 */
+	private ?FileHandlerSupportInterface $fileService = null;
+
+	/**
+	 * Constructor for FilePublishingHandler.
+	 *
+	 * @param MagicObjectFinderInterface $objectEntityMapper Object entity mapper for fetching objects.
+	 * @param FileMapperInterface $fileMapper File mapper for share operations.
+	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param IServerContainer $container Container, for the lazily resolved party indicator guard.
+	 */
+	public function __construct(
+		private readonly MagicObjectFinderInterface $objectEntityMapper,
+		private readonly FileMapperInterface $fileMapper,
+		private readonly LoggerInterface $logger,
+		private readonly IServerContainer $container,
+	) {
+	}//end __construct()
+
+	/**
+	 * The party indicator guard, resolved at the act rather than injected.
+	 *
+	 * Deliberately NOT wrapped in a try/catch that degrades to "no guard". A
+	 * control that cannot run must stop the act, not wave it through: an
+	 * indicator whose effect is refuse publication exists precisely for the
+	 * case where publishing is the harm.
+	 *
+	 * @return PartyIndicatorGuard The guard.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 */
+	private function partyIndicatorGuard(): PartyIndicatorGuard {
+		return $this->container->get(PartyIndicatorGuard::class);
+	}//end partyIndicatorGuard()
+
+	/**
+	 * Set the FileService instance for cross-handler coordination.
+	 *
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
+	 *
+	 * @return void
+	 */
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
+		$this->fileService = $fileService;
+	}//end setFileService()
+
+	/**
+	 * Publish a file by creating a public share link.
+	 *
+	 * This method makes a file publicly accessible by creating a public share link.
+	 * It handles both file IDs and file paths, creating appropriate shares and tags.
+	 *
+	 * @param ObjectEntity|string $object The object entity or ID.
+	 * @param string|int $file The file ID or path.
+	 *
+	 * @return File The published file node.
+	 *
+	 * @throws Exception If publishing fails.
+	 *
+	 * @phpstan-return File
+	 * @psalm-return   File
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function publishFile(ObjectEntity|string $object, string|int $file): File {
+		$object = $this->objectOf(object: $object);
+
+		// AN INDICATOR ON A PARTY IS EVALUATED WHERE THE ACT HAPPENS.
+		//
+		// Making a file on an object publicly readable IS the publication a
+		// protected address refuses. Checking it in the component that draws
+		// the chip would leave the refusal to whoever remembered to read a
+		// banner; checking it here means the share is never created. The
+		// guard is resolved lazily because FileService already sits in this
+		// handler's graph through a setter for exactly the same reason: a
+		// constructor dependency on the party model would close that cycle.
+		$this->partyIndicatorGuard()->assertPublicationAllowed(
+			objectUuid: (string)($object->getUuid() ?? '')
+		);
+
+		$this->debug(message: "[FilePublishingHandler] publishFile: Original file parameter received: '$file'");
+		$fileNode = $this->fileFinder(operation: 'publishFile')->find(object: $object, file: $file);
+		$this->debug(message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath());
+
+		$this->assertNotRestricted(fileNode: $fileNode);
+		$this->createPublicShare(fileNode: $fileNode);
+		$this->debug(message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName());
+		return $fileNode;
+	}//end publishFile()
+
+	/**
+	 * Refuse to publish a restricted file: a public link is served without
+	 * asking the restriction.
+	 *
+	 * @param File $fileNode The file.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the file is restricted.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function assertNotRestricted(File $fileNode): void {
+		if ($this->container->get(FileRestrictionGuardInterface::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
+			throw new Exception('A restricted file cannot be published');
+		}
+	}//end assertNotRestricted()
+
+	/**
+	 * The object, looked up when given by id.
+	 *
+	 * @param ObjectEntity|string $object The object entity or ID.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectOf(ObjectEntity|string $object): ObjectEntity {
+		if (is_string($object) === true) {
+			return $this->objectEntityMapper->find($object);
+		}
+
+		return $object;
+	}//end objectOf()
+
+	/**
+	 * Log a debug line of this handler.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return void
+	 */
+	private function debug(string $message): void {
+		$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end debug()
+
+	/**
+	 * Log an error line of this handler.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return void
+	 */
+	private function error(string $message): void {
+		$this->logger->error(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end error()
+
+	/**
+	 * Create the read-only public share of a file directly in the database.
+	 *
+	 * @param File $fileNode The file.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the share cannot be created.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function createPublicShare(File $fileNode): void {
+		try {
+			$openRegisterUser = $this->fileService->getUser();
+			$shareInfo = $this->fileMapper->publishFile(
+				fileId: $fileNode->getId(),
+				sharedBy: $openRegisterUser->getUID(),
+				shareOwner: $openRegisterUser->getUID(),
+			);
+
+			$message = '[FilePublishingHandler] publishFile: Successfully created public share via FileMapper';
+			$this->debug(message: $message . " - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}");
+		} catch (Exception $e) {
+			$this->error(message: '[FilePublishingHandler] publishFile: Failed to create share via FileMapper: ' . $e->getMessage());
+			throw new Exception('Failed to create share link: ' . $e->getMessage());
+		}
+	}//end createPublicShare()
+
+	/**
+	 * Unpublish a file by removing public share links.
+	 *
+	 * This method removes public accessibility from a file by deleting its public
+	 * share links and associated tags.
+	 *
+	 * @param ObjectEntity|string $object The object entity or ID.
+	 * @param string|int $filePath The file ID or path.
+	 *
+	 * @return File The unpublished file node.
+	 *
+	 * @throws Exception If unpublishing fails.
+	 *
+	 * @phpstan-return File
+	 * @psalm-return   File
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function unpublishFile(ObjectEntity|string $object, string|int $filePath): File {
+		$object = $this->objectOf(object: $object);
+
+		$this->debug(message: "[FilePublishingHandler] unpublishFile: Original file path received: '$filePath'");
+		$file = $this->fileFinder(operation: 'unpublishFile')->find(object: $object, file: $filePath);
+
+		$this->debug(message: '[FilePublishingHandler] unpublishFile: Removing share links for file: ' . $file->getPath());
+		$this->removePublicShares(file: $file);
+		$this->debug(message: '[FilePublishingHandler] unpublishFile: Successfully unpublished file: ' . $file->getName());
+		return $file;
+	}//end unpublishFile()
+
+	/**
+	 * Remove every public share of a file directly from the database.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the shares cannot be removed.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function removePublicShares(File $file): void {
+		try {
+			$deletionInfo = $this->fileMapper->depublishFile($file->getId());
+			$message = '[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - ';
+			$this->debug(message: $message . "Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}");
+
+			if ($deletionInfo['deleted_shares'] === 0) {
+				$noSharesMsg = '[FilePublishingHandler] unpublishFile: No public shares were found to delete for file: ';
+				$this->debug(message: $noSharesMsg . $file->getName());
+			}
+		} catch (Exception $e) {
+			$this->error(message: '[FilePublishingHandler] unpublishFile: Failed to remove shares via FileMapper: ' . $e->getMessage());
+			throw new Exception('Failed to remove share links: ' . $e->getMessage());
+		}
+	}//end removePublicShares()
+
+	/**
+	 * A finder of files in an object's folder, its log lines naming one operation of this handler.
+	 *
+	 * Built per call: the file service arrives through a setter, after construction.
+	 *
+	 * @param string $operation The operation, named in every log line.
+	 *
+	 * @return ObjectFileFinder The finder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function fileFinder(string $operation): ObjectFileFinder {
+		$finder = new ObjectFileFinder(logger: $this->logger, fileService: $this->fileService);
+		$finder->prefix = "[FilePublishingHandler] {$operation}:";
+		return $finder;
+	}//end fileFinder()
+
+	/**
+	 * Create a ZIP archive of all files for an object.
+	 *
+	 * This method collects all files associated with an object and creates a ZIP
+	 * archive containing them. The archive is stored in the system temporary directory.
+	 *
+	 * @param ObjectEntity|string $object The object entity or ID.
+	 * @param string|null $zipName Optional custom name for the ZIP file.
+	 *
+	 * @return (int|string)[]
+	 *
+	 * @throws Exception If ZIP creation fails.
+	 *
+	 * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
+	 *
+	 * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null): array {
+		$object = $this->zipSubject(object: $object);
+		$this->debug(message: '[FilePublishingHandler] Creating ZIP archive for object: ' . $object->getId());
+
+		if (class_exists('ZipArchive') === false) {
+			throw new Exception('PHP ZipArchive extension is not available');
+		}
+
+		$files = $this->zipFiles(object: $object);
+		$zipName = $this->zipNameFor(object: $object, zipName: $zipName);
+		$tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
+		$addedFiles = $this->writeZip(path: $tempZipPath, files: $files);
+
+		$skippedFiles = count($files) - $addedFiles;
+		$this->debug(message: "[FilePublishingHandler] ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files");
+
+		return $this->zipResult(path: $tempZipPath, zipName: $zipName);
+	}//end createObjectFilesZip()
+
+	/**
+	 * The object's files the caller is admitted to; restricted ones are left out.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<int, mixed> The nodes.
+	 *
+	 * @throws Exception When none are left.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipFiles(ObjectEntity $object): array {
+		$files = $this->container->get(FileRestrictionGuardInterface::class)->readableNodes(nodes: $this->fileService->getFiles($object));
+		if (empty($files) === true) {
+			throw new Exception('No files found for this object');
+		}
+
+		$this->debug(message: '[FilePublishingHandler] Found ' . count($files) . ' files for object ' . $object->getId());
+		return $files;
+	}//end zipFiles()
+
+	/**
+	 * Write the nodes into a new archive.
+	 *
+	 * @param string            $path  Where to write it.
+	 * @param array<int, mixed> $files The nodes.
+	 *
+	 * @return int How many files were added.
+	 *
+	 * @throws Exception When the archive cannot be opened or finalised.
+	 */
+	private function writeZip(string $path, array $files): int {
+		$zip = new ZipArchive();
+		$result = $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+		if ($result !== true) {
+			throw new Exception('Cannot create ZIP file: ' . $this->getZipErrorMessage(errorCode: $result));
+		}
+
+		$addedFiles = 0;
+		foreach ($files as $file) {
+			$addedFiles += $this->addToZip(zip: $zip, file: $file);
+		}
+
+		if ($zip->close() === false) {
+			throw new Exception('Failed to finalize ZIP archive');
+		}
+
+		return $addedFiles;
+	}//end writeZip()
+
+	/**
+	 * Add one node to the archive.
+	 *
+	 * @param ZipArchive $zip  The archive.
+	 * @param mixed      $file The node.
+	 *
+	 * @return int 1 when the node was added, 0 when it was skipped.
+	 */
+	private function addToZip(ZipArchive $zip, mixed $file): int {
+		$entry = $this->zipEntryOf(file: $file);
+		if ($entry === null) {
+			return 0;
+		}
+
+		if ($zip->addFromString($entry['name'], $entry['content']) === false) {
+			$this->error(message: '[FilePublishingHandler] Failed to add file to ZIP: ' . $entry['name']);
+			return 0;
+		}
+
+		$this->debug(message: '[FilePublishingHandler] Added file to ZIP: ' . $entry['name']);
+		return 1;
+	}//end addToZip()
+
+	/**
+	 * Describe a finished archive.
+	 *
+	 * @param string $path    Where the archive was written.
+	 * @param string $zipName Its file name.
+	 *
+	 * @return array{path: string, filename: string, size: int, mimeType: 'application/zip'} The description.
+	 *
+	 * @throws Exception When the archive is missing or its size cannot be read.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipResult(string $path, string $zipName): array {
+		if (file_exists($path) === false) {
+			throw new Exception('ZIP file was not created successfully');
+		}
+
+		$fileSize = filesize($path);
+		if ($fileSize === false) {
+			throw new Exception('Cannot determine ZIP file size');
+		}
+
+		return [
+			'path' => $path,
+			'filename' => $zipName,
+			'size' => $fileSize,
+			'mimeType' => 'application/zip',
+		];
+	}//end zipResult()
+
+	/**
+	 * The object to zip, looked up when given by id.
+	 *
+	 * @param ObjectEntity|string $object The object entity or ID.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws Exception When no object has that id.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipSubject(ObjectEntity|string $object): ObjectEntity {
+		if (is_string($object) === false) {
+			return $object;
+		}
+
+		try {
+			return $this->objectEntityMapper->find($object);
+		} catch (Exception $e) {
+			throw new Exception('Object not found: ' . $e->getMessage());
+		}
+	}//end zipSubject()
+
+	/**
+	 * The archive's file name: the given name with a `.zip` extension, or one
+	 * made from the object's uuid (or id) and the current time.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param string|null  $zipName The requested name, if any.
+	 *
+	 * @return string The file name.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipNameFor(ObjectEntity $object, ?string $zipName): string {
+		if ($zipName === null) {
+			$objectIdentifier = $object->getUuid() ?? (string)$object->getId();
+			return 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
+		}
+
+		// A requested name is a file name in the temporary directory, never a path: keep its last part only.
+		$zipName = basename(str_replace('\\', '/', $zipName));
+
+		if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
+			$zipName .= '.zip';
+		}
+
+		return $zipName;
+	}//end zipNameFor()
+
+	/**
+	 * The name and content to archive for one node. A folder, or a file the
+	 * caller cannot read, is logged and skipped.
+	 *
+	 * @param mixed $file The node, a file or a folder.
+	 *
+	 * @return array{name: string, content: string}|null The entry, or null to skip the node.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipEntryOf($file): ?array {
+		if ($file instanceof File === false) {
+			$skipped = '[FilePublishingHandler] Skipping non-file node: ' . $file->getName();
+			$this->logger->warning(message: $skipped, context: ['file' => __FILE__, 'line' => __LINE__]);
+			return null;
+		}
+
+		try {
+			// @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+			$this->fileService->checkOwnership($file);
+			return ['name' => $file->getName(), 'content' => $file->getContent()];
+		} catch (Exception $e) {
+			$this->error(message: '[FilePublishingHandler] Error processing file ' . $file->getName() . ': ' . $e->getMessage());
+			return null;
+		}
+	}//end zipEntryOf()
+
+	/**
+	 * Get a human-readable error message for ZipArchive error codes.
+	 *
+	 * @param int $errorCode The ZipArchive error code.
+	 *
+	 * @return string
+	 *
+	 * @psalm-return   string
+	 * @phpstan-return string
+	 */
+	private function getZipErrorMessage(int $errorCode): string {
+		return (self::ZIP_ERRORS[$errorCode] ?? "Unknown error code: $errorCode");
+	}//end getZipErrorMessage()
 }//end class

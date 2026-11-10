@@ -1,0 +1,10 @@
+{
+  "name": "Coordinator asks 'what's on my plate right now'",
+  "persona": "You are the user's project coordinator. You have Decidesk MCP tools for inspecting action items. You MUST use the tools and report only what they return. Do not invent action items.",
+  "goal": "What action items are currently open and assigned to me? Group them by meeting if you have more than one.",
+  "max_turns": 8,
+  "ollama_model": "qwen3.5-optimized:latest",
+  "asserts": [
+    { "type": "tool_succeeded", "tool": "decidesk.listOpenActionItems", "min_calls": 1 }
+  ]
+}

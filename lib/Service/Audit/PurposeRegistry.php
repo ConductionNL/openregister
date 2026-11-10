@@ -1,0 +1,237 @@
+<?php
+
+/**
+ * The administered purpose list, and what makes a purpose usable.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Audit
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Audit;
+
+use OCA\OpenRegister\Db\ProcessingPurpose;
+use OCA\OpenRegister\Db\ProcessingPurposeMapperInterface;
+use OCA\OpenRegister\Db\Verwerkingsactiviteit;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
+
+/**
+ * Resolves a named purpose, and refuses one that cannot carry a query.
+ *
+ * The binding is checked against the processing register LIVE, not read off
+ * the purpose's stored `activityUuid`. A purpose administered while its
+ * activity existed, whose activity was then archived, is no longer bound —
+ * and if the check read the stored column it would still look bound forever.
+ * The stored uuid is a cache of an answer that can go stale; the register is
+ * the authority.
+ *
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
+ */
+class PurposeRegistry implements PurposeRegistryInterface {
+
+	/**
+	 * What a read that names no purpose is told.
+	 *
+	 * @var string
+	 */
+	private const MISSING_REASON = 'This read needs a declared purpose. Name one in the ' . PurposeContext::HEADER . ' header or the '
+		. PurposeContext::PARAM . ' parameter.';
+
+	/**
+	 * The status an archived processing activity carries.
+	 *
+	 * @var string
+	 */
+	private const ACTIVITY_ARCHIVED = 'archived';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ProcessingPurposeMapperInterface     $purposes   The administered purpose list.
+	 * @param VerwerkingsactiviteitMapperInterface $activities The processing activity register.
+	 */
+	public function __construct(
+		private readonly ProcessingPurposeMapperInterface $purposes,
+		private readonly VerwerkingsactiviteitMapperInterface $activities,
+	) {
+	}//end __construct()
+
+	/**
+	 * Whether the instance administers any purpose at all.
+	 *
+	 * An instance that declares none behaves as it did before this change:
+	 * nothing is refused, because there is nothing to name. That is the
+	 * backwards-compatibility promise the proposal makes, and it is read from
+	 * the data rather than from a switch, so turning doelbinding on is an act
+	 * of administration rather than a setting somebody has to find.
+	 *
+	 * @return bool True when at least one active purpose is administered.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function hasAdministeredPurposes(): bool {
+		return $this->purposes->findAll(status: ProcessingPurpose::STATUS_ACTIVE) !== [];
+	}//end hasAdministeredPurposes()
+
+	/**
+	 * The purposes a caller may name, with their bindings resolved.
+	 *
+	 * @return ProcessingPurpose[] Every active purpose.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function usablePurposes(): array {
+		$usable = [];
+		foreach ($this->purposes->findAll(status: ProcessingPurpose::STATUS_ACTIVE) as $purpose) {
+			if ($this->boundActivity(purpose: $purpose) !== null) {
+				$usable[] = $purpose;
+			}
+		}
+
+		return $usable;
+	}//end usablePurposes()
+
+	/**
+	 * The processing activity a purpose is bound to, right now.
+	 *
+	 * @param ProcessingPurpose $purpose The purpose to resolve.
+	 *
+	 * @return Verwerkingsactiviteit|null The activity, or null when the purpose is unbound.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function boundActivity(ProcessingPurpose $purpose): ?Verwerkingsactiviteit {
+		$reference = (string)($purpose->getActivity() ?? '');
+		if ($reference === '') {
+			$reference = (string)($purpose->getActivityUuid() ?? '');
+		}
+
+		if ($reference === '') {
+			return null;
+		}
+
+		$activity = $this->activities->resolveReference(reference: $reference);
+		if ($activity === null) {
+			return null;
+		}
+
+		// An archived activity is one the organisation says it no longer
+		// carries out. A query cannot run under a purpose that names it.
+		if ($activity->getStatus() === self::ACTIVITY_ARCHIVED) {
+			return null;
+		}
+
+		return $activity;
+	}//end boundActivity()
+
+	/**
+	 * Resolve a named purpose to one that may carry a query, or refuse.
+	 *
+	 * Four refusals, named apart on purpose. "No purpose" and "a purpose that
+	 * does not exist" are different mistakes by different callers, and a
+	 * withdrawn purpose and an unbound one need different people to fix them:
+	 * the first is administration, the second is the processing register.
+	 *
+	 * @param string|null $code The purpose the caller named.
+	 *
+	 * @return array{purpose: ProcessingPurpose, activity: Verwerkingsactiviteit} The resolved pair.
+	 *
+	 * @throws PurposeRefusedException When no usable purpose was named.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function requirePurpose(?string $code): array {
+		$named = trim((string)($code ?? ''));
+		$purpose = $this->activePurpose(named: $named);
+
+		$activity = $this->boundActivity(purpose: $purpose);
+		if ($activity === null) {
+			throw new PurposeRefusedException(
+				rule: PurposeRefusedException::RULE_UNBOUND,
+				reason: sprintf('Purpose "%s" names no processing activity, so a query cannot run under it.', $named),
+				purpose: $named,
+				context: ['activity' => $purpose->getActivity()]
+			);
+		}
+
+		return ['purpose' => $purpose, 'activity' => $activity];
+	}//end require()
+
+	/**
+	 * The administered, active purpose a code names.
+	 *
+	 * @param string $named The trimmed code.
+	 *
+	 * @throws PurposeRefusedException When no code is named, the code is unknown, or the purpose is withdrawn.
+	 *
+	 * @return ProcessingPurpose The purpose.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function activePurpose(string $named): ProcessingPurpose {
+		if ($named === '') {
+			$this->refuse(rule: PurposeRefusedException::RULE_MISSING, reason: self::MISSING_REASON, purpose: null);
+		}
+
+		$purpose = $this->purposes->resolveReference(reference: $named);
+		if ($purpose === null) {
+			$reason = sprintf('Purpose "%s" is not in the administered list.', $named);
+			$this->refuse(rule: PurposeRefusedException::RULE_UNKNOWN, reason: $reason, purpose: $named);
+		}
+
+		if ($purpose->getStatus() !== ProcessingPurpose::STATUS_ACTIVE) {
+			$reason = sprintf('Purpose "%s" has been withdrawn and cannot carry a query.', $named);
+			$this->refuse(rule: PurposeRefusedException::RULE_RETIRED, reason: $reason, purpose: $named);
+		}
+
+		return $purpose;
+	}//end activePurpose()
+
+	/**
+	 * Refuse the read, offering the usable codes instead.
+	 *
+	 * @param string      $rule    The refusal rule.
+	 * @param string      $reason  The sentence the caller reads.
+	 * @param string|null $purpose The code named, or null when none was.
+	 *
+	 * @throws PurposeRefusedException Always.
+	 *
+	 * @return never
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function refuse(string $rule, string $reason, ?string $purpose): never {
+		throw new PurposeRefusedException(rule: $rule, reason: $reason, purpose: $purpose, context: ['available' => $this->availableCodes()]);
+	}//end refuse()
+
+	/**
+	 * The codes a refusal offers the caller instead.
+	 *
+	 * @return string[] Every usable purpose code.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function availableCodes(): array {
+		$codes = [];
+		foreach ($this->usablePurposes() as $purpose) {
+			$code = $purpose->getCode();
+			if ($code !== null && $code !== '') {
+				$codes[] = $code;
+			}
+		}
+
+		return $codes;
+	}//end availableCodes()
+}//end class

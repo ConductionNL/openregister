@@ -5,6 +5,11 @@
     "description": "Mock DSO (Digitaal Stelsel Omgevingswet) register with environmental permit data aligned to the CIM-OW/IMOW data model. Contains activities, locations, environmental documents, and permit applications for development and testing.",
     "version": "1.0.0"
   },
+  "x-wire-standard": {
+    "standard": "DSO — CIM-OW / IMOW data model (Omgevingswet)",
+    "vocabulary": "exempt-from-english-vocabulary",
+    "reason": "activiteit, locatie, omgevingsdocument and vergunningaanvraag are IMOW's own object types, and besluitdatum / indieningsdatum / bevoegdGezag are its field names. This register mirrors the model so a connector can be built without hitting the real DSO. See hydra/openspec/changes/fleet-english-vocabulary."
+  },
   "x-openregister": {
     "type": "mock",
     "app": "openregister",
@@ -44,15 +49,18 @@
         "properties": {
           "identificatie": {
             "type": "string",
-            "description": "Unique identifier for the activity"
+            "description": "Unique identifier for the activity",
+            "title": "Identification"
           },
           "naam": {
             "type": "string",
-            "description": "Name of the activity (e.g. 'Dakkapel plaatsen')"
+            "description": "Name of the activity (e.g. 'Dakkapel plaatsen')",
+            "title": "Name"
           },
           "activiteitgroep": {
             "type": "string",
-            "description": "Category group the activity belongs to"
+            "description": "Category group the activity belongs to",
+            "title": "Activity Group"
           },
           "regelkwalificatie": {
             "type": "string",
@@ -62,15 +70,18 @@
               "meldingsplicht",
               "informatieplicht",
               "vergunningvrij"
-            ]
+            ],
+            "title": "Regulatory Classification"
           },
           "bovenliggendeActiviteit": {
             "type": "string",
-            "description": "Reference to the parent activity in the hierarchy"
+            "description": "Reference to the parent activity in the hierarchy",
+            "title": "Parent Activity"
           },
           "omschrijving": {
             "type": "string",
-            "description": "Detailed description of the activity"
+            "description": "Detailed description of the activity",
+            "title": "Description"
           }
         },
         "hardValidation": false,
@@ -92,11 +103,13 @@
         "properties": {
           "identificatie": {
             "type": "string",
-            "description": "Unique identifier for the location"
+            "description": "Unique identifier for the location",
+            "title": "Identification"
           },
           "naam": {
             "type": "string",
-            "description": "Name of the location"
+            "description": "Name of the location",
+            "title": "Name"
           },
           "type": {
             "type": "string",
@@ -107,15 +120,18 @@
               "gemeente",
               "waterschap",
               "provincie"
-            ]
+            ],
+            "title": "Location Type"
           },
           "gemeenteCode": {
             "type": "string",
-            "description": "Municipality code (CBS gemeentecode)"
+            "description": "Municipality code (CBS gemeentecode)",
+            "title": "Municipality Code"
           },
           "gemeenteNaam": {
             "type": "string",
-            "description": "Municipality name"
+            "description": "Municipality name",
+            "title": "Municipality Name"
           },
           "adres": {
             "type": "object",
@@ -123,25 +139,31 @@
             "properties": {
               "straat": {
                 "type": "string",
-                "description": "Street name"
+                "description": "Street name",
+                "title": "Street Name"
               },
               "huisnummer": {
                 "type": "integer",
-                "description": "House number"
+                "description": "House number",
+                "title": "House Number"
               },
               "huisletter": {
                 "type": "string",
-                "description": "House letter"
+                "description": "House letter",
+                "title": "House Letter"
               },
               "postcode": {
                 "type": "string",
-                "description": "Dutch postal code"
+                "description": "Dutch postal code",
+                "title": "Postal Code"
               },
               "woonplaats": {
                 "type": "string",
-                "description": "City name"
+                "description": "City name",
+                "title": "City"
               }
-            }
+            },
+            "title": "Address"
           }
         },
         "hardValidation": false,
@@ -163,7 +185,8 @@
         "properties": {
           "identificatie": {
             "type": "string",
-            "description": "Unique document identifier"
+            "description": "Unique document identifier",
+            "title": "Document Identification"
           },
           "type": {
             "type": "string",
@@ -174,7 +197,8 @@
               "waterschapsverordening",
               "AMvB",
               "ministeriele_regeling"
-            ]
+            ],
+            "title": "Document Type"
           },
           "status": {
             "type": "string",
@@ -183,20 +207,24 @@
               "vastgesteld",
               "ontwerp",
               "ingetrokken"
-            ]
+            ],
+            "title": "Publication Status"
           },
           "bevoegdGezag": {
             "type": "string",
-            "description": "Competent authority (organization name or OIN)"
+            "description": "Competent authority (organization name or OIN)",
+            "title": "Competent Authority"
           },
           "titel": {
             "type": "string",
-            "description": "Title of the document"
+            "description": "Title of the document",
+            "title": "Title"
           },
           "publicatiedatum": {
             "type": "string",
             "format": "date",
-            "description": "Date of publication"
+            "description": "Date of publication",
+            "title": "Publication Date"
           }
         },
         "hardValidation": false,
@@ -220,14 +248,16 @@
         "properties": {
           "identificatie": {
             "type": "string",
-            "description": "Unique application identifier"
+            "description": "Unique application identifier",
+            "title": "Application Identification"
           },
           "activiteiten": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "References to the activities in this application"
+            "description": "References to the activities in this application",
+            "title": "Activities"
           },
           "locatie": {
             "type": "object",
@@ -235,13 +265,16 @@
             "properties": {
               "identificatie": {
                 "type": "string",
-                "description": "Reference to a locatie record"
+                "description": "Reference to a locatie record",
+                "title": "Location Reference"
               },
               "adres": {
                 "type": "string",
-                "description": "Human-readable address"
+                "description": "Human-readable address",
+                "title": "Address"
               }
-            }
+            },
+            "title": "Location"
           },
           "initiatiefnemer": {
             "type": "object",
@@ -249,7 +282,8 @@
             "properties": {
               "naam": {
                 "type": "string",
-                "description": "Applicant name"
+                "description": "Applicant name",
+                "title": "Applicant Name"
               },
               "type": {
                 "type": "string",
@@ -257,13 +291,16 @@
                 "enum": [
                   "particulier",
                   "bedrijf"
-                ]
+                ],
+                "title": "Applicant Type"
               }
-            }
+            },
+            "title": "Applicant"
           },
           "bevoegdGezag": {
             "type": "string",
-            "description": "Competent authority handling the application"
+            "description": "Competent authority handling the application",
+            "title": "Competent Authority"
           },
           "status": {
             "type": "string",
@@ -274,17 +311,20 @@
               "verleend",
               "geweigerd",
               "ingetrokken"
-            ]
+            ],
+            "title": "Application Status"
           },
           "indieningsdatum": {
             "type": "string",
             "format": "date",
-            "description": "Date the application was submitted"
+            "description": "Date the application was submitted",
+            "title": "Submission Date"
           },
           "besluitdatum": {
             "type": "string",
             "format": "date",
-            "description": "Date the decision was made"
+            "description": "Date the decision was made",
+            "title": "Decision Date"
           },
           "bijlagen": {
             "type": "array",
@@ -293,19 +333,23 @@
               "properties": {
                 "naam": {
                   "type": "string",
-                  "description": "Attachment file name"
+                  "description": "Attachment file name",
+                  "title": "File Name"
                 },
                 "type": {
                   "type": "string",
-                  "description": "Attachment type"
+                  "description": "Attachment type",
+                  "title": "File Type"
                 }
               }
             },
-            "description": "Attachments to the application"
+            "description": "Attachments to the application",
+            "title": "Attachments"
           },
           "toelichting": {
             "type": "string",
-            "description": "Additional explanation or decision motivation"
+            "description": "Additional explanation or decision motivation",
+            "title": "Explanation"
           }
         },
         "hardValidation": false,
@@ -638,7 +682,6 @@
         "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.evenementen",
         "omschrijving": "Het organiseren van een evenement waarbij professioneel vuurwerk wordt afgestoken. Vergunningplichtig vanwege veiligheidsrisico's."
       },
-
       {
         "@self": {
           "register": "dso",
@@ -849,7 +892,6 @@
           "woonplaats": "Groningen"
         }
       },
-
       {
         "@self": {
           "register": "dso",
@@ -928,7 +970,6 @@
         "titel": "Omgevingsplan Den Haag",
         "publicatiedatum": "2024-01-01"
       },
-
       {
         "@self": {
           "register": "dso",

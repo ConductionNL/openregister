@@ -1,16 +1,30 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { applicationStore, organisationStore, navigationStore } from '../../store/store.js'
+import {
+	applicationStore,
+	navigationStore,
+	organisationStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="applicationStore.applicationItem?.uuid ? 'Edit Application' : 'Create Application'"
+	<NcDialog
+		:name="
+			applicationStore.applicationItem?.uuid
+				? t('openregister', 'Edit Application')
+				: t('openregister', 'Create Application')
+		"
 		:open="true"
 		size="large"
-		:can-close="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
-			<p>Application successfully {{ applicationStore.applicationItem?.uuid ? 'updated' : 'created' }}</p>
+			<p>
+				{{
+					applicationStore.applicationItem?.uuid
+						? t('openregister', 'Application successfully updated')
+						: t('openregister', 'Application successfully created')
+				}}
+			</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -18,61 +32,56 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 		<div v-if="!success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab active>
+				<AppTabs v-model="activeTab" contentClass="mt-3" justified>
+					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
-							<span>Settings</span>
+							<span>{{ t('openregister', 'Settings') }}</span>
 						</template>
 						<div class="form-editor">
 							<NcTextField
+								v-model="applicationItem.name"
 								:disabled="loading"
-								label="Name *"
-								:value.sync="applicationItem.name"
+								:label="t('openregister', 'Name *')"
 								:error="!applicationItem.name.trim()"
-								placeholder="Enter application name" />
+								:placeholder="
+									t('openregister', 'Enter application name')
+								" />
 
 							<NcTextArea
+								v-model="applicationItem.description"
 								:disabled="loading"
-								label="Description"
-								:value.sync="applicationItem.description"
-								placeholder="Enter application description (optional)"
+								:label="t('openregister', 'Description')"
+								:placeholder="
+									t(
+										'openregister',
+										'Enter application description (optional)',
+									)
+								"
 								:rows="4" />
 
 							<!-- Organisation is automatically set to active organisation by backend -->
 
-							<div class="groups-select-container">
-								<label class="groups-label">Nextcloud Groups</label>
-								<NcSelect
-									v-model="selectedGroups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									track-by="id"
-									:multiple="true"
-									:label-outside="true"
-									:filterable="false"
-									placeholder="Search groups..."
-									@search-change="searchGroups"
-									@input="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{ name }}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">Loading groups...</span>
-										<span v-else>No groups found. Try a different search.</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									Only members of selected groups can access this application
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								label="Nextcloud Groups"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:placeholder="t('openregister', 'Search groups...')"
+								:emptyText="
+									t(
+										'openregister',
+										'No groups found. Try a different search.',
+									)
+								"
+								hint="Only members of selected groups can access this application"
+								@searchChange="searchGroups"
+								@update:modelValue="updateGroups" />
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Database :size="16" />
 							<span>Quota</span>
@@ -83,44 +92,44 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								label="Storage Quota (MB)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="storageQuotaMB"
-								@update:value="updateStorageQuota" />
+								:modelValue="storageQuotaMB"
+								@update:modelValue="updateStorageQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="Bandwidth Quota (MB/month)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="bandwidthQuotaMB"
-								@update:value="updateBandwidthQuota" />
+								:modelValue="bandwidthQuotaMB"
+								@update:modelValue="updateBandwidthQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="API Request Quota (requests/day)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
+								:modelValue="applicationItem.quota?.requests || 0"
+								@update:modelValue="updateRequestQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="User Quota"
 								type="number"
 								placeholder="0 = unlimited (not applicable for applications)"
-								:value="applicationItem.quota?.users || 0"
-								@update:value="updateUserQuota" />
+								:modelValue="applicationItem.quota?.users || 0"
+								@update:modelValue="updateUserQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="Group Quota"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.groups || 0"
-								@update:value="updateGroupQuota" />
+								:modelValue="applicationItem.quota?.groups || 0"
+								@update:modelValue="updateGroupQuota" />
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Shield :size="16" />
 							<span>Security</span>
@@ -129,40 +138,45 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 							<div class="rbac-container">
 								<div class="rbac-section">
 									<p class="rbac-description">
-										Configure CRUD permissions for this application.
-										Empty permissions = open access for all application groups.
-										The 'admin' group always has full access.
+										Configure CRUD permissions for this
+										application. Empty permissions = open access
+										for all application groups. The 'admin' group
+										always has full access.
 									</p>
 
 									<RbacTable
-										entity-type="application"
-										:authorization="applicationItem.authorization"
-										:available-groups="availableGroups"
-										:organisation-groups="applicationItem.groups || []"
+										entityType="application"
+										:authorization="
+											applicationItem.authorization
+										"
+										:availableGroups="availableGroups"
+										:organisationGroups="
+											applicationItem.groups || []
+										"
 										@update="updateApplicationPermission" />
 								</div>
 							</div>
 						</div>
-					</BTab>
-				</BTabs>
+					</AppTab>
+				</AppTabs>
 			</div>
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="!success"
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
+			<NcButton
+				v-if="!success"
 				:disabled="loading || !applicationItem.name.trim()"
-				type="primary"
+				variant="primary"
 				@click="saveApplication()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && applicationStore.applicationItem?.uuid" :size="20" />
-					<Plus v-if="!loading && !applicationStore.applicationItem?.uuid" :size="20" />
+					<ContentSaveOutline
+						v-if="!loading && applicationStore.applicationItem?.uuid"
+						:size="20" />
+					<Plus
+						v-if="!loading && !applicationStore.applicationItem?.uuid"
+						:size="20" />
 				</template>
 				{{ applicationStore.applicationItem?.uuid ? 'Save' : 'Create' }}
 			</NcButton>
@@ -174,44 +188,48 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
-	NcTextArea,
-	NcSelect,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcTextArea,
+	NcTextField,
 } from '@nextcloud/vue'
-import { BTabs, BTab } from 'bootstrap-vue'
-
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Database from 'vue-material-design-icons/Database.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
-
 import RbacTable from '../../components/RbacTable.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import { searchGroupsDebounced } from '../../services/groupSearch.js'
+import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
 
 export default {
 	name: 'EditApplication',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcTextArea,
-		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		RbacTable,
 		// Icons
 		ContentSaveOutline,
-		Cancel,
+		CloseCancelButton,
 		Plus,
 		Cog,
 		Database,
 		Shield,
 	},
+
+	mixins: [quotaFields],
+
 	data() {
 		return {
 			activeTab: 0,
@@ -219,13 +237,8 @@ export default {
 				name: '',
 				description: '',
 				// Organisation will be set automatically by backend based on active organisation
-				quota: {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				},
+				quota: unlimitedQuota(),
+
 				groups: [],
 				authorization: {
 					create: [],
@@ -234,6 +247,7 @@ export default {
 					delete: [],
 				},
 			},
+
 			selectedGroups: [],
 			availableGroups: [],
 			loadingGroups: false,
@@ -244,23 +258,35 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	computed: {
-		storageQuotaMB() {
-			if (!this.applicationItem.quota?.storage) return 0
-			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
+		/**
+		 * @spec exclude Names the form item for the quota fields; UI plumbing.
+		 */
+		quotaItem() {
+			return this.applicationItem
 		},
-		bandwidthQuotaMB() {
-			if (!this.applicationItem.quota?.bandwidth) return 0
-			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
-		},
+
+		/**
+		 * @spec exclude UI display helper — filters available groups to those assigned to the application.
+		 */
 		filteredAvailableGroups() {
-		// Filter available groups to only show groups assigned to the application
-			if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
+			// Filter available groups to only show groups assigned to the application
+			if (
+				!this.applicationItem.groups
+				|| this.applicationItem.groups.length === 0
+			) {
 				return this.availableGroups
 			}
-			return this.availableGroups.filter(group => this.applicationItem.groups.includes(group.id))
+			return this.availableGroups.filter((group) =>
+				this.applicationItem.groups.includes(group.id),
+			)
 		},
 	},
+
+	/**
+	 * @spec exclude Vue lifecycle hook — loads organisations/groups and hydrates the modal.
+	 */
 	async mounted() {
 		await this.fetchOrganisations()
 		// Use cached Nextcloud groups from store (preloaded on index page)
@@ -268,11 +294,13 @@ export default {
 		// Initialize after groups are loaded
 		this.initializeApplicationItem()
 	},
+
 	methods: {
 		/**
 		 * Fetch available organisations from the store
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		async fetchOrganisations() {
 			await organisationStore.refreshOrganisationList()
@@ -283,27 +311,32 @@ export default {
 		 * Groups are preloaded on the index page for better performance
 		 *
 		 * @return {void}
+		 * @spec exclude Modal data-load plumbing — reads cached Nextcloud groups from the store.
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately
-			if (applicationStore.nextcloudGroups && applicationStore.nextcloudGroups.length > 0) {
+			if (
+				applicationStore.nextcloudGroups
+				&& applicationStore.nextcloudGroups.length > 0
+			) {
 				this.availableGroups = applicationStore.nextcloudGroups
 				this.loadingGroups = false
-				console.info('Using cached Nextcloud groups from application store:', this.availableGroups.length)
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
-				console.info('Groups not cached in application store, loading from API...')
 				this.loadingGroups = true
-				applicationStore.loadNextcloudGroups().then(() => {
-					this.availableGroups = applicationStore.nextcloudGroups
-					this.loadingGroups = false
-					// Re-initialize to map groups now that they're loaded
-					this.initializeApplicationItem()
-				}).catch(error => {
-					console.error('Error loading Nextcloud groups:', error)
-					this.error = 'Failed to load Nextcloud groups'
-					this.loadingGroups = false
-				})
+				applicationStore
+					.loadNextcloudGroups()
+					.then(() => {
+						this.availableGroups = applicationStore.nextcloudGroups
+						this.loadingGroups = false
+						// Re-initialize to map groups now that they're loaded
+						this.initializeApplicationItem()
+					})
+					.catch((error) => {
+						console.error('Error loading Nextcloud groups:', error)
+						this.error = 'Failed to load Nextcloud groups'
+						this.loadingGroups = false
+					})
 			}
 		},
 
@@ -312,64 +345,22 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
+		 * @spec exclude Modal data-load plumbing — debounced group search via OCS API.
 		 */
 		searchGroups(searchQuery) {
-			// Clear existing debounce timer
-			if (this.groupSearchDebounce) {
-				clearTimeout(this.groupSearchDebounce)
-			}
-
-			// If search is empty, load all cached groups
-			if (!searchQuery || searchQuery.trim() === '') {
-				this.loadNextcloudGroupsFromStore()
-				return
-			}
-
-			// Debounce the search by 300ms
-			this.groupSearchDebounce = setTimeout(async () => {
-				this.loadingGroups = true
-				try {
-					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`, {
-						headers: {
-							'OCS-APIRequest': 'true',
-						},
-					})
-
-					if (response.ok) {
-						const data = await response.json()
-						if (data.ocs?.data?.groups) {
-							// Transform group IDs into objects
-							const searchResults = data.ocs.data.groups.map(groupId => ({
-								id: groupId,
-								name: groupId,
-								userCount: 0,
-							}))
-
-							// Merge with already selected groups to ensure they remain visible
-							const selectedGroupIds = this.selectedGroups.map(g => g.id)
-							const mergedGroups = [
-								...this.selectedGroups,
-								...searchResults.filter(g => !selectedGroupIds.includes(g.id)),
-							]
-
-							this.availableGroups = mergedGroups
-						}
-					} else {
-						console.warn('Failed to search groups:', response.statusText)
-					}
-				} catch (error) {
-					console.error('Error searching Nextcloud groups:', error)
-				} finally {
-					this.loadingGroups = false
-				}
-			}, 300)
+			searchGroupsDebounced(this, {
+				query: searchQuery,
+				onEmpty: () => this.loadNextcloudGroupsFromStore(),
+				toGroup: (groupId) => ({ id: groupId, name: groupId, userCount: 0 }),
+				warnOnRefusal: false,
+			})
 		},
 
 		/**
 		 * Initialize application item from store
 		 *
 		 * @return {void}
+		 * @spec exclude Modal hydration plumbing — copies the store's applicationItem into local form state.
 		 */
 		initializeApplicationItem() {
 			if (applicationStore.applicationItem?.uuid) {
@@ -382,11 +373,16 @@ export default {
 
 				// Load existing groups selection
 				// Groups are stored as an array of IDs, we need to map them to objects for the select component
-				if (Array.isArray(this.applicationItem.groups) && this.applicationItem.groups.length > 0) {
+				if (
+					Array.isArray(this.applicationItem.groups)
+					&& this.applicationItem.groups.length > 0
+				) {
 					this.selectedGroups = this.applicationItem.groups
-						.map(groupId => {
+						.map((groupId) => {
 							// Find the group in availableGroups
-							const group = this.availableGroups.find(g => g.id === groupId)
+							const group = this.availableGroups.find(
+								(g) => g.id === groupId,
+							)
 							if (group) {
 								return group
 							}
@@ -398,7 +394,7 @@ export default {
 								userCount: 0,
 							}
 						})
-						.filter(g => g !== null)
+						.filter((g) => g !== null)
 				}
 			}
 		},
@@ -408,23 +404,14 @@ export default {
 		 *
 		 * @param {Array} groups - Selected groups
 		 * @return {void}
+		 * @spec exclude Form-field binding — maps selected groups to id array.
 		 */
 		updateGroups(groups) {
 			this.selectedGroups = groups || []
 			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
-		},
-
-		/**
-		 * Remove a group from selection
-		 *
-		 * @param {object} groupToRemove - Group to remove
-		 * @return {void}
-		 */
-		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
-			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
+			this.applicationItem.groups = this.selectedGroups.map(
+				(group) => group.id,
+			)
 		},
 
 		/**
@@ -432,10 +419,10 @@ export default {
 		 *
 		 * @param {object} payload - Permission update payload
 		 * @return {void}
+		 * @spec exclude Form-field binding — toggles a group's CRUD permission in local authorization state.
 		 */
 		updateApplicationPermission(payload) {
 			const { groupId, action, hasPermission } = payload
-			console.info('Updating application permission:', { groupId, action, hasPermission })
 
 			// Initialize authorization if not present
 			if (!this.applicationItem.authorization) {
@@ -453,97 +440,27 @@ export default {
 			}
 
 			// Update the permission
-			const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
+			const groupIndex =
+				this.applicationItem.authorization[action].indexOf(groupId)
 			if (hasPermission && groupIndex === -1) {
-			// Add the group
+				// Add the group
 				this.applicationItem.authorization[action].push(groupId)
-				console.info(`Added ${groupId} to ${action}:`, this.applicationItem.authorization[action])
 			} else if (!hasPermission && groupIndex !== -1) {
-			// Remove the group
+				// Remove the group
 				this.applicationItem.authorization[action].splice(groupIndex, 1)
-				console.info(`Removed ${groupId} from ${action}:`, this.applicationItem.authorization[action])
 			}
 
 			// Force Vue to detect the change
-			this.$set(this.applicationItem, 'authorization', { ...this.applicationItem.authorization })
-		},
-
-		/**
-		 * Update storage quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 */
-		updateStorageQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
+			this.applicationItem.authorization = {
+				...this.applicationItem.authorization,
 			}
-			this.applicationItem.quota.storage = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update bandwidth quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 */
-		updateBandwidthQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-			}
-			this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update request quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 */
-		updateRequestQuota(value) {
-			// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-			}
-			this.applicationItem.quota.requests = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update user quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 */
-		updateUserQuota(value) {
-		// 0 = unlimited (not applicable for applications, but kept for consistency)
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-			}
-			this.applicationItem.quota.users = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update group quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 */
-		updateGroupQuota(value) {
-		// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
-			}
-			this.applicationItem.quota.groups = value ? parseInt(value) : 0
 		},
 
 		/**
 		 * Close the modal and reset state
 		 *
 		 * @return {void}
+		 * @spec exclude Modal close plumbing — resets local state and clears modal/dialog.
 		 */
 		closeModal() {
 			this.success = false
@@ -559,6 +476,7 @@ export default {
 		 * Save the application
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Modal save plumbing — validates name then delegates to applicationStore.saveApplication.
 		 */
 		async saveApplication() {
 			this.loading = true
@@ -582,10 +500,10 @@ export default {
 				if (response.ok) {
 					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
 				}
-
 			} catch (error) {
 				this.success = false
-				this.error = error.message || 'An error occurred while saving the application'
+				this.error =
+					error.message || 'An error occurred while saving the application'
 			} finally {
 				this.loading = false
 			}
@@ -596,6 +514,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
+		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
 		 */
 		handleDialogOpen(isOpen) {
 			// Only close the modal if the dialog is being closed (isOpen = false)
@@ -607,26 +526,16 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 /* EditApplication-specific styles */
 .tabContainer {
 	margin-top: 20px;
 }
 
 /* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
-
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
+@include tab-container-deep-nav-link-rules;
 
 .option-content {
 	display: flex;
@@ -644,40 +553,7 @@ export default {
 	color: var(--color-text-lighter);
 }
 
-.groups-select-container {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.groups-label {
-	font-weight: 500;
-	color: var(--color-main-text);
-	font-size: 14px;
-}
-
-.field-hint {
-	font-size: 12px;
-	color: var(--color-text-lighter);
-	margin: 0;
-}
-
-.group-option {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.group-name {
-	font-weight: 500;
-}
-
-.security-section {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
+@include security-section;
 
 .rbac-container {
 	display: flex;
@@ -686,71 +562,11 @@ export default {
 	padding: 0;
 }
 
-.rbac-section {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
+@include rbac-section;
 
-.rbac-description {
-	font-size: 14px;
-	color: var(--color-text-lighter);
-	margin: 0 0 16px 0;
-}
+@include rbac-description;
 
-.loading-groups {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--color-text-lighter);
-	padding: 16px;
-}
-
-.groups-list {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.groups-list h3 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.group-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.group-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.group-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	border-radius: 16px;
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.no-groups {
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-lighter);
-	font-style: italic;
-}
+@include loading-groups-rules;
 
 .no-groups p {
 	margin: 0;

@@ -1,0 +1,121 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`upload files labels golden fills the label lists from none 1`] = `
+{
+  "after": false,
+  "during": true,
+  "labelOptions": {
+    "inputLabel": "Labels",
+    "multiple": true,
+    "options": [
+      "No label",
+    ],
+    "value": undefined,
+  },
+  "labelOptionsEdit": {
+    "inputLabel": "Labels",
+    "multiple": true,
+    "options": [],
+  },
+}
+`;
+
+exports[`upload files labels golden fills the label lists from tags 1`] = `
+{
+  "after": false,
+  "during": true,
+  "labelOptions": {
+    "inputLabel": "Labels",
+    "multiple": true,
+    "options": [
+      "No label",
+      "b",
+      "a",
+    ],
+    "value": undefined,
+  },
+  "labelOptionsEdit": {
+    "inputLabel": "Labels",
+    "multiple": true,
+    "options": [
+      "b",
+      "a",
+      "No label",
+    ],
+  },
+}
+`;
+
+exports[`upload files labels golden labels sent for empty 1`] = `[]`;
+
+exports[`upload files labels golden labels sent for noLabel 1`] = `null`;
+
+exports[`upload files labels golden labels sent for noLabelAndTag 1`] = `null`;
+
+exports[`upload files labels golden labels sent for nothing 1`] = `undefined`;
+
+exports[`upload files labels golden labels sent for oneTag 1`] = `
+[
+  "t1",
+]
+`;
+
+exports[`upload files labels golden selectable next to empty 1`] = `
+[
+  true,
+  true,
+  true,
+]
+`;
+
+exports[`upload files labels golden selectable next to noLabel 1`] = `
+[
+  true,
+  false,
+  false,
+]
+`;
+
+exports[`upload files labels golden selectable next to noLabelAndTag 1`] = `
+[
+  true,
+  false,
+  false,
+]
+`;
+
+exports[`upload files labels golden selectable next to nothing 1`] = `
+[
+  true,
+  true,
+  true,
+]
+`;
+
+exports[`upload files labels golden selectable next to oneTag 1`] = `
+[
+  false,
+  true,
+  true,
+]
+`;
+
+exports[`upload files labels golden starts with this state 1`] = `
+{
+  "editedTags": [],
+  "editingTags": null,
+  "error": false,
+  "labelOptions": {
+    "inputLabel": "Labels",
+    "multiple": true,
+  },
+  "labelOptionsEdit": {
+    "inputLabel": "Labels",
+    "multiple": true,
+  },
+  "loading": false,
+  "share": false,
+  "success": null,
+  "tagsLoading": false,
+}
+`;

@@ -1,0 +1,122 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MDM Dismissed Pair",
+    "description": "Pairs of objects a person reviewed and ruled not the same. Rows are written only by the dismissal routes and read by DuplicateDetectionService, which stops offering a pair whose value fingerprint still matches its dismissal. RBAC-scoped and auditable through OpenRegister's object infrastructure (ADR-022) rather than a bespoke table.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational MDM dismissed-pair register shipped by OpenRegister so a reviewed false pair is not offered again."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "dismissed-pair": {
+        "slug": "dismissed-pair",
+        "title": "Dismissed Pair",
+        "version": "1.0.0",
+        "description": "One row per pair of objects reviewed and ruled not duplicates.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "dismissedPair"
+        ],
+        "folder": "Open Registers/MDM Dismissed Pair"
+      }
+    },
+    "schemas": {
+      "dismissedPair": {
+        "slug": "dismissedPair",
+        "title": "Dismissed Pair",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A pair of objects a person decided are not the same.",
+        "description": "Written by the dismissal route and read by the duplicate scorer. The two uuids are stored in a canonical order so a pair has one row whichever way round it was reviewed, and the fingerprint records what the values looked like at the moment of the judgement, so the pair is offered again once the data behind it changes.",
+        "required": [
+          "objectA",
+          "objectB",
+          "registerSlug",
+          "schemaSlug",
+          "fingerprint",
+          "dismissedAt"
+        ],
+        "properties": {
+          "objectA": {
+            "type": "string",
+            "description": "Uuid of the first object, in canonical (string-sorted) order.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Object A"
+          },
+          "objectB": {
+            "type": "string",
+            "description": "Uuid of the second object, in canonical (string-sorted) order.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Object B"
+          },
+          "registerSlug": {
+            "type": "string",
+            "description": "Register the pair was reviewed in.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Register"
+          },
+          "schemaSlug": {
+            "type": "string",
+            "description": "Schema the pair was reviewed under.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Schema"
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "Hash of the normalised values of the compared properties at the moment of the judgement. The scorer offers the pair again as soon as this no longer matches.",
+            "maxLength": 128,
+            "title": "Fingerprint"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the reviewer decided the two are not the same.",
+            "maxLength": 1000,
+            "title": "Reason"
+          },
+          "dismissedBy": {
+            "type": "string",
+            "description": "Uid of the person who made the judgement.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Dismissed By"
+          },
+          "dismissedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the judgement was made.",
+            "title": "Dismissed At"
+          },
+          "reversedBy": {
+            "type": "string",
+            "description": "Uid of the person who undid the dismissal, when one has.",
+            "maxLength": 255,
+            "title": "Reversed By"
+          },
+          "reversedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the dismissal was undone, when it has been.",
+            "title": "Reversed At"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true,
+            "description": "False once the dismissal has been reversed. The row is kept rather than deleted so the audit trail of who decided what, and who undid it, survives.",
+            "facetable": true,
+            "title": "Active"
+          }
+        }
+      }
+    }
+  }
+}

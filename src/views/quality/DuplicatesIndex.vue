@@ -1,0 +1,195 @@
+<template>
+	<NcAppContent>
+		<div class="viewContainer">
+			<QualityPageFrame
+				:title="t('openregister', 'Duplicate Candidates')"
+				:description="t('openregister', 'Candidate duplicate pairs detected for a register and schema. Launch the merge wizard on a pair to review and execute a reversible merge.')"
+				:selectDescription="t('openregister', 'Choose a register and schema above to see its duplicate candidates.')"
+				:empty="duplicates.length === 0"
+				:emptyName="t('openregister', 'No duplicate candidates found')"
+				:emptyDescription="t('openregister', 'No candidate pairs were detected for this register and schema.')">
+				<template #icon>
+					<ContentDuplicate :size="64" />
+				</template>
+				<table class="duplicatesTable">
+					<thead>
+						<tr>
+							<th scope="col">
+								{{ t('openregister', 'Object A') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Object B') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Score') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Matched on') }}
+							</th>
+							<th scope="col">
+								{{ t('openregister', 'Actions') }}
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr
+							v-for="(pair, index) in duplicates"
+							:key="index"
+							data-testid="mdm-duplicate-row">
+							<td>{{ pair.objectA }}</td>
+							<td>{{ pair.objectB }}</td>
+							<td>{{ pair.score }}</td>
+							<td>{{ (pair.matchedOn || []).join(', ') }}</td>
+							<td>
+								<NcButton
+									variant="tertiary"
+									data-testid="mdm-merge-launch"
+									@click="openMergeWizard(pair)">
+									{{ t('openregister', 'Merge') }}
+								</NcButton>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<RangePager
+					:offset="duplicatesOffset"
+					:limit="duplicatesLimit"
+					:total="duplicatesTotal"
+					@previous="previousPage"
+					@next="nextPage" />
+			</QualityPageFrame>
+		</div>
+
+		<MdmMergeWizardModal
+			v-if="mergeCandidate"
+			:from="mergeCandidate.from"
+			:into="mergeCandidate.into"
+			@close="mergeCandidate = null"
+			@merged="onMerged" />
+	</NcAppContent>
+</template>
+
+<script>
+import {
+	NcAppContent,
+	NcButton,
+} from '@nextcloud/vue'
+import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
+import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
+import { qualityStore } from '../../store/store.js'
+import { qualityListPage, QualityPageFrame, RangePager } from './qualityListPage.js'
+
+export default {
+	name: 'DuplicatesIndex',
+
+	components: {
+		NcAppContent,
+		NcButton,
+		ContentDuplicate,
+		QualityPageFrame,
+		RangePager,
+		MdmMergeWizardModal,
+	},
+
+	mixins: [qualityListPage('fetchDuplicates', 'duplicates')],
+
+	data() {
+		return {
+			// { from, into } for the pair currently open in the merge wizard;
+			// null when the wizard is closed.
+			mergeCandidate: null,
+		}
+	},
+
+	computed: {
+		/**
+		 * @spec openspec/specs/mdm-frontend/spec.md
+		 */
+		duplicates() {
+			return qualityStore.duplicates
+		},
+
+		/**
+		 * @spec openspec/specs/mdm-frontend/spec.md
+		 */
+		duplicatesTotal() {
+			return qualityStore.duplicatesTotal
+		},
+
+		/**
+		 * @spec openspec/specs/mdm-frontend/spec.md
+		 */
+		duplicatesLimit() {
+			return qualityStore.duplicatesLimit
+		},
+
+		/**
+		 * @spec openspec/specs/mdm-frontend/spec.md
+		 */
+		duplicatesOffset() {
+			return qualityStore.duplicatesOffset
+		},
+	},
+
+	methods: {
+		/**
+		 * Load duplicate candidates for the current selection. No request
+		 * is issued unless both register and schema are selected.
+		 *
+		 * @spec exclude UI data-loading orchestration — delegates to store actions which carry the @spec tags
+		 */
+		async loadData() {
+			if (!qualityStore.hasSelection) return
+			await qualityStore.fetchDuplicates(
+				qualityStore.selectedRegister,
+				qualityStore.selectedSchema,
+				{ limit: 20, offset: 0 },
+			)
+		},
+
+		/**
+		 * Open the merge wizard for a candidate pair, mapping the survivor
+		 * (`objectA`) to the merge `into` and the merged-away object
+		 * (`objectB`) to `from`.
+		 *
+		 * @param {object} pair Candidate pair with `objectA` / `objectB`.
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-merge-action-is-offered-per-candidate-pair
+		 */
+		openMergeWizard(pair) {
+			this.mergeCandidate = { from: pair.objectB, into: pair.objectA }
+		},
+
+		/**
+		 * Reload the candidate list once a merge has executed so the merged
+		 * pair no longer appears.
+		 *
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-confirming-a-merge-executes-it-and-refreshes-candidates
+		 */
+		async onMerged() {
+			this.mergeCandidate = null
+			await this.loadData()
+		},
+	},
+}
+</script>
+
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
+@include view-container-3-subtitled;
+
+.duplicatesTable {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 16px;
+}
+
+.duplicatesTable th,
+.duplicatesTable td {
+	text-align: left;
+	padding: 8px;
+	border-bottom: 1px solid var(--color-border);
+}
+
+@include pagination-2;
+</style>

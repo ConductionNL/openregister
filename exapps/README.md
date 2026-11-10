@@ -238,4 +238,4 @@ curl http://localhost:9000/api/tags
 
 ## License
 
-AGPL-3.0 - See LICENSE file for details.
+EUPL-1.2 - See LICENSE file for details.

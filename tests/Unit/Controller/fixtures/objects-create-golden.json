@@ -1,0 +1,1436 @@
+{
+    "failure anything else": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "no"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure append only": {
+        "status": 405,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "SCHEMA_APPEND_ONLY",
+            "message": "SCHEMA_APPEND_ONLY: Schema \"sch\" is append-only; create operations are not permitted.",
+            "schema": "sch",
+            "operation": "create"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure custom validation": {
+        "status": 400,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "validation": "bad"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure duplicate blocked": {
+        "status": 409,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "twin",
+            "matches": [
+                "m1"
+            ]
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure expression default": {
+        "status": 422,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "cannot derive",
+            "errors": [
+                {
+                    "code": "default-expression-unevaluable",
+                    "property": "title",
+                    "message": "cannot derive"
+                }
+            ]
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure external write": {
+        "status": 418,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "external"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure folder denied": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "folder_access_denied"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure hook stopped": {
+        "status": 422,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "stopped",
+            "errors": {
+                "e": 1
+            }
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure locked": {
+        "status": 423,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Object is locked by ",
+            "lockedBy": null,
+            "lockedByRun": null
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure object exists": {
+        "status": 409,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "taken",
+            "uuid": "u1"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure object state": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "frozen"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure translation conflict": {
+        "status": 400,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": {
+                "code": "TRANSLATION_TARGET_CONFLICT",
+                "property": "title",
+                "targetLanguage": "nl",
+                "message": "Cannot mix language-keyed body for \"title\" with X-Translation-Target-Language: nl"
+            }
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure upsert refusal": {
+        "status": 409,
+        "headers": {
+            "Retry-After": "1",
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "taken"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure validation": {
+        "status": 400,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "validation": "bad"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "register not found": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "message": "Register not found: 'reg'"
+        },
+        "calls": []
+    },
+    "save admin": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    false,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save blank upsert key": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save duplicate override": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    true,
+                    null
+                ]
+            }
+        ]
+    },
+    "save insert only": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    true,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save json strings decode": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "list": "[\"a\"]",
+                        "map": "{\"a\":1}",
+                        "text": "plain"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save multipart decodes": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "list": [
+                            "a"
+                        ],
+                        "text": "plain"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save plain body": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save reserved keys go": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x",
+                        "@self": {
+                            "slug": "s"
+                        }
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "schema not found": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "message": "Schema not found: 'sch'"
+        },
+        "calls": []
+    },
+    "upsert and insert only": {
+        "status": 400,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "_upsertOn and _failIfExists ask opposite things; send one of them."
+        },
+        "calls": []
+    },
+    "upsert anonymous": {
+        "status": 401,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "An upsert needs a signed-in caller."
+        },
+        "calls": []
+    },
+    "upsert created": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "kept-uuid",
+                "slug": null,
+                "name": "kept-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "kept-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "upsert": [
+                    "code",
+                    {
+                        "title": "x"
+                    }
+                ]
+            }
+        ]
+    },
+    "upsert no handler": {
+        "status": 501,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Upsert on a key is not available here."
+        },
+        "calls": []
+    },
+    "upsert updated": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "kept-uuid",
+                "slug": null,
+                "name": "kept-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "kept-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "upsert": [
+                    "code",
+                    {
+                        "title": "x"
+                    }
+                ]
+            }
+        ]
+    },
+    "webhook fails": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            {
+                "error": "[ObjectsController] Webhook interception failed"
+            },
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "webhook rewrites": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "title": "rewritten"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    }
+}

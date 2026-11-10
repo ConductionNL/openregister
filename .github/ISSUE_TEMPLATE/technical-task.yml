@@ -1,0 +1,92 @@
+name: "⚙️ Technische Taak"
+description: "Infra, refactor, technische schuld of ops-werk"
+title: "[TECH] "
+labels: ["technical", "needs-refinement"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Technische Taak
+        Gebruik dit template voor infra-wijzigingen, refactoring, technische schuld of operationeel werk zonder directe gebruikerswaarde.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Beschrijving"
+      description: "Wat moet er gedaan worden en waarom?"
+      placeholder: "Migreer de WOO-platform PVC's naar S3 primary storage op Fuga Cloud."
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: "Motivatie / Aanleiding"
+      description: "Welk probleem lost dit op? Waarom nu?"
+      placeholder: "Huidige lokale PVC's lopen vol en zijn niet HA. Zie ook issue #123."
+    validations:
+      required: false
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: "Aanpak (globaal)"
+      description: "Hoe gaan we dit oplossen? Welke keuzes zijn al gemaakt?"
+      placeholder: |
+        1. Backup bestaande data
+        2. S3 bucket aanmaken op Fuga Cloud
+        3. Nextcloud occ storage:update uitvoeren
+        4. Smoke test per namespace
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: "Acceptatiecriteria"
+      value: |
+        - [ ] Taak uitvoerbaar via Ansible/Terraform (geen handmatige stappen)
+        - [ ] Gedocumenteerd in runbook of ADR
+        - [ ] Getest in acceptatieomgeving vóór productie
+        - [ ] Rollback-procedure beschreven
+        - [ ] Geen downtime buiten afgesproken window
+        - [ ] Gereviewd (4-eyes)
+        - [ ] Geen nieuwe security findings
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: "Risico's / Afhankelijkheden"
+      placeholder: "Afhankelijk van beschikbaarheid acceptatieomgeving. Risico: dataverlies bij fout in migratiescript."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: "Categorie"
+      options:
+        - "Infra / ops"
+        - "Refactor"
+        - "Technische schuld"
+        - "Security"
+        - "Performance"
+        - "CI/CD"
+        - "Documentatie"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "Prioriteit"
+      options:
+        - "🔴 Critical"
+        - "🟠 High"
+        - "🟡 Medium"
+        - "🟢 Low"
+    validations:
+      required: true

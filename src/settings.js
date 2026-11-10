@@ -1,23 +1,35 @@
-import Vue from 'vue'
-import { createPinia, PiniaVuePlugin } from 'pinia'
-import Settings from './views/settings/Settings.vue'
+import { loadState } from '@nextcloud/initial-state'
 import { translate, translatePlural } from '@nextcloud/l10n'
+import { createPinia } from 'pinia'
+import { createApp, h } from 'vue'
+import Settings from './views/settings/Settings.vue'
+import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
-// Install Pinia plugin
-Vue.use(PiniaVuePlugin)
+// Register nextcloud-vue's own catalogue before anything renders, so the
+// library's labels follow the reader's language on this page too.
+registerLibraryTranslations()
+
+// Bootstrap the integration registry on the admin-settings bundle too —
+// any sub-component that calls useIntegrationRegistry() needs the registry
+// populated before render. Idempotent. See ADR-019.
+ensureIntegrationRegistry()
 
 // Create Pinia instance
 const pinia = createPinia()
 
-// Add translation methods to Vue prototype
-Vue.mixin({
+// Read push status from PHP initial state (provided by OpenRegisterAdmin::getForm()).
+const pushStatus = loadState('openregister', 'push_status', 'not_installed')
+
+const app = createApp({
+	render: () => h(Settings, { pushStatus }),
+})
+
+app.mixin({
 	methods: {
 		t: translate,
 		n: translatePlural,
 	},
 })
-
-new Vue({
-	pinia,
-	render: h => h(Settings),
-}).$mount('#settings')
+app.use(pinia)
+app.mount('#settings')

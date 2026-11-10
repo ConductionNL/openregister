@@ -1,19 +1,35 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { navigationStore, schemaStore, objectStore, registerStore } from '../../store/store.js'
+import {
+	navigationStore,
+	objectStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.modal === 'deleteSchemaProperty'"
 		name="Verwijder Schema-eigenschap"
-		:can-close="false">
+		size="small"
+		:loading="loading"
+		:cancelDisabled="loading"
+		:closeLabel="success !== null ? 'Sluiten' : 'Annuleren'"
+		confirmLabel="Verwijder"
+		:showConfirm="success === null"
+		:confirmDisabled="!canDelete"
+		@cancel="closeModal"
+		@confirm="deleteProperty()">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
 				<p>Schema-eigenschap succesvol verwijderd</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="!success" type="error">
-				<p>Er is een fout opgetreden bij het verwijderen van de schema-eigenschap</p>
+				<p>
+					Er is een fout opgetreden bij het verwijderen van de
+					schema-eigenschap
+				</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="error" type="error">
 				<p>{{ error }}</p>
@@ -21,51 +37,42 @@ import { navigationStore, schemaStore, objectStore, registerStore } from '../../
 		</div>
 
 		<p v-if="success === null">
-			Weet u zeker dat u <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]?.title }}</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Weet u zeker dat u
+			<b>{{
+				schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+					?.title
+			}}</b>
+			permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 		<NcNoteCard v-if="!canDelete" type="warning">
-			<p>Meerdere objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken.</p>
+			<p>
+				Meerdere objecten zullen niet beschikbaar zijn, omdat ze deze
+				eigenschap gebruiken.
+			</p>
 		</NcNoteCard>
-		<template #actions>
-			<NcButton :disabled="loading" icon="" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success !== null ? 'Sluiten' : 'Annuleren' }}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || !canDelete"
-				icon="Delete"
-				type="error"
-				@click="deleteProperty()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-if="!loading" :size="20" />
-				</template>
-				Verwijder
-			</NcButton>
+		<template #confirmIcon>
+			<Delete :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcNoteCard, NcLoadingIcon } from '@nextcloud/vue'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { NcNoteCard } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import {
+	objectUsageGuard,
+	refreshSchemaObjects,
+} from '../../composables/objectUsageGuard.js'
 
 export default {
 	name: 'DeleteSchemaProperty',
-	components: {
-		NcDialog,
-		NcButton,
-		NcNoteCard,
-		NcLoadingIcon,
-		// Icons
-		Cancel,
-		Delete,
-	},
+	components: { ConfirmDialogFrame, NcNoteCard, Delete },
+
+	mixins: [
+		objectUsageGuard(() => navigationStore.modal === 'deleteSchemaProperty'),
+	],
+
 	data() {
 		return {
 			loading: false,
@@ -73,21 +80,13 @@ export default {
 			error: false,
 			closeModalTimeout: null,
 			objects: [],
-			isUpdated: false,
 		}
 	},
-	computed: {
-		canDelete() {
-			return this.objects.length === 0
-		},
-	},
-	updated() {
-		if (!this.isUpdated && navigationStore.modal === 'deleteSchemaProperty') {
-			this.isUpdated = true
-			this.initDialog()
-		}
-	},
+
 	methods: {
+		/**
+		 * @spec exclude Scans registers/objects for usage of the property to populate the warning list; UI form-loading plumbing.
+		 */
 		async initDialog() {
 			await registerStore.refreshRegisterList()
 			if (registerStore.registerList.length === 0) {
@@ -95,14 +94,16 @@ export default {
 			}
 
 			for (const reg of registerStore.registerList) {
-				if (reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id)) {
-					await objectStore.refreshObjectList({
-						register: reg.id,
-						schema: schemaStore.schemaItem.id,
-						search: '',
-					})
+				if (
+					reg.schemas.some(
+						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
+					)
+				) {
+					await refreshSchemaObjects(reg)
 					if (objectStore.getCollection(objectStore.currentType).length) {
-						for (const obj of objectStore.getCollection(objectStore.currentType)) {
+						for (const obj of objectStore.getCollection(
+							objectStore.currentType,
+						)) {
 							if (obj[schemaStore.schemaPropertyKey]) {
 								this.objects.push(obj)
 							}
@@ -111,6 +112,10 @@ export default {
 				}
 			}
 		},
+
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and local state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
@@ -120,6 +125,10 @@ export default {
 			this.objects = []
 			this.isUpdated = false
 		},
+
+		/**
+		 * @spec exclude Delete-confirm handler removing the property and delegating to schemaStore.saveSchema; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		deleteProperty() {
 			this.loading = true
 
@@ -130,11 +139,12 @@ export default {
 			const newSchemaItem = {
 				...schemaItemClone,
 				required: schemaItemClone.required.filter(
-					requiredProp => requiredProp !== schemaStore.schemaPropertyKey,
+					(requiredProp) => requiredProp !== schemaStore.schemaPropertyKey,
 				),
 			}
 
-			schemaStore.saveSchema(newSchemaItem)
+			schemaStore
+				.saveSchema(newSchemaItem)
 				.then(({ response }) => {
 					this.loading = false
 					this.success = response.ok

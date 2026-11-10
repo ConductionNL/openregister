@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Test object metadata from searchObjects
  */
@@ -19,24 +20,23 @@ echo "=== OBJECT METADATA TEST ===\n\n";
 echo "HTTP Code: $httpCode\n\n";
 
 if ($httpCode === 200) {
-    $result = json_decode($response, true);
-    $objects = $result['results'] ?? [];
-    
-    if (!empty($objects)) {
-        $object = $objects[0];
-        echo "Object ID: " . ($object['id'] ?? 'N/A') . "\n";
-        echo "UUID: " . ($object['uuid'] ?? $object['_uuid'] ?? 'N/A') . "\n";
-        echo "Register: " . ($object['_register'] ?? $object['register'] ?? 'N/A') . "\n";
-        echo "Schema: " . ($object['_schema'] ?? $object['schema'] ?? 'N/A') . "\n";
-        echo "URI: " . ($object['uri'] ?? $object['_uri'] ?? 'N/A') . "\n\n";
-        
-        echo "Full object:\n";
-        echo json_encode($object, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
-    } else {
-        echo "No objects found\n";
-    }
-} else {
-    echo "Error! HTTP $httpCode\n";
-    echo $response . "\n";
-}
+	$result = json_decode($response, true);
+	$objects = $result['results'] ?? [];
 
+	if (!empty($objects)) {
+		$object = $objects[0];
+		echo 'Object ID: ' . ($object['id'] ?? 'N/A') . "\n";
+		echo 'UUID: ' . ($object['uuid'] ?? $object['_uuid'] ?? 'N/A') . "\n";
+		echo 'Register: ' . ($object['_register'] ?? $object['register'] ?? 'N/A') . "\n";
+		echo 'Schema: ' . ($object['_schema'] ?? $object['schema'] ?? 'N/A') . "\n";
+		echo 'URI: ' . ($object['uri'] ?? $object['_uri'] ?? 'N/A') . "\n\n";
+
+		echo "Full object:\n";
+		echo json_encode($object, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+	} else {
+		echo "No objects found\n";
+	}
+} else {
+	echo "Error! HTTP $httpCode\n";
+	echo $response . "\n";
+}

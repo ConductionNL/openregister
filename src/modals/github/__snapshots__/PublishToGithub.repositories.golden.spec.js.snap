@@ -1,0 +1,4175 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=two",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [
+      {
+        "name": "dev",
+      },
+      {
+        "default": true,
+        "name": "main",
+      },
+    ],
+    "error": null,
+    "filePath": "x/y.json",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": "dev",
+    "selectedRepository": "acme/two",
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=two",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [
+      {
+        "name": "dev",
+      },
+      {
+        "default": true,
+        "name": "main",
+      },
+    ],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": "main",
+    "selectedRepository": "acme/two",
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches listed, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=two",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load branches:",
+      "Error: No access",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "No access",
+    "filePath": "x/y.json",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": "dev",
+    "selectedRepository": "acme/two",
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=two",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load branches:",
+      "Error: No access",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "No access",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": "acme/two",
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads listed, branches refused, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [
+      {
+        "full_name": "acme/one",
+        "name": "one",
+        "owner": "acme",
+      },
+      {
+        "full_name": "acme/two",
+        "name": "two",
+        "owner": "acme",
+      },
+    ],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches listed, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads networkDown, branches refused, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Network",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Network",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches listed, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedNamed, branches refused, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Token expired",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Token expired",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches listed, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads refusedSilent, branches refused, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error: Failed to load repositories",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches listed, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads silentThrow, branches refused, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+    [
+      "console.error",
+      "Failed to load repositories:",
+      "Error",
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": "Failed to load repositories",
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches listed, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity full, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity full, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity gone, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity gone, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity none, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity none, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity repoOnly, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity repoOnly, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity unpublished, preselect false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;
+
+exports[`PublishToGithub.loadRepositories loads unlisted, branches refused, entity unpublished, preselect true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/configurations/github/repositories",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "GET",
+      },
+      true,
+      null,
+    ],
+  ],
+  "state": {
+    "branches": [],
+    "error": null,
+    "filePath": "",
+    "loadingBranches": false,
+    "loadingRepositories": false,
+    "repositories": [],
+    "selectedBranch": null,
+    "selectedRepository": null,
+  },
+}
+`;

@@ -1,0 +1,154 @@
+{
+  "change": "integration-xwiki",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-05-11",
+  "tracking_issue": 1326,
+  "depends_on_issues": [1307],
+  "tasks": [
+    {
+      "id": "1.1",
+      "section": "Backend",
+      "title": "Create lib/Service/Integration/Providers/XwikiProvider.php",
+      "description": "Provider class with id='xwiki', label='Articles', icon='FileDocumentMultiple', group='external', requiredApp=null, storage='external', getOpenConnectorSource()='xwiki'.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: XWiki Provider Registration",
+      "files_likely_affected": ["lib/Service/Integration/Providers/XwikiProvider.php"]
+    },
+    {
+      "id": "1.2",
+      "section": "Backend",
+      "title": "Declare auth requirements (basic or oauth2, configurable at source level)",
+      "description": "XwikiProvider::authRequirements() returns the OpenConnector source's declared auth type. Basic auth and OAuth2 both supported depending on customer XWiki version.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: External Routing via OpenConnector",
+      "files_likely_affected": ["lib/Service/Integration/Providers/XwikiProvider.php"]
+    },
+    {
+      "id": "1.3",
+      "section": "Backend",
+      "title": "Delegate CRUD to ExternalIntegrationRouter",
+      "description": "All CRUD methods on XwikiProvider delegate to ExternalIntegrationRouter (from the umbrella). Provider stays thin; routing logic stays in the umbrella's router.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: External Routing via OpenConnector",
+      "files_likely_affected": ["lib/Service/Integration/Providers/XwikiProvider.php"]
+    },
+    {
+      "id": "1.4",
+      "section": "Backend",
+      "title": "Ship OpenConnector source config template config/openconnector-sources/xwiki.yaml",
+      "description": "YAML template declaring the xWiki source: base URL, auth type, headers (Accept: application/json), pagination shape. Admins import this once.",
+      "status": "pending",
+      "spec_ref": "design.md#Files Affected",
+      "files_likely_affected": ["config/openconnector-sources/xwiki.yaml"]
+    },
+    {
+      "id": "1.5",
+      "section": "Backend",
+      "title": "DI-tag the provider",
+      "description": "Register XwikiProvider as DI-tagged service in lib/AppInfo/Application.php so IntegrationRegistry picks it up automatically.",
+      "status": "pending",
+      "spec_ref": "../pluggable-integration-registry/proposal.md#IntegrationRegistry service",
+      "files_likely_affected": ["lib/AppInfo/Application.php"]
+    },
+    {
+      "id": "1.6",
+      "section": "Backend",
+      "title": "Unit tests (OpenConnector client mocked)",
+      "description": "tests/Unit/Service/Integration/Providers/XwikiProviderTest.php — at least 5 test methods: registration, auth requirements, list pages, get page, missing-page exception.",
+      "status": "pending",
+      "spec_ref": "design.md#Risks",
+      "files_likely_affected": ["tests/Unit/Service/Integration/Providers/XwikiProviderTest.php"]
+    },
+    {
+      "id": "2.1",
+      "section": "Frontend — Tab",
+      "title": "CnXwikiTab.vue — linked pages with title + full breadcrumb",
+      "description": "Tab component listing linked xWiki pages. Each row shows title + full breadcrumb (Wiki / Department / Subspace / Page). Link-by-URL (parses to space.page) or link-by-path. Unlink action. Auth-expired banner.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Breadcrumb in Tab",
+      "files_likely_affected": ["src/components/CnXwikiTab/CnXwikiTab.vue", "src/components/CnXwikiTab/index.js"]
+    },
+    {
+      "id": "2.2",
+      "section": "Frontend — Tab",
+      "title": "Barrel + tests",
+      "description": "src/components/CnXwikiTab/index.js export + tests/components/CnXwikiTab.test.js covering link-by-URL parsing, breadcrumb rendering, auth-expired banner.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: Paste URL resolves to canonical reference",
+      "files_likely_affected": ["src/components/CnXwikiTab/index.js", "tests/components/CnXwikiTab.test.js"]
+    },
+    {
+      "id": "3.1",
+      "section": "Frontend — Widget",
+      "title": "CnXwikiCard.vue — 4 surfaces with detail-page text preview",
+      "description": "Widget rendering across umbrella surfaces: user-dashboard (recent linked pages), app-dashboard (scoped to app), detail-page (linked pages + 500-char text preview + link to full page, macros stripped), single-entity (page-title + breadcrumb chip).",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Widget Surfaces",
+      "files_likely_affected": ["src/components/CnXwikiCard/CnXwikiCard.vue"]
+    },
+    {
+      "id": "3.2",
+      "section": "Frontend — Widget",
+      "title": "Barrel + surface tests",
+      "description": "Index export + tests covering all four surfaces. Security test: confirm macros are stripped, no <script> in preview output.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: Macros not executed in preview",
+      "files_likely_affected": ["src/components/CnXwikiCard/index.js", "tests/components/CnXwikiCard.test.js"]
+    },
+    {
+      "id": "4.1",
+      "section": "Registration",
+      "title": "src/integrations/builtin/xwiki.js — register with referenceType: 'xwiki'",
+      "description": "Frontend registry entry declaring the xWiki integration: tab + widget components, label, icon, group='external', referenceType='xwiki' so schema reference properties can render a chip.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Reference-Property Auto-Rendering",
+      "files_likely_affected": ["src/integrations/builtin/xwiki.js"]
+    },
+    {
+      "id": "5.1",
+      "section": "Quality",
+      "title": "Parity gate, nl+en translations, strict checks, ESLint",
+      "description": "scripts/check-integration-parity.sh passes (tab + widget both present). nl + en translations added for all user-facing strings. composer check:strict passes. npm run lint passes.",
+      "status": "pending",
+      "spec_ref": "../pluggable-integration-registry/proposal.md#Widget-parity contract",
+      "files_likely_affected": ["l10n/nl.json", "l10n/en.json"]
+    },
+    {
+      "id": "6.1",
+      "section": "Acceptance verification",
+      "title": "E2E: configure OpenConnector xwiki source, link a page, verify breadcrumb in tab + text preview on detail-page",
+      "description": "End-to-end test running against a real xWiki instance (the dev environment's openregister-xwiki container). Configures the OpenConnector source, links a page, asserts breadcrumb in tab, asserts 500-char preview on detail-page surface.",
+      "status": "pending",
+      "spec_ref": "tasks.md#Acceptance verification",
+      "files_likely_affected": ["tests/e2e/integration-xwiki.test.js"]
+    },
+    {
+      "id": "6.2",
+      "section": "Acceptance verification",
+      "title": "Link-by-URL test: paste full URL, verify resolution to canonical space.page",
+      "description": "Unit test for the URL parser. Pasting https://wiki.example/xwiki/bin/view/Dept/Policy/Privacy resolves to space='Dept.Policy', page='Privacy'.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: Paste URL resolves to canonical reference",
+      "files_likely_affected": ["tests/components/CnXwikiTab.test.js"]
+    },
+    {
+      "id": "6.3",
+      "section": "Acceptance verification",
+      "title": "Auth test, hide test, reference-property test",
+      "description": "Test auth-expired banner when source credentials fail. Test that the provider is hidden from the registry when its OpenConnector source is missing or disabled. Test reference-property rendering of an xwiki chip in CnFormDialog.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Requirement: Auth Expiry Surfacing",
+      "files_likely_affected": ["tests/Unit/Service/Integration/Providers/XwikiProviderTest.php", "tests/components/CnFormDialog-xwiki-ref.test.js"]
+    },
+    {
+      "id": "6.4",
+      "section": "Acceptance verification",
+      "title": "Security: verify XWiki macros are NOT executed in preview (text-only)",
+      "description": "Render a linked page containing a {{velocity}} macro. Confirm the macro is stripped from the preview text. Confirm no <script> or executable markup is included in the output. ADR-005 compliance.",
+      "status": "pending",
+      "spec_ref": "specs/generic-integrations/spec.md#Scenario: XWiki macro output sanitisation",
+      "files_likely_affected": ["tests/components/CnXwikiCard-security.test.js"]
+    }
+  ]
+}

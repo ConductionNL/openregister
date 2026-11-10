@@ -1,0 +1,138 @@
+{
+  "change": "action-registry",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 995,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Database migration for actions and action_logs tables",
+      "spec_ref": "Requirement 1",
+      "files_likely_affected": [
+        "lib/Migration/Version1Date20260325000000.php"
+      ],
+      "github_issue": 1050,
+      "status": "pending"
+    },
+    {
+      "id": 2,
+      "title": "Action entity and ActionMapper",
+      "spec_ref": "Requirement 1, 2, 13",
+      "files_likely_affected": [
+        "lib/Db/Action.php",
+        "lib/Db/ActionMapper.php"
+      ],
+      "github_issue": 1051,
+      "status": "pending"
+    },
+    {
+      "id": 3,
+      "title": "ActionLog entity and ActionLogMapper",
+      "spec_ref": "Requirement 9",
+      "files_likely_affected": [
+        "lib/Db/ActionLog.php",
+        "lib/Db/ActionLogMapper.php"
+      ],
+      "github_issue": 1052,
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "title": "Action lifecycle events",
+      "spec_ref": "Requirement 11",
+      "files_likely_affected": [
+        "lib/Event/ActionCreatedEvent.php",
+        "lib/Event/ActionUpdatedEvent.php",
+        "lib/Event/ActionDeletedEvent.php"
+      ],
+      "github_issue": 1053,
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "title": "ActionService business logic",
+      "spec_ref": "Requirement 1, 8, 9, 12",
+      "files_likely_affected": [
+        "lib/Service/ActionService.php"
+      ],
+      "github_issue": 1054,
+      "status": "pending"
+    },
+    {
+      "id": 6,
+      "title": "ActionExecutor for action execution orchestration",
+      "spec_ref": "Requirement 4, 5, 9, 10",
+      "files_likely_affected": [
+        "lib/Service/ActionExecutor.php"
+      ],
+      "github_issue": 1055,
+      "status": "pending"
+    },
+    {
+      "id": 7,
+      "title": "ActionListener event handler",
+      "spec_ref": "Requirement 3, 4, 5",
+      "files_likely_affected": [
+        "lib/Listener/ActionListener.php"
+      ],
+      "github_issue": 1056,
+      "status": "pending"
+    },
+    {
+      "id": 8,
+      "title": "ActionsController with CRUD API and routes",
+      "spec_ref": "Requirement 7, 8, 9, 12",
+      "files_likely_affected": [
+        "lib/Controller/ActionsController.php",
+        "appinfo/routes.php"
+      ],
+      "github_issue": 1057,
+      "status": "pending"
+    },
+    {
+      "id": 9,
+      "title": "ActionScheduleJob for cron-based scheduled actions",
+      "spec_ref": "Requirement 6",
+      "files_likely_affected": [
+        "lib/BackgroundJob/ActionScheduleJob.php"
+      ],
+      "github_issue": 1059,
+      "status": "pending"
+    },
+    {
+      "id": 10,
+      "title": "ActionRetryJob for failed action retries",
+      "spec_ref": "Requirement 10",
+      "files_likely_affected": [
+        "lib/BackgroundJob/ActionRetryJob.php"
+      ],
+      "github_issue": 1060,
+      "status": "pending"
+    },
+    {
+      "id": 11,
+      "title": "Application.php event listener and job registration",
+      "spec_ref": "Requirement 4, 6",
+      "files_likely_affected": [
+        "lib/AppInfo/Application.php"
+      ],
+      "github_issue": 1061,
+      "status": "pending"
+    },
+    {
+      "id": 12,
+      "title": "Unit tests for Action entity, mapper, service, executor, jobs",
+      "spec_ref": "All requirements",
+      "files_likely_affected": [
+        "tests/Unit/Db/ActionTest.php",
+        "tests/Unit/Db/ActionLogTest.php",
+        "tests/Unit/Service/ActionServiceTest.php",
+        "tests/Unit/Service/ActionExecutorTest.php",
+        "tests/Unit/Listener/ActionListenerTest.php",
+        "tests/Unit/BackgroundJob/ActionScheduleJobTest.php",
+        "tests/Unit/BackgroundJob/ActionRetryJobTest.php"
+      ],
+      "github_issue": 1062,
+      "status": "pending"
+    }
+  ]
+}

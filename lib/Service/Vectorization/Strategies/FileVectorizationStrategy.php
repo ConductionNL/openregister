@@ -5,6 +5,9 @@
  *
  * Strategy for vectorizing file chunks.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -15,11 +18,13 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/vector-embeddings/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -36,182 +41,160 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class FileVectorizationStrategy implements VectorizationStrategyInterface
-{
+class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 
-    /**
-     * Chunk mapper
-     *
-     * @var ChunkMapper
-     */
-    private ChunkMapper $chunkMapper;
+	/**
+	 * Constructor
+	 *
+	 * @param ChunkMapperInterface $chunkMapper Chunk mapper
+	 * @param IDBConnection $db Database connection
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		private readonly ChunkMapperInterface $chunkMapper,
+		private readonly IDBConnection $db,
+		private readonly LoggerInterface $logger,
+	) {
 
-    /**
-     * Database connection
-     *
-     * @var IDBConnection
-     */
-    private IDBConnection $db;
+	}//end __construct()
 
-    /**
-     * Logger
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
+	/**
+	 * Fetch file chunks for vectorization
+	 *
+	 * @param array $options Options: max_files, file_types
+	 *
+	 * @return \OCA\OpenRegister\Files\Db\Chunk[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Files\Db\Chunk>
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function fetchEntities(array $options): array {
+		$maxFiles = (int)($options['max_files'] ?? 0);
+		$fileTypes = $options['file_types'] ?? [];
 
-    /**
-     * Constructor
-     *
-     * @param ChunkMapper     $chunkMapper Chunk mapper
-     * @param IDBConnection   $db          Database connection
-     * @param LoggerInterface $logger      Logger
-     */
-    public function __construct(
-        ChunkMapper $chunkMapper,
-        IDBConnection $db,
-        LoggerInterface $logger
-    ) {
-        $this->chunkMapper = $chunkMapper;
-        $this->db          = $db;
-        $this->logger      = $logger;
-    }//end __construct()
+		$this->logger->debug(
+			message: '[FileVectorizationStrategy] Fetching file chunks',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'maxFiles' => $maxFiles,
+				'fileTypes' => $fileTypes,
+			]
+		);
 
-    /**
-     * Fetch file chunks for vectorization
-     *
-     * @param array $options Options: max_files, file_types
-     *
-     * @return \OCA\OpenRegister\Db\Chunk[]
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
-     */
-    public function fetchEntities(array $options): array
-    {
-        $maxFiles  = (int) ($options['max_files'] ?? 0);
-        $fileTypes = $options['file_types'] ?? [];
+		// Get all chunks for files (source_type = 'file').
+		// We'll need to query by source_type only.
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_chunks')
+			->where($qb->expr()->eq('source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
+			->orderBy('source_id', 'ASC')
+			->addOrderBy('chunk_index', 'ASC');
 
-        $this->logger->debug(
-            message: '[FileVectorizationStrategy] Fetching file chunks',
-            context: [
-                'file'      => __FILE__,
-                'line'      => __LINE__,
-                'maxFiles'  => $maxFiles,
-                'fileTypes' => $fileTypes,
-            ]
-        );
+		if ($maxFiles > 0) {
+			$qb->setMaxResults($maxFiles * 100);
+		}
 
-        // Get all chunks for files (source_type = 'file').
-        // We'll need to query by source_type only.
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from('openregister_chunks')
-            ->where($qb->expr()->eq('source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
-            ->orderBy('source_id', 'ASC')
-            ->addOrderBy('chunk_index', 'ASC');
+		/*
+		 * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance
+		 */
 
-        if ($maxFiles > 0) {
-            $qb->setMaxResults($maxFiles * 100);
-        }
+		$allChunks = $this->chunkMapper->findEntitiesPublic($qb);
 
-        /*
-         * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance
-         */
+		// Group by source_id and apply max_files limit.
+		$uniqueFiles = [];
+		$fileChunks = [];
 
-        $allChunks = $this->chunkMapper->findEntitiesPublic($qb);
+		foreach ($allChunks as $chunk) {
+			$sourceId = $chunk->getSourceId();
+			if (isset($uniqueFiles[$sourceId]) === false) {
+				$uniqueFiles[$sourceId] = true;
+				if ($maxFiles > 0 && count($uniqueFiles) > $maxFiles) {
+					break;
+				}
+			}
 
-        // Group by source_id and apply max_files limit.
-        $uniqueFiles = [];
-        $fileChunks  = [];
+			$fileChunks[] = $chunk;
+		}
 
-        foreach ($allChunks as $chunk) {
-            $sourceId = $chunk->getSourceId();
-            if (isset($uniqueFiles[$sourceId]) === false) {
-                $uniqueFiles[$sourceId] = true;
-                if ($maxFiles > 0 && count($uniqueFiles) > $maxFiles) {
-                    break;
-                }
-            }
+		return $fileChunks;
+	}//end fetchEntities()
 
-            $fileChunks[] = $chunk;
-        }
+	/**
+	 * Extract chunks from file
+	 *
+	 * @param mixed $entity Chunk entity
+	 *
+	 * @return ((int|string)|mixed|null)[][] Array of items with 'text' and chunk data
+	 *
+	 * @psalm-return list<array{end_offset: mixed|null, index: array-key, start_offset: mixed|null, text: mixed}>
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function extractVectorizationItems($entity): array {
+		// Entity is already a chunk, return it as a single item.
+		return [
+			[
+				'text' => $entity->getTextContent(),
+				'index' => $entity->getChunkIndex(),
+				'start_offset' => $entity->getStartOffset(),
+				'end_offset' => $entity->getEndOffset(),
+			],
+		];
+	}//end extractVectorizationItems()
 
-        return $fileChunks;
-    }//end fetchEntities()
+	/**
+	 * Prepare metadata for file chunk vector
+	 *
+	 * @param mixed $entity Chunk entity
+	 * @param array $item Chunk item
+	 *
+	 * @return (array|int|mixed|string)[] Metadata for storage
+	 *
+	 * @psalm-return array{
+	 *     entity_type: 'file',
+	 *     entity_id: string,
+	 *     chunk_index: mixed,
+	 *     total_chunks: int<0, max>,
+	 *     chunk_text: string,
+	 *     additional_metadata: array{
+	 *         source_id: mixed,
+	 *         start_offset: mixed,
+	 *         end_offset: mixed
+	 *     }
+	 * }
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function prepareVectorMetadata($entity, array $item): array {
+		// Get total chunks for this source.
+		$sourceChunks = $this->chunkMapper->findBySource('file', $entity->getSourceId());
+		$totalChunks = count($sourceChunks);
 
-    /**
-     * Extract chunks from file
-     *
-     * @param mixed $entity Chunk entity
-     *
-     * @return ((int|string)|mixed|null)[][] Array of items with 'text' and chunk data
-     *
-     * @psalm-return list<array{end_offset: mixed|null, index: array-key, start_offset: mixed|null, text: mixed}>
-     */
-    public function extractVectorizationItems($entity): array
-    {
-        // Entity is already a chunk, return it as a single item.
-        return [
-            [
-                'text'         => $entity->getTextContent(),
-                'index'        => $entity->getChunkIndex(),
-                'start_offset' => $entity->getStartOffset(),
-                'end_offset'   => $entity->getEndOffset(),
-            ],
-        ];
-    }//end extractVectorizationItems()
+		return [
+			'entity_type' => 'file',
+			'entity_id' => (string)$entity->getSourceId(),
+			'chunk_index' => $item['index'],
+			'total_chunks' => $totalChunks,
+			'chunk_text' => substr($item['text'], 0, 500),
+			// Preview.
+			'additional_metadata' => [
+				'source_id' => $entity->getSourceId(),
+				'start_offset' => $item['start_offset'],
+				'end_offset' => $item['end_offset'],
+			],
+		];
+	}//end prepareVectorMetadata()
 
-    /**
-     * Prepare metadata for file chunk vector
-     *
-     * @param mixed $entity Chunk entity
-     * @param array $item   Chunk item
-     *
-     * @return (array|int|mixed|string)[] Metadata for storage
-     *
-     * @psalm-return array{
-     *     entity_type: 'file',
-     *     entity_id: string,
-     *     chunk_index: mixed,
-     *     total_chunks: int<0, max>,
-     *     chunk_text: string,
-     *     additional_metadata: array{
-     *         source_id: mixed,
-     *         start_offset: mixed,
-     *         end_offset: mixed
-     *     }
-     * }
-     */
-    public function prepareVectorMetadata($entity, array $item): array
-    {
-        // Get total chunks for this source.
-        $sourceChunks = $this->chunkMapper->findBySource('file', $entity->getSourceId());
-        $totalChunks  = count($sourceChunks);
-
-        return [
-            'entity_type'         => 'file',
-            'entity_id'           => (string) $entity->getSourceId(),
-            'chunk_index'         => $item['index'],
-            'total_chunks'        => $totalChunks,
-            'chunk_text'          => substr($item['text'], 0, 500),
-        // Preview.
-            'additional_metadata' => [
-                'source_id'    => $entity->getSourceId(),
-                'start_offset' => $item['start_offset'],
-                'end_offset'   => $item['end_offset'],
-            ],
-        ];
-    }//end prepareVectorMetadata()
-
-    /**
-     * Get file ID as identifier
-     *
-     * @param mixed $entity Chunk entity
-     *
-     * @return string|int Source ID (file ID)
-     */
-    public function getEntityIdentifier($entity)
-    {
-        return $entity->getSourceId();
-    }//end getEntityIdentifier()
+	/**
+	 * Get file ID as identifier
+	 *
+	 * @param mixed $entity Chunk entity
+	 *
+	 * @return string|int Source ID (file ID)
+	 */
+	public function getEntityIdentifier($entity) {
+		return $entity->getSourceId();
+	}//end getEntityIdentifier()
 }//end class

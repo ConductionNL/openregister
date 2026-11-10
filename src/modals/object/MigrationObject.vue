@@ -1,37 +1,46 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="`Migrate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
+	<NcDialog
+		:name="`Migrate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
 		size="large"
-		:can-close="false">
+		noClose>
 		<!-- Source and Target Information -->
 		<div class="migration-overview">
 			<div class="source-info">
-				<h4>Source</h4>
+				<h4>{{ t('openregister', 'Source') }}</h4>
 				<div class="info-card">
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<DatabaseOutline :size="16" />
-							<span class="card-label">Register:</span>
+							<span class="card-label">{{
+								t('openregister', 'Register:')
+							}}</span>
 						</div>
-						<span class="card-value">{{ registerStore.registerItem?.title || registerStore.registerItem?.id }}</span>
+						<span class="card-value">{{
+							registerStore.registerItem?.title
+							|| registerStore.registerItem?.id
+						}}</span>
 					</div>
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<FileTreeOutline :size="16" />
-							<span class="card-label">Schema:</span>
+							<span class="card-label">{{
+								t('openregister', 'Schema:')
+							}}</span>
 						</div>
-						<span class="card-value">{{ schemaStore.schemaItem?.title || schemaStore.schemaItem?.id }}</span>
+						<span class="card-value">{{
+							schemaStore.schemaItem?.title
+							|| schemaStore.schemaItem?.id
+						}}</span>
 					</div>
 				</div>
 			</div>
 
-			<div class="migration-arrow">
-				→
-			</div>
+			<div class="migration-arrow">→</div>
 
 			<div class="source-info">
 				<h4>Target</h4>
@@ -39,16 +48,24 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<DatabaseOutline :size="16" />
-							<span class="card-label">Register:</span>
+							<span class="card-label">{{
+								t('openregister', 'Register:')
+							}}</span>
 						</div>
-						<span class="card-value">{{ targetRegister?.title || 'Not selected' }}</span>
+						<span class="card-value">{{
+							targetRegister?.title || 'Not selected'
+						}}</span>
 					</div>
 					<div class="card-item">
 						<div class="card-label-with-icon">
 							<FileTreeOutline :size="16" />
-							<span class="card-label">Schema:</span>
+							<span class="card-label">{{
+								t('openregister', 'Schema:')
+							}}</span>
 						</div>
-						<span class="card-value">{{ targetSchema?.title || 'Not selected' }}</span>
+						<span class="card-value">{{
+							targetSchema?.title || 'Not selected'
+						}}</span>
 					</div>
 				</div>
 			</div>
@@ -56,60 +73,45 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 		<!-- Step 1: Confirm Selection -->
 		<div v-if="step === 1" class="migration-step step-1">
-			<h3 class="step-title">
-				Confirm Object Selection
-			</h3>
+			<h3 class="step-title">Confirm Object Selection</h3>
 
 			<NcNoteCard type="info">
-				Review the selected objects below. You can remove any objects you don't want to migrate by clicking the remove button.
+				Review the selected objects below. You can remove any objects you
+				don't want to migrate by clicking the remove button.
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ selectedObjects.length }})</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{ obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || 'Unnamed Object' }}</strong>
-							<p class="object-id">
-								ID: {{ obj.id || obj['@self']?.id }}
-							</p>
-						</div>
-						<NcButton type="tertiary"
-							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent v-else name="No objects selected">
-					<template #description>
-						No objects are currently selected for migration.
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t(
+						'openregister',
+						'No objects are currently selected for migration.',
+					)
+				"
+				@remove="removeObject" />
 		</div>
 
 		<!-- Step 2: Select Target Register and Schema -->
 		<div v-if="step === 2" class="migration-step">
 			<h3>Select Target Register and Schema</h3>
-			<p>Choose the destination register and schema for the {{ selectedObjects.length }} selected object{{ selectedObjects.length > 1 ? 's' : '' }}:</p>
+			<p>
+				Choose the destination register and schema for the
+				{{ selectedObjects.length }} selected object{{
+					selectedObjects.length > 1 ? 's' : ''
+				}}:
+			</p>
 
 			<!-- Target Register Selection -->
 			<div class="selection-section">
 				<h4>Target Register</h4>
 				<NcSelect
 					v-model="targetRegister"
+					inputLabel="Target Register"
 					:options="availableRegisters"
 					label="title"
-					track-by="id"
-					placeholder="Select a register..."
-					@update:model-value="onRegisterChange" />
+					trackBy="id"
+					:placeholder="t('openregister', 'Select a register...')"
+					@update:modelValue="onRegisterChange" />
 			</div>
 
 			<!-- Target Schema Selection -->
@@ -117,33 +119,39 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<h4>Target Schema</h4>
 				<NcSelect
 					v-model="targetSchema"
+					inputLabel="Target Schema"
 					:options="availableSchemas"
 					label="title"
-					track-by="id"
-					placeholder="Select a schema..."
-					@update:model-value="onSchemaChange" />
+					trackBy="id"
+					:placeholder="t('openregister', 'Select a schema...')"
+					@update:modelValue="onSchemaChange" />
 			</div>
 		</div>
 
 		<!-- Step 3: Property Mapping -->
 		<div v-if="step === 3" class="migration-step">
 			<h3>Property Mapping</h3>
-			<p>Map properties from the source schema to the target schema. Properties not mapped will be discarded.</p>
+			<p>
+				Map properties from the source schema to the target schema.
+				Properties not mapped will be discarded.
+			</p>
 
 			<NcNoteCard type="info">
-				Configure how properties should be mapped when migrating from source schema
-				<strong>{{ schemaStore.schemaItem?.title }}</strong> to target schema <strong>{{ targetSchema?.title }}</strong>
+				Configure how properties should be mapped when migrating from source
+				schema
+				<strong>{{ schemaStore.schemaItem?.title }}</strong> to target schema
+				<strong>{{ targetSchema?.title }}</strong>
 			</NcNoteCard>
 
 			<div class="mapping-container">
 				<div class="mapping-header">
 					<div class="source-header">
 						<h4>Source Properties</h4>
-						<span class="schema-name">{{ schemaStore.schemaItem?.title }}</span>
+						<span class="schema-name">{{
+							schemaStore.schemaItem?.title
+						}}</span>
 					</div>
-					<div class="arrow-header">
-						→
-					</div>
+					<div class="arrow-header">→</div>
 					<div class="target-header">
 						<h4>Target Properties</h4>
 						<span class="schema-name">{{ targetSchema?.title }}</span>
@@ -151,25 +159,31 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				</div>
 
 				<div class="mapping-list">
-					<div v-for="sourceProperty in sourceProperties"
+					<div
+						v-for="sourceProperty in sourceProperties"
 						:key="sourceProperty.name"
 						class="mapping-row">
 						<div class="source-property">
-							<span class="property-name">{{ sourceProperty.name }}</span>
-							<span class="property-type">{{ sourceProperty.type }}</span>
+							<span class="property-name">{{
+								sourceProperty.name
+							}}</span>
+							<span class="property-type">{{
+								sourceProperty.type
+							}}</span>
 						</div>
-						<div class="mapping-arrow">
-							→
-						</div>
+						<div class="mapping-arrow">→</div>
 						<div class="target-property">
 							<NcSelect
 								v-model="uiMappings[sourceProperty.name]"
+								inputLabel="Ui Mappings[Source Property Name]"
 								:options="targetPropertyOptions"
 								label="label"
-								track-by="value"
-								:placeholder="'Map to target property...'"
+								trackBy="value"
+								placeholder="Map to target property..."
 								:clearable="true"
-								@update:model-value="updateMappingFromUI(sourceProperty.name)" />
+								@update:modelValue="
+									updateMappingFromUI(sourceProperty.name)
+								" />
 						</div>
 					</div>
 				</div>
@@ -178,14 +192,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 		<!-- Step 4: Migration Report -->
 		<div v-if="step === 4" class="migration-step">
-			<h3 class="report-title">
-				Migration Report
-			</h3>
+			<h3 class="report-title">Migration Report</h3>
 
 			<NcNoteCard v-if="migrationResult?.success" type="success">
 				<p>Objects successfully migrated!</p>
 			</NcNoteCard>
-			<NcNoteCard v-if="migrationResult && !migrationResult.success" type="error">
+			<NcNoteCard
+				v-if="migrationResult && !migrationResult.success"
+				type="error">
 				<p>Migration failed. Please check the details below.</p>
 			</NcNoteCard>
 
@@ -197,14 +211,24 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<div class="migration-detail">
 							<strong>Source:</strong>
 							<div class="migration-meta">
-								<span>{{ registerStore.registerItem?.title }} / {{ schemaStore.schemaItem?.title }}</span>
-								<span class="object-count">{{ selectedObjects.length }} object{{ selectedObjects.length > 1 ? 's' : '' }}</span>
+								<span
+									>{{ registerStore.registerItem?.title }} /
+									{{ schemaStore.schemaItem?.title }}</span
+								>
+								<span class="object-count"
+									>{{ selectedObjects.length }} object{{
+										selectedObjects.length > 1 ? 's' : ''
+									}}</span
+								>
 							</div>
 						</div>
 						<div class="migration-detail">
 							<strong>Target:</strong>
 							<div class="migration-meta">
-								<span>{{ targetRegister?.title }} / {{ targetSchema?.title }}</span>
+								<span
+									>{{ targetRegister?.title }} /
+									{{ targetSchema?.title }}</span
+								>
 							</div>
 						</div>
 					</div>
@@ -214,10 +238,24 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div class="report-section">
 					<h4>Statistics</h4>
 					<ul>
-						<li>Objects migrated: {{ migrationResult.statistics?.objectsMigrated || 0 }}</li>
-						<li>Objects failed: {{ migrationResult.statistics?.objectsFailed || 0 }}</li>
-						<li>Properties mapped: {{ migrationResult.statistics?.propertiesMapped || 0 }}</li>
-						<li>Properties discarded: {{ migrationResult.statistics?.propertiesDiscarded || 0 }}</li>
+						<li>
+							Objects migrated:
+							{{ migrationResult.statistics?.objectsMigrated || 0 }}
+						</li>
+						<li>
+							Objects failed:
+							{{ migrationResult.statistics?.objectsFailed || 0 }}
+						</li>
+						<li>
+							Properties mapped:
+							{{ migrationResult.statistics?.propertiesMapped || 0 }}
+						</li>
+						<li>
+							Properties discarded:
+							{{
+								migrationResult.statistics?.propertiesDiscarded || 0
+							}}
+						</li>
 					</ul>
 				</div>
 
@@ -225,12 +263,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div v-if="migrationResult.details?.length" class="report-section">
 					<h4>Migration Details</h4>
 					<div class="migration-details">
-						<div v-for="detail in migrationResult.details"
+						<div
+							v-for="detail in migrationResult.details"
 							:key="detail.objectId"
 							class="migration-detail-item">
 							<div class="detail-header">
-								<strong>{{ detail.objectTitle || detail.objectId }}</strong>
-								<span :class="['status', detail.success ? 'success' : 'error']">
+								<strong>{{
+									detail.objectTitle || detail.objectId
+								}}</strong>
+								<span
+									class="status"
+									:class="[detail.success ? 'success' : 'error']">
 									{{ detail.success ? 'Success' : 'Failed' }}
 								</span>
 							</div>
@@ -245,7 +288,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div v-if="migrationResult.warnings?.length" class="report-section">
 					<h4>Warnings</h4>
 					<ul>
-						<li v-for="warning in migrationResult.warnings" :key="warning" class="warning-text">
+						<li
+							v-for="warning in migrationResult.warnings"
+							:key="warning"
+							class="warning-text">
 							{{ warning }}
 						</li>
 					</ul>
@@ -255,7 +301,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div v-if="migrationResult.errors?.length" class="report-section">
 					<h4>Errors</h4>
 					<ul>
-						<li v-for="error in migrationResult.errors" :key="error" class="error-text">
+						<li
+							v-for="error in migrationResult.errors"
+							:key="error"
+							class="error-text">
 							{{ error }}
 						</li>
 					</ul>
@@ -264,16 +313,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
+			<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
 				{{ step === 4 ? 'Close' : 'Cancel' }}
 			</NcButton>
 
-			<NcButton v-if="step === 1"
+			<NcButton
+				v-if="step === 1"
 				:disabled="selectedObjects.length === 0"
-				type="primary"
+				variant="primary"
 				@click="nextStep">
 				<template #icon>
 					<ArrowRight :size="20" />
@@ -281,18 +331,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				Next
 			</NcButton>
 
-			<NcButton v-if="step === 2"
-				type="secondary"
-				@click="previousStep">
+			<NcButton v-if="step === 2" variant="secondary" @click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
 				Back
 			</NcButton>
 
-			<NcButton v-if="step === 2"
+			<NcButton
+				v-if="step === 2"
 				:disabled="!targetRegister || !targetSchema"
-				type="primary"
+				variant="primary"
 				@click="nextStep">
 				<template #icon>
 					<ArrowRight :size="20" />
@@ -300,18 +349,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				Next
 			</NcButton>
 
-			<NcButton v-if="step === 3"
-				type="secondary"
-				@click="previousStep">
+			<NcButton v-if="step === 3" variant="secondary" @click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
 				Back
 			</NcButton>
 
-			<NcButton v-if="step === 3"
+			<NcButton
+				v-if="step === 3"
 				:disabled="loading || !canMigrate"
-				type="primary"
+				variant="primary"
 				@click="performMigration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -327,44 +375,45 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 import {
 	NcButton,
 	NcDialog,
-	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
+import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 // Icons
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import selectedObjectsDialog, {
+	refreshObjectLists,
+} from './selectedObjectsDialog.js'
 
 export default {
 	name: 'MigrationObject',
 	components: {
+		SelectedObjectsList,
 		NcButton,
 		NcDialog,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		Cancel,
 		ArrowRight,
 		ArrowLeft,
-		Close,
 		DatabaseExport,
 		DatabaseOutline,
 		FileTreeOutline,
 	},
 
+	mixins: [selectedObjectsDialog],
+
 	data() {
 		return {
 			step: 1, // 1: confirm selection, 2: select target register/schema, 3: property mapping, 4: report
 			loading: false,
-			selectedObjects: [],
 			availableRegisters: [],
 			availableSchemas: [],
 			targetRegister: null,
@@ -377,9 +426,13 @@ export default {
 			migrationResult: null,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude Computed dropdown options from target-schema properties; UI presentation helper.
+		 */
 		targetPropertyOptions() {
-			const options = this.targetProperties.map(prop => ({
+			const options = this.targetProperties.map((prop) => ({
 				label: `${prop.name} (${prop.type})`,
 				value: prop.name,
 			}))
@@ -391,29 +444,43 @@ export default {
 
 			return options
 		},
+
+		/**
+		 * @spec exclude Computed enablement guard for the migrate button; UI validation helper.
+		 */
 		canMigrate() {
 			// Check if we have target register/schema and at least one property mapping
-			const hasValidMappings = Object.values(this.uiMappings).some(option => option && option.value)
+			const hasValidMappings = Object.values(this.uiMappings).some(
+				(option) => option && option.value,
+			)
 			return this.targetRegister && this.targetSchema && hasValidMappings
 		},
 	},
+
 	mounted() {
 		this.initializeMigration()
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		initializeMigration() {
-			// Get selected objects from the store or navigation context
-			this.selectedObjects = objectStore.selectedObjects || []
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-				return
+			this.initializeSelection()
+			if (this.selectedObjects.length > 0) {
+				this.loadAvailableRegisters()
 			}
-			this.loadAvailableRegisters()
 		},
+
+		/**
+		 * @spec exclude Fetches registers to populate the target-register select; UI form-loading plumbing.
+		 */
 		async loadAvailableRegisters() {
 			this.loading = true
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/registers')
+				const response = await fetch(
+					'/index.php/apps/openregister/api/registers?_extend[]=schemas',
+				)
 				const data = await response.json()
 				this.availableRegisters = data.results || []
 			} catch (error) {
@@ -423,37 +490,28 @@ export default {
 				this.loading = false
 			}
 		},
-		async onRegisterChange() {
-			if (!this.targetRegister) {
-				this.availableSchemas = []
-				this.targetSchema = null
-				return
-			}
 
-			this.loading = true
-			try {
-				const response = await fetch(`/index.php/apps/openregister/api/schemas?register=${this.targetRegister.id}`)
-				const data = await response.json()
-				this.availableSchemas = data.results || []
-			} catch (error) {
-				console.error('Error loading schemas:', error)
-				this.availableSchemas = []
-			} finally {
-				this.loading = false
-			}
+		/**
+		 * @spec exclude Offers the schemas of the chosen register; UI reactivity plumbing.
+		 */
+		onRegisterChange() {
+			this.availableSchemas = this.targetRegister?.schemas || []
+			this.targetSchema = null
 		},
+
+		/**
+		 * @spec exclude Loads schema properties when the target-schema select changes; UI reactivity plumbing.
+		 */
 		async onSchemaChange() {
 			if (!this.targetSchema) {
 				return
 			}
 			await this.loadSchemaProperties()
 		},
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-			}
-		},
+
+		/**
+		 * @spec exclude Wizard forward-navigation guard across migration steps; UI step plumbing.
+		 */
 		nextStep() {
 			if (this.step === 1 && this.selectedObjects.length > 0) {
 				this.step = 2
@@ -461,11 +519,19 @@ export default {
 				this.step = 3
 			}
 		},
+
+		/**
+		 * @spec exclude Wizard back-navigation across migration steps; UI step plumbing.
+		 */
 		previousStep() {
 			if (this.step > 1) {
 				this.step--
 			}
 		},
+
+		/**
+		 * @spec exclude Loads source+target schema properties and seeds mappings; UI form-loading plumbing.
+		 */
 		async loadSchemaProperties() {
 			if (!schemaStore.schemaItem || !this.targetSchema) {
 				return
@@ -473,12 +539,17 @@ export default {
 
 			try {
 				// Load source schema properties
-				this.sourceProperties = this.extractSchemaProperties(schemaStore.schemaItem)
+				this.sourceProperties = this.extractSchemaProperties(
+					schemaStore.schemaItem,
+				)
 
 				// Load target schema properties
-				const response = await fetch(`/index.php/apps/openregister/api/schemas/${this.targetSchema.id}`)
+				const response = await fetch(
+					`/index.php/apps/openregister/api/schemas/${this.targetSchema.id}`,
+				)
 				const targetSchemaData = await response.json()
-				this.targetProperties = this.extractSchemaProperties(targetSchemaData)
+				this.targetProperties =
+					this.extractSchemaProperties(targetSchemaData)
 
 				// Initialize property mappings
 				this.initializePropertyMappings()
@@ -489,11 +560,16 @@ export default {
 				console.error('Error loading schema properties:', error)
 			}
 		},
+
+		/**
+		 * @param {object} schema
+		 * @spec exclude Flattens a schema definition into a name/type/required list; UI presentation helper.
+		 */
 		extractSchemaProperties(schema) {
 			// Extract properties from schema definition
 			const properties = []
 			if (schema.properties) {
-				Object.keys(schema.properties).forEach(key => {
+				Object.keys(schema.properties).forEach((key) => {
 					properties.push({
 						name: key,
 						type: schema.properties[key].type || 'string',
@@ -503,27 +579,37 @@ export default {
 			}
 			return properties
 		},
+
+		/**
+		 * @spec exclude Auto-maps same-named source/target properties on load; UI form-init plumbing.
+		 */
 		initializePropertyMappings() {
 			this.mapping = {}
 			this.uiMappings = {}
 
 			// Auto-map properties with same names
-			this.sourceProperties.forEach(sourceProp => {
+			this.sourceProperties.forEach((sourceProp) => {
 				const matchingTarget = this.targetProperties.find(
-					targetProp => targetProp.name === sourceProp.name,
+					(targetProp) => targetProp.name === sourceProp.name,
 				)
 				if (matchingTarget) {
 					// Simple mapping: target property as key, source property as value
 					this.mapping[matchingTarget.name] = sourceProp.name
 
 					// Set up UI mapping
-					const targetOption = this.targetPropertyOptions.find(option => option.value === matchingTarget.name)
+					const targetOption = this.targetPropertyOptions.find(
+						(option) => option.value === matchingTarget.name,
+					)
 					if (targetOption) {
 						this.uiMappings[sourceProp.name] = targetOption
 					}
 				}
 			})
 		},
+
+		/**
+		 * @spec exclude Migrate-confirm handler posting the mapping to the /migrate endpoint and refreshing the list; UI orchestration plumbing.
+		 */
 		async performMigration() {
 			if (!this.canMigrate) {
 				return
@@ -534,31 +620,32 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await fetch('/index.php/apps/openregister/api/migrate', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
+				const response = await fetch(
+					'/index.php/apps/openregister/api/migrate',
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							sourceRegister: registerStore.registerItem.id,
+							sourceSchema: schemaStore.schemaItem.id,
+							targetRegister: this.targetRegister.id,
+							targetSchema: this.targetSchema.id,
+							objects: this.selectedObjects.map((obj) => obj.id),
+							mapping: this.mapping,
+						}),
 					},
-					body: JSON.stringify({
-						sourceRegister: registerStore.registerItem.id,
-						sourceSchema: schemaStore.schemaItem.id,
-						targetRegister: this.targetRegister.id,
-						targetSchema: this.targetSchema.id,
-						objects: this.selectedObjects.map(obj => obj.id),
-						mapping: this.mapping,
-					}),
-				})
+				)
 
+				const result = await response.json().catch(() => ({}))
 				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
+					throw new Error(result.error)
 				}
 
-				this.migrationResult = await response.json()
+				this.migrationResult = result
 				this.step = 4
-
-				// Refresh the object list
-				objectStore.refreshObjectList()
-
+				refreshObjectLists()
 			} catch (error) {
 				console.error('Error performing migration:', error)
 				this.migrationResult = {
@@ -570,29 +657,50 @@ export default {
 				this.loading = false
 			}
 		},
-		closeModal() {
+
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
+		 */
+		closeDialog() {
 			navigationStore.setModal(false)
 		},
+
+		/**
+		 * @param {string} _sourceProperty
+		 * @spec exclude UI-change handler re-syncing the mapping object; UI reactivity plumbing.
+		 */
 		updateMappingFromUI(_sourceProperty) {
 			// Convert UI mappings to our simple mapping format
 			this.convertUIToMapping()
 		},
+
+		/**
+		 * @spec exclude Converts the UI mapping model to the API mapping shape; UI data-shape helper.
+		 */
 		convertUIToMapping() {
 			// Convert from UI format (source -> target option) to our format (target -> source)
 			this.mapping = {}
 
-			for (const [sourceProp, targetOption] of Object.entries(this.uiMappings)) {
+			for (const [sourceProp, targetOption] of Object.entries(
+				this.uiMappings,
+			)) {
 				if (targetOption && targetOption.value) {
 					this.mapping[targetOption.value] = sourceProp
 				}
 			}
 		},
+
+		/**
+		 * @spec exclude Converts the API mapping shape back to the UI mapping model; UI data-shape helper.
+		 */
 		convertMappingToUI() {
 			// Convert from our format (target -> source) to UI format (source -> target option)
 			this.uiMappings = {}
 
 			for (const [targetProp, sourceProp] of Object.entries(this.mapping)) {
-				const targetOption = this.targetPropertyOptions.find(option => option.value === targetProp)
+				const targetOption = this.targetPropertyOptions.find(
+					(option) => option.value === targetProp,
+				)
 				if (targetOption) {
 					this.uiMappings[sourceProp] = targetOption
 				}
@@ -602,7 +710,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .migration-step {
 	padding: 0;
 }
@@ -611,45 +721,11 @@ export default {
 	padding-top: 0 !important;
 }
 
-.step-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
-
-.report-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
+@include step-title-rules;
 
 .migration-step h3 {
 	margin-bottom: 16px;
 	color: var(--color-main-text);
-}
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-.selected-objects-list {
-	max-height: 400px;
-	overflow-y: auto;
-	border: 1px solid var(--color-border);
-	border-radius: 4px;
-}
-
-.selected-object-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 12px;
-	border-bottom: 1px solid var(--color-border);
-	background-color: var(--color-background-hover);
-}
-
-.selected-object-item:last-child {
-	border-bottom: none;
 }
 
 .selection-section {
@@ -816,54 +892,17 @@ export default {
 	font-style: italic;
 }
 
-.loading-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 16px;
-	padding: 40px;
-}
+@include loading-container;
 
-.object-info strong {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--color-main-text);
-}
+@include report-section;
 
-.object-id {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-	margin: 0;
-}
-
-.report-section {
-	margin-bottom: 20px;
-	padding: 16px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-}
-
-.report-section h4 {
-	margin-bottom: 12px;
-	color: var(--color-main-text);
-}
-
-.report-section ul {
-	margin: 0;
-	padding-left: 20px;
-}
+@include report-section-h4-rules;
 
 .report-section li {
 	margin-bottom: 4px;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
+@include error-text-rules;
 
 .detail-grid {
 	display: grid;
@@ -872,11 +911,7 @@ export default {
 	margin: 16px 0;
 }
 
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
+@include detail-item;
 
 .detail-label {
 	font-weight: bold;
@@ -955,68 +990,5 @@ export default {
 	font-weight: bold;
 	color: var(--color-primary);
 	margin-top: 40px;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-	color: black;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-	color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-	color: #2d770f;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-	color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
 }
 </style>

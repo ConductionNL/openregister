@@ -22,6 +22,9 @@
  * - Optimized INSERT...ON DUPLICATE KEY UPDATE queries
  * - Reduced SQL overhead compared to generic table operations
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -39,13 +42,14 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
+use OCA\OpenRegister\Service\Object\ObjectVersionHandler;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -61,706 +65,937 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class MagicBulkHandler
-{
-
-    /**
-     * Maximum packet size buffer percentage (0.1 = 10%, 0.5 = 50%)
-     * Lower values = more conservative chunk sizes
-     *
-     * @var float
-     */
-    private float $maxPacketSizeBuffer = 0.5;
-
-    /**
-     * Cache for table columns to avoid repeated database queries
-     *
-     * @var array<string, array<string>>
-     */
-    private array $tableColumnsCache = [];
-
-    /**
-     * Constructor for MagicBulkHandler
-     *
-     * @param IDBConnection      $db                 Database connection for operations
-     * @param LoggerInterface    $logger             Logger for debugging and error reporting
-     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for business logic hooks
-     * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime input
-     */
-    public function __construct(
-        private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger,
-        private readonly IEventDispatcher $eventDispatcher,
-        private readonly DateTimeNormalizer $dateTimeNormalizer
-    ) {
-        // Try to get max_allowed_packet from database configuration.
-        $this->initializeMaxPacketSize();
-    }//end __construct()
-
-    /**
-     * Prepare objects for dynamic table structure
-     *
-     * @param array    $objects  Array of object data
-     * @param Register $register Register context
-     * @param Schema   $schema   Schema context
-     *
-     * @return (false|int|mixed|null|string)[][] Array of prepared object data
-     *
-     * @psalm-return list<non-empty-array<string, false|int|mixed|null|string>>
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
-     */
-    private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array
-    {
-        $prepared = [];
-        $now      = new DateTime();
-
-        foreach ($objects as $object) {
-            $preparedObject = [];
-
-            // Extract @self metadata.
-            // Handle both formats:
-            // 1. Objects with @self key (legacy format).
-            // 2. Flat selfData arrays (optimized format from TransformationHandler).
-            // Object is already a flat selfData array by default - use it directly.
-            $selfData = $object;
-            if (($object['@self'] ?? null) !== null) {
-                $selfData = $object['@self'];
-            }
-
-            // Map metadata to prefixed columns with proper fallbacks.
-            $uuid = $selfData['uuid'] ?? $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
-            $preparedObject['_uuid']         = $uuid;
-            $preparedObject['_register']     = $register->getId();
-            $preparedObject['_schema']       = $schema->getId();
-            $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
-            $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
-
-            // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s).
-            $createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
-            $preparedObject['_created'] = $this->formatDateTimeForDatabase(
-                value: $createdValue,
-                default: $now->format('Y-m-d H:i:s')
-            );
-
-            $preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
-
-            $preparedObject['_name']        = $selfData['name'] ?? $object['name'] ?? null;
-            $preparedObject['_description'] = $selfData['description'] ?? $object['description'] ?? null;
-            $preparedObject['_summary']     = $selfData['summary'] ?? $object['summary'] ?? null;
-            $preparedObject['_image']       = $selfData['image'] ?? $object['image'] ?? null;
-            $preparedObject['_slug']        = $selfData['slug'] ?? $object['slug'] ?? null;
-            $preparedObject['_uri']         = $selfData['uri'] ?? $object['uri'] ?? null;
-
-            // Calculate object size for storage analytics.
-            // This is the size of the serialized object data for storage analytics.
-            $objectSize = strlen(json_encode($object));
-            $preparedObject['_size'] = (string) $objectSize;
-
-            // Map relations (scanned UUIDs/URLs from object data).
-            $relations = $selfData['relations'] ?? $object['relations'] ?? null;
-            if ($relations !== null && is_array($relations) === true) {
-                $preparedObject['_relations'] = json_encode(array_values($relations));
-            } else if ($relations !== null && is_string($relations) === true && $relations !== '') {
-                // Only use string value if not empty (empty string is invalid JSON for PostgreSQL).
-                $preparedObject['_relations'] = $relations;
-            }
-
-            // Map ALL object properties to columns (camelCase → snake_case).
-            // Properties can be at top level OR in 'object' key (structured format).
-            $propertySource = $object['object'] ?? $object;
-            foreach ($propertySource as $propertyName => $value) {
-                // Skip metadata (already handled) and @self.
-                if ($propertyName === '@self' || str_starts_with($propertyName, '_') === true) {
-                    continue;
-                }
-
-                $columnName = $this->sanitizeColumnName(name: $propertyName);
-
-                // Convert empty strings to NULL for all schema properties.
-                // This is necessary because:
-                // 1. PostgreSQL rejects empty strings for JSON columns
-                // 2. Column types might differ from schema (e.g., table created with old schema)
-                // 3. Empty strings are semantically equivalent to NULL for most use cases.
-                if ($value === '') {
-                    $value = null;
-                }
-
-                // Convert complex values for database storage.
-                $preparedObject[$columnName] = $value;
-                if (is_array($value) === true || is_object($value) === true) {
-                    $preparedObject[$columnName] = json_encode($value);
-                }
-            }//end foreach
-
-            $prepared[] = $preparedObject;
-        }//end foreach
-
-        return $prepared;
-    }//end prepareObjectsForDynamicTable()
-
-    /**
-     * Calculate optimal chunk size for bulk operations
-     *
-     * @param array $objects Array of objects to analyze
-     *
-     * @return int Optimal chunk size
-     *
-     * @psalm-return int<5, 500>
-     */
-    private function calculateOptimalChunkSize(array $objects): int
-    {
-        if ($objects === []) {
-            return 50;
-        }
-
-        // Sample objects to estimate size.
-        $sampleSize = min(10, count($objects));
-        $totalSize  = 0;
-
-        for ($i = 0; $i < $sampleSize; $i++) {
-            $objectSize = strlen(json_encode($objects[$i]));
-            $totalSize += $objectSize;
-        }
-
-        $averageSize = $totalSize / $sampleSize;
-
-        // Calculate safe chunk size based on packet size.
-        $maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
-        $safeChunkSize = intval($maxPacketSize / $averageSize);
-
-        // Keep within reasonable bounds.
-        return max(5, min(500, $safeChunkSize));
-    }//end calculateOptimalChunkSize()
-
-    /**
-     * Get max_allowed_packet size from database
-     *
-     * @return int Max packet size in bytes
-     */
-    private function getMaxAllowedPacketSize(): int
-    {
-        try {
-            $stmt   = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
-            $result = $stmt->fetch();
-
-            if ($result !== false && (($result['Value'] ?? null) !== null)) {
-                return (int) $result['Value'];
-            }
-        } catch (\Exception $e) {
-            // Log error but continue with default.
-        }
-
-        // Default fallback value (16MB).
-        return 16777216;
-    }//end getMaxAllowedPacketSize()
-
-    /**
-     * Initialize max packet size buffer based on database configuration
-     *
-     * @return void
-     */
-    private function initializeMaxPacketSize(): void
-    {
-        try {
-            $maxPacketSize = $this->getMaxAllowedPacketSize();
-
-            // Adjust buffer based on detected packet size.
-            // 30% buffer for smaller packet sizes.
-            $this->maxPacketSizeBuffer = 0.3;
-            if ($maxPacketSize > 67108864) {
-                // > 64MB.
-                // 60% buffer.
-                $this->maxPacketSizeBuffer = 0.6;
-            } else if ($maxPacketSize > 33554432) {
-                // > 32MB.
-                // 50% buffer.
-                $this->maxPacketSizeBuffer = 0.5;
-            } else if ($maxPacketSize > 16777216) {
-                // > 16MB.
-                // 40% buffer.
-                $this->maxPacketSizeBuffer = 0.4;
-            }
-        } catch (\Exception $e) {
-            // Use default buffer on error.
-        }//end try
-    }//end initializeMaxPacketSize()
-
-    /**
-     * Sanitize column name for safe database usage
-     *
-     * @param string $name Column name to sanitize
-     *
-     * @return string Sanitized column name
-     */
-    private function sanitizeColumnName(string $name): string
-    {
-        // Convert camelCase to snake_case.
-        // Insert underscore before uppercase letters, then lowercase everything.
-        $name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-        $name = strtolower($name);
-
-        // Replace any remaining invalid characters with underscore.
-        $name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-        // Ensure it starts with a letter or underscore.
-        if (preg_match('/^[a-z_]/', $name) === false) {
-            $name = 'col_'.$name;
-        }
-
-        // Remove consecutive underscores.
-        $name = preg_replace('/_+/', '_', $name);
-
-        // Remove trailing underscores.
-        $name = rtrim($name, '_');
-
-        return $name;
-    }//end sanitizeColumnName()
-
-    /**
-     * Perform bulk upsert operation on dynamic table
-     *
-     * This method provides high-performance INSERT...ON CONFLICT DO UPDATE (PostgreSQL)
-     * or INSERT...ON DUPLICATE KEY UPDATE (MySQL/MariaDB) operations for dynamic tables.
-     * It returns complete objects with database-computed classification (created/updated/unchanged).
-     *
-     * @param array    $objects   Array of object data in standard format
-     * @param Register $register  Register context
-     * @param Schema   $schema    Schema context
-     * @param string   $tableName Target table name
-     *
-     * @return array Array of complete objects with object_status field
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @psalm-return list<array<string, mixed>>
-     */
-    public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName): array
-    {
-        if ($objects === []) {
-            return [];
-        }
-
-        // Prepare objects for dynamic table structure.
-        $preparedObjects = $this->prepareObjectsForDynamicTable(
-            objects: $objects,
-            register: $register,
-            schema: $schema
-        );
-
-        if ($preparedObjects === []) {
-            return [];
-        }
-
-        // Determine optimal chunk size.
-        $chunkSize = $this->calculateOptimalChunkSize(objects: $preparedObjects);
-        $chunks    = array_chunk($preparedObjects, $chunkSize);
-
-        $allResults = [];
-
-        // Process each chunk.
-        foreach ($chunks as $chunkIndex => $chunk) {
-            $chunkResults = $this->executeUpsertChunk(
-                chunk: $chunk,
-                tableName: $tableName,
-                chunkNumber: ($chunkIndex + 1)
-            );
-
-            $allResults = array_merge($allResults, $chunkResults);
-        }
-
-        // PERFORMANCE: Event dispatching disabled by default.
-        // Dispatching events for 20k+ objects causes 10x slowdown (5000 obj/s -> 500 obj/s).
-        // Enable via $dispatchEvents parameter when business logic hooks are needed.
-        // $this->dispatchBulkEvents(results: $allResults, register: $register, schema: $schema).
-        return $allResults;
-    }//end bulkUpsert()
-
-    /**
-     * Execute upsert operation for a single chunk
-     *
-     * @param array  $chunk       Chunk of prepared objects
-     * @param string $tableName   Target table name
-     * @param int    $chunkNumber Chunk number for logging
-     *
-     * @return array Array of complete objects with object_status
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @psalm-return list<array<string, mixed>>
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Bulk upsert requires complex data transformation logic
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     */
-    private function executeUpsertChunk(array $chunk, string $tableName, int $chunkNumber): array
-    {
-        if ($chunk === []) {
-            return [];
-        }
-
-        // Record operation start time for precise created/updated detection.
-        $operationStartTime = (new DateTime())->format('Y-m-d H:i:s');
-
-        // Get table columns to filter out non-existent columns.
-        $tableColumns = $this->getTableColumns(tableName: $tableName);
-
-        // Filter chunk data to only include columns that exist in the table.
-        $filteredChunk = [];
-        foreach ($chunk as $objectData) {
-            $filteredObject = [];
-            foreach ($objectData as $columnName => $value) {
-                if (in_array($columnName, $tableColumns, true) === true) {
-                    $filteredObject[$columnName] = $value;
-                    continue;
-                }
-
-                // Log dropped columns for debugging purposes.
-                $this->logger->debug(
-                    message: '[MagicBulkHandler] Dropping column not in table',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'column' => $columnName, 'table' => $tableName]
-                );
-            }
-
-            if (empty($filteredObject) === false) {
-                $filteredChunk[] = $filteredObject;
-            }
-        }
-
-        if (empty($filteredChunk) === true) {
-            return [];
-        }
-
-        // Deduplicate chunk by UUID (keep last occurrence).
-        // This prevents "cannot affect row a second time" PostgreSQL errors.
-        $deduplicatedChunk = [];
-        $seenUuids         = [];
-        foreach ($filteredChunk as $objectData) {
-            $uuid = $objectData['_uuid'] ?? null;
-            if ($uuid !== null) {
-                // Keep track of the position to allow overwriting.
-                if (isset($seenUuids[$uuid]) === true) {
-                    // Replace previous occurrence with this one (keep last).
-                    $deduplicatedChunk[$seenUuids[$uuid]] = $objectData;
-                    continue;
-                }
-
-                // Add new object.
-                $index = count($deduplicatedChunk);
-                $deduplicatedChunk[$index] = $objectData;
-                $seenUuids[$uuid]          = $index;
-            }
-        }
-
-        // Re-index array after deduplication.
-        $filteredChunk = array_values($deduplicatedChunk);
-
-        if (empty($filteredChunk) === true) {
-            return [];
-        }
-
-        // Get ALL unique columns from ALL objects in the chunk (not just the first one).
-        // This ensures that properties present in some objects but not others are included.
-        $columns = [];
-        foreach ($filteredChunk as $objectData) {
-            foreach (array_keys($objectData) as $column) {
-                if (in_array($column, $columns, true) === false) {
-                    $columns[] = $column;
-                }
-            }
-        }
-
-        $uuids      = array_column($filteredChunk, '_uuid');
-        $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-
-        // Get full table name with hardcoded prefix.
-        $fullTableName = 'oc_'.$tableName;
-
-        // ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
-        // This allows us to correctly classify created vs updated regardless of timestamp values.
-        // Important for CSV imports that preserve historical _created dates.
-        $existingUuids = [];
-        if (empty($uuids) === false) {
-            $placeholders = implode(',', array_fill(0, count($uuids), '?'));
-            $existsSql    = "SELECT `_uuid` FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
-            if ($isPostgres === true) {
-                $existsSql = "SELECT \"_uuid\" FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
-            }
-
-            try {
-                $existsStmt = $this->db->prepare($existsSql);
-                $existsStmt->execute(array_values($uuids));
-                $existingRows = $existsStmt->fetchAll();
-                foreach ($existingRows as $row) {
-                    $existingUuids[$row['_uuid']] = true;
-                }
-
-                $this->logger->debug(
-                    message: '[MagicBulkHandler] Pre-upsert UUID check',
-                    context: [
-                        'file'           => __FILE__,
-                        'line'           => __LINE__,
-                        'chunk'          => $chunkNumber,
-                        'total_uuids'    => count($uuids),
-                        'existing_uuids' => count($existingUuids),
-                        'new_uuids'      => count($uuids) - count($existingUuids),
-                    ]
-                );
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                    message: '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-                );
-            }//end try
-        }//end if
-
-        // Build column list with proper quoting.
-        $columnList = '`'.implode('`, `', $columns).'`';
-        if ($isPostgres === true) {
-            $columnList = '"'.implode('", "', $columns).'"';
-        }
-
-        // Build VALUES clause with parameters.
-        $valuesClause = [];
-        $parameters   = [];
-        $paramIndex   = 0;
-
-        foreach ($filteredChunk as $objectData) {
-            $rowValues = [];
-            foreach ($columns as $column) {
-                $paramName   = 'p'.$paramIndex;
-                $rowValues[] = ':'.$paramName;
-                $parameters[$paramName] = $objectData[$column] ?? null;
-                $paramIndex++;
-            }
-
-            $valuesClause[] = '('.implode(',', $rowValues).')';
-        }
-
-        // Build UPSERT SQL ($fullTableName already defined above for pre-upsert UUID check).
-        // MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
-        $sql  = "INSERT INTO `{$fullTableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
-        $sql .= ' ON DUPLICATE KEY UPDATE ';
-        if ($isPostgres === true) {
-            // PostgreSQL: INSERT...ON CONFLICT DO UPDATE.
-            $sql  = "INSERT INTO \"{$fullTableName}\" ({$columnList}) VALUES ".implode(',', $valuesClause);
-            $sql .= ' ON CONFLICT (_uuid) DO UPDATE SET ';
-        }
-
-        // Build UPDATE clauses.
-        $updateClauses = [];
-
-        foreach ($columns as $column) {
-            if ($column === '_uuid' || $column === '_created') {
-                // Never update UUID or created timestamp.
-                continue;
-            }
-
-            if ($column === '_updated') {
-                // Always update the updated timestamp.
-                $updateClauses[] = '`_updated` = NOW()';
-                if ($isPostgres === true) {
-                    $updateClauses[count($updateClauses) - 1] = '"_updated" = NOW()';
-                }
-
-                continue;
-            }
-
-            // Update all other columns.
-            $updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
-            if ($isPostgres === true) {
-                $updateClauses[count($updateClauses) - 1] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
-            }
-        }//end foreach
-
-        $sql .= implode(', ', $updateClauses);
-
-        // Execute UPSERT.
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($parameters);
-
-            $this->logger->info(
-                message: '[MagicBulkHandler] Executed UPSERT chunk',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'chunk'       => $chunkNumber,
-                    'objects'     => count($chunk),
-                    'table'       => $tableName,
-                    'sql_size_kb' => round(strlen($sql) / 1024, 2),
-                    'sql_preview' => substr($sql, 0, 150),
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[MagicBulkHandler] UPSERT chunk failed',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'chunk' => $chunkNumber,
-                    'table' => $tableName,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            throw $e;
-        }//end try
-
-        // Query back complete objects and apply classification based on pre-upsert UUID check.
-        $completeObjects = [];
-
-        if (empty($uuids) === false) {
-            $placeholders = implode(',', array_fill(0, count($uuids), '?'));
-
-            // Simple SELECT - classification will be done in PHP using $existingUuids.
-            $selectSql = "SELECT * FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
-            if ($isPostgres === true) {
-                $selectSql = "SELECT * FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
-            }
-
-            $stmt = $this->db->prepare($selectSql);
-            $stmt->execute(array_values($uuids));
-            $rawObjects = $stmt->fetchAll();
-
-            // Apply accurate classification based on pre-upsert UUID check.
-            // - 'created': UUID was NOT in existingUuids (new record inserted)
-            // - 'updated': UUID WAS in existingUuids AND _updated changed (record modified)
-            // - 'unchanged': UUID WAS in existingUuids AND _updated didn't change (no modification).
-            $createdCount   = 0;
-            $updatedCount   = 0;
-            $unchangedCount = 0;
-
-            foreach ($rawObjects as $obj) {
-                $objUuid = $obj['_uuid'] ?? null;
-
-                if (isset($existingUuids[$objUuid]) === false) {
-                    // UUID didn't exist before upsert - this is a newly created record.
-                    $obj['object_status'] = 'created';
-                    $createdCount++;
-                }
-
-                if (isset($existingUuids[$objUuid]) === true) {
-                    // UUID existed before - check if it was actually updated.
-                    // Compare _updated timestamp with operation start time.
-                    $updatedTime          = $obj['_updated'] ?? null;
-                    $obj['object_status'] = 'unchanged';
-                    $unchangedCount++;
-                    if ($updatedTime !== null && $updatedTime >= $operationStartTime) {
-                        $obj['object_status'] = 'updated';
-                        $unchangedCount--;
-                        $updatedCount++;
-                    }
-                }
-
-                $obj['operation_start_time'] = $operationStartTime;
-                $completeObjects[]           = $obj;
-            }//end foreach
-
-            $this->logger->info(
-                message: '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
-                context: [
-                    'file'             => __FILE__,
-                    'line'             => __LINE__,
-                    'chunk'            => $chunkNumber,
-                    'uuids_requested'  => count($uuids),
-                    'objects_returned' => count($completeObjects),
-                    'created'          => $createdCount,
-                    'updated'          => $updatedCount,
-                    'unchanged'        => $unchangedCount,
-                ]
-            );
-        }//end if
-
-        return $completeObjects;
-    }//end executeUpsertChunk()
-
-    /**
-     * Get list of columns that exist in a table
-     *
-     * @param string $tableName The table name
-     *
-     * @return array List of column names
-     *
-     * @psalm-return list<mixed>
-     */
-    private function getTableColumns(string $tableName): array
-    {
-        try {
-            $platform   = $this->db->getDatabasePlatform();
-            $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-
-            // Get full table name with hardcoded prefix.
-            $fullTableName = 'oc_'.$tableName;
-
-            // MySQL/MariaDB: use SHOW COLUMNS.
-            $sql = "SHOW COLUMNS FROM `$fullTableName`";
-            if ($isPostgres === true) {
-                // PostgreSQL: query information_schema with full table name.
-                $sql = "SELECT column_name
+class MagicBulkHandler {
+	use MagicColumnNameTrait;
+
+	/**
+	 * What the update half of an upsert leaves as stored.
+	 *
+	 * A bulk row carries the writer as owner and the writer's organisation, which
+	 * says who created a new row and nothing about an existing one. An owner only
+	 * changes through the ownership endpoint.
+	 *
+	 * @var array<int, string>
+	 */
+	private const COLUMNS_KEPT_ON_UPDATE = ['_uuid', '_created', '_version', '_owner', '_organisation'];
+
+	/**
+	 * Maximum packet size buffer percentage (0.1 = 10%, 0.5 = 50%)
+	 * Lower values = more conservative chunk sizes
+	 *
+	 * @var float
+	 */
+	private float $maxPacketSizeBuffer = 0.5;
+
+	/**
+	 * Cache for table columns to avoid repeated database queries
+	 *
+	 * @var array<string, array<string>>
+	 */
+	private array $tableColumnsCache = [];
+
+	/** @var array<string, bool> Tables whose schema has managed slugs (#4037): the upsert keeps a stored `_slug`. */
+	private array $managedSlugTables = [];
+
+	/**
+	 * Decides the version an inserted row starts on.
+	 *
+	 * Constructed rather than injected: it is stateless arithmetic over one
+	 * string, and version policy belongs in one class rather than being
+	 * re-stated wherever a row is written.
+	 *
+	 * @var ObjectVersionHandler
+	 */
+	private ObjectVersionHandler $versionHandler;
+
+	/**
+	 * Constructor for MagicBulkHandler
+	 *
+	 * @param IDBConnection $db Database connection for operations
+	 * @param LoggerInterface $logger Logger for debugging and error reporting
+	 * @param IEventDispatcher $eventDispatcher Event dispatcher for business logic hooks
+	 * @param DateTimeNormalizerInterface $dateTimeNormalizer Normaliser for user-supplied datetime input
+	 * @param IConfig $config Nextcloud config for reading the table prefix
+	 */
+	public function __construct(
+		private readonly IDBConnection $db,
+		private readonly LoggerInterface $logger,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly DateTimeNormalizerInterface $dateTimeNormalizer,
+		private readonly IConfig $config,
+	) {
+		// Try to get max_allowed_packet from database configuration.
+		$this->initializeMaxPacketSize();
+		$this->versionHandler = new ObjectVersionHandler();
+	}//end __construct()
+
+	/**
+	 * Build the full, prefixed table name for a bare magic table name.
+	 *
+	 * Uses the configured `dbtableprefix` rather than a hardcoded `oc_` so
+	 * raw-SQL paths work on installs with a custom prefix (BUG-DB-3).
+	 *
+	 * @param string $tableName The bare table name (without prefix).
+	 *
+	 * @return string The full table name including the configured prefix.
+	 */
+	private function getFullTableName(string $tableName): string {
+		return ((string)$this->config->getSystemValue('dbtableprefix', 'oc_')) . $tableName;
+	}//end getFullTableName()
+
+	/**
+	 * Prepare objects for dynamic table structure
+	 *
+	 * @param array $objects Array of object data
+	 * @param Register $register Register context
+	 * @param Schema $schema Schema context
+	 *
+	 * @return (false|int|mixed|null|string)[][] Array of prepared object data
+	 *
+	 * @psalm-return list<non-empty-array<string, false|int|mixed|null|string>>
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
+	 */
+	private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array {
+		$prepared = [];
+		$now = new DateTime();
+		$columnRoles = new MagicMetadataColumn();
+
+		foreach ($objects as $object) {
+			$preparedObject = [];
+
+			// Extract @self metadata.
+			// Handle both formats:
+			// 1. Objects with @self key (legacy format).
+			// 2. Flat selfData arrays (optimized format from TransformationHandler).
+			// Object is already a flat selfData array by default - use it directly.
+			$selfData = $object;
+			if (($object['@self'] ?? null) !== null) {
+				$selfData = $object['@self'];
+			}
+
+			// Map metadata to prefixed columns with proper fallbacks.
+			$uuid = $selfData['uuid'] ?? $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
+			$preparedObject['_uuid'] = $uuid;
+			$preparedObject['_register'] = $register->getId();
+			$preparedObject['_schema'] = $schema->getId();
+
+			// SECURITY (wave-11 SB2 — defense-in-depth layer 2): _owner and _organisation
+			// MUST already have been stamped with authoritative values by SaveObjects::
+			// prepareSingleSchemaObject() (the first strip layer).  This second strip
+			// ensures that any future code path that calls prepareObjectsForDynamicTable()
+			// directly (e.g. ImportService) cannot slip client-supplied values through.
+			// $selfData['owner'] and $selfData['organisation'] were already overwritten with
+			// the session-user and active-organisation values before this point.
+			// We do NOT fall back to $object['owner'] / $object['organisation'] here because
+			// those keys come from raw client JSON and must not be trusted.
+			$preparedObject['_owner'] = $selfData['owner'] ?? null;
+			$preparedObject['_organisation'] = $selfData['organisation'] ?? null;
+
+			// Format datetime fields to MySQL-compatible format (Y-m-d H:i:s).
+			$createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
+			$preparedObject['_created'] = $this->formatDateTimeForDatabase(
+				value: $createdValue,
+				default: $now->format('Y-m-d H:i:s')
+			);
+
+			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
+			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object, selfData: $selfData);
+
+			$preparedObject = $this->withDisplayColumns(
+				prepared: $preparedObject,
+				selfData: $selfData,
+				object: $object,
+				managedSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema)
+			);
+
+			$preparedObject['_version'] = $this->versionHandler->initialVersionFor(candidate: ($selfData['version'] ?? $object['version'] ?? null));
+
+			// Calculate object size for storage analytics.
+			// This is the size of the serialized object data for storage analytics.
+			$objectSize = strlen(json_encode($object));
+			$preparedObject['_size'] = (string)$objectSize;
+
+			// Map relations (scanned UUIDs/URLs from object data).
+			$relations = $selfData['relations'] ?? $object['relations'] ?? null;
+			if ($relations !== null && is_array($relations) === true) {
+				$preparedObject['_relations'] = json_encode(array_values($relations));
+			} elseif ($relations !== null && is_string($relations) === true && $relations !== '') {
+				// Only use string value if not empty (empty string is invalid JSON for PostgreSQL).
+				$preparedObject['_relations'] = $relations;
+			}
+
+			// Map ALL object properties to columns (camelCase → snake_case).
+			// Properties can be at top level OR in 'object' key (structured format).
+			$propertySource = $object['object'] ?? $object;
+			foreach ($propertySource as $propertyName => $value) {
+				// A declared property that would write a metadata column is skipped
+				// with the undeclared `_` keys and `@self`: the metadata columns were
+				// stamped above and a client value must not replace them.
+				if ($columnRoles->skippedOnWrite(key: (string)$propertyName, schemaProperties: ($schema->getProperties() ?? [])) === true) {
+					continue;
+				}
+
+				$columnName = $this->sanitizeColumnName(name: $propertyName);
+
+				// Convert empty strings to NULL for all schema properties.
+				// This is necessary because:
+				// 1. PostgreSQL rejects empty strings for JSON columns
+				// 2. Column types might differ from schema (e.g., table created with old schema)
+				// 3. Empty strings are semantically equivalent to NULL for most use cases.
+				$value = match ($value) { '' => null, default => $value };
+
+				// Convert complex values for database storage.
+				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
+			}//end foreach
+
+			$prepared[] = $preparedObject;
+		}//end foreach
+
+		return $prepared;
+	}//end prepareObjectsForDynamicTable()
+
+
+	/**
+	 * Map the six display-metadata columns onto a prepared row.
+	 *
+	 * Each reads `@self` first and the raw payload second, which is the same
+	 * fallback the surrounding method applies to every other metadata column.
+	 * Extracted as a group because they share that rule exactly, and because
+	 * `prepareObjectsForDynamicTable()` sits on the method-length threshold.
+	 *
+	 * @param array<string, mixed> $prepared The row being built.
+	 * @param array<string, mixed> $selfData The object's `@self` metadata.
+	 * @param array<string, mixed> $object The raw object payload.
+	 * @param bool $managedSlug Whether the schema has managed slugs; only then is a slug carried onto the row.
+	 *
+	 * @return array<string, mixed> The row with the display columns set.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `managedSlug` is a fact about the schema, carried to the one column that varies on it.
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
+	 */
+	private function withDisplayColumns(array $prepared, array $selfData, array $object, bool $managedSlug=false): array {
+		$prepared['_name'] = $selfData['name'] ?? $object['name'] ?? null;
+		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
+		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
+		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
+		$prepared['_slug'] = match ($managedSlug) {
+			true => MagicBulkUpsertSql::managedRowSlug(selfData: $selfData, object: $object),
+			false => MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object),
+		};
+		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
+
+		return $prepared;
+	}//end withDisplayColumns()
+
+	/**
+	 * Copy an object's expiry into the prepared row's `_expires` column, when it has one.
+	 *
+	 * An expiry is METADATA, not a property: it lives in the metadata block
+	 * (`@self`, or the flat selfData shape whose properties sit under `object`)
+	 * and lands in the indexed `_expires` column that purgeExpired() sweeps. It
+	 * is deliberately NOT read from a bare property map: a schema is free to
+	 * declare its own `expires` property, and that must stay a plain data
+	 * column rather than silently scheduling the row for deletion. A row that
+	 * carries no expiry gets NO `_expires` key, so an upsert of an existing row
+	 * leaves its expiry alone; a row inserted without one keeps NULL and is
+	 * never purged.
+	 *
+	 * @param array $prepared The prepared row so far.
+	 * @param array $object   The object as passed to bulkUpsert().
+	 * @param array $selfData The object's metadata block.
+	 *
+	 * @return array The prepared row, with `_expires` set when the object carries an expiry.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	private function withExpiry(array $prepared, array $object, array $selfData): array {
+		$hasMetadataBlock = (($object['@self'] ?? null) !== null || isset($object['object']) === true);
+		$expiresValue = $selfData['expires'] ?? null;
+		if ($expiresValue === null || $hasMetadataBlock === false) {
+			return $prepared;
+		}
+
+		$prepared['_expires'] = $this->formatDateTimeForDatabase(value: $expiresValue, default: null);
+
+		return $prepared;
+	}//end withExpiry()
+
+	/**
+	 * Calculate optimal chunk size for bulk operations
+	 *
+	 * @param array $objects Array of objects to analyze
+	 *
+	 * @return int Optimal chunk size
+	 *
+	 * @psalm-return int<5, 500>
+	 */
+	private function calculateOptimalChunkSize(array $objects): int {
+		if ($objects === []) {
+			return 50;
+		}
+
+		// Sample objects to estimate size.
+		$sampleSize = min(10, count($objects));
+		$totalSize = 0;
+
+		for ($i = 0; $i < $sampleSize; $i++) {
+			$objectSize = strlen(json_encode($objects[$i]));
+			$totalSize += $objectSize;
+		}
+
+		$averageSize = $totalSize / $sampleSize;
+
+		// Calculate safe chunk size based on packet size.
+		$maxPacketSize = $this->getMaxAllowedPacketSize() * $this->maxPacketSizeBuffer;
+		$safeChunkSize = intval($maxPacketSize / $averageSize);
+
+		// Keep within reasonable bounds.
+		return max(5, min(500, $safeChunkSize));
+	}//end calculateOptimalChunkSize()
+
+	/**
+	 * Get max_allowed_packet size from database
+	 *
+	 * @return int Max packet size in bytes
+	 */
+	private function getMaxAllowedPacketSize(): int {
+		// `SHOW VARIABLES` is a MySQL-ism. On PostgreSQL the statement is a
+		// syntax error — and although the exception is swallowed here, a
+		// failed statement inside an OPEN TRANSACTION aborts the whole
+		// transaction on postgres (SQLSTATE 25P02). This runs from the
+		// handler CONSTRUCTOR (lazily instantiated mid-save), so it would
+		// abort any caller-managed transaction wrapping a save (e.g. the
+		// ADR-051 handoff engine). Only probe on MySQL/MariaDB.
+		if ($this->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
+			return 16777216;
+		}
+
+		try {
+			$stmt = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
+			$result = $stmt->fetch();
+
+			if ($result !== false && (($result['Value'] ?? null) !== null)) {
+				return (int)$result['Value'];
+			}
+		} catch (\Exception $e) {
+			// Log error but continue with default.
+		}
+
+		// Default fallback value (16MB).
+		return 16777216;
+	}//end getMaxAllowedPacketSize()
+
+	/**
+	 * Initialize max packet size buffer based on database configuration
+	 *
+	 * @return void
+	 */
+	private function initializeMaxPacketSize(): void {
+		try {
+			$maxPacketSize = $this->getMaxAllowedPacketSize();
+
+			// Adjust buffer based on detected packet size.
+			// 30% buffer for smaller packet sizes.
+			$this->maxPacketSizeBuffer = 0.3;
+			if ($maxPacketSize > 67108864) {
+				// > 64MB.
+				// 60% buffer.
+				$this->maxPacketSizeBuffer = 0.6;
+			} elseif ($maxPacketSize > 33554432) {
+				// > 32MB.
+				// 50% buffer.
+				$this->maxPacketSizeBuffer = 0.5;
+			} elseif ($maxPacketSize > 16777216) {
+				// > 16MB.
+				// 40% buffer.
+				$this->maxPacketSizeBuffer = 0.4;
+			}
+		} catch (\Exception $e) {
+			// Use default buffer on error.
+		}//end try
+	}//end initializeMaxPacketSize()
+
+	/**
+	 * Perform bulk upsert operation on dynamic table
+	 *
+	 * This method provides high-performance INSERT...ON CONFLICT DO UPDATE (PostgreSQL)
+	 * or INSERT...ON DUPLICATE KEY UPDATE (MySQL/MariaDB) operations for dynamic tables.
+	 * It returns complete objects with database-computed classification (created/updated/unchanged).
+	 *
+	 * @param array $objects Array of object data in standard format
+	 * @param Register $register Register context
+	 * @param Schema $schema Schema context
+	 * @param string $tableName Target table name
+	 * @param bool $needsPreUpdateState Whether anything downstream will read the
+	 *                                  pre-update rows (audit changeset or update
+	 *                                  event). False narrows the fetch to the uuid.
+	 *                                  See the SuppressWarnings note below.
+	 *
+	 * @return array Array of complete objects with object_status field
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @psalm-return list<array<string, mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $needsPreUpdateState reports a
+	 * FACT about the caller — whether anything will read the pre-update rows —
+	 * rather than switching this method between two behaviours. The rows are
+	 * fetched for an audit changeset or an update event; a caller with both off
+	 * reads only the uuid, and this is how that reaches the query. Inverting it
+	 * into two methods would duplicate the whole chunk path to vary one column
+	 * list.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array {
+		$table = new RegisterSchema(register: $register, schema: $schema);
+		$command = new BulkUpsertCommand(objects: $objects, table: $table, tableName: $tableName, needsPreUpdateState: $needsPreUpdateState);
+		return $this->upsert(command: $command);
+	}//end bulkUpsert()
+
+	/**
+	 * Run one bulk upsert, chunk by chunk, each chunk in its own transaction.
+	 *
+	 * @param BulkUpsertCommand $command The upsert.
+	 *
+	 * @return array Array of complete objects with object_status field
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @psalm-return list<array<string, mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function upsert(BulkUpsertCommand $command): array {
+		$tableName = $command->tableName;
+		if ($command->objects === []) {
+			return [];
+		}
+
+		// Prepare objects for dynamic table structure.
+		$preparedObjects = $this->prepareObjectsForDynamicTable(
+			objects: $command->objects,
+			register: $command->table->register,
+			schema: $command->table->schema
+		);
+
+		if ($preparedObjects === []) {
+			return [];
+		}
+
+		$numberColumnSizes = (new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getFullTableName(tableName: '')))->sizes(tableName: $tableName);
+		foreach ($preparedObjects as $preparedObject) {
+			(new MagicNumberColumn())->assertRowFits(row: $preparedObject, columnSizes: $numberColumnSizes);
+		}
+
+		// Determine optimal chunk size.
+		$chunkSize = $this->calculateOptimalChunkSize(objects: $preparedObjects);
+		$chunks = array_chunk($preparedObjects, $chunkSize);
+		$this->managedSlugTables[$tableName] = MagicBulkUpsertSql::hasManagedSlugs(schema: $command->table->schema);
+
+		$allResults = [];
+
+		// Process each chunk.
+		// BUG-DB-5: wrap each chunk in a transaction so a mid-chunk failure
+		// (e.g. a constraint violation on one row) rolls back the whole chunk
+		// instead of leaving a partial, inconsistent set of rows persisted.
+		foreach ($chunks as $chunkIndex => $chunk) {
+			$this->db->beginTransaction();
+			try {
+				$chunkResults = $this->executeUpsertChunk(run: $command->chunkRun(chunkNumber: ($chunkIndex + 1)), chunk: $chunk);
+
+				$this->db->commit();
+			} catch (\Throwable $e) {
+				$this->db->rollBack();
+				$this->logger->error(
+					message: '[MagicBulkHandler] Rolled back bulk upsert chunk after failure',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'chunk' => ($chunkIndex + 1),
+						'table' => $tableName,
+						'error' => $e->getMessage(),
+					]
+				);
+				throw $e;
+			}//end try
+
+			$allResults = array_merge($allResults, $chunkResults);
+		}//end foreach
+
+		// PERFORMANCE: Event dispatching disabled by default.
+		// Dispatching events for 20k+ objects causes 10x slowdown (5000 obj/s -> 500 obj/s).
+		// Enable via $dispatchEvents parameter when business logic hooks are needed.
+		// $this->dispatchBulkEvents(results: $allResults, register: $register, schema: $schema).
+		return $allResults;
+	}//end upsert()
+
+	/**
+	 * Execute upsert operation for a single chunk
+	 *
+	 * @param MagicUpsertChunkRun $run   The chunk run, carrying the table, chunk number and pre-update flag
+	 * @param array               $chunk Chunk of prepared objects
+	 *
+	 * @return array Array of complete objects with object_status
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @psalm-return list<array<string, mixed>>
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function executeUpsertChunk(MagicUpsertChunkRun $run, array $chunk): array {
+		if ($chunk === []) {
+			return [];
+		}
+
+		$run->objectCount = count($chunk);
+		// Record operation start time for precise created/updated detection.
+		$run->operationStartTime = (new DateTime())->format('Y-m-d H:i:s');
+
+		$filteredChunk = $this->filterToTableColumns(chunk: $chunk, tableName: $run->tableName);
+		if (empty($filteredChunk) === true) {
+			return [];
+		}
+
+		$run->rows = $this->deduplicateByUuid(rows: $filteredChunk);
+		if (empty($run->rows) === true) {
+			return [];
+		}
+
+		$run->collectColumnsAndUuids();
+		$run->isPostgres = $this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+		$run->fullTableName = $this->getFullTableName(tableName: $run->tableName);
+
+		if (empty($run->uuids) === false) {
+			$this->loadExistingRows(run: $run);
+		}
+
+		$this->executeUpsertStatement(run: $run);
+
+		if (empty($run->uuids) === true) {
+			return [];
+		}
+
+		return $this->readBackClassified(run: $run);
+	}//end executeUpsertChunk()
+
+	/**
+	 * Keep only the columns the table has, dropping objects left without any.
+	 *
+	 * @param array  $chunk     Chunk of prepared objects.
+	 * @param string $tableName Target table name.
+	 *
+	 * @return array<int, array<string, mixed>> The filtered objects.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function filterToTableColumns(array $chunk, string $tableName): array {
+		$tableColumns = $this->getTableColumns(tableName: $tableName);
+
+		$filteredChunk = [];
+		foreach ($chunk as $objectData) {
+			$filteredObject = [];
+			foreach ($objectData as $columnName => $value) {
+				if (in_array($columnName, $tableColumns, true) === true) {
+					$filteredObject[$columnName] = $value;
+					continue;
+				}
+
+				$this->logger->debug(
+					message: '[MagicBulkHandler] Dropping column not in table',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'column' => $columnName, 'table' => $tableName]
+				);
+			}
+
+			if (empty($filteredObject) === false) {
+				$filteredChunk[] = $filteredObject;
+			}
+		}
+
+		return $filteredChunk;
+	}//end filterToTableColumns()
+
+	/**
+	 * Deduplicate rows by `_uuid`, keeping the last occurrence in the place of
+	 * the first, and give a row without a uuid a new one.
+	 *
+	 * Duplicates would make PostgreSQL refuse the upsert ("cannot affect row a
+	 * second time"). BUG-DB-6: a row without a `_uuid` is persisted under a
+	 * generated uuid instead of being dropped.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The filtered rows.
+	 *
+	 * @return array<int, array<string, mixed>> The deduplicated rows, re-indexed.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deduplicateByUuid(array $rows): array {
+		$deduplicated = [];
+		$seenUuids = [];
+		foreach ($rows as $objectData) {
+			$uuid = $objectData['_uuid'] ?? null;
+			if ($uuid === null || $uuid === '') {
+				$uuid = Uuid::v4()->toRfc4122();
+				$objectData['_uuid'] = $uuid;
+				$this->logger->debug(
+					message: '[MagicBulkHandler] Generated missing _uuid for bulk object',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+				);
+			}
+
+			if (isset($seenUuids[$uuid]) === true) {
+				$deduplicated[$seenUuids[$uuid]] = $objectData;
+				continue;
+			}
+
+			$seenUuids[$uuid] = count($deduplicated);
+			$deduplicated[] = $objectData;
+		}//end foreach
+
+		return array_values($deduplicated);
+	}//end deduplicateByUuid()
+
+	/**
+	 * Find which uuids exist before the upsert, so created and updated rows are
+	 * told apart whatever their timestamps (CSV imports keep historical
+	 * `_created` dates), and keep the full pre-update rows when the caller
+	 * records an old-vs-new changeset.
+	 *
+	 * Only `_uuid` is selected when nothing reads the pre-update state: that
+	 * read is answered from the `_uuid` index alone (Index Only Scan, measured
+	 * 0.537 ms against 1.574 ms per 100 rows for `SELECT *` on 2.3 KB rows).
+	 * A failed check is logged and leaves classification to the timestamps.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function loadExistingRows(MagicUpsertChunkRun $run): void {
+		$needsPreUpdateState = $run->needsPreUpdateState;
+		$existsColumns = '*';
+		if ($needsPreUpdateState === false) {
+			$existsColumns = ['`_uuid`', '"_uuid"'][(int)$run->isPostgres];
+		}
+
+		try {
+			$existsStmt = $this->db->prepare($run->selectByUuidSql(columns: $existsColumns));
+			$existsStmt->execute(array_values($run->uuids));
+			foreach ($existsStmt->fetchAll() as $row) {
+				$run->existingUuids[$row['_uuid']] = true;
+				if ($needsPreUpdateState === true) {
+					// Left empty on the narrow path: a changeset built from
+					// uuid-only rows would read as "every field became null".
+					$run->preUpdateRows[$row['_uuid']] = $row;
+				}
+			}
+
+			$this->logger->debug(
+				message: '[MagicBulkHandler] Pre-upsert UUID check',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'chunk' => $run->chunkNumber,
+					'total_uuids' => count($run->uuids),
+					'existing_uuids' => count($run->existingUuids),
+					'new_uuids' => count($run->uuids) - count($run->existingUuids),
+				]
+			);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicBulkHandler] Failed to check existing UUIDs, will use timestamp-based classification',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+		}//end try
+	}//end loadExistingRows()
+
+	/**
+	 * Build and run the INSERT ... ON DUPLICATE KEY UPDATE (MySQL/MariaDB) or
+	 * INSERT ... ON CONFLICT DO UPDATE (PostgreSQL) statement of the chunk.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the statement fails; the failure is logged first.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function executeUpsertStatement(MagicUpsertChunkRun $run): void {
+		[$valuesClause, $parameters] = $run->valuesAndParameters();
+
+		$sql = "INSERT INTO `{$run->fullTableName}` ({$run->quotedColumnList()}) VALUES " . $valuesClause;
+		$sql .= ' ON DUPLICATE KEY UPDATE ';
+		if ($run->isPostgres === true) {
+			$sql = "INSERT INTO \"{$run->fullTableName}\" ({$run->quotedColumnList()}) VALUES " . $valuesClause;
+			$sql .= ' ON CONFLICT (_uuid) DO UPDATE SET ';
+		}
+
+		$sql .= implode(', ', $this->buildUpsertUpdateClauses(run: $run));
+
+		try {
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute($parameters);
+
+			$this->logger->info(
+				message: '[MagicBulkHandler] Executed UPSERT chunk',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'chunk' => $run->chunkNumber,
+					'objects' => $run->objectCount,
+					'table' => $run->tableName,
+					'sql_size_kb' => round(strlen($sql) / 1024, 2),
+					'sql_preview' => substr($sql, 0, 150),
+				]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[MagicBulkHandler] UPSERT chunk failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'chunk' => $run->chunkNumber,
+					'table' => $run->tableName,
+					'error' => $e->getMessage(),
+				]
+			);
+			throw $e;
+		}//end try
+	}//end executeUpsertStatement()
+
+	/**
+	 * The SET clauses of the upsert's update half.
+	 *
+	 * COLUMNS_KEPT_ON_UPDATE are never updated: an existing row keeps the version
+	 * it reached, so a re-import does not walk it back to the starting version the
+	 * INSERT half stamps on a new row, and it keeps its owner and organisation.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return array<int, string> The clauses.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function buildUpsertUpdateClauses(MagicUpsertChunkRun $run): array {
+		$freezeSlug = ($this->managedSlugTables[$run->tableName] ?? false);
+		$updateClauses = [];
+		foreach ($run->columns as $column) {
+			if (in_array($column, self::COLUMNS_KEPT_ON_UPDATE, true) === true) {
+				continue;
+			}
+
+			$updateClauses[] = match ($column === '_slug' && $freezeSlug === true) {
+				true => MagicBulkUpsertSql::frozenSlugClause(isPostgres: $run->isPostgres, fullTableName: $run->fullTableName),
+				false => MagicBulkUpsertSql::updateClause(column: $column, isPostgres: $run->isPostgres),
+			};
+		}
+
+		return $updateClauses;
+	}//end buildUpsertUpdateClauses()
+
+	/**
+	 * Read the written rows back and classify each one.
+	 *
+	 * A uuid that did not exist before is `created`; one that did is `updated`
+	 * when its `_updated` is at or after the operation start, else `unchanged`.
+	 * An updated row carries its pre-update row for the audit changeset.
+	 *
+	 * @param MagicUpsertChunkRun $run The chunk being upserted.
+	 *
+	 * @return array<int, array<string, mixed>> The classified rows.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function readBackClassified(MagicUpsertChunkRun $run): array {
+		$stmt = $this->db->prepare($run->selectByUuidSql(columns: '*'));
+		$stmt->execute(array_values($run->uuids));
+
+		$completeObjects = [];
+		foreach ($stmt->fetchAll() as $obj) {
+			$completeObjects[] = $run->classify(obj: $obj);
+		}
+
+		$counts = array_count_values(array_column($completeObjects, 'object_status'));
+		$this->logger->info(
+			message: '[MagicBulkHandler] Classification complete (using pre-upsert UUID check)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'chunk' => $run->chunkNumber,
+				'uuids_requested' => count($run->uuids),
+				'objects_returned' => count($completeObjects),
+				'created' => $counts['created'] ?? 0,
+				'updated' => $counts['updated'] ?? 0,
+				'unchanged' => $counts['unchanged'] ?? 0,
+			]
+		);
+
+		return $completeObjects;
+	}//end readBackClassified()
+
+	/**
+	 * Get list of columns that exist in a table
+	 *
+	 * @param string $tableName The table name
+	 *
+	 * @return array List of column names
+	 *
+	 * @psalm-return list<mixed>
+	 */
+	private function getTableColumns(string $tableName): array {
+		try {
+			$platform = $this->db->getDatabasePlatform();
+			$isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+
+			// Get full table name with the configured database prefix.
+			$fullTableName = $this->getFullTableName(tableName: $tableName);
+
+			// MySQL/MariaDB: use SHOW COLUMNS.
+			$sql = "SHOW COLUMNS FROM `$fullTableName`";
+			if ($isPostgres === true) {
+				// PostgreSQL: query information_schema with full table name.
+				$sql = "SELECT column_name
                         FROM information_schema.columns
                         WHERE table_name = ? AND table_schema = 'public'";
-            }
+			}
 
-            $stmt = $this->db->prepare($sql);
-            // MySQL/MariaDB: SHOW COLUMNS doesn't need parameters.
-            $stmtParams = [];
-            if ($isPostgres === true) {
-                // PostgreSQL information_schema expects table name WITH prefix.
-                $stmtParams = [$fullTableName];
-            }
+			$stmt = $this->db->prepare($sql);
+			// MySQL/MariaDB: SHOW COLUMNS doesn't need parameters.
+			$stmtParams = [];
+			if ($isPostgres === true) {
+				// PostgreSQL information_schema expects table name WITH prefix.
+				$stmtParams = [$fullTableName];
+			}
 
-            $stmt->execute($stmtParams);
+			$stmt->execute($stmtParams);
 
-            $columns = [];
-            $row     = $stmt->fetch();
-            while ($row !== false) {
-                $columnKey = 'Field';
-                if ($isPostgres === true) {
-                    $columnKey = 'column_name';
-                }
+			$columns = [];
+			$row = $stmt->fetch();
+			while ($row !== false) {
+				$columnKey = 'Field';
+				if ($isPostgres === true) {
+					$columnKey = 'column_name';
+				}
 
-                $columns[] = $row[$columnKey];
+				$columns[] = $row[$columnKey];
 
-                $row = $stmt->fetch();
-            }
+				$row = $stmt->fetch();
+			}
 
-            $this->logger->debug(
-                message: '[MagicBulkHandler] Retrieved columns',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName, 'columns' => $columns]
-            );
-            $this->tableColumnsCache[$tableName] = $columns;
+			$this->logger->debug(
+				message: '[MagicBulkHandler] Retrieved columns',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName, 'columns' => $columns]
+			);
+			$this->tableColumnsCache[$tableName] = $columns;
 
-            return $columns;
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[MagicBulkHandler] Failed to get table columns',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'table' => $tableName,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return [];
-        }//end try
-    }//end getTableColumns()
+			return $columns;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				message: '[MagicBulkHandler] Failed to get table columns',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'table' => $tableName,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
+		}//end try
+	}//end getTableColumns()
 
-    /**
-     * Format a datetime value to MySQL-compatible format
-     *
-     * Converts ISO 8601 datetime strings (with 'T' and timezone) to MySQL format (Y-m-d H:i:s).
-     *
-     * @param mixed       $value   The datetime value (string, DateTime object, or null)
-     * @param string|null $default Default value if conversion fails
-     *
-     * @return string|null Formatted datetime string or default value
-     */
-    private function formatDateTimeForDatabase(mixed $value, ?string $default): ?string
-    {
-        // Delegate to DateTimeNormalizer — empty/whitespace/null input returns null
-        // instead of silently becoming "now" via PHP's new DateTime('').
-        $formatted = $this->dateTimeNormalizer->formatForDatabase($value);
-        return $formatted ?? $default;
-    }//end formatDateTimeForDatabase()
+	/**
+	 * Format a datetime value to MySQL-compatible format
+	 *
+	 * Converts ISO 8601 datetime strings (with 'T' and timezone) to MySQL format (Y-m-d H:i:s).
+	 *
+	 * @param mixed $value The datetime value (string, DateTime object, or null)
+	 * @param string|null $default Default value if conversion fails
+	 *
+	 * @return string|null Formatted datetime string or default value
+	 */
+	private function formatDateTimeForDatabase(mixed $value, ?string $default): ?string {
+		// Delegate to DateTimeNormalizer — empty/whitespace/null input returns null
+		// instead of silently becoming "now" via PHP's new DateTime('').
+		$formatted = $this->dateTimeNormalizer->formatForDatabase($value);
+		return $formatted ?? $default;
+	}//end formatDateTimeForDatabase()
+
+	/**
+	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
+	 *
+	 * The counterpart of a raw append: rows written through `bulkUpsert()` with an
+	 * expiry carry no audit trail, so there is nothing to tombstone and nothing to
+	 * soft-delete. They are simply removed. Rows with a NULL `_expires` are never
+	 * touched, and the comparison is done by the database clock (`NOW()`), the
+	 * same clock that `SearchTrailMapper::clearLogs()` sweeps by, so a PHP/DB
+	 * timezone mismatch cannot widen the window.
+	 *
+	 * @param Register $register  The register context.
+	 * @param Schema   $schema    The schema context.
+	 * @param string   $tableName The bare (unprefixed) table name to sweep.
+	 *
+	 * @return int The number of rows removed.
+	 *
+	 * @throws \OCP\DB\Exception If the delete fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	public function purgeExpired(Register $register, Schema $schema, string $tableName): int {
+		return $this->purgeExpiredRows(table: new RegisterSchema(register: $register, schema: $schema), tableName: $tableName);
+	}//end purgeExpired()
+
+	/**
+	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
+	 *
+	 * See purgeExpired() for why the rows are removed rather than soft-deleted
+	 * and why the database clock decides.
+	 *
+	 * @param RegisterSchema $table     The register and schema whose rows are swept.
+	 * @param string         $tableName The bare (unprefixed) table name to sweep.
+	 *
+	 * @return int The number of rows removed.
+	 *
+	 * @throws \OCP\DB\Exception If the delete fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	public function purgeExpiredRows(RegisterSchema $table, string $tableName): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($tableName)
+			->where($qb->expr()->eq('_register', $qb->createNamedParameter($table->register->getId(), IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('_schema', $qb->createNamedParameter($table->schema->getId(), IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('_expires'))
+			->andWhere($qb->expr()->lt('_expires', $qb->createFunction('NOW()')));
+
+		$purged = $qb->executeStatement();
+
+		// Info, not debug: this is destruction, and the count is the only record of it.
+		$this->logger->info(
+			message: '[MagicBulkHandler] Purged expired raw rows',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'register' => $table->register->getId(),
+				'schema' => $table->schema->getId(),
+				'table' => $tableName,
+				'purged' => $purged,
+			]
+		);
+
+		return $purged;
+	}//end purgeExpiredRows()
 }//end class

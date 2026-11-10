@@ -1,0 +1,1619 @@
+{
+  "info": {
+    "_postman_id": "or-relation-types-2026-09-15",
+    "name": "OpenRegister Relation Types With Inverses API",
+    "description": "Typed relations with declared inverses, asserted where CI can see them.\n\nWHAT IT ASSERTS, each paired with its control:\n  * the relation vocabulary survives the schema save rather than being dropped on a 200\n  * a symmetric relation that also names an inverse is refused with 422, naming the property,\n    while an ordinary schema saved in the request before it proves the 422 is about the relation\n  * a type naming a vocabulary entry nobody declared is refused, naming the key\n  * the SAME link reads 'blocks' from the near side and 'blocked by' from the far side\n  * a derive records the source object and the entry it came out of\n  * an external address is a relation row with a title, and something that is not an address is refused\n  * a relation row reached through an object that does not hold it answers 404, and the same row\n    through the object that does hold it is removed, so the 404 is the ownership check and not a broken route\n  * a reference written in prose writes one row per direction under one anchor, the same text saved\n    twice writes nothing, and withdrawing the text leaves no half of the link behind on either side\n  * the graph answers with typed, directed edges, says whether it was bounded, and exports as CSV\n  * an object the caller cannot resolve answers 404, never 403\n\nSELF-CLEANING. It creates its own register, three schemas and its objects and removes all of them, so a re-run starts from the same state and no later collection inherits a fixture.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "admin_user",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "registerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schemaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "controlSchemaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blockedUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "blockerUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "derivedUuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "linkUuid",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "setUp: a register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"relation types newman register\", \"description\": \"relation-types collection fixture\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the register is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: a schema declaring a relation vocabulary",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"relations newman case\", \"description\": \"relation-types collection fixture\", \"properties\": {\"onderwerp\": {\"type\": \"string\", \"title\": \"Onderwerp\", \"maxLength\": 255}, \"classificatie\": {\"type\": \"string\", \"title\": \"Classificatie\", \"maxLength\": 64}, \"blokkeert\": {\"type\": \"array\", \"items\": {\"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"type\": \"blocks\"}}}, \"eigenaar\": {\"type\": \"string\", \"$ref\": \"relations-newman-case\", \"title\": \"Eigenaar\"}}, \"configuration\": {\"x-openregister-relation-types\": [{\"key\": \"blocks\", \"label\": \"blocks\", \"inverseLabel\": \"blocked by\"}]}, \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"authenticated\"], \"update\": [\"authenticated\"], \"delete\": [\"authenticated\"]}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the schema is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('schemaId', String(body.id));",
+              "pm.test('the relation vocabulary survived the save', () => {",
+              "    const declared = (body.configuration || {})['x-openregister-relation-types'];",
+              "    pm.expect(declared, 'the vocabulary was dropped by setConfiguration()').to.be.an('array');",
+              "    pm.expect(declared[0].key).to.eql('blocks');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CONTROL: a schema with no relation declaration is accepted",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"relations newman control\", \"description\": \"relation-types collection control\", \"properties\": {\"onderwerp\": {\"type\": \"string\", \"title\": \"Onderwerp\", \"maxLength\": 255}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('an ordinary schema still saves, so a 422 below is about the relation', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.collectionVariables.set('controlSchemaId', String(pm.response.json().id));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST a symmetric relation that also names an inverse -> 422 naming the property",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"relations newman refused\", \"description\": \"relation-types collection fixture\", \"properties\": {\"duplicaatVan\": {\"type\": \"string\", \"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"label\": \"duplicate of\", \"inverseLabel\": \"duplicated by\", \"symmetric\": true}}}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the contradiction is refused', () => pm.expect(pm.response.code).to.eql(422));",
+              "pm.test('the refusal names the property', () => pm.expect(pm.response.text()).to.include('duplicaatVan'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST a type the vocabulary does not hold -> 422 naming the key",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"relations newman unknown type\", \"description\": \"relation-types collection fixture\", \"properties\": {\"vervolg\": {\"type\": \"string\", \"$ref\": \"relations-newman-case\", \"x-openregister-relation\": {\"type\": \"folows\"}}}, \"configuration\": {\"x-openregister-relation-types\": [{\"key\": \"blocks\", \"label\": \"blocks\"}]}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the unknown key is refused', () => pm.expect(pm.response.code).to.eql(422));",
+              "pm.test('the refusal names the key nobody declared', () => pm.expect(pm.response.text()).to.include('folows'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: the case that gets blocked",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"onderwerp\": \"Bezwaar\", \"classificatie\": \"intern\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the blocked case is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('blockedUuid', String((b['@self'] || {}).id || b.id || b.uuid));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "setUp: the case that blocks it",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"onderwerp\": \"Vergunning\", \"blokkeert\": [\"{{blockedUuid}}\"]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the blocking case is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('blockerUuid', String((b['@self'] || {}).id || b.id || b.uuid));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../uses -> the near side reads blocks",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/uses",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "uses"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('uses answers', () => pm.expect(pm.response.code).to.eql(200));",
+              "const rows = pm.response.json().results || [];",
+              "const wanted = pm.collectionVariables.get('blockedUuid');",
+              "const row = rows.find(r => String((r['@self'] || {}).id || r.id || r.uuid) === wanted);",
+              "pm.test('the blocked case is listed', () => pm.expect(row, 'not among what the blocker uses').to.be.an('object'));",
+              "pm.test('the row names the property it came in through', () => pm.expect(row.relation.property).to.eql('blokkeert'));",
+              "pm.test('and reads as the near label', () => pm.expect(row.relation.displayLabel).to.eql('blocks'));",
+              "pm.test('while still carrying the far one', () => pm.expect(row.relation.inverseLabel).to.eql('blocked by'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../used -> the far side reads blocked by",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/used",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "used"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('used answers', () => pm.expect(pm.response.code).to.eql(200));",
+              "const rows = pm.response.json().results || [];",
+              "const wanted = pm.collectionVariables.get('blockerUuid');",
+              "const row = rows.find(r => String((r['@self'] || {}).id || r.id || r.uuid) === wanted);",
+              "pm.test('the blocking case is listed', () => pm.expect(row, 'not among what uses the blocked case').to.be.an('object'));",
+              "pm.test('the row names the REFERENCING property', () => pm.expect(row.relation.property).to.eql('blokkeert'));",
+              "// The whole change in one assertion: the same link, from the other end.",
+              "pm.test('and reads as the inverse, not as referenced by', () => pm.expect(row.relation.displayLabel).to.eql('blocked by'));",
+              "pm.test('the direction is named', () => pm.expect(row.relation.direction).to.eql('incoming'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST .../derive -> the child records its source and what it inherited",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/derive",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "derive"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"object\": {\"onderwerp\": \"Zaak uit melding\"}, \"entry\": \"entry-1\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the derive succeeds', () => pm.expect(pm.response.code).to.eql(201));",
+              "const b = pm.response.json();",
+              "pm.collectionVariables.set('derivedUuid', String((b.object['@self'] || {}).id || b.object.id));",
+              "pm.test('the row names the object it came from', () => pm.expect(b.relation.targetUuid).to.eql(pm.collectionVariables.get('blockedUuid')));",
+              "pm.test('and the entry it came out of', () => pm.expect(b.relation.sourceEntry).to.eql('entry-1'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST .../relation-rows -> an external address is a relation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"url\": \"https://zoek.officielebekendmakingen.nl/stcrt-2026-1\", \"title\": \"Publicatie in de Staatscourant\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the external link is written', () => pm.expect(pm.response.code).to.eql(201));",
+              "pm.collectionVariables.set('linkUuid', String(pm.response.json().uuid));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST .../relation-rows with something that is not an address -> 422",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"url\": \"zie het andere dossier\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('a link that resolves nowhere is refused', () => pm.expect(pm.response.code).to.eql(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../relation-rows -> it is listed like any other relation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the rows answer', () => pm.expect(pm.response.code).to.eql(200));",
+              "const rows = pm.response.json().results || [];",
+              "const external = rows.find(r => r.kind === 'external');",
+              "pm.test('the external address is listed', () => pm.expect(external, 'not among the relations').to.be.an('object'));",
+              "pm.test('with the title it was given', () => pm.expect(external.targetTitle).to.eql('Publicatie in de Staatscourant'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE a relation row through an object that does not hold it -> 404",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows/{{linkUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "relation-rows",
+            "{{linkUuid}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// A row uuid is not a capability. The same uuid through the RIGHT",
+              "// object succeeds in the next request, which is what makes this a",
+              "// test of the ownership check and not of a broken route.",
+              "pm.test('a row reached through the wrong object is not found', () => pm.expect(pm.response.code).to.eql(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE the same row through the object that does hold it -> removed",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows/{{linkUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows",
+            "{{linkUuid}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the owning object may remove it', () => pm.expect(pm.response.code).to.eql(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../graph -> typed directed edges, and a bound that says so",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/graph?depth=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "graph"
+          ],
+          "query": [
+            {
+              "key": "depth",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the graph answers', () => pm.expect(pm.response.code).to.eql(200));",
+              "const g = pm.response.json();",
+              "pm.test('the root is the object asked about', () => pm.expect(g.root).to.eql(pm.collectionVariables.get('blockerUuid')));",
+              "const uuids = (g.nodes || []).map(n => String(n.uuid));",
+              "pm.test('the blocked case is a node', () => pm.expect(uuids).to.include(pm.collectionVariables.get('blockedUuid')));",
+              "const edge = (g.edges || []).find(e => e.to === pm.collectionVariables.get('blockedUuid'));",
+              "pm.test('the edge is typed', () => pm.expect(edge.label).to.eql('blocks'));",
+              "pm.test('and directed', () => pm.expect(edge.direction).to.eql('outgoing'));",
+              "pm.test('the answer says whether it was bounded', () => pm.expect(g).to.have.property('truncated'));",
+              "pm.test('and names the depth it used', () => pm.expect(g.depth).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../graph/export -> the same answer as rows",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/graph/export?depth=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "graph",
+            "export"
+          ],
+          "query": [
+            {
+              "key": "depth",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the export answers', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.test('as a spreadsheet, not as JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'));",
+              "pm.test('with an edge list header', () => pm.expect(pm.response.text()).to.include('from,fromTitle,relation'));",
+              "pm.test('and the typed edge in it', () => pm.expect(pm.response.text()).to.include('blocks'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../graph on an object nobody can resolve -> 404, not 403",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/graph",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "00000000-0000-4000-8000-000000000000",
+            "graph"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('existence is not leaked', () => pm.expect(pm.response.code).to.eql(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST .../relation-rows with a target -> a mention is a row on both sides",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"target\": \"{{blockedUuid}}\", \"anchor\": \"note-1\", \"type\": \"noemt\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the mention is recorded', () => pm.expect(pm.response.code).to.eql(201));",
+              "const rows = pm.response.json().results || [];",
+              "pm.test('one row per direction', () => pm.expect(rows.length).to.eql(2));",
+              "pm.test('the near row points at the mentioned object', () => pm.expect(rows[0].targetUuid).to.eql(pm.collectionVariables.get('blockedUuid')));",
+              "pm.test('and the far row points back', () => pm.expect(rows[1].targetUuid).to.eql(pm.collectionVariables.get('blockerUuid')));",
+              "pm.test('both carry the anchor that can withdraw them', () => pm.expect(rows.every(r => r.anchor === 'note-1')).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST the same mention again -> nothing is written twice",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"target\": \"{{blockedUuid}}\", \"anchor\": \"note-1\", \"type\": \"noemt\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 200 and no rows, not 201: answering 201 would tell the caller a",
+              "// row was created when none was.",
+              "pm.test('saving the same text twice writes nothing', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.test('and says so', () => pm.expect((pm.response.json().results || []).length).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST a mention with no anchor -> 422, because nothing could withdraw it",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-rows"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"target\": \"{{blockedUuid}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('a reference nothing can withdraw is refused', () => pm.expect(pm.response.code).to.eql(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the far object's rows -> the mention is there from that side too",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "relation-rows"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the rows answer', () => pm.expect(pm.response.code).to.eql(200));",
+              "const rows = pm.response.json().results || [];",
+              "const prose = rows.filter(r => r.origin === 'prose');",
+              "pm.test('the mentioned object holds the mention too', () => pm.expect(prose.length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE .../relation-references/{anchor} -> the text goes and both rows go",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}/relation-references/note-1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}",
+            "relation-references",
+            "note-1"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the withdrawal answers', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.test('both sides went', () => pm.expect(pm.response.json().removed).to.eql(2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the far object's rows again -> the mention is gone from that side too",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}/relation-rows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}",
+            "relation-rows"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The control for the request above: without this, 'removed: 2'",
+              "// would be a number the endpoint reported about itself.",
+              "pm.test('the rows answer', () => pm.expect(pm.response.code).to.eql(200));",
+              "const prose = (pm.response.json().results || []).filter(r => r.origin === 'prose');",
+              "pm.test('no half of the link is left behind', () => pm.expect(prose.length).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the derived case",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{derivedUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{derivedUuid}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture object is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the blocking case",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockerUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockerUuid}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture object is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the blocked case",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{blockedUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{blockedUuid}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture object is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the control schema",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{controlSchemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{controlSchemaId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the control schema is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the schema",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{schemaId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture schema is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tearDown: the register",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{registerId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the fixture register is removed', () => pm.expect(pm.response.code).to.be.below(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

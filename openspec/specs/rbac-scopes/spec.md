@@ -6,8 +6,13 @@ status: in-progress
 
 **OpenSpec changes**
 - `unify-rbac-condition-matching` (active) — collapses `PermissionHandler::evaluateMatchConditions` and `MagicRbacHandler`'s private PHP-side condition matcher onto the shared `ConditionMatcher` service, so schema-level RBAC honours the full operator set (`$eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists`) and dynamic variables (`$organisation/$userId/$now`) that the SQL and property layers already support. Fixes OpenCatalogi `PublicationsController::attachments` throwing on schemas with operator-based `public`-with-match rules.
+- `or-delegated-identity` (active) — states the contract for the two scoped operations on ObjectService that shipped without one (`runAs()` narrowing to a named user, `runAsSystem()` elevating to a trusted userless principal), moves the narrowing one off `IUserSession::setUser()` so an acting identity is never written into the session, gives the elevating one a reachability boundary (code-initiated only), and records that delegation is never expressed as a permission verb (ADR-010, ADR-099).
+
+- `or-delegation-grants` (active) — turns a DECLARED acting identity into an AUTHORIZED one: a delegation grant record with a consent lifecycle, refusal at save and at every fire when the author holds no grant for the user they named, and an `awaiting_consent` run state deduped on (principal, actingAs, scope) (ADR-099).
 
 ## Purpose
+
+@e2e exclude backend RBAC OAS scope builder — covered by PHPUnit
 Validate and extend OpenRegister's existing three-level RBAC system. The core RBAC is already implemented via PermissionHandler (schema-level), MagicRbacHandler (row-level SQL filtering), and PropertyRbacHandler (field-level). This spec documents the existing behavior as requirements and identifies extensions needed for scope management APIs, caching, and audit. Specifically, it maps the existing hierarchical RBAC model (register, schema, object, property) to standard OAuth2 scopes in the generated OpenAPI Specification, and validates that per-operation security requirements are correctly enforced so that API consumers can discover and request the precise group-based permissions they need. The scope system bridges Nextcloud's native group management with standardised OAuth2/OAS security semantics, enabling external API consumers, ZGW-compliant systems, and MCP clients to understand and negotiate access programmatically.
 
 **Source**: Core OpenRegister capability; 67% of tenders require SSO/identity integration; 86% require RBAC per zaaktype; ZGW Autorisaties API compliance.
@@ -388,7 +393,7 @@ The system MUST cache frequently evaluated permission data to avoid repeated dat
 - **AND** each schema's RBAC groups MUST be reused when generating path operations without re-extraction
 
 ### Requirement: Multi-Tenancy Integration with Scopes
-RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. When RBAC conditional rules match on non-`_organisation` fields, they MUST be able to bypass the default multi-tenancy filter, as determined by `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
+RBAC scopes MUST integrate with the multi-tenancy system so that organisation-based data isolation works alongside group-based access control. A conditional rule keeps the organisation filter unless it crosses organisations. A rule whose match pins `_organisation` to the caller's organisation (a token or `{"$eq": token}`) admits only that organisation's rows by itself, so it neither lifts nor keeps the filter. A rule crosses organisations when it binds a field other than `_organisation` to the caller's organisation (the bare `$organisation`, `$activeOrganisation` or `.uuid` token, or `{"$eq": <token>}`) or to the caller's membership (`$memberOf`), or when it declares `"crossOrganisation": true`. Any other match, such as a case type, a status or the caller's uid, selects rows inside the caller's organisation. The filter is lifted only when the caller holds at least one crossing rule and no conditional or `authenticated` rule that stays inside the organisation, because the RBAC predicate ORs every rule the caller holds. A simple group rule the caller holds still reads every row. A conditional `public` read rule (`{"group": "public", "match": {...}}`) that a signed-in, non-admin caller qualifies for (public inheritance on) widens the organisation filter by the rows it admits instead of lifting the filter: the caller reads those rows in every organisation and the rows of their other rules only in their own. An unconditional `public` rule, an anonymous caller and an admin read as before. The aggregation fast path cannot render that branch and falls back to the list. Every read path (list, union search, facets, count, aggregation, export and the single-object read) takes this decision from `MagicRbacHandler::hasConditionalRulesBypassingMultitenancy()`.
 
 #### Scenario: Organisation filtering combined with RBAC
 - **GIVEN** user `jan` has active organisation `org-uuid-1` and is in group `behandelaars`
@@ -404,11 +409,56 @@ RBAC scopes MUST integrate with the multi-tenancy system so that organisation-ba
 - **THEN** it MUST detect `aanbieder` as a non-`_organisation` match field
 - **AND** multi-tenancy filtering MUST be bypassed, allowing RBAC's `aanbieder = 'org-1'` condition to handle filtering instead
 
+#### Scenario: A conditional rule on a static value keeps the organisation filter
+- **GIVEN** schema `case` has RBAC: `{ "read": [{ "group": "team-toezicht", "match": { "caseType": { "$in": ["ct-permit"] } } }] }`
+- **AND** user `femke` is in `team-toezicht` with active organisation `org-1`
+- **AND** a `ct-permit` case belongs to `org-2`
+- **WHEN** `femke` lists cases, counts them, or reads that case by id
+- **THEN** the organisation filter MUST apply and the `org-2` case MUST NOT be returned
+- @e2e exclude {enforcement is a query boundary; covered by PHPUnit on the SQL list, the aggregation decision and the single-object query}
+
+#### Scenario: Holding a crossing rule and a rule inside the organisation keeps the filter
+- **GIVEN** schema `catalogi` has the `aanbieder` rule above and a `team-toezicht` rule on `caseType`
+- **AND** user `jan` is in both groups
+- **WHEN** `jan` lists catalogi
+- **THEN** the organisation filter MUST apply, so the `caseType` rule cannot reach other organisations' rows
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
+#### Scenario: An own-organisation rule beside a crossing rule does not keep the filter
+- **GIVEN** schema `usage` has `{ "group": "aanbod-beheerder", "match": { "_organisation": "$organisation" } }` and `{ "group": "aanbod-beheerder", "match": { "provider": "$organisation" } }`
+- **WHEN** a member of `aanbod-beheerder` in `org-1` lists usages
+- **THEN** usages of other organisations whose `provider` is `org-1` MUST be returned, besides `org-1`'s own
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
+#### Scenario: A conditional public rule does not take the caller's other rules across organisations
+- **GIVEN** schema `case` has RBAC: `{ "read": [{ "group": "public", "match": { "status": "open" } }, { "group": "team-toezicht", "match": { "caseType": { "$in": ["ct-permit"] } } }], "inheritFromPublic": true }`
+- **AND** user `femke` is in `team-toezicht` with active organisation `org-1`
+- **WHEN** `femke` lists cases, counts them, or reads one by id
+- **THEN** open cases of every organisation MUST be returned
+- **AND** `ct-permit` cases of other organisations that are not open MUST NOT be returned
+- @e2e exclude {enforcement is a query boundary; covered by PHPUnit on the SQL list, the QueryBuilder single-object read and the aggregation decision}
+
+#### Scenario: A rule may declare that it crosses organisations
+- **GIVEN** a read rule `{ "group": "landelijk-team", "match": { "caseType": "ct-national" }, "crossOrganisation": true }`
+- **WHEN** a member of `landelijk-team` lists the schema
+- **THEN** the organisation filter MUST be lifted for that member
+- **AND** a `crossOrganisation` value other than the boolean `true` MUST be ignored
+- @e2e exclude {covered by PHPUnit on the SQL list}
+
 #### Scenario: Admin users see all organisations
 - **GIVEN** a user in the `admin` group
 - **WHEN** they query any register
 - **THEN** `MagicRbacHandler::applyRbacFilters()` MUST return without filtering (admin bypass)
 - **AND** multi-tenancy filtering MUST also be bypassed for admin users
+
+#### Scenario: A search that names no table reads under each table's rules
+- **GIVEN** user `jan` has active organisation `org-1`
+- **AND** a search names no register or schema and selects by `_ids` or `_relations_contains`
+- **AND** the selected rows lie in several tables, some of them in `org-2`
+- **WHEN** `jan` runs the search
+- **THEN** each table MUST answer under the same organisation boundary and read rules as a listing of that table
+- **AND** the `org-2` rows MUST NOT appear in the results, the total, or the registers and schemas of the response
+- @e2e exclude {enforcement is a query boundary; covered by the PHPUnit tests on a real database in tests/Db}
 
 ### Requirement: Scope Audit (Who Has Access to What)
 The system MUST provide mechanisms to determine which groups/users have access to which schemas and properties, supporting compliance auditing and access reviews.
@@ -540,6 +590,944 @@ The frontend MUST be able to determine the current user's effective permissions 
 - **WHEN** it inspects the `security` block of the POST operation for schema `meldingen`
 - **THEN** it MUST find the OAuth2 scopes required for creating objects
 - **AND** it can compare these against the current user's groups to determine if the "Create" button should be shown
+
+### Requirement: Effective-Scope Discovery API
+
+The system MUST expose an effective-scope discovery endpoint so clients
+(frontend feature gates, OAuth2 token exchange, downstream apps) can learn which
+`(register, schema, action)` tuples the current user may perform without probing
+every endpoint. `ScopesController::index()` (`GET /api/scopes`) MUST return an
+envelope `{user, isAdmin, groups, scopes}` where `scopes` is a list of
+`{register, schema, actions}` entries keyed by slug. For each in-scope
+(register, schema) pair the controller MUST probe `PermissionHandler::hasPermission()`
+for the five canonical actions (`read`, `create`, `update`, `delete`, `list`)
+and include only the granted ones, omitting pairs with no granted actions. Admin
+callers MUST short-circuit to the full action vocabulary for every pair,
+mirroring the admin-bypass in `PermissionHandler`. Unauthenticated callers MUST
+be supported with `user: null`. Optional `register` and `schema` query
+parameters (id|uuid|slug) MUST narrow the response, and resolution MUST keep the
+multitenancy filter on so the endpoint cannot enumerate across tenants.
+
+#### Scenario: Authenticated user discovers effective scopes
+- **GIVEN** an authenticated non-admin user in groups `users` and `hr`
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST include `user`, `isAdmin: false`, `groups`, and a `scopes` list
+- **AND** each scope entry MUST list only the actions granted by `PermissionHandler::hasPermission()` for that (register, schema) pair
+- **AND** pairs with no granted action MUST be omitted
+
+#### Scenario: Admin receives the full action vocabulary
+- **GIVEN** a caller in the `admin` group
+- **WHEN** `index()` builds the response
+- **THEN** `isAdmin` MUST be `true`
+- **AND** `collectActionsForUser()` MUST short-circuit to `["read", "create", "update", "delete", "list"]` for every (register, schema) pair
+
+#### Scenario: Filter discovery by register and schema
+- **GIVEN** a GET request to `/api/scopes?register=decidesk&schema=meeting`
+- **WHEN** `resolveRegisters()` and `resolveSchemas()` apply the filters
+- **THEN** only the matching register/schema MUST be evaluated
+- **AND** the multitenancy filter MUST remain on so cross-tenant enumeration is not possible
+
+#### Scenario: Unauthenticated caller is supported
+- **GIVEN** no active user session
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST set `user: null` and `isAdmin: false`
+- **AND** only scopes reachable by the `public` pseudo-group MUST be returned
+
+### Requirement: RBAC settings configuration API
+The system SHALL expose an admin-gated API for reading and writing the RBAC enablement and
+configuration dials that govern scope enforcement. `ConfigurationSettingsController`
+provides `getRbacSettings` (delegating to `SettingsService::getRbacSettingsOnly()`) and
+`updateRbacSettings` (delegating to `SettingsService::updateRbacSettingsOnly()`). Both
+return HTTP 500 with an `error` field on service failure.
+
+#### Scenario: Read RBAC settings
+- **WHEN** `getRbacSettings` is called
+- **THEN** it MUST return the RBAC settings document from `SettingsService::getRbacSettingsOnly()`
+
+#### Scenario: Update RBAC settings
+- **GIVEN** an admin toggles RBAC enforcement and posts the change
+- **WHEN** `updateRbacSettings` runs
+- **THEN** it MUST persist the change via `SettingsService::updateRbacSettingsOnly()` and return the updated settings
+
+### Requirement: Custom (non-canonical) action verbs MUST be resolvable via a voting event pair
+When `PermissionHandler` evaluates an action that is NOT one of the canonical five (`read`, `create`, `update`, `delete`, `list`), it MUST dispatch a `CustomScopeEvaluatingEvent` so consuming apps that declare custom action verbs on a register can contribute a verdict. The verdict is first-vote-wins: the first listener to call `allow()` OR `deny()` decides, and subsequent votes are ignored so the outcome is deterministic regardless of listener registration order. When no listener votes, the handler MUST fall through to the standard rule chain. After a listener-driven verdict, a paired telemetry `CustomScopeEvaluatedEvent` MUST be dispatched for observers (audit, dashboards, analytics) without participating in the decision.
+
+#### Scenario: Custom verb dispatches the evaluating event with full context
+- **GIVEN** a register declares a custom action verb `approve` and a user `jan` (groups `["behandelaars"]`) attempts it on schema `besluiten`
+- **WHEN** `PermissionHandler` evaluates the `approve` action
+- **THEN** a `CustomScopeEvaluatingEvent` MUST be dispatched
+- **AND** `getSchema()` MUST return the `besluiten` schema, `getAction()` MUST return `"approve"`, `getUserId()` MUST return `"jan"`, and `getUserGroups()` MUST return `["behandelaars"]`
+- **AND** `getObject()` MUST return the target `ObjectEntity` when one was supplied, otherwise `null`
+
+#### Scenario: First listener vote wins and short-circuits
+- **GIVEN** two listeners are registered for `CustomScopeEvaluatingEvent`
+- **WHEN** the first listener calls `allow()` and the second calls `deny()`
+- **THEN** `getVerdict()` MUST return `true` (the first vote)
+- **AND** `hasVerdict()` MUST return `true`
+- **AND** the second listener's `deny()` MUST be ignored
+
+#### Scenario: No listener votes falls through to the standard rule chain
+- **GIVEN** no listener casts a verdict on the `CustomScopeEvaluatingEvent`
+- **WHEN** evaluation completes
+- **THEN** `hasVerdict()` MUST return `false` and `getVerdict()` MUST return `null`
+- **AND** `PermissionHandler` MUST evaluate the action against the standard static rule chain
+- **AND** no `CustomScopeEvaluatedEvent` MUST be dispatched (the standard rule-chain audit paths capture that outcome)
+
+#### Scenario: Telemetry event reports the resolved verdict and its origin
+- **GIVEN** a listener resolved a custom-scope evaluation to `true`
+- **WHEN** the paired `CustomScopeEvaluatedEvent` is dispatched
+- **THEN** `getVerdict()` MUST return `true` and `isFromListener()` MUST return `true`
+- **AND** `getSchema()`, `getAction()`, and `getUserId()` MUST mirror the evaluating event's context
+
+### Requirement: Schema and register authorization MUST accept an optional `inheritFromPublic` boolean
+
+Schema and register authorization blocks MUST accept an optional `inheritFromPublic` field, boolean. The default value (when the field is absent or `null`) MUST be resolved via the cascade documented below. Existing schemas and registers that do not set the field MUST behave identically to before this change (default `true`).
+
+#### Scenario: Schema authorization without inheritFromPublic preserves pre-change behaviour
+
+- **GIVEN** a schema whose authorization block has no `inheritFromPublic` field
+- **AND** the register's authorization block also has no `inheritFromPublic` field
+- **AND** the tenant default IAppConfig key is unset
+- **WHEN** RBAC checks run
+- **THEN** the effective `inheritFromPublic` value is `true` (the pre-change behaviour)
+- **AND** authenticated users qualify for `public` rules as they did before
+
+#### Scenario: Schema sets inheritFromPublic explicitly
+
+- **GIVEN** a schema whose authorization block contains `"inheritFromPublic": false`
+- **WHEN** RBAC checks run
+- **THEN** the effective value is `false` for that schema
+- **AND** authenticated users do NOT qualify for `public` rules on that schema
+
+#### Scenario: Schema authorization round-trip preserves the field
+
+- **GIVEN** a schema saved with `"inheritFromPublic": false` in its authorization block
+- **WHEN** the schema is fetched and re-serialised via `Schema::getAuthorization()`
+- **THEN** the returned array contains `inheritFromPublic` with value `false`
+- **AND** the JSON serialisation includes the field
+
+### Requirement: The effective value of `inheritFromPublic` MUST be resolved via cascade
+
+The cascade order MUST be: schema's authorization → register's authorization → tenant-wide `IAppConfig` key `openregister.rbac.inherit_from_public_default` → hard-coded `true`. The first explicitly-set value wins. `null` MUST be treated as "unset" (cascade falls through to the next level).
+
+#### Scenario: Cascade falls back to register when schema has no value
+
+- **GIVEN** a schema whose authorization has NO `inheritFromPublic` field
+- **AND** the parent register's authorization has `"inheritFromPublic": false`
+- **WHEN** the resolver is called for that schema
+- **THEN** the resolved value is `false`
+
+#### Scenario: Cascade falls back to tenant default when neither schema nor register sets it
+
+- **GIVEN** schema and register without the field
+- **AND** IAppConfig `openregister.rbac.inherit_from_public_default` is set to `false`
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `false`
+
+#### Scenario: Cascade falls back to hard-coded true when nothing is set
+
+- **GIVEN** no schema, register, or tenant default is set
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `true`
+
+#### Scenario: Schema explicit value wins over register and tenant
+
+- **GIVEN** schema sets `"inheritFromPublic": true`
+- **AND** register sets `"inheritFromPublic": false`
+- **AND** tenant default is `false`
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `true` (schema wins)
+
+#### Scenario: null is treated as "unset"
+
+- **GIVEN** schema authorization contains `"inheritFromPublic": null`
+- **AND** register sets `"inheritFromPublic": false`
+- **WHEN** the resolver is called
+- **THEN** the cascade continues past the schema; the resolved value is `false` (from register)
+
+### Requirement: When `inheritFromPublic` is `false`, authenticated users MUST NOT qualify for `public` rules
+
+When the resolved `inheritFromPublic` is `false`, the PHP-side `PermissionHandler::hasPermission` MUST NOT fall back to `hasGroupPermission(public, ...)` for authenticated users; it MUST return only the result of evaluating the user's own group memberships (plus owner / admin checks). Anonymous users see no behaviour change — the public-fallback path was never used for them in the first place.
+
+The SQL-side filter (`MagicRbacHandler::applyRbacFilters` and `buildRbacConditionsSql`) MUST equivalently exclude `public`-grouped rules from contributing conditions for authenticated users. The simple-string `'public'` rule MUST NOT grant unconditional access to authenticated users when the flag is `false`. Conditional `{group: "public", match: ...}` rules MUST NOT add their match conditions to the WHERE clause for authenticated users when the flag is `false`.
+
+#### Scenario: Authenticated user is denied when inheritance is off and only public has access
+
+- **GIVEN** a schema with `inheritFromPublic: false` and authorization `read: [{group: "public", match: <some-match>}]`
+- **AND** an authenticated user `alice` not a member of any group named in any rule
+- **AND** an object that satisfies the public match
+- **WHEN** alice attempts to read the object
+- **THEN** access is denied
+- **AND** the SQL filter excludes the object from listings for alice
+
+#### Scenario: Anonymous user is granted when public match passes (regardless of flag)
+
+- **GIVEN** the same schema as above
+- **WHEN** an anonymous (unauthenticated) request reads the object
+- **THEN** access is granted (the public match is satisfied)
+- **AND** the SQL filter includes the object
+
+#### Scenario: Authenticated user with explicit group membership is still granted
+
+- **GIVEN** a schema with `inheritFromPublic: false` and authorization `read: [{group: "public", match: ...}, "editors"]`
+- **AND** an authenticated user `bob` in the `editors` group
+- **WHEN** bob attempts to read the object
+- **THEN** access is granted (via the explicit `editors` rule)
+- **AND** the SQL filter includes the object for bob
+
+#### Scenario: Owner check is unaffected by the flag
+
+- **GIVEN** a schema with `inheritFromPublic: false` and `read: [{group: "public", match: ...}]`
+- **AND** an authenticated user `carol` who is the owner of an object
+- **WHEN** carol attempts to read the object
+- **THEN** access is granted via the owner shortcut, regardless of the flag
+
+#### Scenario: Admin user is unaffected by the flag
+
+- **GIVEN** a schema with `inheritFromPublic: false`
+- **AND** an authenticated user in the `admin` group
+- **WHEN** the admin reads any object on this schema
+- **THEN** access is granted via the admin bypass, regardless of the flag
+
+### Requirement: When `inheritFromPublic` is `true` (or unset), behaviour MUST be identical to before this change
+
+For any schema, register, or tenant where the resolved `inheritFromPublic` is `true` (the default), authenticated users MUST continue to qualify for `public` rules exactly as they did before this change. The new code paths MUST NOT introduce any behavioural drift for schemas that don't opt out.
+
+#### Scenario: Pre-change schema is unaffected
+
+- **GIVEN** a schema with no `inheritFromPublic` field anywhere in its cascade
+- **AND** an authenticated user
+- **AND** an object satisfying a public match rule
+- **WHEN** the user attempts to read the object
+- **THEN** access is granted
+- **AND** the result is identical to pre-change behaviour
+
+### Requirement: The simple-string `'authenticated'` rule MUST be unaffected by the flag
+
+The existing `'authenticated'` simple-rule string (recognised by `MagicRbacHandler::processSimpleRule` line 274-276) grants unconditional access to any logged-in user. This behaviour MUST be unchanged by `inheritFromPublic`. The flag concerns the `public` group only.
+
+#### Scenario: 'authenticated' rule still grants access when public inheritance is disabled
+
+- **GIVEN** a schema with `inheritFromPublic: false` and `read: ["authenticated"]`
+- **AND** an authenticated user
+- **WHEN** the user attempts to read
+- **THEN** access is granted (via the `authenticated` rule, independent of the flag)
+
+### Requirement: PHP-side and SQL-side enforcement MUST be identical
+
+For any combination of (user state, flag value, authorization rules, object data), the result of `PermissionHandler::hasPermission` (per-object check) MUST agree with whether the SQL filter (`MagicRbacHandler::applyRbacFilters`) would include the object in a listing. The two layers MUST NOT diverge.
+
+#### Scenario: Per-object check and listing filter agree across the four-state matrix
+
+- **GIVEN** a schema with `read: [{group: "public", match: <m>}]`
+- **AND** the four states: (anon, authenticated) × (inheritFromPublic true, false)
+- **AND** an object satisfying the public match
+- **WHEN** the per-object `hasPermission` check runs AND the listing endpoint runs
+- **THEN** for each of the four states, the per-object check's boolean result matches the listing's include/exclude decision for that object
+
+### Requirement: A declared group MUST exist as a Nextcloud group
+
+Every group id named in a register, schema or property `authorization` block, and every group id declared in a configuration's `components.securitySchemes.oauth2.flows.authorizationCode.scopes` map, SHALL be created as a Nextcloud group if it does not already exist.
+
+This closes a silent-denial gap. `PermissionHandler::hasGroupPermission()` resolves access by membership test alone, so a group that was never created and a group nobody belongs to are indistinguishable: both deny every caller, with no error raised or logged. A typo in an `authorization` block is therefore invisible and reads exactly like a working access control.
+
+Group ids are free-form and SHALL NOT be prefixed or namespaced. Two apps declaring the same id converge on one Nextcloud group by design; a declaring app therefore MUST NOT assume it owns a group it declared.
+
+Provisioning SHALL be create-only: it MUST NOT delete a group, and MUST NOT add or remove members. `admin` and `public` SHALL never be provisioned — `admin` is Nextcloud's built-in group and is short-circuited before any group test, and `public` is a pseudo-principal for anonymous access rather than a membership-bearing group.
+
+#### Scenario: A group named only in a property rule is created
+
+- **GIVEN** a schema whose property `bsn` declares `authorization.read: ["privacy-officers"]` and whose schema-level block never mentions that group
+- **AND** no Nextcloud group `privacy-officers` exists
+- **WHEN** the configuration is imported
+- **THEN** the Nextcloud group `privacy-officers` exists
+- **AND** it has no members, so the rule still denies every caller until an administrator populates it
+
+#### Scenario: Reserved principals are never created as groups
+
+- **GIVEN** an authorization block granting `read` to `public` and `delete` to `admin`
+- **WHEN** the configuration is imported
+- **THEN** no Nextcloud group named `public` is created
+- **AND** no attempt is made to create `admin`
+
+#### Scenario: Match conditions are not mistaken for principals
+
+- **GIVEN** a rule `{ "group": "behandelaars", "match": { "status": "open" } }`
+- **WHEN** declared groups are collected
+- **THEN** only `behandelaars` is provisioned
+- **AND** no group named `status` or `open` is created
+
+#### Scenario: Role assignments name groups in their values, not their keys
+
+- **GIVEN** an authorization block with `roles: { "behandelaar": "groep-a", "beheerder": ["groep-b", "groep-c"] }`
+- **WHEN** declared groups are collected
+- **THEN** `groep-a`, `groep-b` and `groep-c` are provisioned
+- **AND** no group named `behandelaar` or `beheerder` is created
+
+#### Scenario: Provisioning survives a refusing group backend
+
+- **GIVEN** three declared groups, of which the second is refused by a read-only group backend
+- **WHEN** provisioning runs
+- **THEN** the first and third groups are created
+- **AND** the refusal is logged against the declaring app rather than aborting the import
+
+### Requirement: Declared groups MUST be provisioned before the import skip check
+
+Provisioning SHALL run on every configuration import, including one that the content-hash check would skip.
+
+The skip means "importing would write exactly what is already stored" — a statement about stored data, which says nothing about whether the Nextcloud groups those authorization blocks name still exist. Provisioning after the skip would mean a group deleted by an administrator is never restored, because the very configuration that declares it is the one being skipped.
+
+#### Scenario: An unchanged re-import restores a hand-deleted group
+
+- **GIVEN** a configuration whose stored content hash matches the incoming document, so the import is skipped
+- **AND** a group it declares has since been deleted by an administrator
+- **WHEN** the configuration is imported again
+- **THEN** the declared group exists again
+- **AND** no configuration entities are re-written
+
+### Requirement: Provisioning MUST NOT depend on a leaf app's repair-step wiring
+
+Declared groups SHALL be reconciled by an OpenRegister-owned background sweep in addition to the import path, and that sweep SHALL read the live registers and schemas rather than the shipped configuration files.
+
+Import-time provisioning alone inherits each leaf app's `<repair-steps>` declaration, which is frequently wrong. Nextcloud runs `migrateSchemaOnly()` on a first install (`\OC\Installer::installAppLastSteps`): `<pre-migration>` and `<post-migration>` steps are both skipped, and `<install>` is the only unconditional hook. An app that declares its register import only under `<post-migration>` never imports on a fresh instance — precisely the case where no declared group exists yet.
+
+Reading live entities rather than files additionally covers virtual apps that ship no `register.json`, and restores a group an administrator deleted by hand.
+
+#### Scenario: A fresh install with no `<install>` hook still gets its groups
+
+- **GIVEN** an app whose register import is declared only under `<post-migration>`
+- **AND** the app is installed for the first time, so that step never runs
+- **WHEN** the reconciliation sweep next runs
+- **THEN** every group declared by the live registers and schemas exists
+
+#### Scenario: The sweep reads unfiltered rows
+
+- **GIVEN** the sweep runs from cron, with no logged-in user and no active organisation
+- **WHEN** it enumerates registers and schemas
+- **THEN** it does so with RBAC and multi-tenancy filtering disabled
+- **AND** it therefore does not report a clean pass over rows it never read
+
+### Requirement: An exported configuration MUST declare the groups it depends on
+
+`ExportHandler` SHALL emit `components.securitySchemes.oauth2.flows.authorizationCode.scopes` into the exported configuration document, covering every group named by the exported registers and schemas, at parity with the map `OasService` generates for API consumers.
+
+The scope map is derived from the definitions the document already carries, so it does not recover data the importer could not otherwise derive; what it adds is an explicit, self-describing declaration at the OAS-native location.
+
+#### Scenario: The scope map alone carries every group
+
+- **GIVEN** a configuration with a register-level group, a schema-level group and a property-level group
+- **WHEN** it is exported
+- **THEN** reading the scope map ALONE — without walking any authorization block — yields all three group ids
+- **AND** `admin` is present as a scope
+- **AND** `public` is absent unless the configuration grants anonymous access
+
+### Requirement: A declared group with no members MUST be visible
+
+The system SHALL expose, per declared group, whether it exists and how many members it has, so that a declared-but-unpopulated group is discoverable rather than silently denying every caller.
+
+Where the group backend cannot report a count, the member count SHALL be reported as UNKNOWN rather than zero. `OCP\IGroup::count()` returns `int|bool` and yields `false` on backends that cannot count; reporting that as `0` would present a fully populated group as empty and raise the exact false alarm this surface exists to prevent.
+
+#### Scenario: An uncountable backend reports unknown, not empty
+
+- **GIVEN** a declared group on a backend whose `count()` returns `false`
+- **WHEN** the declared-group inventory is read
+- **THEN** the group's member count is reported as unknown
+- **AND** it is NOT reported as having zero members
+
+### Requirement: A userless read inside runAsSystem is a system read
+A read made without a user inside `ObjectService::runAsSystem()` (SystemOperationContext) SHALL be treated as a system read by the magic-table access filters, the same way a userless read on the command line already is: RBAC filtering (query-builder and raw-SQL paths) and the organisation boundary SHALL NOT clamp it. This SHALL NOT open any user-facing read: a logged-in user inside the scope MUST still be filtered as that user, a forced-anonymous evaluation (AnonymousEvaluationContext) MUST still be filtered as anonymous, and a userless web read outside the scope MUST still be filtered. SaaS mode keeps the organisation boundary.
+
+#### Scenario: A system write's calculation resolves its references in a web request
+- **GIVEN** a web request with no user, and a case written inside `runAsSystem()` whose calculations declare references to `caseType` and `statusType`, schemas readable by staff only
+- **WHEN** ReferenceResolver reads those objects with RBAC and multitenancy on
+- **THEN** the referenced objects MUST be found, so the case gets its deadline and status label
+
+#### Scenario: A logged-in user inside the scope is still that user
+- **GIVEN** a logged-in non-admin user inside `runAsSystem()`
+- **WHEN** a staff-only schema is read
+- **THEN** the read MUST be filtered by that user's rights
+
+#### Scenario: Outside the scope nothing changes
+- **GIVEN** a web request with no user, outside `runAsSystem()`
+- **WHEN** a staff-only schema is read
+- **THEN** the read MUST be filtered as anonymous
+
+### Requirement: Related schemas are a catalog read
+`GET /api/schemas/{id}/related` SHALL resolve the schema and scan the other schemas without the multitenancy filter (a metadata read, like `GET /api/schemas/{id}`), so a caller who may see the schema gets its related schemas whatever their active organisation.
+
+#### Scenario: A non-admin in another organisation gets related schemas
+- **GIVEN** a non-admin whose active organisation does not own schema `module`
+- **WHEN** they request `GET /api/schemas/module/related`
+- **THEN** the response MUST be HTTP 200 with the incoming and outgoing related schemas, not "Schema not found"
+
+### Requirement: The scoped acting-user and trusted-system operations MUST have a stated contract
+
+Two scoped operations exist on the object service and have shipped without a
+spec-level contract: one narrows the caller to a named user for the duration of a
+callable, the other elevates to a trusted userless principal. Both are relied on
+by flow nodes and background jobs to decide access, so their guarantees are
+observable behaviour rather than implementation detail.
+
+The narrowing operation MUST behave as `delegated-identity` requires: it
+establishes the named user as the acting identity for the callable only, restores
+the previously acting identity when the callable ends — including on a throw —
+and grants nothing the named user does not already hold.
+
+The elevating operation MUST be reachable only from code shipped with the
+application, per `delegated-identity`.
+
+#### Scenario: The narrowing operation grants nothing
+
+- **WHEN** a callable runs narrowed to a user who lacks a permission
+- **THEN** an action requiring that permission is refused inside the callable
+- **AND** the refusal names the narrowed user, not the ambient caller
+
+#### Scenario: The elevating operation is not reachable from request handling
+
+- **WHEN** handling of an inbound request attempts a trusted userless operation
+- **THEN** the attempt is refused
+- **AND** the refusal is reported rather than downgraded to a silent no-op
+
+### Requirement: Authorization decisions MUST answer for the acting identity, not the ambient session
+
+Every predicate that decides access — the row-level authorization predicate and
+the tenancy predicate — MUST resolve the subject from the acting identity in
+force. A caller holding an explicit identity MUST NOT have that identity ignored
+in favour of whatever the ambient session carries.
+
+Where no acting identity is in force, an access decision MUST fail closed. A read
+MUST NOT silently drop its authorization predicate and return more than the
+subject may see; a write MUST NOT be attributed to a named owner while being
+decided against a different subject.
+
+#### Scenario: A read and the write it feeds decide against one identity
+
+- **WHEN** a lookup selects the object that a subsequent write or delete acts on,
+  both within one scoped identity
+- **THEN** both the lookup and the action decide against that same identity
+- **AND** an object the identity may not act on is not selected by the lookup
+
+#### Scenario: A sessionless read does not widen
+
+- **WHEN** a read runs with no acting identity in force
+- **THEN** the read is refused
+- **AND** it does not return rows that an authorization predicate would have
+  excluded
+
+### Requirement: Delegation MUST NOT be expressed as a permission verb
+
+Acting as another user is a property of the caller's identity, not an action
+performed on an object. It MUST NOT be added to the permission vocabulary, and
+MUST NOT be expressed as a scope, role or verb on a register, schema or object.
+
+This preserves ADR-010's rule that the core verb set is core's bitmask and that
+extensions are enforced at the endpoint performing the action rather than by
+widening the RBAC vocabulary.
+
+#### Scenario: No delegation verb appears in the permission model
+
+- **WHEN** the permission model for a register or schema is read
+- **THEN** it contains no verb, scope or role expressing "may act as another
+  user"
+
+### Requirement: A roles block that resolves to nothing grants nothing
+
+When an authorization block declares `roles` and none of them can be expanded,
+because the parent register declares no role definitions or every role name is
+unknown, the expanded block SHALL grant no verb to anybody: `read`, `create`,
+`update` and `delete` SHALL each be an empty list. It SHALL NOT be read as an
+absent block, which is open to every signed in account. The administrator and
+object owner bypasses SHALL still apply, and a block that keeps any other rule
+after expansion SHALL be evaluated as written.
+
+#### Scenario: A schema with roles only and a register without role definitions
+@e2e exclude An engine verdict with no surface of its own; asserted through hasPermission() in tests/Unit/Service/Object/PermissionHandlerHandlingTeamRuleTest.php.
+- **GIVEN** a schema whose authorization is `{"roles": {"behandelaar": ["behandelaars"]}}`
+- **AND** a parent register that declares no role definitions
+- **WHEN** a signed in user in no group asks to read, update or delete an object of it
+- **THEN** each SHALL be refused
+- **AND** an administrator SHALL still be allowed
+
+#### Scenario: A schema whose role names are all unknown
+@e2e exclude Same engine verdict; asserted in tests/Unit/Service/Object/PermissionHandlerRoleHierarchyTest.php.
+- **GIVEN** a register declaring the role `viewer`
+- **AND** a schema whose authorization assigns only the unknown role `ghost`
+- **WHEN** the block is expanded
+- **THEN** every canonical verb SHALL be an empty list
+
+### Requirement: A matrix row may add conditions and an end
+
+A department matrix row SHALL accept `where`, extra conditions in the scope vocabulary joined with AND to the row's field condition, and `until`, after which the row grants nothing. A `where` key SHALL be a property of the schema or one of the metadata fields `_organisation` and `_owner`, which the system sets and every enforcement path reads from the row's own column; any other key is refused with `matrix.where-unknown-field`. A `where` that binds a field other than `_organisation` to the caller's organisation (`"$organisation"`, `"$activeOrganisation"` or their `.uuid` form) compiles into a rule that reads other organisations' rows, so anyone who may write matrix rows could otherwise open that door. Such a row SHALL declare `"crossOrganisation": true` (the boolean); without it the validator refuses the row with `matrix.where-crosses-organisations` and the compiler drops it whole. The compiled scope SHALL be an ordinary conditional scope, evaluated identically on the PHP and SQL paths. A row whose `where` holds an empty `$in` SHALL be dropped whole.
+
+#### Scenario: an edit right limited to statuses
+
+- **GIVEN** schema `case` with a matrix on `assignedGroup`, a row for group `intakers` with value `team-a`, actions `update` and `where` `{status: {$in: ["s1"]}}`, and a second row for `intakers` with actions `read` and no `where`
+- **AND** user A in groups `intakers` and `team-a`
+- **WHEN** A updates a `team-a` case in status `s1`, then one in status `s2`
+- **THEN** the first update is allowed and the second refused
+- **AND** A still reads the case in `s2`
+- @e2e exclude {enforcement is a service boundary; covered by PHPUnit on both the PHP and the SQL path}
+
+#### Scenario: a row limited to the caller's organisation
+
+- **GIVEN** a matrix row for group `team-toezicht` with `where` `{_organisation: "$organisation"}`
+- **WHEN** the schema is saved, or an app adds the row at check time
+- **THEN** the row is accepted and its compiled scope carries `_organisation: "$organisation"` beside the field condition
+- **AND** a `where` on `_uuid`, `_created` or another metadata field is refused
+- @e2e exclude {covered by unit tests on the validator and compiler}
+
+#### Scenario: a row whose where reads across organisations must say so
+
+- **GIVEN** a matrix row with `where` `{provider: "$organisation"}` and no `crossOrganisation`
+- **WHEN** the schema is saved, or an app adds the row at check time
+- **THEN** it is refused with `matrix.where-crosses-organisations` and the compiler drops it
+- **AND** the same row with `"crossOrganisation": true` compiles into `{provider: "$organisation"}` beside the field condition
+- @e2e exclude {covered by unit tests on the validator and compiler}
+
+#### Scenario: a row past its end
+
+- **GIVEN** a row with `until` yesterday
+- **WHEN** its group lists objects
+- **THEN** the row admits nobody
+- @e2e exclude {covered by unit tests on the compiler}
+
+### Requirement: `$self` can mean a group the caller is in
+
+A matrix user source SHALL accept `{groups: true}`, making the caller's own values their Nextcloud group ids without a prefix.
+
+#### Scenario: own team
+
+- **GIVEN** a matrix on `assignedGroup` with user source `{groups: true}` and a row `$self` for group `handlers` with `read`
+- **AND** user A in `handlers` and `team-a`
+- **WHEN** A lists cases
+- **THEN** A sees the cases assigned to `team-a` and none assigned to `team-b`
+- @e2e exclude {covered by PHPUnit on both paths}
+
+### Requirement: An app contributes matrix rows at check time
+
+A matrix SHALL accept `rowsFrom`, a provider id. At check time OpenRegister SHALL dispatch `MatrixRowsRequestedEvent` once per request and schema and compile the rows listeners add beside the declared rows, through the same validator. A listener failure SHALL contribute no rows.
+
+#### Scenario: a provider row admits, a failing provider admits nobody
+
+- **GIVEN** a schema whose matrix declares `rowsFrom: "dossiq.case-type-rights"` and no rows of its own
+- **WHEN** a listener adds a row granting `read` to group `inspectors` on value `team-a`
+- **THEN** a member of `inspectors` and `team-a` reads a `team-a` object
+- **AND** when the listener throws, the same member reads nothing through the matrix
+- @e2e exclude {covered by PHPUnit with a real event dispatcher}
+
+### Requirement: The delegation store MUST sit outside the access control it informs
+
+Grant lookups MUST NOT pass through the object-level authorization path. A read
+that decides authorization cannot itself depend on the decision it is making, and
+routing it through `ObjectService` would make it do exactly that.
+
+It MUST NOT be resolved by elevating to a trusted userless principal either. That
+would put a security-critical read behind the one escape hatch
+`delegated-identity` forbids on request paths, and make every grant check a
+reason to reach for it.
+
+#### Scenario: Resolving a grant needs neither a subject nor elevation
+
+- **WHEN** an access decision resolves whether a grant exists
+- **THEN** the lookup performs no object-level permission check
+- **AND** it does not enter a trusted userless scope
+
+### Requirement: Delegation MUST remain outside the permission vocabulary
+
+Consistent with ADR-010 and with `or-delegated-identity`: acting as another user
+is a property of the caller's identity, not an action performed on an object. The
+grant store MUST NOT be expressed as a permission verb, scope or role.
+
+#### Scenario: No delegation verb is introduced
+
+- **WHEN** the permission model is read after this change
+- **THEN** it contains no verb, scope or role expressing delegation
+
+### Requirement: A schema declares the property that names its parent (REQ-RIC-001)
+
+A schema MAY declare `x-openregister-hierarchy` with a `parent` property
+name and a `maxDepth`. The named property MUST be a declared reference to
+the same schema; a schema that names anything else SHALL fail to save with
+HTTP 422. A schema without the annotation SHALL resolve authorization
+exactly as it does today.
+
+#### Scenario: a valid hierarchy declaration is accepted
+
+- **GIVEN** a schema `case` with a `parentCase` property declared as a reference to `case`
+- **WHEN** the schema is saved with `x-openregister-hierarchy: {"parent": "parentCase", "maxDepth": 5}`
+- **THEN** the save succeeds
+- @e2e exclude {annotation validator, covered by unit tests}
+
+#### Scenario: a parent property that points elsewhere is refused
+
+- **GIVEN** a schema `case` whose `assignee` property references the schema `user`
+- **WHEN** the schema is saved with `x-openregister-hierarchy: {"parent": "assignee"}`
+- **THEN** the save fails with HTTP 422 and the message names the property
+- @e2e exclude {annotation validator, covered by unit tests}
+
+#### Scenario: an undeclared hierarchy changes nothing
+
+- **GIVEN** a schema without `x-openregister-hierarchy`
+- **WHEN** a per-object grant is evaluated on one of its objects
+- **THEN** the answer is the same as before this change
+- @e2e exclude {regression assertion, covered by unit tests}
+
+### Requirement: A grant on an ancestor answers for its descendants (REQ-RIC-002)
+
+Where a schema declares its hierarchy, a per-object grant on an object
+SHALL grant the same verbs on every descendant reachable through the
+declared parent property, without a second grant. The inherited grant
+SHALL carry the ancestor's verbs and no others. A grant written directly
+on a descendant SHALL be evaluated beside the inherited one under the
+existing most-specific-wins resolution. The object list SHALL return the
+same set the per-object check allows.
+
+#### Scenario: read on the root reaches the grandchild
+
+- **GIVEN** a root object, a child and a grandchild linked by the declared parent property
+- **AND** a user holding a per-object `read` grant on the root only
+- **WHEN** the user reads the grandchild
+- **THEN** the grandchild is returned
+
+#### Scenario: read does not become write
+
+- **GIVEN** the same user and the same `read` grant on the root
+- **WHEN** the user saves a change to the child
+- **THEN** the write is refused
+
+#### Scenario: the list agrees with the read
+
+- **GIVEN** the same user and the same grant
+- **WHEN** the user lists the schema's objects
+- **THEN** the root, the child and the grandchild are all in the result
+- **AND** an object in a different tree they hold no grant on is not
+
+#### Scenario: a direct grant on a descendant still applies
+
+- **GIVEN** a user with `read` on the root and a direct `update` grant on the child
+- **WHEN** the user saves a change to the child
+- **THEN** the write succeeds
+- @e2e exclude {resolution order, covered by unit tests}
+
+### Requirement: Resolution is bounded and fails closed (REQ-RIC-003)
+
+Ancestor resolution SHALL stop at the schema's `maxDepth` and SHALL detect
+a cycle in the parent chain. In both cases the resolution SHALL return no
+grant and SHALL log the refusal with the object and the reason. Resolution
+SHALL be a single recursive query on both the object path and the list
+path.
+
+#### Scenario: a cycle grants nothing
+
+- **GIVEN** two objects that name each other as parent
+- **AND** a user with a per-object grant on neither
+- **WHEN** the user reads one of them
+- **THEN** access is refused and the refusal is logged with the cycle
+- @e2e exclude {fail-closed path, covered by unit tests}
+
+#### Scenario: a chain longer than maxDepth stops
+
+- **GIVEN** a schema with `maxDepth: 3` and a chain of six objects
+- **AND** a user holding a grant on the top object only
+- **WHEN** the user reads the sixth
+- **THEN** access is refused
+- @e2e exclude {depth cap, covered by unit tests}
+
+#### Scenario: a list over a tree stays one query
+
+- **GIVEN** a tree of 500 objects at depth 5
+- **WHEN** a user with a grant on the root lists them
+- **THEN** the list is answered within the performance budget of openregister ADR-009
+- @e2e exclude {performance assertion, covered by the query-count test}
+
+### Requirement: An inherited grant names where it came from (REQ-RIC-004)
+
+`GET /api/scopes` and the scope audit SHALL report an inherited grant with
+the ancestor object that carries it, distinguishable from a grant written
+on the object itself.
+
+#### Scenario: the audit points at the ancestor
+
+- **GIVEN** a user who may read a grandchild only through a grant on the root
+- **WHEN** an administrator asks who has access to the grandchild
+- **THEN** the user is listed with the root named as the source of the grant
+- @e2e exclude {discovery endpoint, covered by Newman}
+
+### Requirement: The set of grantable permissions is published (REQ-PPD-001)
+
+The system SHALL expose every permission that may be granted in this
+instance through a discovery endpoint. Each entry SHALL name the verb,
+the app that declared it, the scope levels it may be granted at and a
+description a human can read. The canonical verbs (`read`, `create`,
+`update`, `delete`, `list`, `manage`) SHALL always be present. A custom
+verb SHALL appear only when an app has declared it, and a verb that is
+not in the catalogue SHALL NOT be grantable: a role's `actions` array or
+an authorization block naming an unknown verb SHALL fail to save with
+HTTP 422 naming the verb.
+
+#### Scenario: an administrator reads what can be granted
+
+- **GIVEN** an instance where one app has declared the custom verb `publish`
+- **WHEN** a client requests the permission catalogue
+- **THEN** the response includes the six canonical verbs and `publish`
+- **AND** `publish` names the app that declared it and a description
+- @e2e exclude {covered by the catalogue unit tests and the e2e in task 4.1}
+
+#### Scenario: an unknown verb is refused at save
+
+- **GIVEN** a register whose `roles` configuration names the action `approve`, which no app declares
+- **WHEN** the register is saved
+- **THEN** the save fails with HTTP 422 and the message names `approve`
+- @e2e exclude {validator, covered by unit tests}
+
+#### Scenario: a declared verb without an evaluator fails closed
+
+- **GIVEN** a declared custom verb whose app registers no listener for `CustomScopeEvaluatingEvent`
+- **WHEN** the verb is evaluated
+- **THEN** the answer is a refusal
+- **AND** the refusal names the app that owes the listener
+- @e2e exclude {resolver behaviour, covered by unit tests}
+
+### Requirement: A rule may deny a verb, and a deny is not overridden (REQ-PPD-002)
+
+An authorization entry SHALL be able to name a verb as denied for a
+group, a role or an object. A deny SHALL remove that verb inside its
+scope and SHALL NOT be overridden by a broader grant, including a grant
+inherited from an ancestor object under `x-openregister-hierarchy`. A
+grant and a deny written for the same principal at the same level SHALL
+fail to save with both rules named. The object list SHALL return the same
+set the per-object check allows, so a denied object SHALL NOT appear in a
+list.
+
+#### Scenario: a deny on a child beats an inherited grant
+
+- **GIVEN** a user holding a per-object `read` grant on a root object
+- **AND** a deny of `read` on one child of that root
+- **WHEN** the user reads that child
+- **THEN** the read is refused
+
+#### Scenario: the denied object is absent from the list
+
+- **GIVEN** the same user, the same grant and the same deny
+- **WHEN** the user lists the schema's objects
+- **THEN** the root and its other descendants are returned
+- **AND** the denied child is not in the list
+
+#### Scenario: a broader grant does not restore a denied verb
+
+- **GIVEN** a schema rule granting `update` to the group `behandelaars`
+- **AND** a deny of `update` for the role `waarnemer`, held by a member of that group
+- **WHEN** that member saves a change
+- **THEN** the write is refused
+- @e2e exclude {resolution precedence, covered by unit tests}
+
+#### Scenario: a grant and a deny at one level is a configuration error
+
+- **GIVEN** an authorization block granting and denying `delete` to the same group at the same level
+- **WHEN** the block is saved
+- **THEN** the save fails with HTTP 422
+- **AND** the message names both rules
+- @e2e exclude {validator, covered by unit tests}
+
+### Requirement: Administration cannot be denied away (REQ-PPD-003)
+
+A deny SHALL NOT remove `manage` from the last principal holding it on a
+register. The save SHALL be refused, and the refusal SHALL name what
+would be left without an administrator.
+
+#### Scenario: the last manager cannot be denied
+
+- **GIVEN** a register where one group holds `manage`
+- **WHEN** an administrator saves a deny of `manage` for that group
+- **THEN** the save fails
+- **AND** the message names the register and the group
+- @e2e exclude {validator, covered by unit tests}
+
+### Requirement: Every effective permission names the rule that decided it (REQ-PPD-004)
+
+The effective-scope discovery endpoint SHALL report, for each granted
+action, the rule that granted it: the register default, the schema rule,
+the named role, the per-object grant, or the ancestor object it was
+inherited from. For an action a broader rule would have granted and a
+deny removed, it SHALL report that deny. The existing `actions` list
+SHALL keep its shape so existing callers are unaffected. The scope audit
+SHALL report the same provenance, and a denial log entry SHALL name the
+rule and not only the decision.
+
+#### Scenario: a grant says where it came from
+
+- **GIVEN** a user who may `read` a schema through a role on the register
+- **WHEN** the client requests the effective scopes
+- **THEN** `read` is listed in `actions`
+- **AND** its provenance names the role and the register
+- @e2e exclude {covered by the scopes endpoint unit tests and the e2e in task 4.1}
+
+#### Scenario: an absence says which rule removed it
+
+- **GIVEN** a user who would hold `update` through a schema rule, with `update` denied for their role
+- **WHEN** the client requests the effective scopes
+- **THEN** `update` is absent from `actions`
+- **AND** the provenance names the deny and the role it was written for
+- @e2e exclude {covered by the scopes endpoint unit tests}
+
+#### Scenario: an instance with no deny is unchanged
+
+- **GIVEN** an instance declaring no deny and no custom verb
+- **WHEN** any authorization decision is made
+- **THEN** the answer is the same as before this change
+- @e2e exclude {regression assertion, covered by unit tests}
+
+### Requirement: Access is compiled into the query, not applied to the result (REQ-PPD-005)
+
+Grants, inherited grants and denies SHALL be compiled into the object
+query and into the search index query as predicates, so that the returned
+page, the total and every facet count are computed over the set the caller
+may see. The system SHALL NOT filter a fetched page after the fact. The
+list path and the per-object check SHALL agree for every object.
+
+#### Scenario: the total counts only what the caller may see
+
+- **GIVEN** a schema holding 100 objects of which the caller may read 12
+- **WHEN** the caller lists the schema with a page size of 10
+- **THEN** the total is 12, the first page holds 10 and the second holds 2
+
+#### Scenario: facets count the permitted set
+
+- **GIVEN** the same caller and a facet over a property
+- **WHEN** the facet is requested
+- **THEN** the counts sum to 12
+
+#### Scenario: search and list agree
+
+- **GIVEN** the same caller and an object they may not read
+- **WHEN** they search for a term that object contains
+- **THEN** the object is absent from the results and from the result count
+- @e2e exclude {index path, covered by unit tests and the search suite}
+
+### Requirement: A record is returned with the actions its reader may take (REQ-PPD-006)
+
+An object read SHALL carry the actions the current user may take on that
+object, resolved in the same pass that decided the read. The list SHALL
+contain the verbs the caller actually holds, deny included, so a client
+does not have to guess and does not discover a refusal by attempting it.
+
+#### Scenario: the page renders only what is allowed
+
+- **GIVEN** a user who may read and update an object but may not delete it
+- **WHEN** the object is read
+- **THEN** the response lists `read` and `update` and does not list `delete`
+
+#### Scenario: a deny removes the action from the record
+
+- **GIVEN** the same user with `update` denied on that one object
+- **WHEN** the object is read
+- **THEN** `update` is absent from the actions
+
+### Requirement: An object answers who holds which right on it, and how that changed (REQ-PPD-007)
+
+The system SHALL answer, for a named object, which principals hold which
+verbs on it and the rule behind each grant. The system SHALL keep the
+history of that set, so it can report who held which right at a past
+moment and which rule changed it. Two roles SHALL be readable side by side
+against the catalogue, showing which permissions differ.
+
+#### Scenario: an auditor asks who could open a dossier
+
+- **GIVEN** an object reachable by one role grant, one per-object grant and one inherited grant
+- **WHEN** the object's effective permissions are read
+- **THEN** the three principals are listed, each with its verbs and the rule behind it
+
+#### Scenario: the access history answers a question about last year
+
+- **GIVEN** a grant that was removed three months ago
+- **WHEN** the object's access history is read for a date before the removal
+- **THEN** the grant is reported as held at that date, with the rule that removed it afterwards
+- @e2e exclude {history path, covered by unit tests}
+
+#### Scenario: two roles are compared
+
+- **GIVEN** the roles `behandelaar` and `senior behandelaar`
+- **WHEN** the two are compared
+- **THEN** the verbs only the senior role holds are listed
+- @e2e exclude {catalogue read, covered by unit tests}
+
+### Requirement: Grants may be derived at login, scoped, and given an end (REQ-PPD-008)
+
+A rule SHALL be able to map the claims an identity provider asserts to
+roles and scopes when a user signs in, in the same declared shape as any
+other authorization rule. A grant MAY carry an end, including an end bound
+to the deadline of the workflow step that created it, and an expired grant
+SHALL NOT be resolved. When a rule that derives access changes, the system
+SHALL re-run the derivation and report how many grants changed. The
+`manage` verb SHALL be grantable scoped to a named area, so a person may
+administer part of the instance without administering all of it.
+
+#### Scenario: a new employee is authorised without a matrix
+
+- **GIVEN** a rule mapping the claim `department: vergunningen` to the role `behandelaar` in that department
+- **WHEN** a user with that claim signs in
+- **THEN** they hold the role in that department and no other
+
+#### Scenario: a step's grant dies with the step
+
+- **GIVEN** a workflow step granting `read` on a file to its assignee until its deadline
+- **WHEN** the deadline passes and the assignee reads the file
+- **THEN** the read is refused
+- @e2e exclude {time-dependent, covered by unit tests with a clock fixture}
+
+#### Scenario: changing the rule reports what moved
+
+- **GIVEN** a derivation rule granting access to 240 objects
+- **WHEN** the rule is narrowed and saved
+- **THEN** the derivation re-runs and the response names how many grants changed
+
+#### Scenario: a delegated administrator cannot administer everything
+
+- **GIVEN** a user holding `manage` scoped to one register
+- **WHEN** they try to change the configuration of another register
+- **THEN** the write is refused naming the scope of their grant
+
+### Requirement: The deny is recorded before it refuses anything (REQ-PPD-009)
+
+The system SHALL carry a deny enforcement mode with three values: `off`,
+`staging` and `enforcing`. The default SHALL be `staging`, and a value the
+system does not recognise SHALL be read as `staging`. In `staging` a deny
+SHALL be resolved and recorded and SHALL NOT change any answer: the grant
+stands, no deny predicate enters the object query, and the recorded entry
+SHALL name the rule, the principal it names, the verb and the caller. In
+`off` no deny SHALL be resolved and none SHALL be recorded. In `enforcing`
+a deny SHALL apply as REQ-PPD-002 describes. Every enforcement path SHALL
+read the same mode, so an object read and a list cannot resolve in
+different modes within one request. The save-time refusals of REQ-PPD-002
+and REQ-PPD-003 SHALL apply in every mode.
+
+#### Scenario: a new deny refuses nobody on the day it is written
+
+- **GIVEN** an instance that has never set the deny enforcement mode
+- **AND** a deny of `read` for the group `waarnemers` on a schema they may read
+- **WHEN** a member of that group reads an object of the schema
+- **THEN** the read succeeds
+- **AND** the system records that the deny would have refused it, naming the rule
+
+#### Scenario: the list is unchanged while staging
+
+- **GIVEN** the same instance, the same deny and a schema holding 100 readable objects
+- **WHEN** the caller lists the schema
+- **THEN** the total is 100
+
+#### Scenario: the administrator turns it on
+
+- **GIVEN** the same instance with the deny enforcement mode set to `enforcing`
+- **WHEN** the same member reads the same object
+- **THEN** the read is refused
+- @e2e exclude {mode is instance configuration, covered by unit tests}
+
+#### Scenario: a contradiction is refused whatever the mode
+
+- **GIVEN** an instance in `staging`
+- **WHEN** an administrator saves a block granting and denying `delete` to one group at one level
+- **THEN** the save fails with HTTP 422
+- @e2e exclude {validator, covered by unit tests}
 
 ## ZGW Autorisaties Mapping Guide
 

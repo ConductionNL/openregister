@@ -1,0 +1,257 @@
+<?php
+
+/**
+ * WorkingCalendarController — the year preview of an unsaved calendar.
+ *
+ * There is deliberately ONE endpoint here, and it writes nothing. Working
+ * calendars are objects in the `flow-timers` register, so the objects API
+ * already reads and writes them; a second CRUD surface would give the same
+ * data a second RBAC model and a second validator, which is the shape this
+ * whole change exists to remove.
+ *
+ * What the objects API cannot do is answer "what would this definition mean
+ * in 2031?" before it is stored. An administrator editing a rule needs to see
+ * the dates the rule produces while the edit is still a draft, so this
+ * endpoint runs the rules over a year and returns the dates. Nothing is
+ * persisted, nothing is cached, and the request body is the calendar.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-working-calendars-are-administered-under-nextcloud-admin-settings
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Controller\Support\WorkingCalendarControllerServices;
+use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
+use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUserSession;
+
+/**
+ * Previews the non-working dates a calendar definition produces in a year.
+ */
+class WorkingCalendarController extends Controller {
+
+	/**
+	 * The earliest year a preview will compute.
+	 *
+	 * Bounded on both sides because the year is the loop counter of the
+	 * computus and the rule walk: an unbounded year from a request body is a
+	 * denial of service with extra steps.
+	 *
+	 * @var integer
+	 */
+	public const MIN_YEAR = 1970;
+
+	/**
+	 * The latest year a preview will compute.
+	 *
+	 * @var integer
+	 */
+	public const MAX_YEAR = 2200;
+
+	/**
+	 * Resolves the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Answers whether they are an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Builds and validates the definition.
+	 *
+	 * @var WorkingCalendarDefinitionsInterface
+	 */
+	private readonly WorkingCalendarDefinitionsInterface $calendars;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest                          $request  The current request.
+	 * @param WorkingCalendarControllerServices $services The controller's collaborators.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IRequest $request,
+		WorkingCalendarControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->calendars = $services->calendars;
+	}//end __construct()
+
+	/**
+	 * The non-working dates an unsaved calendar definition produces in a year.
+	 *
+	 * The definition is validated on the way in by the same constructor the
+	 * write path uses, so a preview of a calendar that could not be saved
+	 * refuses with the message the save would have given rather than quietly
+	 * previewing something else.
+	 *
+	 * 🔴 THE no-admin-required TAG IS DELIBERATELY ABSENT and is not spelled
+	 * out here either, because a docblock that writes the literal tag DECLARES
+	 * it. With it absent, Nextcloud's middleware requires an administrator
+	 * before the controller runs, and requireAdmin() then answers a JSON 403
+	 * rather than a middleware redirect. CSRF stays on: the panel posts through
+	 * axios with Nextcloud's request token, and `AuthorizedAdminSetting` is the
+	 * one attribute that declares "administrator" without also disabling it.
+	 *
+	 * @param array<string, mixed> $calendar The unsaved `working-calendar` definition.
+	 * @param int $year The year to compute.
+	 *
+	 * @return JSONResponse The dates, or a refusal.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-working-calendars-are-administered-under-nextcloud-admin-settings
+	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	public function preview(array $calendar = [], int $year = 0): JSONResponse {
+		$refusal = $this->requireAdmin() ?? $this->refuseYear(year: $year);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		try {
+			$definition = $this->calendars->parse(definition: $calendar);
+		} catch (FlowTimerValidationException $refused) {
+			return $this->invalidDefinition(refused: $refused);
+		}
+
+		return new JSONResponse(data: $this->previewBody(definition: $definition, year: $year));
+	}//end preview()
+
+	/**
+	 * Refuse a year outside the bounds a preview will compute.
+	 *
+	 * @param int $year The requested year.
+	 *
+	 * @return JSONResponse|null A 422, or null when the year is in bounds.
+	 */
+	private function refuseYear(int $year): ?JSONResponse {
+		if ($year >= self::MIN_YEAR && $year <= self::MAX_YEAR) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => sprintf('Preview year must be between %d and %d.', self::MIN_YEAR, self::MAX_YEAR),
+			],
+			statusCode: 422
+		);
+	}//end refuseYear()
+
+	/**
+	 * The 422 for a definition the write path would also refuse.
+	 *
+	 * @param FlowTimerValidationException $refused The validation refusal.
+	 *
+	 * @return JSONResponse The 422.
+	 */
+	private function invalidDefinition(FlowTimerValidationException $refused): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $refused->getMessage(),
+				'errors' => ['code' => 'working-calendar-invalid', 'message' => $refused->getMessage()],
+			],
+			statusCode: 422
+		);
+	}//end invalidDefinition()
+
+	/**
+	 * The preview body for a validated definition.
+	 *
+	 * The opening and closing times are echoed back from what was VALIDATED,
+	 * like the weekdays, and for the same reason: a panel that previews the
+	 * holidays but prints the opening time straight from its own form cannot
+	 * tell the reader that a malformed one was defaulted.
+	 *
+	 * @param WorkingCalendarInterface $definition The validated definition.
+	 * @param int $year The year to compute.
+	 *
+	 * @return array<string, mixed> The preview body.
+	 */
+	private function previewBody(WorkingCalendarInterface $definition, int $year): array {
+		$dates = $this->dateRows(definition: $definition, year: $year);
+
+		return [
+			'slug' => $definition->getSlug(),
+			'year' => $year,
+			'workingWeekdays' => $definition->getWorkingWeekdays(),
+			'hoursPerWorkingDay' => $definition->getHoursPerWorkingDay(),
+			'dayStartsAt' => $this->clockTime(minute: $definition->getDayStartsAtMinute()),
+			'dayEndsAt' => $this->clockTime(minute: $definition->getDayEndsAtMinute()),
+			'timezone' => $definition->getTimezone(),
+			'dates' => $dates,
+			'total' => count($dates),
+		];
+	}//end previewBody()
+
+	/**
+	 * The non-working dates of a year as `{date, name}` rows.
+	 *
+	 * @param WorkingCalendarInterface $definition The validated definition.
+	 * @param int $year The year to compute.
+	 *
+	 * @return list<array{date: string, name: string}> The rows.
+	 */
+	private function dateRows(WorkingCalendarInterface $definition, int $year): array {
+		$dates = [];
+		foreach ($definition->nonWorkingDates(year: $year) as $date => $name) {
+			$dates[] = ['date' => $date, 'name' => $name];
+		}
+
+		return $dates;
+	}//end dateRows()
+
+	/**
+	 * Format a minute of the day as `HH:MM`.
+	 *
+	 * @param int $minute Minutes since midnight.
+	 *
+	 * @return string The clock time.
+	 */
+	private function clockTime(int $minute): string {
+		return sprintf('%02d:%02d', intdiv($minute, 60), ($minute % 60));
+	}//end clockTime()
+
+	/**
+	 * Refuse a caller who is not an administrator.
+	 *
+	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
+	 */
+	private function requireAdmin(): ?JSONResponse {
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
+
+		return $gate->refusal(forbidden: 'Forbidden: working calendars are administered by administrators');
+	}//end requireAdmin()
+}//end class

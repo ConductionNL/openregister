@@ -1,0 +1,296 @@
+{
+    "allOf all invalid": {
+        "schema": [],
+        "issues": [
+            {
+                "path": "components.schemas.Test.allOf",
+                "message": "allOf with no valid items was removed.",
+                "code": "invalid_allof",
+                "severity": "auto_corrected"
+            }
+        ]
+    },
+    "allOf empty": {
+        "schema": [],
+        "issues": []
+    },
+    "allOf mixed": {
+        "schema": {
+            "allOf": [
+                {
+                    "$ref": "#/components/schemas/Adres"
+                },
+                {
+                    "type": "object"
+                },
+                {
+                    "properties": {
+                        "a": {
+                            "type": "string"
+                        }
+                    }
+                }
+            ]
+        },
+        "issues": []
+    },
+    "allOf ref case mismatch": {
+        "schema": {
+            "allOf": [
+                {
+                    "$ref": "#/components/schemas/Adres"
+                }
+            ]
+        },
+        "issues": []
+    },
+    "allOf scalar": {
+        "schema": [],
+        "issues": []
+    },
+    "allOf with dangling ref": {
+        "schema": {
+            "allOf": [
+                {
+                    "type": "string",
+                    "description": "Reference to Missing"
+                }
+            ]
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.allOf[0].$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Missing\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "anyOf nested": {
+        "schema": {
+            "anyOf": [
+                {
+                    "items": {
+                        "type": "string",
+                        "description": "Reference to gone"
+                    }
+                }
+            ]
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.anyOf[0].items.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/gone\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "anyOf scalar": {
+        "schema": {
+            "anyOf": "x"
+        },
+        "issues": []
+    },
+    "deep mix": {
+        "schema": {
+            "allOf": [
+                {
+                    "$ref": "#/components/schemas/Adres"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "p": {
+                            "type": "string",
+                            "description": "Reference to Nope"
+                        }
+                    }
+                }
+            ],
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "description": "Reference to Nope"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.properties.list.items.oneOf[0].$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Nope\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            },
+            {
+                "path": "components.schemas.Test.allOf[1].properties.p.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Nope\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "empty": {
+        "schema": [],
+        "issues": []
+    },
+    "items nested": {
+        "schema": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Reference to Gone"
+            }
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.items.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Gone\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "items scalar": {
+        "schema": {
+            "type": "array",
+            "items": "x"
+        },
+        "issues": []
+    },
+    "oneOf nested": {
+        "schema": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description": "Reference to Gone"
+                },
+                "x",
+                {
+                    "$ref": "#/components/schemas/Adres"
+                }
+            ]
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.oneOf[0].$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Gone\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "plain type": {
+        "schema": {
+            "type": "string"
+        },
+        "issues": []
+    },
+    "properties nested": {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "a": {
+                    "type": "string",
+                    "description": "Reference to Gone"
+                },
+                "b": "scalar",
+                "c": {
+                    "properties": {
+                        "d": {
+                            "$ref": "#/components/schemas/Adres"
+                        }
+                    }
+                }
+            }
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.properties.a.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Gone\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "ref case mismatch": {
+        "schema": {
+            "$ref": "#/components/schemas/Adres"
+        },
+        "issues": []
+    },
+    "ref dangling": {
+        "schema": {
+            "type": "string",
+            "description": "Reference to Missing"
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Missing\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "ref dangling with description": {
+        "schema": {
+            "description": "kept",
+            "type": "string"
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Missing\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "ref dangling with type": {
+        "schema": {
+            "type": "object"
+        },
+        "issues": [
+            {
+                "path": "components.schemas.Test.$ref",
+                "message": "Dangling $ref to \"#/components/schemas/Missing\"; substituted with type=string.",
+                "code": "dangling_ref",
+                "severity": "error"
+            }
+        ]
+    },
+    "ref definitions": {
+        "schema": {
+            "$ref": "#/definitions/Missing"
+        },
+        "issues": []
+    },
+    "ref empty": {
+        "schema": [],
+        "issues": []
+    },
+    "ref existing": {
+        "schema": {
+            "$ref": "#/components/schemas/Adres"
+        },
+        "issues": []
+    },
+    "ref external": {
+        "schema": {
+            "$ref": "https://example.org/a.json"
+        },
+        "issues": []
+    },
+    "ref non string": {
+        "schema": [],
+        "issues": []
+    }
+}

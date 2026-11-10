@@ -596,7 +596,16 @@ services:
     user: root
     container_name: nextcloud
 #    entrypoint: occ app:enable openregister
-    image: nextcloud
+    # PINNED Nextcloud version. Do NOT use the floating `nextcloud` / `:latest`
+    # tag here: when `latest` drifts to a newer NC (e.g. 33→34) and the env is
+    # recreated, the container boots a newer NC over the existing data volume →
+    # needsDbUpgrade → maintenance mode → 503 instance-wide, and bind-mounted
+    # apps (shillinq/pipelinq/procest/openregister/…) get disabled or their
+    # OpenRegister API fails until someone runs `occ upgrade`. Pinning a single
+    # patch tag makes every `docker compose up` reproducible — bump this
+    # deliberately (and run `occ upgrade` once) when you actually want to move
+    # NC versions, instead of being surprised on a reset.
+    image: nextcloud:34.0.0-apache
     restart: always
     ports:
       - 8080:80
@@ -614,7 +623,7 @@ services:
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
       - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
       - ../nldesign:/var/www/html/custom_apps/nldesign
-      - ../mydash:/var/www/html/custom_apps/mydash
+      - ../launchpad:/var/www/html/custom_apps/launchpad
       - ../opentalk:/var/www/html/custom_apps/opentalk
       - ../valtimo:/var/www/html/custom_apps/valtimo
       - ../openzaak:/var/www/html/custom_apps/openzaak
@@ -622,8 +631,10 @@ services:
       - ../docudesk:/var/www/html/custom_apps/docudesk
       - ../procest:/var/www/html/custom_apps/procest
       - ../pipelinq:/var/www/html/custom_apps/pipelinq
+      - ../decidesk:/var/www/html/custom_apps/decidesk
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
+      - ../shillinq:/var/www/html/custom_apps/shillinq
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
@@ -651,6 +662,58 @@ services:
       - EXAPP_OPENTALK_URL=http://openregister-exapp-opentalk:23000
       - EXAPP_VALTIMO_URL=http://openregister-exapp-valtimo:23000
 
+  # Redis - shared cache backend.
+  # Required by notify_push (cross-process state for connected clients) AND by Nextcloud
+  # itself once memcache.distributed is set to \OC\Memcache\Redis (see post-up setup
+  # commands below). Without Redis, notify_push crashloops with "No redis server is
+  # configured" because it reads NC's config.php for the cache backend.
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+
+  # notify_push - WebSocket push server for realtime updates
+  # Required by OpenRegister's add-live-updates change for REST clients (frontends consume
+  # via @conduction/nextcloud-vue's useLiveUpdates plugin). Soft-fails when absent — OR
+  # works fine without this service, just without push delivery.
+  #
+  # Setup after first start (one time):
+  #   docker exec -u www-data nextcloud php occ config:system:set redis host --value redis
+  #   docker exec -u www-data nextcloud php occ config:system:set redis port --value 6379 --type integer
+  #   docker exec -u www-data nextcloud php occ config:system:set memcache.distributed --value '\OC\Memcache\Redis'
+  #   docker exec -u www-data nextcloud php occ config:system:set trusted_proxies 0 --value 172.16.0.0/12
+  #   docker exec -u www-data nextcloud php occ notify_push:setup http://notify_push:7867
+  #   docker exec -u www-data nextcloud php occ notify_push:self-test
+  #
+  # Image: icewind1991/notify_push (official upstream maintained by the notify_push author).
+  notify_push:
+    image: icewind1991/notify_push:latest
+    container_name: notify_push
+    restart: always
+    depends_on:
+      - nextcloud
+      - db
+      - redis
+    ports:
+      - 7867:7867
+    volumes:
+      # Mount the same NC volume the nextcloud container uses, read-only — notify_push
+      # reads NC's config.php and apps/notify_push/css/* from here.
+      - nextcloud:/nextcloud:ro
+    environment:
+      # Tell notify_push where Nextcloud lives (server-side URL, not the public one)
+      - NEXTCLOUD_URL=http://nextcloud
+      # PostgreSQL connection (matches the db service env vars above)
+      - DATABASE_URL=postgres://nextcloud:!ChangeMe!@db/nextcloud
+      # Redis URL (matches the redis service above)
+      - REDIS_URL=redis://redis:6379
+      # Logging — set to `info` for production, `trace` while debugging
+      - LOG=info
+      # Bind on all interfaces inside the container
+      - PORT=7867
+
   # Nextcloud Application Server (MariaDB - For Testing)
   # Start with: docker-compose --profile mariadb up
   # Note: Do NOT use docker-compose up when using this profile
@@ -660,7 +723,9 @@ services:
       - mariadb
     user: root
     container_name: nextcloud-mariadb
-    image: nextcloud
+    # PINNED — same reason as the main nextcloud service above (avoid latest-drift
+    # upgrade churn that 503s the env on reset).
+    image: nextcloud:34.0.0-apache
     restart: always
     ports:
       - 8080:80
@@ -1057,6 +1122,35 @@ services:
   # ExApp Shared Infrastructure
   # Start with: docker-compose --profile commonground up
   # =============================================================================
+
+  # Greenmail — In-memory SMTP/IMAP/POP3 server for integration tests
+  # Start with: docker-compose --profile mail up -d
+  # Seed test mailboxes via: bash docker/mail/seed-mail.sh
+  # Auto-creates accounts on first message; login = email = password.
+  # Used by `nextcloud-entity-relations` integration tests
+  # (`tests/Service/MailRelationsIntegrationTest.php`) — tests skip
+  # gracefully when this container is not running.
+  greenmail:
+    profiles:
+      - mail
+    image: greenmail/standalone:2.1.0
+    container_name: openregister-greenmail
+    restart: unless-stopped
+    environment:
+      - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users.login=email -Dgreenmail.auth.disabled
+    ports:
+      - "3025:3025"  # SMTP
+      - "3110:3110"  # POP3
+      - "3143:3143"  # IMAP
+      - "3465:3465"  # SMTPS
+      - "3993:3993"  # IMAPS
+      - "3995:3995"  # POP3S
+      - "8088:8080"  # Greenmail HTTP API (for inbox inspection in tests)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/127.0.0.1/3025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis - Shared cache and message broker for ExApp services
   # Used by: OpenZaak, OpenKlant, OpenTalk

@@ -6,7 +6,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -16,12 +16,6 @@
  */
 
 declare(strict_types=1);
-
-/*
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
 
 namespace OCA\OpenRegister\Migration;
 
@@ -35,113 +29,101 @@ use OCP\Migration\SimpleMigrationStep;
  * Migration step for adding hard_validation and archive columns to schemas table
  *
  * FIXME Auto-generated migration step: Please modify to your needs!
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class Version1Date20241030131427 extends SimpleMigrationStep
-{
-    /**
-     * Execute actions before schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end preSchemaChange()
+class Version1Date20241030131427 extends SimpleMigrationStep {
+	/**
+	 * Execute actions before schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end preSchemaChange()
 
-    /**
-     * Apply schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return ISchemaWrapper
-     *
-     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
-     */
-    public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
-    {
-        /*
-         * @var ISchemaWrapper $schema
-         */
+	/**
+	 * Apply schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-        $schema = $schemaClosure();
+		$schema = $schemaClosure();
 
-        // Update the openregister_schemas table.
-        $table = $schema->getTable('openregister_schemas');
-        if ($table->hasColumn('hard_validation') === false) {
-            $options = ['notnull' => true];
-            $table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: $options)
-                ->setDefault(default: false);
-        }
+		// Update the openregister_schemas table.
+		$table = $schema->getTable('openregister_schemas');
+		if ($table->hasColumn('hard_validation') === false) {
+			$options = ['notnull' => true];
+			$table->addColumn(name: 'hard_validation', typeName: Types::BOOLEAN, options: $options)
+				->setDefault(default: false);
+		}
 
-        if ($table->hasColumn('archive') === false) {
-            $options = ['notnull' => false];
-            $table->addColumn(name: 'archive', typeName: Types::JSON, options: $options)
-                ->setDefault(default: '{}');
-        }
+		if ($table->hasColumn('archive') === false) {
+			$options = ['notnull' => false];
+			$table->addColumn(name: 'archive', typeName: Types::JSON, options: $options)
+				->setDefault(default: '{}');
+		}
 
-        if ($table->hasColumn('source') === false) {
-            $options = ['notnull' => false];
-            $table->addColumn(name: 'source', typeName: Types::STRING, options: $options)
-                ->setDefault(default: '');
-        }
+		if ($table->hasColumn('source') === false) {
+			$options = ['notnull' => false];
+			$table->addColumn(name: 'source', typeName: Types::STRING, options: $options)
+				->setDefault(default: '');
+		}
 
-        // Update the openregister_registers table.
-        $table = $schema->getTable('openregister_registers');
-        if ($table->hasColumn('source') === true) {
-            $column = $table->getColumn('source');
-            $column->setNotnull(false);
-            $column->setDefault('');
-        }
+		// Update the openregister_registers table.
+		$table = $schema->getTable('openregister_registers');
+		if ($table->hasColumn('source') === true) {
+			$column = $table->getColumn('source');
+			$column->setNotnull(false);
+			$column->setDefault('');
+		}
 
-        if ($table->hasColumn('table_prefix') === true) {
-            $column = $table->getColumn('table_prefix');
-            $column->setNotnull(false);
-            $column->setDefault('');
-        }
+		if ($table->hasColumn('table_prefix') === true) {
+			$column = $table->getColumn('table_prefix');
+			$column->setNotnull(false);
+			$column->setDefault('');
+		}
 
-        if ($schema->hasTable('openregister_object_audit_logs') === false) {
-            $table = $schema->createTable('openregister_object_audit_logs');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-            $table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
-            $table->addColumn('schema_id', Types::STRING, ['notnull' => true, 'length' => 255]);
-            $table->addColumn('object_id', Types::STRING, ['notnull' => true, 'length' => 255]);
-            $table->addColumn('user_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('session_id', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('changes', Types::JSON, ['notnull' => false]);
-            $table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
-            $table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
+		if ($schema->hasTable('openregister_object_audit_logs') === false) {
+			$table = $schema->createTable('openregister_object_audit_logs');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
+			$table->addColumn('uuid', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('schema_id', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('object_id', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('user_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('session_id', Types::STRING, ['notnull' => false, 'length' => 255]);
+			$table->addColumn('changes', Types::JSON, ['notnull' => false]);
+			$table->addColumn('expires', Types::DATETIME, ['notnull' => false]);
+			$table->addColumn('created', Types::DATETIME, ['notnull' => true, 'default' => 'CURRENT_TIMESTAMP']);
 
-            $table->setPrimaryKey(['id']);
-            $table->addIndex(['uuid'], 'object_audit_log_uuid');
-            $table->addIndex(['schema_id'], 'object_audit_log_schema_id');
-            $table->addIndex(['object_id'], 'object_audit_log_object_id');
-            $table->addIndex(['user_id'], 'object_audit_log_user_id');
-        }
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['uuid'], 'object_audit_log_uuid');
+			$table->addIndex(['schema_id'], 'object_audit_log_schema_id');
+			$table->addIndex(['object_id'], 'object_audit_log_object_id');
+			$table->addIndex(['user_id'], 'object_audit_log_user_id');
+		}
 
-        return $schema;
-    }//end changeSchema()
+		return $schema;
+	}//end changeSchema()
 
-    /**
-     * Execute actions after schema changes
-     *
-     * @param IOutput                   $output        Output interface for migration progress
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options       Migration options
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
-    {
-    }//end postSchemaChange()
+	/**
+	 * Execute actions after schema changes
+	 *
+	 * @param IOutput $output Output interface for migration progress
+	 * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+	 * @param array $options Migration options
+	 *
+	 * @return void
+	 */
+	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	}//end postSchemaChange()
 }//end class

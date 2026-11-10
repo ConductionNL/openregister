@@ -9,7 +9,7 @@ Define the authentication and authorization system for OpenRegister, supporting 
 
 **Source**: Core OpenRegister capability; 67% of tenders require SSO/identity integration; 86% require RBAC per zaaktype.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: The system MUST support multiple authentication methods with unified identity resolution
 OpenRegister MUST accept authentication via Nextcloud session cookies, HTTP Basic Auth, Bearer JWT tokens, OAuth2 bearer tokens, and API keys. All methods MUST resolve to a Nextcloud user identity (via `OCP\IUserSession::setUser()`) before any RBAC evaluation occurs, ensuring that authorization decisions are independent of the authentication method used.

@@ -1,0 +1,268 @@
+{
+    "after april": {
+        "rows": [
+            {
+                "uid": "i",
+                "uri": "i.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T00:00:00+00:00",
+                "dtend": "2026-05-02T00:00:00+00:00",
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-09-01T10:00:00+00:00",
+                "dtend": "2026-09-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            }
+        ],
+        "warnings": [
+            [
+                "Failed to parse calendar event for picker: This pa",
+                {
+                    "uri": "h.ics"
+                }
+            ]
+        ]
+    },
+    "after everything": {
+        "rows": [
+            {
+                "uid": "c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            }
+        ],
+        "warnings": [
+            [
+                "Failed to parse calendar event for picker: This pa",
+                {
+                    "uri": "h.ics"
+                }
+            ]
+        ]
+    },
+    "all": {
+        "rows": [
+            {
+                "uid": "b",
+                "uri": "b.ics",
+                "summary": "Early",
+                "dtstart": "2026-01-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "i",
+                "uri": "i.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T00:00:00+00:00",
+                "dtend": "2026-05-02T00:00:00+00:00",
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-09-01T10:00:00+00:00",
+                "dtend": "2026-09-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            }
+        ],
+        "warnings": [
+            [
+                "Failed to parse calendar event for picker: This pa",
+                {
+                    "uri": "h.ics"
+                }
+            ]
+        ]
+    },
+    "limit two": {
+        "rows": [
+            {
+                "uid": "b",
+                "uri": "b.ics",
+                "summary": "Early",
+                "dtstart": "2026-01-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "i",
+                "uri": "i.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T00:00:00+00:00",
+                "dtend": "2026-05-02T00:00:00+00:00",
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            }
+        ],
+        "warnings": [
+            [
+                "Failed to parse calendar event for picker: This pa",
+                {
+                    "uri": "h.ics"
+                }
+            ]
+        ]
+    },
+    "limit zero": {
+        "rows": [
+            {
+                "uid": "b",
+                "uri": "b.ics",
+                "summary": "Early",
+                "dtstart": "2026-01-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "i",
+                "uri": "i.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T00:00:00+00:00",
+                "dtend": "2026-05-02T00:00:00+00:00",
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-09-01T10:00:00+00:00",
+                "dtend": "2026-09-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            }
+        ],
+        "warnings": [
+            [
+                "Failed to parse calendar event for picker: This pa",
+                {
+                    "uri": "h.ics"
+                }
+            ]
+        ]
+    },
+    "no limit": {
+        "rows": [
+            {
+                "uid": "b",
+                "uri": "b.ics",
+                "summary": "Early",
+                "dtstart": "2026-01-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "i",
+                "uri": "i.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T00:00:00+00:00",
+                "dtend": "2026-05-02T00:00:00+00:00",
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-09-01T10:00:00+00:00",
+                "dtend": "2026-09-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 3,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 3,
+                "calendarUri": "work"
+            }
+        ],
+        "warnings": [
+            [
+                "Failed to parse calendar event for picker: This pa",
+                {
+                    "uri": "h.ics"
+                }
+            ]
+        ]
+    },
+    "todo calendar": {
+        "error": [
+            "Exception",
+            "Calendar tasks not found for user"
+        ],
+        "warnings": []
+    },
+    "unknown calendar": {
+        "error": [
+            "Exception",
+            "Calendar nope not found for user"
+        ],
+        "warnings": []
+    }
+}

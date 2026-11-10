@@ -1,0 +1,220 @@
+{
+    "nothing discovered": [],
+    "mixed set": [
+        {
+            "property_name": "address",
+            "confidence": "low",
+            "usage_percentage": 49,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null,
+            "maxLength": 24,
+            "type": "object",
+            "properties": {
+                "street": {
+                    "type": "string",
+                    "description": "Nested property discovered through analysis"
+                },
+                "city": {
+                    "type": "string",
+                    "description": "Nested property discovered through analysis"
+                }
+            }
+        },
+        {
+            "property_name": "tags",
+            "confidence": "low",
+            "usage_percentage": 20,
+            "usage_count": 6,
+            "recommended_type": "array",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null,
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        {
+            "property_name": "meta",
+            "confidence": "low",
+            "usage_percentage": 20,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null,
+            "maxLength": 24
+        },
+        {
+            "property_name": "nopct",
+            "confidence": "low",
+            "usage_percentage": 0,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": null,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null,
+            "maxLength": 24
+        },
+        {
+            "property_name": "long",
+            "confidence": "medium",
+            "usage_percentage": 79,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 900,
+            "min_length": 3,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null,
+            "maxLength": 1000
+        },
+        {
+            "property_name": "_internal",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null,
+            "maxLength": 24
+        },
+        {
+            "property_name": "count",
+            "confidence": "medium",
+            "usage_percentage": 50,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": null,
+            "min_length": null,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": [
+                "integer",
+                "string"
+            ]
+        },
+        {
+            "property_name": "title",
+            "confidence": "high",
+            "usage_percentage": 95,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "nullable": true,
+            "description": "Property discovered through object analysis",
+            "detected_format": "email",
+            "string_patterns": [
+                "lower"
+            ],
+            "numeric_range": null,
+            "type_variations": null,
+            "maxLength": 24
+        },
+        {
+            "property_name": "status",
+            "confidence": "high",
+            "usage_percentage": 80,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "examples": [
+                "open",
+                "open",
+                "closed"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "nullable": true,
+            "description": "Enum-like property with predefined values",
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null,
+            "maxLength": 24,
+            "type": "string",
+            "enum": [
+                "open",
+                "closed"
+            ]
+        }
+    ]
+}

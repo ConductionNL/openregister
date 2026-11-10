@@ -1,0 +1,1172 @@
+{
+    "fields": {
+        "color 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color 1 stored": {
+            "custom": "Property 'field' declared format 'hex'; 'nope' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; 'nope' does not match hex regex"
+            }
+        },
+        "color 1 required": {
+            "custom": "Property 'field' declared format 'hex'; 'nope' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; 'nope' does not match hex regex"
+            }
+        },
+        "color 1 given": {
+            "custom": "Property 'field' declared format 'hex'; 'nope' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; 'nope' does not match hex regex"
+            }
+        },
+        "color 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color 2 stored": {
+            "custom": "Property 'field': color value must be a string",
+            "errors": {
+                "field": "Property 'field': color value must be a string"
+            }
+        },
+        "color 2 required": {
+            "custom": "Property 'field': color value must be a string",
+            "errors": {
+                "field": "Property 'field': color value must be a string"
+            }
+        },
+        "color 2 given": {
+            "custom": "Property 'field': color value must be a string",
+            "errors": {
+                "field": "Property 'field': color value must be a string"
+            }
+        },
+        "color 2 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color 3 stored": {
+            "custom": "Property 'field' declared format 'hex'; '' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; '' does not match hex regex"
+            }
+        },
+        "color 3 required": {
+            "custom": "Property 'field' declared format 'hex'; '' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; '' does not match hex regex"
+            }
+        },
+        "color 3 given": {
+            "custom": "Property 'field' declared format 'hex'; '' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; '' does not match hex regex"
+            }
+        },
+        "color 3 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color 4 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color 4 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "color 4 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color 4 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color rgb 0 stored": {
+            "custom": "Property 'field' declared format 'hex'; 'rgb(1,2,3)' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; 'rgb(1,2,3)' does not match hex regex"
+            }
+        },
+        "color rgb 0 required": {
+            "custom": "Property 'field' declared format 'hex'; 'rgb(1,2,3)' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; 'rgb(1,2,3)' does not match hex regex"
+            }
+        },
+        "color rgb 0 given": {
+            "custom": "Property 'field' declared format 'hex'; 'rgb(1,2,3)' does not match hex regex",
+            "errors": {
+                "field": "Property 'field' declared format 'hex'; 'rgb(1,2,3)' does not match hex regex"
+            }
+        },
+        "color rgb 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color rgb 1 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color rgb 1 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color rgb 1 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color rgb 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color rgba 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color rgba 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color rgba 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color rgba 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color rgba 1 stored": {
+            "custom": "Property 'field' declared format 'rgba'; '#ff0000' does not match rgba regex",
+            "errors": {
+                "field": "Property 'field' declared format 'rgba'; '#ff0000' does not match rgba regex"
+            }
+        },
+        "color rgba 1 required": {
+            "custom": "Property 'field' declared format 'rgba'; '#ff0000' does not match rgba regex",
+            "errors": {
+                "field": "Property 'field' declared format 'rgba'; '#ff0000' does not match rgba regex"
+            }
+        },
+        "color rgba 1 given": {
+            "custom": "Property 'field' declared format 'rgba'; '#ff0000' does not match rgba regex",
+            "errors": {
+                "field": "Property 'field' declared format 'rgba'; '#ff0000' does not match rgba regex"
+            }
+        },
+        "color rgba 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color oklch 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color oklch 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color oklch 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "color oklch 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "color oklch 1 stored": {
+            "custom": "Property 'field' declared format 'oklch'; '#ff0000' does not match oklch regex",
+            "errors": {
+                "field": "Property 'field' declared format 'oklch'; '#ff0000' does not match oklch regex"
+            }
+        },
+        "color oklch 1 required": {
+            "custom": "Property 'field' declared format 'oklch'; '#ff0000' does not match oklch regex",
+            "errors": {
+                "field": "Property 'field' declared format 'oklch'; '#ff0000' does not match oklch regex"
+            }
+        },
+        "color oklch 1 given": {
+            "custom": "Property 'field' declared format 'oklch'; '#ff0000' does not match oklch regex",
+            "errors": {
+                "field": "Property 'field' declared format 'oklch'; '#ff0000' does not match oklch regex"
+            }
+        },
+        "color oklch 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "recurrence 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "recurrence 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "recurrence 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "recurrence 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "recurrence 1 stored": {
+            "custom": "Property 'field': invalid RRULE 'nope' (sabre/vobject parse error)",
+            "errors": {
+                "field": "Property 'field': invalid RRULE 'nope' (sabre/vobject parse error)"
+            }
+        },
+        "recurrence 1 required": {
+            "custom": "Property 'field': invalid RRULE 'nope' (sabre/vobject parse error)",
+            "errors": {
+                "field": "Property 'field': invalid RRULE 'nope' (sabre/vobject parse error)"
+            }
+        },
+        "recurrence 1 given": {
+            "custom": "Property 'field': invalid RRULE 'nope' (sabre/vobject parse error)",
+            "errors": {
+                "field": "Property 'field': invalid RRULE 'nope' (sabre/vobject parse error)"
+            }
+        },
+        "recurrence 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "recurrence 2 stored": {
+            "custom": "Property 'field': recurrence value must be an RRULE string",
+            "errors": {
+                "field": "Property 'field': recurrence value must be an RRULE string"
+            }
+        },
+        "recurrence 2 required": {
+            "custom": "Property 'field': recurrence value must be an RRULE string",
+            "errors": {
+                "field": "Property 'field': recurrence value must be an RRULE string"
+            }
+        },
+        "recurrence 2 given": {
+            "custom": "Property 'field': recurrence value must be an RRULE string",
+            "errors": {
+                "field": "Property 'field': recurrence value must be an RRULE string"
+            }
+        },
+        "recurrence 2 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "recurrence 3 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "recurrence 3 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "recurrence 3 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "recurrence 3 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "bsn 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "bsn 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "bsn 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "bsn 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "bsn 1 stored": {
+            "valid": false,
+            "message": "Property 'field' should match format 'bsn' but '123456789' does not. Please provide a value in the correct format."
+        },
+        "bsn 1 required": {
+            "valid": false,
+            "message": "Property 'field' should match format 'bsn' but '123456789' does not. Please provide a value in the correct format."
+        },
+        "bsn 1 given": {
+            "valid": false,
+            "message": "Property 'field' should match format 'bsn' but '123456789' does not. Please provide a value in the correct format."
+        },
+        "bsn 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "semver 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "semver 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "semver 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "semver 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "semver 1 stored": {
+            "valid": false,
+            "message": "Property 'field' should match format 'semver' but 'x' does not. Please provide a value in the correct format."
+        },
+        "semver 1 required": {
+            "valid": false,
+            "message": "Property 'field' should match format 'semver' but 'x' does not. Please provide a value in the correct format."
+        },
+        "semver 1 given": {
+            "valid": false,
+            "message": "Property 'field' should match format 'semver' but 'x' does not. Please provide a value in the correct format."
+        },
+        "semver 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "cron 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "cron 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "cron 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "cron 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "cron 1 stored": {
+            "valid": false,
+            "message": "Property 'field' should match format 'cron' but 'x' does not. Please provide a value in the correct format."
+        },
+        "cron 1 required": {
+            "valid": false,
+            "message": "Property 'field' should match format 'cron' but 'x' does not. Please provide a value in the correct format."
+        },
+        "cron 1 given": {
+            "valid": false,
+            "message": "Property 'field' should match format 'cron' but 'x' does not. Please provide a value in the correct format."
+        },
+        "cron 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "user 0 stored": {
+            "valid": false,
+            "message": "Property 'field' should match format 'user' but 'alice' does not. Please provide a value in the correct format."
+        },
+        "user 0 required": {
+            "valid": false,
+            "message": "Property 'field' should match format 'user' but 'alice' does not. Please provide a value in the correct format."
+        },
+        "user 0 given": {
+            "valid": false,
+            "message": "Property 'field' should match format 'user' but 'alice' does not. Please provide a value in the correct format."
+        },
+        "user 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "user 1 stored": {
+            "valid": false,
+            "message": "Property 'field' should match format 'user' but 'ghost' does not. Please provide a value in the correct format."
+        },
+        "user 1 required": {
+            "valid": false,
+            "message": "Property 'field' should match format 'user' but 'ghost' does not. Please provide a value in the correct format."
+        },
+        "user 1 given": {
+            "valid": false,
+            "message": "Property 'field' should match format 'user' but 'ghost' does not. Please provide a value in the correct format."
+        },
+        "user 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "date-time 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "date-time 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "date-time 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "date-time 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "date-time 1 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "date-time 1 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "date-time 1 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "date-time 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "date-time 2 stored": {
+            "valid": false,
+            "message": "Property 'field' should match format 'date-time' but 'x' does not. Please provide a value in the correct format."
+        },
+        "date-time 2 required": {
+            "valid": false,
+            "message": "Property 'field' should match format 'date-time' but 'x' does not. Please provide a value in the correct format."
+        },
+        "date-time 2 given": {
+            "valid": false,
+            "message": "Property 'field' should match format 'date-time' but 'x' does not. Please provide a value in the correct format."
+        },
+        "date-time 2 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "translated 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "translated 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "translated 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "translated 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "translated 1 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "translated 1 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "translated 1 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "translated 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "translated 2 stored": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'object'. Please provide a value of the correct type."
+        },
+        "translated 2 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'object'. Please provide a value of the correct type."
+        },
+        "translated 2 given": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'object'. Please provide a value of the correct type."
+        },
+        "translated 2 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "translated 3 stored": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'integer'. Please provide a value of the correct type."
+        },
+        "translated 3 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'integer'. Please provide a value of the correct type."
+        },
+        "translated 3 given": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'integer'. Please provide a value of the correct type."
+        },
+        "translated 3 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "nested null 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested null 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested null 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested null 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "nested null 1 stored": {
+            "valid": false,
+            "message": "Property 'field.b' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "nested null 1 required": {
+            "valid": false,
+            "message": "Property 'field.b' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "nested null 1 given": {
+            "valid": false,
+            "message": "Property 'field.b' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "nested null 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "nested null 2 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested null 2 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested null 2 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested null 2 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "nested enum 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested enum 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested enum 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested enum 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "nested enum 1 stored": {
+            "valid": false,
+            "message": "Property 'field.a' should be one of: 'x', '', but is 'y'. Please choose one of the allowed values."
+        },
+        "nested enum 1 required": {
+            "valid": false,
+            "message": "Property 'field.a' should be one of: 'x', '', but is 'y'. Please choose one of the allowed values."
+        },
+        "nested enum 1 given": {
+            "valid": false,
+            "message": "Property 'field.a' should be one of: 'x', '', but is 'y'. Please choose one of the allowed values."
+        },
+        "nested enum 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "nested list 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested list 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested list 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "nested list 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "nested list 1 stored": {
+            "valid": false,
+            "message": "Property 'field.0.a' should be type 'integer or null' but is 'string'. Please provide a value of the correct type."
+        },
+        "nested list 1 required": {
+            "valid": false,
+            "message": "Property 'field.0.a' should be type 'integer or null' but is 'string'. Please provide a value of the correct type."
+        },
+        "nested list 1 given": {
+            "valid": false,
+            "message": "Property 'field.0.a' should be type 'integer or null' but is 'string'. Please provide a value of the correct type."
+        },
+        "nested list 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "union 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "union 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "union 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "union 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "union 1 stored": {
+            "valid": false,
+            "message": "Property 'field.a' should be type 'string' but is 'number'. Please provide a value of the correct type."
+        },
+        "union 1 required": {
+            "valid": false,
+            "message": "Property 'field.a' should be type 'string' but is 'number'. Please provide a value of the correct type."
+        },
+        "union 1 given": {
+            "valid": false,
+            "message": "Property 'field.a' should be type 'string' but is 'number'. Please provide a value of the correct type."
+        },
+        "union 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "null union 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null union 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null union 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null union 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "null oneOf 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null oneOf 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null oneOf 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null oneOf 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "null type 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null type 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null type 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "null type 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "null type 1 stored": {
+            "valid": false,
+            "message": "Property 'field.a' should be type 'null' but is 'string'. Please provide a value of the correct type."
+        },
+        "null type 1 required": {
+            "valid": false,
+            "message": "Property 'field.a' should be type 'null' but is 'string'. Please provide a value of the correct type."
+        },
+        "null type 1 given": {
+            "valid": false,
+            "message": "Property 'field.a' should be type 'null' but is 'string'. Please provide a value of the correct type."
+        },
+        "null type 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "enum 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "enum 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "enum 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "enum 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "enum 1 stored": {
+            "valid": false,
+            "message": "Property 'field' should be one of: 'a', 'b', but is 'c'. Please choose one of the allowed values."
+        },
+        "enum 1 required": {
+            "valid": false,
+            "message": "Property 'field' should be one of: 'a', 'b', but is 'c'. Please choose one of the allowed values."
+        },
+        "enum 1 given": {
+            "valid": false,
+            "message": "Property 'field' should be one of: 'a', 'b', but is 'c'. Please choose one of the allowed values."
+        },
+        "enum 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "enum 2 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum 2 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "enum 2 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum 2 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "enum 3 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum 3 required": {
+            "valid": false,
+            "message": "Property 'field' should be one of: 'a', 'b', but is ''. Please choose one of the allowed values."
+        },
+        "enum 3 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum 3 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "enum empty 0 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum empty 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "enum empty 0 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum empty 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "enum empty 1 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum empty 1 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "enum empty 1 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "enum empty 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "list 0 stored": {
+            "valid": false,
+            "message": "Property 'field' requires at least 1 items, has 0. Please add more items to the array or set to null if the property is not required."
+        },
+        "list 0 required": {
+            "valid": false,
+            "message": "Property 'field' requires at least 1 items, has 0. Please add more items to the array or set to null if the property is not required."
+        },
+        "list 0 given": {
+            "valid": false,
+            "message": "Property 'field' requires at least 1 items, has 0. Please add more items to the array or set to null if the property is not required."
+        },
+        "list 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "list 1 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "list 1 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "list 1 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "list 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "max list 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "max list 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "max list 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "max list 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "max list 1 stored": {
+            "valid": false,
+            "message": "Property 'field' allows at most 2 items, has 3. Please remove some items from the array."
+        },
+        "max list 1 required": {
+            "valid": false,
+            "message": "Property 'field' allows at most 2 items, has 3. Please remove some items from the array."
+        },
+        "max list 1 given": {
+            "valid": false,
+            "message": "Property 'field' allows at most 2 items, has 3. Please remove some items from the array."
+        },
+        "max list 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "unique list 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "unique list 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "unique list 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "unique list 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "unique list 1 stored": {
+            "valid": false,
+            "message": "Property 'field' failed validation for rule 'uniqueItems'. Please check the property value and schema requirements."
+        },
+        "unique list 1 required": {
+            "valid": false,
+            "message": "Property 'field' failed validation for rule 'uniqueItems'. Please check the property value and schema requirements."
+        },
+        "unique list 1 given": {
+            "valid": false,
+            "message": "Property 'field' failed validation for rule 'uniqueItems'. Please check the property value and schema requirements."
+        },
+        "unique list 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "plain list 0 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "plain list 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "plain list 0 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "plain list 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "text 0 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "text 0 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "text 0 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "text 0 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "text 1 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "text 1 required": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "text 1 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "text 1 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "text 2 stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "text 2 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'null'. Please provide a value of the correct type."
+        },
+        "text 2 given": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "text 2 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "text 3 stored": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'integer'. Please provide a value of the correct type."
+        },
+        "text 3 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'integer'. Please provide a value of the correct type."
+        },
+        "text 3 given": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'integer'. Please provide a value of the correct type."
+        },
+        "text 3 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "text 4 stored": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'array'. Please provide a value of the correct type."
+        },
+        "text 4 required": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string' but is 'array'. Please provide a value of the correct type."
+        },
+        "text 4 given": {
+            "valid": false,
+            "message": "Property 'field' should be type 'string or null' but is 'array'. Please provide a value of the correct type."
+        },
+        "text 4 omitted": {
+            "valid": false,
+            "message": "The required property (field) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "computed 0 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "computed 0 required": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "computed 0 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "computed 0 omitted": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "computed 1 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "computed 1 required": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "computed 1 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "computed 1 omitted": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "calculation 0 stored": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "calculation 0 required": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "calculation 0 given": {
+            "valid": false,
+            "message": "Property 'root' expects object but got empty ({}). For non-required object properties, set this to null to clear the field. For required object properties, provide a valid object with the necessary properties."
+        },
+        "calculation 0 omitted": {
+            "valid": true,
+            "message": "Validation passed"
+        }
+    },
+    "paths": {
+        "by id": {
+            "valid": false,
+            "message": "Property 'title' should be type 'string or null' but is 'integer'. Please provide a value of the correct type."
+        },
+        "by slug": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "no schema": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "no properties": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "first of two": {
+            "valid": false,
+            "message": "Property 'title' should be type 'string' but is 'integer'. Please provide a value of the correct type."
+        },
+        "second of two": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "excused": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "not excused": {
+            "valid": false,
+            "message": "The required property (title) is missing. Please provide a value for this property or set it to null if allowed."
+        },
+        "given and stored": {
+            "valid": true,
+            "message": "Validation passed"
+        },
+        "planned user": [
+            true,
+            {
+                "valid": false,
+                "message": "Property 'who' should match format 'user' but 'ghost' does not. Please provide a value in the correct format."
+            }
+        ]
+    },
+    "resolving": {
+        "http://nc.test/api/schemas/4": "{\"title\":\"Thing\",\"description\":null,\"version\":\"1.0.0\",\"type\":\"object\",\"required\":[],\"$schema\":\"https:\\/\\/json-schema.org\\/draft\\/2020-12\\/schema\",\"$id\":\"http:\\/\\/nc.test\\/apps\\/openregister\\/api\\/v1\\/schemas\\/\",\"properties\":{\"title\":{\"type\":\"string\"}}}",
+        "http://nc.test/api/files/schema": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"path\":{\"type\":\"string\"},\"mimetype\":{\"type\":\"string\"},\"size\":{\"type\":\"integer\"}}}",
+        "http://nc.test/other": "",
+        "http://other.test/api/schemas/4": ""
+    },
+    "responses": {
+        "custom": [
+            400,
+            {
+                "status": "error",
+                "message": "Validation failed",
+                "errors": [
+                    "b",
+                    "d"
+                ]
+            }
+        ],
+        "message alone": [
+            400,
+            {
+                "status": "error",
+                "message": "Validation failed",
+                "errors": [
+                    {
+                        "property": null,
+                        "message": "bad",
+                        "errors": []
+                    }
+                ]
+            }
+        ],
+        "with an error": [
+            400,
+            {
+                "status": "error",
+                "message": "Validation failed",
+                "errors": [
+                    {
+                        "property": null,
+                        "message": "bad",
+                        "errors": {
+                            "/title": [
+                                "The data (integer) must match the type: string, null"
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

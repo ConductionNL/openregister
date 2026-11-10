@@ -1,0 +1,25 @@
+From: Alice Bakker <alice@example.com>
+To: Bob de Vries <bob@example.com>
+Subject: Email with unnamed attachments
+Date: Thu, 01 Jan 2026 12:00:00 +0000
+Content-Type: multipart/mixed; boundary="boundary77"
+
+--boundary77
+Content-Type: text/plain; charset=UTF-8
+
+Email with two attachments, the second has no filename.
+
+--boundary77
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="first.bin"
+Content-Transfer-Encoding: base64
+
+AAAA
+
+--boundary77
+Content-Type: application/octet-stream
+Content-Disposition: attachment
+
+BBBB
+
+--boundary77--

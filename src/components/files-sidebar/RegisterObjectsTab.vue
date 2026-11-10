@@ -6,16 +6,14 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent v-else-if="error"
+		<TabErrorState
+			v-else-if="error"
 			:name="t('openregister', 'Failed to load register data')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Empty state -->
-		<NcEmptyContent v-else-if="objects.length === 0"
+		<NcEmptyContent
+			v-else-if="objects.length === 0"
 			:name="t('openregister', 'No register objects reference this file')">
 			<template #icon>
 				<DatabaseOffOutline :size="44" />
@@ -24,10 +22,12 @@
 
 		<!-- Objects list -->
 		<ul v-else class="register-objects-tab__list">
-			<li v-for="obj in objects"
+			<li
+				v-for="obj in objects"
 				:key="obj.uuid"
 				class="register-objects-tab__item">
-				<a :href="getObjectUrl(obj)"
+				<a
+					:href="getObjectUrl(obj)"
 					class="register-objects-tab__link"
 					:aria-label="getAriaLabel(obj)">
 					<div class="register-objects-tab__title">
@@ -51,47 +51,27 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import { fetchFileTab, fileTab } from './fileTabFetch.js'
 
 export default {
 	name: 'RegisterObjectsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
-		AlertCircleOutline,
 		DatabaseOffOutline,
 	},
 
-	props: {
-		fileId: {
-			type: Number,
-			required: true,
-		},
-	},
+	mixins: [fileTab('fetchObjects')],
 
 	data() {
 		return {
-			loading: false,
-			error: false,
-			errorMessage: '',
 			objects: [],
 		}
-	},
-
-	watch: {
-		fileId: {
-			handler(newVal) {
-				if (newVal) {
-					this.fetchObjects()
-				}
-			},
-			immediate: true,
-		},
 	},
 
 	methods: {
@@ -99,31 +79,20 @@ export default {
 
 		/**
 		 * Fetch objects referencing this file from the API.
+		 *
+		 * @spec exclude API passthrough loading file-referencing objects; object contract owned by object capability
 		 */
 		async fetchObjects() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
 			this.objects = []
-
-			try {
-				const url = generateUrl('/apps/openregister/api/files/{fileId}/objects', {
-					fileId: this.fileId,
-				})
-				const response = await axios.get(url)
-
-				if (response.data?.success) {
-					this.objects = response.data.data || []
-				} else {
-					this.error = true
-					this.errorMessage = response.data?.error || t('openregister', 'Unknown error')
-				}
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message
-				console.error('[RegisterObjectsTab] Failed to fetch objects:', err)
-			} finally {
-				this.loading = false
+			const failure = await fetchFileTab(
+				this,
+				'/apps/openregister/api/files/{fileId}/objects',
+				(data) => {
+					this.objects = data || []
+				},
+			)
+			if (failure) {
+				console.error('[RegisterObjectsTab] Failed to fetch objects:', failure)
 			}
 		},
 
@@ -132,6 +101,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} The absolute URL to the object detail page
+		 * @spec exclude computed object-detail URL builder, UI plumbing
 		 */
 		getObjectUrl(obj) {
 			return generateUrl(
@@ -149,6 +119,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} Accessible label text
+		 * @spec exclude computed aria-label display helper, UI plumbing
 		 */
 		getAriaLabel(obj) {
 			return t('openregister', '{title} in {register} / {schema}', {
@@ -161,7 +132,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .register-objects-tab {
 	padding: 10px;
 }
@@ -214,13 +187,11 @@ export default {
 	margin: 0 4px;
 }
 
-.material-design-icon {
-	display: inline-flex;
-}
+@include material-design-icon-block;
 
-.material-design-icon :deep(svg) {
-	width: 64px;
-	height: 64px;
-	fill: currentColor;
+@media (prefers-reduced-motion: reduce) {
+	.register-objects-tab__link {
+		transition: none;
+	}
 }
 </style>

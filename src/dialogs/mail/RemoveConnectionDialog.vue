@@ -1,0 +1,91 @@
+<template>
+	<ConfirmDialogFrame
+		v-if="show"
+		:name="t('openregister', 'Remove connection')"
+		size="small"
+		:closable="!removing"
+		class="or-remove-connection-dialog"
+		:loading="removing"
+		:cancelDisabled="removing"
+		:closeLabel="t('openregister', 'Cancel')"
+		:confirmLabel="t('openregister', 'Remove connection')"
+		showConfirm
+		@cancel="$emit('cancel')"
+		@confirm="$emit('confirm')">
+		<p>
+			{{
+				t(
+					'openregister',
+					'Remove the connection between this email and {name}?',
+					{ name },
+				)
+			}}
+		</p>
+		<p class="or-remove-connection-dialog__warning">
+			<AlertOutline
+				:size="18"
+				class="or-remove-connection-dialog__warning-icon" />
+			<span>{{ t('openregister', 'This cannot be undone.') }}</span>
+		</p>
+		<template #confirmIcon>
+			<LinkVariantOff :size="20" />
+		</template>
+	</ConfirmDialogFrame>
+</template>
+
+<script>
+/**
+ * Confirmation dialog for removing a mail ↔ object connection. Lives in its
+ * own file (ADR-004 modal-isolation) and is driven entirely by the parent
+ * via `show`/`removing` props and `confirm`/`cancel` events.
+ *
+ * @spec openspec/specs/integration-email/spec.md
+ */
+import { translate as t } from '@nextcloud/l10n'
+import AlertOutline from 'vue-material-design-icons/AlertOutline.vue'
+import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import ConfirmDialogFrame from '../../modals/shared/ConfirmDialogFrame.vue'
+
+export default {
+	name: 'RemoveConnectionDialog',
+	components: { ConfirmDialogFrame, LinkVariantOff, AlertOutline },
+
+	props: {
+		show: {
+			type: Boolean,
+			required: true,
+		},
+
+		name: {
+			type: String,
+			default: '',
+		},
+
+		removing: {
+			type: Boolean,
+			default: false,
+		},
+	},
+
+	emits: ['cancel', 'confirm'],
+
+	methods: {
+		t,
+	},
+}
+</script>
+
+<style scoped>
+.or-remove-connection-dialog__warning {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 8px;
+	color: var(--color-warning-text, var(--color-error));
+	font-weight: 500;
+}
+
+.or-remove-connection-dialog__warning-icon {
+	flex-shrink: 0;
+}
+</style>

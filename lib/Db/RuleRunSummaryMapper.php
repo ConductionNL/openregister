@@ -1,0 +1,285 @@
+<?php
+
+/**
+ * RuleRunSummaryMapper: the per-rule summary the prune never touches.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/flow-engine/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\IDBConnection;
+
+/**
+ * Class RuleRunSummaryMapper.
+ *
+ * @method RuleRunSummary insert(Entity $entity)
+ * @method RuleRunSummary update(Entity $entity)
+ * @method RuleRunSummary delete(Entity $entity)
+ *
+ * @template-extends QBMapper<RuleRunSummary>
+ *
+ * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @spec openspec/specs/flow-engine/spec.md
+ */
+class RuleRunSummaryMapper extends QBMapper implements RuleRunSummaryMapperInterface {
+
+	/**
+	 * How long a repeat of the same verdict may go unwritten.
+	 *
+	 * @var integer
+	 */
+	public const THROTTLE_SECONDS = 60;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db Database connection.
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(
+			db: $db,
+			tableName: 'openregister_rule_summaries',
+			entityClass: RuleRunSummary::class
+		);
+
+	}//end __construct()
+
+	/**
+	 * One rule's summary, when it has ever been evaluated.
+	 *
+	 * @param string $ruleId The derived rule id.
+	 *
+	 * @return RuleRunSummary|null The summary, or null when the rule has never run.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function findByRule(string $ruleId): ?RuleRunSummary {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)))
+			->setMaxResults(1);
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+
+	}//end findByRule()
+
+	/**
+	 * Every summary for one schema, keyed by rule id.
+	 *
+	 * The inventory renders every rule on a schema at once, so it loads every
+	 * summary in ONE read rather than one per entry.
+	 *
+	 * @param string $schemaSlug The schema's slug.
+	 *
+	 * @return array<string, RuleRunSummary> Summaries keyed by rule id.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function findBySchema(string $schemaSlug): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('schema_slug', $qb->createNamedParameter($schemaSlug)));
+
+		$keyed = [];
+		foreach ($this->findEntities(query: $qb) as $summary) {
+			$keyed[(string)$summary->getRuleId()] = $summary;
+		}
+
+		return $keyed;
+
+	}//end findBySchema()
+
+	/**
+	 * The rules whose last evaluation left an error, most recent first.
+	 *
+	 * NARROWED IN SQL RATHER THAN IN THE READER, and the reason is not
+	 * tidiness. Ordering every rule by `last_error_at DESC` and filtering
+	 * afterwards is wrong on Postgres, where a descending sort puts NULLs
+	 * FIRST: the rules that have never errored would fill the page and push
+	 * the ones an administrator has to act on off the end, silently, while
+	 * MySQL put them last and the same code looked correct. A `WHERE` that
+	 * removes them is the same answer on both.
+	 *
+	 * One row per rule, so this table is as long as the instance has rules
+	 * rather than as long as it has evaluations.
+	 *
+	 * @param int $limit How many summaries to return.
+	 *
+	 * @return array<int, RuleRunSummary> The summaries.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findHoldingAnError(int $limit = 50): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('last_error'))
+			->orderBy('last_error_at', 'DESC')
+			->addOrderBy('id', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		return $this->findEntities(query: $qb);
+
+	}//end findHoldingAnError()
+
+	/**
+	 * Record one evaluation against a rule's summary.
+	 *
+	 * Creates the row on the rule's first evaluation and updates it after. An
+	 * error keeps its own pair of columns, so the last error survives a
+	 * thousand successful runs and is still there when an administrator asks
+	 * why a rule stopped being trusted.
+	 *
+	 * THROTTLED, BECAUSE THIS RUNS ON EVERY SAVE. A rule that fires on every
+	 * object save would otherwise cost one UPDATE per save per rule, and an
+	 * import of four hundred thousand objects would spend most of its time
+	 * rewriting a timestamp nobody is watching change. So a repeat of the same
+	 * verdict inside the throttle window is not written: `lastRun` is then
+	 * accurate to the window rather than to the second, which is the resolution
+	 * "has this rule run in ninety days" actually needs. A CHANGED verdict and
+	 * an error are always written, because those are the two things an
+	 * administrator is reading the summary for.
+	 *
+	 * @param string $ruleId The derived rule id.
+	 * @param string $schemaSlug The schema the rule is declared on.
+	 * @param string $verdict The verdict reached.
+	 * @param DateTime $moment When the evaluation happened.
+	 * @param string|null $error The message, when the verdict was an error.
+	 *
+	 * @return RuleRunSummary The stored summary, written or not.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function record(
+		string $ruleId,
+		string $schemaSlug,
+		string $verdict,
+		DateTime $moment,
+		string|null $error = null,
+	): RuleRunSummary {
+		$summary = $this->findOrStart(ruleId: $ruleId, schemaSlug: $schemaSlug);
+		$evaluation = new RuleEvaluation(verdict: $verdict, moment: $moment, error: $error);
+		if ($this->worthWriting(summary: $summary, evaluation: $evaluation) === false) {
+			return $summary;
+		}
+
+		$summary->setSchemaSlug($schemaSlug);
+		return $this->persist(summary: $this->applyEvaluation(summary: $summary, evaluation: $evaluation));
+
+	}//end record()
+
+	/**
+	 * Write an evaluation onto a summary; an error also sets the error pair.
+	 *
+	 * @param RuleRunSummary $summary    The summary.
+	 * @param RuleEvaluation $evaluation The evaluation.
+	 *
+	 * @return RuleRunSummary The same summary.
+	 */
+	private function applyEvaluation(RuleRunSummary $summary, RuleEvaluation $evaluation): RuleRunSummary {
+		$summary->setLastRun($evaluation->moment);
+		$summary->setLastVerdict($evaluation->verdict);
+
+		if ($evaluation->isError() === true) {
+			$summary->setLastError($evaluation->error);
+			$summary->setLastErrorAt($evaluation->moment);
+		}
+
+		return $summary;
+	}//end applyEvaluation()
+
+	/**
+	 * The stored summary of a rule, or a new unsaved one for its first run.
+	 *
+	 * @param string $ruleId     The rule id.
+	 * @param string $schemaSlug The schema slug a new summary starts with.
+	 *
+	 * @return RuleRunSummary
+	 */
+	private function findOrStart(string $ruleId, string $schemaSlug): RuleRunSummary {
+		$summary = $this->findByRule(ruleId: $ruleId);
+		if ($summary === null) {
+			$summary = new RuleRunSummary();
+			$summary->setRuleId($ruleId);
+			$summary->setSchemaSlug($schemaSlug);
+		}
+
+		return $summary;
+	}//end findOrStart()
+
+	/**
+	 * Insert a summary that has no id yet, update one that has.
+	 *
+	 * @param RuleRunSummary $summary The summary.
+	 *
+	 * @return RuleRunSummary The stored summary.
+	 */
+	private function persist(RuleRunSummary $summary): RuleRunSummary {
+		if ($summary->getId() === null) {
+			return $this->insert(entity: $summary);
+		}
+
+		return $this->update(entity: $summary);
+	}//end persist()
+
+	/**
+	 * Whether this evaluation changes anything an administrator reads.
+	 *
+	 * @param RuleRunSummary $summary    The summary as it stands.
+	 * @param RuleEvaluation $evaluation The evaluation.
+	 *
+	 * @return bool True when the row should be written.
+	 *
+	 * PUBLIC so the throttle is testable on its own. It is a rule about which
+	 * writes may be dropped, and a rule about dropping writes that can only be
+	 * exercised through a live database is a rule nobody checks.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function worthWriting(RuleRunSummary $summary, RuleEvaluation $evaluation): bool {
+		if ($summary->getId() === null || $evaluation->isError() === true) {
+			return true;
+		}
+
+		if ((string)$summary->getLastVerdict() !== $evaluation->verdict) {
+			return true;
+		}
+
+		$lastRun = $summary->getLastRun();
+		if ($lastRun === null) {
+			return true;
+		}
+
+		return (($evaluation->moment->getTimestamp() - $lastRun->getTimestamp()) >= self::THROTTLE_SECONDS);
+
+	}//end worthWriting()
+}//end class

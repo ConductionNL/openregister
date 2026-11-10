@@ -4,267 +4,268 @@ declare(strict_types=1);
 
 namespace Unit\Service\GraphQL;
 
+use GraphQL\Type\Definition\ObjectType;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
-use GraphQL\Type\Definition\ObjectType;
-use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
-class SchemaGeneratorTest extends TestCase
-{
-    private SchemaGenerator $generator;
-    private RegisterMapper&MockObject $registerMapper;
-    private SchemaMapper&MockObject $schemaMapper;
+class SchemaGeneratorTest extends TestCase {
+	private SchemaGenerator $generator;
+	private SchemaMapper&MockObject $schemaMapper;
 
-    protected function setUp(): void
-    {
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+	protected function setUp(): void {
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-        $this->generator = new SchemaGenerator($this->registerMapper, $this->schemaMapper);
-    }
+		$this->generator = new SchemaGenerator(
+			$this->schemaMapper,
+			$this->createMock(\OCP\IUserSession::class),
+			$this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class)
+		);
+	}
 
-    /**
-     * Create a real Schema entity with properties set.
-     */
-    private function createSchema(int $id, string $slug, array $properties, ?string $title = null): Schema
-    {
-        $schema = new Schema();
-        $schema->setId($id);
-        $schema->setSlug($slug);
-        $schema->setTitle($title ?? ucfirst($slug));
-        $schema->setDescription('Test schema');
-        $schema->setSummary('Test');
-        $schema->setProperties($properties);
-        $schema->setRequired([]);
-        return $schema;
-    }
+	/**
+	 * Create a real Schema entity with properties set.
+	 */
+	private function createSchema(int $id, string $slug, array $properties, ?string $title = null): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setSlug($slug);
+		$schema->setTitle($title ?? ucfirst($slug));
+		$schema->setDescription('Test schema');
+		$schema->setSummary('Test');
+		$schema->setProperties($properties);
+		$schema->setRequired([]);
+		return $schema;
+	}
 
-    // ── Type Mapping ──
+	// ── Type Mapping ──
 
-    public function testStringPropertyMapsToStringType(): void
-    {
-        $schema = $this->createSchema(1, 'items', [
-            'name' => ['type' => 'string'],
-        ]);
+	public function testStringPropertyMapsToStringType(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'name' => ['type' => 'string'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->generator->generate();
-        $objectType = $this->generator->getObjectType($schema);
+		$this->generator->generate();
+		$objectType = $this->generator->getObjectType($schema);
 
-        $fields = $objectType->getFields();
-        $this->assertArrayHasKey('name', $fields);
-    }
+		$fields = $objectType->getFields();
+		$this->assertArrayHasKey('name', $fields);
+	}
 
-    public function testIntegerPropertyPresent(): void
-    {
-        $schema = $this->createSchema(1, 'items', [
-            'count' => ['type' => 'integer'],
-        ]);
+	public function testIntegerPropertyPresent(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'count' => ['type' => 'integer'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->generator->generate();
-        $objectType = $this->generator->getObjectType($schema);
+		$this->generator->generate();
+		$objectType = $this->generator->getObjectType($schema);
 
-        $fields = $objectType->getFields();
-        $this->assertArrayHasKey('count', $fields);
-    }
+		$fields = $objectType->getFields();
+		$this->assertArrayHasKey('count', $fields);
+	}
 
-    public function testDateTimeFormatMapsToDateTimeScalar(): void
-    {
-        $schema = $this->createSchema(1, 'items', [
-            'created' => ['type' => 'string', 'format' => 'date-time'],
-        ]);
+	public function testDateTimeFormatMapsToDateTimeScalar(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'created' => ['type' => 'string', 'format' => 'date-time'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->generator->generate();
-        $objectType = $this->generator->getObjectType($schema);
+		$this->generator->generate();
+		$objectType = $this->generator->getObjectType($schema);
 
-        $fields = $objectType->getFields();
-        $this->assertArrayHasKey('created', $fields);
-        $this->assertSame('DateTime', $fields['created']->getType()->name);
-    }
+		$fields = $objectType->getFields();
+		$this->assertArrayHasKey('created', $fields);
+		$this->assertSame('DateTime', $fields['created']->getType()->name);
+	}
 
-    public function testUuidFormatMapsToUuidScalar(): void
-    {
-        $schema = $this->createSchema(1, 'items', [
-            'identifier' => ['type' => 'string', 'format' => 'uuid'],
-        ]);
+	public function testUuidFormatMapsToUuidScalar(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'identifier' => ['type' => 'string', 'format' => 'uuid'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->generator->generate();
-        $objectType = $this->generator->getObjectType($schema);
+		$this->generator->generate();
+		$objectType = $this->generator->getObjectType($schema);
 
-        $fields = $objectType->getFields();
-        $this->assertArrayHasKey('identifier', $fields);
-        $this->assertSame('UUID', $fields['identifier']->getType()->name);
-    }
+		$fields = $objectType->getFields();
+		$this->assertArrayHasKey('identifier', $fields);
+		$this->assertSame('UUID', $fields['identifier']->getType()->name);
+	}
 
-    public function testEmailFormatMapsToEmailScalar(): void
-    {
-        $schema = $this->createSchema(1, 'items', [
-            'email' => ['type' => 'string', 'format' => 'email'],
-        ]);
+	public function testEmailFormatMapsToEmailScalar(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'email' => ['type' => 'string', 'format' => 'email'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->generator->generate();
-        $objectType = $this->generator->getObjectType($schema);
+		$this->generator->generate();
+		$objectType = $this->generator->getObjectType($schema);
 
-        $fields = $objectType->getFields();
-        $this->assertArrayHasKey('email', $fields);
-        $this->assertSame('Email', $fields['email']->getType()->name);
-    }
+		$fields = $objectType->getFields();
+		$this->assertArrayHasKey('email', $fields);
+		$this->assertSame('Email', $fields['email']->getType()->name);
+	}
 
-    public function testObjectWithoutRefMapsToJsonScalar(): void
-    {
-        $schema = $this->createSchema(1, 'items', [
-            'metadata' => ['type' => 'object'],
-        ]);
+	public function testObjectWithoutRefMapsToJsonScalar(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'metadata' => ['type' => 'object'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->generator->generate();
-        $objectType = $this->generator->getObjectType($schema);
+		$this->generator->generate();
+		$objectType = $this->generator->getObjectType($schema);
 
-        $fields = $objectType->getFields();
-        $this->assertArrayHasKey('metadata', $fields);
-        $this->assertSame('JSON', $fields['metadata']->getType()->name);
-    }
+		$fields = $objectType->getFields();
+		$this->assertArrayHasKey('metadata', $fields);
+		$this->assertSame('JSON', $fields['metadata']->getType()->name);
+	}
 
-    // ── Schema Generation ──
+	// ── Schema Generation ──
 
-    public function testGeneratesQueryAndMutationTypes(): void
-    {
-        $schema = $this->createSchema(1, 'meldingen', [
-            'title' => ['type' => 'string'],
-        ]);
+	public function testGeneratesQueryAndMutationTypes(): void {
+		$schema = $this->createSchema(1, 'meldingen', [
+			'title' => ['type' => 'string'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $graphqlSchema = $this->generator->generate();
+		$graphqlSchema = $this->generator->generate();
 
-        $this->assertNotNull($graphqlSchema->getQueryType());
-        $this->assertNotNull($graphqlSchema->getMutationType());
-    }
+		$this->assertNotNull($graphqlSchema->getQueryType());
+		$this->assertNotNull($graphqlSchema->getMutationType());
+	}
 
-    public function testGeneratesConnectionType(): void
-    {
-        $schema = $this->createSchema(1, 'meldingen', [
-            'title' => ['type' => 'string'],
-        ]);
+	public function testGeneratesConnectionType(): void {
+		$schema = $this->createSchema(1, 'meldingen', [
+			'title' => ['type' => 'string'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $graphqlSchema = $this->generator->generate();
-        $queryType = $graphqlSchema->getQueryType();
+		$graphqlSchema = $this->generator->generate();
+		$queryType = $graphqlSchema->getQueryType();
 
-        $meldingen = $queryType->getField('meldingen');
-        $this->assertStringContainsString('Connection', $meldingen->getType()->name);
-    }
+		$reports = $queryType->getField('meldingen');
+		$this->assertStringContainsString('Connection', $reports->getType()->name);
+	}
 
-    public function testGeneratesMutationFields(): void
-    {
-        $schema = $this->createSchema(1, 'meldingen', [
-            'title' => ['type' => 'string'],
-        ]);
+	public function testGeneratesMutationFields(): void {
+		$schema = $this->createSchema(1, 'meldingen', [
+			'title' => ['type' => 'string'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $graphqlSchema = $this->generator->generate();
-        $mutationType = $graphqlSchema->getMutationType();
+		$graphqlSchema = $this->generator->generate();
+		$mutationType = $graphqlSchema->getMutationType();
 
-        $this->assertTrue($mutationType->hasField('createMelding'));
-        $this->assertTrue($mutationType->hasField('updateMelding'));
-        $this->assertTrue($mutationType->hasField('deleteMelding'));
-    }
+		$this->assertTrue($mutationType->hasField('createMelding'));
+		$this->assertTrue($mutationType->hasField('updateMelding'));
+		$this->assertTrue($mutationType->hasField('deleteMelding'));
+	}
 
-    // ── Metadata Fields ──
+	// ── Metadata Fields ──
 
-    public function testObjectTypeIncludesMetadataFields(): void
-    {
-        $schema = $this->createSchema(1, 'items', [
-            'name' => ['type' => 'string'],
-        ]);
+	public function testObjectTypeIncludesMetadataFields(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'name' => ['type' => 'string'],
+		]);
 
-        $this->schemaMapper->method('findAll')->willReturn([$schema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $this->generator->generate();
-        $objectType = $this->generator->getObjectType($schema);
+		$this->generator->generate();
+		$objectType = $this->generator->getObjectType($schema);
 
-        $fields = $objectType->getFields();
-        $this->assertArrayHasKey('_uuid', $fields);
-        $this->assertArrayHasKey('_register', $fields);
-        $this->assertArrayHasKey('_schema', $fields);
-        $this->assertArrayHasKey('_created', $fields);
-        $this->assertArrayHasKey('_updated', $fields);
-        $this->assertArrayHasKey('_owner', $fields);
-        $this->assertArrayHasKey('_auditTrail', $fields);
-        $this->assertArrayHasKey('_usedBy', $fields);
-    }
+		$fields = $objectType->getFields();
+		$this->assertArrayHasKey('_uuid', $fields);
+		$this->assertArrayHasKey('_register', $fields);
+		$this->assertArrayHasKey('_schema', $fields);
+		$this->assertArrayHasKey('_created', $fields);
+		$this->assertArrayHasKey('_updated', $fields);
+		$this->assertArrayHasKey('_owner', $fields);
+		$this->assertArrayHasKey('_auditTrail', $fields);
+		$this->assertArrayHasKey('_usedBy', $fields);
+	}
 
-    // ── Register query ──
+	public function testTheAuditTrailFieldGivesNothingEvenWhenTheObjectCarriesTheKey(): void {
+		$schema = $this->createSchema(1, 'items', [
+			'name' => ['type' => 'string'],
+		]);
 
-    public function testGeneratesRegisterQuery(): void
-    {
-        $this->schemaMapper->method('findAll')->willReturn([]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-        $graphqlSchema = $this->generator->generate();
-        $queryType = $graphqlSchema->getQueryType();
+		$this->generator->generate();
+		$field = $this->generator->getObjectType($schema)->getField('_auditTrail');
 
-        $this->assertTrue($queryType->hasField('register'));
-    }
+		$this->assertIsCallable($field->resolveFn);
+		$root = ['_uuid' => 'obj-1', '_auditTrail' => [['action' => 'update', 'ipAddress' => '203.0.113.9']]];
+		$this->assertNull(($field->resolveFn)($root, ['last' => 10], null, null));
+	}
 
-    // ── Ref resolution ──
+	// ── Register query ──
 
-    public function testRefPropertyResolvesToObjectType(): void
-    {
-        $personSchema = $this->createSchema(1, 'personen', [
-            'naam' => ['type' => 'string'],
-        ]);
+	public function testGeneratesRegisterQuery(): void {
+		$this->schemaMapper->method('findAll')->willReturn([]);
 
-        $orderSchema = $this->createSchema(2, 'orders', [
-            'klant' => ['type' => 'object', '$ref' => 'personen'],
-        ]);
+		$graphqlSchema = $this->generator->generate();
+		$queryType = $graphqlSchema->getQueryType();
 
-        $this->schemaMapper->method('findAll')->willReturn([$personSchema, $orderSchema]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->assertTrue($queryType->hasField('register'));
+	}
 
-        $this->generator->generate();
-        $orderType = $this->generator->getObjectType($orderSchema);
+	// ── Ref resolution ──
 
-        $fields = $orderType->getFields();
-        $this->assertArrayHasKey('klant', $fields);
-        $this->assertInstanceOf(ObjectType::class, $fields['klant']->getType());
-    }
+	public function testRefPropertyResolvesToObjectType(): void {
+		$personSchema = $this->createSchema(1, 'personen', [
+			'naam' => ['type' => 'string'],
+		]);
 
-    // ── Empty schema ──
+		$orderSchema = $this->createSchema(2, 'orders', [
+			'klant' => ['type' => 'object', '$ref' => 'personen'],
+		]);
 
-    public function testEmptySchemaGeneratesValidGraphQL(): void
-    {
-        $this->schemaMapper->method('findAll')->willReturn([]);
-        $this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([$personSchema, $orderSchema]);
 
-        $graphqlSchema = $this->generator->generate();
+		$this->generator->generate();
+		$orderType = $this->generator->getObjectType($orderSchema);
 
-        $this->assertNotNull($graphqlSchema->getQueryType());
-    }
+		$fields = $orderType->getFields();
+		$this->assertArrayHasKey('klant', $fields);
+		$this->assertInstanceOf(ObjectType::class, $fields['klant']->getType());
+	}
+
+	public function testRefPropertyResolvesBySchemaUri(): void {
+		$personSchema = $this->createSchema(1, 'personen', []);
+		$personSchema->setUri('https://example.org/personen');
+		$orderSchema = $this->createSchema(2, 'orders', [
+			'klant' => ['type' => 'object', '$ref' => 'https://example.org/personen'],
+		]);
+
+		$this->schemaMapper->method('findAll')->willReturn([$personSchema, $orderSchema]);
+
+		$this->generator->generate();
+
+		$this->assertSame('Personen', $this->generator->getObjectType($orderSchema)->getField('klant')->getType()->name);
+	}
+
+	// ── Empty schema ──
+
+	public function testEmptySchemaGeneratesValidGraphQL(): void {
+		$this->schemaMapper->method('findAll')->willReturn([]);
+
+		$graphqlSchema = $this->generator->generate();
+
+		$this->assertNotNull($graphqlSchema->getQueryType());
+	}
 }

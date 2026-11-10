@@ -6,10 +6,13 @@
  * This file contains the event class dispatched when a view is updated
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -20,41 +23,81 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
  * Event dispatched when a view is updated.
  */
-class ViewUpdatedEvent extends Event
-{
+class ViewUpdatedEvent extends Event {
 
-    /**
-     * The updated view state.
-     *
-     * @var View The view after update.
-     */
-    private View $newView;
+	/**
+	 * The updated view state.
+	 *
+	 * @var ViewInterface&Entity The view after update.
+	 */
+	private ViewInterface $newView;
 
-    /**
-     * The previous view state.
-     *
-     * @var View The view before update.
-     */
-    private View $oldView;
+	/**
+	 * The previous view state.
+	 *
+	 * @var ViewInterface&Entity The view before update.
+	 */
+	private ViewInterface $oldView;
 
-    /**
-     * Constructor for ViewUpdatedEvent.
-     *
-     * @param View $newView The view after update.
-     * @param View $oldView The view before update.
-     *
-     * @return void
-     */
-    public function __construct(View $newView, View $oldView)
-    {
-        parent::__construct();
-        $this->newView = $newView;
-        $this->oldView = $oldView;
-    }//end __construct()
+	/**
+	 * Constructor for ViewUpdatedEvent.
+	 *
+	 * @param ViewInterface&Entity $newView The view after update.
+	 * @param ViewInterface&Entity $oldView The view before update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(ViewInterface $newView, ViewInterface $oldView) {
+		parent::__construct();
+		$this->newView = $newView;
+		$this->oldView = $oldView;
+	}//end __construct()
+
+	/**
+	 * Get the updated view
+	 *
+	 * The listener that turns this event into a webhook payload calls
+	 * getView(). The class carried no accessor at all, so that call was a
+	 * fatal error on every dispatch; the only test covering it doubled the
+	 * event with addMethods(['getView']), which invents the method on the
+	 * mock and never consults the real class.
+	 *
+	 * @return ViewInterface&Entity The view after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getView(): ViewInterface {
+		return $this->newView;
+	}//end getView()
+
+	/**
+	 * Get the updated view
+	 *
+	 * @return ViewInterface&Entity The view after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getNewView(): ViewInterface {
+		return $this->newView;
+	}//end getNewView()
+
+	/**
+	 * Get the original view
+	 *
+	 * @return ViewInterface&Entity The view before update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function getOldView(): ViewInterface {
+		return $this->oldView;
+	}//end getOldView()
 }//end class

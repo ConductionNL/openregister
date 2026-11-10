@@ -1,0 +1,770 @@
+<?php
+
+/**
+ * CollectiveLinkService — Tier-2 collectives (NC Collectives / Knowledge)
+ * integration service.
+ *
+ * Composes the {@see CollectiveLinkMapper} with NC Collectives'
+ * `OCA\Collectives\Service\CollectiveService` + `PageService` to expose
+ * the Tier-2 surface:
+ *
+ *   - linkPage(target, pageId)
+ *       — link an existing page
+ *   - createAndLinkPage(target, collectiveId, title)
+ *       — create a new page in a collective and link it
+ *   - unlinkPage(uuid, pageId)
+ *       — remove a link (the page itself stays in NC Collectives)
+ *   - getLinkedPages(uuid)
+ *       — list linked pages, refreshing cached
+ *       title/slug/emoji/last_modified/url when the row is older than 24h
+ *   - getAvailablePages(?search)
+ *       — picker source listing the current user's pages (collective→page)
+ *   - getAvailableCollectives()
+ *       — collectives for the create cascade
+ *
+ * NC Collectives exposes its persistence as the `CollectiveService`
+ * (collective listing) and `PageService` (page listing + create + deep
+ * link). Both are resolved lazily through the server container behind a
+ * `class_exists` + `Throwable` guard so this service loads even when the
+ * Collectives app is not installed (ADR-019 AD-23 graceful degradation):
+ * when Collectives is missing or a call throws, the stored link row is
+ * returned as-is so historical references survive.
+ *
+ * Pages are user-scoped: NC Collectives pages belong to a user (via the
+ * collective's circle membership), so every mutating + picker call is
+ * scoped to the active session's UID.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @version GIT: <git-id>
+ * @link    https://OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service;
+
+use Closure;
+use DateTime;
+use Exception;
+use OCA\OpenRegister\Db\CollectiveLink;
+use OCA\OpenRegister\Db\CollectiveLinkMapperInterface;
+use OCP\IURLGenerator;
+use Psr\Container\ContainerInterface;
+use Throwable;
+
+/**
+ * CollectiveLinkService.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes mapper +
+ *     NC Collectives CollectiveService + PageService (late-bound) + user
+ *     session + app manager + url generator + container + logger. Each
+ *     dependency is required for one of the Tier-2 flows (link, create,
+ *     unlink, list, picker, cache refresh, graceful degradation).
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ */
+class CollectiveLinkService implements CollectiveLinkServiceInterface {
+	private const REQUIRED_APP = 'collectives';
+
+	private const COLLECTIVE_SERVICE = 'OCA\\Collectives\\Service\\CollectiveService';
+
+	private const PAGE_SERVICE = 'OCA\\Collectives\\Service\\PageService';
+
+	private const STALE_AFTER = 86400;
+	// 24 hours in seconds.
+
+	/**
+	 * Constructor.
+	 *
+	 * @param CollectiveLinkMapperInterface $collectiveLinkMapper Persistence for link rows.
+	 * @param ContainerInterface $container Container for late-bound Collectives classes.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
+	 * @param IURLGenerator $urlGenerator URL generator for deep links.
+	 */
+	public function __construct(
+		private readonly CollectiveLinkMapperInterface $collectiveLinkMapper,
+		private readonly ContainerInterface $container,
+		private readonly LinkServiceRuntime $runtime,
+		private readonly IURLGenerator $urlGenerator,
+	) {
+	}//end __construct()
+
+	/**
+	 * Whether NC Collectives is installed + enabled for the current user.
+	 *
+	 * @return bool
+	 */
+	public function isCollectivesAvailable(): bool {
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
+	}//end isCollectivesAvailable()
+
+	/**
+	 * Resolve a late-bound NC Collectives service lazily.
+	 *
+	 * Returns null when Collectives is absent or the class can't be
+	 * resolved, so callers degrade gracefully (ADR-019 AD-23).
+	 *
+	 * @param string $class The fully-qualified Collectives service class.
+	 *
+	 * @return object|null The service instance or null.
+	 */
+	private function resolveService(string $class): ?object {
+		if ($this->isCollectivesAvailable() === false || class_exists($class) === false) {
+			return null;
+		}
+
+		try {
+			return $this->container->get($class);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->debug('CollectiveLinkService: ' . $class . ' unavailable: ' . $e->getMessage());
+			return null;
+		}
+	}//end resolveService()
+
+	/**
+	 * Resolve NC Collectives' CollectiveService.
+	 *
+	 * @return object|null
+	 */
+	private function getCollectiveService(): ?object {
+		return $this->resolveService(class: self::COLLECTIVE_SERVICE);
+	}//end getCollectiveService()
+
+	/**
+	 * Resolve NC Collectives' PageService.
+	 *
+	 * @return object|null
+	 */
+	private function getPageService(): ?object {
+		return $this->resolveService(class: self::PAGE_SERVICE);
+	}//end getPageService()
+
+	/**
+	 * Active session UID, or throw if no user is logged in.
+	 *
+	 * @return string The user id.
+	 *
+	 * @throws Exception When there is no active user.
+	 */
+	private function requireUid(): string {
+		$user = $this->runtime->userSession()->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in', 401);
+		}
+
+		return $user->getUID();
+	}//end requireUid()
+
+	/**
+	 * Link an existing NC Collectives page to an OR object.
+	 *
+	 * Idempotent: a duplicate link raises a 409 Exception. Page metadata
+	 * (title/slug/emoji/last_modified/url) is cached at link time.
+	 *
+	 * @param LinkTarget $target The object to link to.
+	 * @param int        $pageId NC Collectives page id.
+	 *
+	 * @return CollectiveLink The persisted link row.
+	 *
+	 * @throws Exception On missing user (401), missing page (404),
+	 *                   duplicate (409), Collectives unavailable (503).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 */
+	public function linkPage(LinkTarget $target, int $pageId): CollectiveLink {
+		$uid = $this->requireUid();
+		$this->assertPageLinkable(target: $target, pageId: $pageId);
+
+		$info = $this->fetchPageInfo(pageId: $pageId, uid: $uid);
+		if ($info === null) {
+			throw new Exception('Collectives page not found', 404);
+		}
+
+		$link = $this->hydrateLink(pageId: $pageId, info: $info);
+		$target->stamp(link: $link, linkedBy: $uid);
+
+		return $this->collectiveLinkMapper->insert($link);
+	}//end linkPage()
+
+	/**
+	 * Refuse a link when Collectives is off or the page is already linked to the object.
+	 *
+	 * @param LinkTarget $target The object to link to.
+	 * @param int        $pageId NC Collectives page id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception Collectives unavailable (503) or duplicate (409).
+	 */
+	private function assertPageLinkable(LinkTarget $target, int $pageId): void {
+		if ($this->isCollectivesAvailable() === false) {
+			throw new Exception('NC Collectives is not available', 503);
+		}
+
+		if ($this->collectiveLinkMapper->findByObjectAndPage($target->objectUuid, $pageId) !== null) {
+			throw new Exception('Page already linked to this object', 409);
+		}
+	}//end assertPageLinkable()
+
+	/**
+	 * Create a new NC Collectives page and link it to an OR object.
+	 *
+	 * @param LinkTarget $target       The object to link to.
+	 * @param int        $collectiveId Target collective id.
+	 * @param string     $title        New page title.
+	 *
+	 * @return CollectiveLink The persisted link row.
+	 *
+	 * @throws Exception On missing user (401), empty title (400),
+	 *                   missing collective (400), Collectives unavailable (503).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 */
+	public function createAndLinkPage(LinkTarget $target, int $collectiveId, string $title): CollectiveLink {
+		return $this->createAndLinkDraft(target: $target, draft: new CollectivePageDraft(collectiveId: $collectiveId, title: $title));
+	}//end createAndLinkPage()
+
+	/**
+	 * Create the drafted page in its collective and link it to an OR object.
+	 *
+	 * @param LinkTarget          $target The object to link to.
+	 * @param CollectivePageDraft $draft  The target collective id and the new page title.
+	 *
+	 * @return CollectiveLink The persisted link row.
+	 *
+	 * @throws Exception On missing user (401), empty title (400),
+	 *                   missing collective (400), Collectives unavailable (503).
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function createAndLinkDraft(LinkTarget $target, CollectivePageDraft $draft): CollectiveLink {
+		$uid = $this->requireUid();
+
+		$title = trim($draft->title);
+		if ($title === '') {
+			throw new Exception('Page title is required', 400);
+		}
+
+		$collectiveId = $draft->collectiveId;
+		$pageId       = $this->createPage(collectiveId: $collectiveId, title: $title);
+		$info         = ($this->fetchPageInfo(pageId: $pageId, uid: $uid) ?? $this->draftPageInfo(collectiveId: $collectiveId, title: $title));
+
+		$link = $this->hydrateLink(pageId: $pageId, info: $info);
+		$target->stamp(link: $link, linkedBy: $uid);
+
+		return $this->collectiveLinkMapper->insert($link);
+	}//end createAndLinkDraft()
+
+	/**
+	 * Create a page at the root of a collective, as the current user.
+	 *
+	 * @param int    $collectiveId Target collective id.
+	 * @param string $title        The trimmed page title.
+	 *
+	 * @return int The new page id.
+	 *
+	 * @throws Exception Missing collective (400), Collectives unavailable (503) or create failure (500).
+	 */
+	private function createPage(int $collectiveId, string $title): int {
+		if ($collectiveId === 0) {
+			throw new Exception('Collective id is required', 400);
+		}
+
+		$pageService = $this->getPageService();
+		if ($pageService === null) {
+			throw new Exception('NC Collectives is not available', 503);
+		}
+
+		try {
+			// PageService::create(collectiveId, parentId, title, templateId, userId); parent 0 is the root.
+			return (int)$pageService->create($collectiveId, 0, $title, null, $this->requireUid())->getId();
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('CollectiveLinkService::createAndLinkPage failed: ' . $e->getMessage());
+			throw new Exception('Failed to create Collectives page', 500);
+		}
+	}//end createPage()
+
+	/**
+	 * The cached metadata for a new page whose read came back empty; the url defaults to the page's deep link.
+	 *
+	 * @param int    $collectiveId The collective id.
+	 * @param string $title        The page title.
+	 *
+	 * @return array<string,mixed> The page info.
+	 */
+	private function draftPageInfo(int $collectiveId, string $title): array {
+		return [
+			'title' => $title,
+			'collectiveId' => $collectiveId,
+			'slug' => null,
+			'emoji' => null,
+			'lastModified' => new DateTime(),
+		];
+	}//end draftPageInfo()
+
+	/**
+	 * Build a CollectiveLink from normalised page info.
+	 *
+	 * @param int $pageId NC Collectives page id.
+	 * @param array<string,mixed> $info Normalised page info.
+	 *
+	 * @return CollectiveLink
+	 */
+	private function hydrateLink(
+		int $pageId,
+		array $info,
+	): CollectiveLink {
+		$link = new CollectiveLink();
+		$link->setPageId($pageId);
+		$link->setCollectiveId((int)($info['collectiveId'] ?? 0));
+		$link->setCollectiveName((string)($info['collectiveName'] ?? ''));
+		$link->setPageTitle((string)($info['title'] ?? ''));
+		$link->setSlug($info['slug'] ?? null);
+		$link->setEmoji($info['emoji'] ?? null);
+		$link->setLastModified($info['lastModified'] ?? null);
+		$link->setUrl($info['url'] ?? $this->pageDeepLink(pageId: $pageId));
+
+		return $link;
+	}//end hydrateLink()
+
+	/**
+	 * Unlink a page from an object.
+	 *
+	 * Does NOT delete the page itself — it stays in NC Collectives for the
+	 * user and for any other linked objects.
+	 *
+	 * @param string $objectUuid Parent OR object uuid.
+	 * @param int $pageId NC Collectives page id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception On missing user (401) or no matching link (404).
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 */
+	public function unlinkPage(string $objectUuid, int $pageId): void {
+		$this->requireUid();
+
+		$deleted = $this->collectiveLinkMapper->deleteByObjectAndPage($objectUuid, $pageId);
+		if ($deleted === 0) {
+			throw new Exception('Collective link not found', 404);
+		}
+	}//end unlinkPage()
+
+	/**
+	 * Return the linked pages for an object, refreshing the cached
+	 * title/slug/emoji/last_modified/url columns when a row is older
+	 * than 24h.
+	 *
+	 * @param string $objectUuid Parent OR object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 */
+	public function getLinkedPages(string $objectUuid): array {
+		$links = $this->collectiveLinkMapper->findByObjectUuid($objectUuid);
+		$available = $this->isCollectivesAvailable();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
+
+		$results = [];
+		foreach ($links as $link) {
+			if ($available === true && $uid !== null && $this->isStale(link: $link) === true) {
+				$link = $this->refreshLink(link: $link, uid: $uid);
+			}
+
+			$results[] = $link->jsonSerialize();
+		}
+
+		return $results;
+	}//end getLinkedPages()
+
+	/**
+	 * Return the current user's collectives (create cascade source).
+	 *
+	 * Returns an empty array when Collectives is unavailable.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 */
+	public function getAvailableCollectives(): array {
+		$service = $this->getCollectiveService();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
+		if ($service === null || $uid === null) {
+			return [];
+		}
+
+		try {
+			$collectives = $service->getCollectives($uid);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('CollectiveLinkService::getAvailableCollectives failed: ' . $e->getMessage());
+			return [];
+		}
+
+		return $this->collectiveRows(collectives: $collectives);
+	}//end getAvailableCollectives()
+
+	/**
+	 * The id/name/emoji rows of Collectives, skipping those that cannot be read.
+	 *
+	 * @param iterable<object> $collectives Collective entities.
+	 *
+	 * @return array<int,array{id:int,name:string,emoji:mixed}>
+	 */
+	private function collectiveRows(iterable $collectives): array {
+		$out = [];
+		foreach ($collectives as $collective) {
+			try {
+				$out[] = [
+					'id' => (int)$collective->getId(),
+					'name' => (string)$collective->getName(),
+					'emoji' => $collective->getEmoji(),
+				];
+			} catch (Throwable $e) {
+				continue;
+			}
+		}
+
+		return $out;
+	}//end collectiveRows()
+
+	/**
+	 * Return the current user's NC Collectives pages (picker source).
+	 *
+	 * Walks every collective the user can see and lists its pages,
+	 * optionally filtered by a name substring. Returns an empty array
+	 * when Collectives is unavailable.
+	 *
+	 * @param string|null $search Optional title-substring filter.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 */
+	public function getAvailablePages(?string $search = null): array {
+		$context = $this->pageContext();
+		if ($context === null) {
+			return [];
+		}
+
+		[$collectiveService, $pageService, $uid] = $context;
+
+		try {
+			$collectives = $collectiveService->getCollectives($uid);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('CollectiveLinkService::getAvailablePages failed: ' . $e->getMessage());
+			return [];
+		}
+
+		$pageSearch = (new PageSearch(pageService: $pageService, uid: $uid))->matching(search: $search);
+		return $this->pagesOf(collectives: $collectives, search: $pageSearch);
+	}//end getAvailablePages()
+
+	/**
+	 * The Collectives and Page services and the current user, or null when any is missing.
+	 *
+	 * @return array{0:object,1:object,2:string}|null
+	 */
+	private function pageContext(): ?array {
+		$collectiveService = $this->getCollectiveService();
+		$pageService = $this->getPageService();
+		$uid = $this->runtime->userSession()->getUser()?->getUID();
+		if ($collectiveService === null || $pageService === null || $uid === null) {
+			return null;
+		}
+
+		return [$collectiveService, $pageService, $uid];
+	}//end pageContext()
+
+	/**
+	 * The picker rows of the matching pages of every Collective, in Collective order.
+	 *
+	 * @param iterable<object> $collectives Collective entities.
+	 * @param PageSearch       $search      The page service, user and title filter.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function pagesOf(iterable $collectives, PageSearch $search): array {
+		$out = [];
+		foreach ($collectives as $collective) {
+			array_push($out, ...$this->collectPages(search: $search, collective: $collective));
+		}
+
+		return $out;
+	}//end pagesOf()
+
+	/**
+	 * The picker rows of a collective's pages.
+	 *
+	 * @param PageSearch $search     The page service, user and title filter.
+	 * @param object     $collective A Collective entity.
+	 *
+	 * @return array<int,array<string,mixed>> The rows; empty when the pages cannot be read.
+	 */
+	private function collectPages(PageSearch $search, object $collective): array {
+		try {
+			$owner = ['collectiveId' => (int)$collective->getId(), 'collectiveName' => (string)$collective->getName()];
+			$pages = $search->pageService->findAll($owner['collectiveId'], $search->uid);
+		} catch (Throwable $e) {
+			return [];
+		}
+
+		$rows = [];
+		foreach ($pages as $page) {
+			$row = $this->pickerRowFromPage(page: $page, search: $search);
+			if ($row !== null) {
+				$rows[] = ['pageId' => $row['pageId']] + $owner + $row;
+			}
+		}
+
+		return $rows;
+	}//end collectPages()
+
+	/**
+	 * Map a single NC Collectives page into a picker row without its
+	 * collective, applying the title filter.
+	 *
+	 * @param object     $page   A Collectives PageInfo instance.
+	 * @param PageSearch $search The title filter.
+	 *
+	 * @return array<string,mixed>|null The row, or null when the page is
+	 *                                  unreadable or filtered out.
+	 */
+	private function pickerRowFromPage(object $page, PageSearch $search): ?array {
+		try {
+			$title = (string)$page->getTitle();
+			$pageId = (int)$page->getId();
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if ($search->matches(title: $title) === false) {
+			return null;
+		}
+
+		$lastModified = $this->pageLastModified(page: $page);
+		return [
+			'pageId' => $pageId,
+			'title' => $title,
+			'emoji' => $this->pageEmoji(page: $page),
+			'lastModified' => $lastModified,
+			'url' => $this->pageDeepLink(pageId: $pageId),
+		];
+	}//end pickerRowFromPage()
+
+	/**
+	 * The modification time of a page as ATOM; null when unknown or unreadable.
+	 *
+	 * @param object $page A Collectives PageInfo instance.
+	 *
+	 * @return string|null The time.
+	 */
+	private function pageLastModified(object $page): ?string {
+		try {
+			$timestamp = (int)$page->getTimestamp();
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if ($timestamp <= 0) {
+			return null;
+		}
+
+		return (new DateTime())->setTimestamp($timestamp)->format(DateTime::ATOM);
+	}//end pageLastModified()
+
+	/**
+	 * The emoji of a page; null when unset or unreadable.
+	 *
+	 * @param object $page A Collectives PageInfo instance.
+	 *
+	 * @return mixed The emoji.
+	 */
+	private function pageEmoji(object $page): mixed {
+		try {
+			return $page->getEmoji();
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end pageEmoji()
+
+	/**
+	 * Whether a link row's cache is older than the stale window.
+	 *
+	 * @param CollectiveLink $link The link row.
+	 *
+	 * @return bool
+	 */
+	private function isStale(CollectiveLink $link): bool {
+		$linkedAt = $link->getLinkedAt();
+		if ($linkedAt === null) {
+			return true;
+		}
+
+		return (time() - $linkedAt->getTimestamp()) > self::STALE_AFTER;
+	}//end isStale()
+
+	/**
+	 * Refresh a link row's cached page metadata in place.
+	 *
+	 * Best-effort: when the page can't be resolved the link is left
+	 * untouched (the page may have been deleted in NC Collectives).
+	 *
+	 * @param CollectiveLink $link The link row.
+	 * @param string $uid The owning user id.
+	 *
+	 * @return CollectiveLink The (possibly updated) link row.
+	 */
+	private function refreshLink(CollectiveLink $link, string $uid): CollectiveLink {
+		$info = $this->fetchPageInfo(pageId: (int)$link->getPageId(), uid: $uid);
+		if ($info === null) {
+			return $link;
+		}
+
+		if (($info['collectiveName'] ?? '') !== '') {
+			$link->setCollectiveName((string)$info['collectiveName']);
+		}
+
+		$link->setPageTitle((string)($info['title'] ?? $link->getPageTitle()));
+		$link->setSlug($info['slug'] ?? null);
+		$link->setEmoji($info['emoji'] ?? null);
+		$link->setLastModified($info['lastModified'] ?? null);
+		$link->setUrl($info['url'] ?? $link->getUrl());
+		$link->setLinkedAt(new DateTime());
+
+		try {
+			return $this->collectiveLinkMapper->update($link);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->debug('CollectiveLinkService::refreshLink update failed: ' . $e->getMessage());
+			return $link;
+		}
+	}//end refreshLink()
+
+	/**
+	 * Fetch normalised page metadata from NC Collectives.
+	 *
+	 * Walks the user's collectives to find the one owning the page, then
+	 * normalises the PageInfo into the shape used by hydrateLink /
+	 * refreshLink.
+	 *
+	 * @param int $pageId The page id.
+	 * @param string $uid The owning user id.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function fetchPageInfo(int $pageId, string $uid): ?array {
+		$collectiveService = $this->getCollectiveService();
+		$pageService = $this->getPageService();
+		if ($collectiveService === null || $pageService === null) {
+			return null;
+		}
+
+		try {
+			$collectives = $collectiveService->getCollectives($uid);
+		} catch (Throwable $e) {
+			$this->runtime->logger()->debug('CollectiveLinkService::fetchPageInfo getCollectives failed: ' . $e->getMessage());
+			return null;
+		}
+
+		return $this->findPageIn(
+			collectives: $collectives,
+			find: static fn (int $collectiveId): mixed => $pageService->find($collectiveId, $pageId, $uid)
+		);
+	}//end fetchPageInfo()
+
+	/**
+	 * The normalised page from the first Collective that holds it, or null when none does.
+	 *
+	 * @param iterable<object> $collectives Collective entities.
+	 * @param Closure          $find        Reads the page from one collective id; throws when it is not there.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function findPageIn(iterable $collectives, Closure $find): ?array {
+		foreach ($collectives as $collective) {
+			try {
+				$collectiveId = (int)$collective->getId();
+				$page = $find($collectiveId);
+			} catch (Throwable $e) {
+				continue;
+			}
+
+			return $this->normalisePage(page: $page, collective: $collective);
+		}
+
+		return null;
+	}//end findPageIn()
+
+	/**
+	 * Normalise a Collectives PageInfo + Collective into the info shape.
+	 *
+	 * @param object $page A Collectives PageInfo instance.
+	 * @param object $collective The owning Collective entity.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function normalisePage(object $page, object $collective): array {
+		$lastModified = null;
+		try {
+			$timestamp = (int)$page->getTimestamp();
+			if ($timestamp > 0) {
+				$lastModified = (new DateTime())->setTimestamp($timestamp);
+			}
+		} catch (Throwable $e) {
+			$lastModified = null;
+		}
+
+		$emoji = null;
+		try {
+			$emoji = $page->getEmoji();
+		} catch (Throwable $e) {
+			$emoji = null;
+		}
+
+		$slug = null;
+		try {
+			$slug = $page->getSlug();
+		} catch (Throwable $e) {
+			$slug = null;
+		}
+
+		return [
+			'title' => (string)$page->getTitle(),
+			'collectiveId' => (int)$collective->getId(),
+			'collectiveName' => (string)$collective->getName(),
+			'slug' => $slug,
+			'emoji' => $emoji,
+			'lastModified' => $lastModified,
+			'url' => $this->pageDeepLink(pageId: (int)$page->getId()),
+		];
+	}//end normalisePage()
+
+	/**
+	 * Build the NC Collectives deep link for a page.
+	 *
+	 * Uses the stable `?fileId=` query form which Collectives resolves to
+	 * the correct page regardless of slug/path, so the link survives
+	 * renames + moves.
+	 *
+	 * @param int $pageId The page id.
+	 *
+	 * @return string
+	 */
+	private function pageDeepLink(int $pageId): string {
+		return $this->urlGenerator->linkToRoute('collectives.start.index') . '?fileId=' . $pageId;
+	}//end pageDeepLink()
+}//end class

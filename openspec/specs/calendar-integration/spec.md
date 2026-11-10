@@ -1,10 +1,13 @@
 ---
+status: done
 retrofit: true
 ---
 
 # Calendar Integration
 
 ## Purpose
+
+@e2e exclude CalDAV provider — backend-only, covered by PHPUnit
 
 OpenRegister can surface register objects as Nextcloud calendar events by implementing the `ICalendarProvider` contract. Objects from enabled schemas are exposed as iCalendar events (VEVENT) via CalDAV, allowing any CalDAV client (Nextcloud Calendar app, iOS/Android) to subscribe to, view, and filter them. This capability integrates with the object-interactions spec's broader "objects as structured resources" theme but focuses specifically on the CalDAV provider layer.
 
@@ -57,3 +60,10 @@ OpenRegister can surface register objects as Nextcloud calendar events by implem
 #### Notes
 - `RegisterCalendar::search()` builds Nextcloud QBMapper-style timerange filters using the schema's configured date property name. If no date property is configured, the calendar MUST return an empty array.
 - The CalDAV integration is read-only: objects can be viewed via CalDAV but not created or modified through the calendar interface.
+
+### Requirement: A linked event lists the people invited
+
+Each linked event SHALL list its invitees, read from the event: `name`, `email` and `partstat`. An event that cannot be read SHALL list none and still show.
+
+#### Scenario: an explanation at the desk
+- **THEN** the appointment lists Sanne de Vries with partstat `needs-action`

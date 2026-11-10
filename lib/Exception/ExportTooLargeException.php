@@ -1,0 +1,94 @@
+<?php
+
+/**
+ * Class ExportTooLargeException
+ *
+ * Thrown when a PDF export request exceeds `ExportService::MAX_PDF_EXPORT_ROWS`.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Exception
+ * @package   OCA\OpenRegister\Exception
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ *
+ * @spec openspec/specs/export-pdf-format/spec.md
+ */
+
+namespace OCA\OpenRegister\Exception;
+
+use Exception;
+
+/**
+ * Exception thrown when a PDF export's row count exceeds the configured cap.
+ *
+ * A PDF is laid out from one document holding every row, unlike the
+ * streaming CSV writer, so its cost grows with the row count.
+ * `ExportService::exportToPdf()` throws this exception before any document is
+ * built, so no wasted work happens once the cap is exceeded.
+ *
+ * Controllers exposing PDF export MUST catch this exception specifically and
+ * map it to HTTP 400 with a structured body identifying the actual row count
+ * and the configured limit — never a bare 500, and never a silently truncated
+ * PDF.
+ *
+ * @category Exception
+ * @package  OCA\OpenRegister\Exception
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+class ExportTooLargeException extends Exception {
+
+	/**
+	 * The HTTP status code controllers MUST map this exception to.
+	 *
+	 * @var int
+	 */
+	public const HTTP_STATUS = 400;
+
+	/**
+	 * ExportTooLargeException constructor.
+	 *
+	 * @param int $rowCount The actual number of objects the export attempted to render.
+	 * @param int $maxRows  The configured row-count limit that was exceeded.
+	 */
+	public function __construct(private readonly int $rowCount, private readonly int $maxRows) {
+		parent::__construct(
+			message: sprintf(
+				'PDF export row count (%d) exceeds the maximum allowed (%d). '
+				. 'Narrow the export with filters or use CSV/Excel export instead.',
+				$rowCount,
+				$maxRows
+			),
+			code: 0
+		);
+	}//end __construct()
+
+	/**
+	 * Get the actual number of objects the export attempted to render.
+	 *
+	 * @return int
+	 */
+	public function getRowCount(): int {
+		return $this->rowCount;
+	}//end getRowCount()
+
+	/**
+	 * Get the configured row-count limit that was exceeded.
+	 *
+	 * @return int
+	 */
+	public function getMaxRows(): int {
+		return $this->maxRows;
+	}//end getMaxRows()
+}//end class

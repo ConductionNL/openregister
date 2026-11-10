@@ -1,0 +1,92 @@
+{
+    "first": {
+        "data": {
+            "title": "Send the missing payslip",
+            "description": "For case case-7",
+            "state": "active",
+            "performerType": "external",
+            "priority": "normal",
+            "assignee": "party:kvk-9",
+            "dueAt": "2026-12-01",
+            "expiresAt": "2026-12-31",
+            "onTimeout": "expire",
+            "onReject": "fail",
+            "metadata": {
+                "flowNodeType": "openregister.portal-task",
+                "flowNode": "ask",
+                "outcomeKey": "answer",
+                "partyRole": "applicant",
+                "partyReference": "party:kvk-9",
+                "cycle": 1,
+                "previousTaskUuid": null,
+                "reaskReason": null,
+                "upload": {
+                    "required": true,
+                    "maxFiles": 3,
+                    "acceptedTypes": [
+                        "application/pdf",
+                        "image/png"
+                    ],
+                    "maxSizeBytes": 2621440
+                }
+            },
+            "objectUuid": "case-7",
+            "registerId": 3,
+            "schemaId": 9
+        },
+        "slot": {
+            "taskUuid": "t-new",
+            "advance": 4,
+            "assignee": "party:kvk-9",
+            "title": "Send the missing payslip",
+            "cycle": 1,
+            "previousTaskUuid": null,
+            "passedAt": null
+        }
+    },
+    "reask": {
+        "data": {
+            "title": "Send the missing payslip",
+            "description": "For case case-7",
+            "state": "active",
+            "performerType": "external",
+            "priority": "normal",
+            "assignee": "party:kvk-9",
+            "dueAt": "2026-12-01",
+            "expiresAt": "2026-12-31",
+            "onTimeout": "expire",
+            "onReject": "fail",
+            "metadata": {
+                "flowNodeType": "openregister.portal-task",
+                "flowNode": "ask",
+                "outcomeKey": "answer",
+                "partyRole": "applicant",
+                "partyReference": "party:kvk-9",
+                "cycle": 3,
+                "previousTaskUuid": "t-1",
+                "reaskReason": "The scan is unreadable",
+                "upload": {
+                    "required": true,
+                    "maxFiles": 3,
+                    "acceptedTypes": [
+                        "application/pdf",
+                        "image/png"
+                    ],
+                    "maxSizeBytes": 2621440
+                }
+            },
+            "objectUuid": "case-7",
+            "registerId": 3,
+            "schemaId": 9
+        },
+        "slot": {
+            "taskUuid": "t-new",
+            "cycle": 3,
+            "passedAt": null,
+            "advance": 4,
+            "assignee": "party:kvk-9",
+            "title": "Send the missing payslip",
+            "previousTaskUuid": "t-1"
+        }
+    }
+}

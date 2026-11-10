@@ -13,268 +13,258 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class NotificationServiceTest extends TestCase
-{
-    private IManager&MockObject $notificationManager;
-    private IGroupManager&MockObject $groupManager;
-    private LoggerInterface&MockObject $logger;
-    private NotificationService $service;
+class NotificationServiceTest extends TestCase {
+	private IManager&MockObject $notificationManager;
+	private IGroupManager&MockObject $groupManager;
+	private LoggerInterface&MockObject $logger;
+	private NotificationService $service;
 
-    protected function setUp(): void
-    {
-        $this->notificationManager = $this->createMock(IManager::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		$this->notificationManager = $this->createMock(IManager::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        // NotificationService has no constructor, so we use reflection to set readonly props
-        $this->service = new NotificationService();
-        $ref = new \ReflectionClass($this->service);
+		// This used to read:
+		//
+		//   // NotificationService has no constructor, so we use reflection to
+		//   // set readonly props
+		//   $this->service = new NotificationService();
+		//   ...three ReflectionProperty::setValue() calls...
+		//
+		// The comment was accurate and that is the problem: the class genuinely
+		// had no constructor, so in production nothing ever assigned those
+		// properties and every method died with "must not be accessed before
+		// initialization". The reflection workaround made this suite green over
+		// a class that could not run outside it. Injecting normally is both the
+		// simpler setup and the one that would have failed loudly.
+		$this->service = new NotificationService(
+			$this->notificationManager,
+			$this->groupManager,
+			$this->logger
+		);
+	}
 
-        $prop = $ref->getProperty('notificationManager');
-        $prop->setAccessible(true);
-        $prop->setValue($this->service, $this->notificationManager);
+	private function createConfiguration(int $id, string $title, array $groups = [], ?string $localVersion = '1.0', ?string $remoteVersion = '2.0'): Configuration {
+		$config = new Configuration();
+		$config->setTitle($title);
+		$config->setNotificationGroups($groups);
+		$config->setLocalVersion($localVersion);
+		$config->setRemoteVersion($remoteVersion);
+		$ref = new \ReflectionClass($config);
+		$prop = $ref->getProperty('id');
+		$prop->setAccessible(true);
+		$prop->setValue($config, $id);
+		return $config;
+	}
 
-        $prop = $ref->getProperty('groupManager');
-        $prop->setAccessible(true);
-        $prop->setValue($this->service, $this->groupManager);
+	private function createUser(string $uid): IUser&MockObject {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		return $user;
+	}
 
-        $prop = $ref->getProperty('logger');
-        $prop->setAccessible(true);
-        $prop->setValue($this->service, $this->logger);
-    }
+	private function createGroup(string $groupId, array $users): IGroup&MockObject {
+		$group = $this->createMock(IGroup::class);
+		$group->method('getUsers')->willReturn($users);
+		return $group;
+	}
 
-    private function createConfiguration(int $id, string $title, array $groups = [], ?string $localVersion = '1.0', ?string $remoteVersion = '2.0'): Configuration
-    {
-        $config = new Configuration();
-        $config->setTitle($title);
-        $config->setNotificationGroups($groups);
-        $config->setLocalVersion($localVersion);
-        $config->setRemoteVersion($remoteVersion);
-        $ref = new \ReflectionClass($config);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($config, $id);
-        return $config;
-    }
+	public function testNotifyConfigurationUpdateSendsToAdminGroup(): void {
+		$config = $this->createConfiguration(1, 'TestConfig');
+		$adminUser = $this->createUser('admin');
+		$adminGroup = $this->createGroup('admin', [$adminUser]);
 
-    private function createUser(string $uid): IUser&MockObject
-    {
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn($uid);
-        return $user;
-    }
+		$this->groupManager->method('get')->willReturnMap([
+			['admin', $adminGroup],
+		]);
 
-    private function createGroup(string $groupId, array $users): IGroup&MockObject
-    {
-        $group = $this->createMock(IGroup::class);
-        $group->method('getUsers')->willReturn($users);
-        return $group;
-    }
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-    public function testNotifyConfigurationUpdateSendsToAdminGroup(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig');
-        $adminUser = $this->createUser('admin');
-        $adminGroup = $this->createGroup('admin', [$adminUser]);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		$this->notificationManager->expects($this->once())->method('notify');
 
-        $this->groupManager->method('get')->willReturnMap([
-            ['admin', $adminGroup],
-        ]);
+		$count = $this->service->notifyConfigurationUpdate($config);
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
+		$this->assertSame(1, $count);
+	}
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        $this->notificationManager->expects($this->once())->method('notify');
+	public function testNotifyConfigurationUpdateAlwaysIncludesAdmin(): void {
+		$config = $this->createConfiguration(1, 'TestConfig', ['editors']);
+		$user1 = $this->createUser('editor1');
+		$adminUser = $this->createUser('admin');
 
-        $count = $this->service->notifyConfigurationUpdate($config);
+		$editorsGroup = $this->createGroup('editors', [$user1]);
+		$adminGroup = $this->createGroup('admin', [$adminUser]);
 
-        $this->assertSame(1, $count);
-    }
+		$this->groupManager->method('get')->willReturnMap([
+			['editors', $editorsGroup],
+			['admin', $adminGroup],
+		]);
 
-    public function testNotifyConfigurationUpdateAlwaysIncludesAdmin(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig', ['editors']);
-        $user1 = $this->createUser('editor1');
-        $adminUser = $this->createUser('admin');
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-        $editorsGroup = $this->createGroup('editors', [$user1]);
-        $adminGroup = $this->createGroup('admin', [$adminUser]);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		$this->notificationManager->expects($this->exactly(2))->method('notify');
 
-        $this->groupManager->method('get')->willReturnMap([
-            ['editors', $editorsGroup],
-            ['admin', $adminGroup],
-        ]);
+		$count = $this->service->notifyConfigurationUpdate($config);
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
+		$this->assertSame(2, $count);
+	}
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        $this->notificationManager->expects($this->exactly(2))->method('notify');
+	public function testNotifyConfigurationUpdateDeduplicatesUsers(): void {
+		$config = $this->createConfiguration(1, 'TestConfig', ['admin']);
+		$adminUser = $this->createUser('admin');
+		$adminGroup = $this->createGroup('admin', [$adminUser]);
 
-        $count = $this->service->notifyConfigurationUpdate($config);
+		// admin is already in the notificationGroups, should not be added twice
+		$this->groupManager->method('get')->willReturnMap([
+			['admin', $adminGroup],
+		]);
 
-        $this->assertSame(2, $count);
-    }
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-    public function testNotifyConfigurationUpdateDeduplicatesUsers(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig', ['admin']);
-        $adminUser = $this->createUser('admin');
-        $adminGroup = $this->createGroup('admin', [$adminUser]);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		// admin should only be notified once even though it appears in both the explicit list and forced admin
+		$this->notificationManager->expects($this->once())->method('notify');
 
-        // admin is already in the notificationGroups, should not be added twice
-        $this->groupManager->method('get')->willReturnMap([
-            ['admin', $adminGroup],
-        ]);
+		$count = $this->service->notifyConfigurationUpdate($config);
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
+		$this->assertSame(1, $count);
+	}
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        // admin should only be notified once even though it appears in both the explicit list and forced admin
-        $this->notificationManager->expects($this->once())->method('notify');
+	public function testNotifyConfigurationUpdateSkipsNonexistentGroup(): void {
+		$config = $this->createConfiguration(1, 'TestConfig', ['nonexistent']);
+		$adminUser = $this->createUser('admin');
+		$adminGroup = $this->createGroup('admin', [$adminUser]);
 
-        $count = $this->service->notifyConfigurationUpdate($config);
+		$this->groupManager->method('get')->willReturnMap([
+			['nonexistent', null],
+			['admin', $adminGroup],
+		]);
 
-        $this->assertSame(1, $count);
-    }
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-    public function testNotifyConfigurationUpdateSkipsNonexistentGroup(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig', ['nonexistent']);
-        $adminUser = $this->createUser('admin');
-        $adminGroup = $this->createGroup('admin', [$adminUser]);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-        $this->groupManager->method('get')->willReturnMap([
-            ['nonexistent', null],
-            ['admin', $adminGroup],
-        ]);
+		$count = $this->service->notifyConfigurationUpdate($config);
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
+		$this->assertSame(1, $count);
+	}
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        $this->logger->expects($this->atLeastOnce())->method('warning');
+	public function testNotifyConfigurationUpdateHandlesNotificationFailure(): void {
+		$config = $this->createConfiguration(1, 'TestConfig');
+		$adminUser = $this->createUser('admin');
+		$adminGroup = $this->createGroup('admin', [$adminUser]);
 
-        $count = $this->service->notifyConfigurationUpdate($config);
+		$this->groupManager->method('get')->willReturnMap([
+			['admin', $adminGroup],
+		]);
 
-        $this->assertSame(1, $count);
-    }
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-    public function testNotifyConfigurationUpdateHandlesNotificationFailure(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig');
-        $adminUser = $this->createUser('admin');
-        $adminGroup = $this->createGroup('admin', [$adminUser]);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		$this->notificationManager->method('notify')
+			->willThrowException(new \Exception('Notification failed'));
 
-        $this->groupManager->method('get')->willReturnMap([
-            ['admin', $adminGroup],
-        ]);
+		$this->logger->expects($this->atLeastOnce())->method('error');
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
+		$count = $this->service->notifyConfigurationUpdate($config);
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        $this->notificationManager->method('notify')
-            ->willThrowException(new \Exception('Notification failed'));
+		$this->assertSame(0, $count);
+	}
 
-        $this->logger->expects($this->atLeastOnce())->method('error');
+	public function testNotifyConfigurationUpdateNoGroups(): void {
+		$config = $this->createConfiguration(1, 'TestConfig', []);
 
-        $count = $this->service->notifyConfigurationUpdate($config);
+		// No groups configured, but admin is always added
+		$adminUser = $this->createUser('admin');
+		$adminGroup = $this->createGroup('admin', [$adminUser]);
 
-        $this->assertSame(0, $count);
-    }
+		$this->groupManager->method('get')->willReturnMap([
+			['admin', $adminGroup],
+		]);
 
-    public function testNotifyConfigurationUpdateNoGroups(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig', []);
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-        // No groups configured, but admin is always added
-        $adminUser = $this->createUser('admin');
-        $adminGroup = $this->createGroup('admin', [$adminUser]);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
 
-        $this->groupManager->method('get')->willReturnMap([
-            ['admin', $adminGroup],
-        ]);
+		$count = $this->service->notifyConfigurationUpdate($config);
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
+		$this->assertSame(1, $count);
+	}
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
+	public function testMarkConfigurationUpdated(): void {
+		$config = $this->createConfiguration(1, 'TestConfig');
 
-        $count = $this->service->notifyConfigurationUpdate($config);
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
 
-        $this->assertSame(1, $count);
-    }
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		$this->notificationManager->expects($this->once())->method('markProcessed');
 
-    public function testMarkConfigurationUpdated(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig');
+		$this->service->markConfigurationUpdated($config);
+	}
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
+	public function testNotifyConfigurationUpdateMultipleGroups(): void {
+		$config = $this->createConfiguration(1, 'TestConfig', ['editors', 'reviewers']);
+		$editor = $this->createUser('editor1');
+		$reviewer = $this->createUser('reviewer1');
+		$adminUser = $this->createUser('admin');
 
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        $this->notificationManager->expects($this->once())->method('markProcessed');
+		$editorsGroup = $this->createGroup('editors', [$editor]);
+		$reviewersGroup = $this->createGroup('reviewers', [$reviewer]);
+		$adminGroup = $this->createGroup('admin', [$adminUser]);
 
-        $this->service->markConfigurationUpdated($config);
-    }
+		$this->groupManager->method('get')->willReturnMap([
+			['editors', $editorsGroup],
+			['reviewers', $reviewersGroup],
+			['admin', $adminGroup],
+		]);
 
-    public function testNotifyConfigurationUpdateMultipleGroups(): void
-    {
-        $config = $this->createConfiguration(1, 'TestConfig', ['editors', 'reviewers']);
-        $editor = $this->createUser('editor1');
-        $reviewer = $this->createUser('reviewer1');
-        $adminUser = $this->createUser('admin');
+		$notification = $this->createMock(INotification::class);
+		$notification->method('setApp')->willReturnSelf();
+		$notification->method('setUser')->willReturnSelf();
+		$notification->method('setDateTime')->willReturnSelf();
+		$notification->method('setObject')->willReturnSelf();
+		$notification->method('setSubject')->willReturnSelf();
 
-        $editorsGroup = $this->createGroup('editors', [$editor]);
-        $reviewersGroup = $this->createGroup('reviewers', [$reviewer]);
-        $adminGroup = $this->createGroup('admin', [$adminUser]);
+		$this->notificationManager->method('createNotification')->willReturn($notification);
+		$this->notificationManager->expects($this->exactly(3))->method('notify');
 
-        $this->groupManager->method('get')->willReturnMap([
-            ['editors', $editorsGroup],
-            ['reviewers', $reviewersGroup],
-            ['admin', $adminGroup],
-        ]);
+		$count = $this->service->notifyConfigurationUpdate($config);
 
-        $notification = $this->createMock(INotification::class);
-        $notification->method('setApp')->willReturnSelf();
-        $notification->method('setUser')->willReturnSelf();
-        $notification->method('setDateTime')->willReturnSelf();
-        $notification->method('setObject')->willReturnSelf();
-        $notification->method('setSubject')->willReturnSelf();
-
-        $this->notificationManager->method('createNotification')->willReturn($notification);
-        $this->notificationManager->expects($this->exactly(3))->method('notify');
-
-        $count = $this->service->notifyConfigurationUpdate($config);
-
-        $this->assertSame(3, $count);
-    }
+		$this->assertSame(3, $count);
+	}
 }

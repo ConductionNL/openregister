@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # Tenant Isolation Audit
 
 ## Purpose
+
+@e2e exclude backend audit/isolation verification — covered by PHPUnit
 Define cross-tenant access audit logging, isolation verification, and automated isolation testing to ensure that tenant boundaries are never breached in a SaaS deployment. This provides the evidence trail required for BIO/ISO 27001 compliance and builds confidence that the shared-database multi-tenancy model provides adequate isolation.
 
 **Source**: BIO/ISO 27001 audit requirements; government procurement requirement for demonstrable tenant isolation; ISAE 3402 evidence trail.
@@ -53,6 +59,11 @@ The `TenantQuotaMiddleware` MUST check the Organisation status and block all API
 - **WHEN** an API request is scoped to an Organisation with `status: "deprovisioning"`
 - **THEN** the middleware MUST return HTTP 403 Forbidden
 - **AND** the response MUST include `{"error": "Organisation is being deprovisioned", "status": "deprovisioning"}`
+
+#### Scenario: Retained organisation API access is blocked
+- **WHEN** an API request is scoped to an Organisation with `status: "retained"`
+- **THEN** the middleware MUST return HTTP 403 Forbidden
+- **AND** the response MUST include `{"error": "Organisation access has ended and its data is retained", "status": "retained"}`
 
 #### Scenario: Provisioning organisation only allows admin API access
 - **WHEN** a non-admin API request is scoped to an Organisation with `status: "provisioning"`

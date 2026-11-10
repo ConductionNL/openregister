@@ -1,0 +1,105 @@
+{
+    "standard": "ggm",
+    "version": "ggm-2.2.0",
+    "objecttypen": [
+        {
+            "id": "INGESCHREVEN_PERSOON",
+            "naam": "Ingeschreven persoon",
+            "definitie": "Een natuurlijk persoon die is ingeschreven in de Basisregistratie Personen van een gemeente.",
+            "attribuutsoorten": [
+                {
+                    "naam": "burgerservicenummer",
+                    "definitie": "Het burgerservicenummer (BSN) van de ingeschreven persoon.",
+                    "type": "tekst"
+                },
+                {
+                    "naam": "geslachtsnaam",
+                    "definitie": "De officiële geslachtsnaam van de persoon.",
+                    "type": "tekst"
+                },
+                {
+                    "naam": "voornamen",
+                    "definitie": "De voornamen van de persoon.",
+                    "type": "tekst"
+                },
+                {
+                    "naam": "geboortedatum",
+                    "definitie": "De datum waarop de persoon is geboren.",
+                    "type": "datum"
+                },
+                {
+                    "naam": "aanduidingNaamgebruik",
+                    "definitie": "De wijze waarop de naam van de persoon wordt gebruikt.",
+                    "type": "tekst",
+                    "referentielijst": {
+                        "naam": "Tabel naamgebruik",
+                        "waarden": ["eigen", "partner", "partner_eigen", "eigen_partner"]
+                    }
+                },
+                {
+                    "naam": "verblijfadres",
+                    "definitie": "Het adres waarop de persoon staat ingeschreven.",
+                    "type": "relatie",
+                    "doelObjecttype": "NUMMERAANDUIDING"
+                }
+            ]
+        },
+        {
+            "id": "ZAAK",
+            "naam": "Zaak",
+            "definitie": "Een samenhangende hoeveelheid werk met een gedefinieerde aanleiding en een gedefinieerd resultaat.",
+            "attribuutsoorten": [
+                {
+                    "naam": "identificatie",
+                    "definitie": "De unieke identificatie van de zaak binnen de gemeente.",
+                    "type": "tekst"
+                },
+                {
+                    "naam": "omschrijving",
+                    "definitie": "Een korte omschrijving van de zaak.",
+                    "type": "tekst"
+                },
+                {
+                    "naam": "startdatum",
+                    "definitie": "De datum waarop de uitvoering van de zaak is gestart.",
+                    "type": "datum"
+                },
+                {
+                    "naam": "registratiedatum",
+                    "definitie": "Het tijdstip waarop de zaak is geregistreerd.",
+                    "type": "datumtijd"
+                },
+                {
+                    "naam": "vertrouwelijkheidaanduiding",
+                    "definitie": "Aanduiding van de mate waarin de zaak openbaar is.",
+                    "type": "tekst",
+                    "referentielijst": {
+                        "naam": "Tabel vertrouwelijkheid",
+                        "waarden": ["openbaar", "intern", "vertrouwelijk", "zeer_geheim"]
+                    }
+                },
+                {
+                    "naam": "doorlooptijd",
+                    "definitie": "De wettelijke doorlooptijd van de zaak in dagen.",
+                    "type": "geheel getal"
+                },
+                {
+                    "naam": "kosten",
+                    "definitie": "De aan de zaak verbonden kosten in euro's.",
+                    "type": "decimaal"
+                },
+                {
+                    "naam": "betaaldHeffing",
+                    "definitie": "Geeft aan of de heffing voor de zaak is betaald.",
+                    "type": "boolean"
+                },
+                {
+                    "naam": "heeftBetrekkingOp",
+                    "definitie": "Het object waarop de zaak betrekking heeft.",
+                    "type": "relatie",
+                    "doelObjecttype": "INGESCHREVEN_PERSOON"
+                }
+            ]
+        }
+    ]
+}

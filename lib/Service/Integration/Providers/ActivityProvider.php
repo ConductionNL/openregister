@@ -1,0 +1,305 @@
+<?php
+
+/**
+ * ActivityProvider — exposes NC Activity entities linked to an OpenRegister
+ * object via a `[or:{objectUuid}]` marker in the entity's `subject`
+ * field.
+ *
+ * Storage strategy is `query-time` — the marker lives in the upstream
+ * app's own table (`activity`), not in OR. Every `list()` call runs a
+ * live LIKE query against the upstream `activity` table; OpenRegister
+ * persists nothing about the link itself.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Integration\Providers
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @link https://conduction.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Integration\Providers;
+
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing
+
+use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
+use OCP\App\IAppManager;
+use OCP\IDBConnection;
+use OCP\IL10N;
+use Psr\Log\LoggerInterface;
+
+class ActivityProvider extends AbstractIntegrationProvider {
+	use MarkerLookupTrait;
+
+	private const REQUIRED_APP = 'activity';
+
+	private const MARKER_PREFIX = '[or:';
+
+	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * App manager for installation checks.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation service.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * Construct the provider with required dependencies.
+	 *
+	 * @param LeafMarkerScanning $leaf The DB connection, app manager, localisation and marker-scan logger.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function __construct(LeafMarkerScanning $leaf) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
+	}//end __construct()
+
+	/**
+	 * Return the unique provider identifier.
+	 *
+	 * @return string Provider ID.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function getId(): string {
+		return 'activity';
+	}//end getId()
+
+	/**
+	 * Return the human-readable provider label.
+	 *
+	 * @return string Localised label.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function getLabel(): string {
+		return $this->l10n->t('Activity');
+	}//end getLabel()
+
+	/**
+	 * Return the icon identifier for this provider.
+	 *
+	 * @return string Icon name.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function getIcon(): string {
+		return 'Timeline';
+	}//end getIcon()
+
+	/**
+	 * Return the group this provider belongs to.
+	 *
+	 * @return string|null Group identifier or null if ungrouped.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function getGroup(): ?string {
+		return 'workflow';
+	}//end getGroup()
+
+	/**
+	 * Return the Nextcloud app this provider requires.
+	 *
+	 * @return string|null Required app ID or null if none.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function getRequiredApp(): ?string {
+		return self::REQUIRED_APP;
+	}//end getRequiredApp()
+
+	/**
+	 * Return the storage strategy for this provider.
+	 *
+	 * @return string Storage strategy identifier.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function getStorageStrategy(): string {
+		return 'query-time';
+	}//end getStorageStrategy()
+
+	/**
+	 * Check whether this provider is currently available.
+	 *
+	 * @return bool True when the required NC app is installed.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
+	 */
+	public function isEnabled(): bool {
+		return $this->appManager->isInstalled(self::REQUIRED_APP);
+	}//end isEnabled()
+
+	/**
+	 * List linked Activity entities for an OR object.
+	 *
+	 * Linking convention: the entity's `subject` field contains
+	 * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
+	 * rows are normalised into the registry leaf row shape.
+	 *
+	 * Tier-2 narrowing: optional `type` / `actor` / `after` filters may
+	 * be passed in `$filters`. They are applied in PHP over the rows the
+	 * MarkerLookupTrait returns — the marker LIKE query itself is left
+	 * untouched so the wave-5.3 carve-out (NC Activity's single string
+	 * `subject` column as the marker target) stays canonical.
+	 *
+	 * Every row carries `visibility`, and it is always `internal`: an NC
+	 * Activity row records what a handler did, so it never belongs on a
+	 * citizen's side of the counter. A `visibility=public` filter therefore
+	 * empties this source rather than narrowing it.
+	 *
+	 * @param string $register Register slug for the parent object.
+	 * @param string $schema Schema slug for the parent object.
+	 * @param string $objectId UUID of the OR object whose rows we want.
+	 * @param array $filters Optional filters: `type`, `actor`, `after` (Unix ts), `visibility`.
+	 *
+	 * @return array<int,array<string,mixed>> List of registry leaf rows.
+	 *
+	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
+	 */
+	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->listMarked(objectId: $objectId, filters: $filters);
+	}//end list()
+
+	/**
+	 * The Activity rows marked for an object, narrowed by the caller's filters.
+	 *
+	 * @param string $objectId UUID of the OR object whose rows we want.
+	 * @param array  $filters  Optional filters: `type`, `actor`, `after` (Unix ts), `visibility`.
+	 *
+	 * @return array<int,array<string,mixed>> List of registry leaf rows.
+	 */
+	private function listMarked(string $objectId, array $filters): array {
+		if ($this->isEnabled() === false) {
+			return [];
+		}
+
+		$rows = $this->findByMarker(
+			db: $this->db,
+			table: 'activity',
+			markerColumn: 'subject',
+			marker: self::MARKER_PREFIX . $objectId . ']',
+			extraColumns: ['type', 'affecteduser', 'timestamp', 'object_id'],
+			idColumn: 'activity_id',
+		);
+
+		if ($this->wantsPublicOnly(filters: $filters) === true) {
+			return [];
+		}
+
+		return array_map(self::leafRow(...), $this->applyFilters(rows: $rows, filters: $filters));
+	}//end listMarked()
+
+	/**
+	 * One Activity row in the registry leaf row shape.
+	 *
+	 * Flatten the activity event so CnActivityTab can read type / timestamp /
+	 * actor at the row root without hand-walking `data.*`. `data` is retained
+	 * for any generic consumer that still wants the raw row.
+	 *
+	 * @param array $row The activity row.
+	 *
+	 * @return array<string,mixed> The leaf row.
+	 */
+	private static function leafRow(array $row): array {
+		return [
+			'id' => (string)($row['activity_id'] ?? ''),
+			'title' => (string)($row['subject'] ?? ''),
+			'subject' => (string)($row['subject'] ?? ''),
+			'type' => (string)($row['type'] ?? ''),
+			'timestamp' => (int)($row['timestamp'] ?? 0),
+			'affecteduser' => (string)($row['affecteduser'] ?? ''),
+			'actor_id' => (string)($row['affecteduser'] ?? ''),
+			'object_id' => (string)($row['object_id'] ?? ''),
+			'url' => '/index.php/apps/activity/' . (string)($row['activity_id'] ?? ''),
+			// An NC Activity row is always internal: it is written by
+			// core about what a handler did, never about what a citizen
+			// may read.
+			'visibility' => TimelineVisibilityServiceInterface::INTERNAL,
+			'data' => $row,
+		];
+	}//end leafRow()
+
+	/**
+	 * Whether the caller asked for the public view only.
+	 *
+	 * Every row of this source is internal, so a public-only read has nothing
+	 * to return. Anything other than `public` — including an absent or
+	 * misspelled value — leaves the rows alone, which is the same default
+	 * TimelineVisibilityService applies everywhere else.
+	 *
+	 * @param array $filters The filters the caller passed.
+	 *
+	 * @return bool True when the read asked for public rows only.
+	 */
+	private function wantsPublicOnly(array $filters): bool {
+		if (isset($filters['visibility']) === false || is_string($filters['visibility']) === false) {
+			return false;
+		}
+
+		return strtolower(trim($filters['visibility'])) === TimelineVisibilityServiceInterface::PUBLIC_ENTRY;
+	}//end wantsPublicOnly()
+
+	/**
+	 * Apply Tier-2 type/actor/after filters over marker-matched rows.
+	 *
+	 * Filtering is done in PHP (not in the marker query) to preserve the
+	 * wave-5.3 MarkerLookupTrait carve-out intact.
+	 *
+	 * @param array $rows Rows returned by the marker lookup.
+	 * @param array $filters Optional `type` / `actor` / `after` filters.
+	 *
+	 * @return array Filtered rows.
+	 */
+	private function applyFilters(array $rows, array $filters): array {
+		$filter = ActivityRowFilter::fromFilters(filters: $filters);
+		if ($filter->isEmpty() === true) {
+			return $rows;
+		}
+
+		return array_values(array_filter($rows, $filter->admits(...)));
+	}//end applyFilters()
+
+	/**
+	 * Return the health descriptor for this provider.
+	 *
+	 * @return array<string,mixed> Health status payload.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-4
+	 */
+	public function health(): array {
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Activity app is not installed');
+	}//end health()
+}//end class

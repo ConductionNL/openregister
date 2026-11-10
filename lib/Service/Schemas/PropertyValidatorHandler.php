@@ -6,6 +6,9 @@
  * This file contains the class for validating schema properties
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,12 +19,15 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ReferenceKey;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Class PropertyValidatorHandler
@@ -29,336 +35,1315 @@ use Psr\Log\LoggerInterface;
  * Service class for validating schema properties according to JSON Schema specification
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is the TYPES and STRING_FORMATS
+ *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
+ *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
+ *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
  */
-class PropertyValidatorHandler
-{
+class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 
-    /**
-     * Valid JSON Schema types
-     *
-     * @var array<string> List of valid JSON Schema types
-     */
-    private array $validTypes = [
-        'string',
-        'number',
-        'integer',
-        'boolean',
-        'array',
-        'object',
-        'null',
-        'file',
-        'NcFile',
-        'NcMail',
-        'NcContact',
-        'NcNote',
-        'NcTodo',
-        'NcCalendarEvent',
-        'NcTalk',
-        'NcDeck',
-    ];
+	/**
+	 * The property types the layer accepts, and what an editor should say about each.
+	 *
+	 * This table is the vocabulary. `PropertyVocabulary` publishes it and
+	 * `$validTypes` is derived from its keys, so the list a form is generated
+	 * from and the list the save path checks against are one array. A type
+	 * added here is accepted, published and documented in the same edit, and
+	 * there is no second file to forget.
+	 *
+	 * `conversion` answers the question an administrator asks right after
+	 * "what types are there": what happens to the objects that already exist.
+	 * `supported` means every stored value survives the change. `conditional`
+	 * means values that do not parse are refused, so the change needs a
+	 * migration run. `unsupported` means the stored shape cannot be derived
+	 * from the old one at all.
+	 *
+	 * @var array<string, array{category: string, conversion: string, conversionNote: string, description: string}>
+	 */
+	public const TYPES = [
+		'string' => [
+			'category' => 'text',
+			'conversion' => 'supported',
+			'conversionNote' => 'Every stored value can be read back as text, so populated objects survive the change.',
+			'description' => 'Text. Add a format to say which kind of text it is.',
+		],
+		'number' => [
+			'category' => 'numeric',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A stored value that is not numeric is refused, so run a migration first.',
+			'description' => 'A number with decimals.',
+		],
+		'integer' => [
+			'category' => 'numeric',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A stored value that is not a whole number is refused, so run a migration first.',
+			'description' => 'A whole number.',
+		],
+		'boolean' => [
+			'category' => 'numeric',
+			'conversion' => 'conditional',
+			'conversionNote' => 'Only true, false and the strings that spell them convert.',
+			'description' => 'Yes or no.',
+		],
+		'array' => [
+			'category' => 'composite',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A single stored value becomes a list of one. The other direction loses everything after the first entry.',
+			'description' => 'A list. Use items to say what one entry looks like.',
+		],
+		'object' => [
+			'category' => 'composite',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A stored value that is not an object is refused, so run a migration first.',
+			'description' => 'A nested set of properties, stored inside this object.',
+		],
+		'null' => [
+			'category' => 'composite',
+			'conversion' => 'supported',
+			'conversionNote' => 'Nothing is stored, so there is nothing to convert.',
+			'description' => 'No value at all. Use it inside oneOf to allow an empty answer.',
+		],
+		'file' => [
+			'category' => 'file',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'A file has to be uploaded. No stored value converts into one.',
+			'description' => 'An uploaded file, stored in the object folder.',
+		],
+		'geo' => [
+			'category' => 'spatial',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'Coordinates cannot be derived from another value. Import them instead.',
+			'description' => 'A point or a shape on the map.',
+		],
+		'color' => [
+			'category' => 'presentation',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A stored value that is not a colour is refused, so run a migration first.',
+			'description' => 'A colour, written as hex, rgb or hsl.',
+		],
+		'recurrence' => [
+			'category' => 'temporal',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'A repeat rule cannot be derived from a date or a sentence.',
+			'description' => 'A repeat rule, such as every second Tuesday.',
+		],
+		'NcFile' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at a file that has to exist first.',
+			'description' => 'A link to a file already in Nextcloud.',
+		],
+		'NcMail' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at a message that has to exist first.',
+			'description' => 'A link to a message in Nextcloud Mail.',
+		],
+		'NcContact' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at a contact that has to exist first.',
+			'description' => 'A link to a contact in Nextcloud Contacts.',
+		],
+		'NcNote' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at a note that has to exist first.',
+			'description' => 'A link to a note in Nextcloud Notes.',
+		],
+		'NcTodo' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at a task that has to exist first.',
+			'description' => 'A link to a task in Nextcloud Tasks.',
+		],
+		'NcCalendarEvent' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at an event that has to exist first.',
+			'description' => 'A link to an event in Nextcloud Calendar.',
+		],
+		'NcTalk' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at a conversation that has to exist first.',
+			'description' => 'A link to a conversation in Nextcloud Talk.',
+		],
+		'NcDeck' => [
+			'category' => 'nextcloud',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'The reference points at a card that has to exist first.',
+			'description' => 'A link to a card in Nextcloud Deck.',
+		],
+	];
 
-    /**
-     * Valid string formats for JSON Schema
-     *
-     * @var array<string> List of valid string formats
-     */
-    private array $validStringFormats = [
-        '',
-        // Text content formats.
-        'text',
-        'markdown',
-        'html',
-        // Standard JSON Schema formats.
-        'date-time',
-        'date',
-        'time',
-        'duration',
-        'email',
-        'idn-email',
-        'hostname',
-        'idn-hostname',
-        'ipv4',
-        'ipv6',
-        'uri',
-        'uri-reference',
-        'iri',
-        'iri-reference',
-        'uuid',
-        'uri-template',
-        'json-pointer',
-        'relative-json-pointer',
-        'regex',
-        'url',
-        // Additional type.
-        'color',
-        // Additional type.
-        'color-hex',
-        // Additional type.
-        'color-hex-alpha',
-        // Additional type.
-        'color-rgb',
-        // Additional type.
-        'color-rgba',
-        // Additional type.
-        'color-hsl',
-        // Additional type.
-        'color-hsla',
-        // Semantic versioning format.
-        'semver',
-    ];
+	/**
+	 * Valid string formats for JSON Schema
+	 *
+	 * A format this allowlist accepts is one the value validator can actually
+	 * enforce, so the two lists must agree. See `bsn` and `user` below for
+	 * what it costs when they drift apart.
+	 *
+	 * @var array<string> List of valid string formats
+	 */
+	public const STRING_FORMATS = [
+		'',
+		// Text content formats.
+		'text',
+		'markdown',
+		'html',
+		// Standard JSON Schema formats.
+		'date-time',
+		'date',
+		'time',
+		'duration',
+		'email',
+		'idn-email',
+		'hostname',
+		'idn-hostname',
+		'ipv4',
+		'ipv6',
+		'uri',
+		'uri-reference',
+		'iri',
+		'iri-reference',
+		'uuid',
+		'uri-template',
+		'json-pointer',
+		'relative-json-pointer',
+		'regex',
+		'url',
+		// Additional type.
+		'color',
+		// Additional type.
+		'color-hex',
+		// Additional type.
+		'color-hex-alpha',
+		// Additional type.
+		'color-rgb',
+		// Additional type.
+		'color-rgba',
+		// Additional type.
+		'color-hsl',
+		// Additional type.
+		'color-hsla',
+		// Semantic versioning format.
+		'semver',
+		// Dutch burgerservicenummer, checked with the 11-proef.
+		//
+		// BsnFormat has existed and been REGISTERED with the value validator all
+		// along (ValidateObject::registerCustomFormat), so OpenRegister could
+		// already checksum a BSN. It simply refused to accept a schema that
+		// said so, because this allowlist never got the entry. procest declares
+		// `format: bsn` on a burgerservicenummer, and that one missing word
+		// failed its schema import, then schema creation, then its "Load default
+		// ZGW API mapping configurations" repair step. A built and wired feature
+		// was unreachable because two lists disagreed.
+		'bsn',
+		// Nextcloud user id, checked against the user backend. The referenced
+		// user must exist. See UserFormat.
+		'user',
+	];
 
-    /**
-     * Validate a property definition against JSON Schema rules
-     *
-     * @param array  $property The property definition to validate
-     * @param string $path     The current path in the schema (for error messages)
-     *
-     * @throws Exception If the property definition is invalid
-     *
-     * @return true True if the property is valid
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
-     */
-    public function validateProperty(array $property, string $path=''): bool
-    {
-        // If property has oneOf, treat the contents as separate properties and return the result of those checks.
-        if (($property['oneOf'] ?? null) !== null) {
-            return $this->validateProperties(properties: $property['oneOf'], path: $path.'/oneOf');
-        }
+	/**
+	 * The constraint keys a property may carry, and which types take them.
+	 *
+	 * `appliesTo` lists the types the key is meaningful on, or `*` for every
+	 * type. A key outside this table, outside the modifiers and outside the
+	 * pass-through set fails the save naming itself, so a typo cannot quietly
+	 * become a property that constrains nothing.
+	 *
+	 * `breaking` marks the keys that change how stored objects validate.
+	 * Adding a `format` to a property that already holds values is the one
+	 * our own notes keep rediscovering.
+	 *
+	 * @var array<string, array{appliesTo: array<int, string>, value: string, breaking: bool, description: string}>
+	 */
+	public const CONSTRAINTS = [
+		'format' => [
+			'appliesTo' => ['string'],
+			'value' => 'string',
+			'breaking' => true,
+			'description' => 'Which kind of text this is. Adding one to a populated property is breaking.',
+		],
+		'pattern' => [
+			'appliesTo' => ['string'],
+			'value' => 'string',
+			'breaking' => true,
+			'description' => 'A regular expression the value must match.',
+		],
+		'minLength' => [
+			'appliesTo' => ['string'],
+			'value' => 'integer',
+			'breaking' => true,
+			'description' => 'The shortest text you accept.',
+		],
+		'maxLength' => [
+			'appliesTo' => ['string'],
+			'value' => 'integer',
+			'breaking' => true,
+			'description' => 'The longest text you accept.',
+		],
+		'minimum' => [
+			'appliesTo' => ['number', 'integer'],
+			'value' => 'number',
+			'breaking' => true,
+			'description' => 'The lowest number you accept.',
+		],
+		'maximum' => [
+			'appliesTo' => ['number', 'integer'],
+			'value' => 'number',
+			'breaking' => true,
+			'description' => 'The highest number you accept.',
+		],
+		'exclusiveMinimum' => [
+			'appliesTo' => ['number', 'integer'],
+			'value' => 'number',
+			'breaking' => true,
+			'description' => 'The value must be above this number, not equal to it.',
+		],
+		'exclusiveMaximum' => [
+			'appliesTo' => ['number', 'integer'],
+			'value' => 'number',
+			'breaking' => true,
+			'description' => 'The value must be below this number, not equal to it.',
+		],
+		'exclusiveMin' => [
+			'appliesTo' => ['number', 'integer'],
+			'value' => 'boolean',
+			'breaking' => true,
+			'description' => 'Read minimum as "above" instead of "at least". The property form writes this one.',
+		],
+		'exclusiveMax' => [
+			'appliesTo' => ['number', 'integer'],
+			'value' => 'boolean',
+			'breaking' => true,
+			'description' => 'Read maximum as "below" instead of "at most". The property form writes this one.',
+		],
+		'multipleOf' => [
+			'appliesTo' => ['number', 'integer'],
+			'value' => 'number',
+			'breaking' => true,
+			'description' => 'The value must be a multiple of this number.',
+		],
+		'items' => [
+			'appliesTo' => ['array'],
+			'value' => 'object',
+			'breaking' => true,
+			'description' => 'What one entry in the list looks like.',
+		],
+		'minItems' => [
+			'appliesTo' => ['array'],
+			'value' => 'integer',
+			'breaking' => true,
+			'description' => 'The fewest entries you accept.',
+		],
+		'maxItems' => [
+			'appliesTo' => ['array'],
+			'value' => 'integer',
+			'breaking' => true,
+			'description' => 'The most entries you accept.',
+		],
+		'uniqueItems' => [
+			'appliesTo' => ['array'],
+			'value' => 'boolean',
+			'breaking' => true,
+			'description' => 'Refuse a list that repeats an entry.',
+		],
+		'properties' => [
+			'appliesTo' => ['object'],
+			'value' => 'object',
+			'breaking' => true,
+			'description' => 'The properties nested inside this one.',
+		],
+		'required' => [
+			'appliesTo' => ['*'],
+			'value' => 'boolean or array',
+			'breaking' => true,
+			'description' => 'On a property, whether an answer is required. On an object, which nested properties are.',
+		],
+		'additionalProperties' => [
+			'appliesTo' => ['object'],
+			'value' => 'boolean or object',
+			'breaking' => true,
+			'description' => 'Whether properties you did not declare may be stored.',
+		],
+		'minProperties' => [
+			'appliesTo' => ['object'],
+			'value' => 'integer',
+			'breaking' => true,
+			'description' => 'The fewest nested properties you accept.',
+		],
+		'maxProperties' => [
+			'appliesTo' => ['object'],
+			'value' => 'integer',
+			'breaking' => true,
+			'description' => 'The most nested properties you accept.',
+		],
+		'enum' => [
+			'appliesTo' => ['*'],
+			'value' => 'array',
+			'breaking' => true,
+			'description' => 'The list of answers you accept. Removing an entry refuses objects that already hold it.',
+		],
+		'const' => [
+			'appliesTo' => ['*'],
+			'value' => 'any',
+			'breaking' => true,
+			'description' => 'The one value you accept.',
+		],
+		'default' => [
+			'appliesTo' => ['*'],
+			'value' => 'any',
+			'breaking' => false,
+			'description' => 'What a new object starts with.',
+		],
+		'oneOf' => [
+			'appliesTo' => ['*'],
+			'value' => 'array',
+			'breaking' => true,
+			'description' => 'A list of alternative shapes. Exactly one has to match.',
+		],
+		'$ref' => [
+			'appliesTo' => ['*'],
+			'value' => 'string',
+			'breaking' => true,
+			'description' => 'A reference to another schema. This is how one object points at another.',
+		],
+		'allowedTypes' => [
+			'appliesTo' => ['file'],
+			'value' => 'array',
+			'breaking' => false,
+			'description' => 'The MIME types you accept on upload.',
+		],
+		'allowedTags' => [
+			'appliesTo' => ['file'],
+			'value' => 'array',
+			'breaking' => false,
+			'description' => 'The tags a person may put on the upload.',
+		],
+		'autoTags' => [
+			'appliesTo' => ['file'],
+			'value' => 'array',
+			'breaking' => false,
+			'description' => 'The tags every upload gets automatically.',
+		],
+		'maxSize' => [
+			'appliesTo' => ['file'],
+			'value' => 'integer',
+			'breaking' => false,
+			'description' => 'The largest upload you accept, in bytes, up to 100 MB.',
+		],
+		'fileConfiguration' => [
+			'appliesTo' => ['file', 'NcFile'],
+			'value' => 'object',
+			'breaking' => false,
+			'description' => 'Where the upload lands and how many files fit.',
+		],
+		'allowedMimeTypes' => [
+			'appliesTo' => ['file', 'NcFile'],
+			'value' => 'array',
+			'breaking' => false,
+			'description' => 'The MIME types the upload field offers.',
+		],
+		'uploadMaxFiles' => [
+			'appliesTo' => ['file', 'NcFile'],
+			'value' => 'integer',
+			'breaking' => false,
+			'description' => 'How many files one answer may hold.',
+		],
+		'uploadMaxSizeMb' => [
+			'appliesTo' => ['file', 'NcFile'],
+			'value' => 'integer',
+			'breaking' => false,
+			'description' => 'The largest upload you accept, in megabytes.',
+		],
+	];
 
-        // Type is required.
-        if (isset($property['type']) === false) {
-            throw new Exception("Property at '$path' must have a 'type' field");
-        }
+	/**
+	 * The modifiers that take one value from a closed list, and that list.
+	 *
+	 * The save path refuses any other value, so the list is published with the
+	 * vocabulary. An app that ships `inputControl: textarea` learns at build
+	 * time what it otherwise learns from a schema refused at import.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	/**
+	 * The actions an onDelete may name.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ON_DELETE_ACTIONS = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
 
-        // Validate type.
-        if (in_array($property['type'], $this->validTypes) === false) {
-            throw new Exception(
-                "Invalid type '{$property['type']}' at '$path'. Must be one of: ".implode(', ', $this->validTypes)
-            );
-        }
+	public const CLOSED_MODIFIER_VALUES = [
+		'matchType' => PropertySearchProfile::MATCH_TYPES,
+		'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+	];
 
-        // Validate string format if present.
-        if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
-            if (in_array($property['format'], $this->validStringFormats) === false) {
-                $validFormats = implode(', ', $this->validStringFormats);
-                $message      = "Invalid string format '{$property['format']}' at '$path'. Must be one of: $validFormats";
-                throw new Exception($message);
-            }
-        }
+	/**
+	 * The keys that change how a property behaves rather than what it accepts.
+	 *
+	 * These are OpenRegister's own, they are valid on every type, and they are
+	 * published so a generated form offers them instead of a hand-written six.
+	 *
+	 * @var array<string, array{value: string, description: string}>
+	 */
+	public const MODIFIERS = [
+		'title' => ['value' => 'string', 'description' => 'The label a person reads above the field.'],
+		'description' => ['value' => 'string', 'description' => 'The sentence under the field.'],
+		'example' => ['value' => 'any', 'description' => 'A sample answer, shown in the API documentation.'],
+		'order' => ['value' => 'number', 'description' => 'Where the field sits in the form.'],
+		'behavior' => ['value' => 'string', 'description' => 'How the field behaves in the form.'],
+		'visible' => ['value' => 'boolean', 'description' => 'Set this to false and the property disappears from every read.'],
+		'hideOnCollection' => ['value' => 'boolean', 'description' => 'Keep the field out of the list view.'],
+		'hideOnForm' => ['value' => 'boolean', 'description' => 'Keep the field out of the form.'],
+		'readOnly' => ['value' => 'boolean', 'description' => 'Show the value, refuse a write.'],
+		'writeOnly' => ['value' => 'boolean', 'description' => 'Accept a write, never read it back.'],
+		'immutable' => ['value' => 'boolean', 'description' => 'Accept the first answer, refuse every change after it.'],
+		'repeatingGroup' => ['value' => 'boolean', 'description' => 'Rows a person adds and removes. Set items to the shape of one row.'],
+		'groupOrdered' => ['value' => 'boolean', 'description' => 'Keep the order the rows were authored in. Needs repeatingGroup.'],
+		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
+		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
+		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
+		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
+		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
+		'inputControl' => ['value' => 'string', 'description' => 'The control a list surface should render to filter on this field.'],
+		'aggregated' => ['value' => 'boolean', 'description' => 'Count the field in aggregations.'],
+		'translatable' => ['value' => 'boolean', 'description' => 'Store one value per language.'],
+		'sourceLanguage' => ['value' => 'string', 'description' => 'Which language the authored value is in. Needs translatable.'],
+		'calculation' => ['value' => 'object', 'description' => 'Derive the value from other properties instead of asking for it.'],
+		'computed' => ['value' => 'string', 'description' => 'A Twig expression that derives the value.'],
+		'onDelete' => ['value' => 'string', 'description' => 'What happens to this object when the one it points at is deleted.'],
+		'referenceSchema' => ['value' => 'string', 'description' => 'The schema whose rows this value cites by a key, not a uuid.'],
+		'referenceKey' => ['value' => 'string', 'description' => 'The cited schema\'s property this value matches, e.g. code.'],
+		'cascade' => ['value' => 'boolean', 'description' => 'Save the referenced object along with this one.'],
+		'cascadeDelete' => ['value' => 'boolean', 'description' => 'Delete the referenced object along with this one.'],
+		'inversedBy' => ['value' => 'string', 'description' => 'The property on the other side of the relation.'],
+		'register' => ['value' => 'string', 'description' => 'The register the referenced object lives in.'],
+		'schema' => ['value' => 'string', 'description' => 'The schema the referenced object follows.'],
+		'writeBack' => ['value' => 'boolean', 'description' => 'Write changes back to the referenced object.'],
+		'removeAfterWriteBack' => ['value' => 'boolean', 'description' => 'Drop the nested copy once it is written back.'],
+		'objectConfiguration' => ['value' => 'object', 'description' => 'Whether a reference is stored nested, by id or by URL.'],
+		'validateReference' => ['value' => 'boolean', 'description' => 'Check that the referenced object exists before saving.'],
+		'validationStrictness' => ['value' => 'string', 'description' => 'How hard a failed check refuses the write.'],
+		'referenceType' => ['value' => 'string', 'description' => 'What kind of thing the reference points at.'],
+		'referenceSemanticType' => ['value' => 'string', 'description' => 'The semantic type the reference resolves to.'],
+		'referenceSemanticApp' => ['value' => 'string', 'description' => 'The app that owns the semantic type.'],
+		'iri' => ['value' => 'string', 'description' => 'The vocabulary term this property means.'],
+		'domains' => ['value' => 'array', 'description' => 'The classes this property may be used on.'],
+		'ranges' => ['value' => 'array', 'description' => 'The classes this property may point at.'],
+		'authorization' => ['value' => 'object', 'description' => 'Which roles or groups may read and write this one property.'],
+		'scope' => ['value' => 'string', 'description' => 'The team or unit this field belongs to. Only they may read or change it.'],
+		'x-openregister-property-source' => [
+			'value' => 'object',
+			'description' => 'Where this one field\'s values come from: a provider id, what to ask it, and whether the answer is '
+				. 'looked up live or offered as a starting value. It binds ONE FIELD, not the whole schema.',
+		],
+		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
+		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
+		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
+		'conceptScheme' => [
+			'value' => 'string',
+			'description' => 'The SKOS concept scheme this field takes its choices from, by slug. The concepts are the answers, so '
+				. 'the list is maintained once in the vocabulary register and every schema binding to it follows. A '
+				. 'field carrying both this and an inline enum has two sources, and the scheme is the one that wins.',
+		],
+	];
 
-        // Validate array items if type is array.
-        $hasItems = ($property['items'] ?? null) !== null;
-        if ($property['type'] === 'array' && $hasItems === true && isset($property['items']['$ref']) === false) {
-            $this->validateProperty(property: $property['items'], path: $path.'/items');
-        }
+	/**
+	 * The modifier keys that take a language suffix, and the shape it has.
+	 *
+	 * `title` and `description` carry prose a person reads, so a schema written
+	 * for more than one audience spells them `title:nl` and `description:en`
+	 * beside the unsuffixed pair. Nothing else is prose, and the tag is matched
+	 * rather than waved through (BCP 47's common shapes: `en`, `pt-BR`,
+	 * `zh-Hans`), so `order:en` and `title:englisch` stay the mistakes they are.
+	 *
+	 * @var array<int, string> The base keys a language suffix may follow.
+	 */
+	public const LOCALISED_KEYS = ['title', 'description'];
 
-        // Validate nested properties if type is object.
-        if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
-            $this->validateProperties(properties: $property['properties'], path: $path.'/properties');
-        }
+	/**
+	 * @var string A PCRE matching the part after the colon.
+	 */
+	public const LANGUAGE_TAG_PATTERN = '/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/';
 
-        // Validate minimum/maximum for numeric types.
-        if (in_array($property['type'], ['number', 'integer'], true) === true) {
-            if (($property['minimum'] ?? null) !== null && is_numeric($property['minimum']) === false) {
-                throw new Exception("'minimum' at '$path' must be numeric");
-            }
+	/**
+	 * Keys that are stored and handed on, but not enforced here.
+	 *
+	 * Standard JSON Schema keywords the layer keeps so an imported schema
+	 * round-trips unchanged. They are published with the rest of the
+	 * vocabulary, marked as not enforced, because a contract that hides which
+	 * half it actually checks is the expensive kind of lie.
+	 *
+	 * Any key starting with `x-` is a vendor extension and passes through the
+	 * same way, which is the JSON Schema convention and the reason an app can
+	 * annotate a property without asking us first.
+	 *
+	 * @var array<string, string>
+	 */
+	public const PASSTHROUGH = [
+		'$id' => 'The identifier of this sub-schema.',
+		'$schema' => 'Which JSON Schema draft the author wrote against.',
+		'$comment' => 'A note for whoever reads the schema next.',
+		'comment' => 'A note for whoever reads the schema next.',
+		'examples' => 'Sample answers, shown in the API documentation.',
+		'nullable' => 'The OpenAPI 3.0 spelling of "an empty answer is allowed".',
+		'allOf' => 'Every listed shape has to match. Stored, not enforced here.',
+		'anyOf' => 'At least one listed shape has to match. Stored, not enforced here.',
+		'not' => 'The listed shape must not match. Stored, not enforced here.',
+		'if' => 'The condition of a conditional sub-schema.',
+		'then' => 'The shape that applies when the condition matches.',
+		'else' => 'The shape that applies when the condition does not match.',
+		'contains' => 'At least one list entry has to match this shape.',
+		'prefixItems' => 'The shape of the first entries of a list, in order.',
+		'patternProperties' => 'Nested properties matched by name against a regular expression.',
+		'propertyNames' => 'A shape every nested property name has to match.',
+		'dependentRequired' => 'Which properties become required once this one is answered.',
+		'contentMediaType' => 'The media type of the encoded content.',
+		'contentEncoding' => 'How the content is encoded.',
+		'extends' => 'A reference to the property template this definition builds on. Stored, not resolved here.',
+	];
 
-            if (($property['maximum'] ?? null) !== null && is_numeric($property['maximum']) === false) {
-                throw new Exception("'maximum' at '$path' must be numeric");
-            }
+	/**
+	 * Valid JSON Schema types
+	 *
+	 * Derived from {@see self::TYPES} so the published vocabulary and the
+	 * list the save path checks against cannot drift apart.
+	 *
+	 * @var array<string> List of valid JSON Schema types
+	 */
+	private array $validTypes;
 
-            if (($property['minimum'] ?? null) !== null
-                && ($property['maximum'] ?? null) !== null
-                && ($property['minimum'] > $property['maximum']) === true
-            ) {
-                throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
-            }
-        }
+	/**
+	 * Valid string formats for JSON Schema
+	 *
+	 * Derived from {@see self::STRING_FORMATS}.
+	 *
+	 * @var array<string> List of valid string formats
+	 */
+	private array $validStringFormats;
 
-        // Validate file properties if type is file.
-        if ($property['type'] === 'file') {
-            $this->validateFileProperty(property: $property, path: $path);
-        }
+	/**
+	 * The save-time rules a repeating group's declaration has to satisfy.
+	 *
+	 * Its own class: the rules are about one keyword, they read better
+	 * together, and this file is the one every property-shaped change edits.
+	 *
+	 * @var RepeatingGroupDeclarationValidator
+	 */
+	private RepeatingGroupDeclarationValidator $repeatingGroups;
 
-        // Validate enum values if present.
-        if (($property['enum'] ?? null) !== null) {
-            if (is_array($property['enum']) === false || empty($property['enum']) === true) {
-                throw new Exception("'enum' at '$path' must be a non-empty array");
-            }
-        }
+	/**
+	 * The save-time rules for the options of a file property.
+	 *
+	 * @var FilePropertyOptionsValidator
+	 */
+	private FilePropertyOptionsValidator $fileOptions;
 
-        // Validate visible property if present.
-        if (($property['visible'] ?? null) !== null && is_bool($property['visible']) === false) {
-            throw new Exception("'visible' at '$path' must be a boolean");
-        }
+	/**
+	 * Read the two allowlists off the published vocabulary.
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		$this->validTypes = array_map('strval', array_keys(self::TYPES));
+		$this->validStringFormats = self::STRING_FORMATS;
+		$this->repeatingGroups = new RepeatingGroupDeclarationValidator();
+		$this->fileOptions = new FilePropertyOptionsValidator();
+	}//end __construct()
 
-        // Validate hideOnCollection property if present.
-        if (($property['hideOnCollection'] ?? null) !== null && is_bool($property['hideOnCollection']) === false) {
-            throw new Exception("'hideOnCollection' at '$path' must be a boolean");
-        }
+	/**
+	 * Every key the vocabulary holds, in one flat list.
+	 *
+	 * A property key outside this list and not prefixed `x-` fails the save.
+	 *
+	 * @return array<int, string> The accepted property keys.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public static function vocabularyKeys(): array {
+		return array_values(
+			array_unique(
+				array_merge(
+					['type'],
+					array_map('strval', array_keys(self::CONSTRAINTS)),
+					array_map('strval', array_keys(self::MODIFIERS)),
+					array_map('strval', array_keys(self::PASSTHROUGH))
+				)
+			)
+		);
+	}//end vocabularyKeys()
 
-        // Validate hideOnForm property if present.
-        if (($property['hideOnForm'] ?? null) !== null && is_bool($property['hideOnForm']) === false) {
-            throw new Exception("'hideOnForm' at '$path' must be a boolean");
-        }
+	/**
+	 * Whether a key is one of the prose keys carrying a language suffix.
+	 *
+	 * @param string $key The property key to look at.
+	 *
+	 * @return bool True when the key is a localised spelling of a prose modifier.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public static function isLocalisedKey(string $key): bool {
+		$colon = strpos($key, ':');
+		if ($colon === false) {
+			return false;
+		}
 
-        // Validate onDelete property if present.
-        if (($property['onDelete'] ?? null) !== null) {
-            // OnDelete is only valid on relation properties (those with $ref).
-            $hasRef = isset($property['$ref']) === true
-                || (isset($property['items']['$ref']) === true);
-            if ($hasRef === false) {
-                throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref'");
-            }
+		$base = substr($key, 0, $colon);
+		if (in_array($base, self::LOCALISED_KEYS, true) === false) {
+			return false;
+		}
 
-            $validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
-            $upperValue   = strtoupper((string) $property['onDelete']);
-            if (in_array($upperValue, $validActions, true) === false) {
-                $validList = implode(', ', $validActions);
-                throw new Exception(
-                    "Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}"
-                );
-            }
-        }
+		return preg_match(self::LANGUAGE_TAG_PATTERN, substr($key, ($colon + 1))) === 1;
+	}//end isLocalisedKey()
 
-        return true;
-    }//end validateProperty()
+	/**
+	 * Refuse a property key the vocabulary does not hold.
+	 *
+	 * A key starting with `x-` is a vendor extension and passes through: that
+	 * is the JSON Schema convention, and it is what lets an app annotate a
+	 * property without waiting on a release here. Everything else has to be a
+	 * type, a constraint, a modifier or a pass-through keyword.
+	 *
+	 * @param array $property The property definition to check.
+	 * @param string $path The current path in the schema (for error messages).
+	 *
+	 * @throws PropertyVocabularyException When a key is outside the vocabulary.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertKeysAreInTheVocabulary(array $property, string $path): void {
+		$errors = [];
+		foreach (array_keys($property) as $key) {
+			if ($this->isAcceptedKey(key: (string)$key) === false) {
+				$errors[] = [
+					'code' => 'property-vocabulary-unknown-key',
+					'key' => (string)$key,
+					'path' => $path,
+					'message' => "Unknown property key '{$key}' at '$path'. It is not in the property vocabulary.",
+				];
+			}
+		}
 
-    /**
-     * Validate an entire properties object
-     *
-     * @param array  $properties The properties object to validate
-     * @param string $path       The current path in the schema
-     *
-     * @throws Exception If any property definition is invalid
-     *
-     * @return true True if all properties are valid
-     */
-    public function validateProperties(array $properties, string $path=''): bool
-    {
-        foreach ($properties as $propertyName => $property) {
-            if (is_array($property) === false) {
-                throw new Exception("Property '$propertyName' at '$path' must be an object");
-            }
+		$this->refuseUnknownKeys(errors: $errors, path: $path);
+	}//end assertKeysAreInTheVocabulary()
 
-            $this->validateProperty(property: $property, path: $path.'/'.$propertyName);
-        }
+	/**
+	 * Whether a property key may stand: a vendor extension, a numeric key, a
+	 * vocabulary key or a localised spelling of a prose key.
+	 *
+	 * @param string $key The property key.
+	 *
+	 * @return bool True when the key is accepted.
+	 */
+	private function isAcceptedKey(string $key): bool {
+		if (str_starts_with($key, 'x-') === true || is_numeric($key) === true) {
+			return true;
+		}
 
-        return true;
-    }//end validateProperties()
+		return in_array($key, self::vocabularyKeys(), true) === true || self::isLocalisedKey(key: $key) === true;
+	}//end isAcceptedKey()
 
-    /**
-     * Validate file-specific properties
-     *
-     * Validates file property configuration options including allowedTypes,
-     * maxSize, allowedTags, and autoTags
-     *
-     * @param array  $property The file property definition to validate
-     * @param string $path     The current path in the schema (for error messages)
-     *
-     * @throws Exception If the file property configuration is invalid
-     *
-     * @return true
-     *
-     * @psalm-param array<string, mixed> $property
-     *
-     * @phpstan-param array<string, mixed> $property
-     *
-     * @psalm-return   bool
-     * @phpstan-return bool
-     *
-     * @psalm-suppress UnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple file property validations
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for file properties
-     */
-    private function validateFileProperty(array $property, string $path): bool
-    {
-        // Validate allowedTypes if present.
-        if (($property['allowedTypes'] ?? null) !== null) {
-            if (is_array($property['allowedTypes']) === false) {
-                throw new Exception("'allowedTypes' at '$path' must be an array");
-            }
+	/**
+	 * Throw one refusal naming every unknown key, or nothing when there is none.
+	 *
+	 * @param array<int, array<string, string>> $errors The unknown-key errors.
+	 * @param string                            $path   The current path in the schema.
+	 *
+	 * @throws PropertyVocabularyException When there is at least one unknown key.
+	 *
+	 * @return void
+	 */
+	private function refuseUnknownKeys(array $errors, string $path): void {
+		if ($errors === []) {
+			return;
+		}
 
-            // Validate each MIME type.
-            foreach ($property['allowedTypes'] as $index => $mimeType) {
-                if (is_string($mimeType) === false) {
-                    throw new Exception("'allowedTypes[$index]' at '$path' must be a string");
-                }
+		$keys = implode(', ', array_map(static fn (array $error): string => $error['key'], $errors));
+		throw new PropertyVocabularyException(
+			"Unknown property key(s) '{$keys}' at '$path'. Read /api/schemas/property-vocabulary for the keys this layer accepts.",
+			$errors
+		);
+	}//end refuseUnknownKeys()
 
-                // Basic MIME type validation (type/subtype).
-                if (preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType) === 0) {
-                    throw new Exception("'allowedTypes[$index]' at '$path' contains invalid MIME type format: '$mimeType'");
-                }
-            }
-        }
+	/**
+	 * Validate a property definition against JSON Schema rules
+	 *
+	 * Every key on the property has to be one the vocabulary holds. A key
+	 * nobody defines is a typo, and a typo that passes is a constraint that
+	 * silently constrains nothing for as long as nobody counts. A property
+	 * with oneOf is checked as the separate properties it lists.
+	 *
+	 * @param array $property The property definition to validate
+	 * @param string $path The current path in the schema (for error messages)
+	 *
+	 * @throws Exception If the property definition is invalid
+	 *
+	 * @return true True if the property is valid
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public function validateProperty(array $property, string $path = ''): bool {
+		$this->assertKeysAreInTheVocabulary(property: $property, path: $path);
+		$this->assertDeclarations(property: $property, path: $path);
+		if (($property['oneOf'] ?? null) !== null) {
+			return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');
+		}
 
-        // Validate maxSize if present.
-        if (($property['maxSize'] ?? null) !== null) {
-            if (is_int($property['maxSize']) === false && is_numeric($property['maxSize']) === false) {
-                throw new Exception("'maxSize' at '$path' must be a numeric value");
-            }
+		if (isset($property['type']) === false) {
+			$this->assertTypeMayBeOmitted(property: $property, path: $path);
+			return true;
+		}
 
-            $maxSize = (int) $property['maxSize'];
-            if ($maxSize < 0) {
-                throw new Exception("'maxSize' at '$path' must be a positive number");
-            }
+		$this->assertTypedShape(property: $property, path: $path);
+		return true;
+	}//end validateProperty()
 
-            // Reasonable upper limit (100MB).
-            if ($maxSize > 104857600) {
-                throw new Exception("'maxSize' at '$path' exceeds maximum allowed size (100MB)");
-            }
-        }
+	/**
+	 * Check a typed property: its type, format, nested definitions, bounds and modifiers.
+	 *
+	 * A repeating group is an array of objects that somebody authors row by
+	 * row, so the declaration has to hold together before any object is
+	 * written against it. Checked here rather than at save time because a
+	 * group whose members nobody declared is a schema mistake, and the schema
+	 * author is the only person who can fix it.
+	 *
+	 * @param array  $property The typed property definition.
+	 * @param string $path     The current path in the schema.
+	 *
+	 * @throws Exception When the type, format, nesting or bounds are invalid.
+	 *
+	 * @return void
+	 */
+	private function assertTypedShape(array $property, string $path): void {
+		$this->assertKnownType(property: $property, path: $path);
+		$this->assertKnownStringFormat(property: $property, path: $path);
+		$this->repeatingGroups->validate(property: $property, path: $path);
+		$this->validateNestedDefinitions(property: $property, path: $path);
+		$this->assertNumericBounds(property: $property, path: $path);
+		if ($property['type'] === 'file') {
+			$this->fileOptions->validate(property: $property, path: $path);
+		}
 
-        // Validate allowedTags if present.
-        if (($property['allowedTags'] ?? null) !== null) {
-            if (is_array($property['allowedTags']) === false) {
-                throw new Exception("'allowedTags' at '$path' must be an array");
-            }
+		$this->assertModifiers(property: $property, path: $path);
+	}//end assertTypedShape()
 
-            foreach ($property['allowedTags'] as $index => $tag) {
-                if (is_string($tag) === false) {
-                    throw new Exception("'allowedTags[$index]' at '$path' must be a string");
-                }
+	/**
+	 * Check the modifiers of a typed property: enum and display flags, source language, onDelete and search profile.
+	 *
+	 * An unknown match type is refused here rather than ignored at query time:
+	 * ignoring it leaves the property matching the way it did before, which
+	 * looks exactly like the declaration working.
+	 *
+	 * @param array  $property The typed property definition.
+	 * @param string $path     The current path in the schema.
+	 *
+	 * @throws Exception When a modifier is invalid.
+	 *
+	 * @return void
+	 */
+	private function assertModifiers(array $property, string $path): void {
+		$this->assertModifierShapes(property: $property, path: $path);
+		$this->assertSourceLanguage(property: $property, path: $path);
+		$this->assertOnDelete(property: $property, path: $path);
+		$this->validateSearchProfile(property: $property, path: $path);
+	}//end assertModifiers()
 
-                // Basic tag validation (no empty strings, reasonable length).
-                if (trim($tag) === '') {
-                    throw new Exception("'allowedTags[$index]' at '$path' cannot be empty");
-                }
+	/**
+	 * Check the annotations that declare their own shape: generated identifier,
+	 * coded choice, reference filter, scope and source.
+	 *
+	 * A generated identifier is checked where every other property key is. The
+	 * refusal extends PropertyVocabularyException, so every schema-save path
+	 * already answers it as a 422 naming the property, and no controller had
+	 * to learn about this annotation to do it.
+	 *
+	 * A choice property has to resolve to exactly one list of answers. Same
+	 * reason, same place, same exception family: a field that offers nothing,
+	 * or offers two different things, is not something a reader can tell apart
+	 * from a field nobody has configured yet.
+	 *
+	 * A reference filter is checked here for the same reason: an annotation
+	 * that is unusable is a picker that silently offers everything, and the
+	 * author is present at save and nowhere near the picker later. The
+	 * OPERANDS are checked where both schemas are in hand, because this method
+	 * sees one property: `ReferenceFilterOperandGuard`, which
+	 * `SchemasController::validateReferenceFilterOperands()` calls on create
+	 * and on update.
+	 *
+	 * A scope that is accepted but not enforced is worse than no scope: the
+	 * author believes the field is team-only BECAUSE the platform took the
+	 * word. Refusing here is what keeps the published key honest.
+	 *
+	 * A source is checked because an `x-` key is accepted without this:
+	 * assertKeysAreInTheVocabulary() skips every one of them, so
+	 * `{"provider": 7}` would save cleanly and the consumer would read what it
+	 * could and guess the rest.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When a declaration does not hold together.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `fromProperty()` and `assert()` are named constructors
+	 *                                       and checks on value objects; a factory injected here
+	 *                                       would answer one question and hold no state.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertDeclarations(array $property, string $path): void {
+		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
+		CodedChoiceDeclaration::assert(property: $property, path: $path);
+		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
+		ScopedPropertyDeclaration::assert(property: $property, path: $path);
+		PropertySourceDeclaration::assert(property: $property, path: $path);
+	}//end assertDeclarations()
 
-                if (strlen($tag) > 50) {
-                    throw new Exception("'allowedTags[$index]' at '$path' exceeds maximum length (50 characters)");
-                }
-            }
-        }
+	/**
+	 * Refuse a property without a type at the top level, unless a `$ref` derives it.
+	 *
+	 * JSON Schema treats a schema with no `type` as "any type", and that is
+	 * a real thing authors need: a CMMN sentry `value` is compared with loose
+	 * equality against bool/string/int, must be an ARRAY for the in/notIn
+	 * operators, and numeric for gt/lt. No single type is honest there.
+	 *
+	 * It stays required at the top level because those properties become
+	 * COLUMNS: mapColumnTypeToSQL() takes a `string $type`, so a typeless
+	 * top-level property is a TypeError during table creation. Nested
+	 * properties are stored inside a JSON column and derive nothing.
+	 * Depth is the discriminator: validateProperties() builds '/name' for a
+	 * top-level property and appends for every level under it.
+	 *
+	 * @param array  $property The property definition without a type.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When a top-level property has neither a type nor a `$ref`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertTypeMayBeOmitted(array $property, string $path): void {
+		$isTopLevel = (substr_count($path, '/') <= 1);
+		if ($isTopLevel === true && isset($property['$ref']) === false) {
+			throw new Exception("Property at '$path' must have a 'type' field");
+		}
+	}//end assertTypeMayBeOmitted()
 
-        // Validate autoTags if present.
-        if (($property['autoTags'] ?? null) !== null) {
-            if (is_array($property['autoTags']) === false) {
-                throw new Exception("'autoTags' at '$path' must be an array");
-            }
+	/**
+	 * Refuse a type outside the vocabulary.
+	 *
+	 * Union types arrive as arrays: they are rendered as JSON in the message
+	 * instead of letting string interpolation emit "Array to string conversion".
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws PropertyVocabularyException When the type is unknown.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertKnownType(array $property, string $path): void {
+		if (in_array($property['type'], $this->validTypes) === true) {
+			return;
+		}
 
-            foreach ($property['autoTags'] as $index => $tag) {
-                if (is_string($tag) === false) {
-                    throw new Exception("'autoTags[$index]' at '$path' must be a string");
-                }
+		$typeLabel = $this->labelOf(value: $property['type']);
+		$this->refuseVocabulary(
+			error: [
+				'code' => 'property-vocabulary-unknown-type',
+				'key' => $typeLabel,
+				'path' => $path,
+				'message' => "Invalid type '{$typeLabel}' at '$path'. Must be one of: " . implode(', ', $this->validTypes),
+			]
+		);
+	}//end assertKnownType()
 
-                // Basic tag validation (no empty strings, reasonable length).
-                if (trim($tag) === '') {
-                    throw new Exception("'autoTags[$index]' at '$path' cannot be empty");
-                }
+	/**
+	 * Refuse a string format outside the allowlist.
+	 *
+	 * A format this allowlist accepts is one ValidateObject can actually
+	 * enforce, so the two lists must agree. See `bsn` and `user` in
+	 * $validStringFormats for what that costs when they drift apart.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws PropertyVocabularyException When a string property has an unknown format.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertKnownStringFormat(array $property, string $path): void {
+		if ($this->hasUnknownStringFormat(property: $property) === false) {
+			return;
+		}
 
-                if (strlen($tag) > 50) {
-                    throw new Exception("'autoTags[$index]' at '$path' exceeds maximum length (50 characters)");
-                }
-            }
-        }
+		$formatLabel = $this->labelOf(value: $property['format']);
+		$this->refuseVocabulary(
+			error: [
+				'code' => 'property-vocabulary-unknown-format',
+				'key' => $formatLabel,
+				'path' => $path,
+				'message' => "Invalid string format '{$formatLabel}' at '$path'. Must be one of: " . implode(', ', $this->validStringFormats),
+			]
+		);
+	}//end assertKnownStringFormat()
 
-        return true;
-    }//end validateFileProperty()
+	/**
+	 * Whether a string property declares a format outside the allowlist.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return bool True when the format is declared and unknown.
+	 */
+	private function hasUnknownStringFormat(array $property): bool {
+		return $property['type'] === 'string'
+			&& ($property['format'] ?? null) !== null
+			&& in_array($property['format'], $this->validStringFormats) === false;
+	}//end hasUnknownStringFormat()
+
+	/**
+	 * A declared value as message text: a string as is, anything else as JSON.
+	 *
+	 * Union types arrive as arrays; rendering them as JSON avoids the
+	 * "Array to string conversion" string interpolation would emit.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return string The label.
+	 */
+	private function labelOf(mixed $value): string {
+		if (is_string($value) === true) {
+			return $value;
+		}
+
+		return (string)json_encode($value);
+	}//end labelOf()
+
+	/**
+	 * Throw a vocabulary refusal carrying the one error it describes.
+	 *
+	 * @param array<string, string> $error The error, with its code, key, path and message.
+	 *
+	 * @throws PropertyVocabularyException Always.
+	 *
+	 * @return void
+	 */
+	private function refuseVocabulary(array $error): void {
+		throw new PropertyVocabularyException($error['message'], [$error]);
+	}//end refuseVocabulary()
+
+	/**
+	 * Validate the items of an array and the properties of an object.
+	 *
+	 * Items that are a `$ref` are validated where the referenced schema lives.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema.
+	 *
+	 * @throws Exception When a nested definition is invalid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function validateNestedDefinitions(array $property, string $path): void {
+		if ($property['type'] === 'array') {
+			$this->validateItems(items: ($property['items'] ?? null), path: $path . '/items');
+		}
+
+		if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
+			$this->validateProperties(properties: $property['properties'], path: $path . '/properties');
+		}
+	}//end validateNestedDefinitions()
+
+	/**
+	 * Validate the items of an array, unless absent or a `$ref`.
+	 *
+	 * @param mixed  $items The declared items.
+	 * @param string $path  The path of the items in the schema.
+	 *
+	 * @throws Exception When the items definition is invalid.
+	 *
+	 * @return void
+	 */
+	private function validateItems(mixed $items, string $path): void {
+		if ($items !== null && isset($items['$ref']) === false) {
+			$this->validateProperty(property: $items, path: $path);
+		}
+	}//end validateItems()
+
+	/**
+	 * Refuse a non-numeric minimum or maximum, or a minimum above the maximum, on a numeric type.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When a bound is not numeric or the bounds cross.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertNumericBounds(array $property, string $path): void {
+		if (in_array($property['type'], ['number', 'integer'], true) === false) {
+			return;
+		}
+
+		$this->assertBoundsAreNumeric(property: $property, path: $path);
+		$minimum = ($property['minimum'] ?? null);
+		$maximum = ($property['maximum'] ?? null);
+		if ($minimum !== null && $maximum !== null && ($minimum > $maximum) === true) {
+			throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
+		}
+	}//end assertNumericBounds()
+
+	/**
+	 * Refuse a minimum or maximum that is present and not numeric, minimum first.
+	 *
+	 * @param array  $property The numeric property definition.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When a bound is not numeric.
+	 *
+	 * @return void
+	 */
+	private function assertBoundsAreNumeric(array $property, string $path): void {
+		foreach (['minimum', 'maximum'] as $bound) {
+			if (($property[$bound] ?? null) !== null && is_numeric($property[$bound]) === false) {
+				throw new Exception("'{$bound}' at '$path' must be numeric");
+			}
+		}
+	}//end assertBoundsAreNumeric()
+
+	/**
+	 * Refuse an enum that is not a non-empty array, and a display flag that is not a boolean.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When the enum or a display flag has the wrong shape.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertModifierShapes(array $property, string $path): void {
+		$enum = ($property['enum'] ?? null);
+		if ($enum !== null && (is_array($enum) === false || empty($enum) === true)) {
+			throw new Exception("'enum' at '$path' must be a non-empty array");
+		}
+
+		$this->assertDisplayFlags(property: $property, path: $path);
+	}//end assertModifierShapes()
+
+	/**
+	 * Refuse a visible, hideOnCollection or hideOnForm flag that is present and not a boolean.
+	 *
+	 * @param array  $property The property definition.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When a display flag is not a boolean.
+	 *
+	 * @return void
+	 */
+	private function assertDisplayFlags(array $property, string $path): void {
+		foreach (['visible', 'hideOnCollection', 'hideOnForm'] as $flag) {
+			if (($property[$flag] ?? null) !== null && is_bool($property[$flag]) === false) {
+				throw new Exception("'{$flag}' at '$path' must be a boolean");
+			}
+		}
+	}//end assertDisplayFlags()
+
+	/**
+	 * Refuse a sourceLanguage on a property that is not translatable, or one that is not a BCP-47 tag.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When the sourceLanguage modifier is misplaced or malformed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertSourceLanguage(array $property, string $path): void {
+		if (array_key_exists('sourceLanguage', $property) === false) {
+			return;
+		}
+
+		if (($property['translatable'] ?? false) !== true) {
+			throw new Exception("'sourceLanguage' at '$path' requires translatable: true");
+		}
+
+		$this->assertLanguageTag(sourceLanguage: $property['sourceLanguage'], path: $path);
+	}//end assertSourceLanguage()
+
+	/**
+	 * Refuse a sourceLanguage that is not a non-empty BCP-47 tag.
+	 *
+	 * The syntax check is basic: 2-3 lowercase letters, then optional
+	 * region or subtag suffixes.
+	 *
+	 * @param mixed  $sourceLanguage The declared source language.
+	 * @param string $path           The current path in the schema, for the message.
+	 *
+	 * @throws Exception When the value is empty, not a string, or not a BCP-47 tag.
+	 *
+	 * @return void
+	 */
+	private function assertLanguageTag(mixed $sourceLanguage, string $path): void {
+		if (is_string($sourceLanguage) === false || $sourceLanguage === '') {
+			throw new Exception("'sourceLanguage' at '$path' must be a non-empty string");
+		}
+
+		if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $sourceLanguage) !== 1) {
+			throw new Exception(
+				"'sourceLanguage' at '$path' is not a valid BCP-47 language tag: '$sourceLanguage'"
+			);
+		}
+	}//end assertLanguageTag()
+
+	/**
+	 * Refuse an onDelete outside a relation, outside the known actions, or other than RESTRICT on a reference by key.
+	 *
+	 * A reference by key only refuses: the other actions rewrite or delete by
+	 * uuid and would act on the wrong value. An empty referenceKey or the
+	 * literal `uuid` is a plain uuid reference, read the way the delete reads it.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When the onDelete action is not allowed here.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function assertOnDelete(array $property, string $path): void {
+		if (($property['onDelete'] ?? null) === null) {
+			return;
+		}
+
+		if ($this->isRelation(property: $property) === false) {
+			throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref' or 'referenceSchema'");
+		}
+
+		$this->assertOnDeleteAction(property: $property, path: $path);
+	}//end assertOnDelete()
+
+	/**
+	 * Refuse an onDelete action other than RESTRICT on a reference by key, or outside the known actions.
+	 *
+	 * @param array  $property The relation property definition.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When the action is not allowed.
+	 *
+	 * @return void
+	 */
+	private function assertOnDeleteAction(array $property, string $path): void {
+		$upperValue = strtoupper((string)$property['onDelete']);
+		if ((new ReferenceKey())->keyOf(property: $property) !== null && $upperValue !== 'RESTRICT') {
+			throw new Exception("'referenceKey' at '$path' is only valid with onDelete RESTRICT");
+		}
+
+		if (in_array($upperValue, self::ON_DELETE_ACTIONS, true) === false) {
+			$validList = implode(', ', self::ON_DELETE_ACTIONS);
+			throw new Exception("Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}");
+		}
+	}//end assertOnDeleteAction()
+
+	/**
+	 * Whether the property, or its items, references another schema.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return bool True when a `$ref` or `referenceSchema` is declared.
+	 */
+	private function isRelation(array $property): bool {
+		$items = ($property['items'] ?? null);
+		if (is_array($items) === false) {
+			$items = [];
+		}
+
+		return isset($property['$ref']) === true || isset($items['$ref']) === true
+			|| isset($property['referenceSchema']) === true || isset($items['referenceSchema']) === true;
+	}//end isRelation()
+
+	/**
+	 * Refuse an unknown match type or input control, naming the property.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @phpstan-param array<string, mixed> $property
+	 *
+	 * @psalm-param array<string, mixed> $property
+	 *
+	 * @throws Exception When a declared value is outside its vocabulary.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function validateSearchProfile(array $property, string $path): void {
+		foreach (self::CLOSED_MODIFIER_VALUES as $key => $allowed) {
+			$declared = ($property[$key] ?? null);
+			if ($declared !== null && $this->isAllowedValue(declared: $declared, allowed: $allowed) === false) {
+				$rendered = json_encode($declared);
+				$allowedList = implode(', ', $allowed);
+				throw new Exception("Invalid {$key} {$rendered} at '$path'. Must be one of: {$allowedList}");
+			}
+		}
+	}//end validateSearchProfile()
+
+	/**
+	 * Whether a declared closed-modifier value is a string in the allowed list, ignoring case and padding.
+	 *
+	 * @param mixed             $declared The declared value.
+	 * @param array<int,string> $allowed  The allowed values.
+	 *
+	 * @return bool True when allowed.
+	 */
+	private function isAllowedValue(mixed $declared, array $allowed): bool {
+		return is_string($declared) === true && in_array(strtolower(trim($declared)), $allowed, true) === true;
+	}//end isAllowedValue()
+
+	/**
+	 * Validate an entire properties object
+	 *
+	 * @param array $properties The properties object to validate
+	 * @param string $path The current path in the schema
+	 *
+	 * @throws Exception If any property definition is invalid
+	 *
+	 * @return true True if all properties are valid
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public function validateProperties(array $properties, string $path = ''): bool {
+		foreach ($properties as $propertyName => $property) {
+			if (is_array($property) === false) {
+				throw new Exception("Property '$propertyName' at '$path' must be an object");
+			}
+
+			$this->validateProperty(property: $property, path: $path . '/' . $propertyName);
+		}
+
+		return true;
+	}//end validateProperties()
+
 }//end class

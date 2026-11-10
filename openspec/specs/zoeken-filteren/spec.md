@@ -1,14 +1,20 @@
 ---
-status: implemented
+status: in-progress
+retrofit_extensions:
+  - search-trail-analytics-dashboard
 ---
 # Zoeken en Filteren
 
-
 # Zoeken en Filteren
 ## Purpose
+
+@e2e exclude backend search/filter query engine — covered by PHPUnit
 Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails. The system MUST transparently operate against PostgreSQL (with optional pg_trgm fuzzy matching), Apache Solr, or Elasticsearch as interchangeable backends, while exposing a single unified API surface through `ObjectService.searchObjectsPaginated()` and `SearchBackendInterface`.
 
 **Tender demand**: 78% of analyzed government tenders require advanced search and filtering capabilities, including full-text search, faceted navigation, and multi-criteria filtering across structured data.
+
+**OpenSpec changes**
+- `searchable-property-index` (in progress) — backs the existing `_name` fuzzy/full-text search with a `pg_trgm` GIN index (was an unindexed `similarity()`/`ILIKE` scan); adds an opt-in `searchable: true` schema-property flag (mirroring `facetable`) for indexed search on other string properties.
 
 ## Requirements
 
@@ -46,7 +52,13 @@ The system MUST support free-text search across all string-typed properties of r
 - **AND** results MUST be combined into a single paginated response with unified `total` count
 
 ### Requirement: Field-level filtering with comparison operators
-The system MUST support exact match, array containment, IN-list, null-check, and range comparison operators for filtering on individual schema properties. Filter parameters are passed as query parameters where the parameter name matches the schema property name. The `SearchQueryHandler.cleanQuery()` method MUST normalize operator suffixes (`_in`, `_gt`, `_lt`, `_gte`, `_lte`, `_isnull`) into structured filter objects.
+The system MUST support exact match, array containment, IN-list, NOT-IN-list, not-equal, null-check and range comparison operators for filtering on individual schema properties. Filter parameters are passed as query parameters where the parameter name matches the schema property name.
+
+An operator is expressed as a suffix on the parameter name: `?bedrag_gte=5000`, `?status_in[]=new`, `?assignee_isnull=true`. `SearchQueryHandler::buildSearchQuery()` reconstructs a suffixed key into a nested operator bag (`bedrag => ['gte' => '5000']`), and `MagicSearchHandler::COMPARISON_OPERATORS` is the list of operator names that reconstruction may produce: `gte`, `lte`, `gt`, `lt`, `in`, `notIn`, `ne`, `isnull`. A suffix outside that list is NOT an operator — it is read as part of a nested field path, contributes no condition, and the filter is silently ignored, so the set above is exhaustive and adding an operator means adding it there AND in each of the four condition builders.
+
+Operator values arrive as strings, because a query string carries nothing else. `isnull` MUST therefore be read with boolean coercion (`true`/`"true"`/`"1"`/`1`/`"on"`/`"yes"` mean IS NULL; everything else, `"false"`/`"0"`/`""` included, means IS NOT NULL). A strict comparison against a PHP boolean MUST NOT be used: no query string can satisfy it, and the resulting failure is silent and inverted.
+
+A filter value MAY also be the literal string `IS NULL` or `IS NOT NULL` (`?assignee=IS NULL`), which every condition builder matches by value. This sentinel and the `_isnull` suffix are two spellings of one predicate.
 
 #### Scenario: Exact match filter on a string property
 - **GIVEN** schema `meldingen` with property `status` (string)
@@ -63,20 +75,127 @@ The system MUST support exact match, array containment, IN-list, null-check, and
 #### Scenario: Greater-than and less-than range filters
 - **GIVEN** schema `subsidies` with property `bedrag` (number)
 - **WHEN** the user filters with `?bedrag_gte=5000&bedrag_lte=10000`
-- **THEN** `SearchQueryHandler.cleanQuery()` MUST normalize these into `bedrag: { gte: 5000, lte: 10000 }`
+- **THEN** the suffixes MUST reconstruct into `bedrag: { gte: 5000, lte: 10000 }`
 - **AND** only objects with `bedrag >= 5000 AND bedrag <= 10000` MUST be returned
 
 #### Scenario: Null-check filter
 - **GIVEN** schema `meldingen` with property `afgehandeld_op` (string, format: date)
 - **WHEN** the user filters with `?afgehandeld_op_isnull=true`
-- **THEN** `SearchQueryHandler.cleanQuery()` MUST convert this to `WHERE afgehandeld_op IS NULL`
+- **THEN** the query MUST carry `afgehandeld_op IS NULL`
 - **AND** only objects without an `afgehandeld_op` value MUST be returned
+- **AND** `?afgehandeld_op_isnull=false` MUST return exactly the complement
+
+#### Scenario: An operator bag carrying only isnull is not a bare IN list
+@e2e exclude query-layer operator with no browser surface — pinned by the same unit test
+
+- **WHEN** a filter resolves to `assignee => ['isnull' => 'true']`
+- **THEN** it MUST emit a null check
+- **AND** it MUST NOT be treated as the historical bare-list `IN ('true')`, which matches
+  nothing and reads as a correct empty result
+
+#### Scenario: Both filter paths agree
+@e2e exclude query-layer operator with no browser surface — pinned by the same unit test
+
+- **WHEN** the same `isnull` filter runs through the QueryBuilder path and the raw-SQL
+  UNION path
+- **THEN** both MUST emit the same predicate
 
 #### Scenario: Filter on non-existent property returns empty results
 - **GIVEN** schema `meldingen` that does NOT have a property `nonexistent`
 - **WHEN** the user filters with `?nonexistent=somevalue`
 - **THEN** `MagicSearchHandler.applyObjectFilters()` MUST add `WHERE 1 = 0` to ensure zero results
 - **AND** the property name MUST be tracked in `ignoredFilters` for client feedback in the response
+
+### Requirement: Both filter spellings mean the same filter on object search and the aggregations
+
+A property filter MAY be written bare (`?origin=manual`) or bracketed (`?filter[origin]=manual`), and both spellings MUST mean the same filter on `GET /api/objects/{register}/{schema}` and on every `GET /api/objects/aggregations/{register}/{schema}/…` surface. Before this, each endpoint read one spelling and answered the other with a plausible wrong number: object search read `filter[origin]` as a filter on a property literally named `filter`, which no schema declares, so every such query returned the empty set, and the aggregations dropped a bare key and returned the figure for the whole schema. Neither failed loudly, and a caller that summed the empty set rendered a `0` indistinguishable from a real one.
+
+Reserved parameters are never filters, on either spelling: every underscore-prefixed parameter (`_limit`, `_order`, `_search`, …), the object-search context parameters (`register`, `schema`, `registers`, `schemas`, `extend`) and the system parameters `id`, `rbac`, `multi`, `deleted`, plus each aggregation action's own control parameters (`metric`, `field`, `metrics`, `groupBy`, `sort`, `limit`, `interval`, `from`, `to`, `metricField`, `cumulative`, and `name` on the declared-aggregation route). A property that shares one of those names can only be filtered with the bracket spelling. `filter[_limit]` is not a way to reach a control parameter either: the bracket spelling is lifted only for keys that could be bare filters.
+
+On the aggregations, a bare key joins the filter map ONLY when it names a property the schema declares. A bare parameter that names nothing keeps being ignored, because a cache-buster or a stray `v=2` must not start filtering and answer `0` where a widget used to read a total. A bracket key that names no property keeps matching no rows, as it already did. The one exception is `filter[id]`: every aggregation row carries the object's uuid as `id`, so `filter[id]=<uuid>` scopes the figure to that object and MUST NOT be reported as unknown. `filter[uuid]` and `filter[@self.…]` name nothing a row carries, so they still match no rows and are still reported.
+
+An unrecognised filter key MUST be logged once per request as a warning naming the keys, the endpoint and the schema, and MUST NOT be refused: every caller on the wrong spelling would break in the same minute. Refusing it with HTTP 400 is the follow-up once the logs show no caller depends on the old answer.
+
+The ad-hoc aggregation cache key MUST be derived from the NORMALISED filter map, so two spellings of one query share an entry and two different queries never do. Deriving it from the parameters the endpoint happened to recognise is what let `?origin=manual` and `?origin=nonsense` answer each other's cached figure.
+
+#### Scenario: The bracket spelling filters object search
+- **GIVEN** schema `TimeEntry` with property `origin` and 9 objects, 8 of them `origin = manual`
+- **WHEN** the client calls `GET /api/objects/humaniq/TimeEntry?filter[origin]=manual`
+- **THEN** the response MUST carry the same 8 results as `?origin=manual`
+- **AND** `filter` MUST NOT appear in `@self.ignoredFilters`
+- @e2e exclude Backend query-grammar normalisation on an HTTP read path; verified by PHPUnit unit tests over the query builder and the controller, no browser flow.
+
+#### Scenario: The bare spelling filters an aggregation
+- **GIVEN** the same schema and rows
+- **WHEN** the client calls `GET /api/objects/aggregations/humaniq/TimeEntry/value?metric=count&origin=manual`
+- **THEN** the value MUST be `8`, the same figure `filter[origin]=manual` returns
+- @e2e exclude Backend query-grammar normalisation on an HTTP read path; verified by PHPUnit unit tests over the controller and the aggregation query, no browser flow.
+
+#### Scenario: A control parameter is never read as a filter
+- **GIVEN** a schema that declares properties named `limit` and `name`
+- **WHEN** the client calls the grouped aggregation with `?groupBy=status&limit=5`
+- **THEN** `limit` MUST steer the top-N and MUST NOT become a filter on the `limit` property
+- **AND** only `filter[limit]=5` MUST filter on that property
+- @e2e exclude Backend parameter classification; verified by PHPUnit unit tests, no browser flow.
+
+#### Scenario: An unknown filter key warns and changes nothing
+- **GIVEN** schema `TimeEntry`, which declares no property `origni`
+- **WHEN** the client calls either endpoint with `?origni=manual`
+- **THEN** the endpoint MUST answer exactly what it answered before this requirement: no rows from object search, the unscoped figure from the aggregations
+- **AND** exactly one warning MUST be logged naming `origni`, the endpoint and the schema
+- **AND** the response MUST NOT be an HTTP 400
+- @e2e exclude Backend logging and result-preservation on an HTTP read path; verified by PHPUnit unit tests with a logger spy, no browser flow.
+
+#### Scenario: filter[id] scopes an aggregation to one object without a warning
+- **GIVEN** schema `lead` with property `value` and two objects worth 450000 and 2237500
+- **WHEN** the client calls `GET /api/objects/aggregations/pipelinq/lead/value?metric=sum&field=value&filter[id]=<uuid of the first>`
+- **THEN** the value MUST be `450000`
+- **AND** no unknown-filter-key warning MUST be logged
+- @e2e exclude Backend parameter classification and logging; verified by PHPUnit unit tests with a logger spy and a live instance, no browser flow.
+
+#### Scenario: The aggregation cache key follows the normalised filter
+- **GIVEN** an ad-hoc aggregation over schema `TimeEntry`
+- **WHEN** one caller asks `?filter[origin]=manual` and another asks `?origin=manual`
+- **THEN** both MUST resolve to the same cache key
+- **AND** `?origin=manual` and `?origin=migration` MUST resolve to different cache keys
+- @e2e exclude Backend cache-key derivation; verified by PHPUnit unit tests over AggregationCache, no browser flow.
+
+### Requirement: A register or schema reference on the read path resolves or is refused
+The read path MUST accept a register or schema reference in every spelling the write path accepts: a numeric id, a uuid or a slug. It MUST resolve the reference to its numeric id before the search runs, and it MUST refuse a reference that names nothing by raising `RegisterNotFoundException` or `SchemaNotFoundException`, the same two the write path raises.
+
+The read path MUST NOT int-cast a reference. `(int)` turns a slug, a uuid and an empty string into `0`, `0` is not `null`, so the search runs scoped to a register no instance carries, the lookup fails, and the caller receives an empty page. An empty page is indistinguishable from a legitimate answer, and three apps acted on it as a fact about their data.
+
+A reference that is empty or only whitespace MUST drop the filter instead of scoping to `0`, so the search reaches the same global fallbacks a real `null` reaches.
+
+The rule applies wherever a reference enters a search: the query builder's `register` and `schema` parameters, and the `@self.register`, `@self.schema`, `_register` and `_schema` keys of a query a caller built by hand.
+
+#### Scenario: A slug scopes a search the way an id does
+- **GIVEN** register `zaken` with id 19 and schema `zaak` with id 9476, holding 3 objects
+- **WHEN** a caller searches or counts with `@self.register = 'zaken'` and `@self.schema = 'zaak'`
+- **THEN** the answer MUST be the same as for ids 19 and 9476
+- **AND** it MUST NOT be an empty result
+- @e2e exclude Backend reference resolution on a read path; verified by PHPUnit unit tests over the query handler with a mapper double, no browser flow.
+
+#### Scenario: A reference that names nothing is refused
+- **GIVEN** an instance with no register named `no-such-register`
+- **WHEN** a caller searches with that reference
+- **THEN** the search MUST raise `RegisterNotFoundException`
+- **AND** it MUST NOT answer `['results' => [], 'total' => 0]`
+- @e2e exclude Backend refusal on a read path; verified by PHPUnit unit tests, no browser flow.
+
+#### Scenario: An empty reference filters nothing
+- **GIVEN** a query carrying `@self.register = ''`
+- **WHEN** the search runs
+- **THEN** the register filter MUST be absent from the query
+- **AND** the search MUST NOT be scoped to register `0`
+- @e2e exclude Backend query normalisation; verified by PHPUnit unit tests over the resolver, no browser flow.
+
+#### Scenario: A list refuses the member it cannot resolve
+- **GIVEN** a query carrying `_schemas = ['zaak', 'no-such-schema']`
+- **WHEN** the search runs
+- **THEN** it MUST raise `SchemaNotFoundException`
+- **AND** it MUST NOT drop the unresolvable member and search the rest in silence
+- @e2e exclude Backend list resolution; verified by PHPUnit unit tests over the resolver, no browser flow.
 
 ### Requirement: JSON array and object property filtering
 The system MUST support filtering on `type: array` (JSONB array columns) using PostgreSQL's `@>` containment operator, and on `type: object` properties using JSON path extraction. This enables filtering on multi-valued and nested structured properties.
@@ -118,6 +237,52 @@ The system MUST support filtering on object metadata fields (register, schema, u
 - **WHEN** `SearchQueryHandler.applyViewsToQuery()` merges view registers into the query
 - **THEN** `query['@self']['register']` MUST be `[1, 2, 3]`
 - **AND** `MagicSearchHandler.applyMetadataFilters()` MUST use `WHERE t._register IN (1, 2, 3)`
+
+### Requirement: @self metadata filters support comparison operators
+A `@self` metadata filter MUST accept the same comparison-operator vocabulary as a schema-property filter — the bare keys `gte`, `lte`, `gt`, `lt`, `in`, `notIn`, `ne` — so that the same comparison does not need different syntax depending on whether the field is metadata or a property. An array value carrying none of those keys MUST retain its IN-list meaning. Multiple operators on one field MUST combine with AND.
+
+This vocabulary MUST be applied identically on both query paths: the single-table `IQueryBuilder` path (`MagicSearchHandler.applyMetadataFilters()`) and the raw-SQL multi-table UNION path (`MagicSearchHandler.buildWhereConditionsSql()`). Neither path may silently ignore a `@self` filter.
+
+#### Scenario: Date cutoff selects objects created before a moment
+- **GIVEN** a schema whose objects were created between 2026-05-21 and 2026-08-02
+- **WHEN** the caller filters with `@self[created][lte]=2026-06-01T00:00:00Z`
+- **THEN** `MagicSearchHandler.applyMetadataFilters()` MUST emit `WHERE t._created <= '2026-06-01T00:00:00Z'`
+- **AND** only objects created at or before that moment MUST be returned
+
+#### Scenario: A cutoff in the future selects every object
+- **GIVEN** the same schema
+- **WHEN** the caller filters with `@self[created][lte]=2030-01-01T00:00:00Z`
+- **THEN** every non-deleted object MUST be returned
+- **AND** the result MUST NOT be empty — an empty result here indicates the operator key was discarded and the value compared for equality
+
+#### Scenario: Two operators bound a range
+- **GIVEN** objects with varying `_updated` timestamps
+- **WHEN** the caller filters with `@self[updated][gte]=2026-01-01&@self[updated][lte]=2026-02-01`
+- **THEN** the system MUST emit both `t._updated >= '2026-01-01'` and `t._updated <= '2026-02-01'`
+
+#### Scenario: A metadata filter is honoured on the multi-table UNION path
+- **GIVEN** a search spanning more than one register/schema table
+- **WHEN** the caller supplies a `@self` metadata filter
+- **THEN** `MagicSearchHandler.buildWhereConditionsSql()` MUST include a condition for that filter in every UNION arm
+- **AND** the filter MUST NOT be dropped — dropping it would return objects the caller explicitly excluded
+
+#### Scenario: A null-check does not also compare against the sentinel
+- **GIVEN** objects that all have an `_owner` value
+- **WHEN** the caller filters with `@self[owner]=IS NOT NULL`
+- **THEN** the system MUST emit only `t._owner IS NOT NULL`
+- **AND** it MUST NOT additionally emit `t._owner = 'IS NOT NULL'`, which would match nothing on a text column and raise a cast error on a timestamp column
+
+#### Scenario: A camelCase metadata field resolves to its snake_case column
+- **GIVEN** the metadata column `_schema_version`
+- **WHEN** the caller filters with `@self[schemaVersion]=1.0`
+- **THEN** the system MUST compare against `t._schema_version`
+
+#### Scenario: An unknown metadata field is refused by name
+- **GIVEN** a caller filtering with `@self[creatd]=…` (a misspelling)
+- **WHEN** the query is built
+- **THEN** the system MUST raise `UnknownMetadataFieldException` and respond HTTP 400
+- **AND** the message MUST name the offending field and list the filterable metadata fields
+- **AND** the system MUST NOT interpolate the name into SQL, which previously surfaced as an opaque HTTP 500
 
 ### Requirement: Fuzzy search with pg_trgm integration
 The system MUST support optional fuzzy (typo-tolerant) search when the `_fuzzy=true` parameter is explicitly set AND the PostgreSQL `pg_trgm` extension is available. Fuzzy search MUST use the `similarity()` function on the `_name` column with a threshold of `0.1`. When fuzzy search is active, a `_relevance` score column MUST be available for sorting.
@@ -172,10 +337,24 @@ The system MUST support sorting by one or more fields via the `_order` parameter
 - **THEN** it MUST add `ORDER BY similarity(t._name::text, 'overlast') DESC`
 - **AND** if `pg_trgm` is not available, the `_relevance` sort MUST be silently skipped
 
-#### Scenario: Legacy ordering parameter
-- **GIVEN** a request with `?ordering=-aanmaakdatum` (legacy format)
-- **WHEN** `SearchQueryHandler.cleanQuery()` processes the parameter
-- **THEN** it MUST convert the leading `-` to `DESC` direction: `_order: { aanmaakdatum: DESC }`
+#### Scenario: Sort direction is expressed with `_order`
+- **GIVEN** a request with `?_order[aanmaakdatum]=DESC`
+- **WHEN** the search runs
+- **THEN** results MUST be ordered by `aanmaakdatum` descending
+
+The `?ordering=-aanmaakdatum` form this scenario used to describe is NOT supported.
+
+#### Scenario: Every form of `_order` orders the same
+- **GIVEN** a search on one schema or across several
+- **WHEN** `_order` is a map, that map as JSON, a list of objects with `field` and `direction`, a list of names, or one name, where a name is `field` or `field:direction`
+- **THEN** the search MUST order on those fields, ascending unless the direction is `desc` in any case
+- **AND** an entry that names no field MUST be left out, not end in an error
+- **AND** a field that may not be sorted on MUST be refused in every form
+It was only ever implemented in `SearchQueryHandler::cleanQuery()`, which no
+production code called; over HTTP `ordering` is read as a filter on a property no
+schema declares, which adds `1 = 0` and returns **zero rows**. Measured on a live
+instance 2026-09-04: `?ordering=title` -> 0 of 13. The method has been deleted
+rather than left as a second, dead filter language.
 
 ### Requirement: Offset and page-based pagination
 The system MUST support pagination through `_limit`, `_offset`, and `_page` parameters. Page-based pagination MUST be 1-indexed. The response MUST include `total` (total matching count), `page` (current page), `pages` (total pages), `limit`, and `offset` fields. Navigation URLs (`next`, `prev`) MUST be generated when multiple pages exist.
@@ -446,6 +625,552 @@ The system MUST provide configurable performance optimizations including: index 
 - **WHEN** `SearchQueryHandler.buildSearchQuery()` processes request parameters
 - **THEN** it MUST reconstruct the nested structure by splitting underscore-separated keys back into nested arrays
 - **AND** system parameters starting with `_` MUST be preserved as-is
+
+### Requirement: Search Trail Analytics and Audit API
+
+The system MUST expose an analytics and audit API over the search-trail log so
+operators can review search activity, surface aggregate insight, export the
+trail, and apply retention. The API MUST provide: a paginated list of trail
+entries returning the same `{results, total, page, pages, limit, offset}`
+pagination envelope used by the objects list endpoint; retrieval of a single
+trail entry by id returning HTTP `404` when it does not exist; aggregate search
+statistics over an optional `from`/`to` window; popular search terms; a search
+activity time-series; per-(register, schema) search statistics; and user-agent
+statistics. The API MUST support exporting the trail (CSV or JSON), and MUST
+provide retention operations: age-based cleanup, single-entry delete, and a
+clear-all purge. Date-window and pagination parameters MUST be parsed through a
+shared parameter-extraction helper, and system/query parameters (`_route`,
+`id`) MUST be stripped before they reach the service.
+
+#### Scenario: List search trail entries with pagination envelope
+- **GIVEN** search-trail entries exist
+- **WHEN** a GET request is sent to the search-trail list endpoint
+- **THEN** the response MUST be the shared pagination envelope (`results`, `total`, `page`, `pages`, `limit`, `offset`)
+- **AND** `_route` and `id` MUST be stripped from the parameters passed to the service
+
+#### Scenario: Fetch a missing trail entry yields 404
+- **GIVEN** no search-trail entry exists for the requested id
+- **WHEN** the show endpoint is invoked with that id
+- **THEN** the response MUST be HTTP `404` with `{error: "Search trail not found"}`
+
+#### Scenario: Aggregate statistics honour the date window
+- **GIVEN** a statistics request carrying optional `from` and `to` parameters
+- **WHEN** the statistics endpoint is invoked
+- **THEN** the service MUST receive the parsed `from`/`to` window and return aggregate search statistics
+
+#### Scenario: Export the search trail
+- **GIVEN** search-trail entries exist
+- **WHEN** the export endpoint is invoked
+- **THEN** the trail MUST be returned in the requested export format (CSV or JSON)
+
+#### Scenario: Retention operations prune the trail
+- **GIVEN** stale search-trail entries
+- **WHEN** the cleanup, single-delete, or clear-all endpoint is invoked
+- **THEN** the matching entries MUST be removed and the operation result MUST be reported
+
+### Requirement: Search-Trail Analytics Statistics Surface
+
+The system MUST expose a search-trail analytics surface through `SearchTrailService` that
+enriches raw aggregations from `SearchTrailMapper` into report-ready structures, each
+accepting an optional `from`/`to` datetime window. `getPopularSearchTerms()` MUST return
+the most-used search terms annotated with each term's share-of-total percentage and an
+effectiveness rating derived from its average result count. `getRegisterSchemaStatistics()`
+MUST return per-register/schema search counts annotated with percentage and a performance
+rating, sorted by percentage descending. `getSearchActivity()` MUST return search counts
+bucketed by a time interval (e.g. day) together with computed activity insights.
+`getSearchStatistics()` MUST return aggregate totals enriched with searches-with-results /
+without-results splits, a success rate, unique-term and unique-user counts, and
+per-session averages. `getUserAgentStatistics()` MUST return top user agents with parsed
+browser info plus an aggregated browser distribution.
+
+#### Scenario: Popular terms include percentage and effectiveness
+- **GIVEN** persisted search trails within the requested window
+- **WHEN** `getPopularSearchTerms()` is called
+- **THEN** each returned term MUST include its share-of-total percentage and an effectiveness rating
+
+#### Scenario: Aggregate statistics include success rate and uniqueness counts
+- **GIVEN** persisted search trails
+- **WHEN** `getSearchStatistics()` is called
+- **THEN** the result MUST include searches-with-results, searches-without-results, a success rate, unique-term and unique-user counts, and per-session averages
+
+#### Scenario: User-agent statistics aggregate by browser
+- **GIVEN** persisted search trails carrying user-agent strings
+- **WHEN** `getUserAgentStatistics()` is called
+- **THEN** each user agent MUST be annotated with parsed browser info
+- **AND** the result MUST include an aggregated browser distribution
+
+### Requirement: Search-trail analytics dashboard
+
+The search-trail sidebar (`SearchTrailSideBar.vue`) MUST render a read-only analytics dashboard over persisted `SearchTrail` data, sourced from `searchTrailStore`. The canonical `zoeken-filteren` spec covers search-trail *persistence*; this requirement covers the *analytics reporting* surface that the persistence-spec Notes section flags as unspecified. On mount the sidebar MUST load the trail list (`loadSearchTrailData`), aggregate statistics (`loadStatistics` → totals, averages, success rate, unique terms/users/organisations, per-session averages, and a `queryComplexity` distribution), popular terms (`loadPopularTerms`), register/schema usage (`loadRegisterSchemaStats`), user-agent usage (`loadUserAgentStats`), and period-bucketed activity (`loadActivityData` for the selected `hourly`/`daily`/`weekly`/`monthly` period). Each loader MUST degrade gracefully to safe empty/zero defaults on error. Display helpers MUST format the aggregates for the panel: `getComplexityPercentage(type)` returns the share of a complexity bucket, `formatActivityPeriod(period)` localises a bucket label per the selected period, `getRegisterSchemaName(stat)` resolves register/schema ids to titles, `getBrowserName(agent)` derives a browser label from the user-agent record, and `updateFilteredCount()` reflects the current list length. Changing the activity period MUST reload activity data and reflect the period in the route query.
+
+#### Scenario: Mounting the sidebar loads every analytics dataset
+- **GIVEN** the search-trail sidebar is mounted
+- **WHEN** the `mounted()` hook runs
+- **THEN** `loadSearchTrailData`, `loadStatistics`, `loadPopularTerms`, `loadRegisterSchemaStats`, `loadUserAgentStats`, and `loadActivityData` MUST each be invoked
+- **AND** the filtered count MUST be initialised from the store list length
+
+#### Scenario: A failing analytics loader degrades to safe defaults
+- **GIVEN** `searchTrailStore.getStatistics()` rejects
+- **WHEN** `loadStatistics()` handles the error
+- **THEN** all statistic fields MUST be reset to zero defaults (totals `0`, `queryComplexity = { simple: 0, medium: 0, complex: 0 }`)
+- **AND** no exception MUST propagate to the caller
+
+#### Scenario: Changing the activity period reloads bucketed activity
+- **GIVEN** the user selects a different activity period (e.g. `monthly`)
+- **WHEN** `loadActivityData()` runs
+- **THEN** `searchTrailStore.getActivity(period)` MUST be called with the selected period
+- **AND** the selected period MUST be reflected in the `/search-trails` route query via `updateRouteQueryFromState()`
+
+#### Scenario: Complexity percentage is computed against the bucket total
+- **GIVEN** `queryComplexity = { simple: 3, medium: 1, complex: 0 }`
+- **WHEN** `getComplexityPercentage('simple')` runs
+- **THEN** it MUST return `75`
+- **AND** when the total is `0` it MUST return `0` without dividing by zero
+
+### Requirement: AggregationRunner MUST dispatch by configured search backend
+
+When the runner executes a named aggregation, it MUST consult `SchemaIndexService::getBackend($schema)` and dispatch to the backend-native `aggregate()` implementation when available. The dispatch order MUST be:
+
+1. Solr — when the schema is Solr-indexed and the metric is in Solr's facet/stats vocabulary.
+2. Elasticsearch — when the schema is ES-indexed.
+3. Postgres — when neither index is configured (uses the magic table directly).
+4. PHP runner — fallback when any backend rejects the input shape.
+
+#### Scenario: Solr-indexed schema uses facet path
+- GIVEN an `ActionItem` schema with `searchable: true` and a Solr collection synced
+- AND a `byStatus` aggregation declared with `metric: count, groupBy: { field: "taskStatus" }`
+- WHEN the controller calls `GET /api/objects/aggregations/decidesk/action-item/byStatus`
+- THEN the response carries `backend: "solr"`
+- AND the value matches what the PHP runner would compute
+
+### Requirement: Postgres backend MUST translate operator filters to SQL
+
+When the runner uses the Postgres backend, it MUST translate `in`/`gte`/`lte`/`gt`/`lt`/`ne` operators to SQL clauses (`IN (...)`, `>= ?`, `<= ?`, `> ?`, `< ?`, `<> ?`) and bind concrete values for placeholder strings (`$now`, `$startOfMonth`, etc.) at query time. v1 only supported equality filters and fell back to the PHP runner for everything else.
+
+#### Scenario: Range filter with placeholder binding
+- GIVEN an aggregation declared with `filters: { createdAt: { gte: "$startOfMonth" } }`
+- WHEN the runner executes against the Postgres backend
+- THEN the SQL emitted carries `created_at >= ?` with `$startOfMonth` bound to the current month's first-day timestamp at query time
+- AND the result matches what the PHP runner would compute over the same dataset
+
+### Requirement: AggregationRunner MUST cache results for 60s
+
+The runner MUST consult `AggregationCache` before computing. Cache key: `agg:{registerSlug}:{schemaSlug}:{name}:{filtersHash}:{rbacScopeHash}`. TTL: 60 seconds. The cache MUST be evicted for the affected `(register, schema)` on any `ObjectCreatedEvent`/`ObjectUpdatedEvent`/`ObjectDeletedEvent`/`ObjectTransitionedEvent`.
+
+#### Scenario: cache hit returns within 5 ms
+- GIVEN a previous call to `byStatus` populated the cache
+- WHEN a second call arrives within 60 s
+- THEN the response carries `X-OR-Cache: hit`
+- AND total request time is under 5 ms (no backend roundtrip)
+
+### Requirement: Response MUST carry backend attribution
+
+Every aggregation response MUST include a `backend` field with one of `"postgres"`, `"solr"`, `"elasticsearch"`, or `"php-fallback"`. Apps and operators use this to debug slow queries.
+
+#### Scenario: Backend attribution surfaced on every response
+- GIVEN any aggregation request
+- WHEN the response is rendered
+- THEN the JSON body MUST include a top-level `backend` field
+- AND the value MUST be one of `"postgres"`, `"solr"`, `"elasticsearch"`, `"php-fallback"`
+- AND a fallback path (e.g. unsupported metric on Solr) MUST attribute the actual backend that produced the result, not the originally-targeted one
+
+### Requirement: Search-backend selection and reindex administration
+The system SHALL expose an admin-gated API for selecting the active search backend and for
+reindexing collections. `SettingsController` provides `getSearchBackend` (current backend
+config), `updateSearchBackend` (sets the active backend and signals `reload_required:
+true`), `testSetupHandler` (runs Solr setup via `SetupHandler` when Solr is enabled), and
+`reindexSpecificCollection` (reindexes a named collection with validated `batchSize`
+1–5000 and `maxObjects` >= 0). `SolrSettingsController` provides `getSolrSettings`,
+`updateSolrSettings`, `getSolrInfo`, and `getSolrDashboardStats` for the Solr settings and
+status surface.
+
+#### Scenario: Update search backend signals reload
+- **GIVEN** an admin posts `{backend: "solr"}`
+- **WHEN** `updateSearchBackend` runs
+- **THEN** it MUST persist the backend via `SettingsService::updateSearchBackendConfig()` and return `reload_required: true`
+- **AND** an empty backend param MUST produce HTTP 400
+
+#### Scenario: Reindex validates batch size
+- **GIVEN** an admin requests a reindex with `batchSize=10000`
+- **WHEN** `reindexSpecificCollection` runs
+- **THEN** it MUST reject with HTTP 400 because batch size must be between 1 and 5000
+
+#### Scenario: Setup test refuses when Solr disabled
+- **GIVEN** Solr is disabled in settings
+- **WHEN** `testSetupHandler` runs
+- **THEN** it MUST return HTTP 400 with a "SOLR is disabled" message
+
+### Requirement: Solr collection, configset, and field administration
+The system SHALL expose an admin-gated API for managing Solr collections, configsets, and
+schema fields. `SolrController` provides `listCollections`, `listConfigSets`,
+`createCollection`, `createConfigSet`, `deleteConfigSet`, and `copyCollection`.
+`SolrManagementController` provides `getSolrFields`, `createMissingSolrFields`,
+`fixMismatchedSolrFields`, `deleteSolrField`, `deleteSpecificSolrCollection`, and
+`updateSolrCollectionAssignments`. `SolrOperationsController` provides `setupSolr`,
+`testSolrConnection`, `warmupSolrIndex`, `inspectSolrIndex`, `getSolrMemoryPrediction`,
+and `manageSolr`. `ConfigurationSettingsController` provides `getObjectCollectionFields`
+and `createMissingObjectFields` to inspect and mirror the object collection's field set.
+
+#### Scenario: Create a Solr collection
+- **WHEN** `SolrController::createCollection` runs with a collection name
+- **THEN** it MUST create the collection and report the outcome
+
+#### Scenario: Synchronize missing object-collection fields
+- **GIVEN** the object collection is configured
+- **WHEN** `ConfigurationSettingsController::createMissingObjectFields` runs
+- **THEN** it MUST mirror schemas into the collection via `IndexService::mirrorSchemas(force: true)` and report success
+- **AND** an unconfigured object collection MUST produce HTTP 400
+
+#### Scenario: Inspect and warm the Solr index
+- **WHEN** `SolrOperationsController::warmupSolrIndex` then `inspectSolrIndex` run
+- **THEN** warmup MUST populate the index and inspection MUST report current index state
+
+### Requirement: Saved views MUST be managed through an access-controlled CRUD lifecycle with a single default per user
+
+`ViewService` MUST manage saved `View` definitions (the `{registers, schemas, filters, searchTerms}` query objects consumed by `SearchQueryHandler.applyViewsToQuery()`) with owner/public access control and a single-default-view-per-user invariant.
+
+- `find(id, owner)` MUST load the view by id and grant access only when the caller is the owner OR the view is public; otherwise it MUST throw `DoesNotExistException("View not found or access denied")` (denial is indistinguishable from not-found, so a private view's existence is not leaked).
+- `findAll(owner)` MUST return the views the user owns or that are public, delegating to `ViewMapper::findAll(owner:)`.
+- `create(name, description, owner, isPublic, isDefault, query)` MUST persist a new `View`; when `isDefault` is `true` it MUST first clear any existing default for that owner so at most one default view exists per user; `favoredBy` MUST be initialised to an empty list.
+- `update(id, name, description, owner, isPublic, isDefault, query, favoredBy?)` MUST resolve the view via the access-controlled `find()`, and when it is being newly promoted to default (`isDefault` true and previously false) MUST clear the owner's existing default first; `favoredBy` MUST be updated only when explicitly provided (non-null).
+- `delete(id, owner)` MUST resolve the view via the access-controlled `find()` before deleting, so a caller cannot delete a view they cannot access.
+- The single-default invariant MUST be enforced by `clearDefaultForUser(owner)`, which unsets `isDefault` on every default view owned by that user.
+- All write operations MUST log and re-throw on failure (the persisted state is the mapper's; the service does not swallow errors).
+
+#### Scenario: Access control on find hides other users' private views
+- **GIVEN** a private view owned by `alice`
+- **WHEN** `find(id, owner: "bob")` is called and the view is not public
+- **THEN** the method MUST throw `DoesNotExistException("View not found or access denied")`
+- **AND** when `bob` is the owner OR the view is public, the view MUST be returned
+
+#### Scenario: Creating a default view clears the previous default
+- **GIVEN** user `alice` already has a default view
+- **WHEN** `create(..., isDefault: true, ...)` is called for `alice`
+- **THEN** `clearDefaultForUser("alice")` MUST run first so the prior default is unset
+- **AND** exactly one of `alice`'s views MUST have `isDefault = true` afterwards
+- **AND** the new view's `favoredBy` MUST be an empty list
+
+#### Scenario: Update only clears the default when newly promoting
+- **GIVEN** a view that is currently not the default
+- **WHEN** `update(..., isDefault: true, ...)` promotes it to default
+- **THEN** the owner's existing default MUST be cleared first
+- **AND** when the view was already default (`isDefault` unchanged) no extra clear MUST occur
+- **AND** `favoredBy` MUST be changed only when a non-null `favoredBy` argument is supplied
+
+#### Scenario: Delete is access-controlled
+- **GIVEN** a view the caller does not own and that is not public
+- **WHEN** `delete(id, owner)` is called
+- **THEN** the access-controlled `find()` MUST throw before any deletion occurs
+- **AND** an owned-or-public view MUST be deleted via `ViewMapper::delete()`
+
+### Requirement: `_content_search` opt-in flag widens `searchObjectsPaginated` to include document body text (ZKN-CONTENT-001)
+
+`ObjectService::searchObjectsPaginated()` MUST accept an optional boolean `_content_search` flag (either as a named parameter or as a `_content_search` key inside the `$query` array). When absent or `false`, the method's behaviour MUST be byte-identical to the pre-change baseline (metadata + string properties only, no chunk fan-out) — no envelope drift, no row-order drift, no `total` drift, no additional query fan-out MUST occur.
+
+When `_content_search=true`, the method MUST additionally invoke `ChunkMapper::searchByKeyword($query['_search'])` — scoped by the same `_register` / `_schemas` the caller passed — and include the objects whose file chunks match the query, subject to the mapping and deduplication rules in `ZKN-CONTENT-002` and the response-shape rule in `ZKN-CONTENT-003`.
+
+The flag MUST be exposed at the `SearchBackendInterface` seam so alternate backends can implement it or explicitly fall back. On backends without native `tsvector` (e.g. MariaDB), the backend MAY fall back to unranked `LIKE` on `openregister_chunks.text_content` — behaviour is preserved, ranking degrades. On PostgreSQL, the existing `ts_rank`-scored `ChunkMapper::searchByKeyword()` path MUST be used.
+
+#### Scenario: default omits chunk fan-out
+
+- GIVEN a call to `ObjectService::searchObjectsPaginated($query)` with no `_content_search` key,
+- WHEN the response is compared to the pre-change baseline for the same `$query`,
+- THEN the response envelope, row order, and `total` MUST be byte-identical to that baseline,
+- AND no query MUST be issued against `openregister_chunks`.
+
+#### Scenario: opt-in triggers chunk fan-out
+
+- GIVEN a call to `searchObjectsPaginated($query)` with `_content_search=true` and `_search=<phrase>`,
+- WHEN backend query logs are inspected,
+- THEN exactly one additional query MUST be issued against `openregister_chunks` (or its backend-specific equivalent),
+- AND that query MUST be scoped by the same `_register` / `_schemas` present in `$query`.
+
+#### Scenario: MariaDB fallback preserves match set, degrades ranking
+
+- GIVEN a MariaDB backend without a `tsvector` index on `openregister_chunks.text_content`,
+- WHEN `searchObjectsPaginated(..., _content_search=true)` runs,
+- THEN the response MUST include every object whose chunk `text_content` contains the query as a substring,
+- AND the response ordering MAY differ from the PostgreSQL `ts_rank` ordering,
+- AND the response MUST NOT error or return HTTP 500.
+
+### Requirement: Chunk hits are mapped back to their owning object (ZKN-CONTENT-002)
+
+When `_content_search=true` returns chunk hits, `searchObjectsPaginated` MUST map each chunk to its owning object before merging into the result set:
+
+- Chunks with `source_type = 'object'` MUST map to the object identified by `source_id` directly.
+- Chunks with `source_type = 'file'` MUST map to the object that owns the file, resolved via the existing file→object join OpenRegister already uses for other file-relative queries.
+- Chunks whose owning object cannot be resolved (deleted, cross-tenant, etc.) MUST be silently skipped — no error surfaced to the caller.
+
+The mapped-object set MUST be unioned with the metadata-match set produced by the pre-change search path and deduplicated on object id. An object that matches on BOTH surfaces MUST appear exactly once in the response.
+
+#### Scenario: chunk hit maps to owning object
+
+- GIVEN a chunk in `openregister_chunks` with `source_type='file'` and `source_id=42`, where file 42 is attached to object `obj-X`,
+- WHEN `searchObjectsPaginated(..., _content_search=true, _search=<phrase>)` matches that chunk,
+- THEN `obj-X` MUST appear in the response's result rows.
+
+#### Scenario: object matching both surfaces appears once
+
+- GIVEN an object whose `_name` metadata AND a linked chunk's `text_content` both contain the query,
+- WHEN `searchObjectsPaginated(..., _content_search=true, _search=<query>)` runs,
+- THEN the object MUST appear exactly once in the response's result rows,
+- AND the `total` field MUST count it once.
+
+#### Scenario: chunk with unresolvable owning object is silently skipped
+
+- GIVEN a chunk whose `source_id` references a deleted or cross-tenant object,
+- WHEN `searchObjectsPaginated(..., _content_search=true)` runs,
+- THEN the chunk MUST NOT surface any row in the response,
+- AND the call MUST NOT return an error.
+
+### Requirement: Response envelope stays object-shaped — no raw chunk payloads (ZKN-CONTENT-003)
+
+Chunk hits routed through `_content_search=true` MUST NOT leak chunk-shaped fields into the `searchObjectsPaginated` response. Specifically, the returned rows MUST NOT contain:
+
+- A `chunk_id`, `chunk`, or `source_id` field (unless that field is already part of the object schema for other reasons).
+- A `text_content` field, snippet, or excerpt derived from the chunk.
+- A `ts_rank` / `score` field or any ranking numerical exposed as a row property.
+
+The row shape MUST be exactly what `searchObjectsPaginated` returns for a metadata-only match today — the object as `ObjectEntity` (or its `jsonSerialize()` form), with the caller's existing `_extend` / `_fields` selection semantics applied uniformly.
+
+#### Scenario: no chunk fields in response rows
+
+- GIVEN a `_content_search=true` call whose sole matches are chunk-only (no metadata match),
+- WHEN the response rows are inspected,
+- THEN no row MUST contain a `chunk_id`, `text_content`, `snippet`, or `ts_rank` / `score` field,
+- AND every row MUST be shape-identical to the rows produced by a metadata-only match on the same schemas.
+
+#### Scenario: `_extend` / `_fields` selection applies uniformly
+
+- GIVEN two calls with identical query except one is a metadata match and the other is a chunk-only match,
+- AND both calls pass the same `_extend` / `_fields` selection,
+- WHEN both responses' first rows are compared,
+- THEN the rows MUST have the same set of top-level keys and the same nested shape under `@self`.
+
+### Requirement: A like filter matches a substring ignoring case
+
+The system SHALL support a `like` operator on property filters and on `@self`
+metadata filters, written `?title[like]=foo` or `?title_like=foo`. It SHALL
+return the objects whose value contains the term anywhere, ignoring case, on
+every condition builder (QueryBuilder path and raw UNION path) and on the DBAL
+object source listing. The column SHALL be compared as text, so the operator
+also works on numeric, date and JSON columns. A list of terms SHALL match any
+of them, and an empty term SHALL add no condition.
+
+#### Scenario: a table header filter finds a client by part of its name
+
+- **GIVEN** a client schema with objects named "Gemeente Demo" and "Meridiaan Advies B.V."
+- **WHEN** the client calls `GET /api/objects/{register}/client?name[like]=demo`
+- **THEN** the result holds "Gemeente Demo" and not "Meridiaan Advies B.V."
+- @e2e exclude {query-layer operator; covered by MagicSearchHandlerLikeOperatorTest over both builders and by LikeOperatorTest against a real SQLite table; the header filter UI lives in nextcloud-vue}
+
+#### Scenario: the suffix spelling means the same filter
+
+- **WHEN** the client calls `?name_like=demo`
+- **THEN** `buildSearchQuery()` rebuilds it into `name => ['like' => 'demo']` and the result equals `?name[like]=demo`
+- @e2e exclude {query-layer normalisation, no browser surface}
+
+#### Scenario: a cleared filter shows everything
+
+- **WHEN** the client calls `?name[like]=`
+- **THEN** no condition is added for `name`
+- @e2e exclude {covered by MagicSearchHandlerLikeOperatorTest::testEmptyTermAddsNoCondition}
+
+### Requirement: Like matches percent, underscore and backslash literally
+
+The system SHALL escape `%`, `_` and `\` in a `like` term so they match
+themselves, and SHALL pass the pattern as a bound parameter on every path that
+has a query builder. The raw UNION path, which joins SQL text, SHALL pass it
+through the platform's `quote()`.
+
+#### Scenario: a percent sign is not a wildcard
+
+- **GIVEN** objects named "100% zeker" and "1000 zeker"
+- **WHEN** the client filters `?name[like]=0%`
+- **THEN** only "100% zeker" is returned
+- @e2e exclude {covered by LikeOperatorTest on SQLite and verified on PostgreSQL with a prepared statement}
+
+#### Scenario: an underscore is not a wildcard
+
+- **GIVEN** objects named "a_b" and "axb"
+- **WHEN** the client filters `?name[like]=a_b`
+- **THEN** only "a_b" is returned
+- @e2e exclude {covered by LikeOperatorTest and DbalObjectSourceProviderTest on SQLite}
+
+### Requirement: A boolean filter value filters like its string form
+
+A property filter whose value is a PHP boolean SHALL return the same objects as
+the same filter with the value written as a string (`false` as `'false'`, `true`
+as `'true'`), on the list, on the count and on the facets, on PostgreSQL, MySQL and
+MariaDB. This SHALL hold for equality, `in`, `notIn` and `ne`.
+
+A null or missing property value SHALL match neither `true` nor `false`. A caller
+that means "false or not set" SHALL ask for that explicitly; the filter SHALL NOT
+widen to it on its own.
+
+#### Scenario: a PHP false filter returns the rows that hold false
+
+- **GIVEN** a schema with a boolean property `isDraft`, two objects with `isDraft` false, one with `isDraft` true and one without `isDraft`
+- **WHEN** a PHP caller searches with `['isDraft' => false]`
+- **THEN** the two objects with `isDraft` false are returned
+- **AND** the same search with `['isDraft' => 'false']` returns the same two objects
+- @e2e exclude {a PHP-caller value type; no browser or HTTP request can send a PHP boolean. Covered by tests/Db/BooleanFilterIntegrationTest.php against a real database}
+
+#### Scenario: a PHP true filter returns the rows that hold true
+
+- **GIVEN** the same objects
+- **WHEN** a PHP caller searches with `['isDraft' => true]`
+- **THEN** only the object with `isDraft` true is returned
+- @e2e exclude {a PHP-caller value type; covered by tests/Db/BooleanFilterIntegrationTest.php}
+
+#### Scenario: an unset value is not false
+
+- **GIVEN** the same objects
+- **WHEN** a caller searches with `isDraft` false, as a boolean or as a string
+- **THEN** the object without `isDraft` is not returned
+- @e2e exclude {covered by tests/Db/BooleanFilterIntegrationTest.php; the behaviour is the existing one for the string form}
+
+#### Scenario: a boolean in an operator bag
+
+- **GIVEN** the same objects
+- **WHEN** a PHP caller searches with `['isDraft' => ['ne' => true]]` or `['isDraft' => ['in' => [false]]]`
+- **THEN** the two objects with `isDraft` false are returned
+- @e2e exclude {a PHP-caller value type; covered by tests/Unit/Db/MagicSearchHandlerBooleanFilterValueTest.php and tests/Db/BooleanFilterIntegrationTest.php}
+
+### Requirement: A filter can name a field inside an object property
+
+A property filter SHALL accept a path into an object-typed property, written
+as a dotted key (`dunning.currentStage=2`) or as the nested map the request
+layer rebuilds from it (`['dunning' => ['currentStage' => 2]]`). It SHALL
+compare the value at that path on PostgreSQL, MySQL and MariaDB, for the list
+and the count, with equality, a list of values, `in`, `notIn`, `ne`, `isnull`,
+`like` and the comparisons `gt`, `gte`, `lt` and `lte`. The comparisons SHALL
+be numeric when the operand is a number. A boolean value SHALL compare in its
+JSON spelling. A path segment that is not a plain property name SHALL match
+nothing. A path into an encrypted property SHALL be refused, the same as a
+filter on that property. A filter on the object property itself SHALL keep
+its meaning.
+
+#### Scenario: invoices in a reminder round
+
+- **GIVEN** an ARInvoice schema whose object property `dunning` holds `currentStage`, two invoices at stage 1 and 2, and one without a stage
+- **WHEN** a client lists `ARInvoice?dunning.currentStage[isnull]=false`
+- **THEN** the two invoices with a stage are returned, and the total is 2
+
+#### Scenario: the same filter from PHP
+
+- **GIVEN** the same invoices
+- **WHEN** a PHP caller searches with `['dunning.currentStage' => 2]`
+- **THEN** the invoice at stage 2 is returned
+
+#### Scenario: a path segment that is not a name
+
+- **WHEN** a client filters on `dunning.current'Stage=1`
+- **THEN** nothing matches and the filter is reported as ignored
+
+### Requirement: A filter can also admit empty values with orNull
+
+An operator bag on a property filter or a `@self` metadata filter SHALL accept
+the modifier `orNull`. When its value reads as true (`true`, `"true"`, `"1"`,
+`"on"`, `"yes"`), the field's other operators SHALL still all have to hold, OR
+the field SHALL be empty (NULL or not set). When it reads as false, or is
+absent, the filter SHALL behave exactly as it does without the modifier. On its
+own, `orNull` SHALL add no condition. This SHALL hold on the list and the count,
+on PostgreSQL, MySQL and MariaDB, and on paths inside object
+properties.
+
+#### Scenario: ne with orNull returns the unwritten row
+
+- **GIVEN** a schema with a boolean property `isFinalStatus` and three objects holding `true`, `false` and no value
+- **WHEN** a caller searches with `isFinalStatus[ne]=true&isFinalStatus[orNull]=true`
+- **THEN** the objects holding `false` and no value are returned
+- @e2e exclude {a query-language rule; covered by tests/Unit/Db/MagicSearchHandlerOrNullModifierTest.php, which runs the generated condition against a real SQLite table}
+
+#### Scenario: ne without orNull keeps its meaning
+
+- **GIVEN** the same objects
+- **WHEN** a caller searches with `isFinalStatus[ne]=true`
+- **THEN** only the object holding `false` is returned
+- @e2e exclude {unchanged behaviour; covered by tests/Unit/Db/MagicSearchHandlerOrNullModifierTest.php}
+
+#### Scenario: orNull on a metadata field
+
+- **GIVEN** objects with and without `@self.expires`
+- **WHEN** a caller searches with `@self[expires][lt]=2026-01-01&@self[expires][orNull]=true`
+- **THEN** the objects that expire before 2026 and the objects without an expiry are returned
+- @e2e exclude {a query-language rule; covered by tests/Unit/Db/MagicSearchHandlerOrNullModifierTest.php on both builders}
+
+### Requirement: An object records when a person last wrote it
+
+Every object SHALL carry `@self.lastUserActivity`. A create or update made by a
+signed-in user in a web request SHALL set it to the time of the write. A write
+made on the command line, from Nextcloud's cron, without a signed-in user,
+inside the system-operation scope, or labelled with a write cause other than
+`person` SHALL leave it unchanged. `@self.updated` SHALL keep moving on every
+write. `@self.lastUserActivity` SHALL be filterable with the same operators as
+`@self.updated` and sortable with `_order[@self.lastUserActivity]`.
+
+#### Scenario: a recompute job does not make a case look worked on
+
+- **GIVEN** a case a person last wrote on 1 September
+- **WHEN** a background job rewrites one of its fields on 10 October
+- **THEN** its `@self.updated` is 10 October
+- **AND** its `@self.lastUserActivity` is still 1 September
+- @e2e exclude {a background-job write cannot be driven from a browser; covered by tests/Unit/Service/Object/UserActivityStamperTest.php}
+
+#### Scenario: a person's edit moves it
+
+- **GIVEN** the same case
+- **WHEN** a signed-in user saves it through the API
+- **THEN** its `@self.lastUserActivity` is the time of that save
+- @e2e exclude {covered by tests/Unit/Service/Object/UserActivityStamperTest.php; the API save path calls the same stamper}
+
+#### Scenario: stalled cases are found by filter
+
+- **GIVEN** cases last written by a person before and after 1 October
+- **WHEN** a caller searches with `@self[lastUserActivity][lt]=2026-10-01T00:00:00`
+- **THEN** only the cases a person last wrote before 1 October are returned
+- @e2e exclude {a query-language rule; covered by tests/Unit/Db/LastUserActivityMetadataTest.php on both builders}
+
+### Requirement: A filter can match one element of an array property
+
+A list query MAY carry `_element[<property>][<field>]=<value>` for an array-of-objects property. The object SHALL match
+when one element of the array carries every field of the block; numbered blocks (`_element[<property>][<n>][…]`) SHALL
+each be matched by an element of their own. A field SHALL take a value, a list or an operator bag as a nested-path
+filter does. A block on a property that is not an array, or that the caller may not read, SHALL match nothing; an
+encrypted property SHALL refuse; a query across several schemas SHALL refuse `_element`.
+
+#### Scenario: A case-type field on the case list
+
+- **GIVEN** a case carries `properties: [{ "propertyDefinition": "pd-7", "name": "Oppervlakte", "value": "120" }]`
+- **WHEN** the list asks `_element[properties][propertyDefinition]=pd-7&_element[properties][value][gte]=100`
+- **THEN** the case is listed, and a case whose pd-7 answer is 80 is not
+
+#### Scenario: Both fields on the same element
+
+- **GIVEN** a case answers pd-7 with "80" and pd-8 with "120"
+- **WHEN** the list asks `_element[properties][propertyDefinition]=pd-7&_element[properties][value][gte]=100`
+- **THEN** the case is not listed
+
+### Requirement: The search index status reads index names in bulk
+
+The search index status SHALL read the index names of all tables in scope in one query per 500 tables, and SHALL answer every table in scope, with an empty list for a table without indexes.
+
+#### Scenario: Three tables
+- WHEN the status is read for three tables
+- THEN one pg_indexes query runs and each table lists its index names
+
+### Requirement: The search index status names how many rows it covers
+
+The search index status SHALL answer `rowsInTables`, the rows of all tables in scope, and `indexed`, the rows per schema slug, summed over the registers that hold that slug. It SHALL count the rows of up to 200 tables in one query. A slug with a table that cannot be counted SHALL be left out of `indexed`, and `rowsInTables` SHALL then be left out too, so a reader never sees a count that is too low.
+
+#### Scenario: Cases and documents
+- WHEN the status is read and the tables in scope hold 12418 cases and 31902 documents
+- THEN it answers `rowsInTables` 44320 and `indexed` with `cases` 12418 and `documents` 31902
+
+#### Scenario: A table that cannot be counted
+- WHEN one table of the `documents` schema cannot be counted
+- THEN `indexed` leaves `documents` out, keeps `cases`, and the answer has no `rowsInTables`
 
 ## Current Implementation Status
 

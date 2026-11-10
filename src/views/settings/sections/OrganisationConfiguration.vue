@@ -1,7 +1,12 @@
 <template>
 	<NcSettingsSection
-		name="Organisation Configuration"
-		description="Configure default organisation and organisation-related settings">
+		:name="t('openregister', 'Organisation Configuration')"
+		:description="
+			t(
+				'openregister',
+				'Configure default organisation and organisation-related settings',
+			)
+		">
 		<NcNoteCard v-if="saveSuccess" type="success">
 			{{ t('openregister', 'Organisation settings saved successfully') }}
 		</NcNoteCard>
@@ -13,9 +18,16 @@
 		<!-- Default Organisation Setting -->
 		<div class="setting-row">
 			<div class="setting-label">
-				<label for="default-organisation">{{ t('openregister', 'Default Organisation') }}</label>
+				<label for="default-organisation">{{
+					t('openregister', 'Default Organisation')
+				}}</label>
 				<p class="setting-description">
-					{{ t('openregister', 'New users without specific organisation membership will be automatically added to this organisation') }}
+					{{
+						t(
+							'openregister',
+							'New users without specific organisation membership will be automatically added to this organisation',
+						)
+					}}
 				</p>
 			</div>
 			<div class="setting-control">
@@ -26,17 +38,19 @@
 					:loading="loadingOrganisations"
 					:placeholder="t('openregister', 'Select default organisation')"
 					:clearable="false"
-					label-outside
-					input-label="Default Organisation"
-					@input="handleDefaultOrganisationChange">
+					labelOutside
+					:inputLabel="t('openregister', 'Default Organisation')"
+					@update:modelValue="handleDefaultOrganisationChange">
 					<template #option="{ name, users, owner }">
 						<div class="organisation-option">
 							<OfficeBuilding :size="20" />
 							<div class="organisation-info">
 								<span class="organisation-name">{{ name }}</span>
 								<span class="organisation-meta">
-									{{ (users?.length || 0) }} {{ t('openregister', 'members') }} ·
-									{{ t('openregister', 'Owner:') }} {{ owner || 'System' }}
+									{{ users?.length || 0 }}
+									{{ t('openregister', 'members') }} ·
+									{{ t('openregister', 'Owner:') }}
+									{{ owner || 'System' }}
 								</span>
 							</div>
 						</div>
@@ -48,17 +62,24 @@
 		<!-- Auto-create Default Organisation -->
 		<div class="setting-row">
 			<div class="setting-label">
-				<label for="auto-create-default">{{ t('openregister', 'Auto-create Default Organisation') }}</label>
+				<label for="auto-create-default">{{
+					t('openregister', 'Auto-create Default Organisation')
+				}}</label>
 				<p class="setting-description">
-					{{ t('openregister', 'Automatically create a default organisation if none exists when the app is initialized') }}
+					{{
+						t(
+							'openregister',
+							'Automatically create a default organisation if none exists when the app is initialized',
+						)
+					}}
 				</p>
 			</div>
 			<div class="setting-control">
 				<NcCheckboxRadioSwitch
 					id="auto-create-default"
-					:checked="autoCreateDefault"
+					:modelValue="autoCreateDefault"
 					type="switch"
-					@update:checked="handleAutoCreateDefaultChange">
+					@update:modelValue="handleAutoCreateDefaultChange">
 					{{ t('openregister', 'Enable auto-creation') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -106,7 +127,7 @@
 		<!-- Actions -->
 		<div class="actions-section">
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="saving || !hasChanges"
 				@click="saveSettings">
 				<template #icon>
@@ -118,7 +139,7 @@
 
 			<NcButton
 				v-if="hasChanges"
-				type="secondary"
+				variant="secondary"
 				:disabled="saving"
 				@click="resetSettings">
 				<template #icon>
@@ -127,10 +148,7 @@
 				{{ t('openregister', 'Reset Changes') }}
 			</NcButton>
 
-			<NcButton
-				type="secondary"
-				:disabled="saving"
-				@click="refreshData">
+			<NcButton variant="secondary" :disabled="saving" @click="refreshData">
 				<template #icon>
 					<Refresh :size="20" />
 				</template>
@@ -141,6 +159,9 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -149,17 +170,14 @@ import {
 	NcSelect,
 	NcSettingsSection,
 } from '@nextcloud/vue'
-
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
-
-import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
 
 /**
  * OrganisationConfiguration
+ *
  * @module Components
  *
  * Settings section for organisation-related configuration
@@ -182,6 +200,7 @@ export default {
 		Refresh,
 		OfficeBuilding,
 	},
+
 	data() {
 		return {
 			// Current values
@@ -211,14 +230,16 @@ export default {
 			saveSuccessTimeout: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Format organisations for NcSelect
 		 *
+		 * @spec exclude settings-section select-option formatting helper (computed)
 		 * @return {Array} Formatted organisation options
 		 */
 		organisationOptions() {
-			return this.organisations.map(org => ({
+			return this.organisations.map((org) => ({
 				...org,
 				id: org.uuid,
 				label: org.name,
@@ -228,23 +249,31 @@ export default {
 		/**
 		 * Check if there are unsaved changes
 		 *
+		 * @spec exclude settings-section dirty-state detection helper (computed)
 		 * @return {boolean} True if there are changes
 		 */
 		hasChanges() {
-			return this.selectedDefaultOrganisation?.uuid !== this.originalDefaultOrganisation?.uuid
+			return (
+				this.selectedDefaultOrganisation?.uuid
+					!== this.originalDefaultOrganisation?.uuid
 				|| this.autoCreateDefault !== this.originalAutoCreateDefault
+			)
 		},
 	},
+
 	async mounted() {
 		await this.loadData()
 	},
+
 	beforeUnmount() {
 		clearTimeout(this.saveSuccessTimeout)
 	},
+
 	methods: {
 		/**
 		 * Load all data
 		 *
+		 * @spec exclude settings-section aggregate-load plumbing (tenant-lifecycle contract)
 		 * @return {Promise<void>}
 		 */
 		async loadData() {
@@ -258,6 +287,7 @@ export default {
 		/**
 		 * Load organisations list
 		 *
+		 * @spec exclude settings-section API fetch plumbing for organisations
 		 * @return {Promise<void>}
 		 */
 		async loadOrganisations() {
@@ -272,7 +302,10 @@ export default {
 				}
 			} catch (error) {
 				console.error('Error loading organisations:', error)
-				this.saveError = this.t('openregister', 'Failed to load organisations')
+				this.saveError = this.t(
+					'openregister',
+					'Failed to load organisations',
+				)
 			} finally {
 				this.loadingOrganisations = false
 			}
@@ -281,6 +314,7 @@ export default {
 		/**
 		 * Load current settings
 		 *
+		 * @spec exclude settings-section API fetch plumbing for current settings
 		 * @return {Promise<void>}
 		 */
 		async loadSettings() {
@@ -294,21 +328,25 @@ export default {
 				// Load default organisation UUID
 				const defaultOrgUuid = settings.default_organisation
 				if (defaultOrgUuid && this.organisations.length > 0) {
-					const defaultOrg = this.organisations.find(org => org.uuid === defaultOrgUuid)
+					const defaultOrg = this.organisations.find(
+						(org) => org.uuid === defaultOrgUuid,
+					)
 					if (defaultOrg) {
 						this.selectedDefaultOrganisation = {
 							...defaultOrg,
 							id: defaultOrg.uuid,
 							label: defaultOrg.name,
 						}
-						this.originalDefaultOrganisation = { ...this.selectedDefaultOrganisation }
+						this.originalDefaultOrganisation = {
+							...this.selectedDefaultOrganisation,
+						}
 					}
 				}
 
 				// Load auto-create setting
-				this.autoCreateDefault = settings.auto_create_default_organisation !== false
+				this.autoCreateDefault =
+					settings.auto_create_default_organisation !== false
 				this.originalAutoCreateDefault = this.autoCreateDefault
-
 			} catch (error) {
 				console.error('Error loading settings:', error)
 			}
@@ -317,6 +355,7 @@ export default {
 		/**
 		 * Load organisation statistics
 		 *
+		 * @spec exclude settings-section API fetch plumbing for non-critical statistics
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
@@ -342,6 +381,7 @@ export default {
 		/**
 		 * Handle default organisation change
 		 *
+		 * @spec exclude settings-section select-change state plumbing
 		 * @param {object} organisation - Selected organisation
 		 * @return {void}
 		 */
@@ -354,6 +394,7 @@ export default {
 		/**
 		 * Handle auto-create default change
 		 *
+		 * @spec exclude settings-section toggle-change state plumbing
 		 * @param {boolean} value - New value
 		 * @return {void}
 		 */
@@ -366,6 +407,7 @@ export default {
 		/**
 		 * Save settings
 		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
 		 * @return {Promise<void>}
 		 */
 		async saveSettings() {
@@ -377,13 +419,16 @@ export default {
 				await axios.put(
 					generateUrl('/apps/openregister/api/settings/organisation'),
 					{
-						default_organisation: this.selectedDefaultOrganisation?.uuid || null,
+						default_organisation:
+							this.selectedDefaultOrganisation?.uuid || null,
 						auto_create_default_organisation: this.autoCreateDefault,
 					},
 				)
 
 				this.saveSuccess = true
-				this.originalDefaultOrganisation = { ...this.selectedDefaultOrganisation }
+				this.originalDefaultOrganisation = {
+					...this.selectedDefaultOrganisation,
+				}
 				this.originalAutoCreateDefault = this.autoCreateDefault
 
 				// Auto-hide success message after 3 seconds
@@ -391,10 +436,10 @@ export default {
 				this.saveSuccessTimeout = setTimeout(() => {
 					this.saveSuccess = false
 				}, 3000)
-
 			} catch (error) {
 				console.error('Error saving settings:', error)
-				this.saveError = error.response?.data?.message
+				this.saveError =
+					error.response?.data?.message
 					|| this.t('openregister', 'Failed to save settings')
 			} finally {
 				this.saving = false
@@ -404,10 +449,13 @@ export default {
 		/**
 		 * Reset changes to original values
 		 *
+		 * @spec exclude settings-section reset-to-original state plumbing
 		 * @return {void}
 		 */
 		resetSettings() {
-			this.selectedDefaultOrganisation = { ...this.originalDefaultOrganisation }
+			this.selectedDefaultOrganisation = {
+				...this.originalDefaultOrganisation,
+			}
 			this.autoCreateDefault = this.originalAutoCreateDefault
 			this.saveSuccess = false
 			this.saveError = null
@@ -416,6 +464,7 @@ export default {
 		/**
 		 * Refresh all data
 		 *
+		 * @spec exclude settings-section manual refresh plumbing
 		 * @return {Promise<void>}
 		 */
 		async refreshData() {

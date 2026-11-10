@@ -16,170 +16,163 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 /**
  * Test class for NameCacheWarmupJob
  */
-class NameCacheWarmupJobTest extends TestCase
-{
-    private CacheHandler&MockObject $cacheHandler;
-    private LoggerInterface&MockObject $logger;
-    private NameCacheWarmupJob $job;
+class NameCacheWarmupJobTest extends TestCase {
+	use RegistersContainerServices;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	private CacheHandler&MockObject $cacheHandler;
+	private LoggerInterface&MockObject $logger;
+	private NameCacheWarmupJob $job;
 
-        $this->cacheHandler = $this->createMock(CacheHandler::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
+	protected function setUp(): void {
+		parent::setUp();
 
-        // Register mocks into the container so run() can resolve them.
-        \OC::$server->registerService(CacheHandler::class, function () {
-            return $this->cacheHandler;
-        });
-        \OC::$server->registerService(LoggerInterface::class, function () {
-            return $this->logger;
-        });
+		$this->cacheHandler = $this->createMock(CacheHandler::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-        $timeFactory = $this->createMock(ITimeFactory::class);
-        $this->job   = new NameCacheWarmupJob($timeFactory);
-    }
+		// Register mocks into the container so run() can resolve them.
+		$this->registerService(ObjectNameCacheInterface::class, function () {
+			return $this->cacheHandler;
+		});
+		$this->registerService(LoggerInterface::class, function () {
+			return $this->logger;
+		});
 
-    /**
-     * Invoke the protected run() method via reflection.
-     */
-    private function runJob(mixed $argument = []): void
-    {
-        $ref    = new ReflectionClass($this->job);
-        $method = $ref->getMethod('run');
-        $method->setAccessible(true);
-        $method->invoke($this->job, $argument);
-    }
+		$timeFactory = $this->createMock(ITimeFactory::class);
+		$this->job = new NameCacheWarmupJob($timeFactory, $this->containerMock());
+	}
 
-    // -------------------------------------------------------------------------
-    // Constructor
-    // -------------------------------------------------------------------------
+	/**
+	 * Invoke the protected run() method via reflection.
+	 */
+	private function runJob(mixed $argument = []): void {
+		$ref = new ReflectionClass($this->job);
+		$method = $ref->getMethod('run');
+		$method->setAccessible(true);
+		$method->invoke($this->job, $argument);
+	}
 
-    public function testIntervalIsSetToTwentyFourHours(): void
-    {
-        $ref      = new ReflectionClass($this->job);
-        $property = $ref->getProperty('interval');
-        $property->setAccessible(true);
+	// -------------------------------------------------------------------------
+	// Constructor
+	// -------------------------------------------------------------------------
 
-        $this->assertSame(24 * 60 * 60, $property->getValue($this->job));
-    }
+	public function testIntervalIsSetToTwentyFourHours(): void {
+		$ref = new ReflectionClass($this->job);
+		$property = $ref->getProperty('interval');
+		$property->setAccessible(true);
 
-    // -------------------------------------------------------------------------
-    // Happy path
-    // -------------------------------------------------------------------------
+		$this->assertSame(24 * 60 * 60, $property->getValue($this->job));
+	}
 
-    public function testRunCallsWarmupNameCache(): void
-    {
-        $this->cacheHandler
-            ->expects($this->once())
-            ->method('warmupNameCache')
-            ->willReturn(150);
+	// -------------------------------------------------------------------------
+	// Happy path
+	// -------------------------------------------------------------------------
 
-        $this->runJob();
-    }
+	public function testRunCallsWarmupNameCache(): void {
+		$this->cacheHandler
+			->expects($this->once())
+			->method('warmupNameCache')
+			->willReturn(150);
 
-    public function testRunLogsStartAndCompletion(): void
-    {
-        $this->cacheHandler->method('warmupNameCache')->willReturn(10);
+		$this->runJob();
+	}
 
-        $infoCalls = 0;
-        $this->logger
-            ->method('info')
-            ->willReturnCallback(static function () use (&$infoCalls): void {
-                $infoCalls++;
-            });
+	public function testRunLogsStartAndCompletion(): void {
+		$this->cacheHandler->method('warmupNameCache')->willReturn(10);
 
-        $this->runJob();
+		$infoCalls = 0;
+		$this->logger
+			->method('info')
+			->willReturnCallback(static function () use (&$infoCalls): void {
+				$infoCalls++;
+			});
 
-        // At minimum: one start log + one completion log.
-        $this->assertGreaterThanOrEqual(2, $infoCalls);
-    }
+		$this->runJob();
 
-    public function testRunLogsNamesLoadedInCompletionContext(): void
-    {
-        $this->cacheHandler
-            ->method('warmupNameCache')
-            ->willReturn(77);
+		// At minimum: one start log + one completion log.
+		$this->assertGreaterThanOrEqual(2, $infoCalls);
+	}
 
-        $completionContext = null;
-        $this->logger
-            ->method('info')
-            ->willReturnCallback(static function (string $message, array $context = []) use (&$completionContext): void {
-                if (isset($context['names_loaded'])) {
-                    $completionContext = $context;
-                }
-            });
+	public function testRunLogsNamesLoadedInCompletionContext(): void {
+		$this->cacheHandler
+			->method('warmupNameCache')
+			->willReturn(77);
 
-        $this->runJob();
+		$completionContext = null;
+		$this->logger
+			->method('info')
+			->willReturnCallback(static function (string $message, array $context = []) use (&$completionContext): void {
+				if (isset($context['names_loaded'])) {
+					$completionContext = $context;
+				}
+			});
 
-        $this->assertNotNull($completionContext, 'Completion log with names_loaded was not emitted');
-        $this->assertSame(77, $completionContext['names_loaded']);
-    }
+		$this->runJob();
 
-    public function testRunWithZeroNamesLoadedCompletesNormally(): void
-    {
-        $this->cacheHandler->method('warmupNameCache')->willReturn(0);
+		$this->assertNotNull($completionContext, 'Completion log with names_loaded was not emitted');
+		$this->assertSame(77, $completionContext['names_loaded']);
+	}
 
-        // Should not throw.
-        $this->runJob();
-        $this->assertTrue(true);
-    }
+	public function testRunWithZeroNamesLoadedCompletesNormally(): void {
+		$this->cacheHandler->method('warmupNameCache')->willReturn(0);
 
-    // -------------------------------------------------------------------------
-    // Exception handling
-    // -------------------------------------------------------------------------
+		// Should not throw.
+		$this->runJob();
+		$this->assertTrue(true);
+	}
 
-    public function testRunLogsErrorWhenCacheHandlerThrows(): void
-    {
-        $this->cacheHandler
-            ->method('warmupNameCache')
-            ->willThrowException(new \Exception('APCu not available'));
+	// -------------------------------------------------------------------------
+	// Exception handling
+	// -------------------------------------------------------------------------
 
-        $this->logger
-            ->expects($this->atLeastOnce())
-            ->method('error');
+	public function testRunLogsErrorWhenCacheHandlerThrows(): void {
+		$this->cacheHandler
+			->method('warmupNameCache')
+			->willThrowException(new \Exception('APCu not available'));
 
-        $this->runJob();
-    }
+		$this->logger
+			->expects($this->atLeastOnce())
+			->method('error');
 
-    public function testRunDoesNotPropagateException(): void
-    {
-        $this->cacheHandler
-            ->method('warmupNameCache')
-            ->willThrowException(new \RuntimeException('Database offline'));
+		$this->runJob();
+	}
 
-        // PHPUnit will catch any uncaught exception and fail the test.
-        $this->runJob();
-        $this->assertTrue(true);
-    }
+	public function testRunDoesNotPropagateException(): void {
+		$this->cacheHandler
+			->method('warmupNameCache')
+			->willThrowException(new \RuntimeException('Database offline'));
 
-    public function testRunLogsExceptionMessageInErrorContext(): void
-    {
-        $this->cacheHandler
-            ->method('warmupNameCache')
-            ->willThrowException(new \Exception('Cache backend down'));
+		// PHPUnit will catch any uncaught exception and fail the test.
+		$this->runJob();
+		$this->assertTrue(true);
+	}
 
-        $errorContext = null;
-        $this->logger
-            ->method('error')
-            ->willReturnCallback(static function (string $message, array $context = []) use (&$errorContext): void {
-                $errorContext = $context;
-            });
+	public function testRunLogsExceptionMessageInErrorContext(): void {
+		$this->cacheHandler
+			->method('warmupNameCache')
+			->willThrowException(new \Exception('Cache backend down'));
 
-        $this->runJob();
+		$errorContext = null;
+		$this->logger
+			->method('error')
+			->willReturnCallback(static function (string $message, array $context = []) use (&$errorContext): void {
+				$errorContext = $context;
+			});
 
-        $this->assertNotNull($errorContext);
-        $this->assertSame('Cache backend down', $errorContext['error']);
-    }
+		$this->runJob();
+
+		$this->assertNotNull($errorContext);
+		$this->assertSame('Cache backend down', $errorContext['error']);
+	}
 }

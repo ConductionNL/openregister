@@ -7,9 +7,7 @@
 					<h1 class="viewHeaderTitleIndented">
 						{{ t('openregister', 'Webhook Logs') }}
 					</h1>
-					<NcButton
-						type="tertiary"
-						@click="goBack">
+					<NcButton variant="tertiary" @click="goBack">
 						<template #icon>
 							<ArrowLeft :size="20" />
 						</template>
@@ -17,162 +15,142 @@
 					</NcButton>
 				</div>
 				<p>
-					{{ t('openregister', 'View webhook delivery logs and filter by webhook') }}
+					{{
+						t(
+							'openregister',
+							'View webhook delivery logs and filter by webhook',
+						)
+					}}
 				</p>
 			</div>
 
 			<!-- Filters -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} log entries', {
-							showing: logsList.length,
-							total: totalLogs
-						}) }}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcSelect
-						v-model="selectedWebhookId"
-						:options="webhookOptions"
-						:placeholder="t('openregister', 'Filter by webhook')"
-						:clearable="true"
-						:label-outside="true"
-						:input-label="t('openregister', 'Filter by webhook')"
-						@update:value="handleWebhookFilterChange">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
-					<NcButton
-						type="secondary"
-						@click="refreshLogs">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
-				</div>
-			</div>
+			<ListActionsBar
+				:summary="
+					t('openregister', 'Showing {showing} of {total} log entries', {
+						showing: logsList.length,
+						total: totalLogs,
+					})
+				">
+				<NcSelect
+					v-model="selectedWebhookId"
+					:options="webhookOptions"
+					:placeholder="t('openregister', 'Filter by webhook')"
+					:clearable="true"
+					:labelOutside="true"
+					:inputLabel="t('openregister', 'Filter by webhook')"
+					@update:modelValue="handleWebhookFilterChange">
+					<template #option="{ option }">
+						{{ option.label }}
+					</template>
+				</NcSelect>
+				<NcButton variant="secondary" @click="refreshLogs">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					{{ t('openregister', 'Refresh') }}
+				</NcButton>
+			</ListActionsBar>
 
 			<!-- Logs Table -->
-			<div class="tableContainer" :class="{ 'is-loading': loading }">
-				<div v-if="loading" class="loadingWrapper">
-					<NcLoadingIcon :size="64" />
-				</div>
+			<ListTableStates
+				:loading="loading"
+				:empty="!logsList.length"
+				:emptyName="t('openregister', 'No log entries found')"
+				:emptyDescription="
+					t(
+						'openregister',
+						'There are no webhook log entries matching your filters.',
+					)
+				">
+				<template #emptyIcon>
+					<FileDocumentOutline :size="64" />
+				</template>
 
-				<NcEmptyContent
-					v-else-if="!logsList.length"
-					:name="t('openregister', 'No log entries found')"
-					:description="t('openregister', 'There are no webhook log entries matching your filters.')">
-					<template #icon>
-						<FileDocumentOutline :size="64" />
+				<CnDataTable :columns="logColumns" :rows="logsList">
+					<template #column-webhookId="{ row }">
+						{{ getWebhookName(row.webhookId) }}
 					</template>
-				</NcEmptyContent>
+					<template #column-eventClass="{ row }">
+						<span class="event-class">{{ truncateEventClass(row.eventClass) }}</span>
+					</template>
+					<template #column-success="{ row }">
+						<span :class="row.success ? 'status-success' : 'status-failed'">
+							{{
+								row.success
+									? t('openregister', 'Success')
+									: t('openregister', 'Failed')
+							}}
+						</span>
+					</template>
+					<template #column-statusCode="{ row }">
+						{{ row.statusCode || '-' }}
+					</template>
+					<template #column-attempt="{ row }">
+						{{ row.attempt }}
+					</template>
+					<template #column-created="{ row }">
+						{{ formatDate(row.created) }}
+					</template>
+					<template #column-errorMessage="{ row }">
+						<span
+							v-if="row.errorMessage"
+							class="error-message"
+							:title="row.errorMessage">
+							{{ truncateText(row.errorMessage, 50) }}
+						</span>
+						<span v-else>-</span>
+					</template>
+					<template #actions-header>
+						{{ t('openregister', 'Actions') }}
+					</template>
+					<template #row-actions="{ row }">
+						<NcActions>
+							<NcActionButton closeAfterClick @click="viewLogDetails(row)">
+								<template #icon>
+									<Eye :size="20" />
+								</template>
+								{{ t('openregister', 'View Details') }}
+							</NcActionButton>
+						</NcActions>
+					</template>
+				</CnDataTable>
 
-				<table v-else class="webhooksTable">
-					<thead>
-						<tr>
-							<th>{{ t('openregister', 'Webhook') }}</th>
-							<th>{{ t('openregister', 'Event') }}</th>
-							<th>{{ t('openregister', 'Status') }}</th>
-							<th>{{ t('openregister', 'Status Code') }}</th>
-							<th>{{ t('openregister', 'Attempt') }}</th>
-							<th>{{ t('openregister', 'Created') }}</th>
-							<th>{{ t('openregister', 'Error') }}</th>
-							<th class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="log in logsList" :key="log.id">
-							<td>
-								{{ getWebhookName(log.webhookId) }}
-							</td>
-							<td>
-								<span class="event-class">{{ truncateEventClass(log.eventClass) }}</span>
-							</td>
-							<td>
-								<span :class="log.success ? 'status-success' : 'status-failed'">
-									{{ log.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
-								</span>
-							</td>
-							<td>
-								{{ log.statusCode || '-' }}
-							</td>
-							<td>
-								{{ log.attempt }}
-							</td>
-							<td>
-								{{ formatDate(log.created) }}
-							</td>
-							<td>
-								<span v-if="log.errorMessage" class="error-message" :title="log.errorMessage">
-									{{ truncateText(log.errorMessage, 50) }}
-								</span>
-								<span v-else>-</span>
-							</td>
-							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										close-after-click
-										@click="viewLogDetails(log)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<!-- Pagination -->
-				<div v-if="totalLogs > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalLogs"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
-			</div>
+				<template #footer>
+					<!-- Pagination -->
+					<OffsetPager
+						:offset="offset"
+						:limit="limit"
+						:total="totalLogs"
+						@previous="previousPage"
+						@next="nextPage" />
+				</template>
+			</ListTableStates>
 		</div>
 	</NcAppContent>
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
-
 import {
-	NcAppContent,
-	NcActions,
 	NcActionButton,
+	NcActions,
+	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
-	NcEmptyContent,
 	NcSelect,
 } from '@nextcloud/vue'
-
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
+import ListTableStates from '../ListTableStates.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { navigationStore } from '../../store/store.js'
 
 /**
  * Webhook Logs Index View
@@ -180,18 +158,21 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 export default {
 	name: 'WebhookLogsIndex',
 	components: {
+		CnDataTable,
+		ListActionsBar,
+		OffsetPager,
 		NcAppContent,
 		NcActions,
 		NcActionButton,
 		NcButton,
-		NcLoadingIcon,
-		NcEmptyContent,
+		ListTableStates,
 		NcSelect,
 		ArrowLeft,
 		Refresh,
 		FileDocumentOutline,
 		Eye,
 	},
+
 	data() {
 		return {
 			logsList: [],
@@ -203,28 +184,28 @@ export default {
 			selectedWebhookId: null,
 		}
 	},
+
 	computed: {
 		/**
-		 * Get current page number
-		 *
-		 * @return {number} Current page
+		 * @spec exclude UI plumbing — static column definitions for the logs table
+		 * @return {Array<object>}
 		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
-		/**
-		 * Get total number of pages
-		 *
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalLogs / this.limit)
+		logColumns() {
+			return [
+				{ key: 'webhookId', label: t('openregister', 'Webhook'), cellClass: 'cn-cell--wrap' },
+				{ key: 'eventClass', label: t('openregister', 'Event') },
+				{ key: 'success', label: t('openregister', 'Status') },
+				{ key: 'statusCode', label: t('openregister', 'Status Code') },
+				{ key: 'attempt', label: t('openregister', 'Attempt') },
+				{ key: 'created', label: t('openregister', 'Created') },
+				{ key: 'errorMessage', label: t('openregister', 'Error'), cellClass: 'cn-cell--wrap' },
+			]
 		},
 
 		/**
 		 * Webhook options for filter dropdown
 		 *
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {Array} Webhook options
 		 */
 		webhookOptions() {
@@ -232,13 +213,20 @@ export default {
 				{ value: null, label: t('openregister', 'All Webhooks') },
 			]
 			return options.concat(
-				this.webhooksList.map(webhook => ({
+				this.webhooksList.map((webhook) => ({
 					value: webhook.id,
 					label: webhook.name || webhook.url,
 				})),
 			)
 		},
 	},
+
+	/**
+	 * Lifecycle hook: load webhooks and logs and subscribe to retry events.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch and event wiring
+	 * @return {void}
+	 */
 	mounted() {
 		// Get webhook ID from transfer data if available.
 		const transferData = navigationStore.getTransferData()
@@ -251,14 +239,23 @@ export default {
 		// Listen for retry events to refresh logs.
 		window.addEventListener('webhook-log-retried', this.loadLogs)
 	},
-	beforeDestroy() {
+
+	/**
+	 * Lifecycle hook: remove the retry event listener before teardown.
+	 *
+	 * @spec exclude UI plumbing — event-listener teardown
+	 * @return {void}
+	 */
+	beforeUnmount() {
 		// Clean up event listener.
 		window.removeEventListener('webhook-log-retried', this.loadLogs)
 	},
+
 	methods: {
 		/**
 		 * Load webhooks list
 		 *
+		 * @spec exclude UI plumbing — fetches the webhook list for display
 		 * @return {Promise<void>}
 		 */
 		async loadWebhooks() {
@@ -275,6 +272,7 @@ export default {
 		/**
 		 * Load logs list
 		 *
+		 * @spec exclude UI plumbing — fetches webhook logs for display
 		 * @return {Promise<void>}
 		 */
 		async loadLogs() {
@@ -305,6 +303,7 @@ export default {
 		 * Handle webhook filter change
 		 *
 		 * @param {number|null} webhookId - Selected webhook ID
+		 * @spec exclude UI plumbing — filter handler reloads logs
 		 * @return {void}
 		 */
 		handleWebhookFilterChange(webhookId) {
@@ -316,6 +315,7 @@ export default {
 		/**
 		 * Refresh logs
 		 *
+		 * @spec exclude UI plumbing — refresh button reloads logs
 		 * @return {void}
 		 */
 		refreshLogs() {
@@ -325,6 +325,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude UI plumbing — pagination handler reloads logs
 		 * @return {void}
 		 */
 		previousPage() {
@@ -337,6 +338,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude UI plumbing — pagination handler reloads logs
 		 * @return {void}
 		 */
 		nextPage() {
@@ -350,17 +352,19 @@ export default {
 		 * Get webhook name by ID
 		 *
 		 * @param {number} webhookId - Webhook ID
+		 * @spec exclude UI plumbing — display lookup helper
 		 * @return {string} Webhook name
 		 */
 		getWebhookName(webhookId) {
-			const webhook = this.webhooksList.find(w => w.id === webhookId)
-			return webhook ? (webhook.name || webhook.url) : `#${webhookId}`
+			const webhook = this.webhooksList.find((w) => w.id === webhookId)
+			return webhook ? webhook.name || webhook.url : `#${webhookId}`
 		},
 
 		/**
 		 * Truncate event class name
 		 *
 		 * @param {string} eventClass - Event class name
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Truncated event class
 		 */
 		truncateEventClass(eventClass) {
@@ -374,6 +378,7 @@ export default {
 		 *
 		 * @param {string} text - Text to truncate
 		 * @param {number} maxLength - Maximum length
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Truncated text
 		 */
 		truncateText(text, maxLength) {
@@ -382,21 +387,13 @@ export default {
 			return text.substring(0, maxLength) + '...'
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 
 		/**
 		 * View log details
 		 *
 		 * @param {object} log - Log entry
+		 * @spec exclude UI plumbing — opens the log-details modal
 		 * @return {void}
 		 */
 		viewLogDetails(log) {
@@ -408,6 +405,7 @@ export default {
 		/**
 		 * Go back to webhooks list
 		 *
+		 * @spec exclude UI plumbing — router navigation
 		 * @return {void}
 		 */
 		goBack() {
@@ -417,151 +415,21 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+@use '../../styles/views.scss' as *;
+
+@include view-container-2;
 
 .viewHeader {
 	margin-bottom: 20px;
 }
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
+@include view-header-title-rules;
 
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
+@include table-container-2-rules;
 
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-	align-items: center;
-}
-
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow-x: auto;
-	overflow-y: visible;
-	min-height: 200px;
-}
-
-.tableContainer.is-loading {
-	overflow: hidden;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.loadingWrapper {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	padding: 40px;
-}
-
-.webhooksTable {
-	width: 100%;
-	border-collapse: collapse;
-	min-width: 100%;
-}
-
-.webhooksTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
-
-.webhooksTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.webhooksTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.webhooksTable tbody tr:hover {
-	background: var(--color-background-hover);
-}
-
-.column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-main-background);
-	z-index: 5;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable thead .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-background-hover);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
-
-.webhooksTable thead .column-actions {
-	z-index: 10;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
-
-.status-success {
-	color: var(--color-success);
-	font-weight: 600;
-}
-
-.status-failed {
-	color: var(--color-error);
-	font-weight: 600;
-}
+@include status-success-rules;
 
 .event-class {
 	font-family: monospace;
@@ -571,17 +439,5 @@ export default {
 .error-message {
 	color: var(--color-error);
 	font-size: 0.9em;
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-}
-
-.pagination-info {
-	font-weight: 600;
 }
 </style>

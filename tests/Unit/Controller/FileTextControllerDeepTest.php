@@ -4,194 +4,138 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Http;
-use OCP\IAppConfig;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-class FileTextControllerDeepTest extends TestCase
-{
-    private FileTextController $controller;
-    private IRequest|MockObject $request;
-    private TextExtractionService|MockObject $textExtractor;
-    private IndexService|MockObject $indexService;
-    private FileService|MockObject $fileService;
-    private EntityRelationMapper|MockObject $entityRelationMapper;
-    private LoggerInterface|MockObject $logger;
-    private IAppConfig|MockObject $config;
+class FileTextControllerDeepTest extends TestCase {
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+	private FileTextController $controller;
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->textExtractor = $this->createMock(TextExtractionService::class);
-        $this->indexService = $this->createMock(IndexService::class);
-        $this->fileService = $this->createMock(FileService::class);
-        $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->config = $this->createMock(IAppConfig::class);
+	private IRequest|MockObject $request;
 
-        $this->controller = new FileTextController(
-            'openregister',
-            $this->request,
-            $this->textExtractor,
-            $this->indexService,
-            $this->fileService,
-            $this->entityRelationMapper,
-            $this->logger,
-            $this->config
-        );
-    }
+	private TextExtractionService|MockObject $textExtractor;
 
-    public function testExtractFileTextWhenDisabled(): void
-    {
-        $this->config->method('hasKey')->willReturn(false);
-        $this->config->method('getValueString')->willReturn('{}');
+	private FileService|MockObject $fileService;
 
-        $response = $this->controller->extractFileText(42);
+	private EntityRelationMapper|MockObject $entityRelationMapper;
 
-        $this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-    }
+	private LoggerInterface|MockObject $logger;
 
-    public function testExtractFileTextWhenScopeNone(): void
-    {
-        $this->config->method('hasKey')->willReturn(true);
-        $this->config->method('getValueString')->willReturn('{"extractionScope":"none"}');
+	private ManualEntityService|MockObject $manualEntityService;
 
-        $response = $this->controller->extractFileText(42);
+	private IUserSession|MockObject $userSession;
 
-        $this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $response->getStatus());
-    }
+	private IRootFolder|MockObject $rootFolder;
 
-    public function testExtractFileTextSuccess(): void
-    {
-        $this->config->method('hasKey')->willReturn(true);
-        $this->config->method('getValueString')->willReturn('{"extractionScope":"all"}');
-        $this->textExtractor->expects($this->once())
-            ->method('extractFile')
-            ->with(42, true);
+	private IGroupManager|MockObject $groupManager;
 
-        $response = $this->controller->extractFileText(42);
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->assertEquals(200, $response->getStatus());
-        $this->assertTrue($response->getData()['success']);
-    }
+		$this->request = $this->createMock(IRequest::class);
+		$this->textExtractor = $this->createMock(TextExtractionService::class);
+		$this->fileService = $this->createMock(FileService::class);
+		$this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->manualEntityService = $this->createMock(ManualEntityService::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->rootFolder = $this->createMock(IRootFolder::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 
-    public function testExtractFileTextException(): void
-    {
-        $this->config->method('hasKey')->willReturn(true);
-        $this->config->method('getValueString')->willReturn('{"extractionScope":"all"}');
-        $this->textExtractor->method('extractFile')
-            ->willThrowException(new \Exception('extract error'));
+		$admin = $this->createMock(IUser::class);
+		$admin->method('getUID')->willReturn('admin');
+		$this->userSession->method('getUser')->willReturn($admin);
 
-        $response = $this->controller->extractFileText(42);
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+		$this->groupManager->method('isAdmin')->willReturn(true);
 
-        $this->assertEquals(500, $response->getStatus());
-        $this->assertStringContainsString('extract error', $response->getData()['message']);
-    }
+		$this->controller = FileTextControllerFactory::create(
+			'openregister',
+			$this->request,
+			$this->textExtractor,
+			$this->fileService,
+			$this->entityRelationMapper,
+			$this->logger,
+			$this->manualEntityService,
+			$this->userSession,
+			$this->rootFolder,
+			$this->groupManager
+		);
+	}//end setUp()
 
-    public function testBulkExtractException(): void
-    {
-        $this->request->method('getParam')->willReturn(100);
-        $this->textExtractor->method('extractPendingFiles')
-            ->willThrowException(new \Exception('bulk fail'));
+	public function testBulkExtractException(): void {
+		$this->request->method('getParam')->willReturn(100);
+		$this->textExtractor->method('extractPendingFiles')
+			->willThrowException(new \Exception('bulk fail'));
 
-        $response = $this->controller->bulkExtract();
+		$response = $this->controller->bulkExtract();
 
-        $this->assertEquals(500, $response->getStatus());
-        $this->assertStringContainsString('bulk fail', $response->getData()['message']);
-    }
+		$this->assertEquals(500, $response->getStatus());
+		$this->assertStringContainsString('bulk fail', $response->getData()['message']);
+	}//end testBulkExtractException()
 
-    public function testGetStatsException(): void
-    {
-        $this->textExtractor->method('getStats')
-            ->willThrowException(new \Exception('stats error'));
+	public function testGetStatsException(): void {
+		$this->textExtractor->method('getStats')
+			->willThrowException(new \Exception('stats error'));
 
-        $response = $this->controller->getStats();
+		$response = $this->controller->getStats();
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$this->assertEquals(500, $response->getStatus());
+	}//end testGetStatsException()
 
-    public function testProcessAndIndexExtractedException(): void
-    {
-        $this->indexService->method('processUnindexedChunks')
-            ->willThrowException(new \Exception('index error'));
+	public function testAnonymizeFileNotFound(): void {
+		$this->fileService->method('getFileById')->willReturn(null);
 
-        $response = $this->controller->processAndIndexExtracted();
+		$response = $this->controller->anonymizeFile(999);
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$this->assertEquals(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testAnonymizeFileNotFound()
 
-    public function testProcessAndIndexFileException(): void
-    {
-        $this->indexService->method('processUnindexedChunks')
-            ->willThrowException(new \Exception('file error'));
+	public function testAnonymizeFileAlreadyAnonymized(): void {
+		$fileNode = $this->createMock(\OCP\Files\File::class);
+		$fileNode->method('getName')->willReturn('document_anonymized.pdf');
+		$this->fileService->method('getFileById')->willReturn($fileNode);
 
-        $response = $this->controller->processAndIndexFile(1);
+		$response = $this->controller->anonymizeFile(1);
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertEquals('File is already anonymized', $response->getData()['message']);
+	}//end testAnonymizeFileAlreadyAnonymized()
 
-    public function testGetChunkingStatsException(): void
-    {
-        $this->indexService->method('getChunkingStats')
-            ->willThrowException(new \Exception('chunk stats error'));
+	public function testAnonymizeFileNoEntities(): void {
+		$fileNode = $this->createMock(\OCP\Files\File::class);
+		$fileNode->method('getName')->willReturn('document.pdf');
+		$this->fileService->method('getFileById')->willReturn($fileNode);
+		$this->entityRelationMapper->method('findEntitiesForAnonymization')->willReturn([]);
 
-        $response = $this->controller->getChunkingStats();
+		$response = $this->controller->anonymizeFile(1);
 
-        $this->assertEquals(500, $response->getStatus());
-    }
+		$this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testAnonymizeFileNoEntities()
 
-    public function testAnonymizeFileNotFound(): void
-    {
-        $this->fileService->method('getFileById')->willReturn(null);
+	public function testAnonymizeFileException(): void {
+		$this->fileService->method('getFileById')
+			->willThrowException(new \Exception('anon error'));
 
-        $response = $this->controller->anonymizeFile(999);
+		$response = $this->controller->anonymizeFile(1);
 
-        $this->assertEquals(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }
-
-    public function testAnonymizeFileAlreadyAnonymized(): void
-    {
-        $fileNode = $this->createMock(\OCP\Files\File::class);
-        $fileNode->method('getName')->willReturn('document_anonymized.pdf');
-        $this->fileService->method('getFileById')->willReturn($fileNode);
-
-        $response = $this->controller->anonymizeFile(1);
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertEquals('File is already anonymized', $response->getData()['message']);
-    }
-
-    public function testAnonymizeFileNoEntities(): void
-    {
-        $fileNode = $this->createMock(\OCP\Files\File::class);
-        $fileNode->method('getName')->willReturn('document.pdf');
-        $this->fileService->method('getFileById')->willReturn($fileNode);
-        $this->entityRelationMapper->method('findEntitiesForFile')->willReturn([]);
-
-        $response = $this->controller->anonymizeFile(1);
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $response->getStatus());
-    }
-
-    public function testAnonymizeFileException(): void
-    {
-        $this->fileService->method('getFileById')
-            ->willThrowException(new \Exception('anon error'));
-
-        $response = $this->controller->anonymizeFile(1);
-
-        $this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
-    }
-}
+		$this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+	}//end testAnonymizeFileException()
+}//end class

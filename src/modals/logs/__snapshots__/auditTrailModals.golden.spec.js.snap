@@ -1,0 +1,219 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`audit trail changes modal golden copies the changes, and reports a failure 1`] = `
+{
+  "logged": [
+    [
+      "success",
+      "t:Changes copied to clipboard",
+    ],
+    [
+      "error",
+      "t:Failed to copy changes",
+    ],
+  ],
+  "written": [
+    "{
+  "a": 1
+}",
+  ],
+}
+`;
+
+exports[`audit trail changes modal golden formats dates and changes 1`] = `
+[
+  "-",
+  "-",
+  "Invalid Date",
+]
+`;
+
+exports[`audit trail changes modal golden formats dates and changes 2`] = `
+[
+  "",
+  "",
+  "plain",
+  "{
+  "a": 1
+}",
+  "[
+  1,
+  2
+]",
+  "{
+  "a": {
+    "b": 2
+  }
+}",
+  "[
+  1
+]",
+  "[object Object]",
+  "12",
+]
+`;
+
+exports[`audit trail changes modal golden reads the changed data 1`] = `
+[
+  [
+    null,
+    false,
+  ],
+  [
+    undefined,
+    false,
+  ],
+  [
+    "",
+    false,
+  ],
+  [
+    "text",
+    true,
+  ],
+  [
+    0,
+    false,
+  ],
+  [
+    7,
+    true,
+  ],
+  [
+    [],
+    false,
+  ],
+  [
+    [
+      "a",
+    ],
+    true,
+  ],
+  [
+    {},
+    false,
+  ],
+  [
+    {
+      "title": {
+        "new": "b",
+        "old": "a",
+      },
+    },
+    true,
+  ],
+  [
+    "no item",
+    false,
+  ],
+]
+`;
+
+exports[`audit trail details modal golden copies the changes, and reports a failure 1`] = `
+{
+  "logged": [
+    [
+      "success",
+      "t:Changes copied to clipboard",
+    ],
+    [
+      "error",
+      "t:Failed to copy changes",
+    ],
+  ],
+  "written": [
+    "{
+  "a": 1
+}",
+  ],
+}
+`;
+
+exports[`audit trail details modal golden formats dates and changes 1`] = `
+[
+  "-",
+  "-",
+  "Invalid Date",
+]
+`;
+
+exports[`audit trail details modal golden formats dates and changes 2`] = `
+[
+  "",
+  "",
+  "plain",
+  "{
+  "a": 1
+}",
+  "[
+  1,
+  2
+]",
+  "{
+  "a": {
+    "b": 2
+  }
+}",
+  "[
+  1
+]",
+  "[object Object]",
+  "12",
+]
+`;
+
+exports[`audit trail details modal golden reads the changed data 1`] = `
+[
+  [
+    null,
+    false,
+  ],
+  [
+    undefined,
+    false,
+  ],
+  [
+    "",
+    false,
+  ],
+  [
+    "text",
+    true,
+  ],
+  [
+    0,
+    false,
+  ],
+  [
+    7,
+    true,
+  ],
+  [
+    [],
+    false,
+  ],
+  [
+    [
+      "a",
+    ],
+    true,
+  ],
+  [
+    {},
+    false,
+  ],
+  [
+    {
+      "title": {
+        "new": "b",
+        "old": "a",
+      },
+    },
+    true,
+  ],
+  [
+    "no item",
+    false,
+  ],
+]
+`;

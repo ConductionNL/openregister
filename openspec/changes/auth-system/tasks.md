@@ -1,5 +1,21 @@
 # Tasks: Authentication and Authorization System
 
+> 🔑 **Archive blocker, measured 2026-09-18, and not fixed here.**
+>
+> The structural defect in `specs/auth-system/spec.md` — a requirement header
+> outside the `## Requirements` section — is fixed (#3918), so that is no longer
+> what refuses this delta. One blocker remains, and the archive names it:
+>
+> `auth-system ADDED failed for header "### Requirement: Input sanitization
+> MUST prevent XSS and injection attacks" - already exists`
+>
+> The delta ADDS a requirement the main spec already carries. An ADDED block
+> whose header exists is either a MODIFIED that was spelled as an ADDED, or a
+> requirement that has since landed in the spec by another route and can be
+> dropped from the delta. Which of the two it is depends on whether the two
+> texts still say the same thing, and that is this change's author's call, not
+> a neighbouring lane's.
+
 - [ ] Implement: The system MUST support multiple authentication methods with unified identity resolution
 - [ ] Implement: API consumers MUST be configurable entities that bridge external systems to Nextcloud identities
 - [ ] Implement: The RBAC model MUST enforce schema-level, property-level, and row-level access control using Nextcloud groups

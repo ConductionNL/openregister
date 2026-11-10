@@ -5,14 +5,14 @@
  * OpenRegister objects in the Nextcloud Smart Picker / vue-richtext.
  *
  * @category Reference
- * @package  OCA.OpenRegister.Reference
+ * @package
  * @license  EUPL-1.2
  */
 
-// eslint-disable-next-line import/no-unresolved
 import { registerWidget } from '@nextcloud/vue-richtext'
 
 registerWidget('openregister-object', async () => {
-	const { default: ObjectReferenceWidget } = await import('./ObjectReferenceWidget.vue')
+	const { default: ObjectReferenceWidget } =
+		await import('./ObjectReferenceWidget.vue')
 	return ObjectReferenceWidget
 })

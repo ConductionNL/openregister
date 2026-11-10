@@ -154,11 +154,13 @@ Both paths now include metadata hydration using temporary ObjectEntity instances
 
 ### Published Date Handling
 
-When `publish=1` is set during import:
+> **DEPRECATED / REMOVED (2026-06-15).** Object-level publish metadata was removed as a breaking change by the `deprecate-published-metadata` OpenSpec change: the `published`/`depublished` columns were dropped by migration `Version1Date20260313130000`, `ImportService::addPublishedDateToObjects()` was removed, and passing `$publish=true` to import now only logs a deprecation warning (locked by `tests/Unit/Service/ImportServicePublishDeprecationTest.php`). Publication/anonymous visibility is now governed by **RBAC** (a public-group read scope with a date-window match such as `publicatiedatum <= $now`), owned by the downstream consuming apps — not by import-time object metadata. The historical behaviour below no longer applies.
 
-1. **ImportService** adds published date to all objects in `@self.published`
-2. **SaveObjects** preserves published dates during processing
-3. **Database** stores published dates in the `published` column
+The legacy behaviour, when `publish=1` was set during import (now a no-op + deprecation warning):
+
+1. **ImportService** added a published date to all objects in `@self.published`
+2. **SaveObjects** preserved published dates during processing
+3. **Database** stored published dates in the `published` column
 
 ## Performance Characteristics
 

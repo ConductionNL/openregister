@@ -1,10 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # Mock Registers
 
 ## Purpose
+
+@e2e exclude seed-data/configuration backend — covered by PHPUnit
 
 Provide self-contained mock registers for the five Dutch base registries -- BRP (persons), KVK (businesses), BAG (addresses/buildings), DSO (environmental permits), and ORI (council information) -- so that Procest, Pipelinq, and other consuming apps can develop and demonstrate integrations without external API credentials, government certificates, or network access. Each register ships as a `*_register.json` file in `lib/Settings/` following the OpenAPI 3.0.0 + `x-openregister` extension pattern, with seed data in the `components.objects[]` array using the `@self` envelope format, imported via the `ConfigurationService -> ImportHandler` pipeline.
 
@@ -189,9 +191,9 @@ Each mock register MUST be delivered as a `*_register.json` file in `lib/Setting
 
 ### Requirement: Idempotent Import via ConfigurationService Pipeline
 
-> **Status: deferred** — No MockRegisterService or mock seed JSON files found in codebase as of 2026-04-30 coverage scan. ConfigurationService import pipeline exists but mock-specific idempotent seeding is not implemented.
+Mock register import MUST be idempotent.
 
-Mock register import MUST be idempotent. The ImportHandler MUST skip creation of registers, schemas, and objects that already exist (matched by slug) when `force` is `false`. Re-importing the same file MUST NOT create duplicate records. A `force: true` flag MUST allow re-importing to update existing records. The ObjectService `searchObjects` method SHALL be used with `_rbac: false` and `_multitenancy: false` to find existing objects regardless of organisation context, preventing duplicates across tenants.
+> **Status: deferred** — No MockRegisterService or mock seed JSON files found in codebase as of 2026-04-30 coverage scan. ConfigurationService import pipeline exists but mock-specific idempotent seeding is not implemented. The ImportHandler MUST skip creation of registers, schemas, and objects that already exist (matched by slug) when `force` is `false`. Re-importing the same file MUST NOT create duplicate records. A `force: true` flag MUST allow re-importing to update existing records. The ObjectService `searchObjects` method SHALL be used with `_rbac: false` and `_multitenancy: false` to find existing objects regardless of organisation context, preventing duplicates across tenants.
 
 #### Scenario: First-time import creates all records
 - **GIVEN** no BRP register exists in the system

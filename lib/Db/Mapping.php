@@ -7,6 +7,9 @@
  * in the OpenRegister application. Mappings define how to transform data between
  * different formats using Twig templating.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -25,6 +28,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Mapping\MappingFieldTypes;
+use OCA\OpenRegister\Db\Mapping\MappingSlug;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -71,317 +76,201 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress UnusedClass
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
- *
- * @SuppressWarnings(PHPMD.StaticAccess)         Transliterator::create is the correct pattern for ICU transliteration
- * @SuppressWarnings(PHPMD.ErrorControlOperator) @ suppression needed for Transliterator which may not be available
  */
-class Mapping extends Entity implements JsonSerializable
-{
+class Mapping extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateBySettersTrait;
 
-    /**
-     * Unique identifier for the mapping.
-     *
-     * @var string|null Unique identifier for the mapping
-     */
-    protected ?string $uuid = null;
+	/**
+	 * The serialised fields, in API order.
+	 *
+	 * @var string[]
+	 */
+	private const JSON_ORDER = [
+		'id', 'uuid', 'name', 'description', 'version', 'reference', 'mapping', 'unset',
+		'cast', 'passThrough', 'configurations', 'slug', 'organisation', 'created', 'updated',
+	];
 
-    /**
-     * External reference for the mapping.
-     *
-     * @var string|null External reference
-     */
-    protected ?string $reference = null;
+	/**
+	 * Unique identifier for the mapping.
+	 *
+	 * @var string|null Unique identifier for the mapping
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Version of the mapping.
-     *
-     * @var string|null The version of the mapping (format: X.Y.Z)
-     */
-    protected ?string $version = '0.0.0';
+	/**
+	 * External reference for the mapping.
+	 *
+	 * @var string|null External reference
+	 */
+	protected ?string $reference = null;
 
-    /**
-     * Name of the mapping.
-     *
-     * @var string|null The name of the mapping
-     */
-    protected ?string $name = null;
+	/**
+	 * Version of the mapping.
+	 *
+	 * @var string|null The version of the mapping (format: X.Y.Z)
+	 */
+	protected ?string $version = '0.0.0';
 
-    /**
-     * Description of the mapping.
-     *
-     * @var string|null The description of the mapping
-     */
-    protected ?string $description = null;
+	/**
+	 * Name of the mapping.
+	 *
+	 * @var string|null The name of the mapping
+	 */
+	protected ?string $name = null;
 
-    /**
-     * The core mapping configuration.
-     * Defines how to transform data using Twig templating.
-     *
-     * @var array|null The mapping configuration
-     */
-    protected ?array $mapping = [];
+	/**
+	 * Description of the mapping.
+	 *
+	 * @var string|null The description of the mapping
+	 */
+	protected ?string $description = null;
 
-    /**
-     * Array of keys to remove from output.
-     *
-     * @var array|null Array of keys to unset
-     */
-    protected ?array $unset = [];
+	/**
+	 * The core mapping configuration.
+	 * Defines how to transform data using Twig templating.
+	 *
+	 * @var array|null The mapping configuration
+	 */
+	protected ?array $mapping = [];
 
-    /**
-     * Type casting rules for specific fields.
-     *
-     * @var array|null Array of cast rules
-     */
-    protected ?array $cast = [];
+	/**
+	 * Array of keys to remove from output.
+	 *
+	 * @var array|null Array of keys to unset
+	 */
+	protected ?array $unset = [];
 
-    /**
-     * Whether to include input data not explicitly mapped.
-     *
-     * @var boolean|null Pass through flag
-     */
-    protected ?bool $passThrough = null;
+	/**
+	 * Type casting rules for specific fields.
+	 *
+	 * @var array|null Array of cast rules
+	 */
+	protected ?array $cast = [];
 
-    /**
-     * Array of configuration IDs that this mapping belongs to.
-     *
-     * @var array|null Array of configuration IDs
-     */
-    protected ?array $configurations = [];
+	/**
+	 * Whether to include input data not explicitly mapped.
+	 *
+	 * @var boolean|null Pass through flag
+	 */
+	protected ?bool $passThrough = null;
 
-    /**
-     * URL-friendly identifier for the mapping.
-     *
-     * @var string|null URL-friendly slug for the mapping
-     */
-    protected ?string $slug = null;
+	/**
+	 * Array of configuration IDs that this mapping belongs to.
+	 *
+	 * @var array|null Array of configuration IDs
+	 */
+	protected ?array $configurations = [];
 
-    /**
-     * Organisation associated with the mapping.
-     *
-     * @var string|null Organisation associated with the mapping
-     */
-    protected ?string $organisation = null;
+	/**
+	 * URL-friendly identifier for the mapping.
+	 *
+	 * @var string|null URL-friendly slug for the mapping
+	 */
+	protected ?string $slug = null;
 
-    /**
-     * Creation timestamp.
-     *
-     * @var DateTime|null Creation timestamp
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Organisation associated with the mapping.
+	 *
+	 * @var string|null Organisation associated with the mapping
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Last update timestamp.
-     *
-     * @var DateTime|null Last update timestamp
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Creation timestamp.
+	 *
+	 * @var DateTime|null Creation timestamp
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Initialize the entity and define field types
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'reference', type: 'string');
-        $this->addType(fieldName: 'version', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'description', type: 'string');
-        $this->addType(fieldName: 'mapping', type: 'json');
-        $this->addType(fieldName: 'unset', type: 'json');
-        $this->addType(fieldName: 'cast', type: 'json');
-        $this->addType(fieldName: 'passThrough', type: 'boolean');
-        $this->addType(fieldName: 'configurations', type: 'json');
-        $this->addType(fieldName: 'slug', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Last update timestamp.
+	 *
+	 * @var DateTime|null Last update timestamp
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Get the mapping configuration
-     *
-     * @return array The mapping configuration or empty array if null
-     */
-    public function getMapping(): array
-    {
-        return $this->mapping ?? [];
-    }//end getMapping()
+	/**
+	 * Initialize the entity and define field types
+	 */
+	public function __construct() {
+		foreach (MappingFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
+	}//end __construct()
 
-    /**
-     * Get the unset configuration
-     *
-     * @return array The unset configuration or empty array if null
-     */
-    public function getUnset(): array
-    {
-        return $this->unset ?? [];
-    }//end getUnset()
+	/**
+	 * Get the mapping configuration
+	 *
+	 * @return array The mapping configuration or empty array if null
+	 */
+	public function getMapping(): array {
+		return $this->mapping ?? [];
+	}//end getMapping()
 
-    /**
-     * Get the cast configuration
-     *
-     * @return array The cast configuration or empty array if null
-     */
-    public function getCast(): array
-    {
-        return $this->cast ?? [];
-    }//end getCast()
+	/**
+	 * Get the unset configuration
+	 *
+	 * @return array The unset configuration or empty array if null
+	 */
+	public function getUnset(): array {
+		return $this->unset ?? [];
+	}//end getUnset()
 
-    /**
-     * Get the configurations array
-     *
-     * @return array The configurations or empty array if null
-     */
-    public function getConfigurations(): array
-    {
-        return $this->configurations ?? [];
-    }//end getConfigurations()
+	/**
+	 * Get the cast configuration
+	 *
+	 * @return array The cast configuration or empty array if null
+	 */
+	public function getCast(): array {
+		return $this->cast ?? [];
+	}//end getCast()
 
-    /**
-     * Get array of field names that are JSON type
-     *
-     * @return string[] List of field names that are JSON type
-     *
-     * @psalm-return list<string>
-     */
-    public function getJsonFields(): array
-    {
-        return array_keys(
-            array_filter(
-                $this->getFieldTypes(),
-                function ($field) {
-                    return $field === 'json';
-                }
-            )
-        );
-    }//end getJsonFields()
+	/**
+	 * Get the configurations array
+	 *
+	 * @return array The configurations or empty array if null
+	 */
+	public function getConfigurations(): array {
+		return $this->configurations ?? [];
+	}//end getConfigurations()
 
-    /**
-     * Get the slug for the mapping.
-     * If the slug is not set, generate one from the name.
-     *
-     * @return string The mapping slug.
-     *
-     * @phpstan-return non-empty-string
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     *
-     * @psalm-suppress UndefinedClass Transliterator is optional PHP intl extension
-     */
-    public function getSlug(): string
-    {
-        // Return existing slug when present.
-        if (empty($this->slug) === false) {
-            return $this->slug;
-        }
+	/**
+	 * Get the slug for the mapping.
+	 * If the slug is not set, generate one from the name.
+	 *
+	 * @return string The mapping slug.
+	 *
+	 * @phpstan-return non-empty-string
+	 *
+	 */
+	public function getSlug(): string {
+		if (empty($this->slug) === false) {
+			return $this->slug;
+		}
 
-        // Prepare name.
-        $name = trim((string) ($this->name ?? ''));
+		return (new MappingSlug())->generated(name: $this->name, id: $this->id);
+	}//end getSlug()
 
-        // Attempt transliteration to ASCII for non-Latin names.
-        $transliterated = $name;
-        if ($name !== '') {
-            if (class_exists('\Transliterator') === true) {
-                $transliterator = \Transliterator::create('Any-Latin; Latin-ASCII');
-                if ($transliterator !== null) {
-                    $transliterated = (string) $transliterator->transliterate($name);
-                }
-            } else if (function_exists('iconv') === true) {
-                $converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
-                if ($converted !== false) {
-                    $transliterated = $converted;
-                }
-            }
-        }//end if
+	/**
+	 * Serialize the entity to JSON format
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @phpstan-return array<string,mixed>
+	 */
+	public function jsonSerialize(): array {
+		$json = (new TypedFieldsJson())->pick(values: get_object_vars($this), names: self::JSON_ORDER);
 
-        // Convert to slug: lowercase, non-alphanumeric to hyphens, trim.
-        $generatedSlug = strtolower($transliterated);
-        $generatedSlug = preg_replace('/[^a-z0-9]+/', '-', $generatedSlug ?? '');
-        $generatedSlug = trim((string) $generatedSlug, '-');
-
-        // Return slug if not empty.
-        if ($generatedSlug !== '') {
-            return $generatedSlug;
-        }
-
-        // Safe fallback if empty.
-        $prefix = 'mapping';
-        if (isset($this->id) === true && (string) $this->id !== '') {
-            return $prefix.'-'.(string) $this->id;
-        }
-
-        try {
-            return $prefix.'-'.bin2hex(random_bytes(4));
-        } catch (\Exception $e) {
-            return $prefix.'-'.substr(md5((string) $name), 0, 8);
-        }
-    }//end getSlug()
-
-    /**
-     * Hydrate the entity from an array of data
-     *
-     * @param array $object Array of data to hydrate the entity with
-     *
-     * @return static Returns the hydrated entity
-     */
-    public function hydrate(array $object): static
-    {
-        $jsonFields = $this->getJsonFields();
-
-        foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === true && $value === []) {
-                $value = [];
-            }
-
-            $method = 'set'.ucfirst($key);
-
-            try {
-                $this->$method($value);
-            } catch (\Exception $exception) {
-                // Silently ignore invalid properties.
-            }
-        }
-
-        return $this;
-    }//end hydrate()
-
-    /**
-     * Serialize the entity to JSON format
-     *
-     * @return array<string, mixed>
-     *
-     * @phpstan-return array<string,mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        $result = [
-            'id'             => $this->id,
-            'uuid'           => $this->uuid,
-            'name'           => $this->name,
-            'description'    => $this->description,
-            'version'        => $this->version,
-            'reference'      => $this->reference,
-            'mapping'        => $this->getMapping(),
-            'unset'          => $this->getUnset(),
-            'cast'           => $this->getCast(),
-            'passThrough'    => $this->passThrough,
-            'configurations' => $this->getConfigurations(),
-            'slug'           => $this->getSlug(),
-            'organisation'   => $this->organisation,
-        ];
-
-        $result['created'] = null;
-        if (isset($this->created) === true) {
-            $result['created'] = $this->created->format('c');
-        }
-
-        $result['updated'] = null;
-        if (isset($this->updated) === true) {
-            $result['updated'] = $this->updated->format('c');
-        }
-
-        return $result;
-    }//end jsonSerialize()
+		return array_merge(
+			$json,
+			[
+				'mapping' => $this->getMapping(),
+				'unset' => $this->getUnset(),
+				'cast' => $this->getCast(),
+				'configurations' => $this->getConfigurations(),
+				'slug' => $this->getSlug(),
+			]
+		);
+	}//end jsonSerialize()
 }//end class

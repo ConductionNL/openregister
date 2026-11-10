@@ -6,10 +6,13 @@
  * Implements ICalendarProvider to register virtual calendars
  * for OpenRegister schemas with calendar-enabled date fields.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Calendar
  * @package  OCA\OpenRegister\Calendar
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -17,19 +20,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCP\Calendar\ICalendarProvider;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Calendar provider that creates virtual calendars from OpenRegister schemas
@@ -41,200 +39,143 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Calendar
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-integration/spec.md
  */
-class RegisterCalendarProvider implements ICalendarProvider
-{
+class RegisterCalendarProvider implements ICalendarProvider {
 
-    /**
-     * The schema mapper for loading schemas
-     *
-     * @var SchemaMapper
-     */
-    private SchemaMapper $schemaMapper;
+	/**
+	 * Cached calendar-enabled schemas (per-request)
+	 *
+	 * @var array|null
+	 */
+	private ?array $enabledSchemasCache = null;
 
-    /**
-     * The register mapper for loading registers
-     *
-     * @var RegisterMapper
-     */
-    private RegisterMapper $registerMapper;
+	/**
+	 * Constructor
+	 *
+	 * @param RegisterCalendarSources $sources Schema/register/object lookup, transformer and logger
+	 */
+	public function __construct(
+		private readonly RegisterCalendarSources $sources,
+	) {
+	}//end __construct()
 
-    /**
-     * The MagicMapper for querying objects
-     *
-     * @var MagicMapper
-     */
-    private MagicMapper $magicMapper;
+	/**
+	 * Get virtual calendars for the given principal
+	 *
+	 * Returns one RegisterCalendar per schema that has calendar provider enabled.
+	 * Respects RBAC: anonymous/unauthenticated principals get no calendars.
+	 *
+	 * @param string $principalUri The principal URI (e.g., principals/users/admin)
+	 * @param array $calendarUris Optional URI filter to return only specific calendars
+	 *
+	 * @return array Array of ICalendar instances
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function getCalendars(string $principalUri, array $calendarUris = []): array {
+		try {
+			// Reject anonymous/unauthenticated principals.
+			if ($this->isValidUserPrincipal(principalUri: $principalUri) === false) {
+				return [];
+			}
 
-    /**
-     * The user session for authentication context
-     *
-     * @var IUserSession
-     */
-    private IUserSession $userSession;
+			$enabledSchemas = $this->getCalendarEnabledSchemas();
 
-    /**
-     * Logger instance
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
+			if (empty($enabledSchemas) === true) {
+				return [];
+			}
 
-    /**
-     * The event transformer
-     *
-     * @var CalendarEventTransformer
-     */
-    private CalendarEventTransformer $transformer;
+			$calendars = [];
 
-    /**
-     * Cached calendar-enabled schemas (per-request)
-     *
-     * @var array|null
-     */
-    private ?array $enabledSchemasCache = null;
+			foreach ($enabledSchemas as $schemaData) {
+				$schema = $schemaData['schema'];
+				$config = $schemaData['config'];
+				$calendarUri = 'openregister-schema-' . $schema->getId();
 
-    /**
-     * Constructor
-     *
-     * @param SchemaMapper             $schemaMapper   The schema mapper
-     * @param RegisterMapper           $registerMapper The register mapper
-     * @param MagicMapper              $magicMapper    The MagicMapper
-     * @param IUserSession             $userSession    The user session
-     * @param LoggerInterface          $logger         Logger instance
-     * @param CalendarEventTransformer $transformer    The event transformer
-     */
-    public function __construct(
-        SchemaMapper $schemaMapper,
-        RegisterMapper $registerMapper,
-        MagicMapper $magicMapper,
-        IUserSession $userSession,
-        LoggerInterface $logger,
-        CalendarEventTransformer $transformer
-    ) {
-        $this->schemaMapper   = $schemaMapper;
-        $this->registerMapper = $registerMapper;
-        $this->magicMapper    = $magicMapper;
-        $this->userSession    = $userSession;
-        $this->logger         = $logger;
-        $this->transformer    = $transformer;
-    }//end __construct()
+				// Filter by requested URIs if provided.
+				if (empty($calendarUris) === false && in_array($calendarUri, $calendarUris, true) === false) {
+					continue;
+				}
 
-    /**
-     * Get virtual calendars for the given principal
-     *
-     * Returns one RegisterCalendar per schema that has calendar provider enabled.
-     * Respects RBAC: anonymous/unauthenticated principals get no calendars.
-     *
-     * @param string $principalUri The principal URI (e.g., principals/users/admin)
-     * @param array  $calendarUris Optional URI filter to return only specific calendars
-     *
-     * @return array Array of ICalendar instances
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
-     */
-    public function getCalendars(string $principalUri, array $calendarUris=[]): array
-    {
-        try {
-            // Reject anonymous/unauthenticated principals.
-            if ($this->isValidUserPrincipal(principalUri: $principalUri) === false) {
-                return [];
-            }
+				$calendars[] = new RegisterCalendar(
+					definition: new CalendarDefinition(schema: $schema, config: $config),
+					principalUri: $principalUri,
+					sources: $this->sources
+				);
+			}
 
-            $enabledSchemas = $this->getCalendarEnabledSchemas();
+			return $calendars;
+		} catch (\Exception $e) {
+			$this->sources->logger->warning(
+				'[RegisterCalendarProvider] Failed to load calendars: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			return [];
+		}//end try
+	}//end getCalendars()
 
-            if (empty($enabledSchemas) === true) {
-                return [];
-            }
+	/**
+	 * Get all schemas that have calendar provider enabled
+	 *
+	 * Results are cached within the request to avoid repeated DB queries.
+	 *
+	 * @return array Array of ['schema' => Schema, 'config' => array] entries
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function getCalendarEnabledSchemas(): array {
+		if ($this->enabledSchemasCache !== null) {
+			return $this->enabledSchemasCache;
+		}
 
-            $calendars = [];
+		$this->enabledSchemasCache = [];
 
-            foreach ($enabledSchemas as $schemaData) {
-                $schema      = $schemaData['schema'];
-                $config      = $schemaData['config'];
-                $calendarUri = 'openregister-schema-'.$schema->getId();
+		try {
+			// Bypass multi-tenancy: a user with read access to a schema's
+			// objects (which is checked downstream when each calendar event
+			// is fetched) should see the calendar even if the schema's
+			// organisation differs from the user's active organisation.
+			// Per-object ACLs gate the actual event content.
+			$allSchemas = $this->sources->catalog->schemas()->findAll(
+				_multitenancy: false
+			);
 
-                // Filter by requested URIs if provided.
-                if (empty($calendarUris) === false && in_array($calendarUri, $calendarUris, true) === false) {
-                    continue;
-                }
+			foreach ($allSchemas as $schema) {
+				$calendarConfig = $schema->getCalendarProviderConfig();
 
-                $calendars[] = new RegisterCalendar(
-                    schema: $schema,
-                    calendarConfig: $config,
-                    magicMapper: $this->magicMapper,
-                    registerMapper: $this->registerMapper,
-                    transformer: $this->transformer,
-                    principalUri: $principalUri,
-                    logger: $this->logger
-                );
-            }
+				if ($calendarConfig === null) {
+					continue;
+				}
 
-            return $calendars;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                '[RegisterCalendarProvider] Failed to load calendars: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            return [];
-        }//end try
-    }//end getCalendars()
+				$this->enabledSchemasCache[] = [
+					'schema' => $schema,
+					'config' => $calendarConfig,
+				];
+			}
+		} catch (\Exception $e) {
+			$this->sources->logger->warning(
+				'[RegisterCalendarProvider] Failed to load schemas: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->enabledSchemasCache = [];
+		}//end try
 
-    /**
-     * Get all schemas that have calendar provider enabled
-     *
-     * Results are cached within the request to avoid repeated DB queries.
-     *
-     * @return array Array of ['schema' => Schema, 'config' => array] entries
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    private function getCalendarEnabledSchemas(): array
-    {
-        if ($this->enabledSchemasCache !== null) {
-            return $this->enabledSchemasCache;
-        }
+		return $this->enabledSchemasCache;
+	}//end getCalendarEnabledSchemas()
 
-        $this->enabledSchemasCache = [];
-
-        try {
-            $allSchemas = $this->schemaMapper->findAll();
-
-            foreach ($allSchemas as $schema) {
-                $calendarConfig = $schema->getCalendarProviderConfig();
-
-                if ($calendarConfig === null) {
-                    continue;
-                }
-
-                $this->enabledSchemasCache[] = [
-                    'schema' => $schema,
-                    'config' => $calendarConfig,
-                ];
-            }
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                '[RegisterCalendarProvider] Failed to load schemas: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            $this->enabledSchemasCache = [];
-        }//end try
-
-        return $this->enabledSchemasCache;
-    }//end getCalendarEnabledSchemas()
-
-    /**
-     * Check if a principal URI represents a valid authenticated user
-     *
-     * @param string $principalUri The principal URI
-     *
-     * @return bool True if the principal is a valid user
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    private function isValidUserPrincipal(string $principalUri): bool
-    {
-        return preg_match('/^principals\/users\/.+$/', $principalUri) === 1;
-    }//end isValidUserPrincipal()
+	/**
+	 * Check if a principal URI represents a valid authenticated user
+	 *
+	 * @param string $principalUri The principal URI
+	 *
+	 * @return bool True if the principal is a valid user
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function isValidUserPrincipal(string $principalUri): bool {
+		return preg_match('/^principals\/users\/.+$/', $principalUri) === 1;
+	}//end isValidUserPrincipal()
 }//end class

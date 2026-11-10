@@ -6,10 +6,13 @@
  * This file contains the class for handling object entity related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -23,11 +26,11 @@ namespace OCA\OpenRegister\Db;
 use DateInterval;
 use DateTime;
 use Exception;
-use RuntimeException;
 use JsonSerializable;
-use OCA\OpenRegister\Service\FileService;
-use OCP\AppFramework\Db\Entity;
 use OC\Files\Node\File;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
+use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
 /**
@@ -67,6 +70,8 @@ use OCP\IUserSession;
  * @method void setRegister(?string $register)
  * @method string|null getSchema()
  * @method void setSchema(?string $schema)
+ * @method string|null getSchemaVersion()
+ * @method void setSchemaVersion(?string $schemaVersion)
  * @method array|null getObject()
  * @method void setObject(?array $object)
  * @method array|null getFiles()
@@ -87,8 +92,16 @@ use OCP\IUserSession;
  * @method void setOrganisation(?string $organisation)
  * @method array|null getValidation()
  * @method void setValidation(?array $validation)
+ * @method array|null getQuality()
+ * @method void setQuality(?array $quality)
  * @method array|null getDeleted()
  * @method void setDeleted(?array $deleted)
+ * @method array|null getArchived()
+ * @method void setArchived(?array $archived)
+ * @method array|null getFrozen()
+ * @method void setFrozen(?array $frozen)
+ * @method string|null getStatus()
+ * @method void setStatus(?string $status)
  * @method array|null getGeo()
  * @method void setGeo(?array $geo)
  * @method array|null getRetention()
@@ -125,9 +138,10 @@ use OCP\IUserSession;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getLastUserActivity()
+ * @method void setLastUserActivity(?DateTime $lastUserActivity)
  * @method DateTime|null getModified()
  * @method void setModified(?DateTime $modified)
- * @method string|null getOrganization()
  * @method float|null getRelevance()
  * @method void setRelevance(?float $relevance)
  * @method array|null getGroups()
@@ -135,1034 +149,2283 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are the
+ * column surface plus the transient render fields, not an API design choice.
+ * The class already sat at the threshold, so any accessor trips it; splitting
+ * ObjectEntity is owned by the debt sweep, not by a feature that adds one field.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) The state verbs live here for
+ * the same reason `delete()` and `isSoftDeleted()` do: a marker on the record
+ * is written and read through the record. `archive`/`unarchive`,
+ * `freeze`/`unfreeze` and the two predicates that go with them are six methods
+ * that took the class from seven to thirteen. Moving them to a helper would
+ * put the write next to neither the field it writes nor the guard that reads
+ * it, which is how `getDeleted() === null` became a guard that does not guard.
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class ObjectEntity extends Entity implements JsonSerializable
-{
-
-    /**
-     * Unique identifier for the object.
-     *
-     * @var string|null Unique identifier for the object
-     */
-    protected ?string $uuid = null;
-
-    /**
-     * URL-friendly identifier for the object.
-     *
-     * This field can be automatically populated via schema metadata mapping configuration.
-     * Configure in schema: { "configuration": { "objectSlugField": "naam" } }
-     * The field value will be converted to a URL-friendly slug format.
-     *
-     * @var string|null URL-friendly slug for the object, unique within register+schema combination
-     *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
-     */
-    protected ?string $slug = null;
-
-    /**
-     * URI of the object.
-     *
-     * @var string|null URI of the object
-     */
-    protected ?string $uri = null;
-
-    /**
-     * Version of the object.
-     *
-     * @var string|null Version of the object
-     */
-    protected ?string $version = null;
-
-    /**
-     * Register associated with the object.
-     *
-     * @var string|null Register associated with the object
-     */
-    protected ?string $register = null;
-
-    /**
-     * Schema associated with the object.
-     *
-     * @var string|null Schema associated with the object
-     */
-    protected ?string $schema = null;
-
-    /**
-     * Object data stored as an array.
-     *
-     * @var array|null Object data
-     */
-    protected ?array $object = [];
-
-    /**
-     * Files associated with the object.
-     *
-     * @var array|null Files associated with the object
-     */
-    protected ?array $files = [];
-
-    /**
-     * Relations to other objects stored as an array of file IDs.
-     *
-     * @var array|null Array of file IDs that are related to this object
-     */
-    protected ?array $relations = [];
-
-    /**
-     * Lock information for the object if locked.
-     *
-     * @var array|null Contains the locked object if the object is locked
-     */
-    protected ?array $locked = null;
-
-    /**
-     * The owner of this object.
-     *
-     * @var string|null The Nextcloud user that owns this object
-     */
-    protected ?string $owner = null;
-
-    /**
-     * Authorization details for the object.
-     *
-     * @var array|null JSON object describing authorizations
-     */
-    protected ?array $authorization = [];
-
-    /**
-     * Folder path where the object is stored.
-     *
-     * @var string|null The folder path where this object is stored
-     */
-    protected ?string $folder = null;
-
-    /**
-     * Application name associated with the object.
-     *
-     * @var string|null The application name
-     */
-    protected ?string $application = null;
-
-    /**
-     * Organisation name associated with the object.
-     *
-     * @var string|null The organisation name
-     */
-    protected ?string $organisation = null;
-
-    /**
-     * Validation results for the object.
-     *
-     * @var array|null Array describing validation results
-     */
-    protected ?array $validation = [];
-
-    /**
-     * Deletion details if the object is deleted.
-     *
-     * @var array|null Array describing deletion details
-     */
-    protected ?array $deleted = [];
-
-    /**
-     * Geographical details for the object.
-     *
-     * @var array|null Array describing geographical details
-     */
-    protected ?array $geo = [];
-
-    /**
-     * Retention details for the object.
-     *
-     * @var array|null Array describing retention details
-     */
-    protected ?array $retention = [];
-
-    /**
-     * TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden) archival metadata.
-     *
-     * Contains structured archival metadata conforming to TMLO 1.2 / MDTO:
-     * - classificatie: Archival classification code
-     * - archiefnominatie: blijvend_bewaren or vernietigen
-     * - archiefactiedatum: ISO-8601 date for archival action
-     * - archiefstatus: actief, semi_statisch, overgebracht, or vernietigd
-     * - bewaarTermijn: ISO-8601 duration (e.g., P7Y)
-     * - vernietigingsCategorie: Destruction category from VNG Selectielijst
-     *
-     * @var array|null TMLO archival metadata
-     */
-    protected ?array $tmlo = [];
-
-    /**
-     * Linked mail entity IDs for this object.
-     *
-     * @var array|null Linked mail entity IDs
-     */
-    protected ?array $mail = null;
-
-    /**
-     * Linked contact entity IDs for this object.
-     *
-     * @var array|null Linked contact entity IDs
-     */
-    protected ?array $contacts = null;
-
-    /**
-     * Linked note entity IDs for this object.
-     *
-     * @var array|null Linked note entity IDs
-     */
-    protected ?array $notes = null;
-
-    /**
-     * Linked todo entity IDs for this object.
-     *
-     * @var array|null Linked todo entity IDs
-     */
-    protected ?array $todos = null;
-
-    /**
-     * Linked calendar event entity IDs for this object.
-     *
-     * @var array|null Linked calendar event entity IDs
-     */
-    protected ?array $calendar = null;
-
-    /**
-     * Linked Talk conversation IDs for this object.
-     *
-     * @var array|null Linked Talk conversation IDs
-     */
-    protected ?array $talk = null;
-
-    /**
-     * Linked Deck card IDs for this object.
-     *
-     * @var array|null Linked Deck card IDs
-     */
-    protected ?array $deck = null;
-
-    /**
-     * Size of the object in byte.
-     *
-     * @var string|null Size of the object
-     */
-    protected ?string $size = null;
-
-    /**
-     * Version of the schema when this object was created
-     *
-     * @var string|null Version of the schema when this object was created
-     */
-    protected ?string $schemaVersion = null;
-
-    /**
-     * Last update timestamp.
-     *
-     * 🔒 DATABASE-MANAGED: Set by database ON UPDATE CURRENT_TIMESTAMP
-     * This field should NOT be set during bulk preparation to avoid false change detection.
-     *
-     * @var DateTime|null Last update timestamp
-     */
-    protected ?DateTime $updated = null;
-
-    /**
-     * Creation timestamp.
-     *
-     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP
-     * This field should NOT be set during bulk preparation to avoid false change detection.
-     *
-     * @var DateTime|null Creation timestamp
-     */
-    protected ?DateTime $created = null;
-
-    /**
-     * Last log entry related to this object (not persisted, runtime only)
-     *
-     * @var array<string, mixed>|null
-     */
-    private ?array $lastLog = null;
-
-    /**
-     * Source of the object data (not persisted, runtime only)
-     *
-     * Indicates where this object was loaded from:
-     * - "orm": Magic tables (structured storage)
-     * - "index": Search index
-     *
-     * @var string|null
-     */
-    private ?string $source = null;
-
-    /**
-     * Name of the object.
-     *
-     * This field is automatically populated via schema metadata mapping configuration.
-     * Configure in schema: { "configuration": { "objectNameField": "naam" } } or
-     * with twig-like concatenation: { "objectNameField": "{{ voornaam }} {{ achternaam }}" }
-     *
-     * @var string|null Name of the object
-     *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
-     */
-    protected ?string $name = null;
-
-    /**
-     * Description of the object.
-     *
-     * This field is automatically populated via schema metadata mapping configuration.
-     * Configure in schema: { "configuration": { "objectDescriptionField": "beschrijving" } }
-     * Supports dot notation for nested fields: "contact.beschrijving"
-     *
-     * @var string|null Description of the object
-     *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
-     */
-    protected ?string $description = null;
-
-    /**
-     * Summary of the object.
-     *
-     * This field is automatically populated via schema metadata mapping configuration.
-     * Configure in schema: { "configuration": { "objectSummaryField": "beschrijvingKort" } }
-     * Supports twig-like templates for combining fields.
-     *
-     * @var string|null Summary of the object
-     *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
-     */
-    protected ?string $summary = null;
-
-    /**
-     * Image of the object.
-     *
-     * This field is automatically populated via schema metadata mapping configuration.
-     * Configure in schema: { "configuration": { "objectImageField": "afbeelding" } }
-     * Can reference file fields or contain base64 encoded image data.
-     *
-     * @var string|null Image of the object (base64 encoded or file reference)
-     *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
-     */
-    protected ?string $image = null;
-
-    /**
-     * An array defining group-based permissions for CRUD actions.
-     * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
-     * and the values are arrays of group IDs that are permitted to perform that action.
-     * If an action is not present as a key, or its value is an empty array,
-     * it is assumed that all users have permission for that action.
-     *
-     * Example:
-     * [
-     *   'create' => ['group-admin', 'group-editors'],
-     *   'read'   => ['group-viewers'],
-     *   'update' => ['group-editors'],
-     *   'delete' => ['group-admin']
-     * ]
-     *
-     * @var array<string, array<string>>|null
-     */
-    protected ?array $groups = [];
-
-    /**
-     * The expiration timestamp for this object
-     *
-     * @var DateTime|null The expiration timestamp for this object
-     */
-    protected ?DateTime $expires = null;
-
-    /**
-     * Search relevance score (0-100 percentage).
-     *
-     * This is a transient property set during fuzzy search to indicate
-     * how well this object matches the search term. Not persisted to database.
-     *
-     * @var float|null The relevance score as a percentage (0-100)
-     */
-    protected ?float $relevance = null;
-
-    /**
-     * Initialize the entity and define field types
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'slug', type: 'string');
-        $this->addType(fieldName: 'uri', type: 'string');
-        $this->addType(fieldName: 'version', type: 'string');
-        $this->addType(fieldName: 'register', type: 'string');
-        $this->addType(fieldName: 'schema', type: 'string');
-        $this->addType(fieldName: 'object', type: 'json');
-        $this->addType(fieldName: 'files', type: 'json');
-        $this->addType(fieldName: 'relations', type: 'json');
-        $this->addType(fieldName: 'locked', type: 'json');
-        $this->addType(fieldName: 'owner', type: 'string');
-        $this->addType(fieldName: 'authorization', type: 'json');
-        $this->addType(fieldName: 'folder', type: 'string');
-        $this->addType(fieldName: 'application', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'validation', type: 'json');
-        $this->addType(fieldName: 'deleted', type: 'json');
-        $this->addType(fieldName: 'geo', type: 'json');
-        $this->addType(fieldName: 'retention', type: 'json');
-        $this->addType(fieldName: 'tmlo', type: 'json');
-        $this->addType(fieldName: 'mail', type: 'json');
-        $this->addType(fieldName: 'contacts', type: 'json');
-        $this->addType(fieldName: 'notes', type: 'json');
-        $this->addType(fieldName: 'todos', type: 'json');
-        $this->addType(fieldName: 'calendar', type: 'json');
-        $this->addType(fieldName: 'talk', type: 'json');
-        $this->addType(fieldName: 'deck', type: 'json');
-        $this->addType(fieldName: 'size', type: 'string');
-        $this->addType(fieldName: 'schemaVersion', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'description', type: 'string');
-        $this->addType(fieldName: 'summary', type: 'string');
-        $this->addType(fieldName: 'image', type: 'string');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'expires', type: 'datetime');
-    }//end __construct()
-
-    /**
-     * Override getter to provide default empty arrays for JSON array fields
-     *
-     * We only override this one method from parent Entity - everything else
-     * (setters, type conversion, change tracking) uses parent's implementation.
-     *
-     * The ONLY difference: we return [] instead of null for specific JSON fields
-     * that represent collections, making code cleaner throughout the app.
-     *
-     * @param string $name The property name
-     *
-     * @return mixed The property value, or [] for unset array fields
-     */
-    protected function getter(string $name): mixed
-    {
-        // Array fields that should return [] instead of null when unset.
-        $arrayEmptyDefaults = [
-            'files',
-            'relations',
-            'authorization',
-            'validation',
-            'deleted',
-            'groups',
-            'geo',
-            'retention',
-            'tmlo',
-        ];
-
-        // If this is an array field and it's null, return empty array.
-        if (in_array($name, $arrayEmptyDefaults) === true && property_exists($this, $name) === true) {
-            return $this->$name ?? [];
-        }
-
-        // Otherwise, delegate to parent's standard getter behavior.
-        return parent::getter(name: $name);
-    }//end getter()
-
-    /**
-     * Get the object data and set the 'id' to the 'uuid'
-     *
-     * This getter has special logic to inject the UUID as 'id' field,
-     * so it must remain explicit rather than using the magic method.
-     *
-     * @return (mixed|null|string)[]
-     *
-     * @psalm-return array{id: mixed|null|string,...}
-     */
-    public function getObject(): array
-    {
-        // Initialize the object data with an empty array if null.
-        $objectData = $this->object ?? [];
-
-        // Ensure 'id' is the first field by setting it before merging with object data.
-        $objectData = array_merge(['id' => $this->uuid], $objectData);
-
-        return $objectData;
-    }//end getObject()
-
-    /**
-     * Get array of field names that are JSON type
-     *
-     * @return string[] List of field names that are JSON type
-     *
-     * @psalm-return list<string>
-     */
-    public function getJsonFields(): array
-    {
-        return array_keys(
-            array_filter(
-                $this->getFieldTypes(),
-                function ($field) {
-                    return $field === 'json';
-                }
-            )
-        );
-    }//end getJsonFields()
-
-    /**
-     * Hydrate the entity from an array of data
-     *
-     * @param array $object Array of data to hydrate the entity with
-     *
-     * @return static Returns the hydrated entity
-     */
-    public function hydrate(array $object): static
-    {
-        $jsonFields = $this->getJsonFields();
-
-        if (isset($object['metadata']) === false) {
-            $object['metadata'] = [];
-        }
-
-        foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === true && $value === []) {
-                $value = null;
-            }
-
-            $method = 'set'.ucfirst($key);
-
-            try {
-                $this->$method($value);
-            } catch (Exception $exception) {
-                // Silently ignore invalid properties.
-            }
-        }
-
-        return $this;
-    }//end hydrate()
-
-    /**
-     * Hydrate the entity from an serialized array of data
-     *
-     * @param array $object Array of data to hydrate the entity with
-     *
-     * @return static Returns the hydrated entity
-     */
-    public function hydrateObject(array $object): static
-    {
-        // Lets grap the metadata fields and remove them from the object.
-        $metaDataFields = $object['@self'];
-        unset($object['@self']);
-
-        // Hydrate the entity with the metadata fields.
-        $this->hydrate(object: $metaDataFields);
-        $this->setObject(object: $object);
-
-        // Return the hydrated entity.
-        return $this;
-    }//end hydrateObject()
-
-    /**
-     * Serialize the entity to JSON format
-     *
-     * Merges the object's own data with a '@self' key containing metadata.
-     * Ensures that if a name is not set, the UUID is used as a fallback.
-     *
-     * @return ((array|int|mixed|null|string)[]|mixed)[]
-     *
-     * @psalm-return array{'@self': array{id: null|string, slug: null|string,
-     *     name: null|string, description: int|string, summary: null|string,
-     *     image: null|string, uri: null|string, version: null|string,
-     *     register: array|null|string, schema: array|null|string,
-     *     schemaVersion: null|string, files: array|null,
-     *     relations: array|null, locked: array|null,
-     *     owner: array|null|string, organisation: array|null|string,
-     *     groups: mixed, authorization: array|null, folder: null|string,
-     *     application: array|null|string, validation: array|null,
-     *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
-     *     updated: null|string, created: null|string,
-     *     deleted: array|null},...}
-     */
-    public function jsonSerialize(): array
-    {
-        // Backwards compatibility for old objects.
-        $object = [];
-        if (($this->object ?? null) !== null) {
-            $object = $this->object;
-        }
-
-        // Default to an empty array if $this->object is null.
-        $object['@self'] = $this->getObjectArray(object: $object ?? []);
-
-        // Check if name is empty and set uuid as fallback.
-        if (empty($object['@self']['name']) === true) {
-            $object['@self']['name'] = $this->uuid;
-        }
-
-        // Ensure id is always accessible at top level (not just in @self).
-        // This ensures consistency between single object and collection API responses.
-        if (($this->uuid ?? null) !== null) {
-            $object['id'] = $this->uuid;
-        }
-
-        // Let's merge and return.
-        return $object;
-    }//end jsonSerialize()
-
-    /**
-     * Get array representation of all object properties
-     *
-     * @param array $object Object array parameter
-     *
-     * @return (array|int|mixed|null|string)[] Array containing all object properties
-     *
-     * @psalm-return array{id: null|string, slug: null|string,
-     *     name: null|string, description: int|string, summary: null|string,
-     *     image: null|string, uri: null|string, version: null|string,
-     *     register: array|null|string, schema: array|null|string,
-     *     schemaVersion: null|string, files: array|null,
-     *     relations: array|null, locked: array|null,
-     *     owner: array|null|string, organisation: array|null|string,
-     *     groups: mixed, authorization: array|null, folder: null|string,
-     *     application: array|null|string, validation: array|null,
-     *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
-     *     updated: null|string, created: null|string,
-     *     deleted: array|null}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    public function getObjectArray(array $object=[]): array
-    {
-        // Initialize the object array with default properties.
-        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
-        $objectArray = [
-            'id'            => $this->uuid,
-            'slug'          => $this->slug,
-            'name'          => $this->name ?? $this->uuid,
-            'description'   => $this->description ?? $this->id,
-            'summary'       => $this->summary,
-            'image'         => $this->image,
-            'uri'           => $this->uri,
-            'version'       => $this->version,
-            'register'      => $this->register,
-            'schema'        => $this->schema,
-            'schemaVersion' => $this->schemaVersion,
-            'files'         => $this->getFiles(),
-            'relations'     => $this->getRelations(),
-            'locked'        => $this->getLocked(),
-            'owner'         => $this->owner,
-            'organisation'  => $this->organisation,
-            'groups'        => $this->getGroups(),
-            'authorization' => $this->getAuthorization(),
-            'folder'        => $this->folder,
-            'application'   => $this->application,
-            'validation'    => $this->getValidation(),
-            'geo'           => $this->getGeo(),
-            'retention'     => $this->getRetention(),
-            'tmlo'          => $this->getTmlo(),
-            'size'          => $this->size,
-            'updated'       => $this->getFormattedDate(date: $this->updated),
-            'created'       => $this->getFormattedDate(date: $this->created),
-            'deleted'       => $this->getDeleted(),
-            'source'        => $this->source,
-            'mail'          => $this->getMail(),
-            'contacts'      => $this->getContacts(),
-            'notes'         => $this->getNotes(),
-            'todos'         => $this->getTodos(),
-            'calendar'      => $this->getCalendar(),
-            'talk'          => $this->getTalk(),
-            'deck'          => $this->getDeck(),
-        ];
-
-        // Add relevance score if set (from fuzzy search).
-        // Only included when a search was performed with _fuzzy=true.
-        if ($this->relevance !== null) {
-            $objectArray['relevance'] = $this->relevance;
-        }
-
-        // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
-        if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
-            $self = $object['@self'];
-
-            // Use the '@self' values if they are arrays.
-            if (($self['register'] ?? null) !== null && is_array($self['register']) === true) {
-                $objectArray['register'] = $self['register'];
-            }
-
-            if (($self['schema'] ?? null) !== null && is_array($self['schema']) === true) {
-                $objectArray['schema'] = $self['schema'];
-            }
-
-            if (($self['owner'] ?? null) !== null && is_array($self['owner']) === true) {
-                $objectArray['owner'] = $self['owner'];
-            }
-
-            if (($self['organisation'] ?? null) !== null) {
-                $objectArray['organisation'] = $self['organisation'];
-            }
-
-            if (($self['application'] ?? null) !== null && is_array($self['application']) === true) {
-                $objectArray['application'] = $self['application'];
-            }
-        }//end if
-
-        return $objectArray;
-    }//end getObjectArray()
-
-    /**
-     * Format DateTime object to ISO 8601 string or return null
-     *
-     * @param DateTime|null $date The date to format
-     *
-     * @return string|null The formatted date or null
-     */
-    private function getFormattedDate(?DateTime $date): ?string
-    {
-        if ($date === null) {
-            return null;
-        }
-
-        return $date->format('c');
-    }//end getFormattedDate()
-
-    /**
-     * Lock the object for a specific duration
-     *
-     * @param IUserSession $userSession Current user session
-     * @param string|null  $process     Optional process identifier
-     * @param int|null     $duration    Lock duration in seconds (default: 1 hour)
-     *
-     * @throws Exception If object is already locked by another user
-     *
-     * @return true True if lock was successful
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
-     */
-    public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
-    {
-        $currentUser = $userSession->getUser();
-        if ($currentUser === null) {
-            throw new Exception('No user logged in');
-        }
-
-        $userId = $currentUser->getUID();
-        $now    = new DateTime();
-
-        // If already locked, check if it's the same user and not expired.
-        if ($this->isLocked() === true) {
-            $lock = $this->getLocked();
-            if ($lock === null) {
-                throw new Exception('Lock data is missing');
-            }
-
-            // If locked by different user.
-            if ($lock['user'] !== $userId) {
-                throw new Exception('Object is locked by another user');
-            }
-
-            // If same user, extend the lock.
-            $newExpiration = clone $now;
-            $newExpiration->add(new DateInterval('PT'.($duration ?? 0).'S'));
-
-            $this->setLocked(
-                locked: [
-                    'user'       => $userId,
-                    'process'    => ($process ?? $lock['process']),
-                    'created'    => $lock['created'],
-                    'duration'   => $duration,
-                    'expiration' => $newExpiration->format('c'),
-                ]
-            );
-            return true;
-        }//end if
-
-        // Create new lock.
-        $expiration = clone $now;
-        $expiration->add(new DateInterval('PT'.($duration ?? 0).'S'));
-
-        $this->setLocked(
-            locked: [
-                'user'       => $userId,
-                'process'    => $process,
-                'created'    => $now->format('c'),
-                'duration'   => $duration,
-                'expiration' => $expiration->format('c'),
-            ]
-        );
-
-        return true;
-    }//end lock()
-
-    /**
-     * Unlock the object
-     *
-     * @param IUserSession $userSession Current user session
-     *
-     * @throws Exception If object is locked by another user
-     *
-     * @return true True if unlock was successful
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
-     */
-    public function unlock(IUserSession $userSession): bool
-    {
-        if ($this->isLocked() === false) {
-            return true;
-        }
-
-        $currentUser = $userSession->getUser();
-        if ($currentUser === null) {
-            throw new Exception('No user logged in');
-        }
-
-        $userId = $currentUser->getUID();
-
-        // Check if locked by different user.
-        if ($this->locked === null) {
-            throw new Exception('Object is not locked');
-        }
-
-        if ($this->locked['user'] !== $userId) {
-            throw new Exception('Object is locked by another user');
-        }
-
-        $this->setLocked(locked: null);
-        return true;
-    }//end unlock()
-
-    /**
-     * Check if the object is currently locked
-     *
-     * @return bool True if object is locked and lock hasn't expired
-     */
-    public function isLocked(): bool
-    {
-        if ($this->locked === null || empty($this->locked) === true) {
-            return false;
-        }
-
-        // Check if lock has expired.
-        $now = new DateTime();
-
-        // Check if expiration key exists.
-        if (isset($this->locked['expiration']) === true) {
-            // New format with expiration.
-            $expiration = new DateTime($this->locked['expiration']);
-            return $now < $expiration;
-        }
-
-        // Legacy format: calculate expiration from lockedAt + duration.
-        if (isset($this->locked['lockedAt']) === true && isset($this->locked['duration']) === true) {
-            $lockedAt   = new DateTime($this->locked['lockedAt']);
-            $duration   = (int) $this->locked['duration'];
-            $expiration = clone $lockedAt;
-            $expiration->add(new DateInterval('PT'.$duration.'S'));
-            return $now < $expiration;
-        }
-
-        // If no expiration info, treat as permanently locked (until explicitly unlocked).
-        return true;
-    }//end isLocked()
-
-    /**
-     * Get lock information
-     *
-     * @return array|null Lock information or null if not locked
-     */
-    public function getLockInfo(): ?array
-    {
-        if ($this->isLocked() === false) {
-            return null;
-        }
-
-        return $this->locked;
-    }//end getLockInfo()
-
-    /**
-     * Get the user ID who locked the object
-     *
-     * Returns the user ID (UID) of the user who has locked this object.
-     * Returns null if the object is not locked or lock information is missing.
-     *
-     * @return string|null User ID who locked the object, or null if not locked
-     */
-    public function getLockedBy(): ?string
-    {
-        if ($this->isLocked() === false) {
-            return null;
-        }
-
-        // Return the user from the lock array.
-        return $this->locked['user'] ?? null;
-    }//end getLockedBy()
-
-    /**
-     * Delete the object
-     *
-     * @param IUserSession $userSession     Current user session
-     * @param string       $deletedReason   Reason for deletion
-     * @param int          $retentionPeriod Retention period in days (default: 30 days)
-     *
-     * @throws Exception If no user is logged in
-     *
-     * @return static Returns the entity
-     */
-    public function delete(IUserSession $userSession, ?string $deletedReason=null, ?int $retentionPeriod=30): static
-    {
-        $currentUser = $userSession->getUser();
-        if ($currentUser === null) {
-            throw new Exception('No user logged in');
-        }
-
-        $userId    = $currentUser->getUID();
-        $now       = new DateTime();
-        $purgeDate = clone $now;
-        // $purgeDate->add(new DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
-        $purgeDate->add(new DateInterval('P31D'));
-
-        $this->setDeleted(
-            deleted: [
-                'deleted'         => $now->format('c'),
-                'deletedBy'       => $userId,
-                'deletedReason'   => $deletedReason,
-                'retentionPeriod' => $retentionPeriod,
-                'purgeDate'       => $purgeDate->format('c'),
-            ]
-        );
-
-        return $this;
-    }//end delete()
-
-    /**
-     * Get the last log entry for this object (runtime only)
-     *
-     * @return         array|null The last log entry or null if not set
-     * @phpstan-return array<string, mixed>|null
-     * @psalm-return   array<string, mixed>|null
-     */
-    public function getLastLog(): ?array
-    {
-        return $this->lastLog;
-    }//end getLastLog()
-
-    /**
-     * Set the last log entry for this object (runtime only)
-     *
-     * @param array|null $log The log entry to set
-     *
-     * @phpstan-param array<string, mixed>|null $log
-     * @psalm-param   array<string, mixed>|null $log
-     *
-     * @return void
-     */
-    public function setLastLog(?array $log=null): void
-    {
-        $this->lastLog = $log;
-    }//end setLastLog()
-
-    /**
-     * Get the source of this object data (runtime only)
-     *
-     * Returns where this object was loaded from:
-     * - "orm": Magic tables (structured storage)
-     * - "index": Search index
-     *
-     * @return string|null The source identifier, or null if not set
-     */
-    public function getSource(): ?string
-    {
-        return $this->source;
-    }//end getSource()
-
-    /**
-     * Set the source of this object data (runtime only)
-     *
-     * @param string|null $source The source identifier ("orm" or "index")
-     *
-     * @return void
-     */
-    public function setSource(?string $source=null): void
-    {
-        $this->source = $source;
-    }//end setSource()
-
-    /**
-     * String representation of the object entity
-     *
-     * This magic method is required for proper entity handling in Nextcloud
-     * when the framework needs to convert the object to a string.
-     *
-     * @return string String representation of the object entity
-     */
-    public function __toString(): string
-    {
-        // Return the UUID if available, otherwise return a descriptive string.
-        if ($this->uuid !== null && $this->uuid !== '') {
-            return $this->uuid;
-        }
-
-        // Fallback to ID if UUID is not available.
-        if ($this->id !== null) {
-            return 'Object #'.$this->id;
-        }
-
-        // Final fallback.
-        return 'Object Entity';
-    }//end __toString()
-
-    /**
-     * Check if this object is managed by any configuration
-     *
-     * This method checks if the object's ID is present in the objects array
-     * of any provided configuration entities.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return bool True if this object is managed by at least one configuration
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function isManagedByConfiguration(array $configurations): bool
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return false;
-        }
-
-        foreach ($configurations as $configuration) {
-            $objects = $configuration->getObjects();
-            if (in_array($this->id, $objects ?? [], true) === true) {
-                return true;
-            }
-        }
-
-        return false;
-    }//end isManagedByConfiguration()
-
-    /**
-     * Get the configuration that manages this object
-     *
-     * Returns the first configuration that has this object's ID in its objects array.
-     * Returns null if the object is not managed by any configuration.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return Configuration|null The configuration managing this object, or null
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function getManagedByConfiguration(array $configurations): ?Configuration
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return null;
-        }
-
-        foreach ($configurations as $configuration) {
-            $objects = $configuration->getObjects();
-            if (in_array($this->id, $objects ?? [], true) === true) {
-                return $configuration;
-            }
-        }
-
-        return null;
-    }//end getManagedByConfiguration()
+class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
+	use JsonFieldsTrait;
+
+	/**
+	 * Lifecycle status: saved to carry on later, not yet received (decision 180).
+	 *
+	 * @var string
+	 */
+	public const STATUS_DRAFT = 'draft';
+
+	/**
+	 * Lifecycle status: left draft through a submit, received.
+	 *
+	 * @var string
+	 */
+	public const STATUS_ACTIVE = 'active';
+
+
+	/**
+	 * Unique identifier for the object.
+	 *
+	 * @var string|null Unique identifier for the object
+	 */
+	protected ?string $uuid = null;
+
+	/**
+	 * URL-friendly identifier for the object.
+	 *
+	 * This field can be automatically populated via schema metadata mapping configuration.
+	 * Configure in schema: { "configuration": { "objectSlugField": "naam" } }
+	 * The field value will be converted to a URL-friendly slug format.
+	 *
+	 * @var string|null URL-friendly slug for the object, unique within register+schema combination
+	 *
+	 * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
+	 */
+	protected ?string $slug = null;
+
+	/**
+	 * URI of the object.
+	 *
+	 * @var string|null URI of the object
+	 */
+	protected ?string $uri = null;
+
+	/**
+	 * Version of the object.
+	 *
+	 * @var string|null Version of the object
+	 */
+	protected ?string $version = null;
+
+	/**
+	 * Register associated with the object.
+	 *
+	 * @var string|null Register associated with the object
+	 */
+	protected ?string $register = null;
+
+	/**
+	 * Schema associated with the object.
+	 *
+	 * @var string|null Schema associated with the object
+	 */
+	protected ?string $schema = null;
+
+	/**
+	 * Object data stored as an array.
+	 *
+	 * @var array|null Object data
+	 */
+	protected ?array $object = [];
+
+	/**
+	 * Files associated with the object.
+	 *
+	 * @var array|null Files associated with the object
+	 */
+	protected ?array $files = [];
+
+	/**
+	 * Relations to other objects stored as an array of file IDs.
+	 *
+	 * @var array|null Array of file IDs that are related to this object
+	 */
+	protected ?array $relations = [];
+
+	/**
+	 * Lock information for the object if locked.
+	 *
+	 * @var array|null Contains the locked object if the object is locked
+	 */
+	protected ?array $locked = null;
+
+	/**
+	 * The owner of this object.
+	 *
+	 * @var string|null The Nextcloud user that owns this object
+	 */
+	protected ?string $owner = null;
+
+	/**
+	 * Authorization details for the object.
+	 *
+	 * @var array|null JSON object describing authorizations
+	 */
+	protected ?array $authorization = [];
+
+	/**
+	 * Folder path where the object is stored.
+	 *
+	 * @var string|null The folder path where this object is stored
+	 */
+	protected ?string $folder = null;
+
+	/**
+	 * Application name associated with the object.
+	 *
+	 * @var string|null The application name
+	 */
+	protected ?string $application = null;
+
+	/**
+	 * Organisation name associated with the object.
+	 *
+	 * @var string|null The organisation name
+	 */
+	protected ?string $organisation = null;
+
+	/**
+	 * Validation results for the object.
+	 *
+	 * @var array|null Array describing validation results
+	 */
+	protected ?array $validation = [];
+
+	/**
+	 * Platform-computed quality assessment for the object.
+	 *
+	 * Written by QualityScoreOnSaveListener when the schema carries an
+	 * `x-openregister-quality` annotation. Shape:
+	 *   `['score' => 0.0-1.0, 'status' => 'good'|..., 'scoredAt' => '...']`
+	 *
+	 * This is an assessment OF the object's data, not a fact about the thing
+	 * the object describes, which is why it lives in the `@self` envelope
+	 * rather than among the object's own properties. Storing it here means a
+	 * schema no longer has to declare `qualityScore` as an ordinary property
+	 * to be scored, and so no longer puts a number field the platform
+	 * overwrites in front of the person filling the form.
+	 *
+	 * @var array|null Array describing the quality assessment
+	 */
+	protected ?array $quality = [];
+
+	/**
+	 * Deletion details if the object is deleted.
+	 *
+	 * ⚠️ This property defaults to `[]`, NOT `null`, and the row hydrator
+	 * (`MagicStatisticsHandler::convertRowToObjectEntity()`) skips every NULL
+	 * column rather than calling its setter — so a LIVE object never has
+	 * `setDeleted()` called on it and keeps this default. `getDeleted() === null`
+	 * is therefore false for every object that has ever existed, and a guard
+	 * written that way does not guard. Ask {@see self::isSoftDeleted()} instead.
+	 *
+	 * @var array|null Array describing deletion details
+	 */
+	protected ?array $deleted = [];
+
+	/**
+	 * Archive details if the object has been archived.
+	 *
+	 * The archive is not the trash. A soft-deleted object is a mistake on its
+	 * way out; an archived object is a finished result that stays whole and
+	 * stays findable on purpose. They get separate markers so a report can
+	 * never put an archived case in somebody's recycle bin.
+	 *
+	 * ⚠️ Defaults to `[]` for the same reason {@see self::$deleted} does: the
+	 * row hydrator skips NULL columns rather than calling the setter, so
+	 * `getArchived() === null` is false for every object. Ask
+	 * {@see self::isArchived()}.
+	 *
+	 * @var array|null Array describing the archive: `by`, `at` and `reason`
+	 */
+	protected ?array $archived = [];
+
+	/**
+	 * Freeze details if the object has been frozen.
+	 *
+	 * Frozen and archived are two states, not one flag with a switch. A frozen
+	 * object stays in the working lists and in search and refuses writes to
+	 * its data; an archived object refuses writes and leaves the lists. A zaak
+	 * in bezwaar has to be findable and unchangeable at the same time.
+	 *
+	 * ⚠️ Defaults to `[]`; ask {@see self::isFrozen()}, never `=== null`.
+	 *
+	 * @var array|null Array describing the freeze: `by`, `at`, `reason` and `state`
+	 */
+	protected ?array $frozen = [];
+
+	/**
+	 * The explicit lifecycle status, when one is stored (decision 180).
+	 *
+	 * `draft`: the object may miss required properties, is never type-invalid,
+	 * and is visible to its owner only unless the schema says otherwise.
+	 * `active`: it left draft through a submit. Null: no explicit status, so the
+	 * status is deduced from the object's dates exactly as before.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
+
+	/**
+	 * Geographical details for the object.
+	 *
+	 * @var array|null Array describing geographical details
+	 */
+	protected ?array $geo = [];
+
+	/**
+	 * Retention details for the object.
+	 *
+	 * @var array|null Array describing retention details
+	 */
+	protected ?array $retention = [];
+
+	/**
+	 * TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden) archival metadata.
+	 *
+	 * Contains structured archival metadata conforming to TMLO 1.2 / MDTO:
+	 * - classificatie: Archival classification code
+	 * - archiefnominatie: blijvend_bewaren or vernietigen
+	 * - archiefactiedatum: ISO-8601 date for archival action
+	 * - archiefstatus: actief, semi_statisch, overgebracht, or vernietigd
+	 * - bewaarTermijn: ISO-8601 duration (e.g., P7Y)
+	 * - vernietigingsCategorie: Destruction category from VNG Selectielijst
+	 *
+	 * @var array|null TMLO archival metadata
+	 */
+	protected ?array $tmlo = [];
+
+	/**
+	 * Linked mail entity IDs for this object.
+	 *
+	 * @var array|null Linked mail entity IDs
+	 */
+	protected ?array $mail = null;
+
+	/**
+	 * Linked contact entity IDs for this object.
+	 *
+	 * @var array|null Linked contact entity IDs
+	 */
+	protected ?array $contacts = null;
+
+	/**
+	 * Linked note entity IDs for this object.
+	 *
+	 * @var array|null Linked note entity IDs
+	 */
+	protected ?array $notes = null;
+
+	/**
+	 * Linked todo entity IDs for this object.
+	 *
+	 * @var array|null Linked todo entity IDs
+	 */
+	protected ?array $todos = null;
+
+	/**
+	 * Linked calendar event entity IDs for this object.
+	 *
+	 * @var array|null Linked calendar event entity IDs
+	 */
+	protected ?array $calendar = null;
+
+	/**
+	 * Linked Talk conversation IDs for this object.
+	 *
+	 * @var array|null Linked Talk conversation IDs
+	 */
+	protected ?array $talk = null;
+
+	/**
+	 * Linked Deck card IDs for this object.
+	 *
+	 * @var array|null Linked Deck card IDs
+	 */
+	protected ?array $deck = null;
+
+	/**
+	 * Size of the object in byte.
+	 *
+	 * @var string|null Size of the object
+	 */
+	protected ?string $size = null;
+
+	/**
+	 * Version of the schema when this object was created
+	 *
+	 * @var string|null Version of the schema when this object was created
+	 */
+	protected ?string $schemaVersion = null;
+
+	/**
+	 * Last update timestamp.
+	 *
+	 * 🔒 DATABASE-MANAGED: Set by database ON UPDATE CURRENT_TIMESTAMP
+	 * This field should NOT be set during bulk preparation to avoid false change detection.
+	 *
+	 * @var DateTime|null Last update timestamp
+	 */
+	protected ?DateTime $updated = null;
+
+	/**
+	 * When a person last wrote this object.
+	 *
+	 * Unlike `updated`, which moves on every write, this moves only on a write
+	 * made by a signed-in user in a web request. A background job, an occ
+	 * command, a repair step, a system-elevated write or a write labelled with
+	 * a non-person {@see \OCA\OpenRegister\Service\WriteCause} leaves it as
+	 * it was. Null until a person writes the object.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastUserActivity = null;
+
+	/**
+	 * Creation timestamp.
+	 *
+	 * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP
+	 * This field should NOT be set during bulk preparation to avoid false change detection.
+	 *
+	 * @var DateTime|null Creation timestamp
+	 */
+	protected ?DateTime $created = null;
+
+	/**
+	 * Last log entry related to this object (not persisted, runtime only)
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $lastLog = null;
+
+	/**
+	 * Source of the object data (not persisted, runtime only)
+	 *
+	 * Indicates where this object was loaded from:
+	 * - "orm": Magic tables (structured storage)
+	 * - "index": Search index
+	 *
+	 * @var string|null
+	 */
+	private ?string $source = null;
+
+	/**
+	 * Name of the object.
+	 *
+	 * This field is automatically populated via schema metadata mapping configuration.
+	 * Configure in schema: { "configuration": { "objectNameField": "naam" } } or
+	 * with twig-like concatenation: { "objectNameField": "{{ voornaam }} {{ achternaam }}" }
+	 *
+	 * @var string|null Name of the object
+	 *
+	 * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
+	 */
+	protected ?string $name = null;
+
+	/**
+	 * Description of the object.
+	 *
+	 * This field is automatically populated via schema metadata mapping configuration.
+	 * Configure in schema: { "configuration": { "objectDescriptionField": "beschrijving" } }
+	 * Supports dot notation for nested fields: "contact.beschrijving"
+	 *
+	 * @var string|null Description of the object
+	 *
+	 * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
+	 */
+	protected ?string $description = null;
+
+	/**
+	 * Summary of the object.
+	 *
+	 * This field is automatically populated via schema metadata mapping configuration.
+	 * Configure in schema: { "configuration": { "objectSummaryField": "beschrijvingKort" } }
+	 * Supports twig-like templates for combining fields.
+	 *
+	 * @var string|null Summary of the object
+	 *
+	 * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
+	 */
+	protected ?string $summary = null;
+
+	/**
+	 * Image of the object.
+	 *
+	 * This field is automatically populated via schema metadata mapping configuration.
+	 * Configure in schema: { "configuration": { "objectImageField": "afbeelding" } }
+	 * Can reference file fields or contain base64 encoded image data.
+	 *
+	 * @var string|null Image of the object (base64 encoded or file reference)
+	 *
+	 * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
+	 */
+	protected ?string $image = null;
+
+	/**
+	 * An array defining group-based permissions for CRUD actions.
+	 * The keys are the CRUD actions ('create', 'read', 'update', 'delete'),
+	 * and the values are arrays of group IDs that are permitted to perform that action.
+	 * If an action is not present as a key, or its value is an empty array,
+	 * it is assumed that all users have permission for that action.
+	 *
+	 * Example:
+	 * [
+	 *   'create' => ['group-admin', 'group-editors'],
+	 *   'read'   => ['group-viewers'],
+	 *   'update' => ['group-editors'],
+	 *   'delete' => ['group-admin']
+	 * ]
+	 *
+	 * @var array<string, array<string>>|null
+	 */
+	protected ?array $groups = [];
+
+	/**
+	 * The expiration timestamp for this object
+	 *
+	 * @var DateTime|null The expiration timestamp for this object
+	 */
+	protected ?DateTime $expires = null;
+
+	/**
+	 * Search relevance score (0-100 percentage).
+	 *
+	 * This is a transient property set during fuzzy search to indicate
+	 * how well this object matches the search term. Not persisted to database.
+	 *
+	 * @var float|null The relevance score as a percentage (0-100)
+	 */
+	protected ?float $relevance = null;
+
+	/**
+	 * RFC 8141 URN identifier for this object.
+	 *
+	 * Transient property set by `RenderObject` (or `UrnService::buildForObject`)
+	 * during render so the @self envelope can carry a stable, system-
+	 * independent identifier. Not persisted to the DB — derived from
+	 * registerSlug + schemaSlug + uuid at render time.
+	 *
+	 * @var string|null The RFC 8141 URN, or null when not yet computed
+	 */
+	protected ?string $urn = null;
+
+	/**
+	 * Per-language translation completeness (Decision 4 from register-i18n).
+	 *
+	 * Transient property populated by RenderObject during render — shape:
+	 *   `[language => ['translated' => int, 'total' => int, 'ratio' => float]]`.
+	 * Computed-on-read via TranslationStatusService::completenessForObject;
+	 * skipped (null) when the schema has no translatable properties.
+	 *
+	 * @var array<string, array{translated: int, total: int, ratio: float}>|null
+	 */
+	protected ?array $translationCompleteness = null;
+
+	/**
+	 * Effective archival retention metadata for this object.
+	 *
+	 * Transient property populated by the render layer
+	 * (`add-archival-annotation-support`) so the @self envelope can carry the
+	 * resolved retention decision. The shape is ArchivalDecisionResolver's:
+	 * MDTO keys such as `retentionPeriod` and `disposalDate`, with the schema
+	 * annotation's evaluation under `annotation`, and no key holding null.
+	 * Not persisted to the DB; derived at render time. Exposed in @self as
+	 * `_retention`, and omitted entirely when not set.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $archivalRetention = null;
+
+	/**
+	 * The AVG clock and the Archiefwet clock, each with the rule that produced
+	 * it.
+	 *
+	 * Transient property populated by the render layer
+	 * (`delete-window-and-recorded-destruction`). Two dates rather than one,
+	 * deliberately: the AVG says delete when the lawful purpose ends and the
+	 * Archiefwet says keep for N years, and a product that merges them into a
+	 * single date is wrong in one direction for every object. Exposed in @self
+	 * as `_clocks`, omitted entirely when not set.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $retentionClocks = null;
+
+	/**
+	 * Registry subscription state for this object (`registry-subscriptions`,
+	 * finding B22).
+	 *
+	 * Transient property populated by the render layer from
+	 * `RegistrySubscriptionService::stateFor()`/`statesFor()` — shape:
+	 *   `['registry' => 'brp', 'state' => 'active', 'lastUpdate' => '...',
+	 *      'lastUpdateSource' => '...', 'refusalReason' => null|string]`.
+	 * Not persisted on this entity (the state lives in
+	 * `openregister_registry_subs`, keyed by object uuid). Exposed in @self
+	 * as `registry`, and omitted entirely for an object whose schema does
+	 * not declare `x-openregister-registry` or that never requested one.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $registryState = null;
+
+	/**
+	 * The lifecycle state's field rules for this object and reader
+	 * (`field-rules-by-state`).
+	 *
+	 * Transient property populated by the render layer from
+	 * `PropertyRbacHandler::stateFieldRulesFor()` — shape:
+	 *   `['state' => 'closed', 'hidden' => [...], 'readOnly' => [...],
+	 *      'required' => [...]]`.
+	 * Not persisted on this entity: the rules are declared on the SCHEMA and
+	 * re-resolved per read, because they depend on who is asking and on the
+	 * object's own values. Exposed in @self as `fieldRules`, and omitted
+	 * entirely for a schema that declares no `x-openregister-lifecycle.states`
+	 * block.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $fieldRules = null;
+
+	/**
+	 * Whether the current user follows this object (`object-watchers`).
+	 *
+	 * Transient property populated by the render layer from
+	 * `WatcherService::isWatchedByCaller()`. Not persisted on this entity: a
+	 * watcher is per-user, per-object state living in `openregister_watchers`,
+	 * which is exactly what keeps following an object out of the object's own
+	 * audit trail and versions. Exposed in @self as `watching`, and omitted for
+	 * an anonymous read.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $watching = null;
+
+	/**
+	 * How many users follow this object (`object-watchers`).
+	 *
+	 * Transient, and set only for a caller with `update` on the object —
+	 * watching is a fact about the object's audience, so an editor may see the
+	 * size of it and an ordinary reader may not. Exposed in @self as
+	 * `watcherCount`, and omitted entirely otherwise.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $watcherCount = null;
+
+	/**
+	 * Whether this object is unread for the current user (`object-read-state`).
+	 *
+	 * Transient, populated by the render layer from
+	 * `ReadStateService::isUnreadForCaller()`. Not persisted: a read state is
+	 * per-user, per-object state living in
+	 * `openregister_object_read_state`, which is what keeps reading an object
+	 * out of its own audit trail and versions. Exposed in @self as `unread`, and
+	 * omitted for an anonymous read, where there is no "you" to answer for.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $unread = null;
+
+	/**
+	 * How many entries of each sub-resource are unread (`object-read-state`).
+	 *
+	 * Transient, and one map rather than a field per tab, so a page renders
+	 * every tab badge from one read instead of a call per tab. Exposed in @self
+	 * as `unreadCounts`.
+	 *
+	 * @var array<string, int>|null
+	 */
+	protected ?array $unreadCounts = null;
+
+	/**
+	 * Whether the current user's follow of this object notifies them.
+	 *
+	 * Transient, set with the follow marker by `setWatching()`, and only when
+	 * the reader follows the object (`merge-follow-and-favourites`). Exposed
+	 * as `watchNotify` in the self envelope. The deprecated `favourite` marker
+	 * is no longer a property of its own: it is `watching` under its old name
+	 * for one release.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $watchNotify = null;
+
+	/**
+	 * When the reader last opened this object, as ISO 8601.
+	 *
+	 * Transient, set only on a `_recent=true` page from the read history the
+	 * lens was resolved with (the audit trail's `read` rows). Exposed in @self
+	 * as `viewedAt`, and absent on every other read.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $viewedAt = null;
+
+	/**
+	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
+	 *
+	 * Transient, populated by the render layer only when the request asks for
+	 * it (`_extend[]=@self.can`), for the reader of that request. Exposed
+	 * in @self as `can`. The records list reads it to decide where a cell may
+	 * be edited in place (REQ-RFCE-002).
+	 *
+	 * @var array<string, bool>|null
+	 */
+	protected ?array $can = null;
+
+	/**
+	 * AVG / GDPR Art 30 processing-activity override.
+	 *
+	 * Transient field — set by callers that want to tag an upcoming
+	 * write to a specific verwerkingsactiviteit (highest precedence in
+	 * the audit-trail trigger contract; beats schema and register
+	 * defaults). Used by data-subject access endpoints
+	 * (`/api/avg/inzage`, `/api/avg/vergetelheid`,
+	 * `/api/avg/portabiliteit`) so reads/writes performed under a DSAR
+	 * are correctly attributed to that processing activity.
+	 *
+	 * Not persisted to the object itself — the audit trail is the
+	 * canonical record. Accepted as either a `code` or a `uuid`; the
+	 * audit hook resolves both forms via
+	 * `VerwerkingsactiviteitMapper::resolveReference`.
+	 *
+	 * @var string|null Transient processing-activity reference.
+	 */
+	protected ?string $processingActivityId = null;
+
+	/**
+	 * Import-job tag transferred to the audit trail on save.
+	 *
+	 * Transient field — set by `ImportService` at the start of a bulk
+	 * import so every object created during that import gets the same
+	 * UUID stamped on its `create` audit row. Powers the
+	 * `softDeleteByImportJobId` rollback contract: a critical failure
+	 * (or explicit user request) hands the UUID back, the audit table
+	 * is queried for `action = 'create' AND import_job_id = X`, and
+	 * the resulting object UUIDs are soft-deleted as a unit.
+	 *
+	 * Not persisted to the object itself — the audit trail is the
+	 * canonical record so per-magic-table migrations are avoided.
+	 *
+	 * @var string|null Transient import-job reference (UUID v4).
+	 */
+	protected ?string $importJobId = null;
+
+	/**
+	 * Get the URN for this object.
+	 *
+	 * @return string|null URN string, or null when none is set.
+	 */
+	public function getUrn(): ?string {
+		return $this->urn;
+	}//end getUrn()
+
+	/**
+	 * Get the transient processing-activity override used by the
+	 * audit-trail trigger contract. Null when no override is set.
+	 *
+	 * @return string|null Processing-activity code or UUID, or null.
+	 */
+	public function getProcessingActivityId(): ?string {
+		return $this->processingActivityId;
+	}//end getProcessingActivityId()
+
+	/**
+	 * Set the transient processing-activity override (code or uuid).
+	 * Not persisted to the object — read by `AuditTrailMapper` at
+	 * write time only.
+	 *
+	 * @param string|null $processingActivityId Processing-activity code or UUID.
+	 *
+	 * @return void
+	 */
+	public function setProcessingActivityId(?string $processingActivityId): void {
+		$this->processingActivityId = $processingActivityId;
+	}//end setProcessingActivityId()
+
+	/**
+	 * Get the transient import-job UUID that should be stamped on the
+	 * next save's audit-trail `create` row. Null when the write is
+	 * not part of a tagged bulk import.
+	 *
+	 * @return string|null Import-job UUID, or null when not part of an import.
+	 */
+	public function getImportJobId(): ?string {
+		return $this->importJobId;
+	}//end getImportJobId()
+
+	/**
+	 * Set the transient import-job UUID. Not persisted to the object;
+	 * read by `AuditTrailMapper::createAuditTrail()` at write time and
+	 * stored on the audit row.
+	 *
+	 * @param string|null $importJobId Import-job UUID to stamp on the next audit row.
+	 *
+	 * @return void
+	 */
+	public function setImportJobId(?string $importJobId): void {
+		$this->importJobId = $importJobId;
+	}//end setImportJobId()
+
+	/**
+	 * Set the URN for this object (transient, not persisted).
+	 *
+	 * @param string|null $urn URN to attach to the object instance.
+	 *
+	 * @return void
+	 */
+	public function setUrn(?string $urn): void {
+		$this->urn = $urn;
+	}//end setUrn()
+
+	/**
+	 * Read the cached per-language translation completeness map.
+	 *
+	 * @return array<string, mixed>|null Completeness map keyed by language, or null when not computed.
+	 */
+	public function getTranslationCompleteness(): ?array {
+		return $this->translationCompleteness;
+	}//end getTranslationCompleteness()
+
+	/**
+	 * Write the cached per-language translation completeness map.
+	 *
+	 * @param array<string, mixed>|null $translationCompleteness Completeness map keyed by language.
+	 *
+	 * @return void
+	 */
+	public function setTranslationCompleteness(?array $translationCompleteness): void {
+		$this->translationCompleteness = $translationCompleteness;
+	}//end setTranslationCompleteness()
+
+	/**
+	 * Read the effective archival retention metadata.
+	 *
+	 * @return array<string, mixed>|null The retention decision, or null when not set.
+	 */
+	public function getArchivalRetention(): ?array {
+		return $this->archivalRetention;
+	}//end getArchivalRetention()
+
+	/**
+	 * Write the effective archival retention metadata.
+	 *
+	 * Surfaced in the @self envelope as `_retention` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $retention The resolved retention decision.
+	 *
+	 * @return void
+	 */
+	public function setArchivalRetention(?array $retention): void {
+		$this->archivalRetention = $retention;
+	}//end setArchivalRetention()
+
+	/**
+	 * Read the two retention clocks.
+	 *
+	 * @return array<string, mixed>|null The clocks, or null when not resolved.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function getRetentionClocks(): ?array {
+		return $this->retentionClocks;
+	}//end getRetentionClocks()
+
+	/**
+	 * Write the two retention clocks.
+	 *
+	 * Surfaced in the @self envelope as `_clocks` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $clocks The AVG and Archiefwet clocks with their rules.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function setRetentionClocks(?array $clocks): void {
+		$this->retentionClocks = $clocks;
+	}//end setRetentionClocks()
+
+	/**
+	 * Get the registry subscription state, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function getRegistryState(): ?array {
+		return $this->registryState;
+	}//end getRegistryState()
+
+	/**
+	 * Write the registry subscription state.
+	 *
+	 * Surfaced in the @self envelope as `registry` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $state The subscription state mirror.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function setRegistryState(?array $state): void {
+		$this->registryState = $state;
+	}//end setRegistryState()
+
+	/**
+	 * Get the lifecycle state's field rules, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function getFieldRules(): ?array {
+		return $this->fieldRules;
+	}//end getFieldRules()
+
+	/**
+	 * Write the lifecycle state's field rules.
+	 *
+	 * Surfaced in the @self envelope as `fieldRules` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $rules The resolved hidden, read-only and required lists.
+	 *
+	 * @return void
+	 */
+	public function setFieldRules(?array $rules): void {
+		$this->fieldRules = $rules;
+	}//end setFieldRules()
+
+	/**
+	 * Write the current user's follow marker.
+	 *
+	 * Write-only on purpose: `mergeTransientRenderFields()` reads the property
+	 * directly, so a public getter would have no caller. This entity is already
+	 * at PHPMD's public-member ceiling, and a getter nothing calls is what it is
+	 * there to stop.
+	 *
+	 * Surfaced in the @self envelope as `watching` (and, deprecated, as
+	 * `favourite`) by getObjectArray(). The follow's notification switch rides
+	 * along as the second argument rather than a setter of its own, for the
+	 * same public-member ceiling; it is surfaced as `watchNotify` only when the
+	 * reader follows the object.
+	 *
+	 * @param boolean|null $watching Whether the current user follows this object.
+	 * @param boolean|null $notify   Whether that follow notifies them, or null when not following.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	public function setWatching(?bool $watching, ?bool $notify = null): void {
+		$this->watching = $watching;
+		$this->watchNotify = null;
+		if ($watching === true) {
+			$this->watchNotify = $notify;
+		}
+	}//end setWatching()
+
+	/**
+	 * Write the follower count.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above.
+	 *
+	 * Surfaced in the @self envelope as `watcherCount` by getObjectArray().
+	 *
+	 * @param integer|null $count The number of followers, or null to omit it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 */
+	public function setWatcherCount(?int $count): void {
+		$this->watcherCount = $count;
+	}//end setWatcherCount()
+
+	/**
+	 * Write the current user's unread marker.
+	 *
+	 * Write-only, for the same reason as `setWatching()` above:
+	 * `mergeTransientRenderFields()` reads the property directly, so a public
+	 * getter would have no caller and this entity is already at PHPMD's
+	 * public-member ceiling.
+	 *
+	 * Surfaced in the @self envelope as `unread` by getObjectArray().
+	 *
+	 * @param boolean|null $unread Whether the object is unread for the current user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	public function setUnread(?bool $unread): void {
+		$this->unread = $unread;
+	}//end setUnread()
+
+	/**
+	 * Write the per-sub-resource unread counts.
+	 *
+	 * Write-only, for the same reason as `setUnread()` above.
+	 *
+	 * Surfaced in the @self envelope as `unreadCounts` by getObjectArray().
+	 *
+	 * @param array<string, int>|null $counts Sub-resource name to unread count, or null to omit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	public function setUnreadCounts(?array $counts): void {
+		$this->unreadCounts = $counts;
+	}//end setUnreadCounts()
+
+	/**
+	 * Write when the reader last opened this object.
+	 *
+	 * Write-only, like setWatching(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `viewedAt`.
+	 *
+	 * @param string|null $viewedAt ISO 8601 moment of the reader's latest read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 */
+	public function setViewedAt(?string $viewedAt): void {
+		$this->viewedAt = $viewedAt;
+	}//end setViewedAt()
+
+	/**
+	 * Write what the reader may do with this object.
+	 *
+	 * Write-only, like setWatching(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `can`.
+	 *
+	 * @param array<string, bool>|null $can The reader's rights, e.g. `['update' => true]`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+	 */
+	public function setCan(?array $can): void {
+		$this->can = $can;
+	}//end setCan()
+
+	/**
+	 * Initialize the entity and define field types
+	 */
+	public function __construct() {
+		$this->addType(fieldName: 'uuid', type: 'string');
+		$this->addType(fieldName: 'slug', type: 'string');
+		$this->addType(fieldName: 'uri', type: 'string');
+		$this->addType(fieldName: 'version', type: 'string');
+		$this->addType(fieldName: 'register', type: 'string');
+		$this->addType(fieldName: 'schema', type: 'string');
+		$this->addType(fieldName: 'object', type: 'json');
+		$this->addType(fieldName: 'files', type: 'json');
+		$this->addType(fieldName: 'relations', type: 'json');
+		$this->addType(fieldName: 'locked', type: 'json');
+		$this->addType(fieldName: 'owner', type: 'string');
+		$this->addType(fieldName: 'authorization', type: 'json');
+		$this->addType(fieldName: 'folder', type: 'string');
+		$this->addType(fieldName: 'application', type: 'string');
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'validation', type: 'json');
+		$this->addType(fieldName: 'quality', type: 'json');
+		$this->addType(fieldName: 'deleted', type: 'json');
+		$this->addType(fieldName: 'archived', type: 'json');
+		$this->addType(fieldName: 'frozen', type: 'json');
+		$this->addType(fieldName: 'status', type: 'string');
+		$this->addType(fieldName: 'geo', type: 'json');
+		$this->addType(fieldName: 'retention', type: 'json');
+		$this->addType(fieldName: 'tmlo', type: 'json');
+		$this->addType(fieldName: 'mail', type: 'json');
+		$this->addType(fieldName: 'contacts', type: 'json');
+		$this->addType(fieldName: 'notes', type: 'json');
+		$this->addType(fieldName: 'todos', type: 'json');
+		$this->addType(fieldName: 'calendar', type: 'json');
+		$this->addType(fieldName: 'talk', type: 'json');
+		$this->addType(fieldName: 'deck', type: 'json');
+		$this->addType(fieldName: 'size', type: 'string');
+		$this->addType(fieldName: 'schemaVersion', type: 'string');
+		$this->addType(fieldName: 'name', type: 'string');
+		$this->addType(fieldName: 'description', type: 'string');
+		$this->addType(fieldName: 'summary', type: 'string');
+		$this->addType(fieldName: 'image', type: 'string');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'lastUserActivity', type: 'datetime');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'groups', type: 'json');
+		$this->addType(fieldName: 'expires', type: 'datetime');
+	}//end __construct()
+
+	/**
+	 * Override getter to provide default empty arrays for JSON array fields
+	 *
+	 * We only override this one method from parent Entity - everything else
+	 * (setters, type conversion, change tracking) uses parent's implementation.
+	 *
+	 * The ONLY difference: we return [] instead of null for specific JSON fields
+	 * that represent collections, making code cleaner throughout the app.
+	 *
+	 * @param string $name The property name
+	 *
+	 * @return mixed The property value, or [] for unset array fields
+	 */
+	protected function getter(string $name): mixed {
+		// Array fields that should return [] instead of null when unset.
+		$arrayEmptyDefaults = [
+			'files',
+			'relations',
+			'authorization',
+			'validation',
+			'quality',
+			'deleted',
+			'archived',
+			'frozen',
+			'groups',
+			'geo',
+			'retention',
+			'tmlo',
+		];
+
+		// If this is an array field and it's null, return empty array.
+		if (in_array($name, $arrayEmptyDefaults) === true && property_exists($this, $name) === true) {
+			return $this->$name ?? [];
+		}
+
+		// Otherwise, delegate to parent's standard getter behavior.
+		return parent::getter(name: $name);
+	}//end getter()
+
+	/**
+	 * Get the object data and set the 'id' to the 'uuid'
+	 *
+	 * This getter has special logic to inject the UUID as 'id' field,
+	 * so it must remain explicit rather than using the magic method.
+	 *
+	 * @return (mixed|null|string)[]
+	 *
+	 * @psalm-return array{id: mixed|null|string,...}
+	 */
+	public function getObject(): array {
+		// Initialize the object data with an empty array if null.
+		$objectData = $this->object ?? [];
+
+		// Ensure 'id' is the first field; array_replace keeps numeric property keys.
+		$objectData = array_replace(['id' => $this->uuid], $objectData);
+
+		return $objectData;
+	}//end getObject()
+
+	/**
+	 * The object's UUID.
+	 *
+	 * 🔑 EXPLICIT ON PURPOSE — an interface cannot be satisfied by `__call`.
+	 *
+	 * These five getters were magic (`@method` annotations over Nextcloud's
+	 * Entity `__call`). Magic methods do not implement an interface: PHP checks
+	 * DECLARED methods, so `implements ObjectEntityInterface` would have been a
+	 * fatal error with the annotations alone. The same blind spot has bitten
+	 * this fleet before — `method_exists()` is false for every magic method.
+	 *
+	 * Their `@method` annotations are deliberately LEFT IN PLACE above, even
+	 * though a declared method makes them redundant. Removing them is correct
+	 * and was tried here: it surfaces **214 phpstan findings** across the app,
+	 * because the annotations had been hiding the real return types from static
+	 * analysis. That is genuine debt and it deserves its own change with its own
+	 * baseline — openregister#2288 already set that precedent for lib/Db — not a
+	 * silent passenger on a PR about publishing a contract.
+	 *
+	 * `@method array|null getObject()` in particular reads like an obvious
+	 * deletion — the method has been explicitly declared for a long time, and
+	 * psalm reports it as LessSpecificImplementedReturnType. Deleting it was
+	 * tried, and it is a trap twice over: psalm's finding is ALREADY in the
+	 * baseline, so removing the line trades a suppressed warning for an
+	 * `UnusedBaselineEntry` error, and it re-opens the same phpstan array-shape
+	 * findings the other five shadows are keeping closed. Leave it.
+	 *
+	 * @return string|null
+	 */
+	public function getUuid(): ?string {
+		return $this->uuid;
+	}//end getUuid()
+
+	/**
+	 * The register this object belongs to.
+	 *
+	 * @return string|null
+	 */
+	public function getRegister(): ?string {
+		return $this->register;
+	}//end getRegister()
+
+	/**
+	 * The schema this object conforms to.
+	 *
+	 * @return string|null
+	 */
+	public function getSchema(): ?string {
+		return $this->schema;
+	}//end getSchema()
+
+	/**
+	 * The owning organisation.
+	 *
+	 * @return string|null
+	 */
+	public function getOrganisation(): ?string {
+		return $this->organisation;
+	}//end getOrganisation()
+
+	/**
+	 * The owner's user id.
+	 *
+	 * @return string|null
+	 */
+	public function getOwner(): ?string {
+		return $this->owner;
+	}//end getOwner()
+
+	/**
+	 * Hydrate the entity from an array of data
+	 *
+	 * @param array $object Array of data to hydrate the entity with
+	 *
+	 * @return static Returns the hydrated entity
+	 */
+	public function hydrate(array $object): static {
+		$jsonFields = $this->getJsonFields();
+
+		if (isset($object['metadata']) === false) {
+			$object['metadata'] = [];
+		}
+
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields) === true && $value === []) {
+				$value = null;
+			}
+
+			$method = 'set' . ucfirst($key);
+
+			try {
+				$this->$method($value);
+			} catch (Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
+
+		return $this;
+	}//end hydrate()
+
+	/**
+	 * Hydrate the entity from an serialized array of data
+	 *
+	 * @param array $object Array of data to hydrate the entity with
+	 *
+	 * @return static Returns the hydrated entity
+	 */
+	public function hydrateObject(array $object): static {
+		// Lets grap the metadata fields and remove them from the object.
+		$metaDataFields = $object['@self'];
+		unset($object['@self']);
+
+		// Hydrate the entity with the metadata fields.
+		$this->hydrate(object: $metaDataFields);
+		$this->setObject($object);
+
+		// Return the hydrated entity.
+		return $this;
+	}//end hydrateObject()
+
+	/**
+	 * Serialize the entity to JSON format
+	 *
+	 * Merges the object's own data with a '@self' key containing metadata.
+	 * Ensures that if a name is not set, the UUID is used as a fallback.
+	 *
+	 * @return ((array|int|mixed|null|string)[]|mixed)[]
+	 *
+	 * @psalm-return array{'@self': array{id: null|string, slug: null|string,
+	 *     name: null|string, description: int|string, summary: null|string,
+	 *     image: null|string, uri: null|string, version: null|string,
+	 *     register: array|null|string, schema: array|null|string,
+	 *     schemaVersion: null|string, files: array|null,
+	 *     relations: array|null, locked: array|null,
+	 *     owner: array|null|string, organisation: array|null|string,
+	 *     groups: mixed, authorization: array|null, folder: null|string,
+	 *     application: array|null|string, validation: array|null,
+	 *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
+	 *     updated: null|string, created: null|string,
+	 *     deleted: array|null},...}
+	 */
+	public function jsonSerialize(): array {
+		// Backwards compatibility for old objects.
+		$object = [];
+		if (($this->object ?? null) !== null) {
+			$object = $this->object;
+		}
+
+		// Default to an empty array if $this->object is null.
+		$object['@self'] = $this->getObjectArray(object: $object ?? []);
+
+		// Check if name is empty and set uuid as fallback.
+		if (empty($object['@self']['name']) === true) {
+			$object['@self']['name'] = $this->uuid;
+		}
+
+		// Ensure id is always accessible at top level (not just in @self).
+		// This ensures consistency between single object and collection API responses.
+		if (($this->uuid ?? null) !== null) {
+			$object['id'] = $this->uuid;
+		}
+
+		// Let's merge and return.
+		return $object;
+	}//end jsonSerialize()
+
+	/**
+	 * Get array representation of all object properties
+	 *
+	 * @param array $object Object array parameter
+	 *
+	 * @return (array|int|mixed|null|string)[] Array containing all object properties
+	 *
+	 * @psalm-return array{id: null|string, slug: null|string,
+	 *     name: null|string, description: int|string, summary: null|string,
+	 *     image: null|string, uri: null|string, version: null|string,
+	 *     register: array|null|string, schema: array|null|string,
+	 *     schemaVersion: null|string, files: array|null,
+	 *     relations: array|null, locked: array|null,
+	 *     owner: array|null|string, organisation: array|null|string,
+	 *     groups: mixed, authorization: array|null, folder: null|string,
+	 *     application: array|null|string, validation: array|null,
+	 *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
+	 *     updated: null|string, created: null|string,
+	 *     deleted: array|null}
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 */
+	public function getObjectArray(array $object = []): array {
+		// Initialize the object array with default properties.
+		// Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
+		$objectArray = [
+			'id' => $this->uuid,
+			'slug' => $this->slug,
+			'name' => $this->name ?? $this->uuid,
+			'description' => $this->description ?? $this->id,
+			'summary' => $this->summary,
+			'image' => $this->image,
+			'uri' => $this->uri,
+			'version' => $this->version,
+			'register' => $this->register,
+			'schema' => $this->schema,
+			'schemaVersion' => $this->schemaVersion,
+			'files' => $this->getFiles(),
+			'relations' => $this->getRelations(),
+			'locked' => $this->getLocked(),
+			'owner' => $this->owner,
+			'organisation' => $this->organisation,
+			'groups' => $this->getGroups(),
+			'authorization' => $this->getAuthorization(),
+			'folder' => $this->folder,
+			'application' => $this->application,
+			'validation' => $this->getValidation(),
+			'quality' => $this->getQuality(),
+			'geo' => $this->getGeo(),
+			'retention' => $this->getRetention(),
+			'tmlo' => $this->getTmlo(),
+			'size' => $this->size,
+			'updated' => $this->getFormattedDate(date: $this->updated),
+			'lastUserActivity' => $this->getFormattedDate(date: $this->lastUserActivity),
+			'created' => $this->getFormattedDate(date: $this->created),
+			'deleted' => $this->getDeleted(),
+			'archived' => $this->getArchived(),
+			'frozen' => $this->getFrozen(),
+			'status' => $this->status,
+			'source' => $this->source,
+			'mail' => $this->getMail(),
+			'contacts' => $this->getContacts(),
+			'notes' => $this->getNotes(),
+			'todos' => $this->getTodos(),
+			'calendar' => $this->getCalendar(),
+			'talk' => $this->getTalk(),
+			'deck' => $this->getDeck(),
+		];
+
+		$objectArray = $this->mergeTransientRenderFields(objectArray: $objectArray);
+
+		// Check for '@self' in the provided object array (this is the case if the object metadata is extended).
+		if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
+			$self = $object['@self'];
+
+			// Use the '@self' values if they are arrays.
+			if (($self['register'] ?? null) !== null && is_array($self['register']) === true) {
+				$objectArray['register'] = $self['register'];
+			}
+
+			if (($self['schema'] ?? null) !== null && is_array($self['schema']) === true) {
+				$objectArray['schema'] = $self['schema'];
+			}
+
+			if (($self['owner'] ?? null) !== null && is_array($self['owner']) === true) {
+				$objectArray['owner'] = $self['owner'];
+			}
+
+			if (($self['organisation'] ?? null) !== null) {
+				$objectArray['organisation'] = $self['organisation'];
+			}
+
+			if (($self['application'] ?? null) !== null && is_array($self['application']) === true) {
+				$objectArray['application'] = $self['application'];
+			}
+		}//end if
+
+		return $objectArray;
+	}//end getObjectArray()
+
+	/**
+	 * The record as an access rule's `match` reads it: its data, with `@self` set from its own metadata.
+	 *
+	 * A rule on `_owner`, `_organisation`, `_schema` or another underscore-prefixed
+	 * field reads `@self`, and an object without `@self` the body key of that name.
+	 * Both can come from whoever wrote the data, so the data's own `@self` is replaced
+	 * and the body keys that name a metadata field are dropped: the record answers for
+	 * its metadata, also when a field is empty. The envelope also carries the
+	 * record's `expires`, which the rendered `@self` does not, so a delegation
+	 * can end on `_expires`.
+	 *
+	 * @return array<int|string, mixed>
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function getMatchEnvelope(): array {
+		$envelope = $this->getObject();
+		$metadata = $this->getObjectArray();
+		$metadata['expires'] = $this->getFormattedDate(date: $this->expires);
+		foreach (array_keys($metadata) as $field) {
+			unset($envelope['_' . $field]);
+		}
+
+		$envelope['@self'] = $metadata;
+
+		return $envelope;
+	}//end getMatchEnvelope()
+
+	/**
+	 * Run a property filter over data, with the rules reading this record's own metadata.
+	 *
+	 * The filter sees the data with `@self` set from the record, so a rule on
+	 * `_organisation` or `_owner` is not answered by a `@self` the data carries.
+	 * The result carries the data's own `@self` again, or none when it had none.
+	 *
+	 * @param array<int|string, mixed>                                       $data   The data to filter.
+	 * @param callable(array<int|string, mixed>): array<int|string, mixed> $filter The property filter.
+	 *
+	 * @return array<int|string, mixed> The filtered data.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function filterAsRecord(array $data, callable $filter): array {
+		$probe = $data;
+		$probe['@self'] = $this->getObjectArray();
+
+		$filtered = $filter($probe);
+		if (array_key_exists('@self', $data) === true) {
+			$filtered['@self'] = $data['@self'];
+
+			return $filtered;
+		}
+
+		unset($filtered['@self']);
+
+		return $filtered;
+	}//end filterAsRecord()
+
+	/**
+	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
+	 * search relevance, the RFC 8141 URN, per-language translation
+	 * completeness, the effective archival retention decision, the
+	 * registry subscription state (`registry-subscriptions`, finding B22), the
+	 * reader's own follow marker plus the follower count (`object-watchers`),
+	 * and the reader's unread marker plus the tab badge counts
+	 * (`object-read-state`).
+	 * Each is optional and omitted entirely when unset — none of these are
+	 * persisted on this entity; they are populated by RenderObject at read
+	 * time.
+	 *
+	 * Extracted out of {@see getObjectArray()} to keep that method under
+	 * this repo's PHPMD line-count threshold.
+	 *
+	 * @param array<string, mixed> $objectArray The array built so far.
+	 *
+	 * @return array<string, mixed> The array with any set transient fields merged in.
+	 */
+	private function mergeTransientRenderFields(array $objectArray): array {
+		// Every transient render field, keyed by the name it takes in @self.
+		// Each is set by the render layer and left null otherwise, and a null
+		// one is omitted rather than written as null, because "not rendered"
+		// and "rendered as nothing" are different claims to a client.
+		//
+		// - relevance: only when a search ran with _fuzzy=true.
+		// - urn: RenderObject populates it via UrnService::buildForObject, so a
+		//   raw entity that never went through the renderer has none.
+		// - translationCompleteness: absent when the schema has no translatable
+		//   properties, or the object has not been rendered.
+		// - _retention: the effective archival retention decision.
+		// - _clocks: both retention clocks, each naming its rule, never flattened
+		//   into one date.
+		// - registry: the registry subscription state, absent for an object
+		//   that never requested one.
+		// - fieldRules: what the object's lifecycle state hides, freezes and
+		//   demands for this reader, absent when the schema declares none.
+		// - watching, watcherCount: the reader's own follow state and the size
+		//   of the audience (`object-watchers`).
+		// - unread: whether the reader has seen this object since it last
+		//   changed (`object-read-state`). Absent for an anonymous read, where
+		//   there is no "you" to answer for.
+		// - watchNotify: whether the reader's follow notifies them, present only
+		//   when they follow (`merge-follow-and-favourites`).
+		// - favourite: DEPRECATED, `watching` under its old name for one
+		//   release, so a client that still reads the star keeps working.
+		// - viewedAt: when the reader last opened this object, on a
+		//   `_recent=true` page only (`read-history-on-audit-trail`).
+		//
+		// This is a map rather than a chain of ifs because the chain grew one
+		// branch per feature and ran past the complexity budget.
+		$transient = [
+			'relevance'               => $this->relevance,
+			'urn'                     => $this->urn,
+			'translationCompleteness' => $this->translationCompleteness,
+			'_retention'              => $this->archivalRetention,
+			'_clocks'                 => $this->retentionClocks,
+			'registry'                => $this->registryState,
+			'fieldRules'              => $this->fieldRules,
+			'watching'                => $this->watching,
+			'watcherCount'            => $this->watcherCount,
+			'unread'                  => $this->unread,
+			'watchNotify'             => $this->watchNotify,
+			'favourite'               => $this->watching,
+			'viewedAt'                => $this->viewedAt,
+			'can'                     => $this->can,
+		];
+
+		foreach ($transient as $key => $value) {
+			if ($value !== null) {
+				$objectArray[$key] = $value;
+			}
+		}
+
+		// The tab badges, as one map. Omitted when there is nothing to badge,
+		// because an empty map and "no badges here" are the same claim.
+		if ($this->unreadCounts !== null && $this->unreadCounts !== []) {
+			$objectArray['unreadCounts'] = $this->unreadCounts;
+		}
+
+		return $objectArray;
+	}//end mergeTransientRenderFields()
+
+	/**
+	 * Format DateTime object to ISO 8601 string or return null
+	 *
+	 * @param DateTime|null $date The date to format
+	 *
+	 * @return string|null The formatted date or null
+	 */
+	private function getFormattedDate(?DateTime $date): ?string {
+		if ($date === null) {
+			return null;
+		}
+
+		return $date->format('c');
+	}//end getFormattedDate()
+
+	/**
+	 * Holder kind for a lock taken by a flow run.
+	 *
+	 * @var string
+	 */
+	public const LOCK_KIND_RUN = 'run';
+
+	/**
+	 * Holder kind for a lock taken by a person.
+	 *
+	 * A payload with no `kind` at all is read as this one, which is how every
+	 * lock written before run-scoped locking keeps its meaning without a
+	 * migration or a back-fill. No such record can be misclassified, because
+	 * no run has ever been able to take a lock.
+	 *
+	 * @var string
+	 */
+	public const LOCK_KIND_USER = 'user';
+
+	/**
+	 * Whether the live lock on this object is held AGAINST the given caller.
+	 *
+	 * This is the ONE production predicate for lock ownership. Every write
+	 * guard, every unlock authorization and every flow node calls it, and
+	 * nothing restates the comparison, tests included. It used to be spelled
+	 * three different ways in three places and two of them were wrong.
+	 *
+	 * The rules:
+	 *  - No live lock: held against nobody. An EXPIRED lock is not a lock.
+	 *  - User lock: held against everyone whose uid differs from the recorded
+	 *    one. This is the historical behaviour, unchanged.
+	 *  - Run lock: held against everyone whose run uuid differs from the
+	 *    recorded one, INCLUDING a caller presenting the run's own `runAs`
+	 *    user and no run uuid. That exclusion is the point: if the runAs user
+	 *    were admitted, a lock taken by a run under `alice` would be no
+	 *    obstacle to alice, and on an instance where flows run as one service
+	 *    account it would be no obstacle to anybody.
+	 *  - Run lock with no `runUuid`: held against everybody. A malformed lock
+	 *    fails CLOSED, because the alternative is silently converting a
+	 *    writer's bug into an open door.
+	 *  - User lock, run caller: held against the run. A run is not the person
+	 *    it runs as, in EITHER direction. Reading them as one holder let a run
+	 *    walk into a person's lock, take the extend branch and rewrite the
+	 *    payload as its own — and then release it at the end of the run. The
+	 *    person's lock was destroyed by a flow merely passing over the object,
+	 *    with no error and no audit of a displacement.
+	 *
+	 * @param string|null $userId The caller's user id, or null when anonymous.
+	 * @param string|null $runUuid The caller's flow-run uuid, when the caller is a run.
+	 *
+	 * @return bool True when the caller must be refused.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function isLockedBySomeoneElse(?string $userId, ?string $runUuid = null): bool {
+		if ($this->isLocked() === false) {
+			return false;
+		}
+
+		$lock = ($this->locked ?? []);
+		$kind = ($lock['kind'] ?? self::LOCK_KIND_USER);
+
+		if ($kind === self::LOCK_KIND_RUN) {
+			$holder = ($lock['runUuid'] ?? null);
+			if (is_string($holder) === false || trim($holder) === '') {
+				// Malformed run lock: admit nobody.
+				return true;
+			}
+
+			return ($runUuid === null || trim($runUuid) !== trim($holder));
+		}
+
+		// A USER lock and a caller acting for a run: different holders, so the
+		// lock is held against it. The kinds are compared BEFORE the user id
+		// because they are what distinguishes the holders — a run under
+		// `alice` matching a lock alice took is exactly the confusion that let
+		// a flow take over a person's lock.
+		if ($runUuid !== null && trim($runUuid) !== '') {
+			return true;
+		}
+
+		return (($lock['user'] ?? null) !== $userId);
+	}//end isLockedBySomeoneElse()
+
+	/**
+	 * Describe the live lock's holder for a refusal message.
+	 *
+	 * A refusal that does not say who holds the lock leaves the reader with
+	 * nowhere to go, which is why the message is built here rather than at
+	 * each of the four guards.
+	 *
+	 * @return string|null The holder description, or null when not locked.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
+	 */
+	public function describeLockHolder(): ?string {
+		if ($this->isLocked() === false) {
+			return null;
+		}
+
+		$lock = ($this->locked ?? []);
+		if (($lock['kind'] ?? self::LOCK_KIND_USER) !== self::LOCK_KIND_RUN) {
+			return (string)($lock['user'] ?? 'another user');
+		}
+
+		$run = trim((string)($lock['runUuid'] ?? ''));
+		if ($run === '') {
+			return 'a flow run that did not record its identity';
+		}
+
+		$runAs = trim((string)($lock['user'] ?? ''));
+		if ($runAs === '') {
+			return sprintf('flow run %s', $run);
+		}
+
+		return sprintf('flow run %s, running as %s', $run, $runAs);
+	}//end describeLockHolder()
+
+	/**
+	 * Get the flow run holding this object, when a run holds it.
+	 *
+	 * @return string|null The holding run's uuid, or null when the lock is a
+	 *                     user lock, malformed, expired or absent.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-records-whether-a-run-or-a-person-holds-it
+	 */
+	public function getLockedByRun(): ?string {
+		if ($this->isLocked() === false) {
+			return null;
+		}
+
+		$lock = ($this->locked ?? []);
+		if (($lock['kind'] ?? self::LOCK_KIND_USER) !== self::LOCK_KIND_RUN) {
+			return null;
+		}
+
+		$run = trim((string)($lock['runUuid'] ?? ''));
+		if ($run === '') {
+			return null;
+		}
+
+		return $run;
+	}//end getLockedByRun()
+
+	/**
+	 * Lock the object for a specific duration
+	 *
+	 * Passing `$runUuid` takes a RUN-scoped lock: one that refuses every
+	 * caller but that run, the run's own `runAs` user included. Omitting it
+	 * takes the user lock this method has always taken.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string|null $process Optional process identifier
+	 * @param int|null $duration Lock duration in seconds (default: 1 hour)
+	 * @param string|null $runUuid Flow run taking the lock, for a run-scoped lock
+	 *
+	 * @throws Exception If the object is already locked by another holder
+	 *
+	 * @return true True if lock was successful
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function lock(
+		IUserSession $userSession,
+		?string $process = null,
+		?int $duration = 3600,
+		?string $runUuid = null,
+	): bool {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$userId = $currentUser->getUID();
+		$now = new DateTime();
+
+		$kind = self::LOCK_KIND_USER;
+		if ($runUuid !== null && trim($runUuid) !== '') {
+			$kind = self::LOCK_KIND_RUN;
+			$runUuid = trim($runUuid);
+		}
+
+		// If already locked, check whether this caller is the holder.
+		if ($this->isLocked() === true) {
+			$lock = $this->getLocked();
+			if ($lock === null) {
+				throw new Exception('Lock data is missing');
+			}
+
+			// Held against this caller. Note that two runs under ONE user land
+			// here now: ownership is no longer keyed on the user alone, so the
+			// second run is refused instead of silently extending the first's
+			// lock and being handed the object.
+			if ($this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true) {
+				throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
+			}
+
+			// Same holder: extend the lock.
+			$this->setLocked(
+				$this->withExpiration(
+					payload: [
+						'kind' => $kind,
+						'runUuid' => $runUuid,
+						'user' => $userId,
+						'process' => ($process ?? $lock['process']),
+						'created' => $lock['created'],
+						'duration' => $duration,
+					],
+					now: $now
+				)
+			);
+			return true;
+		}//end if
+
+		// Create new lock.
+		$this->setLocked(
+			$this->withExpiration(
+				payload: [
+					'kind' => $kind,
+					'runUuid' => $runUuid,
+					'user' => $userId,
+					'process' => $process,
+					'created' => $now->format('c'),
+					'duration' => $duration,
+				],
+				now: $now
+			)
+		);
+
+		return true;
+	}//end lock()
+
+	/**
+	 * The stored shape of a lock.
+	 *
+	 * 🔴 A LOCK WITH NO DURATION CARRIES NO EXPIRATION, AND THAT IS THE WHOLE
+	 * POINT OF THIS METHOD. Both callers used to write
+	 * `now + ('PT' . ($duration ?? 0) . 'S')`, so a lock taken without a
+	 * duration expired at the instant it was taken: `isLocked()` answers
+	 * `$now < $expiration`, which is already false by the time the next
+	 * request arrives. `POST /lock` still answered `locked: true`, because the
+	 * controller writes that literal rather than reading the object back, so
+	 * the caller was told they held a lock that had never held anybody out. A
+	 * second editor was never kept out, the owner's own release answered 404
+	 * naming a lock that was not there, and nothing anywhere said so.
+	 *
+	 * Leaving the key out is not a new convention: `isLocked()` has always
+	 * ended "if no expiration info, treat as permanently locked (until
+	 * explicitly unlocked)", which is exactly what a lock with no duration
+	 * means. The `?? 0` was writing an expiration precisely so that branch
+	 * could never be reached.
+	 *
+	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: mixed, duration: ?int} $payload The
+	 *        lock as stored: kind, holding run, holder, process, first taken, and how long it lasts (null for "until released").
+	 * @param DateTime $now The clock, so a take and an extend agree.
+	 *
+	 * @return array<string, mixed> The payload to store.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	private function withExpiration(array $payload, DateTime $now): array {
+		$duration = $payload['duration'];
+		if ($duration === null) {
+			// No expiration key at all. See the note above: a zero-second one
+			// is not "no expiry", it is "expired".
+			return $payload;
+		}
+
+		$expiration = clone $now;
+		$expiration->add(new DateInterval('PT' . $duration . 'S'));
+		$payload['expiration'] = $expiration->format('c');
+
+		return $payload;
+	}//end withExpiration()
+
+	/**
+	 * Unlock the object
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock
+	 * @param bool $break Release the lock regardless of who holds it. Reserved
+	 *                    for the administrator break-lock, which audits the
+	 *                    displacement at its call site.
+	 *
+	 * @throws Exception If the object is locked by another holder
+	 *
+	 * @return true True if unlock was successful
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The break flag follows the established RBAC-bypass pattern.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function unlock(IUserSession $userSession, ?string $runUuid = null, bool $break = false): bool {
+		if ($this->isLocked() === false) {
+			return true;
+		}
+
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null && $break === false) {
+			// A break has no session requirement. The engine releases a run's
+			// locks from a terminal-event listener and from the cron sweep,
+			// and neither has a session: `occ` and background jobs run as
+			// nobody. Requiring a user there would mean the release layers
+			// that exist for crashed runs could never fire, which is the
+			// whole case they were built for. Authorization for a break lives
+			// at the call site (administrator, or the engine releasing a lock
+			// whose holding run it has already matched).
+			throw new Exception('No user logged in');
+		}
+
+		$userId = $currentUser?->getUID();
+
+		// Check if locked by different user.
+		if ($this->locked === null) {
+			throw new Exception('Object is not locked');
+		}
+
+		if ($break === false
+			&& $this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true
+		) {
+			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
+		}
+
+		$this->setLocked(null);
+		return true;
+	}//end unlock()
+
+	/**
+	 * Check if the object is currently locked
+	 *
+	 * @return bool True if object is locked and lock hasn't expired
+	 */
+	public function isLocked(): bool {
+		if ($this->locked === null || empty($this->locked) === true) {
+			return false;
+		}
+
+		// Check if lock has expired.
+		$now = new DateTime();
+
+		// Check if expiration key exists.
+		if (isset($this->locked['expiration']) === true) {
+			// New format with expiration.
+			$expiration = new DateTime($this->locked['expiration']);
+			return $now < $expiration;
+		}
+
+		// Legacy format: calculate expiration from lockedAt + duration.
+		if (isset($this->locked['lockedAt']) === true && isset($this->locked['duration']) === true) {
+			$lockedAt = new DateTime($this->locked['lockedAt']);
+			$duration = (int)$this->locked['duration'];
+			$expiration = clone $lockedAt;
+			$expiration->add(new DateInterval('PT' . $duration . 'S'));
+			return $now < $expiration;
+		}
+
+		// If no expiration info, treat as permanently locked (until explicitly unlocked).
+		return true;
+	}//end isLocked()
+
+	/**
+	 * Get lock information
+	 *
+	 * @return array|null Lock information or null if not locked
+	 */
+	public function getLockInfo(): ?array {
+		if ($this->isLocked() === false) {
+			return null;
+		}
+
+		return $this->locked;
+	}//end getLockInfo()
+
+	/**
+	 * Get the user ID who locked the object
+	 *
+	 * Returns the user ID (UID) of the user who has locked this object.
+	 * Returns null if the object is not locked or lock information is missing.
+	 *
+	 * @return string|null User ID who locked the object, or null if not locked
+	 */
+	public function getLockedBy(): ?string {
+		if ($this->isLocked() === false) {
+			return null;
+		}
+
+		// Return the user from the lock array.
+		return $this->locked['user'] ?? null;
+	}//end getLockedBy()
+
+	/**
+	 * Delete the object
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string $deletedReason Reason for deletion
+	 * @param int $retentionPeriod Retention period in days (default: 30 days)
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @return static Returns the entity
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$userId = $currentUser->getUID();
+		$now = new DateTime();
+
+		// The retention handed in is the window. It used to be ignored: every
+		// object got a hard-coded 31 days whatever the schema or the instance
+		// said, so a schema declaring a year of recovery quietly had a month.
+		// A non-positive retention is not a window, so the default applies.
+		$days = $retentionPeriod;
+		if ($days === null || $days < 1) {
+			$days = DeletionWindowService::DEFAULT_RETENTION_DAYS;
+		}
+
+		$purgeDate = clone $now;
+		$purgeDate->add(new DateInterval('P' . (string)$days . 'D'));
+
+		$this->setDeleted(
+			[
+				'deleted' => $now->format('c'),
+				'deletedAt' => $now->format('c'),
+				'deletedBy' => $userId,
+				'deletedReason' => $deletedReason,
+				'retentionPeriod' => $days,
+				'purgeDate' => $purgeDate->format('c'),
+				'destroyableFrom' => $purgeDate->format('c'),
+			]
+		);
+
+		return $this;
+	}//end delete()
+
+	/**
+	 * Whether an active legal hold keeps this record from being destroyed.
+	 *
+	 * THE SINGLE DEFINITION OF "HELD". A legal hold is a property of the
+	 * record, not of its schema, so the answer lives on the record. Three
+	 * copies of this two-line predicate used to sit in
+	 * {@see \OCA\OpenRegister\Service\RetentionService::hasActiveLegalHold},
+	 * {@see \OCA\OpenRegister\Service\Archival\LegalHoldService::hasActiveHold}
+	 * and its `hasActiveHoldFromRetention()` sibling. The first two delegate
+	 * here now; the third still reads a raw retention array rather than a
+	 * record, so it cannot, and it drives no delete path.
+	 *
+	 * A RELEASED HOLD IS NOT A HOLD. `releaseLegalHold()` leaves the
+	 * `legalHold` key in place with `active: false` and the reason in
+	 * `history`, so "the key exists" is not the question and never was.
+	 *
+	 * @return bool True when the record carries an active legal hold.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function hasActiveLegalHold(): bool {
+		// Read through the accessor rather than the property, as every caller
+		// this method replaced did. The two are the same on a live entity, and
+		// the accessor is what existing tests stub.
+		$retention = ($this->getRetention() ?? []);
+
+		return ((($retention['legalHold'] ?? [])['active'] ?? false) === true);
+	}//end hasActiveLegalHold()
+
+	/**
+	 * Whether this object is in the trash.
+	 *
+	 * The one honest answer to "has this been soft-deleted?". The raw
+	 * `getDeleted()` accessor cannot be compared with `null`: the property
+	 * defaults to `[]` and the hydrator never overwrites that default for a
+	 * live row, so `getDeleted() === null` is false for every object, deleted
+	 * or not. Every guard that means "already in the trash" MUST call this.
+	 *
+	 * @return bool True when the object carries deletion metadata.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function isSoftDeleted(): bool {
+		return $this->deleted !== null && $this->deleted !== [];
+	}//end isSoftDeleted()
+
+	/**
+	 * Whether this object has been archived.
+	 *
+	 * The one honest answer to "is this archived?", for the same reason
+	 * {@see self::isSoftDeleted()} exists: the property defaults to `[]` and
+	 * the row hydrator never overwrites that default for a row whose
+	 * `_archived` column is NULL, so `getArchived() === null` is false for
+	 * every object that has ever existed. Every guard that means "already
+	 * archived" MUST call this.
+	 *
+	 * @return bool True when the object carries archive metadata.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isArchived(): bool {
+		return $this->archived !== null && $this->archived !== [];
+	}//end isArchived()
+
+	/**
+	 * Whether this object has been frozen.
+	 *
+	 * Same trap as {@see self::isArchived()}: never compare `getFrozen()` with
+	 * null.
+	 *
+	 * @return bool True when the object carries freeze metadata.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function isFrozen(): bool {
+		return $this->frozen !== null && $this->frozen !== [];
+	}//end isFrozen()
+
+	/**
+	 * Whether this object is a draft (decision 180).
+	 *
+	 * An object with no stored status is never a draft: its status is deduced
+	 * from its dates, as it was before the field existed.
+	 *
+	 * @return bool True for a stored `draft` status.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function isDraft(): bool {
+		return $this->status === self::STATUS_DRAFT;
+	}//end isDraft()
+
+	/**
+	 * Archive the object.
+	 *
+	 * Writes the marker beside the object's data, never into it: the data is
+	 * what the audit trail and the versions are about, so archiving leaves it
+	 * and its version history exactly as they were.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param string|null $reason Why the object was archived.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function archive(IUserSession $userSession, ?string $reason = null): static {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$now = new DateTime();
+
+		$this->setArchived(
+			[
+				'by' => $currentUser->getUID(),
+				'at' => $now->format('c'),
+				'reason' => $reason,
+			]
+		);
+
+		return $this;
+	}//end archive()
+
+	/**
+	 * Restore the object from the archive.
+	 *
+	 * Clears the marker outright rather than flipping an `active` key, so
+	 * "is this archived?" stays a single question with a single answer. The
+	 * archive and the restore both live on the audit trail, which is where the
+	 * history belongs.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unarchive(): static {
+		$this->setArchived(null);
+
+		return $this;
+	}//end unarchive()
+
+	/**
+	 * Freeze the object.
+	 *
+	 * A frozen object stays in every working view and in search, and refuses
+	 * every write to its data. `$state` names the lifecycle state that froze
+	 * it when a state declared the freeze, and is null when a person did.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param string|null $reason Why the object was frozen.
+	 * @param string|null $state The lifecycle state that declared the freeze.
+	 * @param string|null $actor Explicit actor, for a freeze declared by a
+	 *                           lifecycle transition running without a session.
+	 *
+	 * @throws Exception If no user is logged in and no actor was named.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freeze(
+		IUserSession $userSession,
+		?string $reason = null,
+		?string $state = null,
+		?string $actor = null,
+	): static {
+		$userId = $actor;
+		if ($userId === null) {
+			$currentUser = $userSession->getUser();
+			if ($currentUser === null) {
+				throw new Exception('No user logged in');
+			}
+
+			$userId = $currentUser->getUID();
+		}
+
+		$now = new DateTime();
+
+		$this->setFrozen(
+			[
+				'by' => $userId,
+				'at' => $now->format('c'),
+				'reason' => $reason,
+				'state' => $state,
+			]
+		);
+
+		return $this;
+	}//end freeze()
+
+	/**
+	 * Unfreeze the object.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unfreeze(): static {
+		$this->setFrozen(null);
+
+		return $this;
+	}//end unfreeze()
+
+	/**
+	 * Get the last log entry for this object (runtime only)
+	 *
+	 * @return array|null The last log entry or null if not set
+	 * @phpstan-return array<string, mixed>|null
+	 * @psalm-return   array<string, mixed>|null
+	 */
+	public function getLastLog(): ?array {
+		return $this->lastLog;
+	}//end getLastLog()
+
+	/**
+	 * Set the last log entry for this object (runtime only)
+	 *
+	 * @param array|null $log The log entry to set
+	 *
+	 * @phpstan-param array<string, mixed>|null $log
+	 * @psalm-param   array<string, mixed>|null $log
+	 *
+	 * @return void
+	 */
+	public function setLastLog(?array $log = null): void {
+		$this->lastLog = $log;
+	}//end setLastLog()
+
+	/**
+	 * Get the source of this object data (runtime only)
+	 *
+	 * Returns where this object was loaded from:
+	 * - "orm": Magic tables (structured storage)
+	 * - "index": Search index
+	 *
+	 * @return string|null The source identifier, or null if not set
+	 */
+	public function getSource(): ?string {
+		return $this->source;
+	}//end getSource()
+
+	/**
+	 * Set the source of this object data (runtime only)
+	 *
+	 * @param string|null $source The source identifier ("orm" or "index")
+	 *
+	 * @return void
+	 */
+	public function setSource(?string $source = null): void {
+		$this->source = $source;
+	}//end setSource()
+
+	/**
+	 * String representation of the object entity
+	 *
+	 * This magic method is required for proper entity handling in Nextcloud
+	 * when the framework needs to convert the object to a string.
+	 *
+	 * @return string String representation of the object entity
+	 */
+	public function __toString(): string {
+		// Return the UUID if available, otherwise return a descriptive string.
+		if ($this->uuid !== null && $this->uuid !== '') {
+			return $this->uuid;
+		}
+
+		// Fallback to ID if UUID is not available.
+		if ($this->id !== null) {
+			return 'Object #' . $this->id;
+		}
+
+		// Final fallback.
+		return 'Object Entity';
+	}//end __toString()
+
+	/**
+	 * Check if this object is managed by any configuration
+	 *
+	 * This method checks if the object's ID is present in the objects array
+	 * of any provided configuration entities.
+	 *
+	 * @param array<Configuration> $configurations Array of Configuration entities to check against
+	 *
+	 * @return bool True if this object is managed by at least one configuration
+	 *
+	 * @phpstan-param array<Configuration> $configurations
+	 * @psalm-param   array<Configuration> $configurations
+	 */
+	public function isManagedByConfiguration(array $configurations): bool {
+		if (empty($configurations) === true || $this->id === null) {
+			return false;
+		}
+
+		foreach ($configurations as $configuration) {
+			$objects = $configuration->getObjects();
+			if (in_array($this->id, $objects ?? [], true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isManagedByConfiguration()
+
+	/**
+	 * Get the configuration that manages this object
+	 *
+	 * Returns the first configuration that has this object's ID in its objects array.
+	 * Returns null if the object is not managed by any configuration.
+	 *
+	 * @param array<Configuration> $configurations Array of Configuration entities to check against
+	 *
+	 * @return Configuration|null The configuration managing this object, or null
+	 *
+	 * @phpstan-param array<Configuration> $configurations
+	 * @psalm-param   array<Configuration> $configurations
+	 */
+	public function getManagedByConfiguration(array $configurations): ?Configuration {
+		if (empty($configurations) === true || $this->id === null) {
+			return null;
+		}
+
+		foreach ($configurations as $configuration) {
+			$objects = $configuration->getObjects();
+			if (in_array($this->id, $objects ?? [], true) === true) {
+				return $configuration;
+			}
+		}
+
+		return null;
+	}//end getManagedByConfiguration()
 }//end class

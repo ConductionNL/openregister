@@ -1,10 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # Retention Management
 
 ## Purpose
+
+@e2e exclude backend MDTO retention lifecycle — covered by PHPUnit
 Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.
 
 ## Requirements
@@ -256,6 +258,29 @@ Administrators MUST be able to configure retention-related settings through the 
 - **THEN** the settings MUST be persisted in app configuration
 - **AND** the DestructionCheckJob interval MUST be updated if `destructionCheckInterval` changed
 
+### Requirement: The hourly log cleanup job MUST enforce the configured search trail retention
+
+`LogCleanUpTask` runs hourly and MUST enforce `searchTrailRetention` (milliseconds, default `2592000000`, 30 days) on the search trail table, alongside the audit trail sweep it already performs. Search trail rows are inserted without an expiry, so the job MUST first stamp `expires` = `created` + retention on rows that have none, and then delete the rows whose `expires` has passed. The two sweeps MUST be independent: a failure in one MUST be logged and MUST NOT prevent the other from running, and each MUST log its own outcome. Before this requirement the setting was echoed to the admin UI and enforced by nothing; the only caller of the sweep was a manual admin endpoint.
+
+#### Scenario: Search trails past retention are deleted by the hourly job @e2e exclude hourly background job with no UI, covered by tests/Unit/BackgroundJob/LogCleanUpTaskTest.php
+- **GIVEN** `searchTrailRetention` is configured, or left at its default
+- **AND** search trail rows exist whose `created` plus the retention lies in the past
+- **WHEN** `LogCleanUpTask` runs
+- **THEN** rows without an `expires` are stamped `created` + retention
+- **AND** rows whose `expires` has passed are deleted
+- **AND** the job logs the outcome of the search trail sweep separately from the audit trail sweep
+
+#### Scenario: A failing audit sweep does not skip the search trail sweep @e2e exclude hourly background job with no UI, covered by tests/Unit/BackgroundJob/LogCleanUpTaskTest.php
+- **GIVEN** the audit trail sweep throws
+- **WHEN** `LogCleanUpTask` runs
+- **THEN** the error is logged
+- **AND** the search trail sweep still runs, and a throwing search trail sweep likewise leaves the audit sweep's outcome intact
+
+#### Scenario: A non-positive retention keeps search trails @e2e exclude hourly background job with no UI, covered by tests/Unit/BackgroundJob/LogCleanUpTaskTest.php
+- **GIVEN** `searchTrailRetention` is `0` or negative
+- **WHEN** `LogCleanUpTask` runs
+- **THEN** no expiry is stamped and nothing is deleted from the search trail table
+
 ### Requirement: Cascading destruction MUST respect referential integrity
 When an object is destroyed via an approved destruction list, the system MUST evaluate related objects according to the existing referential integrity cascade rules.
 
@@ -278,3 +303,185 @@ When an object is destroyed via an approved destruction list, the system MUST ev
 - **WHEN** the DestructionExecutionJob processes the parent
 - **THEN** destruction of the parent MUST be halted
 - **AND** the archivist MUST be notified about the blocked destruction
+
+### Requirement: Retention configuration and rebase administration API
+The system SHALL expose an admin-gated API for reading and writing retention settings and
+for recalculating deletion times across the corpus. `ConfigurationSettingsController`
+provides `getRetentionSettings` (delegating to `SettingsService::getRetentionSettingsOnly()`)
+and `updateRetentionSettings` (delegating to `updateRetentionSettingsOnly()`).
+`SettingsController::rebase` recalculates deletion times for all objects and logs from the
+current retention settings and assigns default owners/organisations to objects that lack
+them.
+
+#### Scenario: Read retention settings
+- **WHEN** `getRetentionSettings` is called
+- **THEN** it MUST return the retention settings from `SettingsService::getRetentionSettingsOnly()`
+
+#### Scenario: Update retention settings
+- **GIVEN** an admin posts updated retention values
+- **WHEN** `updateRetentionSettings` runs
+- **THEN** it MUST persist them via `SettingsService::updateRetentionSettingsOnly()` and return the result
+
+#### Scenario: Rebase recalculates deletion times
+- **GIVEN** retention settings have changed
+- **WHEN** `SettingsController::rebase` runs
+- **THEN** it MUST delegate to `SettingsService::rebase()` to recompute object/log deletion times
+- **AND** a service failure MUST surface as HTTP 500 with an `error` field
+
+### Requirement: The system MUST run a daily AVG / GDPR retention pass driven by per-activity bewaartermijn
+
+A `TimedJob` (`AvgRetentionJob`, 24-hour interval) MUST invoke `AvgRetentionService::runRetentionPass()` which walks every published `Verwerkingsactiviteit` catalog row, computes a bewaartermijn cut-off per activity, finds audit-trail objects whose **latest** `created` timestamp predates the cut-off, and soft-deletes them. This is distinct from the Archiefwet destruction-list workflow: it operates on the audit-trail's `processing_activity_id` column, not on `archiefactiedatum`, and serves GDPR Article 5(1)(e) (storage limitation).
+
+#### Scenario: Daily job runs the retention pass unless disabled
+
+- **GIVEN** the app-config key `avg_retention_enabled` is unset or `true`
+- **WHEN** the `AvgRetentionJob` (24-hour `TimedJob`) fires
+- **THEN** it MUST call `AvgRetentionService::runRetentionPass()` with the `dryRun` flag read from app-config key `avg_retention_dry_run` (default `false`)
+- **AND** it MUST log an info entry with `evaluatedActivities`, `skippedActivities`, `objectsErased`, and the resolved `dryRun` flag
+- **AND** any `\Throwable` raised by the service MUST be caught and logged at `error` level without re-throwing
+
+#### Scenario: Disable toggle short-circuits the job
+
+- **GIVEN** the app-config key `avg_retention_enabled` is the string `"false"` (or any value parsed as boolean `false` by `FILTER_VALIDATE_BOOLEAN`)
+- **WHEN** the `AvgRetentionJob` fires
+- **THEN** the job MUST log an info entry indicating retention is disabled
+- **AND** it MUST return without invoking the service
+
+#### Scenario: Pass evaluates only published activities
+
+- **GIVEN** the catalog contains two `Verwerkingsactiviteit` rows with `status='published'` and one with `status='draft'`
+- **WHEN** `runRetentionPass(dryRun: false)` is invoked
+- **THEN** the service MUST iterate exactly the two published activities (via `VerwerkingsactiviteitMapper::findAll(status: 'published')`)
+- **AND** the summary's `evaluatedActivities` MUST equal the number of activities that produced a per-activity result, and `skippedActivities` MUST equal the number that returned `null`
+
+#### Scenario: Activity without bewaartermijn is skipped
+
+- **GIVEN** a published activity whose `bewaartermijn` is null or the empty string
+- **WHEN** `processActivity()` is invoked for that activity
+- **THEN** the method MUST return `null` and the activity MUST NOT contribute to `perActivity`
+- **AND** the summary's `skippedActivities` counter MUST be incremented by 1
+
+#### Scenario: Activity with unparseable bewaartermijn is skipped with a warning
+
+- **GIVEN** a published activity whose `bewaartermijn` is a string that is not a valid ISO-8601 duration (e.g. `"10 years"` instead of `"P10Y"`)
+- **WHEN** `computeCutoff()` attempts `new DateInterval($duration)` and catches the resulting `\Exception`
+- **THEN** `computeCutoff()` MUST return `null`
+- **AND** `processActivity()` MUST log a warning `[AVG retention] Unparseable bewaartermijn — skipping activity` carrying the activity uuid and the offending value
+- **AND** the activity MUST be reported under `skippedActivities`
+
+#### Scenario: Cut-off is computed as now-minus-bewaartermijn
+
+- **GIVEN** the current reference time is `2026-05-24T00:00:00Z` and bewaartermijn is `"P10Y"`
+- **WHEN** `computeCutoff()` runs
+- **THEN** the returned cut-off `DateTime` MUST equal `2016-05-24T00:00:00Z`
+- **AND** it MUST be returned in ISO-8601 form (`format('c')`) within the per-activity summary's `cutoff` field
+
+#### Scenario: Overdue candidates are those whose newest audit row predates the cut-off
+
+- **GIVEN** an activity uuid `act-1` with cut-off `2016-05-24`
+- **AND** the `openregister_audit_trails` table contains rows for object A (latest `created` = `2015-12-01`) and object B (latest `created` = `2020-03-15`), both tagged `processing_activity_id='act-1'`
+- **WHEN** `findOverdueObjectsForActivity('act-1', cutoff)` runs
+- **THEN** the SQL MUST `GROUP BY object, object_uuid, register, schema` and apply `HAVING MAX(created) < :cutoff`
+- **AND** object A MUST be returned and object B MUST NOT
+- **AND** each returned row MUST carry `object` (int), `object_uuid` (string|null), `register` (int|null), `schema` (int|null)
+
+#### Scenario: SQL failure during enumeration is contained per activity
+
+- **GIVEN** the query builder for an activity uuid throws a `\Throwable`
+- **WHEN** `findOverdueObjectsForActivity()` catches it
+- **THEN** the method MUST log a warning `[AVG retention] Failed to enumerate overdue objects for activity` with the activity uuid and the error message
+- **AND** the method MUST return `[]` so the retention pass continues with the next activity
+
+#### Scenario: Erasure is a soft-delete carrying the activity attribution
+
+- **GIVEN** `processActivity()` resolves three candidate rows and `dryRun=false`
+- **WHEN** `erasePastRetention()` runs
+- **THEN** for each candidate the loader MUST call `MagicMapper::find($uuidOrIntId, _rbac: false, _multitenancy: false)`
+- **AND** each loaded `ObjectEntity` MUST have its `deleted` field set to an array `{ deletedBy: 'system', deletedAt: <ISO 8601 ATOM>, reason: 'avg-bewaartermijn', activityUuid: <activity uuid>, bewaartermijn: <activity bewaartermijn> }`
+- **AND** the same `ObjectEntity` MUST have its `processingActivityId` set to the owning activity's uuid before being passed to `objectMapper->update()`
+- **AND** the per-activity `erased` count MUST equal the number of successful `update()` calls; failures MUST be logged at warning level and MUST NOT abort the loop
+
+#### Scenario: Dry run reports candidates without writing
+
+- **GIVEN** `runRetentionPass(dryRun: true)` is invoked with two overdue candidates for an activity
+- **WHEN** `processActivity()` runs
+- **THEN** `erasePastRetention()` MUST NOT be called
+- **AND** the per-activity entry MUST report `matchedObjects=2`, `erased=0`
+- **AND** the summary's `dryRun` field MUST be `true`
+
+#### Scenario: Candidate loader prefers UUID over int id
+
+- **GIVEN** a candidate row with both `object_uuid='abc-123'` and `object=42`
+- **WHEN** `loadCandidate()` runs
+- **THEN** it MUST call `objectMapper->find('abc-123', ...)` (uuid wins)
+
+#### Scenario: Candidate loader falls back to int id when uuid is empty
+
+- **GIVEN** a candidate row with `object_uuid=null` and `object=42`
+- **WHEN** `loadCandidate()` runs
+- **THEN** it MUST call `objectMapper->find(42, ...)`
+
+#### Scenario: Candidate that no longer exists is skipped silently
+
+- **GIVEN** `objectMapper->find()` raises `DoesNotExistException` for a candidate (e.g. already hard-deleted)
+- **WHEN** `loadCandidate()` catches it
+- **THEN** the method MUST return `null` without logging
+- **AND** the candidate MUST NOT count toward `erased`
+
+### Requirement: The retention settings handler MUST expose app metadata and normalise mixed-type toggle values
+
+`ObjectRetentionHandler` is the back-end handler for the Retention/Object/Archival settings sections. Beyond the read/write methods already covered by the settings retrofit, it MUST provide a version-info endpoint backing the settings UI's "About" panel and MUST coerce mixed-type boolean inputs from stored JSON (strings, ints, native booleans) to PHP `bool`.
+
+#### Scenario: Version info reports app name and version
+
+- **WHEN** `ObjectRetentionHandler::getVersionInfoOnly()` is called
+- **THEN** the method MUST return an array containing exactly `appName` = `"Open Register"` and `appVersion` = `"0.2.3"`
+- **AND** any thrown `Exception` MUST be re-thrown as `\RuntimeException` with the prefix `Failed to retrieve version information:`
+
+#### Scenario: Native booleans pass through unchanged
+
+- **GIVEN** the input value is the PHP boolean `true` (resp. `false`)
+- **WHEN** `convertToBoolean()` is called
+- **THEN** it MUST return `true` (resp. `false`) without further processing
+
+#### Scenario: Truthy strings normalise to true
+
+- **GIVEN** the input value is the string `"true"`, `"1"`, `"yes"`, or `"on"` (case-insensitive)
+- **WHEN** `convertToBoolean()` is called
+- **THEN** it MUST return `true`
+- **AND** any other string (e.g. `"false"`, `"no"`, `"random"`) MUST return `false`
+
+#### Scenario: Numeric values use C-style zero/non-zero semantics
+
+- **GIVEN** the input value is the int `0`, `1`, `42`, or the float `0.0`
+- **WHEN** `convertToBoolean()` is called
+- **THEN** the method MUST return `false` for `0` / `0.0` and `true` for any non-zero numeric value
+- **AND** the comparison MUST use `(int) $value !== 0` (so the float `0.5` casts to int `0` and returns `false`)
+
+#### Scenario: convertToBoolean drives audit/search-trail toggle parsing
+
+- **GIVEN** the stored `retention` JSON blob contains `auditTrailsEnabled: "true"` and `searchTrailsEnabled: 1`
+- **WHEN** `getRetentionSettingsOnly()` decodes the blob
+- **THEN** both flags MUST be returned as PHP boolean `true` (via `convertToBoolean()`), not as the raw string/int — so downstream callers can rely on strict `=== true` checks
+
+### Requirement: A selectielijst URL resolves to its code and name
+
+`GET /api/archival/selectielijst/resolve?url=` SHALL answer the code (`volledigNummer`) and name (`naam`) of a VNG Selectielijst result or process type URL, read once and then from the cache. It SHALL fetch only https URLs on an allowed selectielijst host and SHALL answer 400 for any other URL without a request. When the row cannot be read it SHALL answer 404, so the caller can fall back.
+
+#### Scenario: a Woo result type's class
+- **GIVEN** the URL of selectielijst result 6.1 "Ingewilligd"
+- **WHEN** a page asks to resolve it twice
+- **THEN** both answers SHALL be `{code: "6.1", name: "Ingewilligd"}` and the list SHALL be read once
+
+#### Scenario: another host
+- **GIVEN** a URL on another host
+- **WHEN** a page asks to resolve it
+- **THEN** the answer SHALL be 400 and nothing SHALL be fetched
+
+### Requirement: OpenRegister ships a register for destruction lists
+
+OpenRegister SHALL ship a `destruction-lists` register with a `destructionList` schema whose status covers every state a destruction list passes (`in_review`, `awaiting_second_approval`, `approved`, `rejected`, `completed`) and whose entries carry the reviewer, assignment moment, disposal date, classification and decision the review reads. A repair step SHALL import it under its own configuration id, version-gated, so an administrator (or an example set) can name it in the `archival` setting.
+
+#### Scenario: The register is there after an upgrade
+- **WHEN** OpenRegister's repair steps run
+- **THEN** the `destruction-lists` register with the `destructionList` schema SHALL exist

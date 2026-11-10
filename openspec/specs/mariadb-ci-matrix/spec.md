@@ -1,10 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # MariaDB Support & Dual-Database CI Matrix
 
 ## Purpose
+
+@e2e exclude CI infrastructure spec — no UI surface
 
 OpenRegister SHALL be fully tested on both PostgreSQL and MariaDB through a cost-efficient 2-line CI matrix that piggybacks the database difference onto the PHP version split, ensuring that database-specific code paths (JSONB vs JSON, GIN indexes vs B-tree, pg_trgm vs LIKE, PostgreSQL containment operators vs JSON_CONTAINS) are exercised in CI rather than only discovered in production. Blob storage (Normal mode) is removed — only MagicMapper (dedicated SQL tables per schema) is supported.
 
@@ -474,6 +476,64 @@ The testing documentation SHALL be updated to reflect:
   - `lib/Db/MagicMapper/MagicBulkHandler.php` -- MagicMapper bulk ops (has platform branching)
   - `lib/Db/MagicMapper/MagicFacetHandler.php` -- MagicMapper facets (partial platform branching)
   - `lib/Db/MagicMapper/MagicStatisticsHandler.php` -- statistics (has platform detection)
+
+### Requirement: Date-histogram bucket coverage on MariaDB
+
+The `MagicFacetHandlerIntegrationTest` suite MUST run on a MariaDB-enabled dev container with zero modifications and zero failures, and an additional set of MariaDB-specific date-histogram bucket tests MUST pass covering every interval the spec promises (year / month / day / week-ISO / quarter / hour) with explicit ISO 8601 week correctness at year boundaries — the regression that motivated the `'%Y-%u'` → `'%x-%v'` swap in `MariaDbFacetHandler`.
+
+#### Scenario: ISO 8601 week buckets correct at year boundary on MariaDB
+
+- **GIVEN** the MariaDB dev container is running
+- **AND** an `events` schema with rows on `2024-12-30` (ISO week 2025-W01) and `2025-01-06` (ISO week 2025-W02)
+- **WHEN** `GET /api/objects/events/all?_facets=startedAt&_facets[startedAt][interval]=week` is called
+- **THEN** the response MUST include bucket keys `'2025-01'` and `'2025-02'` (not `'2024-52'` and `'2025-00'` — the old `'%Y-%u'` bug)
+- **AND** counts per bucket MUST match the PostgreSQL output for the same dataset
+
+#### Scenario: Year / month / day / quarter / hour buckets
+
+- **GIVEN** rows spanning 3 calendar years with monthly density
+- **WHEN** `interval: year` / `month` / `day` / `quarter` / `hour` are exercised in turn
+- **THEN** bucket keys MUST match the format the spec promises (`'2024'` / `'2024-03'` / `'2024-03-15'` / `'2024-Q1'` / `'2024-03-15T14'`)
+- **AND** the count + `from` / `to` per bucket MUST match the PostgreSQL output for the same dataset
+
+#### Scenario: No regression on PostgreSQL when running the new MariaDB tests
+
+- **GIVEN** the new MariaDB-flavoured tests
+- **WHEN** the suite runs on the PostgreSQL job (matrix entry 1)
+- **THEN** every test SHALL still pass (the helpers are platform-portable, not MariaDB-only)
+- **AND** zero new test failures introduced
+
+### Requirement: Workflow-operations migrations apply cleanly on MariaDB
+
+Every `workflow-operations` Phase 1 migration (`Version1Date2026032*` family) MUST apply on a fresh MariaDB 10.11 container without errors and SHALL produce the same table column types as the PostgreSQL run for `oc_openregister_workflow_executions` / `oc_openregister_scheduled_workflows` / `oc_openregister_approval_chains` / `oc_openregister_approval_steps`. The verification MUST also confirm a representative round-trip (insert one row in each table via the existing API; read-back returns the same row) on the MariaDB instance. This re-uses the Doctrine-portable types declared in those migrations — no schema change is in scope; only verification.
+
+#### Scenario: Migration sweep on a fresh MariaDB instance
+
+- **GIVEN** a fresh MariaDB 10.11 container (per `docker-compose.mariadb-test.yml`)
+- **WHEN** `occ upgrade` runs in the openregister-test image with the matrix MariaDB job
+- **THEN** every migration listed under `lib/Migration/Version1Date2026032*.php` SHALL exit 0
+- **AND** `SHOW CREATE TABLE oc_openregister_workflow_executions` SHALL contain the expected
+  Doctrine-derived column types
+- **AND** the same SHALL hold for `oc_openregister_scheduled_workflows` /
+  `oc_openregister_approval_chains` / `oc_openregister_approval_steps`
+
+### Requirement: A text identifier is never bound as an integer
+
+A lookup that accepts an id, a uuid or a slug SHALL compare the integer `id` column only when the identifier is an integer or a string of digits, and SHALL compare the text columns otherwise. PostgreSQL refuses a text value bound as an integer for the whole query, so `id = :value OR uuid = :value` with a uuid fails there while MySQL and SQLite cast it silently.
+
+#### Scenario: a view is found by its uuid on PostgreSQL
+
+- **GIVEN** a view with id 1 and uuid `04d8079a-b84a-410e-b5df-75f04a130068` on a PostgreSQL instance
+- **WHEN** a client requests `GET /api/views/04d8079a-b84a-410e-b5df-75f04a130068`
+- **THEN** the response is 200 with that view, and `GET /api/views/1` still answers it too
+- @e2e exclude {query binding, covered by IdOrUuidBindingTest; the PostgreSQL PHPUnit cell runs it}
+
+#### Scenario: a schema reference by slug resolves on PostgreSQL
+
+- **GIVEN** a schema whose `allOf` names its parent by slug
+- **WHEN** the schema is resolved
+- **THEN** the parent is loaded by slug without binding the slug as an integer
+- @e2e exclude {query binding, covered by IdOrUuidBindingTest}
 
 ## Estimated Scope
 

@@ -1,0 +1,317 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Vocabulary",
+    "description": "Canonical SKOS-aligned controlled-vocabulary register: concept schemes and their concepts, shared fleet-wide so leaf apps (OpenCatalogi TOOI/DiWoo lookups, softwarecatalog GEMMA referentiecomponenten, decidesk ORI/organisation URIs) consume one authoritative source of concept URIs instead of hand-rolling their own value lists. Backs NL-SBB (mandatory for Federatief Datastelsel participants per 1 January 2026), DiWoo value-list binding, and DCAT-AP-NL 3.0 vocabulary URI requirements.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational SKOS concept-scheme/concept register shipped by OpenRegister for fleet-wide controlled-vocabulary consumption (skos-concept-registers)."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "vocabulary": {
+        "slug": "vocabulary",
+        "title": "Vocabulary",
+        "version": "1.1.0",
+        "description": "Controlled-vocabulary register holding SKOS concept schemes and their concepts. Reads are public (vocabularies are public reference data); writes are admin-gated. Seeded on install with the Woo-critical TOOI value lists (informatiecategorieën, soortHandeling) via the SeedVocabularyRegister repair step. A concept carries its own fields, its validity window, its weight and its exclusive group, so a code list can be retired rather than deleted and can hold data of its own (code-list-lifecycle-and-hierarchy).",
+        "published": "2026-07-23T00:00:00+00:00",
+        "schemas": [
+          "conceptScheme",
+          "concept"
+        ],
+        "folder": "Open Registers/Vocabulary"
+      }
+    },
+    "schemas": {
+      "conceptScheme": {
+        "slug": "conceptScheme",
+        "title": "Concept Scheme",
+        "version": "1.1.0",
+        "published": "2026-07-23T00:00:00+00:00",
+        "x-schema-org": "schema:DefinedTermSet",
+        "summary": "A SKOS concept scheme (controlled vocabulary / begrippenkader)",
+        "description": "A named, published controlled vocabulary (SKOS ConceptScheme) that groups a set of concepts, e.g. the Woo informatiecategorieën or a GEMMA referentiecomponenten-lijst. Identified durably by its source URI; imported/refreshed via the VocabularyImportService.",
+        "required": [
+          "uri",
+          "title",
+          "publisher",
+          "version",
+          "source"
+        ],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "The canonical, durable URI that identifies this concept scheme (e.g. a TOOI kern-thesaurus base URI or a GEMMA scheme URI). Unique within the register: the importer's URI-keyed upsert never creates a second conceptScheme object for the same uri.",
+            "maxLength": 500,
+            "facetable": true,
+            "title": "Scheme URI"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\").",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional longer description of the concept scheme's purpose and scope, as published by the source.",
+            "maxLength": 2000,
+            "title": "Description"
+          },
+          "publisher": {
+            "type": "string",
+            "description": "The organisation responsible for publishing and maintaining this concept scheme (e.g. \"KOOP\" or a TOOI organisatie URI).",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Publisher"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version identifier of the concept scheme as published upstream, used by the importer to detect an updated source release.",
+            "maxLength": 100,
+            "facetable": true,
+            "title": "Version"
+          },
+          "source": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI or identifier of the upstream source this scheme was imported from (e.g. a TOOI waardelijst identifier or a SKOS/JSON-LD export URL).",
+            "maxLength": 500,
+            "title": "Source"
+          },
+          "conceptShape": {
+            "type": "object",
+            "description": "The shape this scheme declares for its concepts' own fields, written as a JSON-Schema property map with an optional required list. A resultaattype scheme declares bewaartermijn and grondslag here, and every concept's fields object is then validated against it on import and on save. A scheme that declares no shape validates nothing, which is how every scheme written before this change keeps behaving.",
+            "properties": {
+              "properties": {
+                "type": "object",
+                "description": "The declared fields, keyed by field name, each with at least a type.",
+                "title": "Concept Field Definitions"
+              },
+              "required": {
+                "type": "array",
+                "description": "The names of the concept fields a concept of this scheme must carry.",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Required Concept Fields"
+              }
+            },
+            "title": "Concept Shape"
+          },
+          "exclusiveGroups": {
+            "type": "array",
+            "description": "The names of the mutually exclusive groups this scheme defines. An object may hold at most one concept of any one group; the group a concept belongs to is named on the concept itself.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Exclusive Groups"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            {"group": "public", "crossOrganisation": true}
+          ]
+        }
+      },
+      "concept": {
+        "slug": "concept",
+        "title": "Concept",
+        "version": "1.1.0",
+        "published": "2026-07-23T00:00:00+00:00",
+        "x-schema-org": "schema:DefinedTerm",
+        "summary": "A SKOS concept (a single controlled-vocabulary term)",
+        "description": "A single term within a concept scheme (SKOS Concept), e.g. one Woo informatiecategorie. Identified durably by its source URI; the importer keys upserts on this URI and, on re-import, marks concepts missing from the source as deprecated rather than deleting them (leaf apps hold long-lived references).",
+        "required": [
+          "uri",
+          "prefLabel",
+          "inScheme"
+        ],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "The canonical, durable URI that identifies this concept (e.g. a TOOI kern-thesaurus concept URI such as https://identifier.overheid.nl/tooi/def/thes/kern/c_139c6280). Unique within the register: the importer's URI-keyed upsert never creates a second concept object for the same uri.",
+            "maxLength": 500,
+            "facetable": true,
+            "title": "Concept URI"
+          },
+          "prefLabel": {
+            "type": "object",
+            "description": "Preferred human-readable label for this concept, keyed by BCP-47 language tag. Dutch (\"nl\") is required; additional language tags (e.g. \"en\") are optional. Used for display and for the resolution API's cross-language label search.",
+            "required": [
+              "nl"
+            ],
+            "properties": {
+              "nl": {
+                "type": "string",
+                "description": "The Dutch (nl) preferred label of this concept.",
+                "maxLength": 500,
+                "title": "Dutch Preferred Label"
+              },
+              "en": {
+                "type": "string",
+                "description": "The English (en) preferred label of this concept, when the source publishes one.",
+                "maxLength": 500,
+                "title": "English Preferred Label"
+              }
+            },
+            "additionalProperties": {
+              "type": "string",
+              "description": "A preferred label in an additional BCP-47 language tag not listed above.",
+              "title": "Additional-Language Preferred Label"
+            },
+            "title": "Preferred Label"
+          },
+          "altLabel": {
+            "type": "object",
+            "description": "Alternative human-readable labels (synonyms) for this concept, keyed by BCP-47 language tag, matching the shape of prefLabel. Optional; used by the resolution API's label search to also match on known synonyms.",
+            "properties": {
+              "nl": {
+                "type": "string",
+                "description": "A Dutch (nl) alternative label (synonym) for this concept.",
+                "maxLength": 500,
+                "title": "Dutch Alternative Label"
+              },
+              "en": {
+                "type": "string",
+                "description": "An English (en) alternative label (synonym) for this concept.",
+                "maxLength": 500,
+                "title": "English Alternative Label"
+              }
+            },
+            "additionalProperties": {
+              "type": "string",
+              "description": "An alternative label in an additional BCP-47 language tag not listed above.",
+              "title": "Additional-Language Alternative Label"
+            },
+            "title": "Alternative Label"
+          },
+          "definition": {
+            "type": "string",
+            "description": "A statement or formal explanation of the meaning of this concept, as published by the source.",
+            "maxLength": 4000,
+            "title": "Definition"
+          },
+          "notation": {
+            "type": "string",
+            "description": "A compact, source-defined code identifying this concept within its scheme (e.g. a TOOI \"c_...\" identifier), distinct from the durable uri. Used by the resolution API's (scheme, notation) lookup.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Notation"
+          },
+          "deprecated": {
+            "type": "boolean",
+            "description": "Whether this concept has been withdrawn from the upstream source. Set by the importer when a re-imported source no longer contains this concept's uri; the concept is never deleted so existing leaf references keep resolving.",
+            "default": false,
+            "facetable": true,
+            "title": "Deprecated"
+          },
+          "inScheme": {
+            "type": "string",
+            "format": "uuid",
+            "$ref": "conceptScheme",
+            "description": "Reference to the conceptScheme this concept belongs to.",
+            "facetable": true,
+            "title": "In Scheme"
+          },
+          "broader": {
+            "type": "array",
+            "description": "References to broader (more general) sibling concepts in the hierarchy. Maintained by the importer in both directions: when concept A is broader of B, B's broader lists A and A's narrower lists B.",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "$ref": "concept"
+            },
+            "title": "Broader Concepts"
+          },
+          "narrower": {
+            "type": "array",
+            "description": "References to narrower (more specific) sibling concepts in the hierarchy. Maintained by the importer in both directions: when concept A is broader of B, B's broader lists A and A's narrower lists B.",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "$ref": "concept"
+            },
+            "title": "Narrower Concepts"
+          },
+          "related": {
+            "type": "array",
+            "description": "References to associatively related sibling concepts (SKOS skos:related) that are neither broader nor narrower.",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "$ref": "concept"
+            },
+            "title": "Related Concepts"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first instant at which this value may be chosen. Before it the value is not offered as an option and still resolves on read, so records that already hold it stay readable. Empty means no lower bound.",
+            "facetable": true,
+            "title": "Valid From"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The last instant at which this value may be chosen. After it the value is retired: it is no longer offered, a new write of it is refused, and every record that already holds it keeps resolving it with its label. This is how a code list is retired rather than deleted. Empty means no upper bound.",
+            "facetable": true,
+            "title": "Valid Until"
+          },
+          "weight": {
+            "type": "number",
+            "description": "The numeric weight this value contributes to a rolled-up score. A multi-valued coded property may declare a score derived from the weights of the concepts it holds, which is how a subsidie aanvraag is scored from its selected criteria. A concept with no weight contributes nothing.",
+            "facetable": true,
+            "title": "Weight"
+          },
+          "exclusiveGroup": {
+            "type": "string",
+            "description": "The mutually exclusive group this value belongs to. An object holding two concepts of one group is refused on save, which is how a label set such as spoed against regulier stays a choice of one.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Exclusive Group"
+          },
+          "systemDefined": {
+            "type": "boolean",
+            "description": "Whether this value is defined by the product rather than by the organisation. A system-defined value may be retired by closing its validity window; it may not be deleted, because the code that switches on it does not stop existing when the row does.",
+            "default": false,
+            "facetable": true,
+            "title": "System Defined"
+          },
+          "contexts": {
+            "type": "array",
+            "description": "The context values this concept serves, for a property whose option subset is bound to another property's value or to a declared context key. A concept that names no context serves every context, so one categorie field can serve many case types without forty near-identical fields.",
+            "items": {
+              "type": "string"
+            },
+            "facetable": true,
+            "title": "Contexts"
+          },
+          "fields": {
+            "type": "object",
+            "description": "This value's own fields, validated against the shape its scheme declares in conceptShape. A resultaattype holds its bewaartermijn and grondslag here, so a code list item is an object with typed, queryable fields rather than a label with data smuggled into its text.",
+            "additionalProperties": true,
+            "title": "Fields"
+          }
+        },
+        "searchable": true,
+        "hardValidation": false,
+        "authorization": {
+          "read": [
+            {"group": "public", "crossOrganisation": true}
+          ]
+        }
+      }
+    }
+  }
+}

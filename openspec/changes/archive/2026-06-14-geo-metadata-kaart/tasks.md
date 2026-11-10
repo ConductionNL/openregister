@@ -1,0 +1,17 @@
+# Tasks: Geo Metadata en Kaart
+
+- [x] Implement: REQ-GEO-001 -- Schema properties MUST support geospatial data types (GeoJsonGeometryValidator: RFC 7946 point/polygon/multipolygon/linestring + BAG id)
+- [~] Implement: REQ-GEO-002 -- GeoJSON storage and indexing in MagicMapper (objects store GeoJSON as JSON per OR convention; PostGIS native column/index push-down deferred to geo-spatial-queries)
+- [~] Implement: REQ-GEO-003 -- Map visualization component with PDOK tile layers (mapData.js PDOK base-layer catalogue + markers/bounds + thin MapView.vue; live Leaflet tile rendering loads lazily, clustering/spiderfication deferred)
+- [x] Implement: REQ-GEO-004 -- Spatial queries in the API (GeoFilter/Parser/Applier/Evaluator + geoSearch endpoint -- pre-existing, retained)
+- [~] Implement: REQ-GEO-005 -- Geocoding via PDOK Locatieserver (PdokGeocoder forward/reverse via OpenConnector w/ graceful degradation + geocode endpoint; auto-geocode-on-save rule deferred)
+- [~] Implement: REQ-GEO-006 -- BAG and BGT base registration integration (BAG id validation + PDOK fq=type:adres BAG search via PdokGeocoder; full BAG/BGT WMS overlay + verblijfsobject enrichment deferred)
+- [ ] Implement: REQ-GEO-007 -- Multi-layer map views with layer control (base-layer catalogue present; per-schema overlay layers + opacity + cadastral WMS deferred)
+- [x] Implement: REQ-GEO-008 -- WFS and GeoJSON export (GeoFeatureCollectionBuilder: FeatureCollection + field selection + WFS GetFeature envelope + geodesic _area_m2; geojson + wfs endpoints)
+- [ ] Implement: REQ-GEO-009 -- INSPIRE metadata compliance (deferred)
+- [ ] Implement: REQ-GEO-010 -- Geo-fencing with event triggers (deferred)
+- [~] Implement: REQ-GEO-011 -- Geo-filtering in search and facets (spatial filters compose with property filters via applyGeoQueryFilters; map-draw + predefined-area/distance facets deferred)
+- [ ] Implement: REQ-GEO-012 -- Solr and Elasticsearch spatial query support (deferred; PHP fallback evaluator covers DB mode)
+- [ ] Implement: REQ-GEO-013 -- Map drawing and geometry editing (deferred)
+- [~] Implement: REQ-GEO-014 -- NL Design System map styling (MapView uses NC/NL DS CSS custom properties + accessible text-list alternative + aria-label; full marker/cluster theming deferred)
+- [x] Implement: REQ-GEO-015 -- Coordinate transformation and Dutch grid support (RdCrsTransformer WGS84<->RD New EPSG:28992 + supported-CRS gate for 406)

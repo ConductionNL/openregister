@@ -1,405 +1,250 @@
-<script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { agentStore, navigationStore } from '../../store/store.js'
-</script>
+<!--
+  The agents screen: every AI agent with the tools it may use and the views it may read.
 
+  @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+  @visual exclude an admin screen whose rows are the instance's own agents, and
+  the visual fixture seeds none, so a baseline would only ever capture the
+  empty state. Its behaviour (who may edit, list versus structured grants, the
+  saved row replacing the old one) is asserted in AgentsIndex.spec.js.
+  SPDX-License-Identifier: EUPL-1.2
+  SPDX-FileCopyrightText: 2026 Conduction B.V.
+-->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
-		<div class="viewContainer">
-			<!-- Header -->
-			<div class="viewHeader">
-				<h1 class="viewHeaderTitleIndented">
-					{{ t('openregister', 'Agents') }}
-				</h1>
-				<p>{{ t('openregister', 'Manage and configure agents for automated tasks') }}</p>
-			</div>
-
-			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} agents', { showing: paginatedAgents.length, total: agentStore.agentList.length }) }}
+		<div class="agents">
+			<h2>{{ t('openregister', 'Agents') }}</h2>
+			<p class="agents__intro">
+				{{
+					t(
+						'openregister',
+						'Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.',
+					)
+				}}
+			</p>
+			<NcLoadingIcon v-if="loading" />
+			<NcNoteCard v-else-if="error" type="error">
+				{{ error }}
+			</NcNoteCard>
+			<NcEmptyContent
+				v-else-if="agents.length === 0"
+				:name="t('openregister', 'No agents yet')" />
+			<CnDataTable
+				v-else
+				class="agents__table"
+				:columns="columns"
+				:rows="agents">
+				<template #column-name="{ value }">
+					{{ value }}
+				</template>
+				<template #column-tools="{ row: agent }">
+					{{ labels(agent.tools, toolOptions) }}
+				</template>
+				<template #column-views="{ row: agent }">
+					{{ labels(agent.views, viewOptions) }}
+				</template>
+				<template #actions-header>
+					<span class="hidden-visually">{{ t('openregister', 'Actions') }}</span>
+				</template>
+				<template #row-actions="{ row: agent }">
+					<NcButton
+						v-if="canEdit(agent)"
+						:aria-label="
+							t('openregister', 'Limits of {name}', {
+								name: agent.name,
+							})
+						"
+						@click="editing = agent">
+						{{ t('openregister', 'Edit limits') }}
+					</NcButton>
+					<span
+						v-else-if="!isListGrant(agent)"
+						class="agents__readonly">
+						{{
+							t(
+								'openregister',
+								'This agent has a grant per app. Change it through the agents API.',
+							)
+						}}
 					</span>
-					<span v-if="selectedAgents.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedAgents.length }) }})
+					<span v-else class="agents__readonly">
+						{{
+							t(
+								'openregister',
+								"Only the agent's owner can change its limits.",
+							)
+						}}
 					</span>
-				</div>
-				<div class="viewActions">
-					<div class="viewModeSwitchContainer">
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							v-tooltip="'See agents as cards'"
-							:button-variant="true"
-							value="cards"
-							name="view_mode_radio"
-							type="radio"
-							button-variant-grouped="horizontal">
-							Cards
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							v-tooltip="'See agents as a table'"
-							:button-variant="true"
-							value="table"
-							name="view_mode_radio"
-							type="radio"
-							button-variant-grouped="horizontal">
-							Table
-						</NcCheckboxRadioSwitch>
-					</div>
-
-					<NcActions
-						:force-name="true"
-						:inline="2"
-						menu-name="Actions">
-						<NcActionButton
-							:primary="true"
-							close-after-click
-							@click="agentStore.setAgentItem(null); navigationStore.setModal('editAgent')">
-							<template #icon>
-								<Plus :size="20" />
-							</template>
-							Add Agent
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="agentStore.refreshAgentList()">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							Refresh
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
-
-			<!-- Loading, Error, and Empty States -->
-			<NcEmptyContent v-if="agentStore.loading || agentStore.error || !agentStore.agentList.length"
-				:name="emptyContentName"
-				:description="emptyContentDescription">
-				<template #icon>
-					<NcLoadingIcon v-if="agentStore.loading" :size="64" />
-					<RobotOutline v-else :size="64" />
 				</template>
-			</NcEmptyContent>
-
-			<!-- Content -->
-			<div v-else>
-				<template v-if="viewMode === 'cards'">
-					<div class="cardGrid">
-						<div v-for="agent in paginatedAgents" :key="agent.id" class="card">
-							<div class="cardHeader">
-								<h2 v-tooltip.bottom="agent.description">
-									<RobotOutline :size="20" />
-									{{ agent.name }}
-								</h2>
-								<NcActions :primary="true" menu-name="Actions">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setModal('editAgent')">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit
-									</NcActionButton>
-									<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setDialog('deleteAgent')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Delete
-									</NcActionButton>
-								</NcActions>
-							</div>
-							<!-- Agent Details -->
-							<div class="agentDetails">
-								<p v-if="agent.description" class="agentDescription">
-									{{ agent.description }}
-								</p>
-								<div class="agentInfo">
-									<div v-if="agent.type" class="agentInfoItem">
-										<strong>{{ t('openregister', 'Type') }}:</strong>
-										<span class="agentTypeBadge">{{ agent.type }}</span>
-									</div>
-									<div v-if="agent.provider" class="agentInfoItem">
-										<strong>{{ t('openregister', 'Provider') }}:</strong>
-										<span>{{ agent.provider }}</span>
-									</div>
-									<div v-if="agent.model" class="agentInfoItem">
-										<strong>{{ t('openregister', 'Model') }}:</strong>
-										<span>{{ agent.model }}</span>
-									</div>
-									<div v-if="agent.active !== undefined" class="agentInfoItem">
-										<strong>{{ t('openregister', 'Status') }}:</strong>
-										<span :class="agent.active ? 'status-active' : 'status-inactive'">
-											{{ agent.active ? 'Active' : 'Inactive' }}
-										</span>
-									</div>
-									<div v-if="agent.enableRag" class="agentInfoItem">
-										<strong>{{ t('openregister', 'RAG') }}:</strong>
-										<span class="ragBadge">
-											<Brain :size="16" />
-											Enabled
-										</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</template>
-				<template v-else>
-					<div class="viewTableContainer">
-						<table class="viewTable">
-							<thead>
-								<tr>
-									<th class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:checked="allSelected"
-											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
-									</th>
-									<th>{{ t('openregister', 'Name') }}</th>
-									<th>{{ t('openregister', 'Type') }}</th>
-									<th>{{ t('openregister', 'Provider') }}</th>
-									<th>{{ t('openregister', 'Model') }}</th>
-									<th>{{ t('openregister', 'Status') }}</th>
-									<th>{{ t('openregister', 'RAG') }}</th>
-									<th>{{ t('openregister', 'Created') }}</th>
-									<th class="tableColumnActions">
-										{{ t('openregister', 'Actions') }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="agent in paginatedAgents"
-									:key="agent.id"
-									class="viewTableRow"
-									:class="{ viewTableRowSelected: selectedAgents.includes(agent.id) }">
-									<td class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:checked="selectedAgents.includes(agent.id)"
-											@update:checked="(checked) => toggleAgentSelection(agent.id, checked)" />
-									</td>
-									<td class="tableColumnTitle">
-										<div class="titleContent">
-											<strong>{{ agent.name }}</strong>
-											<span v-if="agent.description" class="textDescription textEllipsis">{{ agent.description }}</span>
-										</div>
-									</td>
-									<td><span class="agentTypeBadge">{{ agent.type || '-' }}</span></td>
-									<td>{{ agent.provider || '-' }}</td>
-									<td>{{ agent.model || '-' }}</td>
-									<td>
-										<span :class="agent.active ? 'status-active' : 'status-inactive'">
-											{{ agent.active ? 'Active' : 'Inactive' }}
-										</span>
-									</td>
-									<td>
-										<span v-if="agent.enableRag" class="ragBadge">
-											<Brain :size="16" />
-											Enabled
-										</span>
-										<span v-else>-</span>
-									</td>
-									<td>{{ agent.created ? new Date(agent.created).toLocaleDateString() : '-' }}</td>
-									<td class="tableColumnActions">
-										<NcActions :primary="false">
-											<template #icon>
-												<DotsHorizontal :size="20" />
-											</template>
-											<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setModal('editAgent')">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												Edit
-											</NcActionButton>
-											<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setDialog('deleteAgent')">
-												<template #icon>
-													<TrashCanOutline :size="20" />
-												</template>
-												Delete
-											</NcActionButton>
-										</NcActions>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</template>
-			</div>
-
-			<!-- Pagination -->
-			<PaginationComponent
-				v-if="agentStore.agentList.length > 0"
-				:current-page="pagination.page || 1"
-				:total-pages="Math.ceil(agentStore.agentList.length / (pagination.limit || 20))"
-				:total-items="agentStore.agentList.length"
-				:current-page-size="pagination.limit || 20"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
+			</CnDataTable>
 		</div>
+		<EditAgentLimits
+			v-if="editing"
+			:agent="editing"
+			:toolOptions="toolOptions"
+			:viewOptions="viewOptions"
+			@close="editing = null"
+			@saved="onSaved" />
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import Brain from 'vue-material-design-icons/Brain.vue'
-
-import PaginationComponent from '../../components/PaginationComponent.vue'
+import { CnDataTable } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
+import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import EditAgentLimits from '../../modals/agent/EditAgentLimits.vue'
+import { pageShellComponents } from '../pageShell.js'
 
 export default {
 	name: 'AgentsIndex',
 	components: {
-		NcAppContent,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcActions,
-		NcActionButton,
-		NcCheckboxRadioSwitch,
-		RobotOutline,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
-		Refresh,
-		Plus,
-		Brain,
-		PaginationComponent,
+		CnDataTable,
+		EditAgentLimits,
+		...pageShellComponents,
 	},
+
 	data() {
 		return {
-			viewMode: 'cards',
-			selectedAgents: [],
-			pagination: {
-				page: 1,
-				limit: 20,
-			},
+			agents: [],
+			toolOptions: [],
+			viewOptions: [],
+			loading: true,
+			error: '',
+			editing: null,
 		}
 	},
+
 	computed: {
-		paginatedAgents() {
-			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
-			const end = start + (this.pagination.limit || 20)
-			return agentStore.agentList.slice(start, end)
-		},
-		allSelected() {
-			return agentStore.agentList.length > 0 && agentStore.agentList.every(agent => this.selectedAgents.includes(agent.id))
-		},
-		someSelected() {
-			return this.selectedAgents.length > 0 && !this.allSelected
-		},
-		emptyContentName() {
-			if (agentStore.loading) {
-				return t('openregister', 'Loading agents...')
-			} else if (agentStore.error) {
-				return agentStore.error
-			} else if (!agentStore.agentList.length) {
-				return t('openregister', 'No agents found')
-			}
-			return ''
-		},
-		emptyContentDescription() {
-			if (agentStore.loading) {
-				return t('openregister', 'Please wait while we fetch your agents.')
-			} else if (agentStore.error) {
-				return t('openregister', 'Please try again later.')
-			} else if (!agentStore.agentList.length) {
-				return t('openregister', 'Create your first AI agent to get started.')
-			}
-			return ''
+		/**
+		 * The agents table columns; the row actions add the last one.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name'), cellClass: 'cn-cell--wrap' },
+				{ key: 'tools', label: t('openregister', 'Tools'), cellClass: 'cn-cell--wrap' },
+				{ key: 'views', label: t('openregister', 'Views'), cellClass: 'cn-cell--wrap' },
+			]
 		},
 	},
-	mounted() {
-		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
-		agentStore.refreshAgentList(null, true)
+
+	async mounted() {
+		await this.load()
 	},
+
 	methods: {
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.selectedAgents = agentStore.agentList.map(agent => agent.id)
-			} else {
-				this.selectedAgents = []
+		t,
+		/**
+		 * Load the agents, the tool catalogue and the views in one go.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+		 */
+		async load() {
+			this.loading = true
+			this.error = ''
+			try {
+				const [agents, tools, views] = await Promise.all([
+					axios.get(generateUrl('/apps/openregister/api/agents')),
+					axios.get(generateUrl('/apps/openregister/api/agents/tools')),
+					axios.get(generateUrl('/apps/openregister/api/views')),
+				])
+				this.agents = agents.data?.results || []
+				this.toolOptions = Object.entries(tools.data?.results || {}).map(
+					([id, meta]) => ({ id, label: meta?.name || id }),
+				)
+				this.viewOptions = (views.data?.results || []).map((view) => ({
+					id: view.uuid,
+					label: view.name || view.uuid,
+				}))
+			} catch {
+				this.error = t('openregister', 'Could not load the agents')
+			} finally {
+				this.loading = false
 			}
 		},
-		toggleAgentSelection(agentId, checked) {
-			if (checked) {
-				this.selectedAgents.push(agentId)
-			} else {
-				this.selectedAgents = this.selectedAgents.filter(id => id !== agentId)
+
+		/**
+		 * Whether the signed-in user may change this agent (the API allows its owner only).
+		 *
+		 * @param {object} agent The agent
+		 * @return {boolean} True for the owner
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+		 */
+		canEdit(agent) {
+			return this.isListGrant(agent) && agent.owner === getCurrentUser()?.uid
+		},
+
+		/**
+		 * Whether the agent's grant is a plain list of tool ids, the form this screen edits.
+		 * A structured grant (app, subject, action) is left alone: saving a list over it
+		 * would drop its structure.
+		 *
+		 * @param {object} agent The agent
+		 * @return {boolean} True for no grant or a list grant
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+		 */
+		isListGrant(agent) {
+			return (
+				agent.tools === null
+				|| agent.tools === undefined
+				|| Array.isArray(agent.tools)
+			)
+		},
+
+		/**
+		 * Readable list of the ids an agent holds.
+		 *
+		 * @param {Array<string>|object|null} ids The stored ids (a structured grant reads as its app names)
+		 * @param {Array<{id: string, label: string}>} options Known options
+		 * @return {string} Comma-separated labels, or a dash for none
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+		 */
+		labels(ids, options) {
+			if (ids && !Array.isArray(ids) && typeof ids === 'object') {
+				return Object.keys(ids).join(', ')
 			}
+			if (!Array.isArray(ids) || ids.length === 0) {
+				return '-'
+			}
+			return ids
+				.map((id) => options.find((o) => o.id === id)?.label || id)
+				.join(', ')
 		},
-		onPageChanged(page) {
-			this.pagination.page = page
-		},
-		onPageSizeChanged(pageSize) {
-			this.pagination.page = 1
-			this.pagination.limit = pageSize
+
+		/**
+		 * Replace the saved agent in the list and close the modal.
+		 *
+		 * @param {object} saved The agent as the API returned it
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+		 */
+		onSaved(saved) {
+			this.agents = this.agents.map((a) => (a.id === saved.id ? saved : a))
+			this.editing = null
 		},
 	},
 }
 </script>
 
 <style scoped>
-.agentDetails {
-	margin-top: 1rem;
+.agents {
+	padding: 16px 24px;
 }
 
-.agentDescription {
-	color: var(--color-text-lighter);
-	margin-bottom: 1rem;
+.agents__intro {
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 16px;
 }
 
-.agentInfo {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.agentInfoItem {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
-
-.agentInfoItem strong {
-	min-width: 80px;
-}
-
-.status-active {
-	color: var(--color-success);
-	font-weight: 600;
-}
-
-.status-inactive {
-	color: var(--color-text-lighter);
-}
-
-.agentTypeBadge {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	font-size: 0.85em;
-	font-weight: 600;
-	text-transform: capitalize;
-}
-
-.ragBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background-color: var(--color-success-light);
-	color: var(--color-success-dark);
-	font-size: 0.85em;
-	font-weight: 600;
+.agents__readonly {
+	color: var(--color-text-maxcontrast);
 }
 </style>

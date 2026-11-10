@@ -1,0 +1,257 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CopyObject.copyObject copies both 1`] = `
+{
+  "after": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "before": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "closed": 1,
+  "item": "{"id":"root-id","name":"","title":"","@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+  "modal": [
+    [
+      "viewObject",
+    ],
+  ],
+  "refreshed": [
+    [
+      {
+        "register": 4,
+        "schema": 9,
+      },
+    ],
+  ],
+  "registered": [
+    [
+      "4-9",
+      9,
+      4,
+    ],
+  ],
+  "saved": [
+    [
+      "4-9",
+      "{"name":"The copy","title":"The copy","@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+    ],
+  ],
+  "selected": [
+    [
+      {
+        "id": "new",
+        "type": "4-9",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`CopyObject.copyObject copies named 1`] = `
+{
+  "after": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "before": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "closed": 1,
+  "item": "{"id":"root-id","name":"Root name","@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+  "modal": [
+    [
+      "viewObject",
+    ],
+  ],
+  "refreshed": [
+    [
+      {
+        "register": 4,
+        "schema": 9,
+      },
+    ],
+  ],
+  "registered": [
+    [
+      "4-9",
+      9,
+      4,
+    ],
+  ],
+  "saved": [
+    [
+      "4-9",
+      "{"name":"The copy","@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+    ],
+  ],
+  "selected": [
+    [
+      {
+        "id": "new",
+        "type": "4-9",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`CopyObject.copyObject copies plain 1`] = `
+{
+  "after": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "before": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "closed": 1,
+  "item": "{"id":"root-id","answer":42,"@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+  "modal": [
+    [
+      "viewObject",
+    ],
+  ],
+  "refreshed": [
+    [
+      {
+        "register": 4,
+        "schema": 9,
+      },
+    ],
+  ],
+  "registered": [
+    [
+      "4-9",
+      9,
+      4,
+    ],
+  ],
+  "saved": [
+    [
+      "4-9",
+      "{"answer":42,"@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+    ],
+  ],
+  "selected": [
+    [
+      {
+        "id": "new",
+        "type": "4-9",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`CopyObject.copyObject copies titled 1`] = `
+{
+  "after": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "before": "{"success":true,"loading":false,"error":false,"copyName":"  The copy  ","timer":"set"}",
+  "closed": 1,
+  "item": "{"id":"root-id","title":"Root title","@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+  "modal": [
+    [
+      "viewObject",
+    ],
+  ],
+  "refreshed": [
+    [
+      {
+        "register": 4,
+        "schema": 9,
+      },
+    ],
+  ],
+  "registered": [
+    [
+      "4-9",
+      9,
+      4,
+    ],
+  ],
+  "saved": [
+    [
+      "4-9",
+      "{"title":"The copy","@self":{"name":"The copy","register":4,"schema":9,"owner":"alice"}}",
+    ],
+  ],
+  "selected": [
+    [
+      {
+        "id": "new",
+        "type": "4-9",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`CopyObject.copyObject copies withoutSelf 1`] = `
+{
+  "after": "{"success":false,"loading":false,"error":"Cannot read properties of undefined (reading 'register')","copyName":"  The copy  ","timer":"none"}",
+  "before": "{"success":false,"loading":false,"error":"Cannot read properties of undefined (reading 'register')","copyName":"  The copy  ","timer":"none"}",
+  "closed": 0,
+  "item": "{"id":"only-root","name":"n"}",
+  "modal": [],
+  "refreshed": [],
+  "registered": [],
+  "saved": [],
+  "selected": [],
+}
+`;
+
+exports[`CopyObject.copyObject refuses the empty name "   " 1`] = `"{"success":null,"loading":false,"error":"Please provide a name for the copy","copyName":"   ","timer":"none"}"`;
+
+exports[`CopyObject.copyObject refuses the empty name "" 1`] = `"{"success":null,"loading":false,"error":"Please provide a name for the copy","copyName":"","timer":"none"}"`;
+
+exports[`CopyObject.copyObject reports a failing save 1`] = `
+{
+  "refreshed": [],
+  "selected": [],
+  "state": "{"success":false,"loading":false,"error":"Save failed","copyName":"Copy","timer":"none"}",
+}
+`;
+
+exports[`CopyObject.copyObject reports a failure without a message 1`] = `
+{
+  "refreshed": [],
+  "selected": [],
+  "state": "{"success":false,"loading":false,"error":"An error occurred while copying the object","copyName":"Copy","timer":"none"}",
+}
+`;
+
+exports[`CopyObject.copyObject reports no saved object 1`] = `
+{
+  "refreshed": [
+    [
+      {
+        "register": 4,
+        "schema": 9,
+      },
+    ],
+  ],
+  "selected": [],
+  "state": "{"success":false,"loading":false,"error":"Failed to create copy","copyName":"Copy","timer":"none"}",
+}
+`;
+
+exports[`copyPayload builds the payload of both 1`] = `
+{
+  "original": "{"id":"root-id","name":"","title":"","@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+  "payload": "{"name":"Copy of Original (root-id)","title":"Copy of Original (root-id)","@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+}
+`;
+
+exports[`copyPayload builds the payload of named 1`] = `
+{
+  "original": "{"id":"root-id","name":"Root name","@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+  "payload": "{"name":"Copy of Original (root-id)","@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+}
+`;
+
+exports[`copyPayload builds the payload of plain 1`] = `
+{
+  "original": "{"id":"root-id","answer":42,"@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+  "payload": "{"answer":42,"@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+}
+`;
+
+exports[`copyPayload builds the payload of titled 1`] = `
+{
+  "original": "{"id":"root-id","title":"Root title","@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+  "payload": "{"title":"Copy of Original (root-id)","@self":{"name":"Copy of Original (root-id)","register":4,"schema":9,"owner":"alice"}}",
+}
+`;
+
+exports[`copyPayload builds the payload of withoutSelf 1`] = `
+{
+  "original": "{"id":"only-root","name":"n"}",
+  "payload": "{"name":"Copy of n (only-root)"}",
+}
+`;

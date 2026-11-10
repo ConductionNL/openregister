@@ -5,6 +5,9 @@
  *
  * Thrown when an organisation is in a non-active state that prevents API access.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Middleware
  *
@@ -26,34 +29,32 @@ use Exception;
  *
  * @package OCA\OpenRegister\Middleware
  */
-class TenantStatusException extends Exception
-{
-    /**
-     * Constructor
-     *
-     * @param string $message The error message
-     * @param string $status  The organisation status
-     * @param int    $code    HTTP status code
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
-     */
-    public function __construct(
-        string $message,
-        private readonly string $status,
-        int $code=403
-    ) {
-        parent::__construct(message: $message, code: $code);
-    }//end __construct()
+class TenantStatusException extends Exception {
+	/**
+	 * Constructor
+	 *
+	 * @param string $message The error message
+	 * @param string $status The organisation status
+	 * @param int $code HTTP status code
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	public function __construct(
+		string $message,
+		private readonly string $status,
+		int $code = 403,
+	) {
+		parent::__construct(message: $message, code: $code);
+	}//end __construct()
 
-    /**
-     * Get the organisation status.
-     *
-     * @return string The status
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
-     */
-    public function getStatus(): string
-    {
-        return $this->status;
-    }//end getStatus()
+	/**
+	 * Get the organisation status.
+	 *
+	 * @return string The status
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	public function getStatus(): string {
+		return $this->status;
+	}//end getStatus()
 }//end class

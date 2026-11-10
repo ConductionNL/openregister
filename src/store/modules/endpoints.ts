@@ -1,12 +1,26 @@
-import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 const apiEndpoint = '/index.php/apps/openregister/api/endpoints'
 
+type TEndpointItem = Record<string, unknown>
+
+/**
+ * Per save method: the URL it sends to, and the words its errors use.
+ */
+const SAVES = {
+	POST: { url: () => apiEndpoint, verb: 'create', doing: 'creating' },
+	PUT: {
+		url: (item: TEndpointItem) => `${apiEndpoint}/${item.id}`,
+		verb: 'update',
+		doing: 'updating',
+	},
+}
+
 export const useEndpointStore = defineStore('endpoint', () => {
 	// state.
-	const endpointItem = ref(null)
-	const endpointList = ref([])
+	const endpointItem = ref<TEndpointItem | null>(null)
+	const endpointList = ref<TEndpointItem[]>([])
 	const viewMode = ref('cards')
 
 	// ################################
@@ -15,11 +29,11 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Set the active endpoint item.
+	 *
 	 * @param item - The endpoint item to set
 	 */
-	const setEndpointItem = (item) => {
+	const setEndpointItem = (item: TEndpointItem | null) => {
 		endpointItem.value = item
-		console.info('Active endpoint item set to ' + (item ? item.id : 'null'))
 	}
 
 	/**
@@ -38,17 +52,17 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * const endpointItem = computed(() => useEndpointStore().getEndpointItem())
 	 * ```
 	 *
-	 * @return {object | null} The active endpoint item
+	 * @return The active endpoint item
 	 */
 	const getEndpointItem = () => endpointItem.value
 
 	/**
 	 * Set the active endpoint list.
+	 *
 	 * @param list - The endpoint list to set
 	 */
-	const setEndpointList = (list) => {
+	const setEndpointList = (list: TEndpointItem[]) => {
 		endpointList.value = list
-		console.info('Endpoint list set to ' + list.length + ' items')
 	}
 
 	/**
@@ -67,7 +81,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * const endpointList = computed(() => useEndpointStore().getEndpointList())
 	 * ```
 	 *
-	 * @return {Array} The active endpoint list
+	 * @return The active endpoint list
 	 */
 	const getEndpointList = () => endpointList.value
 
@@ -79,8 +93,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 * Fetch the list of endpoints from the API
 	 */
 	const refreshEndpointList = () => {
-		console.info('Refreshing endpoint list')
-
 		fetch(apiEndpoint, {
 			method: 'GET',
 		})
@@ -95,14 +107,18 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	}
 
 	/**
-	 * Create a new endpoint on the API
-	 * @param item - The endpoint item to create
+	 * Send an endpoint to the API, then make the answer the active item and
+	 * refresh the list.
+	 *
+	 * @param method - POST to create, PUT to update
+	 * @param item - The endpoint item to send
+	 * @return The saved endpoint
+	 * @spec exclude Endpoint store save request shared by create and update: no standalone behavioural contract.
 	 */
-	const createEndpoint = (item) => {
-		console.info('Creating endpoint:', item)
-
-		return fetch(apiEndpoint, {
-			method: 'POST',
+	const saveEndpoint = (method: keyof typeof SAVES, item: TEndpointItem) => {
+		const save = SAVES[method]
+		return fetch(save.url(item), {
+			method,
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -110,68 +126,52 @@ export const useEndpointStore = defineStore('endpoint', () => {
 		})
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error('Failed to create endpoint')
+					throw new Error(`Failed to ${save.verb} endpoint`)
 				}
 				return response.json()
 			})
 			.then((data) => {
-				console.info('Endpoint created successfully:', data)
 				setEndpointItem(data)
 				refreshEndpointList()
 				return data
 			})
 			.catch((err) => {
-				console.error('Error creating endpoint:', err)
+				console.error(`Error ${save.doing} endpoint:`, err)
 				throw err
 			})
 	}
 
 	/**
-	 * Update an existing endpoint on the API
-	 * @param item - The endpoint item to update
+	 * Create a new endpoint on the API
+	 *
+	 * @param item - The endpoint item to create
+	 * @spec exclude Endpoint store create action: no standalone behavioural contract.
 	 */
-	const updateEndpoint = (item) => {
+	const createEndpoint = (item: TEndpointItem) => saveEndpoint('POST', item)
+
+	/**
+	 * Update an existing endpoint on the API
+	 *
+	 * @param item - The endpoint item to update
+	 * @spec exclude Endpoint store update action: no standalone behavioural contract.
+	 */
+	const updateEndpoint = (item: TEndpointItem) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for update')
 		}
 
-		console.info('Updating endpoint:', item)
-
-		return fetch(`${apiEndpoint}/${item.id}`, {
-			method: 'PUT',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(item),
-		})
-			.then((response) => {
-				if (!response.ok) {
-					throw new Error('Failed to update endpoint')
-				}
-				return response.json()
-			})
-			.then((data) => {
-				console.info('Endpoint updated successfully:', data)
-				setEndpointItem(data)
-				refreshEndpointList()
-				return data
-			})
-			.catch((err) => {
-				console.error('Error updating endpoint:', err)
-				throw err
-			})
+		return saveEndpoint('PUT', item)
 	}
 
 	/**
 	 * Delete an endpoint from the API
+	 *
 	 * @param item - The endpoint item to delete
 	 */
-	const deleteEndpoint = (item) => {
+	const deleteEndpoint = (item: TEndpointItem) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for deletion')
 		}
-
-		console.info('Deleting endpoint:', item)
 
 		return fetch(`${apiEndpoint}/${item.id}`, {
 			method: 'DELETE',
@@ -180,7 +180,6 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				if (!response.ok) {
 					throw new Error('Failed to delete endpoint')
 				}
-				console.info('Endpoint deleted successfully')
 				// Clear the active item if it was the deleted one.
 				if (endpointItem.value && endpointItem.value.id === item.id) {
 					setEndpointItem(null)
@@ -195,15 +194,14 @@ export const useEndpointStore = defineStore('endpoint', () => {
 
 	/**
 	 * Test an endpoint by executing it
+	 *
 	 * @param item - The endpoint item to test
 	 * @param testData - Optional test data to send
 	 */
-	const testEndpoint = (item, testData = {}) => {
+	const testEndpoint = (item: TEndpointItem, testData = {}) => {
 		if (!item.id) {
 			throw new Error('Endpoint ID is required for testing')
 		}
-
-		console.info('Testing endpoint:', item)
 
 		return fetch(`${apiEndpoint}/${item.id}/test`, {
 			method: 'POST',
@@ -215,13 +213,14 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			.then((response) => {
 				return response.json().then((data) => {
 					if (!response.ok) {
-						throw new Error(data.error || data.message || 'Failed to test endpoint')
+						throw new Error(
+							data.error || data.message || 'Failed to test endpoint',
+						)
 					}
 					return data
 				})
 			})
 			.then((data) => {
-				console.info('Endpoint tested successfully:', data)
 				return data
 			})
 			.catch((err) => {

@@ -49,7 +49,6 @@ Existing guarded reference: `lib/Db/Schema.php:1186` already checks `is_string($
 ```php
 public function normalize(mixed $value): ?DateTimeImmutable;
 public function formatForDatabase(mixed $value): ?string; // 'Y-m-d H:i:s'
-public function formatForIso8601(mixed $value): ?string;  // ISO 8601 with offset
 ```
 
 Rules enforced in `normalize()`:

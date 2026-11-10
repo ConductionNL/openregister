@@ -1,0 +1,166 @@
+<?php
+
+/**
+ * The MDTO appraisal vocabulary, in one place.
+ *
+ * 🔴 THIS EXISTS BECAUSE THE APPRAISAL ALIASES HAD NO SHARED HOME. The list
+ * lived as a private constant on
+ * {@see \OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver}, which
+ * reads objects and answers questions about them. Everything that had to ACT on
+ * an appraisal — the destruction sweep, the e-Depot transfer sweep — could not
+ * see it, so each wrote its own string literal instead, and each picked exactly
+ * one spelling.
+ *
+ * 🔴 MATCHING ONLY THE ENGLISH SPELLING SKIPS EVERY PRE-EXISTING RECORD, AND
+ * SKIPS IT SILENTLY. Stored data carries whatever spelling was current when it
+ * was written and there is no migration, so a destruction sweep that compares
+ * against `destroy` alone finds nothing on an install whose records say
+ * `vernietigen`. That is the direction that keeps personal data past its lawful
+ * term: the sweep reports "no objects eligible", which is indistinguishable
+ * from a clean run. The reverse mistake — matching only Dutch — hides every
+ * record written since the vocabulary landed. Both spellings, always, on READ.
+ *
+ * WRITES STILL PICK ONE. This class is a read-side vocabulary, exactly like
+ * {@see RecordState}: it says which stored spellings mean the same decision. It
+ * does not say which spelling a new record should be written with.
+ *
+ * CONSTANTS ONLY, NO METHODS, for the same reason RecordState has none: phpmd's
+ * StaticAccess rule refuses static helper calls, and a helper injected purely to
+ * compare two strings is not worth the wiring. The alias lists are the API.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Archival
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/retention-management/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Archival;
+
+/**
+ * The MDTO `waardering` values, and every spelling that means each one.
+ */
+final class Appraisal implements AppraisalInterface {
+
+	/**
+	 * Keep forever. The record goes to an e-Depot, it is never destroyed.
+	 */
+	public const RETAIN_PERMANENTLY = 'retain_permanently';
+
+	/**
+	 * Destroy once the disposal date has passed and nothing holds it.
+	 */
+	public const DESTROY = 'destroy';
+
+	/**
+	 * Keep the record, lose the person in it.
+	 *
+	 * The fourth word. A municipality that wants the case for its statistics
+	 * and not the citizen in it had to choose between keeping personal data it
+	 * no longer needs and destroying a record it still uses. Neither is lawful
+	 * and neither is useful, so both were being answered by keeping.
+	 *
+	 * It is not a softer destroy. A destroyed record is gone and the destruction
+	 * log says it was here; an anonymised record stays, and what it lost is
+	 * gone from it, from everything derived from it, and from the values stored
+	 * on its own audit trail. That last one is the exception to the rule that
+	 * history is preserved, and it is deliberate: a trail that keeps the old
+	 * name re-identifies the record it was removed from.
+	 */
+	public const ANONYMISE = 'anonymise';
+
+	/**
+	 * No decision has been recorded yet. Neither sweep may act on this.
+	 */
+	public const NOT_YET_DETERMINED = 'not_yet_determined';
+
+	/**
+	 * The appraisals, canonical spellings only.
+	 *
+	 * @var string[]
+	 */
+	public const ALL = [
+		self::RETAIN_PERMANENTLY,
+		self::DESTROY,
+		self::ANONYMISE,
+		self::NOT_YET_DETERMINED,
+	];
+
+	/**
+	 * Every spelling that means DESTROY.
+	 *
+	 * @var string[]
+	 */
+	public const DESTROY_ALIASES = ['destroy', 'vernietigen'];
+
+	/**
+	 * Every spelling that means ANONYMISE.
+	 *
+	 * Both English spellings, because a schema written by a Dutch team and one
+	 * written by an English-speaking integrator will not agree, and a record
+	 * whose spelling is not recognised is worse here than anywhere else in this
+	 * file: see {@see ArchivalDeclarationReader::declaredAppraisal()}.
+	 *
+	 * @var string[]
+	 */
+	public const ANONYMISE_ALIASES = ['anonymise', 'anonymize', 'anonymiseren'];
+
+	/**
+	 * Every spelling that means NOT_YET_DETERMINED.
+	 *
+	 * @var string[]
+	 */
+	public const NOT_YET_DETERMINED_ALIASES = ['not_yet_determined', 'nog_niet_bepaald'];
+
+	/**
+	 * Every accepted spelling of every appraisal.
+	 *
+	 * @var string[]
+	 */
+	public const ALL_ALIASES = [
+		'retain_permanently',
+		'bewaren',
+		'blijvend_bewaren',
+		'destroy',
+		'vernietigen',
+		'anonymise',
+		'anonymize',
+		'anonymiseren',
+		'not_yet_determined',
+		'nog_niet_bepaald',
+	];
+
+	/**
+	 * Each accepted spelling mapped to its canonical one.
+	 *
+	 * The alias lists above answer "does this stored value mean X", which is
+	 * what a sweep asks. This map answers "what is this stored value, in one
+	 * word", which is what a reader normalising an object for output asks. The
+	 * canonical spellings map to themselves so a value that is already
+	 * canonical resolves rather than falling through unchanged by accident.
+	 *
+	 * @var array<string, string>
+	 */
+	public const CANONICAL = [
+		'retain_permanently' => self::RETAIN_PERMANENTLY,
+		'bewaren' => self::RETAIN_PERMANENTLY,
+		'blijvend_bewaren' => self::RETAIN_PERMANENTLY,
+		'destroy' => self::DESTROY,
+		'vernietigen' => self::DESTROY,
+		'anonymise' => self::ANONYMISE,
+		'anonymize' => self::ANONYMISE,
+		'anonymiseren' => self::ANONYMISE,
+		'not_yet_determined' => self::NOT_YET_DETERMINED,
+		'nog_niet_bepaald' => self::NOT_YET_DETERMINED,
+	];
+}//end class

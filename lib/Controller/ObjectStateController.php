@@ -1,0 +1,288 @@
+<?php
+
+/**
+ * Class ObjectStateController
+ *
+ * The four state verbs an object answers to: archive, restore, freeze and
+ * unfreeze.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use Closure;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
+use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectStateRequest;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use OCP\IUserSession;
+
+/**
+ * Class ObjectStateController
+ *
+ * A separate controller rather than four more methods on ObjectsController,
+ * which is already past two and a half thousand lines and is the file every
+ * object-shaped change edits at once.
+ *
+ * Every method here refuses an anonymous caller before anything else. The
+ * per-object `update` check lives in {@see ArchiveHandler}, so the two doors
+ * to the same state cannot disagree about who may open them.
+ *
+ * @psalm-suppress UnusedClass
+ */
+class ObjectStateController extends Controller {
+
+	/**
+	 * The archive and freeze verbs.
+	 *
+	 * @var ArchiveHandlerInterface
+	 */
+	private readonly ArchiveHandlerInterface $archiveHandler;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest                      $request  The request object.
+	 * @param ObjectStateControllerServices $services The controller's collaborators.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IRequest $request,
+		ObjectStateControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->archiveHandler = $services->archiveHandler;
+		$this->userSession = $services->userSession;
+	}//end __construct()
+
+	/**
+	 * Archive an object.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The id or uuid of the object to archive.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The stored archive marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function archive(string $register, string $schema, string $id): JSONResponse {
+		$verb = fn (?string $reason): array => $this->archiveHandler->archive(identifier: $id, reason: $reason, register: $register, schema: $schema);
+
+		return $this->asSignedInUser(verb: $verb);
+	}//end archive()
+
+	/**
+	 * Restore an object from the archive.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The id or uuid of the object to restore.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The cleared archive marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unarchive(string $register, string $schema, string $id): JSONResponse {
+		$verb = fn (?string $reason): array => $this->archiveHandler->unarchive(identifier: $id, reason: $reason, register: $register, schema: $schema);
+
+		return $this->asSignedInUser(verb: $verb);
+	}//end unarchive()
+
+	/**
+	 * Freeze an object.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The id or uuid of the object to freeze.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The stored freeze marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freeze(string $register, string $schema, string $id): JSONResponse {
+		return $this->asSignedInUser(verb: $this->freezing(ref: new ObjectRef(register: $register, schema: $schema, id: $id)));
+	}//end freeze()
+
+	/**
+	 * The freeze verb for one object; the requested state is read when it runs.
+	 *
+	 * @param ObjectRef $ref The object as the route names it.
+	 *
+	 * @return Closure(?string): array<string, mixed> The verb, given the reason.
+	 */
+	private function freezing(ObjectRef $ref): Closure {
+		return fn (?string $reason): array => $this->archiveHandler->freeze(
+			request: new ObjectStateRequest(identifier: $ref->id, reason: $reason, register: (string)$ref->register, schema: (string)$ref->schema),
+			state: $this->textFromRequest(key: 'state')
+		);
+	}//end freezing()
+
+	/**
+	 * Unfreeze an object.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The id or uuid of the object to unfreeze.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The cleared freeze marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unfreeze(string $register, string $schema, string $id): JSONResponse {
+		$verb = fn (?string $reason): array => $this->archiveHandler->unfreeze(identifier: $id, reason: $reason, register: $register, schema: $schema);
+
+		return $this->asSignedInUser(verb: $verb);
+	}//end unfreeze()
+
+	/**
+	 * Run one verb for a signed-in caller, answering its marker or its refusal.
+	 *
+	 * The anonymous caller is refused before the verb, or anything it reads
+	 * from the request, is evaluated. The verb is handed the request's reason.
+	 *
+	 * @param callable(?string): array $verb The verb, with the handler's other arguments already bound.
+	 *
+	 * @return JSONResponse The marker, or the refusal.
+	 */
+	private function asSignedInUser(callable $verb): JSONResponse {
+		$refusal = $this->requireUser();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		try {
+			return new JSONResponse(data: $verb($this->reasonFromRequest()));
+		} catch (\Throwable $e) {
+			return $this->refusalResponse(exception: $e);
+		}
+	}//end asSignedInUser()
+
+	/**
+	 * Refuse an anonymous caller.
+	 *
+	 * `#[NoAdminRequired]` means "not only admins", never "no account", and
+	 * reading it the other way is how an endpoint ends up reachable by nobody
+	 * in particular. All four verbs write, so all four need a name to write.
+	 *
+	 * @return JSONResponse|null A 401, or null when a user is signed in.
+	 */
+	private function requireUser(): ?JSONResponse {
+		if ($this->userSession->getUser() !== null) {
+			return null;
+		}
+
+		return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+	}//end requireUser()
+
+	/**
+	 * Read the optional reason from the request body.
+	 *
+	 * @return string|null The reason, or null when none was sent.
+	 */
+	private function reasonFromRequest(): ?string {
+		return $this->textFromRequest(key: 'reason');
+	}//end reasonFromRequest()
+
+	/**
+	 * Read an optional text parameter from the request body.
+	 *
+	 * `state` on a freeze names the lifecycle state (or the consumer's own
+	 * moment, such as a Woo delivery) that froze the object, so the refusal a
+	 * later write gets can say why (REQ-OAS-007 contract).
+	 *
+	 * @param string $key The parameter name.
+	 *
+	 * @return string|null The trimmed text, or null when none was sent.
+	 */
+	private function textFromRequest(string $key): ?string {
+		$value = $this->request->getParam($key);
+
+		if (is_string($value) === false || trim($value) === '') {
+			return null;
+		}
+
+		return trim($value);
+	}//end textFromRequest()
+
+	/**
+	 * Map a refusal to its status.
+	 *
+	 * Each refusal keeps its own status rather than collapsing into a 500:
+	 * 422 when the schema does not offer archiving, 403 when the caller lacks
+	 * `update`, 404 when there is no such object. A caller cannot act on
+	 * "something went wrong", and the three are fixed in three different
+	 * places.
+	 *
+	 * @param \Throwable $exception The refusal.
+	 *
+	 * @return JSONResponse The mapped response.
+	 */
+	private function refusalResponse(\Throwable $exception): JSONResponse {
+		if ($exception instanceof ArchiveNotOfferedException) {
+			return new JSONResponse(
+				data: ['error' => $exception->getMessage()],
+				statusCode: ArchiveNotOfferedException::HTTP_STATUS
+			);
+		}
+
+		if ($exception instanceof NotAuthorizedException) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+		}
+
+		if ($exception instanceof DoesNotExistException) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		// SEC-CTRL-7: never leak internal exception detail on a 500.
+		return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: 500);
+	}//end refusalResponse()
+}//end class

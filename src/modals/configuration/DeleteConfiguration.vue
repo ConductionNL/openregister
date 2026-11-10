@@ -1,83 +1,73 @@
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteConfiguration'"
+	<ConfirmDialogFrame
+		v-if="navigationStore.dialog === 'deleteConfiguration'"
 		name="Delete Configuration"
 		size="small"
-		:can-close="false">
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
+		:error="error"
+		:loading="loading"
+		closeLabel="Cancel"
+		confirmLabel="Delete"
+		showConfirm
+		@cancel="closeModal"
+		@confirm="deleteConfiguration">
 		<div class="formContainer">
-			<p>Are you sure you want to delete the configuration "{{ configurationStore.configurationItem?.title }}"?</p>
-			<p>This action cannot be undone.</p>
+			<p>
+				Are you sure you want to delete the configuration "{{
+					configurationStore.configurationItem?.title
+				}}"?
+			</p>
+			<p>{{ t('openregister', 'This action cannot be undone.') }}</p>
 		</div>
-
-		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
-			<NcButton
-				:disabled="loading"
-				type="error"
-				@click="deleteConfiguration">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-else :size="20" />
-				</template>
-				Delete
-			</NcButton>
+		<template #confirmIcon>
+			<Delete :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'DeleteConfiguration',
-	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		Cancel,
-		Delete,
-	},
+	components: { ConfirmDialogFrame, Delete },
+
+	/**
+	 * @spec exclude Vue setup() exposing stores to the template; framework plumbing.
+	 */
 	setup() {
 		return { configurationStore, navigationStore }
 	},
+
 	data() {
 		return {
 			loading: false,
 			error: null,
 		}
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeModal() {
 			navigationStore.setDialog(false)
 			this.loading = false
 			this.error = null
 		},
+
+		/**
+		 * @spec exclude Delete-confirm handler delegating to configurationStore.deleteConfiguration; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		async deleteConfiguration() {
 			this.loading = true
 			this.error = null
 
 			try {
-				await configurationStore.deleteConfiguration(configurationStore.configurationItem)
+				await configurationStore.deleteConfiguration(
+					configurationStore.configurationItem,
+				)
 				this.closeModal()
 			} catch (error) {
 				this.error = error.message || 'Failed to delete configuration'
@@ -89,10 +79,8 @@ export default {
 }
 </script>
 
-<style>
-.formContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
+
+@include form-container;
 </style>

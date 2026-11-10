@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MDTO xmlns="https://www.nationaalarchief.nl/mdto" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://www.nationaalarchief.nl/mdto https://www.nationaalarchief.nl/mdto/MDTO-XML1.0.1.xsd">
+	<informatieobject>
+		<identificatie>
+			<identificatieKenmerk>DC/358</identificatieKenmerk>
+			<identificatieBron>Archief Deltacommissaris</identificatieBron>
+		</identificatie>
+		<naam>Brondocumenten en literatuur bij synthesedocument voorkeursstrategie Kust en strategische beslissing Zand</naam>
+		<aggregatieniveau>
+			<begripLabel>Dossier</begripLabel>
+			<begripBegrippenlijst>
+				<verwijzingNaam>Begrippenlijst Aggregatieniveaus MDTO</verwijzingNaam>
+			</begripBegrippenlijst>
+		</aggregatieniveau>
+		<trefwoord>Noordzee</trefwoord>
+		<omschrijving>Documentatie synthesedocument voorkeursstrategie Kust en strategische beslissing Zand</omschrijving>
+		<raadpleeglocatie>
+			<raadpleeglocatieFysiek>
+				<verwijzingNaam>Nationaal Archief</verwijzingNaam>
+			</raadpleeglocatieFysiek>
+			<raadpleeglocatieOnline>https://www.nationaalarchief.nl/onderzoeken/archief/2.16.133/invnr/%40DC%7C%7C153~DC%7C%7C155</raadpleeglocatieOnline>
+		</raadpleeglocatie>
+		<dekkingInTijd>
+			<dekkingInTijdType>
+				<begripLabel>Looptijd van een dossier</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Ministerie IenW zaaksysteem begrippenlijst</verwijzingNaam>
+				</begripBegrippenlijst>
+			</dekkingInTijdType>
+			<dekkingInTijdBegindatum>2010-01-01</dekkingInTijdBegindatum>
+			<dekkingInTijdEinddatum>2014-12-31</dekkingInTijdEinddatum>
+		</dekkingInTijd>
+		<dekkingInRuimte>
+			<verwijzingNaam>Noordzee</verwijzingNaam>
+		</dekkingInRuimte>
+		<taal>nl</taal>
+		<event>
+			<eventType>
+				<begripLabel>Creatie</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Begrippenlijst EventTypeLijst</verwijzingNaam>
+				</begripBegrippenlijst>
+			</eventType>
+			<eventTijd>2010-04-12T14:20:00</eventTijd>
+			<eventVerantwoordelijkeActor>
+				<verwijzingNaam>Medewerker informatiebeheer </verwijzingNaam>
+				<verwijzingIdentificatie>
+					<identificatieKenmerk>WH2360HHHJ</identificatieKenmerk>
+					<identificatieBron>ZZ-TRIMADDIN</identificatieBron>
+				</verwijzingIdentificatie>
+			</eventVerantwoordelijkeActor>
+		</event>
+		<event>
+			<eventType>
+				<begripLabel>Bevriezing</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Begrippenlijst EventTypeLijst MDTO</verwijzingNaam>
+				</begripBegrippenlijst>
+			</eventType>
+			<eventTijd>2015-04-05T14:40:00</eventTijd>
+			<eventVerantwoordelijkeActor>
+				<verwijzingNaam>Medewerker informatiebeheer</verwijzingNaam>
+				<verwijzingIdentificatie>
+					<identificatieKenmerk>WH2360HHHJ</identificatieKenmerk>
+					<identificatieBron>ZZ-TRIMADDIN</identificatieBron>
+				</verwijzingIdentificatie>
+			</eventVerantwoordelijkeActor>
+		</event>
+		<event>
+			<eventType>
+				<begripLabel>Migratie</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Begrippenlijst EventTypeLijst MDTO</verwijzingNaam>
+				</begripBegrippenlijst>
+			</eventType>
+			<eventTijd>2020-01-12T23:20:00</eventTijd>
+			<eventVerantwoordelijkeActor>
+				<verwijzingNaam>Medewerker informatiebeheer</verwijzingNaam>
+				<verwijzingIdentificatie>
+					<identificatieKenmerk>M94739921</identificatieKenmerk>
+					<identificatieBron>ZZ-TRIMADDIN</identificatieBron>
+				</verwijzingIdentificatie>
+			</eventVerantwoordelijkeActor>
+		</event>
+		<waardering>
+			<begripLabel>Tijdelijk te bewaren</begripLabel>
+			<begripCode>V</begripCode>
+			<begripBegrippenlijst>
+				<verwijzingNaam>Begrippenlijst Waarderingen MDTO</verwijzingNaam>
+			</begripBegrippenlijst>
+		</waardering>
+		<bewaartermijn>
+			<termijnTriggerStartLooptijd>
+				<begripLabel>Sluiting dossier</begripLabel>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Ministerie IenW zaaksysteem begrippenlijst</verwijzingNaam>
+				</begripBegrippenlijst>
+			</termijnTriggerStartLooptijd>
+			<termijnStartdatumLooptijd>2015-04-05</termijnStartdatumLooptijd>
+			<termijnLooptijd>P75Y</termijnLooptijd>
+			<termijnEinddatum>2090-04-05</termijnEinddatum>
+		</bewaartermijn>
+		<informatiecategorie>
+			<begripLabel>Primair beleid</begripLabel>
+			<begripCode>2.1.1</begripCode>
+			<begripBegrippenlijst>
+				<verwijzingNaam>Selectielijst ministerie van Infrastructuur en Milieu 2017</verwijzingNaam>
+			</begripBegrippenlijst>
+		</informatiecategorie>
+		<isOnderdeelVan>
+			<verwijzingNaam>Deelprogramma Kust. Voorbereiding 2010-2014 adviezen en voorstellen voorkeursstrategie Kust en strategische beslissing Zand</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>DC/155</identificatieKenmerk>
+				<identificatieBron>Archief Deltacommissaris</identificatieBron>
+			</verwijzingIdentificatie>
+		</isOnderdeelVan>
+		<bevatOnderdeel>
+			<verwijzingNaam>Atelier Kustkwaliteit, 2011. Ontwerpstudie Dwarsdoorsneden kust, vier Kustdoorsneden in beeld, Werkboek 2, Delft</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>DC-2015/1753</identificatieKenmerk>
+				<identificatieBron>Archief Deltacommissaris</identificatieBron>
+			</verwijzingIdentificatie>
+		</bevatOnderdeel>
+		<archiefvormer>
+			<verwijzingNaam>Ministerie van Infrastructuur en Waterstaat</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>https://organisaties.overheid.nl/112773/Infrastructuur_en_Waterstaat</identificatieKenmerk>
+				<identificatieBron>Register van Overheidsorganisaties</identificatieBron>
+			</verwijzingIdentificatie>
+		</archiefvormer>
+		<activiteit>
+			<verwijzingNaam>Behandelen vergunningsaanvragen</verwijzingNaam>
+			<verwijzingIdentificatie>
+				<identificatieKenmerk>821002193-20201</identificatieKenmerk>
+				<identificatieBron>GEMTE</identificatieBron>
+			</verwijzingIdentificatie>
+		</activiteit>
+		<beperkingGebruik>
+			<beperkingGebruikType>
+				<begripLabel>beperkt openbaar; onevenredige bevoordeling of benadeling (Archiefwet 1995)</begripLabel>
+				<begripCode>Openbaarheid/AW1995/BeperktOpenbaar-Benadeling/1.0</begripCode>
+				<begripBegrippenlijst>
+					<verwijzingNaam>Ministerie IenW zaaksysteem begrippenlijst</verwijzingNaam>
+				</begripBegrippenlijst>
+			</beperkingGebruikType>
+			<beperkingGebruikNadereBeschrijving>Op grond van artikel 15 lid 1c van de Archiefwet 1995 is de openbaarheid van het informatieobject beperkt ter voorkoming van onevenredige bevoordeling of benadeling.</beperkingGebruikNadereBeschrijving>
+			<beperkingGebruikTermijn>
+				<termijnTriggerStartLooptijd>
+					<begripLabel>Sluiting dossier</begripLabel>
+					<begripBegrippenlijst>
+						<verwijzingNaam>Ministerie IenW zaaksysteem begrippenlijst</verwijzingNaam>
+					</begripBegrippenlijst>
+				</termijnTriggerStartLooptijd>
+				<termijnLooptijd>P20Y</termijnLooptijd>
+				<termijnEinddatum>2035-04-05</termijnEinddatum>
+			</beperkingGebruikTermijn>
+		</beperkingGebruik>
+	</informatieobject>
+</MDTO>

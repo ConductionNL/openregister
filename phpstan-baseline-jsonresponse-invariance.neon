@@ -1,0 +1,57 @@
+# Five controller list-endpoints whose declared JSONResponse generic no longer
+# matches, now that the stale `@method ... findAll(...)` docblocks have been
+# removed from lib/Db (see openregister#2283 and the PR that introduced this file).
+#
+# WHY THESE ARE BASELINED RATHER THAN FIXED — read the reported pairs closely:
+#
+#   ConfigurationsController::index() should return
+#     JSONResponse<200, array{results: array<int, Configuration>}, array>
+#   but returns
+#     JSONResponse<200, array{results: array<int, Configuration>}, array{}>
+#
+# The two types are textually IDENTICAL apart from the third template parameter:
+# `array` (from the docblock's `array<never, never>`) versus `array{}` (what the
+# JSONResponse constructor actually produces for default headers). JSONResponse's
+# template parameters are INVARIANT, so phpstan rejects the pair on the headers
+# alone. This is a pre-existing docblock-vs-constructor mismatch across the
+# controller layer; the removed `@method` shadow had simply been changing the
+# results type enough that phpstan never got as far as comparing headers.
+#
+# Attempting the obvious fix (widening `array<X>` to `array<int, X>` in the five
+# @psalm-return docblocks) was measured and made it WORSE — 5 errors became 8,
+# because it also exposed the 500-branch returns (`array{error: string}` against
+# a declared literal `'Failed to retrieve…'`). Doing this properly means auditing
+# the JSONResponse generic docblocks across the whole controller layer, which is
+# a change of its own with its own review — not a rider on a Db-layer fix.
+#
+# This is category (c): real, out of scope, baselined WITH a reason and an issue.
+# It is deliberately a separate file rather than 5 more lines buried in the
+# 338 KB phpstan-baseline.neon, so the reason cannot get detached from the entries.
+#
+# Tracked in: openregister#2288
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ApplicationsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Application\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Application\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ApplicationsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\<'Failed to fetch…'\\|OCA\\\\OpenRegister\\\\Db\\\\Configuration\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Configuration\\>, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Configuration\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Configuration\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ConfigurationsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\OrganisationController\\:\\:search\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Search failed', organisations\\?\\: array\\<array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: string\\|null, groups\\: array\\|null, active\\: bool\\|null, parent\\: string\\|null, \\.\\.\\.\\}\\>, limit\\?\\: int\\<1, 100\\>, offset\\?\\: int\\<0, max\\>, count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{organisations\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: string\\|null, groups\\: array\\|null, active\\: bool\\|null, parent\\: string\\|null, \\.\\.\\.\\}\\>, limit\\: int, offset\\: int, count\\: int\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/OrganisationController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<array\\{id\\: int, uuid\\: string\\|null, uri\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, description\\: string\\|null, version\\: string\\|null, summary\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, uri\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, description\\: string\\|null, version\\: string\\|null, summary\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php

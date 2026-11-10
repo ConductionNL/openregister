@@ -6,6 +6,13 @@
  * Permanently deletes archived organisations and their data after the
  * configured retention period (default: 90 days).
  *
+ * Only an organisation in TenantLifecycleServiceInterface::PURGEABLE_STATUS is ever
+ * deleted. A `retained` organisation, whose access ended but whose data must
+ * be kept, is outside this job's reach by construction.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -15,129 +22,226 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use DateTime;
 use DateInterval;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\TenantUsageMapper;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use DateTime;
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * Purges archived organisations after retention period.
  *
  * @package OCA\OpenRegister\BackgroundJob
  */
-class TenantPurgeJob extends TimedJob
-{
-    /**
-     * Default retention period in days.
-     */
-    private const DEFAULT_RETENTION_DAYS = 90;
+class TenantPurgeJob extends TimedJob {
+	/**
+	 * Default retention period in days.
+	 */
+	private const DEFAULT_RETENTION_DAYS = 90;
 
-    /**
-     * Constructor
-     *
-     * @param ITimeFactory       $time               Time factory
-     * @param OrganisationMapper $organisationMapper Organisation mapper
-     * @param TenantUsageMapper  $tenantUsageMapper  Usage mapper
-     * @param IAppConfig         $appConfig          App config
-     * @param LoggerInterface    $logger             Logger
-     */
-    public function __construct(
-        ITimeFactory $time,
-        private readonly OrganisationMapper $organisationMapper,
-        private readonly TenantUsageMapper $tenantUsageMapper,
-        private readonly IAppConfig $appConfig,
-        private readonly LoggerInterface $logger
-    ) {
-        parent::__construct(time: $time);
-        // Run daily.
-        $this->setInterval(seconds: 86400);
-    }//end __construct()
+	/**
+	 * Organisation mapper
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	private readonly OrganisationMapperInterface $organisationMapper;
 
-    /**
-     * Execute the background job.
-     *
-     * @param mixed $argument Job argument (unused)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/retrofit-tenant-isolation-audit-2026-04-28/tasks.md#task-1
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
-     */
-    protected function run(mixed $argument): void
-    {
-        $this->logger->info('[TenantPurgeJob] Starting purge check');
+	/**
+	 * Usage mapper
+	 *
+	 * @var TenantUsageMapperInterface
+	 */
+	private readonly TenantUsageMapperInterface $tenantUsageMapper;
 
-        $retentionDays = (int) $this->appConfig->getValueString(
-            'openregister',
-            'tenantRetentionDays',
-            (string) self::DEFAULT_RETENTION_DAYS
-        );
+	/**
+	 * Constructor
+	 *
+	 * @param ITimeFactory $time Time factory
+	 * @param TenantPurgeStores $stores Organisations and their usage rows.
+	 * @param IAppConfig $appConfig App config
+	 * @param LoggerInterface $logger Logger
+	 */
+	public function __construct(
+		ITimeFactory $time,
+		TenantPurgeStores $stores,
+		private readonly IAppConfig $appConfig,
+		private readonly LoggerInterface $logger,
+	) {
+		$this->organisationMapper = $stores->organisationMapper;
+		$this->tenantUsageMapper = $stores->tenantUsageMapper;
+		parent::__construct(time: $time);
+		// Run daily.
+		$this->setInterval(seconds: 86400);
+	}//end __construct()
 
-        $cutoffDate = new DateTime();
-        $cutoffDate->sub(new DateInterval("P{$retentionDays}D"));
+	/**
+	 * Execute the background job.
+	 *
+	 * @param mixed $argument Job argument (unused)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-deprovisioned-organisations-must-transition-to-archived-with-data-retention
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
+	 */
+	protected function run(mixed $argument): void {
+		$this->logger->info('[TenantPurgeJob] Starting purge check');
 
-        try {
-            $organisations = $this->organisationMapper->findAll(
-                filters: ['status' => TenantLifecycleService::STATUS_ARCHIVED]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                '[TenantPurgeJob] Failed to query archived organisations',
-                ['error' => $e->getMessage()]
-            );
-            return;
-        }
+		$retentionDays = (int)$this->appConfig->getValueString(
+			'openregister',
+			'tenantRetentionDays',
+			(string)self::DEFAULT_RETENTION_DAYS
+		);
 
-        $purgedCount = 0;
-        foreach ($organisations as $organisation) {
-            $deprovisionedAt = $organisation->getDeprovisionedAt();
-            if ($deprovisionedAt === null) {
-                continue;
-            }
+		$cutoffDate = new DateTime();
+		$cutoffDate->sub(new DateInterval("P{$retentionDays}D"));
 
-            if ($deprovisionedAt > $cutoffDate) {
-                continue;
-            }
+		$organisations = $this->archivedTenants();
+		if ($organisations === null) {
+			return;
+		}
 
-            try {
-                $orgUuid = $organisation->getUuid();
+		$purgedCount = 0;
+		foreach ($organisations as $organisation) {
+			if ($this->purgeIfDue(organisation: $organisation, cutoffDate: $cutoffDate) === true) {
+				$purgedCount++;
+			}
+		}
 
-                // Delete usage records for this organisation.
-                $this->tenantUsageMapper->deleteOlderThan(new DateTime('2099-12-31'));
+		$this->logger->info(
+			'[TenantPurgeJob] Completed, purged ' . $purgedCount . ' organisations'
+		);
+	}//end run()
 
-                // Delete the organisation entity.
-                $this->organisationMapper->delete($organisation);
+	/**
+	 * The archived organisations of this installation, or null when the read failed.
+	 *
+	 * @return array<int, Organisation>|null The candidates.
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
+	 */
+	private function archivedTenants(): ?array {
+		try {
+			// Tenant-scoped read, not findAll: a federated counterparty is an
+			// organisation in this table but NOT a tenant of this installation, and
+			// selecting on status alone would sweep it up with the tenants.
+			return $this->organisationMapper->findLocalTenants(
+				filters: ['status' => TenantLifecycleServiceInterface::PURGEABLE_STATUS]
+			);
+		} catch (\Exception $e) {
+			$this->logger->error(
+				'[TenantPurgeJob] Failed to query archived organisations',
+				['error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end archivedTenants()
 
-                $this->logger->info(
-                    '[TenantPurgeJob] Permanently deleted archived organisation',
-                    ['uuid' => $orgUuid, 'deprovisionedAt' => $deprovisionedAt->format('c')]
-                );
+	/**
+	 * Purge one organisation when it is archived, past retention and has a uuid.
+	 *
+	 * @param Organisation $organisation The candidate.
+	 * @param DateTime     $cutoffDate   Deprovisioned at or before this is past retention.
+	 *
+	 * @return bool True when it was purged.
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
+	 */
+	private function purgeIfDue(Organisation $organisation, DateTime $cutoffDate): bool {
+		$deprovisionedAt = $this->dueSince(organisation: $organisation, cutoffDate: $cutoffDate);
+		if ($deprovisionedAt === null) {
+			return false;
+		}
 
-                $purgedCount++;
-            } catch (\Exception $e) {
-                $this->logger->error(
-                    '[TenantPurgeJob] Failed to purge organisation',
-                    ['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
-                );
-            }//end try
-        }//end foreach
+		// Every delete below is scoped by this uuid. Without one there is
+		// nothing to scope by, so the organisation is left alone.
+		$orgUuid = $organisation->getUuid();
+		if ($orgUuid === null || $orgUuid === '') {
+			$this->logger->error('[TenantPurgeJob] Skipped an archived organisation without a uuid');
+			return false;
+		}
 
-        $this->logger->info(
-            '[TenantPurgeJob] Completed, purged '.$purgedCount.' organisations'
-        );
-    }//end run()
+		return $this->purge(organisation: $organisation, deprovisionedAt: $deprovisionedAt);
+	}//end purgeIfDue()
+
+	/**
+	 * When the organisation was deprovisioned, if it is archived and past retention.
+	 *
+	 * @param Organisation $organisation The candidate.
+	 * @param DateTime     $cutoffDate   Deprovisioned at or before this is past retention.
+	 *
+	 * @return DateTime|null The deprovisioning moment, or null when the row must be spared.
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-deprovisioned-organisations-must-transition-to-archived-with-data-retention
+	 */
+	private function dueSince(Organisation $organisation, DateTime $cutoffDate): ?DateTime {
+		// The query above selects on the status, and this re-checks it on the
+		// row itself. The query is the only thing between a retained
+		// organisation and a permanent delete, so a filter that was dropped
+		// or ignored must not be enough to delete one.
+		if ($organisation->getStatus() !== TenantLifecycleServiceInterface::PURGEABLE_STATUS) {
+			$this->logger->warning(
+				'[TenantPurgeJob] Skipped an organisation that is not in the purgeable state',
+				['uuid' => $organisation->getUuid(), 'status' => $organisation->getStatus()]
+			);
+			return null;
+		}
+
+		$deprovisionedAt = $organisation->getDeprovisionedAt();
+		if ($deprovisionedAt === null || $deprovisionedAt > $cutoffDate) {
+			return null;
+		}
+
+		return $deprovisionedAt;
+	}//end dueSince()
+
+	/**
+	 * Delete the organisation's usage records and the organisation itself.
+	 *
+	 * @param Organisation $organisation    The organisation to purge; its non-empty uuid scopes every delete.
+	 * @param DateTime     $deprovisionedAt When it was deprovisioned, for the log.
+	 *
+	 * @return bool True when both deletes succeeded.
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
+	 */
+	private function purge(Organisation $organisation, DateTime $deprovisionedAt): bool {
+		$orgUuid = (string)$organisation->getUuid();
+		try {
+			// Delete this organisation's usage records, and only this one's.
+			$this->tenantUsageMapper->deleteByOrganisation(organisationUuid: $orgUuid);
+
+			// Delete the organisation entity.
+			$this->organisationMapper->delete($organisation);
+
+			$this->logger->info(
+				'[TenantPurgeJob] Permanently deleted archived organisation',
+				['uuid' => $orgUuid, 'deprovisionedAt' => $deprovisionedAt->format('c')]
+			);
+
+			return true;
+		} catch (\Exception $e) {
+			$this->logger->error(
+				'[TenantPurgeJob] Failed to purge organisation',
+				['uuid' => $organisation->getUuid(), 'error' => $e->getMessage()]
+			);
+			return false;
+		}//end try
+	}//end purge()
 }//end class

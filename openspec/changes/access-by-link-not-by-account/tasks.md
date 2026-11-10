@@ -1,0 +1,69 @@
+# Tasks: access-by-link-not-by-account
+
+## 1. The link
+
+- [x] 1.1 A minted link over one object, one saved view or one file, with a random anchor (D-1).
+- [x] 1.2 The link resolves a principal of its own, never a user's rights (D-2).
+
+## 2. Capabilities, expiry and password
+
+- [x] 2.1 Declared capabilities of read, comment and upload, defaulting to read (D-5).
+- [x] 2.2 An undeclared capability is refused.
+- [x] 2.3 An expiry required at mint; a password optional and checked at use (D-3).
+
+## 3. Revocation and the record
+
+- [x] 3.1 A revoked, expired or disabled link answers 404, never a reduced page (D-4).
+- [x] 3.2 Every use audited with link, act, time and address.
+
+## 4. Visibility
+
+- [x] 4.1 Property visibility, field-level rules and timeline entry visibility applied to link reads (D-6).
+- [x] 4.2 A regression test that a link cannot serve what a person could not.
+
+## 5. Tests
+
+- [x] 5.1 `tests/e2e/ci/publication-link.spec.ts`: mint, open without an account, comment, fail an upload, revoke, get 404.
+- [x] 5.2 Unit tests: anchor non-derivability, the missing-expiry refusal, the password check, the four audit entries, the internal entry filter.
+- [x] 5.3 `openspec validate access-by-link-not-by-account --strict`.
+
+## 6. Hand over
+
+- [x] 6.1 Hand the link to the dossiq lane for `CaseSharingService`, with candidate ids C-communication-7, C-access-and-privacy-5, C-access-and-privacy-25 and C-access-and-privacy-83.
+- [x] 6.2 Tell the D9 lane that C-access-and-privacy-25 is `platform-cloud-federation-provider`.
+
+## 7. Screens (#4061)
+
+- [x] 7.1 Owner side in Open Register's own UI: an "Access links" tab on the object detail page (`src/components/access-links/ObjectAccessLinks.vue`) creates a link (capabilities, expiry, optional password and label), lists the caller's links to that object with their state, and switches them off, on, or revokes them, through `/api/access-links`.
+- [x] 7.2 Holder side: `GET /links/{anchor}` (`AccessLinkPageController`) serves a public page (`src/views/accessLink/AccessLinkPage.vue`) that renders what `/api/public/links/{anchor}` returns as fields and text, never raw JSON, with the comment box and upload field only when the link declares them. It reads the same holder endpoints, so every access decision, the password check, the throttling and the audit stay in `AccessLinkController`. The record is shown through the schema's anonymous-readable properties only, as `AccessLinkReader::filteredProperties()` already serves them.
+- [x] 7.3 The owner descriptor keeps `url` (the JSON API link that dossiq's `CaseAccessLinkController` and other API callers read) and adds `pageUrl`. Leaf apps may keep their own holder page; Open Register's own UI now has both sides.
+- [ ] 7.4 Generalise `src/components/access-links/ObjectAccessLinks.vue` into `SubjectAccessLinks.vue` with props `subjectType` (`object`, `view` or `file`, the values of `AccessLink::SUBJECT_TYPES`) and `subjectId`, listing through `linksForSubject()` in `src/services/accessLinks.js` and minting through `POST /api/access-links` with that subject. Keep `ObjectAccessLinks.vue` as a wrapper passing `subjectType: 'object'` so the object tab is unchanged.
+- [ ] 7.5 Saved view: a "Share by link" action in the view menu of `src/views/search/SearchIndex.vue`, shown for the active view's owner, opens a new `src/modals/view/ViewAccessLinksModal.vue` hosting `SubjectAccessLinks` with `subjectType: 'view'`. The holder page already renders `body.results`.
+- [ ] 7.6 File row: a "Share by link" entry in the row actions (`column-actions`) of `src/views/files/FilesIndex.vue` opens a new `src/modals/file/FileAccessLinksModal.vue` with `subjectType: 'file'`. The holder page already renders `body.file`.
+- [ ] 7.7 Red first: move `ObjectAccessLinks.spec.js` to `SubjectAccessLinks.spec.js` with a mint case per subject type, and extend `tests/e2e/ci/publication-link.spec.ts` to mint a link on a saved view and on a file, open each without a session, and read the rows and the download.
+
+## What landed
+
+`lib/Db/AccessLink.php` and `lib/Db/AccessLinkMapper.php` hold the row and its
+lookups. `lib/Migration/Version1Date20260915204500.php` creates
+`openregister_access_links`, with `expires_at` NOT NULL so a link with no end
+date cannot exist. `lib/Service/Sharing/AccessLinkService.php` mints, resolves,
+revokes and records. `lib/Service/Sharing/AccessLinkReader.php` serves the
+subject under the object's own rules. `lib/Controller/AccessLinkController.php`
+carries three public endpoints and four owner endpoints.
+
+## Two decisions taken while building
+
+**410 Gone is never sent.** The change named four status codes and only three
+are used. Gone confirms that a link once existed and stopped, which is the fact
+a revoked link must not disclose, so revocation answers 404 and the distinction
+is not offered. 401 is the one place a distinct answer is right: whoever holds
+the anchor already knows the link exists, and without a 401 there is no way to
+ask for the password.
+
+**The reader applies the filters itself rather than riding `_rbac`.** Everywhere
+else in this app `_rbac: false` means "trusted internal read", and it switches
+off exactly the property stripping a link needs most. So the subject is fetched
+with the group rules off, because there is no session for them to judge, and the
+write-only strip, the property-authorisation strip, the public-only timeline and
+the `@self` allow-list are applied explicitly in `AccessLinkReader`.

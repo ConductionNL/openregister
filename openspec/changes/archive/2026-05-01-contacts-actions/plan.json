@@ -1,0 +1,110 @@
+{
+  "change": "contacts-actions",
+  "repo": "ConductionNL/openregister",
+  "parent_issue": 998,
+  "tracking_issue": 1020,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Create ContactMatchingService with constructor and matchByEmail",
+      "spec_ref": "tasks.md#ContactMatchingService (Shared Service)",
+      "acceptance_criteria": [
+        "GIVEN a ContactMatchingService instance WHEN constructed THEN it has ObjectService, SchemaMapper, RegisterMapper, ICacheFactory, LoggerInterface injected and APCu cache initialized",
+        "GIVEN an email address WHEN matchByEmail is called THEN it searches across all registers/schemas and returns matches with confidence 1.0",
+        "GIVEN a cached email WHEN matchByEmail is called THEN it returns cached results without DB query"
+      ],
+      "files_likely_affected": ["lib/Service/ContactMatchingService.php"],
+      "github_issue": 1023
+    },
+    {
+      "id": 2,
+      "title": "Add matchByName, matchByOrganization, matchContact, getRelatedObjectCounts, and cache invalidation",
+      "spec_ref": "tasks.md#ContactMatchingService (Shared Service)",
+      "acceptance_criteria": [
+        "GIVEN a name WHEN matchByName is called THEN it returns matches with confidence 0.7 for full match or 0.4 for partial",
+        "GIVEN an organization WHEN matchByOrganization is called THEN it returns matches filtered to org-typed schemas with confidence 0.5",
+        "GIVEN email+name+org WHEN matchContact is called THEN results are deduplicated by UUID keeping highest confidence",
+        "GIVEN matches WHEN getRelatedObjectCounts is called THEN it returns counts grouped by schema title",
+        "GIVEN an email WHEN invalidateCache is called THEN the cache entry is deleted"
+      ],
+      "files_likely_affected": ["lib/Service/ContactMatchingService.php"],
+      "github_issue": 1024
+    },
+    {
+      "id": 3,
+      "title": "Create ContactsMenuProvider implementing IProvider",
+      "spec_ref": "tasks.md#ContactsMenuProvider",
+      "acceptance_criteria": [
+        "GIVEN a contact entry WHEN process() is called THEN it extracts email/name/org and calls ContactMatchingService",
+        "GIVEN matches found WHEN no action registry THEN it adds default View in OpenRegister actions",
+        "GIVEN matches found WHEN action registry available THEN it resolves URL templates with contact placeholders",
+        "GIVEN matches WHEN count badge injected THEN it shows human-readable counts by schema type",
+        "GIVEN an exception in matching WHEN process() runs THEN it catches and logs at warning level"
+      ],
+      "files_likely_affected": ["lib/Contacts/ContactsMenuProvider.php"],
+      "github_issue": 1025
+    },
+    {
+      "id": 4,
+      "title": "Register provider and add cache invalidation hook",
+      "spec_ref": "tasks.md#Registration and Cache Invalidation",
+      "acceptance_criteria": [
+        "GIVEN Application register WHEN called THEN ContactsMenuProvider is registered via registerContactsMenuProvider",
+        "GIVEN an object with email properties WHEN saved via ObjectService THEN ContactMatchingService cache is invalidated"
+      ],
+      "files_likely_affected": ["lib/AppInfo/Application.php", "lib/Service/ObjectService.php"],
+      "github_issue": 1026
+    },
+    {
+      "id": 5,
+      "title": "Create ContactsController API endpoint",
+      "spec_ref": "tasks.md#API Endpoint",
+      "acceptance_criteria": [
+        "GIVEN valid email param WHEN GET /api/contacts/match called THEN returns matches with total and cached fields",
+        "GIVEN no email or name param WHEN GET /api/contacts/match called THEN returns 400",
+        "GIVEN matches WHEN response enriched THEN each match includes url and icon fields"
+      ],
+      "files_likely_affected": ["lib/Controller/ContactsController.php", "appinfo/routes.php"],
+      "github_issue": 1027
+    },
+    {
+      "id": 6,
+      "title": "Extend DeepLinkRegistryService with contact context placeholders",
+      "spec_ref": "tasks.md#DeepLinkRegistryService Extension",
+      "acceptance_criteria": [
+        "GIVEN a contactContext array WHEN resolveUrl is called THEN contactId contactEmail contactName placeholders are replaced",
+        "GIVEN both object and contact placeholders WHEN resolveUrl is called THEN both are resolved"
+      ],
+      "files_likely_affected": ["lib/Service/DeepLinkRegistryService.php", "lib/Dto/DeepLinkRegistration.php"],
+      "github_issue": 1028
+    },
+    {
+      "id": 7,
+      "title": "Add translation strings (en + nl)",
+      "spec_ref": "tasks.md#Translations",
+      "acceptance_criteria": [
+        "GIVEN en.json WHEN loaded THEN contains all contacts-actions translation keys",
+        "GIVEN nl.json WHEN loaded THEN contains Dutch translations for all contacts-actions keys"
+      ],
+      "files_likely_affected": ["l10n/en.json", "l10n/nl.json"],
+      "github_issue": 1029
+    },
+    {
+      "id": 8,
+      "title": "Write unit tests for ContactMatchingService, ContactsMenuProvider, and ContactsController",
+      "spec_ref": "tasks.md#Testing",
+      "acceptance_criteria": [
+        "GIVEN ContactMatchingService tests WHEN run THEN matchByEmail matchByName matchByOrganization matchContact cache tests all pass",
+        "GIVEN ContactsMenuProvider tests WHEN run THEN process with matches no matches exception handling tests pass",
+        "GIVEN ContactsController tests WHEN run THEN match 200 missing params 400 tests pass",
+        "GIVEN URL template tests WHEN run THEN placeholder resolution tests pass"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Service/ContactMatchingServiceTest.php",
+        "tests/Unit/Contacts/ContactsMenuProviderTest.php",
+        "tests/Unit/Controller/ContactsControllerTest.php"
+      ],
+      "github_issue": 1030
+    }
+  ]
+}

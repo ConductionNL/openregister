@@ -1,0 +1,802 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "GDPR Data-Subject Requests",
+    "description": "Generic, jurisdiction-neutral GDPR / AVG data-subject-request register. Captures access (art-15), rectification (art-16), erasure (art-17), restriction (art-18), portability (art-20), and objection (art-21) requests, with the EU art-12 legal deadline and a status lifecycle. Consuming apps (e.g. pipelinq) project locale-specific overlays (BSN/BRP, AP complaint reference, FG/DPO, citizen correspondence) on top of this generic model.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational GDPR data-subject-rights register shipped by OpenRegister for fleet-wide reuse."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "data-subject-requests": {
+        "slug": "data-subject-requests",
+        "title": "Data-Subject Requests",
+        "version": "1.0.0",
+        "description": "Generic GDPR / AVG data-subject-request register (art-15/16/17/18/20/21) with the EU art-12 legal deadline and a status lifecycle.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "dataSubjectRequest"
+        ],
+        "folder": "Open Registers/Data-Subject Requests"
+      }
+    },
+    "schemas": {
+      "dataSubjectRequest": {
+        "slug": "dataSubjectRequest",
+        "title": "Data-Subject Request",
+        "version": "1.2.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A single GDPR / AVG data-subject-rights request tracked as a stateful case.",
+        "description": "Jurisdiction-neutral model for a data-subject-rights request tracked as a stateful case: who the subject is, which right is exercised, the request's status in its lifecycle, the EU art-12(3) legal deadline (one month from receipt, extendable once by two months), the assigned handler, case timestamps, retention window, denial workflow, and evidence/redaction sub-collections.",
+        "required": [
+          "subjectId",
+          "type",
+          "status",
+          "receivedAt"
+        ],
+        "x-openregister-references": {
+          "pack": {
+            "mode": "lookup",
+            "schema": "dsarPolicyPack",
+            "register": "dsar-policy-packs",
+            "filters": {
+              "jurisdiction": "@self.jurisdiction"
+            }
+          }
+        },
+        "x-openregister-lifecycle": {
+          "field": "status",
+          "initial": "received",
+          "final": [
+            "fulfilled",
+            "refused",
+            "closed"
+          ],
+          "transitions": {
+            "startVerifying": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "verifying",
+              "description": "Begin verifying the requester's identity / eligibility."
+            },
+            "startProgress": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "in-progress",
+              "description": "Begin fulfilling the request (discovery, export, rectify, erase)."
+            },
+            "fulfil": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "fulfilled",
+              "description": "Mark the request fulfilled (the right was honoured)."
+            },
+            "refuse": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "refused",
+              "description": "Refuse the request (a lawful exemption applies)."
+            },
+            "close": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress"
+              ],
+              "to": "closed",
+              "description": "Close the request without a fulfil/refuse outcome (e.g. withdrawn)."
+            },
+            "assign": {
+              "from": [
+                "received",
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ],
+              "to": "verifying",
+              "description": "Assign (or reassign) the case to a handler and move it into active verification."
+            },
+            "collectEvidence": {
+              "from": [
+                "verifying",
+                "in-progress",
+                "evidence-collection"
+              ],
+              "to": "evidence-collection",
+              "description": "Enter evidence-collection: harvest source data for the case (harvesting itself is delivered by dsar-case-engine)."
+            },
+            "draftDenial": {
+              "from": [
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ],
+              "to": "denial-drafted",
+              "description": "Record a proposed denialGround as a draft denial. Does NOT require a regulatorReference (the gate applies only at finalise)."
+            },
+            "finaliseDenial": {
+              "from": [
+                "denial-drafted"
+              ],
+              "to": "refused",
+              "description": "Finalise the denial and reach the refused final state. Guarded: refused unless a regulatorReference is present on the case.",
+              "requires": "OCA\\OpenRegister\\Service\\Gdpr\\Lifecycle\\DenialFinaliseGuard"
+            },
+            "redact": {
+              "from": [
+                "in-progress",
+                "evidence-collection"
+              ],
+              "to": "in-progress",
+              "description": "Record a redaction (field before/after + ground) on the case. The redaction write path is delivered by dsar-case-engine."
+            },
+            "bundle": {
+              "from": [
+                "in-progress",
+                "evidence-collection"
+              ],
+              "to": "fulfilled",
+              "description": "Assemble and sign the export bundle and reach the fulfilled final state (bundle generation/signing is delivered by dsar-case-engine)."
+            },
+            "retain": {
+              "from": [
+                "fulfilled",
+                "refused",
+                "closed"
+              ],
+              "to": "closed",
+              "description": "Move a finalised case into its configured retention window (the retention sweep is delivered by dsar-case-engine)."
+            }
+          }
+        },
+        "x-openregister-calculations": {
+          "daysRemaining": {
+            "type": "number",
+            "materialise": true,
+            "title": "Days Remaining",
+            "description": "Whole days between now and the effective deadline (extendedUntil when set, otherwise dueAt). Negative once the deadline has passed. Reuses DataSubjectDeadline art-12 semantics (ADR-011).",
+            "expression": {
+              "diffDays": [
+                {
+                  "coalesce": [
+                    {
+                      "prop": "extendedUntil"
+                    },
+                    {
+                      "prop": "dueAt"
+                    }
+                  ]
+                },
+                {
+                  "now": []
+                }
+              ]
+            }
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "materialise": true,
+            "title": "Is Overdue",
+            "description": "True when the effective deadline (extendedUntil else dueAt) has passed, i.e. daysRemaining is negative. Reuses DataSubjectDeadline::isOverdue semantics (ADR-011).",
+            "expression": {
+              "lt": [
+                {
+                  "prop": "daysRemaining"
+                },
+                0
+              ]
+            }
+          },
+          "escalationTier": {
+            "type": "string",
+            "materialise": true,
+            "title": "Escalation Tier",
+            "description": "Deadline-tracking tier (on-track, reminder, escalation, breached) derived from daysRemaining. The tier boundaries are NOT hard-coded: they resolve from the active dsarPolicyPack's escalationTiers via @ref.pack (index 0 = reminder, 1 = escalation, 2 = breach). The tier activates when the days-past-deadline value (-daysRemaining) reaches a tier's offsetDays; breach when daysRemaining < 0. When no pack resolves (@ref.pack is null) every boundary comparison yields false and the case stays on-track (fail-safe, no false escalation) — the seeded default pack ensures a pack always resolves.",
+            "expression": {
+              "if": [
+                {
+                  "gt": [
+                    {
+                      "-": [
+                        {
+                          "prop": "daysRemaining"
+                        }
+                      ]
+                    },
+                    {
+                      "prop": "@ref.pack.escalationTiers.2.offsetDays"
+                    }
+                  ]
+                },
+                "breached",
+                {
+                  "if": [
+                    {
+                      "gte": [
+                        {
+                          "-": [
+                            {
+                              "prop": "daysRemaining"
+                            }
+                          ]
+                        },
+                        {
+                          "prop": "@ref.pack.escalationTiers.1.offsetDays"
+                        }
+                      ]
+                    },
+                    "escalation",
+                    {
+                      "if": [
+                        {
+                          "gte": [
+                            {
+                              "-": [
+                                {
+                                  "prop": "daysRemaining"
+                                }
+                              ]
+                            },
+                            {
+                              "prop": "@ref.pack.escalationTiers.0.offsetDays"
+                            }
+                          ]
+                        },
+                        "reminder",
+                        "on-track"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "breachedAt": {
+            "type": "string",
+            "materialise": true,
+            "title": "Breached At",
+            "description": "Write-once breach stamp (dsar-escalation-and-dpia): the instant the case's escalationTier first crossed into 'breached'. Declared as a calculation (ADR-031: the temporal sweep job carries no DSAR-specific branch) evaluated AFTER escalationTier in declaration order: while the tier is 'breached' the value coalesces to its existing stamp (write-once) or the evaluation clock on the first crossing; otherwise the existing value (null until a breach) is kept unchanged.",
+            "expression": {
+              "if": [
+                {
+                  "eq": [
+                    {
+                      "prop": "escalationTier"
+                    },
+                    "breached"
+                  ]
+                },
+                {
+                  "coalesce": [
+                    {
+                      "prop": "breachedAt"
+                    },
+                    {
+                      "formatDate": [
+                        {
+                          "now": []
+                        },
+                        "c"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "prop": "breachedAt"
+                }
+              ]
+            }
+          }
+        },
+        "x-openregister-aggregations": {
+          "openCaseCount": {
+            "metric": "count",
+            "schema": "dataSubjectRequest",
+            "filter": {
+              "status": [
+                "received",
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ]
+            }
+          },
+          "overdueCaseCount": {
+            "metric": "count",
+            "schema": "dataSubjectRequest",
+            "filter": {
+              "status": [
+                "received",
+                "verifying",
+                "in-progress",
+                "evidence-collection",
+                "denial-drafted"
+              ],
+              "isOverdue": true
+            }
+          },
+          "breachedCaseCount": {
+            "metric": "count",
+            "schema": "dataSubjectRequest",
+            "filter": {
+              "escalationTier": "breached"
+            }
+          }
+        },
+        "x-openregister-notifications": {
+          "deadlineAdvanceReminder": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "escalationTier",
+              "condition": {
+                "eq": "reminder"
+              },
+              "previously": {
+                "ne": "reminder"
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "field",
+                "field": "handler"
+              }
+            ],
+            "subject": {
+              "nl": "Herinnering: DSAR-deadline nadert voor {{subjectId}}",
+              "en": "Reminder: DSAR deadline approaching for {{subjectId}}"
+            },
+            "message": {
+              "nl": "De wettelijke termijn voor dit verzoek nadert. Nog {{daysRemaining}} dagen tot de deadline.",
+              "en": "The legal deadline for this request is approaching. {{daysRemaining}} days remaining."
+            }
+          },
+          "deadlineEscalation": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "escalationTier",
+              "condition": {
+                "eq": "escalation"
+              },
+              "previously": {
+                "ne": "escalation"
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "field",
+                "field": "handler"
+              }
+            ],
+            "subject": {
+              "nl": "Escalatie: DSAR-deadline kritiek voor {{subjectId}}",
+              "en": "Escalation: DSAR deadline critical for {{subjectId}}"
+            },
+            "message": {
+              "nl": "Dit verzoek nadert kritiek zijn wettelijke termijn. Nog {{daysRemaining}} dagen.",
+              "en": "This request is critically close to its legal deadline. {{daysRemaining}} days remaining."
+            }
+          },
+          "deadlineBreach": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "escalationTier",
+              "condition": {
+                "eq": "breached"
+              },
+              "previously": {
+                "ne": "breached"
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "field",
+                "field": "handler"
+              },
+              {
+                "kind": "expression",
+                "resolver": "OCA\\OpenRegister\\Service\\Gdpr\\PrivacyOfficerRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "Overschreden: DSAR-deadline verlopen voor {{subjectId}}",
+              "en": "Breached: DSAR deadline passed for {{subjectId}}"
+            },
+            "message": {
+              "nl": "De wettelijke termijn voor dit verzoek is verstreken.",
+              "en": "The legal deadline for this request has passed."
+            }
+          },
+          "dpiaFlagged": {
+            "trigger": {
+              "type": "calculatedChange",
+              "field": "dpiaRequired",
+              "condition": {
+                "eq": true
+              },
+              "previously": {
+                "ne": true
+              }
+            },
+            "enabled": true,
+            "originApp": "openregister",
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "expression",
+                "resolver": "OCA\\OpenRegister\\Service\\Gdpr\\PrivacyOfficerRecipientResolver"
+              }
+            ],
+            "subject": {
+              "nl": "DPIA vereist: patroon gedetecteerd rond {{subjectId}}",
+              "en": "DPIA required: pattern detected around {{subjectId}}"
+            },
+            "message": {
+              "nl": "Voor dit verzoek is een Data Protection Impact Assessment (DPIA) gemarkeerd — automatisch patroon (art. 35 AVG) of handmatige markering.",
+              "en": "This request was flagged as requiring a Data Protection Impact Assessment (DPIA) — automatic pattern detection (GDPR art. 35) or a manual flag."
+            }
+          }
+        },
+        "x-openregister-seeds": [
+          {
+            "@self": {
+              "register": "data-subject-requests",
+              "schema": "dataSubjectRequest",
+              "slug": "case-municipality-access"
+            },
+            "subjectId": "j.jansen@example.org",
+            "subjectType": "email",
+            "type": "access",
+            "status": "in-progress",
+            "handler": "handler-gemeente",
+            "receivedAt": "2026-06-01T09:00:00+00:00",
+            "dueAt": "2026-07-01T09:00:00+00:00",
+            "closedAt": null,
+            "dpiaRequired": false,
+            "retentionWindow": "standard",
+            "retainUntil": "2027-07-01T00:00:00+00:00",
+            "evidence": [
+              {
+                "sourceId": "or-objects",
+                "contentHash": "sha256:PLACEHOLDER_HASH",
+                "status": "collected"
+              }
+            ],
+            "notes": "Inwoner vraagt inzage in geregistreerde persoonsgegevens."
+          },
+          {
+            "@self": {
+              "register": "data-subject-requests",
+              "schema": "dataSubjectRequest",
+              "slug": "case-consultancy-erasure"
+            },
+            "subjectId": "contact@example-consultancy.test",
+            "subjectType": "email",
+            "type": "erasure",
+            "status": "verifying",
+            "handler": "handler-privacy",
+            "receivedAt": "2026-05-20T12:00:00+00:00",
+            "dueAt": "2026-06-20T12:00:00+00:00",
+            "extendedUntil": "2026-08-20T12:00:00+00:00",
+            "extensionReason": "Complex cross-register discovery; single art-12(3) extension applied.",
+            "dpiaRequired": true,
+            "retentionWindow": "extended"
+          },
+          {
+            "@self": {
+              "register": "data-subject-requests",
+              "schema": "dataSubjectRequest",
+              "slug": "case-travel-objection-denied"
+            },
+            "subjectId": "traveler@example-travel.test",
+            "subjectType": "email",
+            "type": "objection",
+            "status": "refused",
+            "handler": "handler-dpo",
+            "receivedAt": "2026-04-10T08:30:00+00:00",
+            "dueAt": "2026-05-10T08:30:00+00:00",
+            "closedAt": "2026-05-08T16:00:00+00:00",
+            "denialGround": "overriding-legitimate-grounds",
+            "regulatorReference": "REG-REF-PLACEHOLDER-0001",
+            "outcome": "Objection refused; compelling legitimate grounds documented; regulator reference recorded.",
+            "redactions": [
+              {
+                "field": "notes",
+                "before": "[redacted-source]",
+                "after": "[erased]",
+                "ground": "third-party-data"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "description": "Identifier of the data subject (e.g. email or another identifier value indexed in the PII index).",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Subject Identifier"
+          },
+          "subjectType": {
+            "type": "string",
+            "description": "Optional type hint for the subject identifier (e.g. 'email', 'phone'). Maps to a GdprEntity type when discovering data.",
+            "maxLength": 64,
+            "facetable": true,
+            "title": "Subject Type"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "description": "Jurisdiction / tenant key selecting which dsarPolicyPack supplies this case's escalation-tier thresholds, denial-ground wording, and retention durations (resolved via the pack cross-object reference). Defaults to 'default', which resolves the jurisdiction-neutral default pack. Full tenant-scoped/override selection semantics are delivered by the successor dsar-integration-seams / dsar-case-ui changes.",
+            "maxLength": 128,
+            "default": "default",
+            "facetable": true,
+            "title": "Jurisdiction"
+          },
+          "type": {
+            "type": "string",
+            "description": "Which GDPR right is exercised.",
+            "enum": [
+              "access",
+              "rectification",
+              "erasure",
+              "restriction",
+              "portability",
+              "objection"
+            ],
+            "facetable": true,
+            "title": "Request Type"
+          },
+          "status": {
+            "type": "string",
+            "description": "Lifecycle state of the request (governed by x-openregister-lifecycle).",
+            "enum": [
+              "received",
+              "verifying",
+              "in-progress",
+              "evidence-collection",
+              "denial-drafted",
+              "fulfilled",
+              "refused",
+              "closed"
+            ],
+            "default": "received",
+            "facetable": true,
+            "title": "Status"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the request was received. Anchors the EU art-12 legal deadline.",
+            "title": "Received At"
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "EU art-12(3) base legal deadline: receivedAt + 1 month.",
+            "title": "Legal Due Date"
+          },
+          "extendedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Extended legal deadline when a single +2-month extension was granted (art-12(3)). Empty when not extended.",
+            "title": "Extended Deadline"
+          },
+          "extensionReason": {
+            "type": "string",
+            "description": "Justification recorded when the deadline was extended.",
+            "maxLength": 2000,
+            "title": "Extension Reason"
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Generic outcome summary once the request reaches a final state.",
+            "maxLength": 2000,
+            "title": "Outcome"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-text handler notes (generic; no jurisdiction policy).",
+            "maxLength": 4000,
+            "title": "Handler Notes"
+          },
+          "handler": {
+            "type": "string",
+            "description": "Identifier (Nextcloud uid) of the handler the case is assigned to. Used as the recipient for advance-reminder, escalation, and breach notifications.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Handler"
+          },
+          "closedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the case was closed (reached a final state). Empty while the case is still open.",
+            "title": "Closed At"
+          },
+          "dpiaRequired": {
+            "type": "boolean",
+            "description": "Complexity flag: whether this case requires a Data Protection Impact Assessment (DPIA) before it can be fulfilled. Set manually by a handler or automatically by the daily DPIA pattern-detection job (dsar-escalation-and-dpia) when the active policy pack's dpiaDetection threshold is reached; the job never clears a flag (one-way ratchet).",
+            "default": false,
+            "facetable": true,
+            "title": "DPIA Required"
+          },
+          "breachedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Write-once stamp of the instant the case's escalationTier first crossed into 'breached'. Populated declaratively by the breachedAt calculation on the tier write that crosses the boundary; empty while the deadline has never been breached. Read by the regulator dossier and breach reporting.",
+            "title": "Breached At"
+          },
+          "daysRemaining": {
+            "type": "number",
+            "description": "Engine-materialised value of the daysRemaining calculation (whole days until the effective deadline; negative once passed). Declared as a property so the materialised value persists to a magic-table column — calculation outputs without a backing property are dropped at persist time. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "facetable": true,
+            "title": "Days Remaining"
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "description": "Engine-materialised value of the isOverdue calculation (true when the effective deadline has passed). Declared as a property so the materialised value persists to a magic-table column and the overdueCaseCount aggregation can filter on it. Do not edit by hand.",
+            "facetable": true,
+            "title": "Is Overdue"
+          },
+          "escalationTier": {
+            "type": "string",
+            "description": "Engine-materialised value of the escalationTier calculation (on-track, reminder, escalation, breached — boundaries from the active dsarPolicyPack). Declared as a property so the materialised value persists to a magic-table column, the breachedCaseCount aggregation can filter on it, and the calculatedChange notification rules see old/new values. Do not edit by hand; the save path and the temporal sweep recompute it.",
+            "enum": [
+              "on-track",
+              "reminder",
+              "escalation",
+              "breached"
+            ],
+            "facetable": true,
+            "title": "Escalation Tier"
+          },
+          "retentionWindow": {
+            "type": "string",
+            "description": "Configured retention window key selecting how long the finalised case dossier is retained before the retention sweep (delivered by dsar-case-engine) may purge it.",
+            "maxLength": 64,
+            "facetable": true,
+            "title": "Retention Window"
+          },
+          "retainUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Computed date until which the finalised case dossier must be retained. Set from receivedAt/closedAt plus the retentionWindow; the retention sweep may purge only after this date.",
+            "title": "Retain Until"
+          },
+          "purgedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the case dossier was purged by the retention sweep. Empty until the case has been purged.",
+            "title": "Purged At"
+          },
+          "denialGround": {
+            "type": "string",
+            "description": "Generic ground key recorded when a case is denied. Jurisdiction-specific statutory wording is Phase-2 policy-pack data and is NOT baked into this schema.",
+            "enum": [
+              "manifestly-unfounded",
+              "excessive-request",
+              "identity-unverified",
+              "legal-exemption",
+              "third-party-rights",
+              "overriding-legitimate-grounds",
+              "legal-claims",
+              "public-interest",
+              "professional-secrecy",
+              "not-applicable"
+            ],
+            "facetable": true,
+            "title": "Denial Ground"
+          },
+          "regulatorReference": {
+            "type": "string",
+            "description": "Reference recorded for the supervisory authority / regulator when a denial is finalised. Required by the finaliseDenial lifecycle guard before the case may reach the refused final state.",
+            "maxLength": 255,
+            "title": "Regulator Reference"
+          },
+          "evidence": {
+            "type": "array",
+            "description": "Evidence items collected for the case. The item shape is declared here; the harvesting/dedup behaviour is delivered by dsar-case-engine.",
+            "title": "Evidence",
+            "items": {
+              "type": "object",
+              "title": "Evidence Item",
+              "description": "A single piece of evidence collected for the case, keyed by content hash for downstream deduplication.",
+              "properties": {
+                "sourceId": {
+                  "type": "string",
+                  "description": "Identifier of the source system or provider the evidence was collected from.",
+                  "maxLength": 255,
+                  "title": "Source Identifier"
+                },
+                "contentHash": {
+                  "type": "string",
+                  "description": "Content hash of the evidence item (e.g. sha256:...), used downstream to deduplicate identical evidence across sources.",
+                  "maxLength": 255,
+                  "title": "Content Hash"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Per-item collection status (e.g. pending, collected, failed).",
+                  "maxLength": 64,
+                  "title": "Item Status"
+                }
+              }
+            }
+          },
+          "redactions": {
+            "type": "array",
+            "description": "Redaction entries recorded on the case. Each entry captures a before/after and the ground, distinct from the erase-time pseudonymise already performed by DataSubjectRequestService. The item shape is declared here; the redaction write path is delivered by dsar-case-engine.",
+            "title": "Redactions",
+            "items": {
+              "type": "object",
+              "title": "Redaction Entry",
+              "description": "A single redaction applied to a field of the case, with a before/after audit and the ground it was applied under.",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "Name of the field that was redacted.",
+                  "maxLength": 255,
+                  "title": "Redacted Field"
+                },
+                "before": {
+                  "type": "string",
+                  "description": "Value of the field before redaction (audit of the original content).",
+                  "maxLength": 4000,
+                  "title": "Value Before"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Value of the field after redaction.",
+                  "maxLength": 4000,
+                  "title": "Value After"
+                },
+                "ground": {
+                  "type": "string",
+                  "description": "Generic ground key under which the redaction was applied (e.g. third-party-data).",
+                  "maxLength": 128,
+                  "title": "Redaction Ground"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -5,13 +5,17 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -33,209 +37,249 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
-class LinkedEntityPropertyHandler
-{
-    /**
-     * Map of Nc* type names to their metadata column setter methods.
-     */
-    private const NC_TYPE_TO_SETTER = [
-        'NcMail'          => 'setMail',
-        'NcContact'       => 'setContacts',
-        'NcNote'          => 'setNotes',
-        'NcTodo'          => 'setTodos',
-        'NcCalendarEvent' => 'setCalendar',
-        'NcTalk'          => 'setTalk',
-        'NcDeck'          => 'setDeck',
-        'NcFile'          => 'setFiles',
-    ];
+class LinkedEntityPropertyHandler {
+	/**
+	 * Map of Nc* type names to their metadata column, read and written
+	 * through the entity's get<Column>() and set<Column>().
+	 */
+	private const NC_TYPE_COLUMNS = [
+		'NcMail' => 'Mail',
+		'NcContact' => 'Contacts',
+		'NcNote' => 'Notes',
+		'NcTodo' => 'Todos',
+		'NcCalendarEvent' => 'Calendar',
+		'NcTalk' => 'Talk',
+		'NcDeck' => 'Deck',
+		'NcFile' => 'Files',
+	];
 
-    /**
-     * Map of Nc* type names to their metadata column getter methods.
-     */
-    private const NC_TYPE_TO_GETTER = [
-        'NcMail'          => 'getMail',
-        'NcContact'       => 'getContacts',
-        'NcNote'          => 'getNotes',
-        'NcTodo'          => 'getTodos',
-        'NcCalendarEvent' => 'getCalendar',
-        'NcTalk'          => 'getTalk',
-        'NcDeck'          => 'getDeck',
-        'NcFile'          => 'getFiles',
-    ];
+	/**
+	 * Constructor for LinkedEntityPropertyHandler.
+	 *
+	 * @param LoggerInterface $logger Logger for logging operations
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	public function __construct(
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Constructor for LinkedEntityPropertyHandler.
-     *
-     * @param LoggerInterface $logger Logger for logging operations
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    public function __construct(
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * Extract Nc* property references and populate metadata columns.
+	 *
+	 * Scans the schema properties for Nc* types, extracts the `id` from each
+	 * reference envelope in the object data, and merges them into the corresponding
+	 * metadata column. Existing ad-hoc links (from sidebar) are preserved.
+	 *
+	 * @param ObjectEntity $object The object entity to update
+	 * @param Schema $schema The schema definition
+	 * @param array $data The object data being saved
+	 *
+	 * @return ObjectEntity The updated object entity
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+	 */
+	public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity {
+		$properties = $schema->getProperties();
+		if (is_array($properties) === false) {
+			return $object;
+		}
 
-    /**
-     * Extract Nc* property references and populate metadata columns.
-     *
-     * Scans the schema properties for Nc* types, extracts the `id` from each
-     * reference envelope in the object data, and merges them into the corresponding
-     * metadata column. Existing ad-hoc links (from sidebar) are preserved.
-     *
-     * @param ObjectEntity $object The object entity to update
-     * @param Schema       $schema The schema definition
-     * @param array        $data   The object data being saved
-     *
-     * @return ObjectEntity The updated object entity
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
-     */
-    public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity
-    {
-        $properties = $schema->getProperties();
-        if (is_array($properties) === false || empty($properties) === true) {
-            return $object;
-        }
+		// Merge extracted IDs into metadata columns, preserving ad-hoc links.
+		foreach ($this->extractIds(properties: $properties, data: $data) as $ncType => $ids) {
+			$this->mergeIntoMetadataColumn(object: $object, linked: new LinkedEntityIds(ncType: $ncType, ids: $ids));
+		}
 
-        // Collect extracted IDs grouped by Nc* type.
-        $extractedIds = [];
+		return $object;
+	}//end extractAndPopulate()
 
-        foreach ($properties as $propertyName => $propertyConfig) {
-            if (is_array($propertyConfig) === false) {
-                continue;
-            }
+	/**
+	 * Collect the reference ids of every Nc* typed property, grouped by type.
+	 *
+	 * @param array $properties The schema properties.
+	 * @param array $data The object data.
+	 *
+	 * @return array<string, array<int, string>> The ids by Nc* type; a type without ids is absent.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function extractIds(array $properties, array $data): array {
+		$extractedIds = [];
+		foreach ($properties as $propertyName => $propertyConfig) {
+			$linked = $this->linkedIds(propertyConfig: $propertyConfig, value: $data[$propertyName] ?? null);
+			if ($linked !== null) {
+				$extractedIds[$linked->ncType] = array_merge($extractedIds[$linked->ncType] ?? [], $linked->ids);
+			}
+		}
 
-            $this->extractFromProperty(
-                propertyName: $propertyName,
-                propertyConfig: $propertyConfig,
-                data: $data,
-                extractedIds: $extractedIds
-            );
-        }
+		return $extractedIds;
+	}//end extractIds()
 
-        // Merge extracted IDs into metadata columns, preserving ad-hoc links.
-        foreach ($extractedIds as $ncType => $ids) {
-            $this->mergeIntoMetadataColumn(object: $object, ncType: $ncType, newIds: $ids);
-        }
+	/**
+	 * The ids a single property holds: one envelope for a direct Nc* type, a
+	 * list of envelopes for an array of Nc* items.
+	 *
+	 * @param mixed $propertyConfig The property configuration from the schema; a non-array is skipped.
+	 * @param mixed $value The property's value in the object data.
+	 *
+	 * @return LinkedEntityIds|null The ids, or null when the property is not Nc* typed or holds no id.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function linkedIds(mixed $propertyConfig, mixed $value): ?LinkedEntityIds {
+		if (is_array($propertyConfig) === false) {
+			return null;
+		}
 
-        return $object;
-    }//end extractAndPopulate()
+		$type = $propertyConfig['type'] ?? null;
+		if ($this->isNcType(type: $type) === true) {
+			return $this->envelopeIds(ncType: $type, values: [$value]);
+		}
 
-    /**
-     * Extract IDs from a single property based on its Nc* type.
-     *
-     * @param string $propertyName   The property name
-     * @param array  $propertyConfig The property configuration from the schema
-     * @param array  $data           The object data
-     * @param array  $extractedIds   Reference to the collected IDs (grouped by type)
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function extractFromProperty(
-        string $propertyName,
-        array $propertyConfig,
-        array $data,
-        array &$extractedIds
-    ): void {
-        $type = $propertyConfig['type'] ?? null;
+		return $this->itemIds(propertyConfig: $propertyConfig, value: $value);
+	}//end linkedIds()
 
-        // Direct Nc* type property.
-        if ($type !== null && isset(self::NC_TYPE_TO_SETTER[$type]) === true) {
-            $value = $data[$propertyName] ?? null;
-            $id    = $this->extractIdFromEnvelope(value: $value);
-            if ($id !== null) {
-                $extractedIds[$type][] = $id;
-            }
+	/**
+	 * The ids of an array property whose items are an Nc* type.
+	 *
+	 * @param array $propertyConfig The property configuration from the schema.
+	 * @param mixed $value The property's value; a non-array holds no ids.
+	 *
+	 * @return LinkedEntityIds|null The ids, or null when this is no such array or it holds no id.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function itemIds(array $propertyConfig, mixed $value): ?LinkedEntityIds {
+		if (($propertyConfig['type'] ?? null) !== 'array') {
+			return null;
+		}
 
-            return;
-        }
+		$itemsType = $propertyConfig['items']['type'] ?? null;
+		if ($this->isNcType(type: $itemsType) === false) {
+			return null;
+		}
 
-        // Array of Nc* type items.
-        if ($type === 'array') {
-            $itemsType = $propertyConfig['items']['type'] ?? null;
-            if ($itemsType !== null && isset(self::NC_TYPE_TO_SETTER[$itemsType]) === true) {
-                $values = $data[$propertyName] ?? [];
-                if (is_array($values) === true) {
-                    foreach ($values as $value) {
-                        $id = $this->extractIdFromEnvelope(value: $value);
-                        if ($id !== null) {
-                            $extractedIds[$itemsType][] = $id;
-                        }
-                    }
-                }
-            }
-        }
-    }//end extractFromProperty()
+		return $this->envelopeIds(ncType: $itemsType, values: $value);
+	}//end itemIds()
 
-    /**
-     * Extract the `id` field from a reference envelope.
-     *
-     * Accepts both full envelope format `{ "type": "NcMail", "id": "1/6" }`
-     * and plain string IDs.
-     *
-     * @param mixed $value The property value
-     *
-     * @return string|null The extracted ID or null
-     *
-     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
-     */
-    private function extractIdFromEnvelope(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
+	/**
+	 * Whether a schema type is one of the Nc* types.
+	 *
+	 * @param mixed $type The type.
+	 *
+	 * @return bool True for a type with a metadata column.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function isNcType(mixed $type): bool {
+		return $type !== null && isset(self::NC_TYPE_COLUMNS[$type]) === true;
+	}//end isNcType()
 
-        // Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }.
-        if (is_array($value) === true && isset($value['id']) === true) {
-            return (string) $value['id'];
-        }
+	/**
+	 * The ids in a list of reference envelopes, in order.
+	 *
+	 * @param string $ncType The Nc* type.
+	 * @param mixed $values The envelopes; a non-array holds none.
+	 *
+	 * @return LinkedEntityIds|null The ids, or null when none of the values holds an id.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function envelopeIds(string $ncType, mixed $values): ?LinkedEntityIds {
+		if (is_array($values) === false) {
+			return null;
+		}
 
-        // Plain string ID (for simple references).
-        if (is_string($value) === true && $value !== '') {
-            return $value;
-        }
+		$ids = $this->idsInEnvelopes(values: $values);
+		if ($ids === []) {
+			return null;
+		}
 
-        return null;
-    }//end extractIdFromEnvelope()
+		return new LinkedEntityIds(ncType: $ncType, ids: $ids);
+	}//end envelopeIds()
 
-    /**
-     * Merge extracted IDs into the object's metadata column, preserving existing ad-hoc links.
-     *
-     * @param ObjectEntity $object The object entity
-     * @param string       $ncType The Nc* type name
-     * @param array        $newIds The newly extracted IDs
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
-     */
-    private function mergeIntoMetadataColumn(ObjectEntity $object, string $ncType, array $newIds): void
-    {
-        $getter = self::NC_TYPE_TO_GETTER[$ncType] ?? null;
-        $setter = self::NC_TYPE_TO_SETTER[$ncType] ?? null;
+	/**
+	 * The ids the envelopes in a list hold, in order; values without an id are skipped.
+	 *
+	 * @param array $values The envelopes.
+	 *
+	 * @return list<string>
+	 */
+	private function idsInEnvelopes(array $values): array {
+		$ids = [];
+		foreach ($values as $value) {
+			$id = $this->extractIdFromEnvelope(value: $value);
+			if ($id !== null) {
+				$ids[] = $id;
+			}
+		}
 
-        if ($getter === null || $setter === null) {
-            return;
-        }
+		return $ids;
+	}//end idsInEnvelopes()
 
-        // Get existing IDs (includes ad-hoc links from sidebar).
-        $existingIds = $object->$getter() ?? [];
+	/**
+	 * Extract the `id` field from a reference envelope.
+	 *
+	 * Accepts both full envelope format `{ "type": "NcMail", "id": "1/6" }`
+	 * and plain string IDs.
+	 *
+	 * @param mixed $value The property value
+	 *
+	 * @return string|null The extracted ID or null
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function extractIdFromEnvelope(mixed $value): ?string {
+		// Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }.
+		if (is_array($value) === true) {
+			return $this->envelopeId(envelope: $value);
+		}
 
-        // Merge and deduplicate.
-        $mergedIds = array_values(array_unique(array_merge($existingIds, $newIds)));
+		// Plain string ID (for simple references).
+		if (is_string($value) === true && $value !== '') {
+			return $value;
+		}
 
-        $object->$setter($mergedIds);
+		return null;
+	}//end extractIdFromEnvelope()
 
-        $this->logger->debug(
-            '[LinkedEntityPropertyHandler] Merged IDs into metadata column',
-            [
-                'ncType'   => $ncType,
-                'newIds'   => $newIds,
-                'existing' => count($existingIds),
-                'merged'   => count($mergedIds),
-            ]
-        );
-    }//end mergeIntoMetadataColumn()
+	/**
+	 * The `id` of a full envelope, as a string, or null when it has none.
+	 *
+	 * @param array $envelope The envelope.
+	 *
+	 * @return string|null
+	 */
+	private function envelopeId(array $envelope): ?string {
+		if (isset($envelope['id']) === true) {
+			return (string)$envelope['id'];
+		}
+
+		return null;
+	}//end envelopeId()
+
+	/**
+	 * Merge extracted IDs into the object's metadata column, preserving existing ad-hoc links.
+	 *
+	 * @param ObjectEntity $object The object entity
+	 * @param LinkedEntityIds $linked The Nc* type and the newly extracted IDs
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+	 */
+	private function mergeIntoMetadataColumn(ObjectEntity $object, LinkedEntityIds $linked): void {
+		$column = self::NC_TYPE_COLUMNS[$linked->ncType];
+
+		// Existing IDs include ad-hoc links from the sidebar; merge and deduplicate.
+		$existingIds = $object->{'get' . $column}() ?? [];
+		$mergedIds = array_values(array_unique(array_merge($existingIds, $linked->ids)));
+		$object->{'set' . $column}($mergedIds);
+
+		$this->logger->debug(
+			'[LinkedEntityPropertyHandler] Merged IDs into metadata column',
+			['ncType' => $linked->ncType, 'newIds' => $linked->ids, 'existing' => count($existingIds), 'merged' => count($mergedIds)]
+		);
+	}//end mergeIntoMetadataColumn()
 }//end class

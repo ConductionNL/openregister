@@ -25,7 +25,7 @@
 				<div class="viewHeader">
 					<div class="viewHeaderTitle">
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:aria-label="t('openregister', 'Back to entities')"
 							@click="$router.push('/entities')">
 							<template #icon>
@@ -39,33 +39,21 @@
 						<span class="badge badge-type">{{ entity.type }}</span>
 					</div>
 					<p>
-						{{ t('openregister', 'View entity details and manage relations') }}
+						{{
+							t(
+								'openregister',
+								'View entity details and manage relations',
+							)
+						}}
 					</p>
 				</div>
 
 				<!-- Actions Bar -->
-				<div class="viewActionsBar">
-					<div class="viewInfo">
-						<span class="viewTotalCount">
-							{{ t('openregister', 'Entity ID: {id}', { id: entity.id }) }}
-						</span>
-					</div>
-					<div class="viewActions">
-						<NcActions
-							:force-name="true"
-							:inline="1"
-							menu-name="Actions">
-							<NcActionButton
-								close-after-click
-								@click="refreshEntity">
-								<template #icon>
-									<Refresh :size="20" />
-								</template>
-								{{ t('openregister', 'Refresh') }}
-							</NcActionButton>
-						</NcActions>
-					</div>
-				</div>
+				<ListActionsBar
+					:summary="
+						t('openregister', 'Entity ID: {id}', { id: entity.id })
+					"
+					:actions="[refreshAction(refreshEntity)]" />
 
 				<!-- Entity Information Card -->
 				<div class="card">
@@ -73,34 +61,18 @@
 						<h2>{{ t('openregister', 'Entity Information') }}</h2>
 					</div>
 
-					<table class="statisticsTable entityInfoTable">
-						<tbody>
-							<tr>
-								<td><strong>{{ t('openregister', 'Value') }}</strong></td>
-								<td>{{ entity.value }}</td>
-							</tr>
-							<tr>
-								<td><strong>{{ t('openregister', 'Type') }}</strong></td>
-								<td><span class="badge badge-type">{{ entity.type }}</span></td>
-							</tr>
-							<tr>
-								<td><strong>{{ t('openregister', 'Category') }}</strong></td>
-								<td><span class="badge badge-category">{{ entity.category }}</span></td>
-							</tr>
-							<tr>
-								<td><strong>{{ t('openregister', 'Detected At') }}</strong></td>
-								<td>{{ formatDate(entity.detectedAt) }}</td>
-							</tr>
-							<tr>
-								<td><strong>{{ t('openregister', 'Confidence Score') }}</strong></td>
-								<td>{{ entity.confidence ? (entity.confidence * 100).toFixed(2) + '%' : '-' }}</td>
-							</tr>
-							<tr v-if="entity.source">
-								<td><strong>{{ t('openregister', 'Source') }}</strong></td>
-								<td>{{ entity.source }}</td>
-							</tr>
-						</tbody>
-					</table>
+					<EntityStatsTable
+						class="statisticsTable entityInfoTable"
+						labelWidth="30%"
+						:entity="entity"
+						:fields="[
+							'value',
+							'type',
+							'category',
+							'detectedAt',
+							'confidence',
+							'source',
+						]" />
 				</div>
 
 				<!-- Relations Section -->
@@ -108,14 +80,21 @@
 					<div class="cardHeader">
 						<h2>
 							{{ t('openregister', 'Relations') }}
-							<span class="badge badge-count">{{ relations.length }}</span>
+							<span class="badge badge-count">{{
+								relations.length
+							}}</span>
 						</h2>
 					</div>
 
 					<NcEmptyContent
 						v-if="!loadingRelations && !relations.length"
 						:name="t('openregister', 'No relations found')"
-						:description="t('openregister', 'This entity has no relations to objects or files')">
+						:description="
+							t(
+								'openregister',
+								'This entity has no relations to objects or files',
+							)
+						">
 						<template #icon>
 							<LinkVariantOff :size="64" />
 						</template>
@@ -126,36 +105,63 @@
 					</div>
 
 					<div v-else class="relationsContainer">
-						<div v-for="relation in relations" :key="relation.id" class="relationCard">
+						<div
+							v-for="relation in relations"
+							:key="relation.id"
+							class="relationCard">
 							<div class="relationHeader">
 								<div class="relationTitle">
-									<FileDocumentOutline v-if="relation.fileId" :size="20" />
-									<DatabaseOutline v-else-if="relation.objectId" :size="20" />
+									<FileDocumentOutline
+										v-if="relation.fileId"
+										:size="20" />
+									<DatabaseOutline
+										v-else-if="relation.objectId"
+										:size="20" />
 									<TextBoxOutline v-else :size="20" />
 									<strong>
 										{{ getRelationTitle(relation) }}
 									</strong>
 								</div>
-								<span class="relationType">{{ getRelationType(relation) }}</span>
+								<span class="relationType">{{
+									getRelationType(relation)
+								}}</span>
 							</div>
 							<div v-if="relation.context" class="relationDescription">
 								{{ relation.context }}
 							</div>
 							<div class="relationMeta">
 								<span v-if="relation.confidence">
-									{{ t('openregister', 'Confidence: {confidence}%', { confidence: (relation.confidence * 100).toFixed(1) }) }}
+									{{
+										t(
+											'openregister',
+											'Confidence: {confidence}%',
+											{
+												confidence: (
+													relation.confidence * 100
+												).toFixed(1),
+											},
+										)
+									}}
 								</span>
 								<span v-if="relation.detectionMethod">
-									{{ t('openregister', 'Method: {method}', { method: relation.detectionMethod }) }}
+									{{
+										t('openregister', 'Method: {method}', {
+											method: relation.detectionMethod,
+										})
+									}}
 								</span>
 								<span v-if="relation.createdAt">
-									{{ t('openregister', 'Detected: {date}', { date: formatDate(relation.createdAt) }) }}
+									{{
+										t('openregister', 'Detected: {date}', {
+											date: formatDate(relation.createdAt),
+										})
+									}}
 								</span>
 							</div>
 							<div class="relationActions">
 								<NcButton
 									v-if="relation.objectId"
-									type="secondary"
+									variant="secondary"
 									@click="viewObject(relation)">
 									<template #icon>
 										<EyeOutline :size="20" />
@@ -164,7 +170,7 @@
 								</NcButton>
 								<NcButton
 									v-if="relation.fileId"
-									type="secondary"
+									variant="secondary"
 									@click="viewFile(relation)">
 									<template #icon>
 										<EyeOutline :size="20" />
@@ -181,32 +187,47 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
-
 import {
 	NcAppContent,
 	NcButton,
-	NcLoadingIcon,
 	NcEmptyContent,
-	NcActions,
-	NcActionButton,
+	NcLoadingIcon,
 } from '@nextcloud/vue'
-
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import EntityStatsTable from './EntityStatsTable.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { refreshAction } from '../../services/menuActions.js'
 
 /**
  * Entity detail view showing entity information and relations
+ *
+ * @visual exclude No hermetic e2e can reach this page, because nothing can
+ *   create the record it displays. `openregister_entities` rows are DETECTED
+ *   PII, and the routed surface is read-only: `appinfo/routes.php` registers
+ *   `gdprEntities#index`, `#show`, `#destroy`, `#getTypes`, `#getCategories`
+ *   and `#getStats` — and NO create. The only writer anywhere is
+ *   `fileText#addManualEntity`, which `ManualEntityService` refuses unless the
+ *   target Nextcloud file already carries EXTRACTED CHUNKS, i.e. it needs an
+ *   uploaded file plus a completed text-extraction run — neither hermetic nor
+ *   available in CI. The alternative was a spec that navigates to whatever row
+ *   happens to exist and guards its assertions, which passes without asserting
+ *   on an empty instance; `tests/e2e/ci/playwright.config.ts` names that shape
+ *   as admission criterion 3 and refuses it, and so does this file. Remove this
+ *   waiver and write a real spec on the change that gives entities a create
+ *   endpoint or a seedable extraction fixture; it records that the record
+ *   cannot be made, not that the screen needs no proof.
  *
  * @package
  * @category View
@@ -214,20 +235,19 @@ import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
  * @copyright 2024 Conduction B.V.
  * @license EUPL-1.2
  * @version 1.0.0
- * @link https://github.com/ConductionNL/openregister
+ * @see https://github.com/ConductionNL/openregister
  */
 export default {
 	name: 'EntityDetail',
 	components: {
+		EntityStatsTable,
+		ListActionsBar,
 		NcAppContent,
 		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
-		NcActions,
-		NcActionButton,
 		AccountOutline,
 		ArrowLeft,
-		Refresh,
 		AlertCircleOutline,
 		LinkVariantOff,
 		FileDocumentOutline,
@@ -235,6 +255,7 @@ export default {
 		TextBoxOutline,
 		EyeOutline,
 	},
+
 	data() {
 		return {
 			entity: null,
@@ -244,15 +265,20 @@ export default {
 			error: null,
 		}
 	},
+
 	mounted() {
 		this.loadEntity()
 	},
+
 	methods: {
+		refreshAction,
+
 		t,
 
 		/**
 		 * Load entity from the API
 		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
 		 * @return {Promise<void>}
 		 */
 		async loadEntity() {
@@ -263,7 +289,9 @@ export default {
 			try {
 				const entityId = this.$route.params.id
 				const response = await axios.get(
-					generateUrl('/apps/openregister/api/entities/{id}', { id: entityId }),
+					generateUrl('/apps/openregister/api/entities/{id}', {
+						id: entityId,
+					}),
 				)
 
 				if (response.data.success) {
@@ -271,11 +299,15 @@ export default {
 					// Relations are returned in the same response.
 					this.relations = response.data.relations || []
 				} else {
-					this.error = response.data.message || t('openregister', 'Failed to load entity')
+					this.error =
+						response.data.message
+						|| t('openregister', 'Failed to load entity')
 				}
 			} catch (error) {
 				console.error('Failed to load entity:', error)
-				this.error = error.response?.data?.message || t('openregister', 'Failed to load entity')
+				this.error =
+					error.response?.data?.message
+					|| t('openregister', 'Failed to load entity')
 				showError(this.error)
 			} finally {
 				this.loading = false
@@ -286,6 +318,7 @@ export default {
 		/**
 		 * Refresh entity data
 		 *
+		 * @spec exclude detail-view manual refresh plumbing
 		 * @return {void}
 		 */
 		refreshEntity() {
@@ -295,6 +328,7 @@ export default {
 		/**
 		 * Get relation type string
 		 *
+		 * @spec exclude detail-view relation-type display helper
 		 * @param {object} relation - Relation object
 		 * @return {string} Type description
 		 */
@@ -311,6 +345,7 @@ export default {
 		/**
 		 * Get relation title
 		 *
+		 * @spec exclude detail-view relation-title display helper
 		 * @param {object} relation - Relation object
 		 * @return {string} Title string
 		 */
@@ -327,18 +362,23 @@ export default {
 		/**
 		 * View object details
 		 *
+		 * @spec exclude detail-view router-navigation plumbing to a related object
 		 * @param {object} relation - Relation object
 		 * @return {void}
 		 */
 		viewObject(relation) {
 			if (relation.objectId) {
-				this.$router.push({ path: '/objects', query: { id: relation.objectId } })
+				this.$router.push({
+					path: '/objects',
+					query: { id: relation.objectId },
+				})
 			}
 		},
 
 		/**
 		 * View file in Nextcloud Files app with details sidebar
 		 *
+		 * @spec exclude detail-view navigation plumbing to the Nextcloud Files app
 		 * @param {object} relation - Relation object
 		 * @return {void}
 		 */
@@ -350,36 +390,22 @@ export default {
 			}
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
 <style scoped lang="scss">
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+@use '../../styles/views.scss' as *;
+@use './cardRules.scss' as *;
+
+@include view-container-2;
 
 .viewHeader {
 	margin-bottom: 20px;
 }
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
+@include view-header-title;
 
 .viewHeaderTitleIndented {
 	margin: 0;
@@ -390,35 +416,7 @@ export default {
 	gap: 12px;
 }
 
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-header-p;
 
 .entityDetailContainer {
 	max-width: 1200px;
@@ -433,11 +431,7 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
 	background: var(--color-background-hover);
 }
 
@@ -450,46 +444,7 @@ export default {
 	gap: 8px;
 }
 
-.entityInfoTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.entityInfoTable tbody tr {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.entityInfoTable tbody tr:last-child {
-	border-bottom: none;
-}
-
-.entityInfoTable td {
-	padding: 12px 16px;
-}
-
-.entityInfoTable td:first-child {
-	width: 30%;
-	color: var(--color-text-maxcontrast);
-}
-
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-type {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-
-.badge-category {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
+@include badge-rules-2;
 
 .badge-count {
 	background: var(--color-primary-element);

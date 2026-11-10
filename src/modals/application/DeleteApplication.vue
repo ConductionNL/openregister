@@ -1,64 +1,57 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { applicationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		:name="t('openregister', 'Delete Application')"
+		size="small"
+		closable
 		:message="deleteMessage"
-		@update:open="handleDialogClose">
-		<template #actions>
-			<NcButton @click="navigationStore.setDialog(false)">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton
-				type="error"
-				@click="deleteApplication">
-				<template #icon>
-					<TrashCanOutline :size="20" />
-				</template>
-				{{ t('openregister', 'Delete') }}
-			</NcButton>
-		</template>
-	</NcDialog>
+		:closeLabel="t('openregister', 'Cancel')"
+		:confirmLabel="t('openregister', 'Delete')"
+		showConfirm
+		@cancel="navigationStore.setDialog(false)"
+		@confirm="deleteApplication" />
 </template>
 
 <script>
-import { NcDialog, NcButton } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 
 export default {
 	name: 'DeleteApplication',
-	components: {
-		NcDialog,
-		NcButton,
-		Cancel,
-		TrashCanOutline,
-	},
+	components: { ConfirmDialogFrame },
+
 	computed: {
+		/**
+		 * @spec exclude computed display helper for confirmation message
+		 */
 		deleteMessage() {
-			return t('openregister', 'Are you sure you want to delete the application "{name}"? This action cannot be undone.', {
-				name: applicationStore.applicationItem?.name || t('openregister', 'this application'),
-			})
+			return t(
+				'openregister',
+				'Are you sure you want to delete the application "{name}"? This action cannot be undone.',
+				{
+					name:
+						applicationStore.applicationItem?.name
+						|| t('openregister', 'this application'),
+				},
+			)
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		async deleteApplication() {
 			try {
-				await applicationStore.deleteApplication(applicationStore.applicationItem)
+				await applicationStore.deleteApplication(
+					applicationStore.applicationItem,
+				)
 				navigationStore.setDialog(false)
 			} catch (error) {
 				console.error('Error deleting application:', error)
-			}
-		},
-		handleDialogClose(open) {
-			if (!open) {
-				navigationStore.setDialog(false)
 			}
 		},
 	},

@@ -3,6 +3,9 @@
 /**
  * OpenRegister Object and Retention Settings Handler
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -14,14 +17,15 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
+ * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
 
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
-use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
+use RuntimeException;
 
 /**
  * Handler for object and retention settings operations.
@@ -37,363 +41,353 @@ use OCP\IAppConfig;
  *
  * @link https://www.OpenRegister.nl
  */
-class ObjectRetentionHandler
-{
+class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, RetentionSettingsReaderInterface {
+	use SettingsSectionDefaults;
 
-    /**
-     * Nextcloud configuration instance
-     *
-     * @var IAppConfig
-     */
-    private IAppConfig $appConfig;
+	/**
+	 * The object management settings returned when none are stored, and the default of every key on update.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const OBJECT_DEFAULTS = [
+		'vectorizationEnabled' => false,
+		'vectorizeOnCreate' => true,
+		'vectorizeOnUpdate' => false,
+		'vectorizeAllViews' => true,
+		'enabledViews' => [],
+		'includeMetadata' => true,
+		'includeRelations' => true,
+		'maxNestingDepth' => 10,
+		'batchSize' => 25,
+		'autoRetry' => true,
+	];
 
-    /**
-     * Application name identifier
-     *
-     * @var string
-     */
-    private string $appName;
+	/**
+	 * The retention settings returned when none are stored, and the default of every key on update.
+	 *
+	 * The shared retention defaults plus searchTrailRecordingMode, which says which
+	 * searches to record (all, _search or none); the default records text
+	 * searches only.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const RETENTION_DEFAULTS = self::RETENTION_PERIOD_DEFAULTS + ['searchTrailRecordingMode' => '_search'];
 
-    /**
-     * Constructor for ObjectRetentionHandler.
-     *
-     * @param IAppConfig $appConfig Configuration service.
-     * @param string     $appName   Application name (default: 'openregister').
-     */
-    public function __construct(IAppConfig $appConfig, string $appName="openregister")
-    {
-        $this->appConfig = $appConfig;
-        $this->appName   = $appName;
-    }//end __construct()
+	/**
+	 * The archival settings returned when none are stored, and the default of every key on update.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ARCHIVAL_DEFAULTS = [
+		'destructionCheckInterval' => 86400,
+		'notificationLeadDays' => 30,
+		'reviewReminderFrequency' => 'P7D',
+		'defaultExtensionPeriod' => 'P1Y',
+		'destructionBatchSize' => 50,
+		'selectielijstRegister' => null,
+		'selectielijstSchema' => null,
+		'selectielijstVersion' => null,
+		'destructionListRegister' => null,
+		'destructionListSchema' => null,
+		'archivalRegister' => null,
+	];
 
-    /**
-     * Get focused Object settings only (vectorization config)
-     *
-     * @return (array|bool|int|mixed)[] Object vectorization configuration
-     *
-     * @throws \RuntimeException If Object settings retrieval fails
-     *
-     * @psalm-return array{vectorizationEnabled: false|mixed,
-     *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
-     *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
-     *     includeMetadata: mixed|true, includeRelations: mixed|true,
-     *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
-     */
-    public function getObjectSettingsOnly(): array
-    {
-        try {
-            $objectConfig = $this->appConfig->getValueString($this->appName, 'objectManagement', '');
+	/**
+	 * Nextcloud configuration instance
+	 *
+	 * @var IAppConfig
+	 */
+	private IAppConfig $appConfig;
 
-            if (empty($objectConfig) === true) {
-                return [
-                    'vectorizationEnabled' => false,
-                    'vectorizeOnCreate'    => true,
-                    'vectorizeOnUpdate'    => false,
-                    'vectorizeAllViews'    => true,
-                    'enabledViews'         => [],
-                    'includeMetadata'      => true,
-                    'includeRelations'     => true,
-                    'maxNestingDepth'      => 10,
-                    'batchSize'            => 25,
-                    'autoRetry'            => true,
-                ];
-            }
 
-            $objectData = json_decode($objectConfig, true);
-            return [
-                'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
-                'vectorizeOnCreate'    => $objectData['vectorizeOnCreate'] ?? true,
-                'vectorizeOnUpdate'    => $objectData['vectorizeOnUpdate'] ?? false,
-                'vectorizeAllViews'    => $objectData['vectorizeAllViews'] ?? ($objectData['vectorizeAllSchemas'] ?? true),
-                'enabledViews'         => $objectData['enabledViews'] ?? ($objectData['enabledSchemas'] ?? []),
-                'includeMetadata'      => $objectData['includeMetadata'] ?? true,
-                'includeRelations'     => $objectData['includeRelations'] ?? true,
-                'maxNestingDepth'      => $objectData['maxNestingDepth'] ?? 10,
-                'batchSize'            => $objectData['batchSize'] ?? 25,
-                'autoRetry'            => $objectData['autoRetry'] ?? true,
-            ];
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
-        }//end try
-    }//end getObjectSettingsOnly()
+	/**
+	 * Constructor for ObjectRetentionHandler.
+	 *
+	 * @param IAppConfig $appConfig Configuration service.
+	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail, and announces it.
+	 */
+	public function __construct(
+		IAppConfig $appConfig,
+		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
+	) {
+		$this->appConfig = $appConfig;
+	}//end __construct()
 
-    /**
-     * Update object management settings
-     *
-     * @param array $objectData Object data containing settings to update
-     *
-     * @return (array|bool|int|mixed)[] Updated object configuration
-     *
-     * @throws \RuntimeException If update fails
-     *
-     * @psalm-return array{vectorizationEnabled: false|mixed,
-     *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
-     *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
-     *     includeMetadata: mixed|true, includeRelations: mixed|true,
-     *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
-     */
-    public function updateObjectSettingsOnly(array $objectData): array
-    {
-        try {
-            $objectConfig = [
-                'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
-                'vectorizeOnCreate'    => $objectData['vectorizeOnCreate'] ?? true,
-                'vectorizeOnUpdate'    => $objectData['vectorizeOnUpdate'] ?? false,
-                'vectorizeAllViews'    => $objectData['vectorizeAllViews'] ?? true,
-                'enabledViews'         => $objectData['enabledViews'] ?? [],
-                'includeMetadata'      => $objectData['includeMetadata'] ?? true,
-                'includeRelations'     => $objectData['includeRelations'] ?? true,
-                'maxNestingDepth'      => $objectData['maxNestingDepth'] ?? 10,
-                'batchSize'            => $objectData['batchSize'] ?? 25,
-                'autoRetry'            => $objectData['autoRetry'] ?? true,
-            ];
+	/**
+	 * Get focused Object settings only (vectorization config)
+	 *
+	 * @return (array|bool|int|mixed)[] Object vectorization configuration
+	 *
+	 * @throws \RuntimeException If Object settings retrieval fails
+	 *
+	 * @psalm-return array{vectorizationEnabled: false|mixed,
+	 *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
+	 *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
+	 *     includeMetadata: mixed|true, includeRelations: mixed|true,
+	 *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
+	 */
+	public function getObjectSettingsOnly(): array {
+		try {
+			$objectConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'objectManagement', '');
+			if (empty($objectConfig) === true) {
+				return self::OBJECT_DEFAULTS;
+			}
 
-            $this->appConfig->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
-            return $objectConfig;
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
-        }
-    }//end updateObjectSettingsOnly()
+			$objectData = $this->withViewKeys(objectData: json_decode($objectConfig, true));
+			return $this->overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to get Object Management settings: ' . $e->getMessage());
+		}//end try
+	}//end getObjectSettingsOnly()
 
-    /**
-     * Get focused Retention settings only
-     *
-     * @return (bool|int|mixed)[] Retention configuration
-     *
-     * @throws \RuntimeException If Retention settings retrieval fails
-     *
-     * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
-     *     objectDeleteRetention: 63072000000|mixed,
-     *     searchTrailRetention: 2592000000|mixed,
-     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
-     *     updateLogRetention: 604800000|mixed,
-     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
-     *     searchTrailsEnabled: bool}
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
-     */
-    public function getRetentionSettingsOnly(): array
-    {
-        try {
-            $retentionConfig = $this->appConfig->getValueString($this->appName, 'retention', '');
+	/**
+	 * Stored object settings with the view keys read from their former schema names when unset.
+	 *
+	 * @param mixed $objectData The decoded stored settings.
+	 *
+	 * @return mixed
+	 */
+	private function withViewKeys($objectData) {
+		if (is_array($objectData) === false) {
+			return $objectData;
+		}
 
-            if (empty($retentionConfig) === true) {
-                return [
-                    'objectArchiveRetention' => 31536000000,
-                // 1 year default
-                    'objectDeleteRetention'  => 63072000000,
-                // 2 years default
-                    'searchTrailRetention'   => 2592000000,
-                // 1 month default
-                    'createLogRetention'     => 2592000000,
-                // 1 month default
-                    'readLogRetention'       => 86400000,
-                // 24 hours default
-                    'updateLogRetention'     => 604800000,
-                // 1 week default
-                    'deleteLogRetention'     => 2592000000,
-                // 1 month default
-                    'auditTrailsEnabled'     => true,
-                // Audit trails enabled by default.
-                    'searchTrailsEnabled'    => true,
-                // Search trails enabled by default.
-                ];
-            }//end if
+		$objectData['vectorizeAllViews'] = $objectData['vectorizeAllViews'] ?? ($objectData['vectorizeAllSchemas'] ?? null);
+		$objectData['enabledViews'] = $objectData['enabledViews'] ?? ($objectData['enabledSchemas'] ?? null);
 
-            $retentionData = json_decode($retentionConfig, true);
-            return [
-                'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-                'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
-                'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
-                'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
-                'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
-                'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
-                'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
-                'auditTrailsEnabled'     => $this->convertToBoolean(value: $retentionData['auditTrailsEnabled'] ?? true),
-                'searchTrailsEnabled'    => $this->convertToBoolean(value: $retentionData['searchTrailsEnabled'] ?? true),
-            ];
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
-        }//end try
-    }//end getRetentionSettingsOnly()
+		return $objectData;
+	}//end withViewKeys()
 
-    /**
-     * Update Retention settings only
-     *
-     * @param array $retentionData Retention configuration data
-     *
-     * @return (int|mixed|true)[] Updated Retention configuration
-     *
-     * @throws \RuntimeException If Retention settings update fails
-     *
-     * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
-     *     objectDeleteRetention: 63072000000|mixed,
-     *     searchTrailRetention: 2592000000|mixed,
-     *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
-     *     updateLogRetention: 604800000|mixed,
-     *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
-     *     searchTrailsEnabled: mixed|true}
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
-     */
-    public function updateRetentionSettingsOnly(array $retentionData): array
-    {
-        try {
-            $retentionConfig = [
-                'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-                'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
-                'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
-                'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
-                'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
-                'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
-                'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
-                'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
-                'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
-            ];
+	/**
+	 * Update object management settings
+	 *
+	 * @param array $objectData Object data containing settings to update
+	 *
+	 * @return (array|bool|int|mixed)[] Updated object configuration
+	 *
+	 * @throws \RuntimeException If update fails
+	 *
+	 * @psalm-return array{vectorizationEnabled: false|mixed,
+	 *     vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed,
+	 *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
+	 *     includeMetadata: mixed|true, includeRelations: mixed|true,
+	 *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
+	 */
+	public function updateObjectSettingsOnly(array $objectData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['objectManagement']);
+		try {
+			$objectConfig = $this->overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'objectManagement', json_encode($objectConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['objectManagement']);
+			return $objectConfig;
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to update Object Management settings: ' . $e->getMessage());
+		}
+	}//end updateObjectSettingsOnly()
 
-            $this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
-            return $retentionConfig;
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to update Retention settings: '.$e->getMessage());
-        }
-    }//end updateRetentionSettingsOnly()
+	/**
+	 * Get focused Retention settings only
+	 *
+	 * @return (bool|int|mixed)[] Retention configuration
+	 *
+	 * @throws \RuntimeException If Retention settings retrieval fails
+	 *
+	 * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
+	 *     objectDeleteRetention: 63072000000|mixed,
+	 *     searchTrailRetention: 2592000000|mixed,
+	 *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
+	 *     updateLogRetention: 604800000|mixed,
+	 *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
+	 *     searchTrailsEnabled: bool}
+	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
+	 */
+	public function getRetentionSettingsOnly(): array {
+		try {
+			$retentionConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'retention', '');
+			if (empty($retentionConfig) === true) {
+				return self::RETENTION_DEFAULTS;
+			}
 
-    /**
-     * Get archival settings (destruction scheduling, selectielijst config, etc.)
-     *
-     * @return array Archival configuration settings
-     *
-     * @throws \RuntimeException If archival settings retrieval fails
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
-     */
-    public function getArchivalSettingsOnly(): array
-    {
-        try {
-            $archivalConfig = $this->appConfig->getValueString($this->appName, 'archival', '');
+			$retention = $this->overDefaults(defaults: self::RETENTION_DEFAULTS, values: json_decode($retentionConfig, true));
+			$retention['auditTrailsEnabled'] = $this->convertToBoolean(value: $retention['auditTrailsEnabled']);
+			$retention['searchTrailsEnabled'] = $this->convertToBoolean(value: $retention['searchTrailsEnabled']);
+			$retention['searchTrailRecordingMode'] = $this->normaliseRecordingMode(value: $retention['searchTrailRecordingMode']);
+			return $retention;
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to retrieve Retention settings: ' . $e->getMessage());
+		}//end try
+	}//end getRetentionSettingsOnly()
 
-            if (empty($archivalConfig) === true) {
-                return $this->getArchivalDefaults();
-            }
+	/**
+	 * Update Retention settings only
+	 *
+	 * @param array $retentionData Retention configuration data
+	 *
+	 * @return (int|mixed|true)[] Updated Retention configuration
+	 *
+	 * @throws \RuntimeException If Retention settings update fails
+	 *
+	 * @psalm-return array{objectArchiveRetention: 31536000000|mixed,
+	 *     objectDeleteRetention: 63072000000|mixed,
+	 *     searchTrailRetention: 2592000000|mixed,
+	 *     createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed,
+	 *     updateLogRetention: 604800000|mixed,
+	 *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
+	 *     searchTrailsEnabled: mixed|true}
+	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
+	 */
+	public function updateRetentionSettingsOnly(array $retentionData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['retention']);
+		try {
+			$retentionConfig = $this->overDefaults(defaults: self::RETENTION_DEFAULTS, values: $retentionData);
+			$retentionConfig['searchTrailRecordingMode'] = $this->normaliseRecordingMode(value: $retentionConfig['searchTrailRecordingMode']);
 
-            $archivalData = json_decode($archivalConfig, true);
-            return [
-                'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
-                'notificationLeadDays'     => $archivalData['notificationLeadDays'] ?? 30,
-                'defaultExtensionPeriod'   => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
-                'destructionBatchSize'     => $archivalData['destructionBatchSize'] ?? 50,
-                'selectielijstRegister'    => $archivalData['selectielijstRegister'] ?? null,
-                'selectielijstSchema'      => $archivalData['selectielijstSchema'] ?? null,
-                'destructionListRegister'  => $archivalData['destructionListRegister'] ?? null,
-                'destructionListSchema'    => $archivalData['destructionListSchema'] ?? null,
-                'archivalRegister'         => $archivalData['archivalRegister'] ?? null,
-            ];
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve archival settings: '.$e->getMessage());
-        }//end try
-    }//end getArchivalSettingsOnly()
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'retention', json_encode($retentionConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['retention']);
+			return $retentionConfig;
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to update Retention settings: ' . $e->getMessage());
+		}
+	}//end updateRetentionSettingsOnly()
 
-    /**
-     * Update archival settings
-     *
-     * @param array $archivalData Archival configuration data
-     *
-     * @return array Updated archival configuration
-     *
-     * @throws \RuntimeException If archival settings update fails
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
-     */
-    public function updateArchivalSettingsOnly(array $archivalData): array
-    {
-        try {
-            $archivalConfig = [
-                'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
-                'notificationLeadDays'     => $archivalData['notificationLeadDays'] ?? 30,
-                'defaultExtensionPeriod'   => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
-                'destructionBatchSize'     => $archivalData['destructionBatchSize'] ?? 50,
-                'selectielijstRegister'    => $archivalData['selectielijstRegister'] ?? null,
-                'selectielijstSchema'      => $archivalData['selectielijstSchema'] ?? null,
-                'destructionListRegister'  => $archivalData['destructionListRegister'] ?? null,
-                'destructionListSchema'    => $archivalData['destructionListSchema'] ?? null,
-                'archivalRegister'         => $archivalData['archivalRegister'] ?? null,
-            ];
+	/**
+	 * Get archival settings (destruction scheduling, selectielijst config, etc.)
+	 *
+	 * @return array Archival configuration settings
+	 *
+	 * @throws \RuntimeException If archival settings retrieval fails
+	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
+	 */
+	public function getArchivalSettingsOnly(): array {
+		try {
+			$archivalConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'archival', '');
+			if (empty($archivalConfig) === true) {
+				return self::ARCHIVAL_DEFAULTS;
+			}
 
-            $this->appConfig->setValueString($this->appName, 'archival', json_encode($archivalConfig));
-            return $archivalConfig;
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to update archival settings: '.$e->getMessage());
-        }
-    }//end updateArchivalSettingsOnly()
+			return $this->overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: json_decode($archivalConfig, true));
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to retrieve archival settings: ' . $e->getMessage());
+		}//end try
+	}//end getArchivalSettingsOnly()
 
-    /**
-     * Get default archival settings
-     *
-     * @return array Default archival configuration
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
-     */
-    private function getArchivalDefaults(): array
-    {
-        return [
-            'destructionCheckInterval' => 86400,
-            'notificationLeadDays'     => 30,
-            'defaultExtensionPeriod'   => 'P1Y',
-            'destructionBatchSize'     => 50,
-            'selectielijstRegister'    => null,
-            'selectielijstSchema'      => null,
-            'destructionListRegister'  => null,
-            'destructionListSchema'    => null,
-            'archivalRegister'         => null,
-        ];
-    }//end getArchivalDefaults()
+	/**
+	 * Update archival settings
+	 *
+	 * @param array $archivalData Archival configuration data
+	 *
+	 * @return array Updated archival configuration
+	 *
+	 * @throws \RuntimeException If archival settings update fails
+	 *
+	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
+	 */
+	public function updateArchivalSettingsOnly(array $archivalData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['archival']);
+		try {
+			$archivalConfig = $this->overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: $archivalData);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'archival', json_encode($archivalConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['archival']);
+			return $archivalConfig;
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to update archival settings: ' . $e->getMessage());
+		}
+	}//end updateArchivalSettingsOnly()
 
-    /**
-     * Get version information only
-     *
-     * @return string[] Version information
-     *
-     * @throws \RuntimeException If version information retrieval fails
-     *
-     * @psalm-return array{appName: 'Open Register', appVersion: '0.2.3'}
-     */
-    public function getVersionInfoOnly(): array
-    {
-        try {
-            return [
-                'appName'    => 'Open Register',
-                'appVersion' => '0.2.3',
-            ];
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve version information: '.$e->getMessage());
-        }
-    }//end getVersionInfoOnly()
+	/**
+	 * Hand a per-section save to the change recorder.
+	 *
+	 * @param array{settings: array<string, mixed>, security: array<string, mixed>}|null $before The snapshot, or null.
+	 * @param array<int, string>                                                         $keys   The keys the save wrote.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	private function recordSettingsChange(?array $before, array $keys): void {
+		if ($before === null || $this->changeRecorder === null) {
+			return;
+		}
 
-    /**
-     * Convert various representations to boolean
-     *
-     * @param mixed $value The value to convert to boolean
-     *
-     * @return bool The boolean representation
-     */
-    private function convertToBoolean($value): bool
-    {
-        if (is_bool($value) === true) {
-            return $value;
-        }
+		$this->changeRecorder->record(before: $before, keys: $keys);
+	}//end recordSettingsChange()
 
-        if (is_string($value) === true) {
-            return in_array(strtolower($value), ['true', '1', 'yes', 'on'], true);
-        }
+	/**
+	 * Get version information only
+	 *
+	 * @return string[] Version information
+	 *
+	 * @throws \RuntimeException If version information retrieval fails
+	 *
+	 * @psalm-return array{appName: 'Open Register', appVersion: '0.2.3'}
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	public function getVersionInfoOnly(): array {
+		try {
+			return [
+				'appName' => 'Open Register',
+				'appVersion' => '0.2.3',
+			];
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to retrieve version information: ' . $e->getMessage());
+		}
+	}//end getVersionInfoOnly()
 
-        if (is_numeric($value) === true) {
-            return (int) $value !== 0;
-        }
+	/**
+	 * Convert various representations to boolean
+	 *
+	 * @param mixed $value The value to convert to boolean
+	 *
+	 * @return bool The boolean representation
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
+	 */
+	private function convertToBoolean($value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
 
-        return (bool) $value;
-    }//end convertToBoolean()
+		if (is_string($value) === true) {
+			return in_array(strtolower($value), ['true', '1', 'yes', 'on'], true);
+		}
+
+		if (is_numeric($value) === true) {
+			return (int)$value !== 0;
+		}
+
+		return (bool)$value;
+	}//end convertToBoolean()
+
+	/**
+	 * Normalise the search-trail recording mode to an allowed value.
+	 *
+	 * Accepts only 'all', '_search', or 'none'; any other input falls back
+	 * to the safe default '_search' (record text searches only).
+	 *
+	 * @param mixed $value The raw recording-mode value.
+	 *
+	 * @return string One of 'all', '_search', 'none'.
+	 *
+	 * @spec openspec/specs/search-trail-recording/spec.md
+	 */
+	private function normaliseRecordingMode($value): string {
+		$mode = '';
+		if (is_string($value) === true) {
+			$mode = strtolower($value);
+		}
+
+		if (in_array($mode, ['all', '_search', 'none'], true) === true) {
+			return $mode;
+		}
+
+		return '_search';
+	}//end normaliseRecordingMode()
 }//end class

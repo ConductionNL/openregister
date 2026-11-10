@@ -50,8 +50,56 @@ entry_hash = SHA-256(entry_json + previous_entry_hash)
 This tamper-evident chain allows independent verification: if any entry is modified or deleted, the chain breaks at that point. The chain can be verified via:
 
 ```
-GET /api/audit/verify?register={slug}&from={timestamp}&to={timestamp}
+GET /apps/openregister/api/audit-trails/verify?from={entryId}&to={entryId}
 ```
+
+`from` and `to` are audit entry **IDs**, not timestamps, and both are optional — omit them to walk the whole trail. The endpoint is admin-only. It returns:
+
+```json
+{ "valid": true, "entriesVerified": 309036, "brokenAt": null, "skippedNullHashes": 0 }
+```
+
+`brokenAt` is the ID of the first entry whose recomputed hash disagreed with the hash stored against it; verification stops there, so `entriesVerified` counts only the entries confirmed *before* the break.
+
+### Sealing
+
+Chaining an entry is called **sealing**, and it is a separate step from writing it. An entry is inserted first and sealed immediately afterwards, because its hash depends on the entry before it — so sealing has to be serialised, while writing does not.
+
+Serialisation uses an exclusive advisory lock (`openregister/audit-seal`). Without it, two concurrent seal passes can each read the same predecessor and then write, leaving many entries chained onto **one** predecessor. That is a fan-out rather than a chain, and verification correctly reports it as broken even though nobody tampered with anything.
+
+Sealing is **fail-soft**. If the lock cannot be acquired within three attempts, the write still succeeds and the entry is simply left unsealed — an audit entry with no hash. Refusing the write instead would mean a lock contention could lose audit data, which is worse than a gap.
+
+That makes a sweeper necessary rather than optional:
+
+| | |
+|---|---|
+| **Job** | `OCA\OpenRegister\BackgroundJob\AuditSealJob` |
+| **Interval** | every 5 minutes |
+| **Work per tick** | up to 10 passes × 500 entries |
+| **Order** | oldest unsealed first, so it is resumable by construction |
+
+A backlog after heavy write activity is normal and drains on its own. A backlog that never shrinks is not: it means sealing is failing on the write path *and* in the sweep, and the job logs a warning saying so.
+
+**An unsealed entry is not a tampered entry.** It is an entry the chain cannot vouch for either way. Verification skips unsealed entries and carries the last sealed hash forward, so gaps weaken the guarantee without producing false alarms.
+
+Seal coverage is shown under **Administration settings → Open Register → Log integrity**, alongside a button that runs the full verification on demand. The two numbers answer different questions and the page keeps them apart deliberately: coverage says whether the sweeper is keeping up, and says nothing about whether the stored hashes still agree with their rows. Only verification answers that.
+
+### Repairing a broken chain
+
+If verification reports `valid: false`, read the entry at `brokenAt` before doing anything else. There are two causes and they are not equally serious:
+
+1. The entry was altered after it was written — the case the chain exists to expose.
+2. It was sealed by a historical concurrent pass and chained onto the wrong predecessor — a bookkeeping fault, with the entry itself intact.
+
+Only once you have established which, repair with:
+
+```
+occ openregister:rechain-audit-trail
+```
+
+This recomputes every hash from genesis, in ID order, under the seal lock — so the result is a single chain by construction. It also seals any entry that never had a hash, so one run repairs both failure modes.
+
+It is a command rather than a background job on purpose. Rewriting stored audit hashes is precisely the event the chain is built to make suspicious, so it must be asked for by a person; it prompts for confirmation unless given `--force`, supports `--dry-run`, and logs its start and completion at warning level so the rewrite is itself part of the record.
 
 ### Audit Entry Structure
 

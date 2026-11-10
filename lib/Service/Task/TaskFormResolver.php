@@ -1,0 +1,579 @@
+<?php
+
+/**
+ * The form a task presents: declaration × live schema, derived on every read.
+ *
+ * Two paths and no third. A task carrying a run resolves its declaration
+ * through the flow definition VERSION that run is pinned to, never the
+ * editable head, so editing and publishing a flow changes the form of zero
+ * already-open tasks. A run-less task carries its declaration on its own
+ * record. Where a pinned version cannot be resolved the form fails visibly,
+ * naming the flow and the version, and falls back to nothing: not the head,
+ * not the latest published version and least of all an empty form, which is
+ * the one fallback that reports success for a task that required evidence.
+ *
+ * Nothing here is cached on the task row. The rendered field list is the
+ * declaration intersected with the LIVE schema, recomputed per call, so a
+ * schema that dropped or locked a field after the step was saved shows that
+ * field as broken with its reason instead of silently omitting it.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Task
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Task;
+
+use DateTime;
+use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FormLink;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCP\IL10N;
+use Throwable;
+use UnexpectedValueException;
+
+/**
+ * Resolves and describes the form a task presents, per read.
+ *
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+ */
+class TaskFormResolver implements TaskFormResolverInterface {
+
+	/**
+	 * Every declared field renders.
+	 *
+	 * @var string
+	 */
+	public const STATE_READY = 'ready';
+
+	/**
+	 * At least one declared field no longer renders against the live schema.
+	 *
+	 * @var string
+	 */
+	public const STATE_BROKEN = 'broken';
+
+	/**
+	 * The declaration itself could not be resolved.
+	 *
+	 * @var string
+	 */
+	public const STATE_UNRESOLVABLE = 'unresolvable';
+
+	/**
+	 * The bound external form is not usable.
+	 *
+	 * @var string
+	 */
+	public const STATE_UNAVAILABLE = 'unavailable';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param TaskFormResolverServices $services The run, flow, published-graph and form-link readers.
+	 * @param TaskFormReader $reader Normalises and inspects declarations.
+	 * @param IL10N $l10n Translations, for reasons a performer reads.
+	 */
+	public function __construct(
+		private readonly TaskFormResolverServices $services,
+		private readonly TaskFormReader $reader,
+		private readonly IL10N $l10n,
+	) {
+
+	}//end __construct()
+
+	/**
+	 * The task's completion surface, as the read exposes it.
+	 *
+	 * `form` is null when the step declares none, else a description carrying
+	 * `kind`, `state` and, for the native kind, each declared field with its
+	 * `required` flag from the DECLARATION, its `order` from the declaration
+	 * position, and whether it is `renderable` against the live schema. An
+	 * unresolvable declaration is a form with `state` unresolvable and an
+	 * `error` naming the flow and the version: never an empty field list.
+	 *
+	 * @param TaskInterface $task The task.
+	 *
+	 * @return array{form: array<string, mixed>|null, requireChecklist: bool} The description.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	public function describe(TaskInterface $task): array {
+		return $this->surfaceOf(task: $task) + ['behaviours' => $this->behavioursOf(task: $task)];
+	}//end describe()
+
+	/**
+	 * The form and checklist flag of the task's declaration; an unresolvable
+	 * declaration is a form with `state` unresolvable and the reason.
+	 *
+	 * @param TaskInterface $task The task.
+	 *
+	 * @return array{form: array<string, mixed>|null, requireChecklist: bool} The surface.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	private function surfaceOf(TaskInterface $task): array {
+		try {
+			$declaration = $this->declarationOf(task: $task);
+		} catch (UnexpectedValueException $unresolvable) {
+			$form = ['kind' => null, 'state' => self::STATE_UNRESOLVABLE, 'error' => $unresolvable->getMessage()];
+			return ['form' => $form, 'requireChecklist' => false];
+		}
+
+		return ['form' => $this->formOf(declaration: $declaration, task: $task), 'requireChecklist' => $declaration->requireChecklist];
+	}//end surfaceOf()
+
+	/**
+	 * The description of the declared form, by kind; null when none is declared.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param TaskInterface $task The task, for its subject anchor.
+	 *
+	 * @return array<string, mixed>|null The description.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	private function formOf(TaskForm $declaration, TaskInterface $task): ?array {
+		if ($declaration->isNative() === true) {
+			return $this->describeNative(declaration: $declaration);
+		}
+
+		if ($declaration->isExternal() === true) {
+			return $this->describeExternal(declaration: $declaration, task: $task);
+		}
+
+		return null;
+	}//end formOf()
+
+	/**
+	 * The task's declared deadline behaviours, so a surface rendering the
+	 * form can say what happens on timeout or rejection
+	 * (task-expiry-and-outcomes: the behaviours are the task's contract,
+	 * not the form's).
+	 *
+	 * @param TaskInterface $task The task.
+	 *
+	 * @return array<string, string|null> expiresAt, onTimeout and onReject.
+	 *
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
+	 */
+	private function behavioursOf(TaskInterface $task): array {
+		return [
+			'expiresAt' => $task->getExpiresAt()?->format('c'),
+			'onTimeout' => $task->getOnTimeout(),
+			'onReject' => $task->getOnReject(),
+		];
+	}//end behavioursOf()
+
+	/**
+	 * The declaration a task resolves to: pinned version, or its own record.
+	 *
+	 * @param TaskInterface $task The task.
+	 *
+	 * @return TaskForm The declaration.
+	 *
+	 * @throws UnexpectedValueException When the run, its version or its step cannot be resolved.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 */
+	public function declarationOf(TaskInterface $task): TaskForm {
+		$runUuid = trim((string)$task->getRunUuid());
+		if ($runUuid === '') {
+			// A run-less task is first-class: its record is its declaration.
+			return $this->reader->fromRecord(record: (array)(($task->getMetadata() ?? [])['form'] ?? []));
+		}
+
+		return $this->stepDeclaration(task: $task, run: $this->runOf(task: $task, runUuid: $runUuid));
+	}//end declarationOf()
+
+	/**
+	 * The run a task belongs to.
+	 *
+	 * @param TaskInterface $task The task, for the message.
+	 * @param string $runUuid The run's uuid.
+	 *
+	 * @return FlowRun The run.
+	 *
+	 * @throws UnexpectedValueException When the run no longer exists.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 */
+	private function runOf(TaskInterface $task, string $runUuid): FlowRun {
+		try {
+			return $this->services->runs->findByUuid(uuid: $runUuid);
+		} catch (Throwable) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('Task %1$s belongs to run %2$s, which no longer exists.', [(string)$task->getUuid(), $runUuid])
+			);
+		}
+	}//end runOf()
+
+	/**
+	 * The declaration of the step the task was created by, in the run's graph.
+	 *
+	 * @param TaskInterface $task The task.
+	 * @param FlowRun $run Its run.
+	 *
+	 * @return TaskForm The declaration.
+	 *
+	 * @throws UnexpectedValueException When the graph cannot be resolved or has no such step.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 */
+	private function stepDeclaration(TaskInterface $task, FlowRun $run): TaskForm {
+		$nodeId = trim((string)$task->getNodeId());
+		$config = self::configOf(nodes: $this->nodesOf(run: $run), nodeId: $nodeId);
+		if ($config !== null) {
+			return $this->reader->fromConfig(config: $config);
+		}
+
+		throw new UnexpectedValueException(
+			$this->l10n->t(
+				'Version %1$s of flow %2$s has no step "%3$s", so the form of task %4$s cannot be resolved.',
+				[$this->versionLabel(run: $run), (string)$run->getFlowId(), $nodeId, (string)$task->getUuid()]
+			)
+		);
+	}//end stepDeclaration()
+
+	/**
+	 * The config of the first node carrying the step's id.
+	 *
+	 * @param array<int, mixed> $nodes The graph's node entries.
+	 * @param string $nodeId The step's id.
+	 *
+	 * @return array<string, mixed>|null The step's config, or null when no node carries the id.
+	 */
+	private static function configOf(array $nodes, string $nodeId): ?array {
+		foreach ($nodes as $node) {
+			if (self::isStep(node: $node, nodeId: $nodeId) === true) {
+				return (array)($node['config'] ?? []);
+			}
+		}
+
+		return null;
+	}//end configOf()
+
+	/**
+	 * Whether a node entry is the step with this id.
+	 *
+	 * @param mixed $node A node entry.
+	 * @param string $nodeId The step's id.
+	 *
+	 * @return bool True when the entry is a node whose trimmed id matches.
+	 *
+	 * @psalm-assert-if-true array $node
+	 * @phpstan-assert-if-true array<string, mixed> $node
+	 */
+	private static function isStep(mixed $node, string $nodeId): bool {
+		return is_array($node) === true && trim((string)($node['id'] ?? '')) === $nodeId;
+	}//end isStep()
+
+	/**
+	 * The nodes of the graph a run walks: its pinned version, or the live
+	 * document for the one dispatch that may walk a draft, the interactive
+	 * test run, which carries no pin because there is no published version
+	 * to pin.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return array<int, mixed> The node entries.
+	 *
+	 * @throws UnexpectedValueException When the pinned version cannot be resolved.
+	 */
+	private function nodesOf(FlowRun $run): array {
+		if ($run->getFlowVersion() === null) {
+			return $this->liveNodesOf(run: $run);
+		}
+
+		return $this->pinnedNodesOf(run: $run);
+	}//end nodesOf()
+
+	/**
+	 * The nodes of the published version a run is pinned to.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return array<int, mixed> The node entries.
+	 *
+	 * @throws UnexpectedValueException When the pinned version cannot be resolved.
+	 */
+	private function pinnedNodesOf(FlowRun $run): array {
+		$graph = $this->services->published->ofRun(run: $run);
+		if ($graph === null) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'Version %1$s of flow %2$s cannot be resolved, so the form of this task cannot be shown.',
+					[$this->versionLabel(run: $run), (string)$run->getFlowId()]
+				)
+			);
+		}
+
+		return (array)($graph['nodes'] ?? []);
+	}//end pinnedNodesOf()
+
+	/**
+	 * The nodes of the live flow document an unpinned test run walks.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return array<int, mixed> The node entries.
+	 *
+	 * @throws UnexpectedValueException When the flow no longer exists.
+	 */
+	private function liveNodesOf(FlowRun $run): array {
+		try {
+			return ($this->services->flows->findByUuid(uuid: (string)$run->getFlowId())->getNodes() ?? []);
+		} catch (Throwable) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('Flow %1$s no longer exists.', [(string)$run->getFlowId()])
+			);
+		}
+	}//end liveNodesOf()
+
+	/**
+	 * The native form against the live schema: per field, render or broken-with-reason.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 *
+	 * @return array<string, mixed> The description.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	private function describeNative(TaskForm $declaration): array {
+		try {
+			$schema = $this->reader->schema(reference: $declaration->schema);
+			$declared = $this->reader->declaredFields(form: $declaration, schema: $schema);
+		} catch (UnexpectedValueException $broken) {
+			return self::nativeShape(declaration: $declaration, values: ['error' => $broken->getMessage()]);
+		}
+
+		$fields = $this->fieldDescriptions(schema: $schema, declared: $declared);
+		$values = ['state' => self::stateOf(fields: $fields), 'schema' => self::schemaSummary(schema: $schema), 'fields' => $fields];
+		return self::nativeShape(declaration: $declaration, values: $values);
+	}//end describeNative()
+
+	/**
+	 * A native description: broken, unread and empty unless the values say otherwise.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param array<string, mixed> $values The keys that differ from that default.
+	 *
+	 * @return array<string, mixed> The description, keys in their published order.
+	 */
+	private static function nativeShape(TaskForm $declaration, array $values): array {
+		$shape = [
+			'kind' => TaskForm::KIND_FIELDS,
+			'state' => self::STATE_BROKEN,
+			'error' => null,
+			'schema' => null,
+			'action' => $declaration->action,
+			'fields' => [],
+		];
+
+		return array_merge($shape, $values);
+	}//end nativeShape()
+
+	/**
+	 * Each declared field in declaration order: required flag, order, and
+	 * whether it renders against the live schema (with the reason when not).
+	 *
+	 * @param Schema $schema The live schema.
+	 * @param array<int, array{field: string, required: bool}> $declared The declared fields.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	private function fieldDescriptions(Schema $schema, array $declared): array {
+		$fields = [];
+		foreach ($declared as $order => $field) {
+			$reason = $this->reader->unrenderableReason(schema: $schema, field: $field['field']);
+			$fields[] = [
+				'field' => $field['field'],
+				'required' => $field['required'],
+				'order' => $order,
+				'renderable' => ($reason === null),
+				'reason' => $reason,
+			];
+		}
+
+		return $fields;
+	}//end fieldDescriptions()
+
+	/**
+	 * Ready when every field renders, broken otherwise.
+	 *
+	 * @param array<int, array<string, mixed>> $fields The field descriptions.
+	 *
+	 * @return string The form state.
+	 */
+	private static function stateOf(array $fields): string {
+		foreach ($fields as $field) {
+			if ($field['renderable'] === false) {
+				return self::STATE_BROKEN;
+			}
+		}
+
+		return self::STATE_READY;
+	}//end stateOf()
+
+	/**
+	 * The subject schema as a description names it.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<string, mixed> Its id, uuid, slug and title.
+	 */
+	private static function schemaSummary(Schema $schema): array {
+		return [
+			'id' => $schema->getId(),
+			'uuid' => $schema->getUuid(),
+			'slug' => $schema->getSlug(),
+			'title' => $schema->getTitle(),
+		];
+	}//end schemaSummary()
+
+	/**
+	 * The external form through the subject's link, saying so when it is unusable.
+	 *
+	 * Read from the link's cached snapshot (title, status, expiry), which the
+	 * link service keeps precisely so a surface can still say what happened
+	 * when the Forms app is gone or the form was deleted.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param TaskInterface $task The task, for its subject anchor.
+	 *
+	 * @return array<string, mixed> The description.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
+	 */
+	private function describeExternal(TaskForm $declaration, TaskInterface $task): array {
+		$link = $this->linkOf(declaration: $declaration, task: $task);
+		if ($link === null) {
+			$error = $this->l10n->t('The form is no longer linked to this task\'s subject, so it cannot be used to finish the work.');
+			return self::externalShape(declaration: $declaration, values: ['error' => $error]);
+		}
+
+		return self::externalShape(declaration: $declaration, values: $this->linkedValues(link: $link));
+	}//end describeExternal()
+
+	/**
+	 * What the link's cached snapshot says, and whether the form is usable.
+	 *
+	 * @param FormLink $link The subject's link to the form.
+	 *
+	 * @return array<string, mixed> The description keys the link decides.
+	 */
+	private function linkedValues(FormLink $link): array {
+		$status = (string)($link->getStatus() ?? 'open');
+		$expiresAt = $link->getExpiresAt();
+		$values = ['formHash' => $link->getFormHash(), 'title' => $link->getTitle(), 'status' => $status, 'expiresAt' => $expiresAt?->format('c')];
+		$values['error'] = $this->unusableReason(status: $status, expiresAt: $expiresAt);
+		if ($values['error'] === null) {
+			$values['state'] = self::STATE_READY;
+		}
+
+		return $values;
+	}//end linkedValues()
+
+	/**
+	 * The subject's link to the declared form, when there is a subject and a form id.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param TaskInterface $task The task, for its subject anchor.
+	 *
+	 * @return FormLink|null The link, or null.
+	 */
+	private function linkOf(TaskForm $declaration, TaskInterface $task): ?FormLink {
+		$objectUuid = trim((string)$task->getObjectUuid());
+		if ($objectUuid === '' || $declaration->formId === null) {
+			return null;
+		}
+
+		return $this->services->formLinks->findFormLink(objectUuid: $objectUuid, formId: $declaration->formId);
+	}//end linkOf()
+
+	/**
+	 * Why a linked form cannot be filled in: its status, or its expiry.
+	 *
+	 * @param string $status The link's status.
+	 * @param DateTime|null $expiresAt The link's expiry.
+	 *
+	 * @return string|null The reason, or null when the form is usable.
+	 */
+	private function unusableReason(string $status, ?DateTime $expiresAt): ?string {
+		if (in_array($status, ['archived', 'closed', 'draft'], true) === true) {
+			return $this->l10n->t('The form is %1$s and cannot be filled in.', [$status]);
+		}
+
+		return $this->expiryReason(expiresAt: $expiresAt);
+	}//end unusableReason()
+
+	/**
+	 * Why an expired linked form cannot be filled in.
+	 *
+	 * @param DateTime|null $expiresAt The link's expiry.
+	 *
+	 * @return string|null The reason, or null when it has not expired.
+	 */
+	private function expiryReason(?DateTime $expiresAt): ?string {
+		if ($expiresAt !== null && $expiresAt < new DateTime()) {
+			return $this->l10n->t('The form expired on %1$s and cannot be filled in.', [$expiresAt->format('Y-m-d')]);
+		}
+
+		return null;
+	}//end expiryReason()
+
+	/**
+	 * An external description: unavailable and unlinked unless the values say otherwise.
+	 *
+	 * @param TaskForm $declaration The declaration.
+	 * @param array<string, mixed> $values The keys that differ from that default.
+	 *
+	 * @return array<string, mixed> The description, keys in their published order.
+	 */
+	private static function externalShape(TaskForm $declaration, array $values): array {
+		$shape = [
+			'kind' => TaskForm::KIND_EXTERNAL,
+			'state' => self::STATE_UNAVAILABLE,
+			'error' => null,
+			'formId' => $declaration->formId,
+			'formHash' => null,
+			'title' => null,
+			'status' => null,
+			'expiresAt' => null,
+		];
+
+		return array_merge($shape, $values);
+	}//end externalShape()
+
+	/**
+	 * A run's version for a message: its number, or "draft" for an unpinned test run.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return string The label.
+	 */
+	private function versionLabel(FlowRun $run): string {
+		$version = $run->getFlowVersion();
+		if ($version === null) {
+			return 'draft';
+		}
+
+		return (string)$version;
+	}//end versionLabel()
+}//end class

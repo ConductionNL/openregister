@@ -1,0 +1,125 @@
+[
+    [
+        "findAll",
+        [
+            {
+                "filters": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof",
+                    "objectUuid": "o",
+                    "transferUuid": "t"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "createObject",
+        [
+            {
+                "objectUuid": "o",
+                "transferUuid": "t",
+                "confirmedAt": "T",
+                "@self": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        {
+            "id": "proof-uuid",
+            "proof": true,
+            "uuid": "proof-uuid"
+        }
+    ],
+    [
+        "findAll",
+        [
+            {
+                "filters": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof",
+                    "objectUuid": "o",
+                    "transferUuid": "t"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        {
+            "uuid": "existing"
+        }
+    ],
+    [
+        "findAll",
+        [
+            {
+                "filters": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof",
+                    "objectUuid": "o",
+                    "transferUuid": "t"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "createObject",
+        [
+            {
+                "objectUuid": "o",
+                "transferUuid": "t",
+                "confirmedAt": "T2",
+                "@self": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        {
+            "id": "proof-uuid",
+            "proof": true,
+            "uuid": "proof-uuid"
+        }
+    ],
+    [
+        "createObject",
+        [
+            {
+                "objectUuid": "",
+                "transferUuid": "t",
+                "confirmedAt": "T3",
+                "@self": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransferProof"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        {
+            "id": "proof-uuid",
+            "proof": true,
+            "uuid": "proof-uuid"
+        }
+    ]
+]

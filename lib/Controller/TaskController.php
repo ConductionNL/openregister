@@ -1,0 +1,1043 @@
+<?php
+
+/**
+ * The task REST surface: the inbox and the lifecycle verbs.
+ *
+ * Auth posture: every route is `#[NoAdminRequired]` — tasks are for
+ * everyone — and NONE of those attributes is the check. The actual
+ * authorization on every verb is `TaskAuthorizationService`, evaluated
+ * inside the service BEFORE any mutation, which is precisely the gap this
+ * change closes over `POST /api/flow-runs/{uuid}/resume`
+ * (`lib/Controller/FlowRunController.php:423-436`): there, knowing a run
+ * uuid was the whole check. Here, no verb is reachable by uuid alone, and
+ * even READS are visibility-checked. A task the caller may not see answers
+ * 404 to every route, verbs included, so neither its existence nor its
+ * state leaks through a 403 or a 409.
+ *
+ * CSRF, decided rather than inherited: every mutating verb carries
+ * `#[NoCSRFRequired]`, matching `FlowRunController::resume()`. These routes
+ * are driven by leaf apps and agents with Basic auth or app passwords, for
+ * which Nextcloud issues no CSRF token; the browser-session guard is
+ * Nextcloud's SameSite cookie middleware (`SameSiteCookieMiddleware`),
+ * which refuses a cross-site request before the controller runs. The
+ * authorization inside the service is what decides who may act; the
+ * attribute only says which anti-forgery mechanism applies.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use DateTime;
+use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\TaskControllerServices;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxCriteria;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
+use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Exception\TaskFormRefusedException;
+use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
+use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
+use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
+use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * REST surface for the fleet-generic task.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The sum of the verb
+ * routes and one catch per refusal shape in {@see respondWith()}; both scale
+ * with the spec, not with entanglement.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per
+ * concern, injected: the deep-link builder the projections carry, the form
+ * resolver and the form-aware completion. The controller is the one place
+ * those meet HTTP, and a facade over them would add a class that only
+ * forwards.
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity) respondWith() holds ONE
+ * catch per refusal shape so no verb can drift; folding two shapes into one
+ * catch is how a 400 and a 422 end up indistinguishable.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One route method per
+ * lifecycle verb the spec names, plus the three reads. Folding verbs into a
+ * mode parameter is how per-verb authorization rules get lost.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller mediates
+ * between HTTP and the task services plus their three exception shapes;
+ * that is the whole of its job.
+ *
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ */
+class TaskController extends Controller {
+
+	/**
+	 * The authorized lifecycle.
+	 *
+	 * @var TaskManagerInterface
+	 */
+	private readonly TaskManagerInterface $tasks;
+
+	/**
+	 * The inbox queries.
+	 *
+	 * @var TaskInboxServiceInterface
+	 */
+	private readonly TaskInboxServiceInterface $inbox;
+
+	/**
+	 * Read-visibility decisions.
+	 *
+	 * @var TaskAuthorizationService
+	 */
+	private readonly TaskAuthorizationService $authorization;
+
+	/**
+	 * The one overdue derivation.
+	 *
+	 * @var TaskTemporalProjection
+	 */
+	private readonly TaskTemporalProjection $temporal;
+
+	/**
+	 * Names the acting identity.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the form a task presents, per read.
+	 *
+	 * @var TaskFormResolverInterface
+	 */
+	private readonly TaskFormResolverInterface $forms;
+
+	/**
+	 * Completes a task with a form payload,
+	 *
+	 * @var TaskFormCompletionInterface
+	 */
+	private readonly TaskFormCompletionInterface $completion;
+
+	/**
+	 * Where an unexpected failure's
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
+	 * Resolves the caller's groups
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The request.
+	 * @param TaskControllerServices $services The task controller services.
+	 */
+	public function __construct(
+		IRequest $request,
+		TaskControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->tasks = $services->work->tasks;
+		$this->inbox = $services->work->inbox;
+		$this->authorization = $services->work->authorization;
+		$this->temporal = $services->work->temporal;
+		$this->userSession = $services->platform->userSession;
+		$this->forms = $services->completion->forms;
+		$this->completion = $services->completion->completion;
+		$this->logger = $services->platform->logger;
+		$this->groupManager = $services->platform->groupManager;
+
+	}//end __construct()
+
+	/**
+	 * The deep link every projection carries: a page route that lands a
+	 * person on the task's own surface.
+	 *
+	 * The notification actions, the VTODO `URL` and the route action in the
+	 * task rules all resolve to THIS route, so there is one stable address
+	 * for "open this task" however the task reached the person. It serves
+	 * the SPA shell directly, exactly like `DashboardController::catchAll()`
+	 * serves every other deep sub-path: the router runs in HISTORY mode
+	 * (src/main.js), so the path itself is the route and the SPA's
+	 * `flow-task-detail` route (`/flow-tasks/:uuid`, src/main.js) renders
+	 * the task. It used to redirect to a HASH path instead, which the
+	 * history-mode router never resolved: every notification button and
+	 * VTODO URL landed on the dashboard.
+	 *
+	 * @param string $uuid The task uuid, consumed by the SPA route, not here.
+	 *
+	 * @return TemplateResponse The SPA shell.
+	 *
+	 * @no-admin-idor-exempt Reads nothing: the shell is identical for every
+	 *   uuid, and the SPA performs the visibility-checked read
+	 *   (TaskController::show, 404 for the invisible).
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The route binds {uuid},
+	 *   the SPA consumes it from the URL; dropping the parameter would
+	 *   unbind the route.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-assigned-task-appears-in-the-assignees-own-calendar
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function open(string $uuid): TemplateResponse {
+		$response = new TemplateResponse(
+			appName: $this->appName,
+			templateName: 'index',
+			params: []
+		);
+
+		// The same relaxation the dashboard shell carries: the SPA calls the
+		// API from this page, so the shell's CSP must allow it.
+		$csp = new ContentSecurityPolicy();
+		$csp->addAllowedConnectDomain('*');
+		$response->setContentSecurityPolicy($csp);
+
+		return $response;
+	}//end open()
+
+	/**
+	 * The inbox: what is waiting for me, with subject context and a total.
+	 *
+	 * @param string $scope assigned|pooled|watched|all.
+	 * @param string|null $state Restrict to CMMN states (comma-separated).
+	 * @param string|null $isTerminal 'true'|'false' to restrict on terminality.
+	 * @param string|null $priority Restrict to one priority.
+	 * @param string|null $kind Restrict to one kind of work, as the creator
+	 *                          named it (`reminder`, and whatever else a
+	 *                          consuming app writes). The engine attaches no
+	 *                          behaviour to the value.
+	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
+	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
+	 *                             This ANCHORS the read rather than filtering
+	 *                             it: `scope` is ignored, because the run's
+	 *                             view asks what the run asked, not what it
+	 *                             asked the caller. Visibility still applies.
+	 * @param string|null $overdue 'true' to restrict to derived-overdue tasks.
+	 * @param string|null $dueAfter ISO-8601 instant; only tasks due at or
+	 *                              after it. Pairs with `dueBefore` to make a
+	 *                              window, which `overdue` cannot express.
+	 * @param string|null $dueBefore ISO-8601 instant; only tasks due strictly
+	 *                               before it.
+	 * @param string $sort dueAt|priority|created. A leading `-` inverts
+	 *                     the order (`-dueAt`), so sort and direction travel
+	 *                     as one parameter.
+	 * @param int $limit Page size.
+	 * @param int $offset Page offset.
+	 * @param string|null $includeBlocked 'true' to list tasks whose blocker is
+	 *                                    still open. An object or run anchor
+	 *                                    lists them regardless.
+	 * @param string|null $openFirst 'true' to list open tasks before finished
+	 *                               ones, each in the order `sort` asks.
+	 *
+	 * @return JSONResponse The page: results, total, limit, offset.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function index(
+		string $scope = TaskInboxCriteria::SCOPE_ASSIGNED,
+		?string $state = null,
+		?string $isTerminal = null,
+		?string $priority = null,
+		?string $kind = null,
+		?string $objectUuid = null,
+		?string $runUuid = null,
+		?string $overdue = null,
+		?string $dueAfter = null,
+		?string $dueBefore = null,
+		string $sort = TaskInboxCriteria::SORT_DUE,
+		int $limit = 25,
+		int $offset = 0,
+		?string $includeBlocked = null,
+		?string $openFirst = null,
+	): JSONResponse {
+		$filters = compact('state', 'isTerminal', 'priority', 'kind', 'objectUuid', 'runUuid');
+		$flags = compact('overdue', 'dueAfter', 'dueBefore', 'includeBlocked', 'openFirst');
+		$order = [ltrim($sort, '-') => (str_starts_with($sort, '-') === true ? 'desc' : 'asc')];
+
+		return $this->inboxPage(scope: $scope, query: new ListQuery(limit: $limit, offset: $offset, filters: $filters + $flags, sort: $order));
+	}//end index()
+
+	/**
+	 * One page of the session user's inbox in a scope: 401 without a
+	 * session, 400 for an unparseable due instant.
+	 *
+	 * The listing's filters carry the raw query strings of the route; its
+	 * sort is the one sort key with its direction.
+	 *
+	 * @param string    $scope The audience scope.
+	 * @param ListQuery $query The page, filters and sort.
+	 *
+	 * @return JSONResponse The page: results, total, limit, offset.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function inboxPage(string $scope, ListQuery $query): JSONResponse {
+		$uid = $this->uid();
+		if ($uid === null) {
+			return new JSONResponse(['error' => 'No session'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		// The derived-overdue filter takes its clock instant from the one
+		// derivation class, so filter and projection cannot disagree.
+		$overdueAt = $this->overdueAt(overdue: $query->filters['overdue']);
+		$window = $this->dueWindow(dueAfter: $query->filters['dueAfter'], dueBefore: $query->filters['dueBefore']);
+		if ($window['error'] !== null) {
+			return new JSONResponse(['error' => $window['error']], Http::STATUS_BAD_REQUEST);
+		}
+
+		$audience = new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(uid: $uid), isAdmin: $this->isAdmin(uid: $uid), scope: $scope);
+		$due = new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $window['after'], dueBefore: $window['before']);
+		$criteria = new TaskInboxCriteria(audience: $audience, selection: $this->inboxSelection(query: $query, due: $due));
+
+		return new JSONResponse($this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $query->limit, offset: (int)$query->offset)));
+	}//end inboxPage()
+
+	/**
+	 * What an inbox listing selects: its filter, due window, anchor and order.
+	 *
+	 * @param ListQuery          $query The listing.
+	 * @param TaskInboxDueWindow $due   The due window and overdue instant.
+	 *
+	 * @return TaskInboxSelection The selection.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function inboxSelection(ListQuery $query, TaskInboxDueWindow $due): TaskInboxSelection {
+		$filters = $query->filters;
+		$filter = new TaskInboxFilter(
+			states: $this->stateList(state: $filters['state']),
+			isTerminal: $this->flagOrNull(value: $filters['isTerminal']),
+			priority: $filters['priority'],
+			kind: $this->trimmedOrNull(value: $filters['kind'])
+		);
+		$anchor = new TaskInboxAnchor(
+			objectUuid: $filters['objectUuid'],
+			runUuid: $this->trimmedOrNull(value: $filters['runUuid']),
+			includeBlocked: $this->isTrue(value: $filters['includeBlocked'])
+		);
+
+		return new TaskInboxSelection(filter: $filter, window: $due, anchor: $anchor, order: $this->inboxOrder(query: $query));
+	}//end inboxSelection()
+
+	/**
+	 * The order of an inbox listing: its sort key and direction, and
+	 * whether open tasks come first.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return TaskInboxOrder The order.
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	private function inboxOrder(ListQuery $query): TaskInboxOrder {
+		return new TaskInboxOrder(
+			sort: (string)array_key_first($query->sort),
+			sortDescending: in_array('desc', $query->sort, true),
+			openFirst: $this->isTrue(value: $query->filters['openFirst'])
+		);
+	}//end inboxOrder()
+
+	/**
+	 * The states a comma-separated `state` lists, blanks dropped.
+	 *
+	 * @param string|null $state The parameter.
+	 *
+	 * @return array<int, string> The states; none for an absent or blank parameter.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function stateList(?string $state): array {
+		if ($state === null || trim($state) === '') {
+			return [];
+		}
+
+		return array_values(array_filter(array_map('trim', explode(',', $state))));
+	}//end stateList()
+
+	/**
+	 * A boolean query parameter, or null when it is absent.
+	 *
+	 * @param string|null $value The parameter.
+	 *
+	 * @return bool|null The value ('true'/'1'/'yes'/'on' are true), or null.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function flagOrNull(?string $value): ?bool {
+		if ($value === null) {
+			return null;
+		}
+
+		return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+	}//end flagOrNull()
+
+	/**
+	 * Whether a boolean query parameter is present and true.
+	 *
+	 * @param string|null $value The parameter.
+	 *
+	 * @return bool True for 'true'/'1'/'yes'/'on'.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function isTrue(?string $value): bool {
+		return $value !== null && filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+	}//end isTrue()
+
+	/**
+	 * The clock instant of the derived-overdue filter, when `overdue` is true.
+	 *
+	 * @param string|null $overdue The parameter.
+	 *
+	 * @return DateTime|null The instant, or null for no overdue filter.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function overdueAt(?string $overdue): ?DateTime {
+		if ($this->isTrue(value: $overdue) === false) {
+			return null;
+		}
+
+		return $this->temporal->now();
+	}//end overdueAt()
+
+	/**
+	 * One task, visibility-checked, with the form it presents.
+	 *
+	 * The row carries `form` (null when the step declares none, else the
+	 * resolved description with each field's `required` and `order` from the
+	 * declaration) and `requireChecklist`, so the completion surface needs no
+	 * second round-trip. Derived on this read from the pinned declaration
+	 * and the live schema; nothing is stored.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The task row; 404 when absent OR invisible.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function show(string $uuid): JSONResponse {
+		try {
+			$task = $this->tasks->get(uuid: $uuid);
+		} catch (DoesNotExistException) {
+			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->authorization->mayRead(task: $task, uid: $this->uid()) === false) {
+			// Not 403: a caller with no relationship to the task learns
+			// nothing, not even that the uuid exists.
+			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(
+			array_merge(
+				$this->inbox->enrich(task: $task),
+				$this->forms->describe(task: $task)
+			)
+		);
+	}//end show()
+
+	/**
+	 * A task's audit trail, visibility-checked.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The entries, oldest first.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function audit(string $uuid): JSONResponse {
+		try {
+			$task = $this->tasks->get(uuid: $uuid);
+		} catch (DoesNotExistException) {
+			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->authorization->mayRead(task: $task, uid: $this->uid()) === false) {
+			// Not 403: a caller with no relationship to the task learns
+			// nothing, not even that the uuid exists.
+			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(['results' => $this->tasks->auditTrail(uuid: $uuid)]);
+	}//end audit()
+
+	/**
+	 * Create a task.
+	 *
+	 * The one verb with no task to have a relationship with, so its
+	 * authorization is about the SUBJECT instead: an object the caller may
+	 * not read is an object they may not put a task on, and the refusal is
+	 * the 404 that object's own endpoint gives them
+	 * ({@see \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard}).
+	 *
+	 * @return JSONResponse The created task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function create(): JSONResponse {
+		$response = $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid())
+		);
+		if ($response->getStatus() === Http::STATUS_OK) {
+			// Only the happy path answers 200; a created task is a 201.
+			$response->setStatus(Http::STATUS_CREATED);
+		}
+
+		return $response;
+	}//end create()
+
+	/**
+	 * Offer a task to a candidate pool.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The offered task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function offer(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end offer()
+
+	/**
+	 * Claim a pooled task.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The claimed task; 409 for the race's loser.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function claim(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end claim()
+
+	/**
+	 * Return a claimed task to its pool.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The pooled task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function unclaim(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end unclaim()
+
+	/**
+	 * Assign a task directly.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $assignee The performer reference.
+	 *
+	 * @return JSONResponse The assigned task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function assign(string $uuid, string $assignee = ''): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end assign()
+
+	/**
+	 * Reassign a task.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $assignee The new performer reference.
+	 *
+	 * @return JSONResponse The reassigned task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end reassign()
+
+	/**
+	 * Delegate a task, with a mandate.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $delegate The identity taking over.
+	 * @param string $mandate The authority relied on.
+	 *
+	 * @return JSONResponse The delegated task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end delegate()
+
+	/**
+	 * Resolve a task.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string|null $resultText Free-text result.
+	 * @param string|null $comment Completion comment.
+	 *
+	 * @return JSONResponse The resolved task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end resolve()
+
+	/**
+	 * Complete a task with an explicit outcome.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $outcome The completion outcome.
+	 * @param string|null $resultText Free-text result.
+	 * @param string|null $comment Completion comment — MANDATORY on a
+	 *                             rejecting or returning outcome.
+	 * @param mixed $data The declared form field values, as an object; the
+	 *                    same key the object transition endpoint uses. Absent
+	 *                    for a form-less completion. An undeclared key or a
+	 *                    missing required input is a 400 naming the fields;
+	 *                    a value the subject schema refuses is a 422.
+	 *
+	 * @return JSONResponse The completed task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function complete(
+		string $uuid,
+		string $outcome = 'done',
+		?string $resultText = null,
+		?string $comment = null,
+		mixed $data = null,
+	): JSONResponse {
+		$answer = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment);
+
+		return $this->completeTask(command: new TaskCompletionCommand(uuid: $uuid, answer: $answer, data: $data));
+	}//end complete()
+
+	/**
+	 * Complete a task through the form-aware completion; a `data` that is
+	 * not an object is a 400 before any service is reached.
+	 *
+	 * @param TaskCompletionCommand $command The task, answer and field values.
+	 *
+	 * @return JSONResponse The completed task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	private function completeTask(TaskCompletionCommand $command): JSONResponse {
+		$data = $command->data;
+		if ($data !== null && is_array($data) === false) {
+			return new JSONResponse(['error' => 'Field "data" must be an object of field values.'], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->completion->complete(
+				uuid: $command->uuid,
+				answer: $command->answer,
+				data: ($data ?? []),
+				actor: $this->uid()
+			),
+			uuid: $command->uuid
+		);
+	}//end completeTask()
+
+	/**
+	 * Cancel a task.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string|null $reason Why, recorded on task and audit.
+	 *
+	 * @return JSONResponse The terminated task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end cancel()
+
+	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * The body is the change. Who may edit (the assignee, a pool member or
+	 * an administrator) is decided in the service before anything is
+	 * written; an unknown or invalid field is a 400.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The task as it now stands, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function edit(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->edit(uuid: $uuid, changes: $this->body(), actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end edit()
+
+	/**
+	 * Check or uncheck one checklist item, addressed by id.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param string $itemId The checklist item id.
+	 * @param mixed $checked The new checked value, read as a boolean
+	 *                       ('true'/'false'/1/0 all parse).
+	 *
+	 * @return JSONResponse The task with the one item changed.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function checkItem(string $uuid, string $itemId, mixed $checked = 'true'): JSONResponse {
+		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
+
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end checkItem()
+
+	/**
+	 * Run a verb and translate its refusals to HTTP, uniformly.
+	 *
+	 * One translation so no verb can drift: validation 400, with the
+	 * offending `fields` and the refusal `kind` beside the message when a
+	 * form payload was refused; a subject write the schema or lifecycle
+	 * refused 422; denial 403 for a caller who may READ the task and 404 for
+	 * one who may not (so a stranger cannot confirm a uuid by probing a
+	 * verb); conflict 409 (the current state in the message, per the spec);
+	 * absence 404; everything else a LOGGED 500 with a generic message,
+	 * never the exception text, which for a database failure carries SQL and
+	 * bound parameters.
+	 *
+	 * @param callable(): TaskInterface $verb The service call.
+	 * @param string|null $uuid The task acted on, for the denial mapping.
+	 *
+	 * @return JSONResponse The task, or the refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 */
+	private function respondWith(callable $verb, ?string $uuid = null): JSONResponse {
+		try {
+			$task = $verb();
+
+			return new JSONResponse($this->inbox->enrich(task: $task));
+		} catch (TaskFormRefusedException $refused) {
+			// The form contract's refusal: the fields machine-readable next
+			// to the message, and the kind, so a client can flag each field
+			// and tell an undeclared key from a missing required input.
+			return new JSONResponse(
+				[
+					'error' => $refused->getMessage(),
+					'fields' => $refused->getFields(),
+					'kind' => $refused->getKind(),
+				],
+				Http::STATUS_BAD_REQUEST
+			);
+		} catch (TaskValidationException $refused) {
+			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (TaskSubjectNotFoundException $missing) {
+			// The object a task names is not there for this caller, either
+			// because it is not there at all or because they may not read it.
+			// 404 with the object endpoint's own words, so the two are
+			// indistinguishable and a create cannot be used to find out which
+			// objects exist. This catch sits ABOVE the write refusal because
+			// both are about the subject and only this one is about access.
+			return new JSONResponse(['error' => $missing->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (TaskSubjectWriteRefusedException $refused) {
+			// The payload passed the form and the SUBJECT refused it, on the
+			// ordinary save path: not malformed, not completed.
+			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_UNPROCESSABLE_ENTITY);
+		} catch (TaskAccessDeniedException $denied) {
+			if ($uuid !== null && $this->mayReadUuid(uuid: $uuid) === false) {
+				return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
+			}
+
+			return new JSONResponse(['error' => $denied->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (TaskConflictException $conflict) {
+			return new JSONResponse(['error' => $conflict->getMessage()], Http::STATUS_CONFLICT);
+		} catch (DoesNotExistException) {
+			return new JSONResponse(['error' => 'No such task'], Http::STATUS_NOT_FOUND);
+		} catch (Throwable $failure) {
+			$this->logger?->error(
+				'[TaskController] Task operation failed: ' . $failure->getMessage(),
+				['uuid' => $uuid, 'exception' => $failure]
+			);
+
+			return new JSONResponse(['error' => 'The task operation failed. The details are in the server log.'], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}//end try
+	}//end respondWith()
+
+	/**
+	 * Whether the caller may read the task with this uuid, fail-closed.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return boolean False when absent, invisible or undeterminable.
+	 */
+	private function mayReadUuid(string $uuid): bool {
+		try {
+			return $this->authorization->mayRead(task: $this->tasks->get(uuid: $uuid), uid: $this->uid());
+		} catch (Throwable) {
+			return false;
+		}
+	}//end mayReadUuid()
+
+	/**
+	 * A query parameter that anchors a read, or null when it says nothing.
+	 *
+	 * 🔴 AN EMPTY STRING IS NOT AN ANCHOR. A query string carries
+	 * `?runUuid=` as `''`, never as null, and `''` reaching the criteria
+	 * would be applied as a real predicate — `run_uuid = ''` matches no row,
+	 * so a tab that forgot to fill the uuid in would report a run as having
+	 * asked nobody rather than reporting that it asked nothing of the server.
+	 *
+	 * @param string|null $value The raw parameter.
+	 *
+	 * @return string|null The trimmed value, or null when it is blank.
+	 */
+	private function trimmedOrNull(?string $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		$trimmed = trim($value);
+		if ($trimmed === '') {
+			return null;
+		}
+
+		return $trimmed;
+	}//end trimmedOrNull()
+
+	/**
+	 * An ISO-8601 instant, or null.
+	 *
+	 * Null for an absent value AND for an unparseable one: the caller
+	 * distinguishes the two, because a dropped date filter WIDENS the result
+	 * set and a list quietly showing more than was asked for is worse than a
+	 * refusal.
+	 *
+	 * @param string|null $value The raw query value.
+	 *
+	 * @return DateTime|null The instant, or null.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function parseInstant(?string $value): ?DateTime {
+		$raw = trim((string)($value ?? ''));
+		if ($raw === '') {
+			return null;
+		}
+
+		try {
+			return new DateTime($raw);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end parseInstant()
+
+	/**
+	 * Parse both ends of a due window, or name the one that is wrong.
+	 *
+	 * Extracted from `index()` rather than inlined: two parses and two
+	 * guards took that method's NPath complexity from 162 to 324, over
+	 * phpmd's threshold of 200. The rule is right — `index()` is already a
+	 * long parameter funnel — so the parsing moves out instead of the
+	 * threshold moving up.
+	 *
+	 * 🔴 An UNPARSEABLE instant is REFUSED, not dropped. A dropped date
+	 * filter WIDENS the result set, and a task list quietly showing more
+	 * than was asked for is exactly the failure this endpoint's scope rules
+	 * exist to prevent.
+	 *
+	 * @param string|null $dueAfter The raw lower bound.
+	 * @param string|null $dueBefore The raw upper bound.
+	 *
+	 * @return array{after: DateTime|null, before: DateTime|null, error: string|null}
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function dueWindow(?string $dueAfter, ?string $dueBefore): array {
+		$after = $this->parseInstant(value: $dueAfter);
+		if ($dueAfter !== null && $after === null) {
+			return ['after' => null, 'before' => null, 'error' => 'dueAfter is not a valid instant'];
+		}
+
+		$before = $this->parseInstant(value: $dueBefore);
+		if ($dueBefore !== null && $before === null) {
+			return ['after' => null, 'before' => null, 'error' => 'dueBefore is not a valid instant'];
+		}
+
+		return ['after' => $after, 'before' => $before, 'error' => null];
+	}//end dueWindow()
+
+	/**
+	 * The acting identity, or null without a session.
+	 *
+	 * @return string|null The uid.
+	 */
+	private function uid(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
+
+		return $user->getUID();
+	}//end uid()
+
+	/**
+	 * The caller's group ids — empty without a backend, which scopes.
+	 *
+	 * @param string $uid The caller.
+	 *
+	 * @return array<int, string> The group ids.
+	 */
+	private function groupIds(string $uid): array {
+		$user = $this->userSession->getUser();
+		if ($this->groupManager === null || $user === null || $user->getUID() !== $uid) {
+			return [];
+		}
+
+		try {
+			return $this->groupManager->getUserGroupIds($user);
+		} catch (Throwable) {
+			return [];
+		}
+	}//end groupIds()
+
+	/**
+	 * Whether the caller is an administrator — false without a backend.
+	 *
+	 * @param string $uid The caller.
+	 *
+	 * @return boolean True only when the backend affirms it.
+	 */
+	private function isAdmin(string $uid): bool {
+		if ($this->groupManager === null) {
+			return false;
+		}
+
+		try {
+			return $this->groupManager->isAdmin($uid);
+		} catch (Throwable) {
+			return false;
+		}
+	}//end isAdmin()
+
+	/**
+	 * The request body, the way the framework already parsed it.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private function body(): array {
+		$params = $this->request->getParams();
+		// Route bookkeeping is not task data.
+		unset($params['_route'], $params['uuid']);
+
+		return $params;
+	}//end body()
+}//end class

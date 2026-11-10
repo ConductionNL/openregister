@@ -3,18 +3,17 @@ status: implemented
 ---
 # GraphQL API
 
-
 # GraphQL API
 ## Purpose
+
+@e2e exclude GraphQL backend/schema generation — covered by PHPUnit and Newman
 
 Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).
 
 The GraphQL layer MUST reuse existing OpenRegister services -- `PermissionHandler` for schema-level RBAC, `PropertyRbacHandler` for field-level security, `RelationHandler` for nested resolution and DataLoader batching, `AuditTrailMapper` for change logging, `SecurityService` for rate limiting, `MagicMapper` for cross-register queries, and `MultiTenancyTrait` for organisation scoping -- rather than reimplementing any of these concerns. The implementation is built on the `webonyx/graphql-php` library, with the full service stack comprising `GraphQLService` (orchestrator), `SchemaGenerator` (type generation), `GraphQLResolver` (query/mutation resolution), `QueryComplexityAnalyzer` (abuse prevention), `GraphQLErrorFormatter` (structured errors), `SubscriptionService` (SSE event buffer), and `GraphQLSubscriptionListener` (event bridge).
 
 **Source**: Gap identified in cross-platform analysis; Directus, Strapi, and Twenty CRM all provide auto-generated GraphQL APIs. See cross-references: `zoeken-filteren`, `realtime-updates`, `rbac-scopes`.
-
 ## Requirements
-
 ### Requirement: The GraphQL schema MUST be auto-generated from register schemas
 
 Each register schema MUST automatically produce corresponding GraphQL types, queries, and mutations. `SchemaGenerator.generate()` MUST load all registers via `RegisterMapper.findAll()` and all schemas via `SchemaMapper.findAll()`, then iterate over each schema calling `buildSchemaFields()` to produce query and mutation field definitions. Type generation MUST follow the same JSON Schema property type/format mapping used by `MagicMapper`, ensuring consistency between REST and GraphQL responses. Schema slugs MUST be converted to valid GraphQL names: PascalCase for type names (via `toTypeName()`) and camelCase for field names (via `toFieldName()`), with naive Dutch/English singularization (via `singularize()`) to derive single-object query names from plural schema slugs.
@@ -31,7 +30,7 @@ Each register schema MUST automatically produce corresponding GraphQL types, que
 - **WHEN** `buildQueryFields()` is called
 - **THEN** the following root query fields MUST be generated:
   - `melding(id: ID!): Melding` -- fetch single object via `GraphQLResolver.resolveSingle()`
-  - `meldingen(filter: MeldingenFilter, sort: SortInput, selfFilter: SelfFilter, search: String, fuzzy: Boolean, facets: [String], first: Int, offset: Int, after: String): MeldingenConnection` -- list with pagination via `GraphQLResolver.resolveList()`
+  - `meldingen(filter: MeldingenFilter, sort: SortInput, selfFilter: SelfFilter, search: String, fuzzy: Boolean, facets: [String], first: Int, offset: Int, after: String, groupBy: GroupByInput): MeldingenConnection` -- list with pagination via `GraphQLResolver.resolveList()`; the optional `groupBy` argument enables ad-hoc aggregation as defined under the "GraphQL list queries SHALL support an ad-hoc `groupBy` argument" requirement
 - **AND** list query arguments MUST be defined by `TypeMapperHandler.getListArgs()` with defaults: `first: 20`, `fuzzy: false`
 
 #### Scenario: Generate mutations for a schema
@@ -146,11 +145,11 @@ References between schemas MUST be resolvable as nested objects in a single quer
 
 ### Requirement: GraphQL MUST support filtering and sorting matching the REST API
 
-List queries MUST support the full filtering, sorting, and search capabilities of the REST API. `GraphQLResolver.argsToRequestParams()` MUST translate GraphQL arguments into the request parameter format expected by `ObjectService.buildSearchQuery()`.
+List queries MUST support the full filtering, sorting, and search capabilities of the REST API. `ListRequest.requestParams()` MUST translate GraphQL arguments into the request parameter format expected by `ObjectService.buildSearchQuery()`.
 
 #### Scenario: Filter by property value
 - **GIVEN** a query: `meldingen(filter: { status: "in_behandeling" }) { edges { node { title } } }`
-- **WHEN** `argsToRequestParams()` processes the filter argument
+- **WHEN** `ListRequest.requestParams()` processes the filter argument
 - **THEN** it MUST set `$params['status'] = "in_behandeling"` (property filters are flattened into top-level params)
 - **AND** `ObjectService.buildSearchQuery()` MUST receive these params and delegate to `MagicSearchHandler`
 
@@ -161,20 +160,20 @@ List queries MUST support the full filtering, sorting, and search capabilities o
 
 #### Scenario: Full-text search with fuzzy matching
 - **GIVEN** a query: `meldingen(search: "wateroverlast", fuzzy: true) { edges { node { title } } }`
-- **WHEN** `argsToRequestParams()` processes the arguments
+- **WHEN** `ListRequest.requestParams()` processes the arguments
 - **THEN** it MUST set `$params['_search'] = "wateroverlast"` and `$params['_fuzzy'] = "true"`
 - **AND** the search MUST delegate to `MagicSearchHandler`'s full-text search (ILIKE across string properties)
 - **AND** when fuzzy is enabled, each edge MUST include a `_relevance` field (0-100) in the connection response
 
 #### Scenario: Sort results
 - **GIVEN** a query: `meldingen(sort: { field: "created", order: "DESC" })`
-- **WHEN** `argsToRequestParams()` processes the sort argument
+- **WHEN** `ListRequest.requestParams()` processes the sort argument
 - **THEN** it MUST set `$params['_order']` to a JSON-encoded array: `[{"field": "created", "direction": "DESC"}]`
 - **AND** `SortInput` is a shared `InputObjectType` with fields `field: String!` and `order: String` (default "ASC")
 
 #### Scenario: Metadata filtering via selfFilter
 - **GIVEN** a query using `selfFilter: { owner: "user-1", organisation: "gemeente-tilburg" }`
-- **WHEN** `argsToRequestParams()` processes the selfFilter argument
+- **WHEN** `ListRequest.requestParams()` processes the selfFilter argument
 - **THEN** it MUST set `$params['@self']['owner'] = "user-1"` and `$params['@self']['organisation'] = "gemeente-tilburg"`
 - **AND** this MUST match the REST API's `@self[owner]=user-1` behavior
 - **AND** `SelfFilter` is a shared `InputObjectType` with fields: `owner`, `organisation`, `register`, `schema`, `uuid`
@@ -185,7 +184,7 @@ Connection types MUST expose facets and facetable field lists matching `FacetHan
 
 #### Scenario: Request facets in a list query
 - **GIVEN** a query: `meldingen(facets: ["status", "priority"]) { edges { node { title } } facets facetable }`
-- **WHEN** `argsToRequestParams()` processes the facets argument
+- **WHEN** `ListRequest.requestParams()` processes the facets argument
 - **THEN** it MUST set `$params['_facets'] = "status,priority"` (comma-separated)
 - **AND** `ObjectService.searchObjectsPaginated()` MUST return facet data
 - **AND** the connection response MUST include `facets` (JSON scalar with value counts per field) and `facetable` (list of field names)
@@ -194,8 +193,9 @@ Connection types MUST expose facets and facetable field lists matching `FacetHan
 #### Scenario: Facets in connection type structure
 - **GIVEN** any schema `meldingen`
 - **WHEN** `TypeMapperHandler.getConnectionType()` builds the connection type
-- **THEN** it MUST include fields: `edges: [MeldingenEdge!]!`, `pageInfo: PageInfo!`, `totalCount: Int!`, `facets: JSON`, `facetable: [String]`
+- **THEN** it MUST include fields: `edges: [MeldingenEdge!]!`, `pageInfo: PageInfo!`, `totalCount: Int!`, `facets: JSON`, `facetable: [String]`, `groups: [GroupBucket!]`
 - **AND** each edge type MUST include: `cursor: String!`, `node: Melding!`, `_relevance: Float` (fuzzy search relevance score)
+- **AND** `groups` SHALL be `null` unless the client supplied a `groupBy` argument on the list query
 
 ### Requirement: GraphQL MUST support dual pagination modes
 
@@ -204,7 +204,7 @@ The API MUST support both offset-based pagination (matching the REST API) and Re
 #### Scenario: Offset-based pagination
 - **GIVEN** 100 meldingen objects
 - **AND** a query: `meldingen(first: 10, offset: 20) { edges { node { title } } totalCount }`
-- **THEN** `argsToRequestParams()` MUST set `$params['_limit'] = 10` and `$params['_offset'] = 20`
+- **THEN** `ListRequest.requestParams()` MUST set `$params['_limit'] = 10` and `$params['_offset'] = 20`
 - **AND** exactly 10 objects MUST be returned starting from offset 20
 - **AND** `totalCount` MUST reflect the total filtered count (100)
 
@@ -213,7 +213,7 @@ The API MUST support both offset-based pagination (matching the REST API) and Re
 - **AND** a query: `meldingen(first: 10, after: "eyJ1dWlk...") { edges { cursor node { title } } pageInfo { hasNextPage endCursor } }`
 - **THEN** 10 objects MUST be returned after the cursor position
 - **AND** `pageInfo.hasNextPage` MUST be `true` if `(offset + limit) < totalCount`
-- **AND** cursors MUST be opaque base64-encoded JSON containing `{uuid, offset}` (via `GraphQLResolver.encodeCursor()`)
+- **AND** cursors MUST be opaque base64-encoded JSON containing `{uuid, offset}` (via `ListConnection.encodeCursor()`)
 
 #### Scenario: Connection type follows Relay specification
 - **GIVEN** any schema `meldingen`
@@ -314,7 +314,7 @@ Individual fields within a type MUST respect the property-level authorization de
 
 ### Requirement: GraphQL MUST log operations to the audit trail
 
-All GraphQL mutations MUST produce audit trail entries using the existing `AuditTrailMapper`, matching the same detail level as REST API operations. Query audit trails MUST be available through a dedicated `_auditTrail` field on every object type.
+All GraphQL mutations MUST produce audit trail entries using the existing `AuditTrailMapper`, matching the same detail level as REST API operations. Every object type carries a dedicated `_auditTrail` field. That field MUST give out an object's entries only through the reader path of the object's history (`ObjectHistoryForReaders`), so that the object read, the doelbinding guard and the property redaction apply as on the REST history. Until a resolver is wired through that path, the field MUST answer null.
 
 #### Scenario: Mutation creates audit trail entry
 - **GIVEN** a user executes `createMelding(input: { title: "Wateroverlast", status: "nieuw" })`
@@ -331,11 +331,12 @@ All GraphQL mutations MUST produce audit trail entries using the existing `Audit
 - **AND** a user executes `updateMelding(id: "melding-1", input: { status: "in_behandeling" })`
 - **THEN** the audit trail `changed` field MUST contain only modified fields: `{ "status": { "old": "nieuw", "new": "in_behandeling" } }`
 
-#### Scenario: Queryable audit trail on objects
+#### Scenario: The audit trail field gives out nothing outside the reader path
 - **GIVEN** a user has access to object `melding-1`
 - **WHEN** they query `melding(id: "melding-1") { _auditTrail(last: 5) { action user changed created } }`
-- **THEN** `GraphQLResolver.resolveAuditTrail()` MUST call `AuditTrailMapper.findAll()` with filter `object_uuid = melding-1`, limit 5, ordered by `created DESC`
+- **THEN** the field answers null, even when the resolved object carries an `_auditTrail` key
 - **AND** the `AuditTrailEntry` type MUST include fields: `action`, `user`, `userName`, `changed` (JSON), `created` (DateTime), `ipAddress`, `processingActivityId`, `confidentiality`, `retentionPeriod`
+- @e2e exclude {asserted in tests/Unit/Service/GraphQL/SchemaGeneratorTest.php}
 
 #### Scenario: GraphQL operation name in audit metadata
 - **GIVEN** a named GraphQL operation: `mutation MarkUrgent($id: ID!) { updateMelding(id: $id, input: { priority: "urgent" }) { id } }`
@@ -607,6 +608,121 @@ The `GraphQLResolver` MUST provide a `reset()` method to clear all per-request s
 - **GIVEN** `GraphQLService.createContext()` is called for each execution
 - **THEN** the context array MUST include references to: `objectService`, `permissionHandler`, `propertyRbac`, `auditTrailMapper`, `registerMapper`, `schemaMapper`, `schemaGenerator`, `operationName`, `request`, and an empty `errors` array
 
+### Requirement: GraphQL list queries SHALL support an ad-hoc `groupBy` argument with optional time-bucketing
+
+Every auto-generated list-query field on every schema SHALL accept an optional `groupBy: GroupByInput` argument. When supplied, the returned connection SHALL include a non-null `groups: [GroupBucket!]` field with the bucketed aggregation result. When `groupBy` is absent, `groups` SHALL be `null`.
+
+Type declarations (added to the auto-generated schema):
+
+```graphql
+input GroupByInput {
+  field: String!
+  interval: TimeInterval
+  from: String        # ISO-8601, required when interval is set
+  to: String          # ISO-8601, required when interval is set
+  metric: AggregationMetric = COUNT
+  metricField: String # required when metric != COUNT
+}
+
+enum TimeInterval {
+  MINUTE
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
+enum AggregationMetric {
+  COUNT
+  SUM
+  AVG
+  MIN
+  MAX
+}
+
+type GroupBucket {
+  key: String!
+  value: Float!
+}
+```
+
+#### Scenario: Categorical groupBy returns one bucket per distinct value
+- **GIVEN** schema `applications` with property `status: string` and 30 rows distributed across `active|deprecated|archived`
+- **WHEN** the client issues `query { applications(groupBy: { field: "status" }) { groups { key value } } }`
+- **THEN** the response SHALL contain `groups` with exactly three entries
+- **AND** each `groups[i].key` SHALL be one of `active`, `deprecated`, `archived`
+- **AND** the sum of `groups[i].value` SHALL equal `30`
+
+#### Scenario: Time-bucketed groupBy by DAY produces ISO-keyed buckets
+- **GIVEN** schema `calllogs` with `created: date-time`
+- **WHEN** the client issues `query { calllogs(groupBy: { field: "created", interval: DAY, from: "2026-05-01T00:00:00Z", to: "2026-05-22T00:00:00Z" }) { groups { key value } } }`
+- **THEN** each `groups[i].key` SHALL be an ISO-8601-UTC string at midnight UTC on a day in the range
+- **AND** each `groups[i].value` SHALL equal the count of calllogs whose `created` falls in that day-bucket
+- **AND** days with zero rows SHALL be omitted (the client fills empties at render time)
+
+#### Scenario: groupBy SHALL coexist with filter and totalCount
+- **WHEN** the client issues `query { calllogs(filter: { status: "error" }, groupBy: { field: "created", interval: DAY, from: "...", to: "..." }) { totalCount groups { key value } } }`
+- **THEN** the response SHALL include both `totalCount` (the size of the filtered set) AND `groups` (the bucketed series of the same filtered set)
+- **AND** the sum of `groups[i].value` SHALL equal `totalCount`
+
+#### Scenario: Sub-day interval against a date-only field is rejected
+- **GIVEN** schema `meetings` with `meetingDate: { format: date }`
+- **WHEN** the client issues `query { meetings(groupBy: { field: "meetingDate", interval: HOUR, from: "...", to: "..." }) { groups { key value } } }`
+- **THEN** the response SHALL include a GraphQL field-error stating that sub-day intervals require a `date-time` field
+- **AND** the `groups` field SHALL be `null`
+
+#### Scenario: Unknown `field` produces a GraphQL field-error
+- **WHEN** the client issues `groupBy: { field: "__totally_made_up" }`
+- **THEN** the response SHALL include a GraphQL field-error referencing the unknown field
+- **AND** the `groups` field SHALL be `null`
+
+#### Scenario: Multi-tenant filter is applied before bucketing
+- **GIVEN** two tenants `tenant-a` and `tenant-b` each owning 10 rows
+- **AND** the authenticated user's active organisation is `tenant-a`
+- **WHEN** the client issues a categorical `groupBy` query
+- **THEN** the sum of `groups[i].value` SHALL be `10` (tenant-a only)
+
+#### Scenario: Non-count metric requires metricField
+- **WHEN** the client issues `groupBy: { field: "status", metric: SUM }` with no `metricField`
+- **THEN** the response SHALL include a GraphQL field-error stating `metricField` is required for non-count metrics
+
+### Requirement: The connection type SHALL include the new `groups` field
+
+`TypeMapperHandler::getConnectionType()` SHALL add a nullable `groups: [GroupBucket!]` field to every auto-generated `<Schema>Connection` type. When the resolver did not run an ad-hoc aggregation (the client did not request `groupBy`), the field SHALL be `null`.
+
+#### Scenario: Connection type structure includes `groups`
+- **GIVEN** any schema `meldingen`
+- **WHEN** `TypeMapperHandler.getConnectionType()` builds `MeldingenConnection`
+- **THEN** the type SHALL include the fields: `edges`, `pageInfo`, `totalCount`, `facets`, `facetable`, AND `groups: [GroupBucket!]`
+- **AND** existing clients that select only `edges`/`pageInfo`/`totalCount`/`facets`/`facetable` SHALL be unaffected
+
+### Requirement: The resolver MUST provide aggregation, DataLoader-flush, and cursor helpers
+
+`GraphQLResolver` MUST expose the supporting helpers that back list queries: an aggregation resolver that dispatches `groupBy` to the timeseries pipeline, a DataLoader buffer flush that batch-loads buffered relation UUIDs, and an opaque cursor encoder for Relay pagination.
+
+#### Scenario: Resolve a groupBy aggregation
+
+- **GIVEN** a list query with a `groupBy` argument and a schema bound to a register
+- **WHEN** `ListAggregations.groups()` runs
+- **THEN** it MUST normalize the raw args (field, interval, from, to, metric lowercased, metricField) and validate them through the timeseries validator
+- **AND** it MUST run the aggregation via the aggregation runner and return buckets as `[{key: string, value: float}]`
+- **AND** a validation error or RBAC denial MUST be re-thrown as a GraphQL `Error` (field-level), and a schema with no register MUST return `null` rather than erroring
+
+#### Scenario: Flush the relation buffer in one batch
+
+- **GIVEN** buffered relation UUIDs collected during nested resolution
+- **WHEN** `flushRelationBuffer()` runs
+- **THEN** it MUST clear the buffer, batch-load all UUIDs via `RelationHandler::bulkLoadRelationshipsBatched()`, and store each loaded object in `relationCache` keyed by UUID
+- **AND** an empty buffer MUST be a no-op, and a load failure MUST be caught and logged as a warning rather than propagated
+
+#### Scenario: Encode an opaque pagination cursor
+
+- **GIVEN** an object UUID and an offset position
+- **WHEN** `ListConnection.encodeCursor()` runs
+- **THEN** it MUST return a base64-encoded JSON string containing `{uuid, offset}`
+
 ## Current Implementation Status
 
 - **Fully implemented -- GraphQL service layer**: `GraphQLService` (`lib/Service/GraphQL/GraphQLService.php`) orchestrates query execution with rate limiting, introspection control, complexity analysis, and structured error handling.
@@ -619,9 +735,9 @@ The `GraphQLResolver` MUST provide a `reset()` method to clear all per-request s
 - **Fully implemented -- controller and routes**: `GraphQLController` (`lib/Controller/GraphQLController.php`) exposes `POST /api/graphql` (public+CORS), `GET /api/graphql/explorer` (authenticated), and `GET /api/graphql/subscribe` (authenticated+CORS).
 - **Fully implemented -- RBAC integration**: Schema-level via `PermissionHandler.checkPermission()`, property-level via `PropertyRbacHandler.filterReadableProperties()` and `getUnauthorizedProperties()`.
 - **Fully implemented -- JSON Schema composition**: `CompositionHandler` handles `allOf` (merged fields), `oneOf` (UnionType), `anyOf` (InterfaceType).
-- **Fully implemented -- audit trail integration**: `_auditTrail` field on every object type, delegating to `AuditTrailMapper.findAll()`.
+- **Partially implemented -- audit trail integration**: `_auditTrail` field on every object type, answering null until it is wired through `ObjectHistoryForReaders`.
 - **Fully implemented -- multi-tenancy**: `resolveList()` passes `_multitenancy: true` to `searchObjectsPaginated()`.
-- **Tests present**: Unit tests in `tests/Unit/Service/GraphQL/` (SchemaGeneratorTest, GraphQLErrorFormatterTest, QueryComplexityAnalyzerTest, ScalarTypesTest) and integration test in `tests/Service/GraphQLIntegrationTest.php`. Postman collection at `tests/postman/openregister-graphql-tests.postman_collection.json`.
+- **Tests present**: Unit tests in `tests/Unit/Service/GraphQL/` (SchemaGeneratorTest, GraphQLErrorFormatterTest, QueryComplexityAnalyzerTest, ScalarTypesTest) and integration test in `tests/Service/GraphQLIntegrationTest.php`. Postman collection at `tests/integration/openregister-graphql-tests.postman_collection.json`.
 
 ## Standards & References
 

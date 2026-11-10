@@ -1,32 +1,46 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { schemaStore, navigationStore, registerStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.dialog === 'deleteSchemaObjects'"
+	<ConfirmDialogFrame
+		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
-		size="normal"
-		:can-close="false">
+		:loading="loading"
+		:closeLabel="success ? 'Close' : 'Cancel'"
+		confirmLabel="Delete All Objects"
+		:showConfirm="!success && !loading && !error && objectCount > 0"
+		@cancel="closeDialog"
+		@confirm="confirmDeletion()">
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
-				Are you sure you want to delete <strong>all objects</strong> in the schema
-				<strong>{{ schemaStore.schemaItem?.title }}</strong>?
+				Are you sure you want to delete <strong>all objects</strong> in the
+				schema <strong>{{ schemaStore.schemaItem?.title }}</strong
+				>?
 			</p>
 
 			<!-- Dynamic Warning/Danger Messages -->
 			<div v-if="objectCount > 0" class="deletion-warning-section">
 				<!-- Soft Delete Warning (when checkbox is unchecked) -->
-				<NcNoteCard v-if="!hardDelete.includes('hardDelete')" type="warning" class="deletion-warning">
+				<NcNoteCard
+					v-if="!hardDelete.includes('hardDelete')"
+					type="warning"
+					class="deletion-warning">
 					<template #icon>
 						<AlertCircle :size="20" />
 					</template>
 					<template #title>
 						{{ t('openregister', 'Soft Delete Mode') }}
 					</template>
-					{{ t('openregister', 'Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.') }}
+					{{
+						t(
+							'openregister',
+							'Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.',
+						)
+					}}
 				</NcNoteCard>
 
 				<!-- Hard Delete Danger (when checkbox is checked) -->
@@ -37,36 +51,56 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<template #title>
 						{{ t('openregister', 'Permanent Delete Mode') }}
 					</template>
-					{{ t('openregister', '⚠️ DANGER: All {total} objects will be PERMANENTLY DELETED from the database. This action is UNRECOVERABLE and cannot be undone!', { total: objectCount }) }}
+					{{
+						t(
+							'openregister',
+							'⚠️ DANGER: All {total} objects will be PERMANENTLY DELETED from the database. This action is UNRECOVERABLE and cannot be undone!',
+							{ total: objectCount },
+						)
+					}}
 				</NcNoteCard>
 			</div>
 
 			<div v-if="objectCount > 0" class="object-count-info">
 				<SchemaStatsBlock
-					:object-count="objectCount"
-					:object-stats="objectStats"
+					:objectCount="objectCount"
+					:objectStats="objectStats"
 					:loading="false"
 					:title="t('openregister', 'Objects to be deleted')" />
 
 				<!-- Hard Delete Option -->
-				<div v-if="objectStats && objectStats.deleted > 0" class="hard-delete-option">
+				<div
+					v-if="objectStats && objectStats.deleted > 0"
+					class="hard-delete-option">
 					<NcCheckboxRadioSwitch
 						v-model="hardDelete"
-						:name="'hardDelete'"
-						:label="t('openregister', 'Permanently delete already soft-deleted objects')"
+						name="hardDelete"
+						:label="
+							t(
+								'openregister',
+								'Permanently delete already soft-deleted objects',
+							)
+						"
 						type="checkbox"
-						:value="'hardDelete'" />
+						value="hardDelete" />
 					<p class="hard-delete-description">
-						{{ t('openregister', 'This will permanently remove {count} already soft-deleted objects from the database. This action cannot be undone.', { count: objectStats.deleted }) }}
+						{{
+							t(
+								'openregister',
+								'This will permanently remove {count} already soft-deleted objects from the database. This action cannot be undone.',
+								{ count: objectStats.deleted },
+							)
+						}}
 					</p>
 				</div>
 			</div>
 
 			<div v-else class="no-objects-info">
 				<SchemaStatsBlock
-					:object-count="0"
-					:object-stats="null"
-					:loading="false"
+					:objectCount="0"
+					:objectStats="null"
+					:loading="countLoading"
+					:failed="countFailed"
 					:title="t('openregister', 'Objects in schema')" />
 			</div>
 		</div>
@@ -74,7 +108,9 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
-			<p>Deleting objects from schema '{{ schemaStore.schemaItem?.title }}'...</p>
+			<p>
+				Deleting objects from schema '{{ schemaStore.schemaItem?.title }}'...
+			</p>
 			<p class="loading-subtitle">
 				This may take a moment for large datasets.
 			</p>
@@ -84,7 +120,10 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<div v-if="success" class="success-container">
 			<NcNoteCard type="success">
 				<h3>Deletion Completed Successfully</h3>
-				<p><strong>Objects deleted:</strong> {{ deletionResult?.deleted_count || 0 }}</p>
+				<p>
+					<strong>Objects deleted:</strong>
+					{{ deletionResult?.deleted_count || 0 }}
+				</p>
 				<p><strong>Schema:</strong> {{ schemaStore.schemaItem?.title }}</p>
 			</NcNoteCard>
 		</div>
@@ -95,114 +134,64 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="!success && !loading && !error && objectCount > 0"
-				:disabled="loading"
-				type="error"
-				@click="confirmDeletion()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<DeleteSweep v-if="!loading" :size="20" />
-				</template>
-				Delete All Objects
-			</NcButton>
+		<template #confirmIcon>
+			<DeleteSweep :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import { NcCheckboxRadioSwitch, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
 	name: 'DeleteSchemaObjects',
 	components: {
-		NcDialog,
-		NcButton,
+		ConfirmDialogFrame,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		Cancel,
 		DeleteSweep,
 		AlertCircle,
 		SchemaStatsBlock,
 	},
+
+	mixins: [schemaObjectCount],
+
 	data() {
 		return {
 			loading: false,
 			error: false,
 			success: false,
 			deletionResult: null,
-			objectCount: 0,
-			objectStats: null,
 			hardDelete: [],
 		}
 	},
-	watch: {
-		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
-			handler(newSchemaItem) {
-				console.info('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
-				if (newSchemaItem?.id && this.objectCount === 0) {
-					this.loadObjectCount()
-				}
-			},
-			immediate: true,
-		},
-		// Watch for dialog state changes to load count when dialog becomes visible
-		'navigationStore.dialog': {
-			handler(newDialog) {
-				console.info('Dialog changed to:', newDialog)
-				if (newDialog === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
-					console.info('DeleteSchemaObjects dialog opened, loading object count')
-					this.loadObjectCount()
-				}
-			},
-			immediate: true,
-		},
-	},
+
+	/**
+	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
+	 */
 	async mounted() {
-		console.info('DeleteSchemaObjects dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
+
 	methods: {
-		async loadObjectCount() {
-			console.info('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
-			try {
-				if (schemaStore.schemaItem?.id) {
-					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
-					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-					console.info('DeleteSchemaObjects received stats:', stats)
-					this.objectStats = stats.objects
-					this.objectCount = stats.objects?.total || 0
-					console.info('DeleteSchemaObjects set objectCount to:', this.objectCount)
-				} else {
-					console.info('DeleteSchemaObjects: No schema item ID available')
-				}
-			} catch (err) {
-				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
-				console.warn('Could not load object count:', err)
-				this.objectCount = 0
-				this.objectStats = null
-			}
+		/**
+		 * Report a failed object count.
+		 *
+		 * @param {Error} err The failure
+		 * @spec exclude Modal data-load plumbing — logs a failed object count.
+		 */
+		logCountFailure(err) {
+			console.error('DeleteSchemaObjects error in loadObjectCount:', err)
 		},
 
+		/**
+		 * @spec exclude modal submit handler for bulk schema-object deletion
+		 */
 		async confirmDeletion() {
 			this.loading = true
 			this.error = false
@@ -210,8 +199,10 @@ export default {
 			try {
 				// Find the register that contains this schema
 				await registerStore.refreshRegisterList()
-				const register = registerStore.registerList.find(reg =>
-					reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id),
+				const register = registerStore.registerList.find((reg) =>
+					reg.schemas.some(
+						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
+					),
 				)
 
 				if (!register) {
@@ -247,7 +238,6 @@ export default {
 
 				// Refresh schema stats after successful deletion
 				await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-
 			} catch (err) {
 				this.error = err.message || 'An error occurred during deletion'
 				console.error('Deletion error:', err)
@@ -256,6 +246,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.loading = false
@@ -270,17 +263,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.loading-container {
-	text-align: center;
-	padding: 2rem;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.loading-subtitle {
-	color: var(--color-text-lighter);
-	font-size: 0.9rem;
-	margin-top: 0.5rem;
-}
+@include loading-container-2-rules;
 
 .success-container {
 	padding: 1rem 0;
@@ -303,13 +289,7 @@ export default {
 	border-radius: var(--border-radius);
 }
 
-.object-breakdown {
-	margin-top: 1rem;
-	padding: 1rem;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
+@include object-breakdown;
 
 .hard-delete-option {
 	margin-top: 1rem;
@@ -339,38 +319,13 @@ export default {
 	border-left: 4px solid var(--color-error);
 }
 
-.breakdown-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.5rem;
-}
+@include breakdown-item;
 
 .breakdown-item:last-child {
 	margin-bottom: 0;
 }
 
-.breakdown-label {
-	font-weight: 500;
-	color: var(--color-text);
-}
-
-.breakdown-value {
-	font-weight: 600;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius);
-	background: var(--color-background-hover);
-}
-
-.breakdown-value.invalid {
-	color: var(--color-warning);
-	background: var(--color-warning-light);
-}
-
-.breakdown-value.deleted {
-	color: var(--color-error);
-	background: var(--color-error-light);
-}
+@include breakdown-label-rules;
 
 .no-objects-info {
 	margin: 1rem 0;

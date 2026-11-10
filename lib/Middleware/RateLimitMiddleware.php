@@ -1,0 +1,401 @@
+<?php
+
+/**
+ * Rate Limit Middleware
+ *
+ * Wires SecurityService brute-force protection into the inbound API
+ * authentication path (issue #1834). Nextcloud's core SecurityMiddleware
+ * runs BEFORE app middleware and throws NotLoggedInException / NotAdminException
+ * when Basic/Bearer/session credentials fail on a protected endpoint. Because
+ * app middleware is wrapped OUTSIDE the core middleware in the dispatch chain,
+ * this middleware's afterException() observes those failures and records them
+ * for rate-limiting; its beforeController() pre-emptively blocks once a
+ * (identity + IP) pair is locked out.
+ *
+ * Design guarantees:
+ * - FAIL-OPEN: any error inside this middleware allows the request through.
+ *   A bug in the limiter must never deny service to every client.
+ * - Only failures on PROTECTED endpoints are counted. Public pages
+ *   (@PublicPage) are never rate-limited here.
+ * - Successful authenticated requests are NEVER blocked; they only clear
+ *   accumulated failure counters for that identity.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Middleware
+ * @package  OCA\OpenRegister\Middleware
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Middleware;
+
+use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Middleware;
+use ReflectionClass;
+use Throwable;
+
+/**
+ * Middleware that rate-limits failed inbound-API authentication attempts.
+ *
+ * @package OCA\OpenRegister\Middleware
+ *
+ * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Middleware must reference NC framework types
+ * (Middleware, Controller, Response, JSONResponse, Http, IRequest, IUserSession,
+ * IControllerMethodReflector) plus SecurityService, LoggerInterface, ReflectionClass, and
+ * Throwable — every type is required by the framework contract or the rate-limiting logic.
+ */
+class RateLimitMiddleware extends Middleware {
+	/**
+	 * Constructor.
+	 *
+	 * @param InboundCall                   $call            The request, session, route annotations and logger.
+	 * @param InboundAuthRateLimitInterface $securityService The security service
+	 */
+	public function __construct(
+		private readonly InboundCall $call,
+		private readonly InboundAuthRateLimitInterface $securityService,
+	) {
+	}//end __construct()
+
+	/**
+	 * Pre-emptively block a request whose (identity + IP) pair is locked out.
+	 *
+	 * Runs before the controller. Skips public pages entirely. Fails OPEN:
+	 * any error here allows the request through.
+	 *
+	 * @param Controller $controller The controller being dispatched
+	 * @param string $methodName The method being dispatched
+	 *
+	 * @return void
+	 *
+	 * @throws AuthRateLimitExceededException When the identity+IP is locked out
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::beforeController() requires the
+	 * ($controller, $methodName) signature; $controller is forwarded to isPublicPage() but $methodName is
+	 * also needed there — PHPMD misclassifies the forwarded params as unused.
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	public function beforeController(Controller $controller, string $methodName): void {
+		try {
+			$this->refuseLockedOut(method: new DispatchedMethod(controller: $controller, methodName: $methodName));
+		} catch (AuthRateLimitExceededException $e) {
+			// Intentional lockout — let it propagate to afterException().
+			throw $e;
+		} catch (Throwable $e) {
+			// FAIL-OPEN: never block a request because the limiter errored.
+			$this->call->logger->warning(
+				'[RateLimitMiddleware] Rate-limit precheck failed open: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+		}//end try
+	}//end beforeController()
+
+	/**
+	 * Clear failure counters after a successful authenticated request.
+	 *
+	 * Fails OPEN: never alters the response on error.
+	 *
+	 * @param Controller $controller The controller that was dispatched
+	 * @param string $methodName The method that was dispatched
+	 * @param Response $response The response produced
+	 *
+	 * @return Response The unmodified response
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterController() mandates
+	 * ($controller, $methodName, $response) — $controller and $methodName are not used in this method's
+	 * body (only $response and the session are needed), but the framework dispatch requires all three.
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		$this->recordSuccessFailingOpen();
+		return $response;
+	}//end afterController()
+
+	/**
+	 * Record auth failures and surface the lockout response.
+	 *
+	 * Recognises:
+	 * - AuthRateLimitExceededException (thrown by beforeController): returns 429.
+	 * - Nextcloud core auth failures (NotLoggedInException / NotAdminException
+	 *   / SecurityException with a 401/403 status) on a protected endpoint:
+	 *   records a failed attempt, then RE-THROWS the original exception so
+	 *   the normal Nextcloud error handling is preserved.
+	 *
+	 * Fails OPEN: recording errors never change the outcome; the original
+	 * exception is always preserved for unrecognised cases.
+	 *
+	 * @param Controller $controller The controller that was dispatched
+	 * @param string $methodName The method that was dispatched
+	 * @param \Exception $exception The thrown exception
+	 *
+	 * @return Response|null A 429 response for an enforced lockout, otherwise null
+	 *
+	 * @throws \Exception The original exception is re-thrown for all non-lockout cases
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterException() requires
+	 * ($controller, $methodName, $exception) — $controller is forwarded to isPublicPage() but PHPMD
+	 * flags it; $methodName is also required by isPublicPage().
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	public function afterException(Controller $controller, string $methodName, \Exception $exception): ?Response {
+		return $this->answerException(method: new DispatchedMethod(controller: $controller, methodName: $methodName), exception: $exception);
+	}//end afterException()
+
+	/**
+	 * Answer an enforced lockout with a 429; count any other auth failure and re-throw it.
+	 *
+	 * @param DispatchedMethod $method    The controller method that was dispatched
+	 * @param \Exception       $exception The thrown exception
+	 *
+	 * @return Response A 429 response for an enforced lockout
+	 *
+	 * @throws \Exception The original exception for all non-lockout cases
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function answerException(DispatchedMethod $method, \Exception $exception): Response {
+		// Enforced lockout: return a clean 429.
+		if ($exception instanceof AuthRateLimitExceededException) {
+			return $this->lockoutResponse(exception: $exception);
+		}
+
+		// Otherwise: only count genuine auth failures on protected endpoints,
+		// then re-throw so Nextcloud handles the response unchanged.
+		try {
+			$this->countFailure(method: $method, exception: $exception);
+		} catch (Throwable $e) {
+			// FAIL-OPEN: recording must not interfere with the original error.
+			$this->call->logger->warning(
+				'[RateLimitMiddleware] recordFailedAuthAttempt failed open: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		throw $exception;
+	}//end answerException()
+
+	/**
+	 * Throw the lockout when the (identity + IP) pair of a protected endpoint is locked out.
+	 *
+	 * Public pages are out of scope.
+	 *
+	 * @param DispatchedMethod $method The controller method being dispatched
+	 *
+	 * @return void
+	 *
+	 * @throws AuthRateLimitExceededException When the identity+IP is locked out
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function refuseLockedOut(DispatchedMethod $method): void {
+		if ($this->isPublicPage(method: $method) === true) {
+			return;
+		}
+
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->call->request);
+		$identity = $this->resolveIdentity();
+
+		$check = $this->securityService->checkAuthRateLimit(identity: $identity, ipAddress: $ipAddress);
+		if (($check['allowed'] ?? true) === false) {
+			throw new AuthRateLimitExceededException(
+				message: (string)($check['reason'] ?? 'Too many failed authentication attempts.'),
+				lockoutUntil: (int)($check['lockout_until'] ?? 0)
+			);
+		}
+	}//end refuseLockedOut()
+
+	/**
+	 * Clear the failure counters of the signed-in user; an error is logged, never raised.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function recordSuccessFailingOpen(): void {
+		try {
+			$this->recordSuccess();
+		} catch (Throwable $e) {
+			$this->call->logger->debug(
+				'[RateLimitMiddleware] recordSuccessfulAuth failed open: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end recordSuccessFailingOpen()
+
+	/**
+	 * Clear the failure counters of the signed-in user, when there is one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function recordSuccess(): void {
+		$user = $this->call->userSession->getUser();
+		if ($user === null) {
+			return;
+		}
+
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->call->request);
+		$this->securityService->recordSuccessfulAuth(identity: $user->getUID(), ipAddress: $ipAddress);
+	}//end recordSuccess()
+
+	/**
+	 * The 429 response for an enforced lockout, with a Retry-After header.
+	 *
+	 * @param AuthRateLimitExceededException $exception The lockout
+	 *
+	 * @return JSONResponse The error and when the lockout ends
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function lockoutResponse(AuthRateLimitExceededException $exception): JSONResponse {
+		$response = new JSONResponse(
+			['error' => $exception->getMessage(), 'lockout_until' => $exception->getLockoutUntil()],
+			Http::STATUS_TOO_MANY_REQUESTS
+		);
+
+		$retryAfter = max(1, ($exception->getLockoutUntil() - time()));
+		$response->addHeader('Retry-After', (string)$retryAfter);
+
+		return $response;
+	}//end lockoutResponse()
+
+	/**
+	 * Record a failed attempt when the exception is an auth failure on a protected endpoint.
+	 *
+	 * @param DispatchedMethod $method    The controller method that was dispatched
+	 * @param \Exception       $exception The thrown exception
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function countFailure(DispatchedMethod $method, \Exception $exception): void {
+		if ($this->isAuthFailure(exception: $exception) === false
+			|| $this->isPublicPage(method: $method) === true
+		) {
+			return;
+		}
+
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->call->request);
+		$identity = $this->resolveIdentity();
+		$this->securityService->recordFailedAuthAttempt(
+			identity: $identity,
+			ipAddress: $ipAddress,
+			reason: 'inbound_auth_failed'
+		);
+	}//end countFailure()
+
+	/**
+	 * Determine whether the dispatched method is a public page.
+	 *
+	 * @param DispatchedMethod $method The controller method being dispatched
+	 *
+	 * @return bool True when the endpoint is public (skip rate-limiting)
+	 */
+	private function isPublicPage(DispatchedMethod $method): bool {
+		try {
+			$this->call->reflector->reflect($method->controller, $method->methodName);
+			return $this->call->reflector->hasAnnotation('PublicPage');
+		} catch (Throwable $e) {
+			// If reflection fails, treat as protected (safer: we may rate-limit,
+			// but we never accidentally exempt a protected endpoint).
+			return false;
+		}
+	}//end isPublicPage()
+
+	/**
+	 * Decide whether an exception represents a failed authentication on a
+	 * protected endpoint that should count toward brute-force limits.
+	 *
+	 * Matches Nextcloud's auth exceptions by class short-name (they live in
+	 * the private OC\ namespace) and any SecurityException carrying a 401/403
+	 * status code.
+	 *
+	 * @param \Throwable $exception The exception to classify
+	 *
+	 * @return bool True when the exception is an auth failure
+	 */
+	private function isAuthFailure(\Throwable $exception): bool {
+		$shortName = (new ReflectionClass($exception))->getShortName();
+		if (in_array($shortName, ['NotLoggedInException', 'NotAdminException'], true) === true) {
+			return true;
+		}
+
+		// SecurityException (e.g. forbidden password login, CORS basic-auth)
+		// carries an HTTP status; treat 401/403 as auth failures.
+		$code = $exception->getCode();
+		if (($code === Http::STATUS_UNAUTHORIZED || $code === Http::STATUS_FORBIDDEN)
+			&& str_contains(strtolower($shortName), 'security') === true
+		) {
+			return true;
+		}
+
+		return false;
+	}//end isAuthFailure()
+
+	/**
+	 * Resolve the identity for keying the rate-limit counter.
+	 *
+	 * Prefers the currently logged-in user (success path / partial auth);
+	 * otherwise extracts the attempted username from an HTTP Basic
+	 * Authorization header (NEVER the password). Falls back to '' (anonymous)
+	 * when no identity is discoverable, in which case the per-IP backstop
+	 * still applies.
+	 *
+	 * @return string The identity, or '' when unknown
+	 */
+	private function resolveIdentity(): string {
+		try {
+			$user = $this->call->userSession->getUser();
+			if ($user !== null) {
+				return $user->getUID();
+			}
+
+			return $this->basicAuthUsername();
+		} catch (Throwable $e) {
+			// Fall through to anonymous.
+			unset($e);
+		}
+
+		return '';
+	}//end resolveIdentity()
+
+	/**
+	 * The username an HTTP Basic Authorization header attempts (NEVER the password).
+	 *
+	 * @return string The username, or '' when the header names none
+	 */
+	private function basicAuthUsername(): string {
+		$authHeader = $this->call->request->getHeader('Authorization');
+		if ($authHeader === '' || stripos($authHeader, 'Basic ') !== 0) {
+			return '';
+		}
+
+		$decoded = base64_decode(substr($authHeader, 6), true);
+		if ($decoded === false || str_contains($decoded, ':') === false) {
+			return '';
+		}
+
+		return explode(':', $decoded, 2)[0];
+	}//end basicAuthUsername()
+}//end class

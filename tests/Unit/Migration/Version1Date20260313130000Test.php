@@ -10,7 +10,7 @@ declare(strict_types=1);
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Migration
- * @author   Conduction Development Team <dev@conductio.nl>
+ * @author   Conduction Development Team <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 
@@ -22,117 +22,114 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 
 /**
  * Tests for the published/depublished column drop migration.
  */
-class Version1Date20260313130000Test extends TestCase
-{
-    /** @var LoggerInterface&MockObject */
-    private LoggerInterface $logger;
+class Version1Date20260313130000Test extends TestCase {
+	use SchemaTableMockTrait;
 
-    /** @var Version1Date20260313130000 */
-    private Version1Date20260313130000 $migration;
+	/** @var LoggerInterface&MockObject */
+	private LoggerInterface $logger;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->migration = new Version1Date20260313130000($this->logger);
-    }
+	/** @var Version1Date20260313130000 */
+	private Version1Date20260313130000 $migration;
 
-    /**
-     * Test migration handles tables WITHOUT published columns (idempotent).
-     */
-    public function testMigrationIdempotentWithoutColumns(): void
-    {
-        $output = $this->createMock(IOutput::class);
-        $schema = $this->createMock(ISchemaWrapper::class);
+	protected function setUp(): void {
+		parent::setUp();
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->migration = new Version1Date20260313130000($this->logger);
+	}
 
-        // No magic tables, no objects table.
-        $schema->method('getTableNames')->willReturn(['other_table']);
-        $schema->method('hasTable')->with('openregister_objects')->willReturn(false);
+	/**
+	 * Test migration handles tables WITHOUT published columns (idempotent).
+	 */
+	public function testMigrationIdempotentWithoutColumns(): void {
+		$output = $this->createMock(IOutput::class);
+		$schema = $this->createMock(ISchemaWrapper::class);
 
-        $output->expects($this->once())
-            ->method('info')
-            ->with($this->stringContains('No tables'));
+		// No magic tables, no objects table.
+		$schema->method('getTableNames')->willReturn(['other_table']);
+		$schema->method('hasTable')->with('openregister_objects')->willReturn(false);
 
-        $result = $this->migration->changeSchema($output, fn () => $schema, []);
-        $this->assertNull($result, 'Should return null when no changes needed');
-    }
+		$output->expects($this->once())
+			->method('info')
+			->with($this->stringContains('No tables'));
 
-    /**
-     * Test migration drops columns from magic tables that have them.
-     */
-    public function testMigrationDropsColumnsFromMagicTables(): void
-    {
-        $output = $this->createMock(IOutput::class);
-        $schema = $this->createMock(ISchemaWrapper::class);
+		$result = $this->migration->changeSchema($output, fn () => $schema, []);
+		$this->assertSame($schema, $result, 'Should hand the schema back so the migrateSchemaOnly() snapshot is reused');
+	}
 
-        $table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
-        $table->method('hasColumn')
-            ->willReturnMap([
-                ['_published', true],
-                ['_depublished', true],
-            ]);
-        $table->method('hasIndex')
-            ->willReturnMap([
-                ['idx__published', true],
-            ]);
-        $table->expects($this->exactly(2))->method('dropColumn');
-        $table->expects($this->once())->method('dropIndex');
+	/**
+	 * Test migration drops columns from magic tables that have them.
+	 */
+	public function testMigrationDropsColumnsFromMagicTables(): void {
+		$output = $this->createMock(IOutput::class);
+		$schema = $this->createMock(ISchemaWrapper::class);
 
-        $schema->method('getTableNames')->willReturn(['or_reg_schema']);
-        $schema->method('getTable')->with('or_reg_schema')->willReturn($table);
-        $schema->method('hasTable')->with('openregister_objects')->willReturn(false);
+		$table = $this->createTableMock();
+		$table->method('hasColumn')
+			->willReturnMap([
+				['_published', true],
+				['_depublished', true],
+			]);
+		$table->method('hasIndex')
+			->willReturnMap([
+				['idx__published', true],
+			]);
+		$table->expects($this->exactly(2))->method('dropColumn');
+		$table->expects($this->once())->method('dropIndex');
 
-        $result = $this->migration->changeSchema($output, fn () => $schema, []);
-        $this->assertSame($schema, $result, 'Should return schema when changes were made');
-    }
+		$schema->method('getTableNames')->willReturn(['or_reg_schema']);
+		$schema->method('getTable')->with('or_reg_schema')->willReturn($table);
+		$schema->method('hasTable')->with('openregister_objects')->willReturn(false);
 
-    /**
-     * Test migration skips magic tables without published columns.
-     */
-    public function testMigrationSkipsMagicTablesWithoutColumns(): void
-    {
-        $output = $this->createMock(IOutput::class);
-        $schema = $this->createMock(ISchemaWrapper::class);
+		$result = $this->migration->changeSchema($output, fn () => $schema, []);
+		$this->assertSame($schema, $result, 'Should return schema when changes were made');
+	}
 
-        $table = $this->createMock(\Doctrine\DBAL\Schema\Table::class);
-        $table->method('hasColumn')->willReturn(false);
-        $table->method('hasIndex')->willReturn(false);
-        $table->expects($this->never())->method('dropColumn');
-        $table->expects($this->never())->method('dropIndex');
+	/**
+	 * Test migration skips magic tables without published columns.
+	 */
+	public function testMigrationSkipsMagicTablesWithoutColumns(): void {
+		$output = $this->createMock(IOutput::class);
+		$schema = $this->createMock(ISchemaWrapper::class);
 
-        $schema->method('getTableNames')->willReturn(['or_reg_schema']);
-        $schema->method('getTable')->with('or_reg_schema')->willReturn($table);
-        $schema->method('hasTable')->with('openregister_objects')->willReturn(false);
+		$table = $this->createTableMock();
+		$table->method('hasColumn')->willReturn(false);
+		$table->method('hasIndex')->willReturn(false);
+		$table->expects($this->never())->method('dropColumn');
+		$table->expects($this->never())->method('dropIndex');
 
-        $output->expects($this->once())
-            ->method('info')
-            ->with($this->stringContains('No tables'));
+		$schema->method('getTableNames')->willReturn(['or_reg_schema']);
+		$schema->method('getTable')->with('or_reg_schema')->willReturn($table);
+		$schema->method('hasTable')->with('openregister_objects')->willReturn(false);
 
-        $result = $this->migration->changeSchema($output, fn () => $schema, []);
-        $this->assertNull($result);
-    }
+		$output->expects($this->once())
+			->method('info')
+			->with($this->stringContains('No tables'));
 
-    /**
-     * Test migration skips non-magic tables.
-     */
-    public function testMigrationSkipsNonMagicTables(): void
-    {
-        $output = $this->createMock(IOutput::class);
-        $schema = $this->createMock(ISchemaWrapper::class);
+		$result = $this->migration->changeSchema($output, fn () => $schema, []);
+		$this->assertSame($schema, $result);
+	}
 
-        $schema->method('getTableNames')->willReturn([
-            'users',
-            'openregister_objects',
-            'preferences',
-        ]);
-        $schema->expects($this->never())->method('getTable');
-        $schema->method('hasTable')->with('openregister_objects')->willReturn(false);
+	/**
+	 * Test migration skips non-magic tables.
+	 */
+	public function testMigrationSkipsNonMagicTables(): void {
+		$output = $this->createMock(IOutput::class);
+		$schema = $this->createMock(ISchemaWrapper::class);
 
-        $result = $this->migration->changeSchema($output, fn () => $schema, []);
-        $this->assertNull($result);
-    }
+		$schema->method('getTableNames')->willReturn([
+			'users',
+			'openregister_objects',
+			'preferences',
+		]);
+		$schema->expects($this->never())->method('getTable');
+		$schema->method('hasTable')->with('openregister_objects')->willReturn(false);
+
+		$result = $this->migration->changeSchema($output, fn () => $schema, []);
+		$this->assertSame($schema, $result);
+	}
 }

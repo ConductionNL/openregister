@@ -1,13 +1,14 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import { schemaStore, navigationStore } from '../../store/store.js'
+import { navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'uploadSchema'"
+	<NcDialog
+		v-if="navigationStore.modal === 'uploadSchema'"
 		name="Upload Schema"
 		size="normal"
-		:can-close="false">
+		noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>Schema successfully uploaded</p>
 		</NcNoteCard>
@@ -16,37 +17,35 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<div v-if="!success" class="formContainer">
-			<NcTextField :disabled="loading"
-				label="Url"
-				:value.sync="schema.url" />
+			<NcTextField
+				v-model="schema.url"
+				:disabled="loading"
+				:label="t('openregister', 'Url')" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
-				<p>Schema</p>
-				<CodeMirror v-model="schema.json"
+				<p>{{ t('openregister', 'Schema') }}</p>
+				<CodeMirror
+					v-model="schema.json"
 					:basic="true"
 					:dark="getTheme() === 'dark'"
 					:lang="json()"
 					:linter="jsonParseLinter()"
-					placeholder="Enter your schema here..." />
+					:placeholder="t('openregister', 'Enter your schema here...')" />
 			</div>
 			<NcButton class="prettifyButton" @click="prettifyJson">
 				<template #icon>
 					<AutoFix :size="20" />
 				</template>
-				Prettify
+				{{ t('openregister', 'Prettify') }}
 			</NcButton>
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="!success"
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
+			<NcButton
+				v-if="!success"
 				:disabled="loading || !schema || !validateJson(schema.json)"
-				type="primary"
+				variant="primary"
 				@click="uploadSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -59,20 +58,20 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { json, jsonParseLinter } from '@codemirror/lang-json'
 import {
 	NcButton,
 	NcDialog,
-	NcTextField,
 	NcLoadingIcon,
 	NcNoteCard,
+	NcTextField,
 } from '@nextcloud/vue'
-import { getTheme } from '../../services/getTheme.js'
-import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Upload from 'vue-material-design-icons/Upload.vue'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
+import Upload from 'vue-material-design-icons/Upload.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { isValidJson } from '../../composables/jsonText.js'
+import { getTheme } from '../../services/getTheme.js'
 
 export default {
 	name: 'UploadSchema',
@@ -84,15 +83,17 @@ export default {
 		NcNoteCard,
 		CodeMirror,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Upload,
 	},
+
 	data() {
 		return {
 			schema: {
 				json: '{}',
 				url: '',
 			},
+
 			success: false,
 			loading: false,
 			error: false,
@@ -100,7 +101,11 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — resets upload form state and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -113,9 +118,17 @@ export default {
 				url: '',
 			}
 		},
+
+		/**
+		 * @spec exclude UI helper — pretty-prints the JSON in the editor field.
+		 */
 		prettifyJson() {
 			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
 		},
+
+		/**
+		 * @spec exclude Modal action plumbing — delegates schema upload to schemaStore.uploadSchema.
+		 */
 		async uploadSchema() {
 			this.loading = true
 
@@ -123,143 +136,39 @@ export default {
 				...this.schema,
 				json: JSON.stringify(JSON.parse(this.schema.json)), // create a clean json string
 			}
-			schemaStore.uploadSchema(newSchema).then(({ response }) => {
-				this.success = response.ok
-				this.error = false
-				response.ok && (this.closeModalTimeout = setTimeout(this.closeModal, 2000))
-			}).catch((error) => {
-				this.success = false
-				this.error = error.message || 'An error occurred while uploading the schema'
-			}).finally(() => {
-				this.loading = false
-			})
+			schemaStore
+				.uploadSchema(newSchema)
+				.then(({ response }) => {
+					this.success = response.ok
+					this.error = false
+					if (response.ok) {
+						this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+					}
+				})
+				.catch((error) => {
+					this.success = false
+					this.error =
+						error.message
+						|| 'An error occurred while uploading the schema'
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
-		validateJson(json) {
-			try {
-				JSON.parse(json)
-				return true
-			} catch (error) {
-				return false
-			}
-		},
+
+		validateJson: isValidJson,
 	},
 }
 </script>
 
-<style scoped>
-.codeMirrorContainer {
-	margin-block-start: 6px;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.prettifyButton {
-	margin-block-start: 10px;
-}
+@include code-mirror-frame;
 
-.codeMirrorContainer :deep(.cm-content) {
-	border-radius: 0 !important;
-	border: none !important;
-}
+@include code-mirror-container-deep-cm-content;
 
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
+@include code-mirror-editor;
 
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
-}
-
-/* value text color */
-/* string */
-.codeMirrorContainer.light :deep(.ͼe) {
-	color: #448c27;
-}
-
-.codeMirrorContainer.dark :deep(.ͼe) {
-	color: #88c379;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.ͼc) {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.ͼc) {
-	color: #8d64f7;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.ͼb) {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.ͼb) {
-	color: #be55cd;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-	color: black;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-	color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-	color: #2d770f;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-	color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
-}
+@include code-mirror-theme;
 </style>

@@ -6,10 +6,13 @@
  * Implements ICalendar to provide a virtual calendar backed by
  * OpenRegister schema objects with date fields.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Calendar
  * @package  OCA\OpenRegister\Calendar
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -17,20 +20,18 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCP\Calendar\ICalendar;
 use OCP\Constants;
-use Psr\Log\LoggerInterface;
 
 /**
  * Virtual calendar backed by OpenRegister schema objects
@@ -41,374 +42,372 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Calendar
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-integration/spec.md
  */
-class RegisterCalendar implements ICalendar
-{
+class RegisterCalendar implements ICalendar {
 
-    /**
-     * Default calendar color
-     *
-     * @var string
-     */
-    private const DEFAULT_COLOR = '#0082C9';
+	/**
+	 * Default calendar color
+	 *
+	 * @var string
+	 */
+	private const DEFAULT_COLOR = '#0082C9';
 
-    /**
-     * The schema entity backing this calendar
-     *
-     * @var Schema
-     */
-    private Schema $schema;
+	/**
+	 * Constructor
+	 *
+	 * @param CalendarDefinition      $definition   The schema and its calendar configuration
+	 * @param string                  $principalUri The principal URI for RBAC filtering
+	 * @param RegisterCalendarSources $sources      Register/object lookup, transformer and logger
+	 */
+	public function __construct(
+		private readonly CalendarDefinition $definition,
+		private readonly string $principalUri,
+		private readonly RegisterCalendarSources $sources,
+	) {
+	}//end __construct()
 
-    /**
-     * The calendar provider configuration
-     *
-     * @var array
-     */
-    private array $calendarConfig;
+	/**
+	 * Get the unique key for this calendar
+	 *
+	 * @return string The calendar key
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function getKey(): string {
+		return 'openregister-schema-' . $this->definition->schema->getId();
+	}//end getKey()
 
-    /**
-     * The MagicMapper for querying objects
-     *
-     * @var MagicMapper
-     */
-    private MagicMapper $magicMapper;
+	/**
+	 * Get the URI for this calendar
+	 *
+	 * @return string The calendar URI
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function getUri(): string {
+		return 'openregister-schema-' . $this->definition->schema->getId();
+	}//end getUri()
 
-    /**
-     * The RegisterMapper for loading registers
-     *
-     * @var RegisterMapper
-     */
-    private RegisterMapper $registerMapper;
+	/**
+	 * Get the display name for this calendar
+	 *
+	 * @return string|null The display name
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function getDisplayName(): ?string {
+		return $this->definition->config['displayName'] ?? $this->definition->schema->getTitle();
+	}//end getDisplayName()
 
-    /**
-     * The event transformer
-     *
-     * @var CalendarEventTransformer
-     */
-    private CalendarEventTransformer $transformer;
+	/**
+	 * Get the display color for this calendar
+	 *
+	 * @return string|null The CSS hex color
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function getDisplayColor(): ?string {
+		return $this->definition->config['color'] ?? self::DEFAULT_COLOR;
+	}//end getDisplayColor()
 
-    /**
-     * The principal URI for RBAC filtering
-     *
-     * @var string
-     */
-    private string $principalUri;
+	/**
+	 * Get the permissions for this calendar (read-only)
+	 *
+	 * @return int The permission bitmask
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function getPermissions(): int {
+		return Constants::PERMISSION_READ;
+	}//end getPermissions()
 
-    /**
-     * Logger instance
-     *
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
+	/**
+	 * Check if this calendar is deleted
+	 *
+	 * @return bool Always false for virtual calendars
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function isDeleted(): bool {
+		return false;
+	}//end isDeleted()
 
-    /**
-     * Constructor
-     *
-     * @param Schema                   $schema         The schema entity
-     * @param array                    $calendarConfig The calendar configuration
-     * @param MagicMapper              $magicMapper    The MagicMapper for queries
-     * @param RegisterMapper           $registerMapper The RegisterMapper
-     * @param CalendarEventTransformer $transformer    The event transformer
-     * @param string                   $principalUri   The principal URI
-     * @param LoggerInterface          $logger         Logger instance
-     */
-    public function __construct(
-        Schema $schema,
-        array $calendarConfig,
-        MagicMapper $magicMapper,
-        RegisterMapper $registerMapper,
-        CalendarEventTransformer $transformer,
-        string $principalUri,
-        LoggerInterface $logger
-    ) {
-        $this->schema         = $schema;
-        $this->calendarConfig = $calendarConfig;
-        $this->magicMapper    = $magicMapper;
-        $this->registerMapper = $registerMapper;
-        $this->transformer    = $transformer;
-        $this->principalUri   = $principalUri;
-        $this->logger         = $logger;
-    }//end __construct()
+	/**
+	 * Search for events in this virtual calendar
+	 *
+	 * Queries OpenRegister objects by date range and text pattern,
+	 * then transforms them into VEVENT arrays.
+	 *
+	 * @param string $pattern Text pattern to search for
+	 * @param array $searchProperties Properties to search in
+	 * @param array $options Search options (timerange, etc.)
+	 * @param int|null $limit Maximum number of results
+	 * @param int|null $offset Result offset for pagination
+	 *
+	 * @return array Array of VEVENT-compatible arrays
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function search(
+		string $pattern = '',
+		array $searchProperties = [],
+		array $options = [],
+		?int $limit = null,
+		?int $offset = null,
+	): array {
+		return $this->searchOrEmpty(
+			query: new CalendarSearchQuery(pattern: $pattern, options: $options, limit: $limit, offset: $offset)
+		);
+	}//end search()
 
-    /**
-     * Get the unique key for this calendar
-     *
-     * @return string The calendar key
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    public function getKey(): string
-    {
-        return 'openregister-schema-'.$this->schema->getId();
-    }//end getKey()
+	/**
+	 * Run a search, logging a failure and answering it with no events.
+	 *
+	 * @param CalendarSearchQuery $query The search arguments.
+	 *
+	 * @return array Array of VEVENT-compatible arrays
+	 */
+	private function searchOrEmpty(CalendarSearchQuery $query): array {
+		try {
+			return $this->searchEvents(query: $query);
+		} catch (\Exception $e) {
+			$this->sources->logger->warning(
+				'[RegisterCalendar] Search failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			return [];
+		}//end try
+	}//end searchOrEmpty()
 
-    /**
-     * Get the URI for this calendar
-     *
-     * @return string The calendar URI
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    public function getUri(): string
-    {
-        return 'openregister-schema-'.$this->schema->getId();
-    }//end getUri()
+	/**
+	 * Run a search: refuse a principal that is not a user, then collect the
+	 * events of every register that uses this schema.
+	 *
+	 * @param CalendarSearchQuery $query The search arguments.
+	 *
+	 * @return array Array of VEVENT-compatible arrays
+	 */
+	private function searchEvents(CalendarSearchQuery $query): array {
+		// Extract user ID from principal URI for RBAC.
+		$userId = $this->extractUserId(principalUri: $this->principalUri);
+		if ($userId === null) {
+			return [];
+		}
 
-    /**
-     * Get the display name for this calendar
-     *
-     * @return string|null The display name
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    public function getDisplayName(): ?string
-    {
-        return $this->calendarConfig['displayName'] ?? $this->schema->getTitle();
-    }//end getDisplayName()
+		// Get all registers that use this schema.
+		$registers = $this->findRegistersForSchema(schema: $this->definition->schema);
 
-    /**
-     * Get the display color for this calendar
-     *
-     * @return string|null The CSS hex color
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    public function getDisplayColor(): ?string
-    {
-        return $this->calendarConfig['color'] ?? self::DEFAULT_COLOR;
-    }//end getDisplayColor()
+		if (empty($registers) === true) {
+			return [];
+		}
 
-    /**
-     * Get the permissions for this calendar (read-only)
-     *
-     * @return int The permission bitmask
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    public function getPermissions(): int
-    {
-        return Constants::PERMISSION_READ;
-    }//end getPermissions()
+		$events = [];
+		foreach ($registers as $register) {
+			$events = array_merge($events, $this->registerEvents(register: $register, query: $query));
+		}
 
-    /**
-     * Check if this calendar is deleted
-     *
-     * @return bool Always false for virtual calendars
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    public function isDeleted(): bool
-    {
-        return false;
-    }//end isDeleted()
+		return $events;
+	}//end searchEvents()
 
-    /**
-     * Search for events in this virtual calendar
-     *
-     * Queries OpenRegister objects by date range and text pattern,
-     * then transforms them into VEVENT arrays.
-     *
-     * @param string   $pattern          Text pattern to search for
-     * @param array    $searchProperties Properties to search in
-     * @param array    $options          Search options (timerange, etc.)
-     * @param int|null $limit            Maximum number of results
-     * @param int|null $offset           Result offset for pagination
-     *
-     * @return array Array of VEVENT-compatible arrays
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
-     */
-    public function search(
-        string $pattern='',
-        array $searchProperties=[],
-        array $options=[],
-        ?int $limit=null,
-        ?int $offset=null
-    ): array {
-        try {
-            // Extract user ID from principal URI for RBAC.
-            $userId = $this->extractUserId(principalUri: $this->principalUri);
-            if ($userId === null) {
-                return [];
-            }
+	/**
+	 * The events of one register; a failing register is logged and skipped,
+	 * keeping the events it produced before the failure.
+	 *
+	 * @param Register            $register The register.
+	 * @param CalendarSearchQuery $query    The search arguments (timerange, pattern, paging).
+	 *
+	 * @return array The register's events.
+	 */
+	private function registerEvents(Register $register, CalendarSearchQuery $query): array {
+		$events = [];
+		$filters = $this->buildTimerangeFilters(options: $query->options);
+		try {
+			$objects = $this->sources->catalog->tables()->findAllInRegisterSchemaTable(
+				register: $register,
+				schema: $this->definition->schema,
+				limit: $query->limit,
+				offset: $query->offset,
+				filters: $filters
+			);
 
-            // Build query filters from timerange.
-            $filters = $this->buildTimerangeFilters(options: $options);
+			foreach ($objects as $object) {
+				$event = $this->matchingEvent(object: $object, pattern: $query->pattern);
+				if ($event !== null) {
+					$events[] = $event;
+				}
+			}
+		} catch (\Exception $e) {
+			$this->sources->logger->warning(
+				'[RegisterCalendar] Failed to query register ' . $register->getId() . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}//end try
 
-            // Get all registers that use this schema.
-            $registers = $this->findRegistersForSchema(schema: $this->schema);
+		return $events;
+	}//end registerEvents()
 
-            if (empty($registers) === true) {
-                return [];
-            }
+	/**
+	 * Transform one object; its event when it has one and it matches the pattern, else null.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param string       $pattern The summary text pattern ('' matches all).
+	 *
+	 * @return array|null
+	 */
+	private function matchingEvent(ObjectEntity $object, string $pattern): ?array {
+		$event = $this->sources->transformer->transform($object, $this->definition);
 
-            $events = [];
+		if ($event === null) {
+			return null;
+		}
 
-            foreach ($registers as $register) {
-                try {
-                    $objects = $this->magicMapper->findAllInRegisterSchemaTable(
-                        register: $register,
-                        schema: $this->schema,
-                        limit: $limit,
-                        offset: $offset,
-                        filters: $filters
-                    );
+		// Apply text pattern filter on summary.
+		if ($pattern !== '' && $this->matchesPattern(event: $event, pattern: $pattern) === false) {
+			return null;
+		}
 
-                    foreach ($objects as $object) {
-                        $event = $this->transformer->transform(
-                            $object,
-                            $this->schema,
-                            $this->calendarConfig
-                        );
+		return $event;
+	}//end matchingEvent()
 
-                        if ($event === null) {
-                            continue;
-                        }
+	/**
+	 * Extract user ID from a principal URI
+	 *
+	 * @param string $principalUri The principal URI (e.g., principals/users/admin)
+	 *
+	 * @return string|null The user ID or null if not a valid user principal
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function extractUserId(string $principalUri): ?string {
+		if (preg_match('/^principals\/users\/(.+)$/', $principalUri, $matches) === 1) {
+			return $matches[1];
+		}
 
-                        // Apply text pattern filter on summary.
-                        if ($pattern !== '' && $this->matchesPattern(event: $event, pattern: $pattern) === false) {
-                            continue;
-                        }
+		return null;
+	}//end extractUserId()
 
-                        $events[] = $event;
-                    }
-                } catch (\Exception $e) {
-                    $this->logger->warning(
-                        '[RegisterCalendar] Failed to query register '.$register->getId().': '.$e->getMessage(),
-                        ['exception' => $e]
-                    );
-                }//end try
-            }//end foreach
+	/**
+	 * Build MagicMapper query filters from calendar search timerange options
+	 *
+	 * @param array $options The search options
+	 *
+	 * @return array|null The filters array, or null if no timerange
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function buildTimerangeFilters(array $options): ?array {
+		if (empty($options['timerange']) === true) {
+			return null;
+		}
 
-            return $events;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                '[RegisterCalendar] Search failed: '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            return [];
-        }//end try
-    }//end search()
+		$timerange = $options['timerange'];
+		$dtstartField = $this->definition->config['dtstart'] ?? null;
 
-    /**
-     * Extract user ID from a principal URI
-     *
-     * @param string $principalUri The principal URI (e.g., principals/users/admin)
-     *
-     * @return string|null The user ID or null if not a valid user principal
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    private function extractUserId(string $principalUri): ?string
-    {
-        if (preg_match('/^principals\/users\/(.+)$/', $principalUri, $matches) === 1) {
-            return $matches[1];
-        }
+		if ($dtstartField === null) {
+			return null;
+		}
 
-        return null;
-    }//end extractUserId()
+		// Use canonical operator-filter shape (`field => ['gte' => v, 'lte' => v]`)
+		// — the suffix-on-key form (`'field>='`) is not recognised by the
+		// magic-table search pipeline and silently filters out everything.
+		$rangeOps = $this->rangeOps(timerange: $timerange);
 
-    /**
-     * Build MagicMapper query filters from calendar search timerange options
-     *
-     * @param array $options The search options
-     *
-     * @return array|null The filters array, or null if no timerange
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    private function buildTimerangeFilters(array $options): ?array
-    {
-        if (empty($options['timerange']) === true) {
-            return null;
-        }
+		if (empty($rangeOps) === true) {
+			return null;
+		}
 
-        $timerange    = $options['timerange'];
-        $dtstartField = $this->calendarConfig['dtstart'] ?? null;
+		return [$dtstartField => $rangeOps];
+	}//end buildTimerangeFilters()
 
-        if ($dtstartField === null) {
-            return null;
-        }
+	/**
+	 * The `gte` / `lte` operators for the set `start` / `end` of a timerange.
+	 *
+	 * @param mixed $timerange The timerange option.
+	 *
+	 * @return array<string, string>
+	 */
+	private function rangeOps(mixed $timerange): array {
+		$rangeOps = [];
+		foreach (['start' => 'gte', 'end' => 'lte'] as $bound => $operator) {
+			if (isset($timerange[$bound]) === true) {
+				$rangeOps[$operator] = $this->boundValue(value: $timerange[$bound]);
+			}
+		}
 
-        $filters = [];
+		return $rangeOps;
+	}//end rangeOps()
 
-        if (isset($timerange['start']) === true) {
-            $start = $timerange['start'];
-            if ($start instanceof \DateTimeInterface) {
-                $start = $start->format('Y-m-d H:i:s');
-            }
+	/**
+	 * A timerange bound as text: a date as ATOM, anything else cast to string.
+	 *
+	 * @param mixed $value The bound.
+	 *
+	 * @return string
+	 */
+	private function boundValue(mixed $value): string {
+		if ($value instanceof \DateTimeInterface) {
+			return $value->format(\DateTimeInterface::ATOM);
+		}
 
-            $filters[$dtstartField.'>='] = (string) $start;
-        }
+		return (string)$value;
+	}//end boundValue()
 
-        if (isset($timerange['end']) === true) {
-            $end = $timerange['end'];
-            if ($end instanceof \DateTimeInterface) {
-                $end = $end->format('Y-m-d H:i:s');
-            }
+	/**
+	 * Find all registers that contain the given schema
+	 *
+	 * @param Schema $schema The schema to look for
+	 *
+	 * @return array Array of Register entities
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function findRegistersForSchema(Schema $schema): array {
+		try {
+			$allRegisters = $this->sources->catalog->registers()->findAll();
+			$matchingRegisters = [];
 
-            $filters[$dtstartField.'<='] = (string) $end;
-        }
+			foreach ($allRegisters as $register) {
+				$schemaIds = $register->getSchemas();
+				if (in_array($schema->getId(), $schemaIds, false) === true
+					|| in_array((string)$schema->getId(), $schemaIds, false) === true
+				) {
+					$matchingRegisters[] = $register;
+				}
+			}
 
-        return empty($filters) === true ? null : $filters;
-    }//end buildTimerangeFilters()
+			return $matchingRegisters;
+		} catch (\Exception $e) {
+			$this->sources->logger->warning(
+				'[RegisterCalendar] Failed to find registers for schema ' . $schema->getId() . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			return [];
+		}//end try
+	}//end findRegistersForSchema()
 
-    /**
-     * Find all registers that contain the given schema
-     *
-     * @param Schema $schema The schema to look for
-     *
-     * @return array Array of Register entities
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    private function findRegistersForSchema(Schema $schema): array
-    {
-        try {
-            $allRegisters      = $this->registerMapper->findAll();
-            $matchingRegisters = [];
+	/**
+	 * Check if an event matches a text pattern
+	 *
+	 * @param array $event The VEVENT array
+	 * @param string $pattern The text pattern
+	 *
+	 * @return bool True if the event matches
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function matchesPattern(array $event, string $pattern): bool {
+		if (empty($event['objects']) === true) {
+			return false;
+		}
 
-            foreach ($allRegisters as $register) {
-                $schemaIds = $register->getSchemas();
-                if (in_array($schema->getId(), $schemaIds, false) === true
-                    || in_array((string) $schema->getId(), $schemaIds, false) === true
-                ) {
-                    $matchingRegisters[] = $register;
-                }
-            }
+		$vevent = $event['objects'][0];
+		$summary = $vevent['SUMMARY'][0] ?? '';
 
-            return $matchingRegisters;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                '[RegisterCalendar] Failed to find registers for schema '.$schema->getId().': '.$e->getMessage(),
-                ['exception' => $e]
-            );
-            return [];
-        }//end try
-    }//end findRegistersForSchema()
-
-    /**
-     * Check if an event matches a text pattern
-     *
-     * @param array  $event   The VEVENT array
-     * @param string $pattern The text pattern
-     *
-     * @return bool True if the event matches
-     *
-     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
-     */
-    private function matchesPattern(array $event, string $pattern): bool
-    {
-        if (empty($event['objects']) === true) {
-            return false;
-        }
-
-        $vevent  = $event['objects'][0];
-        $summary = $vevent['SUMMARY'][0] ?? '';
-
-        return stripos($summary, $pattern) !== false;
-    }//end matchesPattern()
+		return stripos($summary, $pattern) !== false;
+	}//end matchesPattern()
 }//end class

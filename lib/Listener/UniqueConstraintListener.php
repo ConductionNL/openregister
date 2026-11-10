@@ -1,0 +1,385 @@
+<?php
+
+/**
+ * OpenRegister UniqueConstraintListener
+ *
+ * Enforces a schema's named uniqueness constraints at write time, in the one
+ * way each constraint asks to be enforced.
+ *
+ * A `refuse` constraint stops the write, and `MagicMapper` turns that into a
+ * `HookStoppedException`, which the objects controller answers as 422 naming
+ * the combination and the conflicting object. A `report` constraint lets the
+ * write through and records the breach on the object's `validation`
+ * envelope, where it is readable afterwards without a second table or a
+ * migration.
+ *
+ * Recording rather than refusing is not a weaker check, it is a different
+ * one. "Two contacts with the same e-mail" is usually a duplicate and
+ * occasionally a household; refusing it stops an intake over a fact nobody
+ * has decided yet. The record is what lets someone decide later.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Listener
+ * @package  OCA\OpenRegister\Listener
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/runtime-schema-api/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Listener;
+
+use DateTimeImmutable;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventListener;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Refuses or records a breach of a named uniqueness constraint.
+ *
+ * @spec openspec/specs/runtime-schema-api/spec.md
+ *
+ * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
+ */
+class UniqueConstraintListener implements IEventListener, UniqueConstraintListenerInterface {
+
+	/**
+	 * The `validation` key a reported breach is recorded under.
+	 *
+	 * @var string
+	 */
+	public const VALIDATION_KEY = 'uniqueness';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param UniqueConstraintEvaluatorInterface $evaluator Reads and describes the constraints.
+	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
+	 * @param MagicObjectSearchInterface $objects Finds the objects already holding a combination.
+	 * @param LoggerInterface $logger The logger.
+	 */
+	public function __construct(
+		private readonly UniqueConstraintEvaluatorInterface $evaluator,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly MagicObjectSearchInterface $objects,
+		private readonly LoggerInterface $logger,
+	) {
+
+	}//end __construct()
+
+	/**
+	 * Evaluate the constraints for one write.
+	 *
+	 * @param Event $event The inbound event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectCreatingEvent) {
+			$this->evaluate(event: $event, object: $event->getObject());
+			return;
+		}
+
+		// A soft delete writes its marker through update(), so it arrives
+		// here as an update. Removing a record never breaches uniqueness, and
+		// refusing it left duplicates from before a constraint undeletable.
+		if ($event instanceof ObjectUpdatingEvent && $event->getNewObject()->isSoftDeleted() === false) {
+			$this->evaluate(event: $event, object: $event->getNewObject());
+		}
+
+	}//end handle()
+
+	/**
+	 * Evaluate every named constraint against one object.
+	 *
+	 * A constraint that cannot be evaluated must not become the reason nothing
+	 * can be written; the failure is named in the log and the save allowed.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 * @param ObjectEntity $object The object the write carries.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
+		try {
+			$this->evaluateConstraints(event: $event, object: $object);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				message: '[UniqueConstraintListener] The evaluation itself failed, allowing the save: ' . $failure->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
+			);
+		}
+
+	}//end evaluate()
+
+	/**
+	 * Refuse on the first breached `refuse` constraint, else record the reported breaches.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 * @param ObjectEntity $object The object the write carries.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function evaluateConstraints(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
+		$resolved = $this->resolveConstraints(object: $object);
+		if ($resolved === null) {
+			return;
+		}
+
+		$run = new UniqueConstraintRun();
+		$run->event = $event;
+		$run->object = $object;
+		$run->schema = $resolved['schema'];
+		$run->data = $resolved['data'];
+
+		$reports = $this->reportsUnlessRefused(run: $run, constraints: $resolved['constraints']);
+		if ($reports !== null) {
+			$this->record(object: $object, reports: $reports);
+		}
+
+	}//end evaluateConstraints()
+
+	/**
+	 * The breaches to report, or null once a `refuse` constraint refused the write.
+	 *
+	 * @param UniqueConstraintRun $run The write being checked.
+	 * @param array<int,array<string,mixed>> $constraints The schema's named constraints.
+	 *
+	 * @return array<int,array<string,mixed>>|null The reports, or null when refused.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function reportsUnlessRefused(UniqueConstraintRun $run, array $constraints): ?array {
+		$reports = [];
+		foreach ($constraints as $constraint) {
+			$breach = $this->breachOf(run: $run, constraint: $constraint);
+			if ($breach === null) {
+				continue;
+			}
+
+			if ($constraint['action'] === UniqueConstraintEvaluatorInterface::ACTION_REFUSE) {
+				$this->refuse(event: $run->event, breach: $breach);
+				return null;
+			}
+
+			$reports[] = $this->report(breach: $breach);
+		}
+
+		return $reports;
+
+	}//end reportsUnlessRefused()
+
+	/**
+	 * The breached constraint, the conflicting object and the breach message, or null.
+	 *
+	 * @param UniqueConstraintRun $run The write being checked.
+	 * @param array<string,mixed> $constraint The constraint.
+	 *
+	 * @return array{constraint: array<string,mixed>, conflict: string, message: string}|null The breach, or null when there is none.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function breachOf(UniqueConstraintRun $run, array $constraint): ?array {
+		$filters = $this->evaluator->filtersFor(constraint: $constraint, object: $run->data);
+		if ($filters === null) {
+			return null;
+		}
+
+		$conflict = $this->conflictingUuid(run: $run, filters: $filters);
+		if ($conflict === null) {
+			return null;
+		}
+
+		return [
+			'constraint' => $constraint,
+			'conflict' => $conflict,
+			'message' => $this->evaluator->describeBreach(constraint: $constraint, object: $run->data, conflictingId: $conflict),
+		];
+	}//end breachOf()
+
+	/**
+	 * Refuse the write on a breached `refuse` constraint.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 * @param array{constraint: array<string,mixed>, conflict: string, message: string} $breach The breach.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, array $breach): void {
+		$event->setErrors(
+			[
+				'code' => self::ERROR_CODE,
+				'message' => $breach['message'],
+				'constraint' => $breach['constraint']['name'],
+				'properties' => $breach['constraint']['properties'],
+				'conflictingObject' => $breach['conflict'],
+			]
+		);
+		$event->stopPropagation();
+	}//end refuse()
+
+	/**
+	 * The validation entry a breached `report` constraint records.
+	 *
+	 * @param array{constraint: array<string,mixed>, conflict: string, message: string} $breach The breach.
+	 *
+	 * @return array<string,mixed> The report.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function report(array $breach): array {
+		return [
+			'constraint' => $breach['constraint']['name'],
+			'properties' => $breach['constraint']['properties'],
+			'conflictingObject' => $breach['conflict'],
+			'message' => $breach['message'],
+			'reportedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+		];
+	}//end report()
+
+	/**
+	 * The schema, its named constraints and the object's data, or null when
+	 * there is nothing to evaluate (no schema, no constraints, or non-array
+	 * data). Pulling the guards out keeps {@see evaluate()} a plain loop.
+	 *
+	 * @param ObjectEntity $object The object the write carries.
+	 *
+	 * @return array{schema: \OCA\OpenRegister\Db\Schema, constraints: array<int,array<string,mixed>>, data: array<string,mixed>}|null
+	 */
+	private function resolveConstraints(ObjectEntity $object): ?array {
+		$reference = $object->getSchema();
+		if ((string)$reference === '') {
+			return null;
+		}
+
+		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		$constraints = $this->evaluator->constraints(configuration: $schema->getConfiguration());
+		$data = $object->getObject();
+		if ($constraints === [] || is_array($data) === false) {
+			return null;
+		}
+
+		return ['schema' => $schema, 'constraints' => $constraints, 'data' => $data];
+	}//end resolveConstraints()
+
+	/**
+	 * Write the reported breaches onto the object's validation envelope.
+	 *
+	 * The key is always written, empty list included, so a breach that has
+	 * been resolved by an edit stops being reported rather than lingering as
+	 * a fact about a value the object no longer holds.
+	 *
+	 * @param ObjectEntity $object The object being written.
+	 * @param array<int,array<string,mixed>> $reports The breaches to record.
+	 *
+	 * @return void
+	 */
+	private function record(ObjectEntity $object, array $reports): void {
+		$validation = $object->getValidation();
+		if (is_array($validation) === false) {
+			$validation = [];
+		}
+
+		if ($reports === [] && isset($validation[self::VALIDATION_KEY]) === false) {
+			return;
+		}
+
+		$validation[self::VALIDATION_KEY] = $reports;
+		$object->setValidation($validation);
+	}//end record()
+
+	/**
+	 * The uuid of another object already holding the combination, or null.
+	 *
+	 * MagicMapper resolves the register/schema pair by NUMERIC id and answers
+	 * the empty list for anything else, which would read as "no conflict"
+	 * rather than as "not checked"; for a non-numeric register this says
+	 * nothing instead of saying no.
+	 *
+	 * @param UniqueConstraintRun $run The write being checked.
+	 * @param array<string,mixed> $filters The combination's filters.
+	 *
+	 * @return string|null The conflicting object's uuid.
+	 */
+	private function conflictingUuid(UniqueConstraintRun $run, array $filters): ?string {
+		$registerRef = (string)$run->object->getRegister();
+		if (is_numeric($registerRef) === false) {
+			return null;
+		}
+
+		$self = ['register' => (int)$registerRef, 'schema' => (int)$run->schema->getId()];
+		$results = $this->objects->searchObjects(
+			query: array_merge($filters, ['@self' => $self, '_limit' => 5]),
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		return $this->otherHolder(results: $results, ownUuid: (string)$run->object->getUuid());
+	}//end conflictingUuid()
+
+	/**
+	 * The first holder that is not the object itself.
+	 *
+	 * The object's own uuid is excluded, so re-saving a record does not
+	 * report it as conflicting with itself, which is what would otherwise
+	 * make every update of a `report` constraint's subject look like a breach.
+	 *
+	 * @param mixed $results The search answer.
+	 * @param string $ownUuid The uuid of the object being written.
+	 *
+	 * @return string|null The other holder's uuid.
+	 */
+	private function otherHolder(mixed $results, string $ownUuid): ?string {
+		if (is_array($results) === false) {
+			return null;
+		}
+
+		foreach ($results as $candidate) {
+			$uuid = $this->uuidOf(candidate: $candidate);
+			if (in_array($uuid, ['', $ownUuid], true) === false) {
+				return $uuid;
+			}
+		}
+
+		return null;
+	}//end otherHolder()
+
+	/**
+	 * The uuid of a search result, or '' when it is not an object.
+	 *
+	 * @param mixed $candidate The search result.
+	 *
+	 * @return string The uuid.
+	 */
+	private function uuidOf(mixed $candidate): string {
+		if ($candidate instanceof ObjectEntity) {
+			return (string)$candidate->getUuid();
+		}
+
+		return '';
+	}//end uuidOf()
+}//end class

@@ -1,0 +1,95 @@
+{
+    "boolean column": [
+        "rule s, column \"ok\": the cell \"maybe\" cannot be executed (type_mismatch)"
+    ],
+    "column duplicate name": [
+        "inputs name \"age\" is declared twice; results are keyed by name, so the columns would collapse"
+    ],
+    "column keyed list": [],
+    "column no name": [
+        "inputs entry 0 has no name",
+        "inputs entry 1 has no name",
+        "rule r1 has 2 input entries for 1 declared inputs; a short row would silently wildcard the missing columns"
+    ],
+    "column not object": [
+        "inputs entry 0 is not an object",
+        "rule r1 has 2 input entries for 1 declared inputs; a short row would silently wildcard the missing columns"
+    ],
+    "column type alias": [],
+    "empty table": [
+        "the table declares no inputs; it needs at least one",
+        "the table declares no outputs; it needs at least one",
+        "the table declares no rules; a table that can never match decides nothing"
+    ],
+    "everything wrong": [
+        "hit policy \"X\" is not implemented; the implemented policies are UNIQUE, FIRST, COLLECT, PRIORITY, ANY",
+        "the table declares no inputs; it needs at least one",
+        "the table declares no outputs; it needs at least one",
+        "the table declares no rules; a table that can never match decides nothing"
+    ],
+    "hit policy lower-case": [],
+    "hit policy numeric": [
+        "hit policy \"7\" is not implemented; the implemented policies are UNIQUE, FIRST, COLLECT, PRIORITY, ANY"
+    ],
+    "hit policy unknown": [
+        "hit policy \"RULE ORDER\" is not implemented; the implemented policies are UNIQUE, FIRST, COLLECT, PRIORITY, ANY"
+    ],
+    "inputs scalar": [
+        "the table declares no inputs; it needs at least one",
+        "rule r1 has 2 input entries for 0 declared inputs; a short row would silently wildcard the missing columns"
+    ],
+    "no columns but rules": [
+        "the table declares no inputs; it needs at least one",
+        "the table declares no outputs; it needs at least one",
+        "rule r has 1 input entries for 0 declared inputs; a short row would silently wildcard the missing columns",
+        "rule r has 1 output entries for 0 declared outputs"
+    ],
+    "output duplicate": [
+        "outputs name \"fee\" is declared twice; results are keyed by name, so the columns would collapse"
+    ],
+    "outputs empty": [
+        "the table declares no outputs; it needs at least one",
+        "rule r1 has 1 output entries for 0 declared outputs"
+    ],
+    "rule bad cells": [
+        "rule r, column \"age\": the cell \">= abc\" cannot be executed (type_mismatch)"
+    ],
+    "rule cells on dropped input": [
+        "inputs entry 1 is not an object",
+        "rule r has 3 input entries for 2 declared inputs; a short row would silently wildcard the missing columns"
+    ],
+    "rule entries keyed": [],
+    "rule entries not lists": [
+        "rule r has 0 input entries for 2 declared inputs; a short row would silently wildcard the missing columns",
+        "rule r has 0 output entries for 1 declared outputs"
+    ],
+    "rule long row": [
+        "rule r has 3 input entries for 2 declared inputs; a short row would silently wildcard the missing columns",
+        "rule r has 2 output entries for 1 declared outputs"
+    ],
+    "rule not object": [
+        "rule 0 is not an object"
+    ],
+    "rule numeric cell": [],
+    "rule priority int": [],
+    "rule priority null": [
+        "rule r1 has a non-integer priority"
+    ],
+    "rule priority string": [
+        "rule r1 has a non-integer priority"
+    ],
+    "rule short row": [
+        "rule r has 1 input entries for 2 declared inputs; a short row would silently wildcard the missing columns"
+    ],
+    "rule without id": [
+        "rule #1 has 1 input entries for 2 declared inputs; a short row would silently wildcard the missing columns",
+        "rule #1 has 0 output entries for 1 declared outputs"
+    ],
+    "rules empty": [
+        "the table declares no rules; a table that can never match decides nothing"
+    ],
+    "rules scalar": [
+        "the table declares no rules; a table that can never match decides nothing"
+    ],
+    "valid": []
+}

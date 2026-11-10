@@ -1,0 +1,393 @@
+{
+  "change": "unify-rbac-condition-matching",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-04-23T14:43:49Z",
+  "tracking_issue": 1336,
+  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1336",
+  "labels": ["openspec", "openregister", "rbac-scopes"],
+  "tasks": [
+    {
+      "id": "1.1",
+      "section": "Deduplication check (ADR-011)",
+      "title": "Confirm ConditionMatcher is the canonical shared PHP-side condition matcher",
+      "description": "Document that ConditionMatcher already backs PropertyRbacHandler and now becomes the sole backing for PermissionHandler and MagicRbacHandler::hasPermission.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": [
+        "openregister/lib/Service/ConditionMatcher.php",
+        "openregister/lib/Service/Object/PermissionHandler.php",
+        "openregister/lib/Db/MagicMapper/MagicRbacHandler.php"
+      ]
+    },
+    {
+      "id": "1.2",
+      "section": "Deduplication check (ADR-011)",
+      "title": "Confirm no other apps carry a parallel conditional-match implementation",
+      "description": "Scan opencatalogi, softwarecatalog, procest, pipelinq, docudesk. Flag any duplicate as a follow-up change.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "1.3",
+      "section": "Deduplication check (ADR-011)",
+      "title": "Record findings in a docblock pointing to ConditionMatcher",
+      "description": "Top of PermissionHandler::hasGroupPermission() — deduplication note referencing the canonical matcher.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Service/Object/PermissionHandler.php"]
+    },
+    {
+      "id": "2.1",
+      "section": "PermissionHandler — delegate",
+      "title": "Inject ConditionMatcher into PermissionHandler",
+      "description": "Constructor-injected dependency. Update DI wiring in Application.php only if auto-wiring does not resolve it.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": [
+        "openregister/lib/Service/Object/PermissionHandler.php",
+        "openregister/lib/AppInfo/Application.php"
+      ]
+    },
+    {
+      "id": "2.2",
+      "section": "PermissionHandler — delegate",
+      "title": "Remove PermissionHandler::evaluateMatchConditions()",
+      "description": "Delete method body and signature (lines 588–623). No deprecation shim.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Service/Object/PermissionHandler.php"]
+    },
+    {
+      "id": "2.3",
+      "section": "PermissionHandler — delegate",
+      "title": "Update hasGroupPermission() to build envelope and delegate",
+      "description": "Fold $objectOrganisation into $objectData['@self']['organisation'] and call ConditionMatcher::objectMatchesConditions.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Service/Object/PermissionHandler.php"]
+    },
+    {
+      "id": "2.4",
+      "section": "PermissionHandler — delegate",
+      "title": "Narrow hasGroupPermission() signature",
+      "description": "Remove activeOrganisation parameter; keep objectData + objectOrganisation split and merge inside the method to minimise caller churn.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Service/Object/PermissionHandler.php"]
+    },
+    {
+      "id": "2.5",
+      "section": "PermissionHandler — delegate",
+      "title": "Update hasPermission() to stop fetching and passing activeOrganisation",
+      "description": "ConditionMatcher resolves $organisation itself; remove the OrganisationService lookup and stop passing it to every hasGroupPermission call.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Service/Object/PermissionHandler.php"]
+    },
+    {
+      "id": "2.6",
+      "section": "PermissionHandler — delegate",
+      "title": "Verify admin and owner bypass still run before any delegation",
+      "description": "Admin group check and objectOwner === userId check must short-circuit before ConditionMatcher is consulted.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Service/Object/PermissionHandler.php"]
+    },
+    {
+      "id": "2.7",
+      "section": "PermissionHandler — delegate",
+      "title": "Preserve public-fallback path for authenticated users",
+      "description": "Lines 226–239 still call hasGroupPermission(groupId: 'public') with the merged envelope.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Service/Object/PermissionHandler.php"]
+    },
+    {
+      "id": "3.1",
+      "section": "MagicRbacHandler — collapse PHP duplicate",
+      "title": "Inject ConditionMatcher into MagicRbacHandler",
+      "description": "Constructor-injected dependency.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Db/MagicMapper/MagicRbacHandler.php"]
+    },
+    {
+      "id": "3.2",
+      "section": "MagicRbacHandler — collapse PHP duplicate",
+      "title": "Rewrite hasPermission() to delegate conditional evaluation",
+      "description": "Lines 640–695: keep admin/owner bypass and authorization resolution; delegate conditional rule evaluation to ConditionMatcher.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Db/MagicMapper/MagicRbacHandler.php"]
+    },
+    {
+      "id": "3.3",
+      "section": "MagicRbacHandler — collapse PHP duplicate",
+      "title": "Delete redundant private PHP-side helpers",
+      "description": "objectMatchesConditions (774–788), objectPropertyMatchesCondition (799–827), valueMatchesOperator (837–846), singleOperatorMatches (857–875), comparisonOperatorMatches (886–902), arrayOperatorMatches (913–926), existsOperatorMatches (936–947), and the PHP-side resolveDynamicValue if unused by SQL path (verify via grep).",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Db/MagicMapper/MagicRbacHandler.php"]
+    },
+    {
+      "id": "3.4",
+      "section": "MagicRbacHandler — collapse PHP duplicate",
+      "title": "Rewrite or delete checkPermissionRule and checkConditionalPermissionRule",
+      "description": "Lines 707, 744: delegate to ConditionMatcher, or delete if hasPermission() can call ConditionMatcher directly without these intermediate helpers.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Db/MagicMapper/MagicRbacHandler.php"]
+    },
+    {
+      "id": "3.5",
+      "section": "MagicRbacHandler — collapse PHP duplicate",
+      "title": "Confirm SQL-emission path is untouched",
+      "description": "applyRbacFilters, processAuthorizationRule, processSimpleRule, processConditionalRule, buildMatchConditions, buildPropertyCondition, buildOperatorCondition, buildSingleOperatorCondition, buildComparisonOperatorCondition, buildArrayOperatorCondition, propertyToColumnName, buildRbacConditionsSql all remain exactly as-is.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/lib/Db/MagicMapper/MagicRbacHandler.php"]
+    },
+    {
+      "id": "3.6",
+      "section": "MagicRbacHandler — collapse PHP duplicate",
+      "title": "Grep for external callers of removed private helpers",
+      "description": "grep -r 'MagicRbacHandler->' openregister/lib returns zero hits for any deleted method name.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "4.1",
+      "section": "Tests",
+      "title": "Unit test public $lte $now rule, past publishDate",
+      "description": "PermissionHandler::hasPermission with { read: [{ group: public, match: { publishDate: { $lte: $now } } }] } and past-dated object — true for both authenticated and anonymous.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.2",
+      "section": "Tests",
+      "title": "Unit test public $lte $now rule, future publishDate",
+      "description": "Same rule, future-dated object — false.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.3",
+      "section": "Tests",
+      "title": "Unit test $userId variable binding",
+      "description": "{ read: [{ group: medewerkers, match: { assignedTo: $userId } }] } — true when user id matches, false otherwise.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.4",
+      "section": "Tests",
+      "title": "Unit test $in operator",
+      "description": "{ read: [{ group: behandelaars, match: { status: { $in: [open, review] } } }] } — true for open, false for done.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.5",
+      "section": "Tests",
+      "title": "Unit test _organisation via @self envelope",
+      "description": "{ read: [{ group: behandelaars, match: { _organisation: $organisation } }] } — matches when @self.organisation equals user's active org (via mocked OrganisationService).",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.6",
+      "section": "Tests",
+      "title": "Unit test each comparison operator",
+      "description": "$eq, $ne, $gt, $gte, $lt, $lte — verdicts match SQL path expectations.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.7",
+      "section": "Tests",
+      "title": "Unit test $exists true/false",
+      "description": "Same verdict as SQL IS NOT NULL / IS NULL.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.8",
+      "section": "Tests",
+      "title": "Unit test anonymous caller against public-with-match rule",
+      "description": "userSession->getUser() returns null; routes through anonymous branch; delegates to ConditionMatcher; correct verdict.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.9",
+      "section": "Tests",
+      "title": "Unit test admin bypass short-circuits",
+      "description": "User in admin group returns true without touching ConditionMatcher (verify mock records zero calls).",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.10",
+      "section": "Tests",
+      "title": "Unit test owner bypass short-circuits",
+      "description": "objectOwner === userId returns true without touching ConditionMatcher.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"]
+    },
+    {
+      "id": "4.11",
+      "section": "Tests",
+      "title": "Parity test: MagicRbacHandler::hasPermission matches PermissionHandler::hasPermission",
+      "description": "For every rule in 4.1–4.7, both evaluators must produce the same verdict.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": [
+        "openregister/tests/Unit/Db/MagicMapper/MagicRbacHandlerTest.php",
+        "openregister/tests/Unit/Service/Object/PermissionHandlerTest.php"
+      ]
+    },
+    {
+      "id": "4.12",
+      "section": "Tests",
+      "title": "Integration / Newman parity test for list vs find",
+      "description": "GET /api/objects/{r}/{s} vs GET /api/objects/{r}/{s}/{id} for { read: [{ group: public, match: { publishDate: { $lte: $now } } }] } — anonymous caller gets the same set from both endpoints. N/A: no API endpoint was changed; the equivalent verification is covered by manual smoke 6.1/6.2 and by unit-level parity tests 4.1-4.11.",
+      "status": "not_applicable",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/tests/newman/rbac-scopes-list-find-parity.json"]
+    },
+    {
+      "id": "4.13",
+      "section": "Tests",
+      "title": "Run composer check:strict, fix every finding until green",
+      "description": "PHPCS, PHPMD, Psalm, PHPStan — no suppression comments.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "4.14",
+      "section": "Tests",
+      "title": "Mark Jest tests N/A with justification",
+      "description": "Backend-only change; no UI components touched.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "4.15",
+      "section": "Tests",
+      "title": "Confirm existing Newman collections still pass",
+      "description": "No new collections needed beyond 4.12.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "5.1",
+      "section": "Documentation",
+      "title": "Update rbac-scopes implementation notes",
+      "description": "Bottom of openregister/openspec/specs/rbac-scopes/spec.md — PermissionHandler now delegates to ConditionMatcher; MagicRbacHandler::hasPermission is a thin wrapper.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/openspec/specs/rbac-scopes/spec.md"]
+    },
+    {
+      "id": "5.2",
+      "section": "Documentation",
+      "title": "Update authorization JSON grammar docs",
+      "description": "openregister/docs/ — state explicitly that operator and dynamic-variable support is identical across list, find, and property paths.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/docs/"]
+    },
+    {
+      "id": "5.3",
+      "section": "Documentation",
+      "title": "Add deduplication note to PermissionHandler and MagicRbacHandler class docblocks",
+      "description": "Point future contributors to ConditionMatcher as the canonical matcher.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": [
+        "openregister/lib/Service/Object/PermissionHandler.php",
+        "openregister/lib/Db/MagicMapper/MagicRbacHandler.php"
+      ]
+    },
+    {
+      "id": "6.1",
+      "section": "Consumer verification",
+      "title": "OpenCatalogi attachments regression smoke (past-dated publication)",
+      "description": "Schema with public $lte $now rule; create past-dated publication with attachment; hit GET /catalog/{slug}/publications/{uuid}/attachments anonymously — MUST return 200.",
+      "status": "pending_manual_smoke",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "6.2",
+      "section": "Consumer verification",
+      "title": "OpenCatalogi attachments negative smoke (future-dated publication)",
+      "description": "Same configuration but future-dated — MUST return 404, not 500 with 'User Anonymous does not have permission'.",
+      "status": "pending_manual_smoke",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "6.3",
+      "section": "Consumer verification",
+      "title": "OpenRegister UI smoke with $userId match",
+      "description": "Logged-in user queries a schema using $userId match — results user-scoped in both list and detail views, no 500s.",
+      "status": "pending_manual_smoke",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "6.4",
+      "section": "Consumer verification",
+      "title": "Grep other consumer apps for _rbac: false reliance",
+      "description": "procest, pipelinq, docudesk, softwarecatalog — confirm none relied on evaluateMatchConditions silently blocking legitimate access.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "7.1",
+      "section": "Clean-up & archiving",
+      "title": "Confirm no orphaned evaluateMatchConditions references",
+      "description": "grep across openregister/lib, tests, docs — zero hits.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "7.2",
+      "section": "Clean-up & archiving",
+      "title": "Confirm no orphaned MagicRbacHandler private-helper references",
+      "description": "grep each deleted method name — zero hits.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": []
+    },
+    {
+      "id": "7.3",
+      "section": "Clean-up & archiving",
+      "title": "Update CHANGELOG if maintained",
+      "description": "Behaviour fix observable by consumers — worth a line.",
+      "status": "done",
+      "spec_ref": "rbac-scopes",
+      "files_likely_affected": ["openregister/CHANGELOG.md"]
+    }
+  ]
+}

@@ -1,0 +1,618 @@
+<?php
+
+/**
+ * Phase-0 regression: MagicMapper soft-deleted listing + restore.
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Unit\Db\MagicMapper
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
+
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\SettingsService;
+use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IConfig;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserManager;
+use OCP\IUserSession;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Locks two Phase-0 fixes:
+ *
+ *  - findDeletedAcrossAllMagicTables() scans EVERY magic table for `_deleted`
+ *    rows and merges them newest-first by the RAW `_updated` value, then
+ *    paginates — replacing the broken register/schema-less search path that
+ *    always returned an empty list.
+ *  - restoreObject() refuses to restore (throws) when the owning register/
+ *    schema context cannot be resolved, instead of silently issuing an UPDATE
+ *    against an unknown table.
+ */
+class MagicMapperDeletedRestoreTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
+
+	private IDBConnection&MockObject $db;
+
+	private SchemaMapper&MockObject $schemaMapper;
+
+	private RegisterMapper&MockObject $registerMapper;
+
+	private LoggerInterface&MockObject $logger;
+
+	private IUserSession&MockObject $userSession;
+
+	private IGroupManager&MockObject $groupManager;
+
+	/** The slug handler the container hands out; null = a stand-in that changes nothing. */
+	private ?ObjectSlugHandler $slugHandler = null;
+
+	protected function setUp(): void {
+		parent::setUp();
+		$this->db = $this->createMock(IDBConnection::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+	}//end setUp()
+
+	/**
+	 * Build a MagicMapper with the shared mock dependencies.
+	 *
+	 * @return MagicMapper
+	 */
+	private function makeMapper(): MagicMapper {
+		$container = $this->makeContainer();
+
+		return new MagicMapper(
+			$this->db,
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->userSession,
+				$this->groupManager,
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->systemDefaults(),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->logger
+			)
+		);
+	}//end makeMapper()
+
+	/**
+	 * Build a DI container that resolves the lazily-fetched collaborators
+	 * MagicMapper pulls during construction (DateTimeNormalizer, ConditionMatcher,
+	 * SchemaTypeConverter), matching the production container contract.
+	 *
+	 * @return ContainerInterface&MockObject
+	 */
+	private function makeContainer(): ContainerInterface {
+		$dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
+		$conditionMatcher = $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class);
+		$schemaTypeConverter = $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class);
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
+				if ($id === \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface::class) {
+					return ($this->slugHandler ?? $this->standInSlugHandler());
+				}
+
+				if ($id === DateTimeNormalizerInterface::class) {
+					return $dateTimeNormalizer;
+				}
+				if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
+					return $conditionMatcher;
+				}
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
+					return $schemaTypeConverter;
+				}
+				return null;
+			}
+		);
+		return $container;
+	}//end makeContainer()
+
+	/**
+	 * A slug handler that keeps every slug as it is.
+	 *
+	 * @return ObjectSlugHandler&MockObject
+	 */
+	private function standInSlugHandler(): ObjectSlugHandler {
+		$handler = $this->createMock(ObjectSlugHandler::class);
+		$handler->method('slugForRestore')->willReturnCallback(
+			static fn (ObjectEntity $entity): ?string => $entity->getSlug()
+		);
+		return $handler;
+	}//end standInSlugHandler()
+
+	/**
+	 * Build an IResult mock returning the given fetchAll() payload.
+	 *
+	 * @param array<int,array<string,mixed>> $rows Rows to return.
+	 *
+	 * @return IResult&MockObject
+	 */
+	private function resultReturning(array $rows): IResult {
+		$result = $this->createMock(IResult::class);
+		$result->method('fetchAll')->willReturn($rows);
+		return $result;
+	}//end resultReturning()
+
+	// -------------------------------------------------------------------------
+	// findDeletedAcrossAllMagicTables()
+	// -------------------------------------------------------------------------
+
+	public function testFindDeletedMergesAllTablesNewestFirst(): void {
+		$mapper = $this->makeMapper();
+
+		// discoverMagicTables() uses db->prepare(...)->execute(...)->fetchAll().
+		$discoverStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+		$discoverResult = $this->resultReturning(
+			[
+				['table_name' => 'oc_openregister_table_1_1'],
+				['table_name' => 'oc_openregister_table_1_2'],
+			]
+		);
+		$discoverStmt->method('execute')->willReturn($discoverResult);
+		$this->db->method('prepare')->willReturn($discoverStmt);
+
+		// Per-table deleted-row queries go through getQueryBuilder().
+		// Table 1_1 holds the OLDER deleted row, 1_2 the NEWER one.
+		$qb1 = $this->makeSelectQbReturning(
+			[
+				['_uuid' => 'older', '_updated' => '2024-01-01T00:00:00Z', '_deleted' => '2024-01-02T00:00:00Z'],
+			]
+		);
+		$qb2 = $this->makeSelectQbReturning(
+			[
+				['_uuid' => 'newer', '_updated' => '2024-06-01T00:00:00Z', '_deleted' => '2024-06-02T00:00:00Z'],
+			]
+		);
+		$this->db->method('getQueryBuilder')->willReturnOnConsecutiveCalls($qb1, $qb2);
+
+		// rowToObjectEntity calls schemaMapper->find(); let it throw (caught).
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		// Unscoped (an admin or system caller): this test is about the merge.
+		$found = $mapper->findDeletedAcrossAllMagicTables(_rbac: false, _multitenancy: false);
+
+		$this->assertCount(2, $found);
+		$this->assertContainsOnlyInstancesOf(ObjectEntity::class, $found);
+		// Newest-first by the RAW _updated value: 'newer' before 'older'.
+		$this->assertSame('newer', $found[0]->getUuid());
+		$this->assertSame('older', $found[1]->getUuid());
+	}//end testFindDeletedMergesAllTablesNewestFirst()
+
+	public function testFindDeletedAppliesPaginationAfterMerge(): void {
+		$mapper = $this->makeMapper();
+
+		$discoverStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+		$discoverResult = $this->resultReturning([['table_name' => 'oc_openregister_table_1_1']]);
+		$discoverStmt->method('execute')->willReturn($discoverResult);
+		$this->db->method('prepare')->willReturn($discoverStmt);
+
+		$qb = $this->makeSelectQbReturning(
+			[
+				['_uuid' => 'a', '_updated' => '2024-03-01T00:00:00Z', '_deleted' => '2024-03-02T00:00:00Z'],
+				['_uuid' => 'b', '_updated' => '2024-02-01T00:00:00Z', '_deleted' => '2024-02-02T00:00:00Z'],
+				['_uuid' => 'c', '_updated' => '2024-01-01T00:00:00Z', '_deleted' => '2024-01-02T00:00:00Z'],
+			]
+		);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		// offset 1, limit 1 over the newest-first set [a, b, c] -> [b].
+		$found = $mapper->findDeletedAcrossAllMagicTables(limit: 1, offset: 1, _rbac: false, _multitenancy: false);
+
+		$this->assertCount(1, $found);
+		$this->assertSame('b', $found[0]->getUuid());
+	}//end testFindDeletedAppliesPaginationAfterMerge()
+
+	/**
+	 * Build a SELECT QueryBuilder mock whose executeQuery()->fetchAll()
+	 * returns the given rows; chainable methods return $this.
+	 *
+	 * @param array<int,array<string,mixed>> $rows Rows to return.
+	 *
+	 * @return IQueryBuilder&MockObject
+	 */
+	private function makeSelectQbReturning(array $rows): IQueryBuilder {
+		$qb = $this->createMock(IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$expr->method('isNotNull')->willReturn('cond');
+		$qb->method('expr')->willReturn($expr);
+		foreach (['select', 'from', 'where', 'orderBy', 'andWhere'] as $chain) {
+			$qb->method($chain)->willReturnSelf();
+		}
+
+		$qb->method('executeQuery')->willReturn($this->resultReturning($rows));
+		return $qb;
+	}//end makeSelectQbReturning()
+
+	/**
+	 * Point table discovery at one magic table, register 1 schema 1.
+	 *
+	 * @return void
+	 */
+	private function discoverOneTable(): void {
+		$discoverStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+		$discoverStmt->method('execute')->willReturn($this->resultReturning([['table_name' => 'oc_openregister_table_1_1']]));
+		$this->db->method('prepare')->willReturn($discoverStmt);
+	}//end discoverOneTable()
+
+	/**
+	 * A scoped scan skips a table whose schema cannot be resolved (openregister#4078).
+	 *
+	 * Whether the caller may read such a table cannot be answered, so the
+	 * answer is no. Before the fix every trashed row of every table was
+	 * returned to any signed-in caller.
+	 *
+	 * @return void
+	 */
+	public function testScopedScanSkipsATableWhoseSchemaCannotBeResolved(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverOneTable();
+
+		$qb = $this->makeSelectQbReturning(
+			[
+				['_uuid' => 'someone-elses', '_updated' => '2024-03-01T00:00:00Z', '_deleted' => '2024-03-02T00:00:00Z'],
+			]
+		);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		$this->assertSame([], $mapper->findDeletedAcrossAllMagicTables(_rbac: true, _multitenancy: true));
+	}//end testScopedScanSkipsATableWhoseSchemaCannotBeResolved()
+
+	/**
+	 * A scoped scan narrows each table with the list path's access control, in the query.
+	 *
+	 * @return void
+	 */
+	public function testScopedScanNarrowsTheQueryWithTheListAccessControl(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverOneTable();
+
+		$qb = $this->makeSelectQbReturning([]);
+		$qb->expects($this->atLeastOnce())->method('andWhere');
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setAuthorization(['read' => ['admin']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		// A signed-in caller in no group: the schema's read rule does not admit them.
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('burger');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+
+		$mapper->findDeletedAcrossAllMagicTables(_rbac: true, _multitenancy: false);
+	}//end testScopedScanNarrowsTheQueryWithTheListAccessControl()
+
+	/**
+	 * The count skips what the listing skips, so the total matches the pages.
+	 *
+	 * @return void
+	 */
+	public function testScopedCountSkipsATableWhoseSchemaCannotBeResolved(): void {
+		$mapper = $this->makeMapper();
+		$this->discoverOneTable();
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$expr->method('isNotNull')->willReturn('cond');
+		$qb->method('expr')->willReturn($expr);
+		foreach (['select', 'from', 'where', 'andWhere'] as $chain) {
+			$qb->method($chain)->willReturnSelf();
+		}
+
+		$func = $this->createMock(\OCP\DB\QueryBuilder\IFunctionBuilder::class);
+		$func->method('count')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryFunction::class));
+		$qb->method('func')->willReturn($func);
+		$result = $this->createMock(IResult::class);
+		$result->method('fetch')->willReturn(['cnt' => 5]);
+		$qb->method('executeQuery')->willReturn($result);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		$this->assertSame(0, $mapper->countDeletedAcrossAllMagicTables(_rbac: true, _multitenancy: true));
+		$this->assertSame(5, $mapper->countDeletedAcrossAllMagicTables(_rbac: false, _multitenancy: false));
+		$this->assertSame(
+			0,
+			\OCA\OpenRegister\Service\OrganisationContext::run(
+				'org-a',
+				static fn (): int => $mapper->countDeletedAcrossAllMagicTables(_rbac: false, _multitenancy: false)
+			),
+			'inside an organisation context the unscoped count is scoped'
+		);
+	}//end testScopedCountSkipsATableWhoseSchemaCannotBeResolved()
+
+	// -------------------------------------------------------------------------
+	// restoreObject()
+	// -------------------------------------------------------------------------
+
+	public function testRestoreObjectThrowsWhenRegisterOrSchemaUnresolvable(): void {
+		// Partial mock: stub the public findAcrossAllSources to return an object
+		// with NO resolvable register/schema context.
+		$mapper = $this->getMockBuilder(MagicMapper::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['findAcrossAllSources'])
+			->getMock();
+
+		$entity = new ObjectEntity();
+		$entity->setUuid('orphan-uuid');
+
+		$mapper->method('findAcrossAllSources')->willReturn(
+			[
+				'object' => $entity,
+				'register' => null,
+				'schema' => null,
+			]
+		);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Cannot restore object without resolvable register and schema context');
+		$mapper->restoreObject('orphan-uuid');
+	}//end testRestoreObjectThrowsWhenRegisterOrSchemaUnresolvable()
+
+	public function testRestoreObjectClearsDeleteMarkerWhenContextResolvable(): void {
+		$mapper = $this->getMockBuilder(MagicMapper::class)
+			->setConstructorArgs($this->constructorArgs())
+			->onlyMethods(['findAcrossAllSources', 'getTableNameForRegisterSchema'])
+			->getMock();
+
+		$entity = new ObjectEntity();
+		$entity->setUuid('live-uuid');
+		$entity->setDeleted('2024-01-01T00:00:00Z');
+
+		$register = new Register();
+		$register->setId(1);
+		$schema = new Schema();
+		$schema->setId(2);
+
+		$mapper->method('findAcrossAllSources')->willReturn(
+			[
+				'object' => $entity,
+				'register' => $register,
+				'schema' => $schema,
+			]
+		);
+		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
+
+		// The restore must issue exactly one UPDATE clearing the _deleted marker.
+		$updateQb = $this->createMock(IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('cond');
+		$updateQb->method('expr')->willReturn($expr);
+		$updateQb->method('createNamedParameter')->willReturn('param');
+		foreach (['update', 'set', 'where'] as $chain) {
+			$updateQb->method($chain)->willReturnSelf();
+		}
+
+		$updateQb->expects($this->once())->method('executeStatement')->willReturn(1);
+		$this->db->method('getQueryBuilder')->willReturn($updateQb);
+
+		$restored = $mapper->restoreObject('live-uuid');
+
+		$this->assertSame('live-uuid', $restored->getUuid());
+		// The in-memory entity's delete marker is cleared (the `deleted` field is
+		// a json-typed Entity column, so a cleared marker normalises to empty —
+		// null or []; the key invariant is that it no longer carries a timestamp).
+		$this->assertEmpty($restored->getDeleted());
+	}//end testRestoreObjectClearsDeleteMarkerWhenContextResolvable()
+
+	/**
+	 * Restore a deleted object holding `hello-world` while another live object holds it.
+	 *
+	 * @param array $configuration The schema configuration.
+	 * @param array $holders       What findSlugHolders() returns.
+	 * @param array $setColumns    Columns the UPDATE sets, by reference.
+	 * @param array $params        Values bound for them, by reference.
+	 *
+	 * @return ObjectEntity The restored entity.
+	 */
+	private function restoreWithSlug(array $configuration, array $holders, array &$setColumns, array &$params): ObjectEntity {
+		$mapper = $this->getMockBuilder(MagicMapper::class)
+			->setConstructorArgs($this->constructorArgs())
+			->onlyMethods(['findAcrossAllSources', 'getTableNameForRegisterSchema', 'findSlugHolders'])
+			->getMock();
+		$this->slugHandler = $this->buildSlugHandler(
+			magicMapper: $mapper,
+			hydrator: new MetadataHydrationHandler(
+				logger: $this->createMock(LoggerInterface::class),
+				cacheHandler: $this->createMock(CacheHandler::class)
+			),
+			registerMapper: $this->registerMapper,
+			logger: $this->logger
+		);
+
+		$entity = new ObjectEntity();
+		$entity->setUuid('restored-uuid');
+		$entity->setSlug('hello-world');
+		$entity->setDeleted('2024-01-01T00:00:00Z');
+		$register = new Register();
+		$register->setId(1);
+		$schema = new Schema();
+		$schema->setId(2);
+		$schema->setConfiguration($configuration);
+
+		$mapper->method('findAcrossAllSources')->willReturn(['object' => $entity, 'register' => $register, 'schema' => $schema]);
+		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
+		// Only the original slug is taken; its suffixed variant is free.
+		$mapper->method('findSlugHolders')->willReturnCallback(
+			static fn (Register $r, Schema $sc, string $slug): array => (($slug === 'hello-world') ? $holders : [])
+		);
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('cond');
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createNamedParameter')->willReturnCallback(
+			function ($value) use (&$params): string {
+				$params[] = $value;
+				return 'param';
+			}
+		);
+		$qb->method('set')->willReturnCallback(
+			function (string $column) use ($qb, &$setColumns): IQueryBuilder {
+				$setColumns[] = $column;
+				return $qb;
+			}
+		);
+		foreach (['update', 'where'] as $chain) {
+			$qb->method($chain)->willReturnSelf();
+		}
+
+		$qb->method('executeStatement')->willReturn(1);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+
+		return $mapper->restoreObject('restored-uuid');
+	}//end restoreWithSlug()
+
+	public function testRestoreWithoutTheSlugWhenALiveObjectNowHoldsIt(): void {
+		// Review finding save-f5: the slug was handed on after the delete; restoring
+		// must not put two live objects on it.
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function ($message) use (&$warnings): void {
+				$warnings[] = (string)$message;
+			}
+		);
+		$setColumns = [];
+		$params = [];
+
+		$restored = $this->restoreWithSlug(['objectSlugField' => 'title'], ['other-uuid'], $setColumns, $params);
+
+		$this->assertNull($restored->getSlug());
+		$this->assertContains('_slug', $setColumns, 'the slug column is cleared in the same UPDATE');
+		$this->assertCount(1, $warnings);
+		$this->assertStringContainsString('hello-world', $warnings[0]);
+		$this->assertStringContainsString('other-uuid', $warnings[0]);
+		$this->assertStringContainsString('restored-uuid', $warnings[0]);
+		$this->assertStringContainsString('was restored without a slug', $warnings[0]);
+	}
+
+	public function testRestoreWithTheSuffixedSlugWhenSuffixIsOn(): void {
+		// Review finding r2save-f4: the object changes its public slug, so it is logged.
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function ($message) use (&$warnings): void {
+				$warnings[] = (string)$message;
+			}
+		);
+		$setColumns = [];
+		$params = [];
+
+		$restored = $this->restoreWithSlug(
+			['objectSlugField' => 'title', 'objectSlugSuffix' => true],
+			['other-uuid'],
+			$setColumns,
+			$params
+		);
+
+		$this->assertMatchesRegularExpression('/^hello-world-\d{14}$/', (string)$restored->getSlug());
+		$this->assertContains('_slug', $setColumns);
+		$this->assertCount(1, $warnings);
+		$this->assertStringContainsString('hello-world', $warnings[0]);
+		$this->assertStringContainsString('other-uuid', $warnings[0]);
+		$this->assertStringContainsString('restored-uuid', $warnings[0]);
+		$this->assertStringContainsString('got the suffixed slug "' . $restored->getSlug() . '"', $warnings[0]);
+	}
+
+	public function testRestoreKeepsTheSlugWhenNobodyHoldsItOrTheSchemaIsNotManaged(): void {
+		$setColumns = [];
+		$params = [];
+		$free = $this->restoreWithSlug(['objectSlugField' => 'title'], [], $setColumns, $params);
+		$this->assertSame('hello-world', $free->getSlug());
+		$this->assertNotContains('_slug', $setColumns);
+	}
+
+	/**
+	 * Constructor argument list for a real MagicMapper instance whose DB and
+	 * schemaMapper are the shared mocks.
+	 *
+	 * @return array<int,mixed>
+	 */
+	private function constructorArgs(): array {
+		$container = $this->makeContainer();
+
+		return [
+			$this->db,
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->systemDefaults(),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->logger
+			),
+		];
+	}//end constructorArgs()
+
+	/**
+	 * System config that answers every key with its default.
+	 *
+	 * @return IConfig
+	 */
+	private function systemDefaults(): IConfig {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValue')->willReturnCallback(static fn (string $key, mixed $default = ''): mixed => $default);
+
+		return $config;
+	}//end systemDefaults()
+}//end class

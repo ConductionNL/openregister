@@ -1,0 +1,94 @@
+{
+  "$comment": "The openconnector HITL retirement inventory (flow-approval-consolidation task 7.1). Every property of the approval_request schema names the home it lands in, or an explicit decision not to carry it with a reason. A property missing here fails HitlRetirementInventoryTest, and the runner cannot be retired while any semantic is homeless.",
+  "source": "openconnector lib/Settings/register.d/hitl-approval-rule-action.json (snapshot beside this file)",
+  "properties": {
+    "uuid": {
+      "home": "openregister_tasks.uuid",
+      "owner": "flow-task-entity"
+    },
+    "status": {
+      "home": "task state + outcome via TaskState legacy mapping (pending, approved, rejected, expired, dead_letter and error are all mapped values)",
+      "owner": "flow-task-entity"
+    },
+    "approverGroup": {
+      "home": "task performer_type 'group' with the group as candidate group and single-role routing",
+      "owner": "flow-task-entity"
+    },
+    "requesterUserId": {
+      "home": "task requester and task_sequences.requester_id",
+      "owner": "flow-task-entity / flow-approval-consolidation"
+    },
+    "comment": {
+      "home": "task comment plus the audit reason; a rejecting outcome refuses an empty comment in TaskService::completeInternal()",
+      "owner": "flow-task-entity"
+    },
+    "expiresAt": {
+      "home": "a business timer with purpose 'expiry' (FlowTimerService::arm), mirrored on task expires_at",
+      "owner": "flow-business-timers"
+    },
+    "onTimeout": {
+      "home": "the timer's onExpiry outcome; skip, error and dead_letter reach four DISTINCT states through TaskService::applyTimerOutcome()",
+      "owner": "flow-business-timers"
+    },
+    "onReject": {
+      "home": "the sequence's rejecting outcome; the skip outcome completes the subject as skipped instead of recording an error, the behaviour the enum promised and the retired sweep at openconnector ApprovalService.php:662 never gave it",
+      "owner": "flow-approval-consolidation"
+    },
+    "approverUserId": {
+      "home": "task completed_by, plus the audit actor",
+      "owner": "flow-task-entity"
+    },
+    "approvedAt": {
+      "home": "task completed_at with an approving outcome",
+      "owner": "flow-task-entity"
+    },
+    "rejectedAt": {
+      "home": "task completed_at with a rejecting outcome",
+      "owner": "flow-task-entity"
+    },
+    "consumedAt": {
+      "home": "the 'consume' verb: TaskService::consume() records consumedAt/consumedBy on the decided task and refuses a second consumption",
+      "owner": "flow-approval-consolidation"
+    },
+    "createdAt": {
+      "home": "task created",
+      "owner": "flow-task-entity"
+    },
+    "created": {
+      "home": "task created (OR-managed duplicate of createdAt)",
+      "owner": "flow-task-entity"
+    },
+    "updated": {
+      "home": "task updated",
+      "owner": "flow-task-entity"
+    },
+    "timing": {
+      "decision": "not carried: always 'before' by declaration (v1 gates pre-write only); a constant is not a semantic",
+      "owner": "openconnector: retire-hitl-runner-to-or-tasks"
+    },
+    "endpointId": {
+      "decision": "not carried by OpenRegister: suspended-pipeline provenance, not an approval semantic; the runner migration keeps it in the run context or a task relation",
+      "owner": "openconnector: retire-hitl-runner-to-or-tasks"
+    },
+    "ruleId": {
+      "decision": "not carried by OpenRegister: same as endpointId",
+      "owner": "openconnector: retire-hitl-runner-to-or-tasks"
+    },
+    "synchronizationId": {
+      "decision": "not carried by OpenRegister: same as endpointId",
+      "owner": "openconnector: retire-hitl-runner-to-or-tasks"
+    },
+    "resumeOrder": {
+      "decision": "not carried by OpenRegister: resumable-pipeline cursor, moves with the runner's own resume logic",
+      "owner": "openconnector: retire-hitl-runner-to-or-tasks"
+    },
+    "snapshot": {
+      "decision": "not carried by OpenRegister: the suspended FlowToken belongs to the run that suspends, not to the approval that gates it",
+      "owner": "openconnector: retire-hitl-runner-to-or-tasks"
+    },
+    "resumeResult": {
+      "decision": "not carried by OpenRegister: the resumed chain's outcome is the run's own record; the approval's audit stays on the task",
+      "owner": "openconnector: retire-hitl-runner-to-or-tasks"
+    }
+  }
+}

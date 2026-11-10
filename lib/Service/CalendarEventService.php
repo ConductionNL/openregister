@@ -7,6 +7,9 @@
  * Events are stored as standard VEVENT items in the user's Nextcloud calendar with
  * X-OPENREGISTER-* properties for linking and an RFC 9253 LINK property.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -15,18 +18,24 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-webhookeventlistener-must-extract-structured-payloads-from-all-event-types
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
+use OCA\OpenRegister\Service\CalendarEvent\UserCalendarSelector;
+use OCA\OpenRegister\Service\CalendarEvent\VeventCodec;
+use OCP\IConfig;
+use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Sabre\VObject\Document;
 use Sabre\VObject\Reader;
 
 /**
@@ -36,444 +45,720 @@ use Sabre\VObject\Reader;
  * @package  OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess)
+ *
+ * @spec openspec/specs/calendar-integration/spec.md
  */
-class CalendarEventService
-{
+class CalendarEventService implements ObjectCalendarEventsInterface {
 
-    /**
-     * CalDAV backend.
-     *
-     * @var CalDavBackend
-     */
-    private readonly CalDavBackend $calDavBackend;
+	/**
+	 * CalDAV backend.
+	 *
+	 * @var CalDavBackend
+	 */
+	private readonly CalDavBackend $calDavBackend;
 
-    /**
-     * User session.
-     *
-     * @var IUserSession
-     */
-    private readonly IUserSession $userSession;
+	/**
+	 * User session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
 
-    /**
-     * Logger.
-     *
-     * @var LoggerInterface
-     */
-    private readonly LoggerInterface $logger;
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
 
-    /**
-     * Constructor.
-     *
-     * @param CalDavBackend   $calDavBackend CalDAV backend
-     * @param IUserSession    $userSession   User session
-     * @param LoggerInterface $logger        Logger
-     *
-     * @return void
-     */
-    public function __construct(
-        CalDavBackend $calDavBackend,
-        IUserSession $userSession,
-        LoggerInterface $logger
-    ) {
-        $this->calDavBackend = $calDavBackend;
-        $this->userSession   = $userSession;
-        $this->logger        = $logger;
-    }//end __construct()
+	/**
+	 * URL generator (webroot-aware deep links).
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
 
-    /**
-     * Get all calendar events linked to a specific OpenRegister object.
-     *
-     * @param string $objectUuid The UUID of the OpenRegister object
-     *
-     * @return array Array of event arrays in JSON-friendly format
-     *
-     * @throws Exception If no user is logged in or no calendar found
-     */
-    public function getEventsForObject(string $objectUuid): array
-    {
-        $calendar   = $this->findUserCalendar();
-        $calendarId = $calendar['id'];
+	/**
+	 * Chooses and pins the calendar events are written to.
+	 *
+	 * @var UserCalendarSelector
+	 */
+	private readonly UserCalendarSelector $calendarSelector;
 
-        $calendarObjects = $this->calDavBackend->getCalendarObjects($calendarId);
+	/**
+	 * Reads parsed VEVENTs into event arrays and serialises new ones.
+	 *
+	 * @var VeventCodec
+	 */
+	private readonly VeventCodec $veventCodec;
 
-        $events = [];
-        foreach ($calendarObjects as $calendarObject) {
-            $fullObject = $this->calDavBackend->getCalendarObject($calendarId, $calendarObject['uri']);
-            if ($fullObject === null || empty($fullObject['calendardata']) === true) {
-                continue;
-            }
+	/**
+	 * Constructor.
+	 *
+	 * @param CalDavBackend $calDavBackend CalDAV backend
+	 * @param LinkSessionRuntime $runtime User session and logger
+	 * @param IConfig $config NC config (user-value store)
+	 * @param IURLGenerator $urlGenerator URL generator for deep links
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		CalDavBackend $calDavBackend,
+		LinkSessionRuntime $runtime,
+		IConfig $config,
+		IURLGenerator $urlGenerator,
+	) {
+		$this->calDavBackend = $calDavBackend;
+		$this->userSession = $runtime->userSession;
+		$this->urlGenerator = $urlGenerator;
+		$this->logger = $runtime->logger;
+		$this->calendarSelector = new UserCalendarSelector(config: $config, logger: $runtime->logger);
+		$this->veventCodec = new VeventCodec();
+	}//end __construct()
 
-            $calendarData = $fullObject['calendardata'];
+	/**
+	 * Get all calendar events linked to a specific OpenRegister object.
+	 *
+	 * @param string $objectUuid The UUID of the OpenRegister object
+	 *
+	 * @return array Array of event arrays in JSON-friendly format
+	 *
+	 * @throws Exception If no user is logged in or no calendar found
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function getEventsForObject(string $objectUuid): array {
+		$calendar = $this->findUserCalendar();
 
-            if (strpos($calendarData, $objectUuid) === false) {
-                continue;
-            }
+		$events = [];
+		foreach ($this->parsedEventsIn(calendarId: $calendar['id'], needle: $objectUuid) as $event) {
+			if ($event['objectUuid'] !== $objectUuid) {
+				continue;
+			}
 
-            if (strpos($calendarData, 'VEVENT') === false) {
-                continue;
-            }
+			$linked = $this->withDeepLink(event: $event, calendarUri: ($calendar['uri'] ?? null));
+			if ($linked !== null) {
+				$events[] = $linked;
+			}
+		}
 
-            try {
-                $eventArray = $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
-                if ($eventArray !== null && $eventArray['objectUuid'] === $objectUuid) {
-                    $events[] = $eventArray;
-                }
-            } catch (Exception $e) {
-                $this->logger->warning(
-                    'Failed to parse calendar event: '.$e->getMessage(),
-                    ['uri' => $calendarObject['uri']]
-                );
-            }
-        }//end foreach
+		return $events;
+	}//end getEventsForObject()
 
-        return $events;
-    }//end getEventsForObject()
+	/**
+	 * Parse every VEVENT in a calendar whose raw data mentions a needle.
+	 *
+	 * Objects that are missing, empty, do not mention the needle or are not
+	 * VEVENTs are skipped; one that fails to parse is logged and skipped.
+	 *
+	 * @param mixed  $calendarId The calendar ID.
+	 * @param string $needle     Text the raw iCalendar data must contain.
+	 *
+	 * @return list<array<string, mixed>> The parsed events.
+	 */
+	private function parsedEventsIn(mixed $calendarId, string $needle): array {
+		$events = [];
+		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $calendarObject) {
+			$event = $this->parseStoredEvent(calendarId: $calendarId, uri: $calendarObject['uri'], needle: $needle);
+			if ($event !== null) {
+				$events[] = $event;
+			}
+		}
 
-    /**
-     * Create a new CalDAV event linked to an OpenRegister object.
-     *
-     * @param int    $registerId  The register ID
-     * @param int    $schemaId    The schema ID
-     * @param string $objectUuid  The object UUID
-     * @param string $objectTitle The object title for the LINK label
-     * @param array  $data        Event data: summary, dtstart, dtend, location, description, attendees
-     *
-     * @return array|null The created event in JSON-friendly format
-     *
-     * @throws Exception If no user or calendar found
-     */
-    public function createEvent(
-        int $registerId,
-        int $schemaId,
-        string $objectUuid,
-        string $objectTitle,
-        array $data
-    ): ?array {
-        $calendar   = $this->findUserCalendar();
-        $calendarId = $calendar['id'];
+		return $events;
+	}//end parsedEventsIn()
 
-        $uid     = strtoupper(bin2hex(random_bytes(16)));
-        $dtstamp = gmdate('Ymd\THis\Z');
-        $summary = $this->escapeIcalText(text: $data['summary'] ?? 'Untitled event');
+	/**
+	 * Parse one stored calendar object into an event array, if it is a VEVENT mentioning the needle.
+	 *
+	 * @param mixed  $calendarId The calendar ID.
+	 * @param string $uri        The calendar object URI.
+	 * @param string $needle     Text the raw iCalendar data must contain.
+	 *
+	 * @return array<string, mixed>|null The event, or null when skipped.
+	 */
+	private function parseStoredEvent(mixed $calendarId, string $uri, string $needle): ?array {
+		$calendarData = ($this->calDavBackend->getCalendarObject($calendarId, $uri)['calendardata'] ?? null);
+		if (empty($calendarData) === true || $this->mentionsAll(data: $calendarData, needles: [$needle, 'VEVENT']) === false) {
+			return null;
+		}
 
-        $lines   = [];
-        $lines[] = 'BEGIN:VCALENDAR';
-        $lines[] = 'VERSION:2.0';
-        $lines[] = 'PRODID:-//OpenRegister//Events//EN';
-        $lines[] = 'BEGIN:VEVENT';
-        $lines[] = 'UID:'.$uid;
-        $lines[] = 'DTSTAMP:'.$dtstamp;
-        $lines[] = 'SUMMARY:'.$summary;
+		try {
+			return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
+		} catch (Exception $e) {
+			$this->logParseFailure(e: $e, uri: $uri);
+			return null;
+		}
+	}//end parseStoredEvent()
 
-        if (empty($data['dtstart']) === false) {
-            $dtstart = new DateTime($data['dtstart']);
-            $lines[] = 'DTSTART:'.$dtstart->format('Ymd\THis\Z');
-        }
+	/**
+	 * Whether a string contains every needle.
+	 *
+	 * @param string       $data    The haystack.
+	 * @param list<string> $needles The needles.
+	 *
+	 * @return bool
+	 */
+	private function mentionsAll(string $data, array $needles): bool {
+		foreach ($needles as $needle) {
+			if (strpos($data, $needle) === false) {
+				return false;
+			}
+		}
 
-        if (empty($data['dtend']) === false) {
-            $dtend   = new DateTime($data['dtend']);
-            $lines[] = 'DTEND:'.$dtend->format('Ymd\THis\Z');
-        }
+		return true;
+	}//end mentionsAll()
 
-        if (empty($data['location']) === false) {
-            $lines[] = 'LOCATION:'.$this->escapeIcalText(text: $data['location']);
-        }
+	/**
+	 * Add the Calendar-app deep link to an event, when one resolves.
+	 *
+	 * A failure here drops the event with the same warning a parse failure
+	 * gives, as it always has.
+	 *
+	 * @param array       $event       The parsed event.
+	 * @param string|null $calendarUri The CalDAV calendar URI owning the event.
+	 *
+	 * @return array|null The event, or null when building the link failed.
+	 */
+	private function withDeepLink(array $event, ?string $calendarUri): ?array {
+		try {
+			$deepLink = $this->buildEventDeepLink(calendarUri: $calendarUri, objectUri: $event['id']);
+		} catch (Exception $e) {
+			$this->logParseFailure(e: $e, uri: $event['id']);
+			return null;
+		}
 
-        if (empty($data['description']) === false) {
-            $lines[] = 'DESCRIPTION:'.$this->escapeIcalText(text: $data['description']);
-        }
+		if ($deepLink !== null) {
+			$event['url'] = $deepLink;
+		}
 
-        if (empty($data['attendees']) === false && is_array($data['attendees']) === true) {
-            foreach ($data['attendees'] as $attendee) {
-                $lines[] = 'ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:'.$attendee;
-            }
-        }
+		return $event;
+	}//end withDeepLink()
 
-        // X-OPENREGISTER linking properties.
-        $lines[] = 'X-OPENREGISTER-REGISTER:'.$registerId;
-        $lines[] = 'X-OPENREGISTER-SCHEMA:'.$schemaId;
-        $lines[] = 'X-OPENREGISTER-OBJECT:'.$objectUuid;
+	/**
+	 * Log a calendar object that could not be turned into an event.
+	 *
+	 * @param Exception $e   The failure.
+	 * @param string    $uri The calendar object URI.
+	 *
+	 * @return void
+	 */
+	private function logParseFailure(Exception $e, string $uri): void {
+		$this->logger->warning('Failed to parse calendar event: ' . $e->getMessage(), ['uri' => $uri]);
+	}//end logParseFailure()
 
-        // RFC 9253 LINK property.
-        $linkLabel = $this->escapeIcalText(text: $objectTitle);
-        $linkUri   = '/apps/openregister/api/objects/'.$registerId.'/'.$schemaId.'/'.$objectUuid;
-        $lines[]   = 'LINK;LINKREL="related";LABEL="'.$linkLabel.'";VALUE=URI:'.$linkUri;
+	/**
+	 * Build a webroot-aware deep-link to a specific calendar event.
+	 *
+	 * The Calendar app opens a specific event via its `/edit/{objectId}` route
+	 * (`calendar.view.index` postfix `direct.edit`), where `objectId` is the
+	 * base64 of the object's full DAV path *including* the `/remote.php/dav/`
+	 * prefix — i.e. `{webroot}/remote.php/dav/calendars/{userId}/{calendarUri}/{objectUri}`
+	 * (this matches the `objectId` the Calendar UI itself generates; the app
+	 * does `atob(objectId)` and fetches that DAV href). NC cannot generate the
+	 * postfixed route by name (it yields an empty string), so we resolve the
+	 * webroot-aware app base via `calendar.view.index` and append the
+	 * `edit/{token}` segment ourselves (token URL-encoded so the base64 `/`/`+`
+	 * survive as one path segment).
+	 *
+	 * Returns null (record gets no `url`) when a required part is missing or the
+	 * Calendar app / route is unavailable.
+	 *
+	 * @param string|null $calendarUri The CalDAV calendar URI owning the event.
+	 * @param string|null $objectUri The VEVENT object URI (.ics).
+	 *
+	 * @return string|null The deep-link URL, or null when not resolvable.
+	 */
+	private function buildEventDeepLink(?string $calendarUri, ?string $objectUri): ?string {
+		$user = $this->userSession->getUser();
+		if ($this->hasDeepLinkPath(calendarUri: $calendarUri, objectUri: $objectUri) === false) {
+			return null;
+		}
 
-        $lines[] = 'END:VEVENT';
-        $lines[] = 'END:VCALENDAR';
+		return $this->deepLinkOf(user: $user, path: $calendarUri . '/' . $objectUri);
+	}//end buildEventDeepLink()
 
-        $calendarData = implode("\r\n", $lines)."\r\n";
-        $uri          = $uid.'.ics';
+	/**
+	 * Whether both the calendar URI and the object URI are present.
+	 *
+	 * @param string|null $calendarUri The CalDAV calendar URI.
+	 * @param string|null $objectUri   The VEVENT object URI.
+	 *
+	 * @return bool
+	 */
+	private function hasDeepLinkPath(?string $calendarUri, ?string $objectUri): bool {
+		return in_array($calendarUri, [null, ''], true) === false && in_array($objectUri, [null, ''], true) === false;
+	}//end hasDeepLinkPath()
 
-        $this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
+	/**
+	 * The Calendar app deep-link for a user's event path, or null without a user or Calendar app.
+	 *
+	 * @param IUser|null $user The current user.
+	 * @param string     $path `{calendarUri}/{objectUri}`.
+	 *
+	 * @return string|null
+	 */
+	private function deepLinkOf(?IUser $user, string $path): ?string {
+		if ($user === null) {
+			return null;
+		}
 
-        return $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $uri);
-    }//end createEvent()
+		$base = $this->calendarAppBase();
+		if ($base === null) {
+			return null;
+		}
 
-    /**
-     * Link an existing calendar event to an object by adding X-OPENREGISTER-* properties.
-     *
-     * @param int    $calendarId The calendar ID
-     * @param string $eventUri   The event URI
-     * @param int    $registerId The register ID
-     * @param int    $schemaId   The schema ID
-     * @param string $objectUuid The object UUID
-     *
-     * @return array|null The updated event
-     *
-     * @throws Exception If the event is not found
-     */
-    public function linkEvent(
-        int $calendarId,
-        string $eventUri,
-        int $registerId,
-        int $schemaId,
-        string $objectUuid
-    ): ?array {
-        $existing = $this->calDavBackend->getCalendarObject($calendarId, $eventUri);
-        if ($existing === null) {
-            throw new Exception('Calendar event not found');
-        }
+		return rtrim($base, '/') . '/edit/' . $this->eventDavToken(userId: $user->getUID(), path: $path);
+	}//end deepLinkOf()
 
-        $vcalendar = Reader::read($existing['calendardata']);
-        $vevent    = $vcalendar->VEVENT;
+	/**
+	 * The Calendar app's objectId for an event: its URL-encoded, base64 DAV href.
+	 *
+	 * The Calendar app decodes objectId to a DAV href and fetches it, so it
+	 * must carry the (webroot-aware) `/remote.php/dav/` prefix.
+	 *
+	 * @param string $userId The calendar owner's user id.
+	 * @param string $path   The `{calendarUri}/{objectUri}` path.
+	 *
+	 * @return string The token.
+	 */
+	private function eventDavToken(string $userId, string $path): string {
+		$davPath = $this->urlGenerator->getWebroot() . '/remote.php/dav/calendars/' . $userId . '/' . $path;
 
-        if ($vevent === null) {
-            throw new Exception('Calendar object is not a VEVENT');
-        }
+		return rawurlencode(base64_encode($davPath));
+	}//end eventDavToken()
 
-        $vevent->add('X-OPENREGISTER-REGISTER', (string) $registerId);
-        $vevent->add('X-OPENREGISTER-SCHEMA', (string) $schemaId);
-        $vevent->add('X-OPENREGISTER-OBJECT', $objectUuid);
+	/**
+	 * The webroot-aware base URL of the Calendar app, or null when it is unavailable.
+	 *
+	 * @return string|null The base URL.
+	 */
+	private function calendarAppBase(): ?string {
+		try {
+			$base = $this->urlGenerator->linkToRoute('calendar.view.index');
+		} catch (\Throwable $e) {
+			return null;
+		}
 
-        $calendarData = $vcalendar->serialize();
-        $this->calDavBackend->updateCalendarObject($calendarId, $eventUri, $calendarData);
+		if ($base === '') {
+			return null;
+		}
 
-        return $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $eventUri);
-    }//end linkEvent()
+		return $base;
+	}//end calendarAppBase()
 
-    /**
-     * Unlink an event from an object (remove X-OPENREGISTER-* properties).
-     *
-     * @param string $calendarId The calendar ID
-     * @param string $eventUri   The event URI
-     *
-     * @return void
-     *
-     * @throws Exception If the event is not found
-     */
-    public function unlinkEvent(string $calendarId, string $eventUri): void
-    {
-        $calendarIdInt = (int) $calendarId;
-        $existing      = $this->calDavBackend->getCalendarObject($calendarIdInt, $eventUri);
+	/**
+	 * Get all VEVENTs across the acting user's VEVENT-supporting calendars.
+	 *
+	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::getAllUserTasks()}
+	 * for events: it enumerates every calendar the user owns (not just the pinned
+	 * one), skips non-VEVENT objects, and returns the parsed event arrays sorted by
+	 * start date (soonest first, undated last). Backs the `calendar-event-source`
+	 * ObjectSourceProvider.
+	 *
+	 * @param int $limit Maximum number of events to return.
+	 * @param int $offset Number of events to skip.
+	 *
+	 * @return array{results: array<int, array<string, mixed>>, total: int} Events with total count.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
+	 */
+	public function getAllUserEvents(int $limit = 200, int $offset = 0): array {
+		$principal = 'principals/users/' . $this->currentUserId();
 
-        if ($existing === null) {
-            throw new Exception('Calendar event not found');
-        }
+		$allEvents = [];
+		foreach ($this->calDavBackend->getCalendarsForUser($principal) as $calendar) {
+			if ($this->calendarSelector->calendarSupportsVevent(calendar: $calendar) === true) {
+				$allEvents = array_merge($allEvents, $this->parsedEventsIn(calendarId: $calendar['id'], needle: 'VEVENT'));
+			}
+		}
 
-        $vcalendar = Reader::read($existing['calendardata']);
-        $vevent    = $vcalendar->VEVENT;
+		$allEvents = $this->sortedByStart(events: $allEvents);
 
-        if ($vevent === null) {
-            throw new Exception('Calendar object is not a VEVENT');
-        }
+		return [
+			'results' => array_slice($allEvents, $offset, $limit),
+			'total' => count($allEvents),
+		];
+	}//end getAllUserEvents()
 
-        // Remove X-OPENREGISTER-* properties.
-        unset($vevent->{'X-OPENREGISTER-REGISTER'});
-        unset($vevent->{'X-OPENREGISTER-SCHEMA'});
-        unset($vevent->{'X-OPENREGISTER-OBJECT'});
+	/**
+	 * Events sorted by start date, soonest first and undated last.
+	 *
+	 * @param list<array<string, mixed>> $events The events.
+	 *
+	 * @return list<array<string, mixed>> The sorted events.
+	 */
+	private function sortedByStart(array $events): array {
+		usort(
+			array: $events,
+			callback: fn ($a, $b) => strcmp(($a['dtstart'] ?? '9999-12-31'), ($b['dtstart'] ?? '9999-12-31'))
+		);
 
-        // Remove LINK property with openregister.
-        foreach ($vevent->select('LINK') as $link) {
-            $value = (string) $link;
-            if (strpos($value, 'openregister') !== false) {
-                $vevent->remove($link);
-            }
-        }
+		return $events;
+	}//end sortedByStart()
 
-        $calendarData = $vcalendar->serialize();
-        $this->calDavBackend->updateCalendarObject($calendarIdInt, $eventUri, $calendarData);
-    }//end unlinkEvent()
+	/**
+	 * Create a new CalDAV event linked to an OpenRegister object.
+	 *
+	 * @param int $registerId The register ID
+	 * @param int $schemaId The schema ID
+	 * @param string $objectUuid The object UUID
+	 * @param string $objectTitle The object title for the LINK label
+	 * @param array $data Event data: summary, dtstart, dtend, location, description, attendees
+	 *
+	 * @return array|null The created event in JSON-friendly format
+	 *
+	 * @throws Exception If no user or calendar found, or if the data carries no
+	 *                   usable dtstart
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function createEvent(
+		int $registerId,
+		int $schemaId,
+		string $objectUuid,
+		string $objectTitle,
+		array $data,
+	): ?array {
+		return $this->createTaggedEvent(
+			link: ['registerId' => $registerId, 'schemaId' => $schemaId, 'objectUuid' => $objectUuid, 'objectTitle' => $objectTitle],
+			data: $data
+		);
+	}//end createEvent()
 
-    /**
-     * Unlink all events for an object (used during cleanup).
-     *
-     * @param string $objectUuid The object UUID.
-     *
-     * @return void
-     */
-    public function unlinkEventsForObject(string $objectUuid): void
-    {
-        $events = $this->getEventsForObject(objectUuid: $objectUuid);
+	/**
+	 * Write a new VEVENT tagged with its object to the user's calendar.
+	 *
+	 * @param array{registerId:int, schemaId:int, objectUuid:string, objectTitle:string} $link The object it is linked to.
+	 * @param array<string,mixed>                                                         $data Event data.
+	 *
+	 * @return array|null The created event.
+	 *
+	 * @throws Exception When the data has no usable start, or no user or calendar.
+	 */
+	private function createTaggedEvent(array $link, array $data): ?array {
+		// A VEVENT without DTSTART is not merely incomplete, it is unreachable.
+		// Its firstoccurence is NULL so it matches no time-range query and no
+		// calendar view can show it, and Sabre's ITip plugin then rejects both
+		// DELETE and PUT on it with "An event MUST have a DTSTART property".
+		// Nothing removes such a row but a SQL delete.
+		//
+		// The guard lives here rather than in the controllers because this is
+		// the one place a VEVENT is serialised, and both callers reach it:
+		// CalendarEventsController and TaskEventsController each validated only
+		// the summary. Both turn a thrown Exception into a 400.
+		//
+		// VTODOs are a separate matter and are not written here: a task carries
+		// DUE and no DTSTART, and is correct that way.
+		$dtstart = $this->veventCodec->requiredStart(data: $data);
+		$calendarId = $this->findUserCalendar()['id'];
 
-        foreach ($events as $event) {
-            try {
-                $this->unlinkEvent(calendarId: $event['calendarId'], eventUri: $event['id']);
-            } catch (Exception $e) {
-                $this->logger->warning(
-                    'Failed to unlink event '.$event['id'].' from object '.$objectUuid.': '.$e->getMessage()
-                );
-            }
-        }
-    }//end unlinkEventsForObject()
+		$uid = strtoupper(bin2hex(random_bytes(16)));
+		$calendarData = $this->veventCodec->calendarData(
+			uid: $uid,
+			dtstart: $dtstart,
+			data: $data,
+			link: $link
+		);
+		$uri = $uid . '.ics';
 
-    /**
-     * Find the user's first VEVENT-supporting calendar.
-     *
-     * @return array Calendar data with 'id' and 'uri' keys
-     *
-     * @throws Exception If no user or calendar found
-     */
-    private function findUserCalendar(): array
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            throw new Exception('No user logged in');
-        }
+		$this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
 
-        $principal = 'principals/users/'.$user->getUID();
-        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
+		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
+	}//end createTaggedEvent()
 
-        foreach ($calendars as $calendar) {
-            $components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
-            if ($components !== null) {
-                $supportsVevent = false;
+	/**
+	 * Link an existing calendar event to an object by adding X-OPENREGISTER-* properties.
+	 *
+	 * @param int $calendarId The calendar ID
+	 * @param string $eventUri The event URI
+	 * @param int $registerId The register ID
+	 * @param int $schemaId The schema ID
+	 * @param string $objectUuid The object UUID
+	 *
+	 * @return array|null The updated event
+	 *
+	 * @throws Exception If the event is not found
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function linkEvent(
+		int $calendarId,
+		string $eventUri,
+		int $registerId,
+		int $schemaId,
+		string $objectUuid,
+	): ?array {
+		return $this->tagEvent(
+			event: new CalendarObjectRef(calendarId: $calendarId, uri: $eventUri),
+			target: (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId)
+		);
+	}//end linkEvent()
 
-                if (is_object($components) === true && method_exists($components, 'getValue') === true) {
-                    foreach ($components->getValue() as $comp) {
-                        if (strtoupper($comp) === 'VEVENT') {
-                            $supportsVevent = true;
-                            break;
-                        }
-                    }
-                } else if (is_string($components) === true) {
-                    $supportsVevent = stripos($components, 'VEVENT') !== false;
-                } else if (is_iterable($components) === true) {
-                    foreach ($components as $comp) {
-                        if (strtoupper((string) $comp) === 'VEVENT') {
-                            $supportsVevent = true;
-                            break;
-                        }
-                    }
-                }//end if
+	/**
+	 * Tag a stored VEVENT with the register, schema and object it is linked to.
+	 *
+	 * @param CalendarObjectRef $event  The stored event.
+	 * @param LinkTarget        $target The object, register and schema.
+	 *
+	 * @return array|null The updated event.
+	 *
+	 * @throws Exception When the event does not exist or is not a VEVENT.
+	 */
+	private function tagEvent(CalendarObjectRef $event, LinkTarget $target): ?array {
+		$vcalendar = $this->readVevent(calendarId: $event->calendarId, eventUri: $event->uri);
+		$vevent = $this->veventOf(document: $vcalendar);
+		$vevent->add('X-OPENREGISTER-REGISTER', (string)$target->registerId);
+		$vevent->add('X-OPENREGISTER-SCHEMA', (string)$target->schemaId());
+		$vevent->add('X-OPENREGISTER-OBJECT', $target->objectUuid);
 
-                if ($supportsVevent === true) {
-                    return [
-                        'id'  => $calendar['id'],
-                        'uri' => $calendar['uri'],
-                    ];
-                }
-            }//end if
-        }//end foreach
+		$calendarData = $vcalendar->serialize();
+		$this->calDavBackend->updateCalendarObject($event->calendarId, $event->uri, $calendarData);
 
-        throw new Exception('No VEVENT-supporting calendar found for user '.$user->getUID());
-    }//end findUserCalendar()
+		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$event->calendarId, uri: $event->uri);
+	}//end tagEvent()
 
-    /**
-     * Parse a VEVENT iCalendar string into a JSON-friendly array.
-     *
-     * @param string $calendarData The raw iCalendar string
-     * @param string $calendarId   The calendar ID
-     * @param string $uri          The calendar object URI
-     *
-     * @return array|null Event array or null if not a VEVENT
-     */
-    private function veventToArray(string $calendarData, string $calendarId, string $uri): ?array
-    {
-        $vcalendar = Reader::read($calendarData);
-        $vevent    = $vcalendar->VEVENT;
+	/**
+	 * Load a stored calendar object that must hold a VEVENT.
+	 *
+	 * @param int    $calendarId The calendar ID.
+	 * @param string $eventUri   The event URI.
+	 *
+	 * @return Document The parsed calendar object.
+	 *
+	 * @throws Exception If the event is not found or is not a VEVENT.
+	 */
+	private function readVevent(int $calendarId, string $eventUri): Document {
+		$existing = $this->calDavBackend->getCalendarObject($calendarId, $eventUri);
+		if ($existing === null) {
+			throw new Exception('Calendar event not found');
+		}
 
-        if ($vevent === null) {
-            return null;
-        }
+		$vcalendar = Reader::read($existing['calendardata']);
+		if ($this->veventOf(document: $vcalendar) === null) {
+			throw new Exception('Calendar object is not a VEVENT');
+		}
 
-        $linkData = $this->extractOpenRegisterProperties(vevent: $vevent);
+		return $vcalendar;
+	}//end readVevent()
 
-        $dtstart = null;
-        if (isset($vevent->DTSTART) === true) {
-            $dtstart = $vevent->DTSTART->getDateTime()->format('c');
-        }
+	/**
+	 * Refuse an event that is not one of the caller's events on the given object.
+	 *
+	 * @param string $objectUuid The object the caller addressed.
+	 * @param string $calendarId The calendar the caller named.
+	 * @param string $eventUri   The event the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireEventOf(string $objectUuid, string $calendarId, string $eventUri): void {
+		foreach ($this->getEventsForObject(objectUuid: $objectUuid) as $event) {
+			if ((string)$event['calendarId'] === $calendarId && $event['id'] === $eventUri) {
+				return;
+			}
+		}
 
-        $dtend = null;
-        if (isset($vevent->DTEND) === true) {
-            $dtend = $vevent->DTEND->getDateTime()->format('c');
-        }
+		throw new Exception('Calendar event not found', 404);
+	}//end requireEventOf()
 
-        $attendees = [];
-        if (isset($vevent->ATTENDEE) === true) {
-            foreach ($vevent->ATTENDEE as $attendee) {
-                $attendees[] = str_replace('mailto:', '', (string) $attendee);
-            }
-        }
+	/**
+	 * Unlink an event from an object (remove X-OPENREGISTER-* properties).
+	 *
+	 * @param string $calendarId The calendar ID
+	 * @param string $eventUri The event URI
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the event is not found
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function unlinkEvent(string $calendarId, string $eventUri): void {
+		$calendarIdInt = (int)$calendarId;
+		$vcalendar = $this->readVevent(calendarId: $calendarIdInt, eventUri: $eventUri);
+		$this->stripOpenRegisterLink(vevent: $this->veventOf(document: $vcalendar));
 
-        return [
-            'id'          => $uri,
-            'uid'         => isset($vevent->UID) === true ? (string) $vevent->UID : null,
-            'calendarId'  => $calendarId,
-            'summary'     => isset($vevent->SUMMARY) === true ? (string) $vevent->SUMMARY : '',
-            'dtstart'     => $dtstart,
-            'dtend'       => $dtend,
-            'location'    => isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null,
-            'description' => isset($vevent->DESCRIPTION) === true ? (string) $vevent->DESCRIPTION : '',
-            'attendees'   => $attendees,
-            'status'      => isset($vevent->STATUS) === true ? strtolower((string) $vevent->STATUS) : null,
-            'objectUuid'  => $linkData['objectUuid'],
-            'registerId'  => $linkData['registerId'],
-            'schemaId'    => $linkData['schemaId'],
-        ];
-    }//end veventToArray()
+		$this->calDavBackend->updateCalendarObject($calendarIdInt, $eventUri, $vcalendar->serialize());
+	}//end unlinkEvent()
 
-    /**
-     * Extract X-OPENREGISTER-* properties from a VEVENT component.
-     *
-     * @param mixed $vevent The VEVENT component.
-     *
-     * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
-     *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-25
-     */
-    private function extractOpenRegisterProperties(mixed $vevent): array
-    {
-        $objectUuid = null;
-        $registerId = null;
-        $schemaId   = null;
+	/**
+	 * Remove the X-OPENREGISTER-* properties and every LINK mentioning openregister from a VEVENT.
+	 *
+	 * @param mixed $vevent The VEVENT component.
+	 *
+	 * @return void
+	 */
+	private function stripOpenRegisterLink(mixed $vevent): void {
+		unset($vevent->{'X-OPENREGISTER-REGISTER'});
+		unset($vevent->{'X-OPENREGISTER-SCHEMA'});
+		unset($vevent->{'X-OPENREGISTER-OBJECT'});
 
-        if (isset($vevent->{'X-OPENREGISTER-OBJECT'}) === true) {
-            $objectUuid = (string) $vevent->{'X-OPENREGISTER-OBJECT'};
-        }
+		foreach ($vevent->select('LINK') as $link) {
+			if (strpos((string)$link, 'openregister') !== false) {
+				$vevent->remove($link);
+			}
+		}
+	}//end stripOpenRegisterLink()
 
-        if (isset($vevent->{'X-OPENREGISTER-REGISTER'}) === true) {
-            $registerId = (int) (string) $vevent->{'X-OPENREGISTER-REGISTER'};
-        }
+	/**
+	 * Delete an event from the calendar outright.
+	 *
+	 * The counterpart to {@see unlinkEvent()}, and genuinely different from it:
+	 * unlink strips the OpenRegister properties and leaves the meeting on the
+	 * user's calendar, this removes the meeting.
+	 *
+	 * The distinction had been lost. `CalendarEventsController::destroy()`, the
+	 * endpoint behind the leaf's "Delete meeting" row action, called
+	 * `unlinkEvent()` and answered `{"success": true}`, so cancelling a hearing
+	 * left the hearing on everybody's calendar while the case confirmed the
+	 * deletion. The two row actions did the same thing.
+	 *
+	 * @param string $calendarId The calendar ID
+	 * @param string $eventUri The event URI
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the event is not found
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function deleteEvent(string $calendarId, string $eventUri): void {
+		$calendarIdInt = (int)$calendarId;
+		$this->refuseSomebodyElsesCalendar(calendarId: $calendarIdInt);
 
-        if (isset($vevent->{'X-OPENREGISTER-SCHEMA'}) === true) {
-            $schemaId = (int) (string) $vevent->{'X-OPENREGISTER-SCHEMA'};
-        }
+		$existing = $this->calDavBackend->getCalendarObject($calendarIdInt, $eventUri);
 
-        return [
-            'objectUuid' => $objectUuid,
-            'registerId' => $registerId,
-            'schemaId'   => $schemaId,
-        ];
-    }//end extractOpenRegisterProperties()
+		if ($existing === null) {
+			throw new Exception('Calendar event not found');
+		}
 
-    /**
-     * Escape text for iCalendar property values.
-     *
-     * @param string $text The text to escape
-     *
-     * @return string The escaped text
-     */
-    private function escapeIcalText(string $text): string
-    {
-        $text = str_replace('\\', '\\\\', $text);
-        $text = str_replace("\n", '\\n', $text);
-        $text = str_replace(',', '\\,', $text);
-        $text = str_replace(';', '\;', $text);
+		$this->calDavBackend->deleteCalendarObject($calendarIdInt, $eventUri);
+	}//end deleteEvent()
 
-        return $text;
-    }//end escapeIcalText()
+	/**
+	 * Refuse a calendar the session user does not own.
+	 *
+	 * The id comes from a link row any reader of the object can see, so holding
+	 * it says nothing about the calendar.
+	 *
+	 * @param int $calendarId The calendar id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not the caller's.
+	 */
+	private function refuseSomebodyElsesCalendar(int $calendarId): void {
+		$user = $this->userSession->getUser();
+		$calendar = $this->calDavBackend->getCalendarById($calendarId);
+		if ($user === null || ($calendar['principaluri'] ?? null) !== 'principals/users/' . $user->getUID()) {
+			throw new Exception('Calendar event not found', 404);
+		}
+	}//end refuseSomebodyElsesCalendar()
+
+	/**
+	 * Unlink all events for an object (used during cleanup).
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	public function unlinkEventsForObject(string $objectUuid): void {
+		$events = $this->getEventsForObject(objectUuid: $objectUuid);
+
+		foreach ($events as $event) {
+			try {
+				$this->unlinkEvent(calendarId: $event['calendarId'], eventUri: $event['id']);
+			} catch (Exception $e) {
+				$this->logger->warning(
+					'Failed to unlink event ' . $event['id'] . ' from object ' . $objectUuid . ': ' . $e->getMessage()
+				);
+			}
+		}
+	}//end unlinkEventsForObject()
+
+	/**
+	 * Find the calendar OpenRegister should target for the current user.
+	 *
+	 * Resolution order:
+	 *   1. The URI pinned in the user's IConfig (`openregister`/`events_calendar_uri`).
+	 *      If present AND the underlying calendar still exists AND supports
+	 *      VEVENT, that calendar is returned. This guarantees that a write
+	 *      via {@see createEvent()} and a subsequent read via
+	 *      {@see getEventsForObject()} always touch the same calendar even
+	 *      when `CalDavBackend::getCalendarsForUser()` returns rows in a
+	 *      different order across calls.
+	 *   2. Fallback to the first VEVENT-supporting calendar in the list and
+	 *      persist its URI as the pin for future calls. A user's `personal`
+	 *      calendar is preferred when present so the pin lands on a sensible
+	 *      default rather than on whichever VEVENT calendar happens to be
+	 *      first (e.g. `contact_birthdays`).
+	 *
+	 * The pin is stored under `openregister`/`events_calendar_uri` and can
+	 * be reset by clearing that user-value if a user wants OR to retarget
+	 * (e.g. via `occ user:setting … --delete`).
+	 *
+	 * @return array Calendar data with 'id' and 'uri' keys
+	 *
+	 * @throws Exception If no user or calendar found
+	 */
+	private function findUserCalendar(): array {
+		$userId = $this->currentUserId();
+		$calendars = $this->calDavBackend->getCalendarsForUser('principals/users/' . $userId);
+
+		return $this->calendarSelector->select(userId: $userId, calendars: $calendars);
+	}//end findUserCalendar()
+
+	/**
+	 * The UID of the session user.
+	 *
+	 * @return string The user id.
+	 *
+	 * @throws Exception If no user is logged in.
+	 */
+	private function currentUserId(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		return $user->getUID();
+	}//end currentUserId()
+
+	/**
+	 * Parse a VEVENT iCalendar string into a JSON-friendly array.
+	 *
+	 * @param string $calendarData The raw iCalendar string
+	 * @param string $calendarId The calendar ID
+	 * @param string $uri The calendar object URI
+	 *
+	 * @return array|null Event array or null if not a VEVENT
+	 */
+	private function veventToArray(string $calendarData, string $calendarId, string $uri): ?array {
+		$vevent = $this->veventOf(document: Reader::read($calendarData));
+		if ($vevent === null) {
+			return null;
+		}
+
+		return $this->veventCodec->eventArray(vevent: $vevent, calendarId: $calendarId, uri: $uri);
+	}//end veventToArray()
+
+	/**
+	 * The first VEVENT of a parsed iCalendar document, or null when it has none.
+	 *
+	 * @param Document $document The parsed document.
+	 *
+	 * @return mixed The VEVENT component.
+	 */
+	private function veventOf(Document $document): mixed {
+		return $document->VEVENT;
+	}//end veventOf()
 }//end class

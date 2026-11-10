@@ -1,0 +1,513 @@
+<?php
+
+/**
+ * FilterParams: one filter grammar for object search and the aggregations.
+ *
+ * @category Support
+ * @package  OCA\OpenRegister\Support
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Support;
+
+use Psr\Log\LoggerInterface;
+
+/**
+ * Normalises the two ways a caller can spell a property filter, `x=v` and
+ * `filter[x]=v`, so object search and the aggregation endpoints read both.
+ *
+ * WHY THIS EXISTS. The two sibling endpoints disagreed, and each answered the
+ * other's spelling with a confident wrong number (openregister#3611):
+ *
+ *   - Object search (`/api/objects/{register}/{schema}`) read only the bare
+ *     spelling. `filter[origin]=manual` became a filter on a property literally
+ *     named `filter`, which no schema has, so every such query returned the
+ *     empty set. A caller summing those rows rendered 0.
+ *   - The aggregations (`/api/objects/aggregations/...`) read only the bracket
+ *     spelling. A bare `origin=manual` was dropped, so the caller got the figure
+ *     for the whole schema while believing it had scoped the query.
+ *
+ * Both failures were silent. This class makes the known-property case agree and
+ * gives the unknown-key case a warning, without refusing anything: a 400 would
+ * break every caller on the wrong spelling at the same moment.
+ *
+ * WHAT STAYS AS IT WAS. A key that names no property keeps the result its
+ * endpoint already gave it, and is logged. That is deliberate: a bare query
+ * parameter the aggregations never read (a cache-buster, a stray `v=2`) must
+ * not start zeroing a KPI tile. Only a key that names a declared property is
+ * newly honoured on the endpoint that used to ignore it.
+ *
+ * Kept static on the same terms as {@see QueryLimit}: both read paths have to
+ * reach the SAME answer, and one pure function reachable by name from both is
+ * the property being bought.
+ *
+ * @psalm-suppress UnusedClass Referenced from the query paths; psalm's
+ *  entry-point analysis does not follow the controllers that reach them.
+ */
+final class FilterParams {
+
+	/**
+	 * The request parameter that carries the bracket spelling, `filter[x]=v`.
+	 */
+	public const FILTER_KEY = 'filter';
+
+	/**
+	 * The words a boolean-column filter accepts, in the form every supported database reads.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BOOLEAN_WORDS = ['true' => '1', 'false' => '0'];
+
+	/**
+	 * Non-underscore parameters that carry object-search CONTEXT, not a filter.
+	 *
+	 * Also the tail of `MagicSearchHandler::getReservedParams()`, which reads
+	 * this constant, so the search handler and this class cannot drift apart.
+	 *
+	 * @var string[]
+	 */
+	public const OBJECT_CONTEXT_PARAMS = ['register', 'schema', 'registers', 'schemas', 'extend'];
+
+	/**
+	 * Parameters `SearchQueryHandler::buildSearchQuery()` strips before it
+	 * reads filters. They steer the request (`deleted` includes soft-deleted
+	 * rows, `rbac`/`multi` are ignored for security) and are never filters.
+	 *
+	 * @var string[]
+	 */
+	public const OBJECT_SYSTEM_PARAMS = ['id', 'rbac', 'multi', 'deleted'];
+
+	/**
+	 * Route placeholders every aggregation route carries. `IRequest::getParams()`
+	 * merges URL parameters in with the query string, so without this a schema
+	 * slug would be read as a filter on a property called `schema`.
+	 *
+	 * @var string[]
+	 */
+	public const AGGREGATION_ROUTE_PARAMS = ['register', 'schema'];
+
+	/**
+	 * Bracket keys that filter on the object itself rather than on a declared
+	 * property, so they are never reported as unknown.
+	 *
+	 * Only `id`: every aggregation row carries the object's uuid as `id` next
+	 * to its properties (`ObjectEntity::getObject()`), so `filter[id]=<uuid>`
+	 * scopes the figure to one object. Reporting it as naming no property was
+	 * a false warning on every Pipelinq lead card (openregister#4165). `uuid`
+	 * and `@self.*` are NOT row keys on any backend, so they still match no
+	 * rows and the warning about them stays true.
+	 *
+	 * @var string[]
+	 */
+	public const AGGREGATION_OBJECT_KEYS = ['id'];
+
+	/**
+	 * The control parameters each aggregation action reads by name, taken
+	 * from `AggregationController`. None of them is ever a filter, on either
+	 * spelling of the endpoint; a property that shares one of these names can
+	 * only be filtered as `filter[name]`.
+	 *
+	 * `aggregate` carries `name` because its route has a `{name}` placeholder,
+	 * and most fleet schemas declare a `name` property.
+	 *
+	 * @var array<string, string[]>
+	 */
+	public const AGGREGATION_CONTROL_PARAMS = [
+		'aggregate'  => ['filter', 'name'],
+		'value'      => ['filter', 'metric', 'field', 'metrics'],
+		'grouped'    => ['filter', 'metric', 'field', 'metrics', 'groupBy', 'sort', 'limit'],
+		'timeseries' => ['filter', 'field', 'interval', 'from', 'to', 'metric', 'metricField', 'cumulative'],
+	];
+
+	/**
+	 * Lift `filter[x]=v` into a bare `x=v` for the object-search grammar.
+	 *
+	 * Runs on the parameters AFTER `buildSearchQuery()` has undone PHP's
+	 * dot-mangling, so a bracket key is taken literally, as it arrived. A
+	 * nested bracket (`filter[address][city]=v`) lifts to the same nested shape
+	 * the bare dot spelling (`address.city=v`) produces. When both spellings
+	 * name one key, the bracket value wins.
+	 *
+	 * A key that is not a filter under the bare spelling stays behind in
+	 * `filter`: an underscore-prefixed key, a context or system parameter, or a
+	 * numeric key. The spelling is not a way to reach a control parameter, and
+	 * the leftover `filter` keeps the result such a request gave before.
+	 *
+	 * @param array<array-key, mixed> $params The request parameters.
+	 *
+	 * @return array<array-key, mixed> The parameters with the bracket keys lifted.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	public static function liftBracketFilter(array $params): array {
+		$bracket = ($params[self::FILTER_KEY] ?? null);
+		if (is_array($bracket) === false || $bracket === [] || array_is_list($bracket) === true) {
+			return $params;
+		}
+
+		$reserved = array_merge(self::OBJECT_CONTEXT_PARAMS, self::OBJECT_SYSTEM_PARAMS);
+		$leftover = [];
+		foreach ($bracket as $key => $value) {
+			if (self::isFilterName(key: $key, reserved: $reserved) === false) {
+				$leftover[$key] = $value;
+				continue;
+			}
+
+			$params[$key] = $value;
+		}
+
+		unset($params[self::FILTER_KEY]);
+		if ($leftover !== []) {
+			$params[self::FILTER_KEY] = $leftover;
+		}
+
+		return $params;
+	}//end liftBracketFilter()
+
+	/**
+	 * Build an aggregation's filter map from both spellings.
+	 *
+	 * The bracket map passes through exactly as the endpoint always read it.
+	 * A bare key joins it only when it names a declared property of the schema
+	 * and is not one of the action's control parameters. When both spellings
+	 * name one key, the bracket value wins.
+	 *
+	 * Keys that name no property come back in `unknown` for the caller to log:
+	 * a bare one was ignored, as it always was, and a bracket one still filters
+	 * on a column the rows do not have, so it still matches nothing.
+	 *
+	 * @param array<array-key, mixed> $bracket       The `filter[...]` map.
+	 * @param array<array-key, mixed> $params        Every request parameter.
+	 * @param string[]                $controlParams The action's control parameters.
+	 * @param array<array-key, mixed> $properties    The schema's declared properties.
+	 *
+	 * @return array{filter: array<array-key, mixed>, unknown: list<string>}
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	public static function forAggregation(array $bracket, array $params, array $controlParams, array $properties): array {
+		$bare = self::bareFilters(candidates: self::filterCandidates(params: $params, controlParams: $controlParams), properties: $properties);
+		$unknown = array_merge($bare['unknown'], self::unknownBracketKeys(bracket: $bracket, properties: $properties));
+
+		return [
+			'filter'  => array_replace($bare['filter'], $bracket),
+			'unknown' => array_values(array_unique($unknown)),
+		];
+	}//end forAggregation()
+
+	/**
+	 * The request parameters that could name a property filter on this aggregation action.
+	 *
+	 * @param array<array-key, mixed> $params        Every request parameter.
+	 * @param string[]                $controlParams The action's control parameters.
+	 *
+	 * @return array<string, mixed> The candidates, in request order.
+	 */
+	private static function filterCandidates(array $params, array $controlParams): array {
+		$reserved = self::reservedForAggregation(controlParams: $controlParams);
+
+		return array_filter(
+			$params,
+			static fn (int|string $key): bool => self::isFilterName(key: $key, reserved: $reserved),
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end filterCandidates()
+
+	/**
+	 * Split candidate bare filters into those naming a declared property and the rest.
+	 *
+	 * @param array<string, mixed>    $candidates The candidate bare filters.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return array{filter: array<string, mixed>, unknown: list<string>}
+	 */
+	private static function bareFilters(array $candidates, array $properties): array {
+		$filter = [];
+		$unknown = [];
+		foreach ($candidates as $key => $value) {
+			if (array_key_exists($key, $properties) === false) {
+				$unknown[] = (string)$key;
+				continue;
+			}
+
+			$filter[$key] = $value;
+		}
+
+		return ['filter' => $filter, 'unknown' => $unknown];
+	}//end bareFilters()
+
+	/**
+	 * The bracket keys that name nothing an aggregation row carries, in bracket order.
+	 *
+	 * @param array<array-key, mixed> $bracket    The `filter[...]` map.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return list<string> The unknown bracket keys.
+	 */
+	private static function unknownBracketKeys(array $bracket, array $properties): array {
+		$unknown = [];
+		foreach (array_keys($bracket) as $key) {
+			if (self::isUnknownBracketKey(key: $key, properties: $properties) === true) {
+				$unknown[] = (string)$key;
+			}
+		}
+
+		return $unknown;
+	}//end unknownBracketKeys()
+
+	/**
+	 * Whether any parameter could become a bare aggregation filter.
+	 *
+	 * Lets the controller skip the schema lookup on the common request that
+	 * carries only control parameters.
+	 *
+	 * @param array<array-key, mixed> $params        Every request parameter.
+	 * @param string[]                $controlParams The action's control parameters.
+	 *
+	 * @return bool True when at least one parameter is a candidate filter name.
+	 */
+	public static function hasBareCandidates(array $params, array $controlParams): bool {
+		$reserved = self::reservedForAggregation(controlParams: $controlParams);
+		foreach (array_keys($params) as $key) {
+			if (self::isFilterName(key: $key, reserved: $reserved) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasBareCandidates()
+
+	/**
+	 * The object-field filter keys of a built search query that name no
+	 * property of the schema.
+	 *
+	 * Mirrors `MagicSearchHandler::isObjectFieldFilterKey()`: `@self`, every
+	 * underscore-prefixed key and every context parameter are not object-field
+	 * filters. What is left and is not a declared property is exactly the set
+	 * the search handler answers with `1 = 0`.
+	 *
+	 * @param array<array-key, mixed> $query      The query from `buildSearchQuery()`.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return list<string> The unknown keys, in query order.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	public static function unknownObjectFilterKeys(array $query, array $properties): array {
+		$unknown = [];
+		foreach (array_keys($query) as $key) {
+			$key = (string)$key;
+			if ($key === '@self'
+				|| str_starts_with($key, '_') === true
+				|| in_array($key, self::OBJECT_CONTEXT_PARAMS, true) === true
+				|| array_key_exists($key, $properties) === true
+			) {
+				continue;
+			}
+
+			$unknown[] = $key;
+		}
+
+		return $unknown;
+	}//end unknownObjectFilterKeys()
+
+	/**
+	 * Log ONE warning naming every filter key that named no property.
+	 *
+	 * This is what makes the silent failure loud without breaking a caller.
+	 * It is a warning and not a refusal on purpose; turning it into an HTTP 400
+	 * is the follow-up once the logs show no caller depends on the old answer.
+	 *
+	 * @param LoggerInterface|null $logger   Where to write; null writes nothing.
+	 * @param string[]             $keys     The unknown keys.
+	 * @param string               $endpoint The route name, e.g. `objects#index`.
+	 * @param string               $register The register reference from the URL.
+	 * @param string               $schema   The schema reference from the URL.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	public static function warnUnknownKeys(?LoggerInterface $logger, array $keys, string $endpoint, string $register, string $schema): void {
+		$context = ['app' => 'openregister', 'endpoint' => $endpoint, 'register' => $register, 'schema' => $schema];
+		self::logUnknownKeys(logger: $logger, context: $context + ['keys' => array_values($keys)]);
+	}//end warnUnknownKeys()
+
+	/**
+	 * Write the one warning line for the unknown filter keys a log context names.
+	 *
+	 * @param LoggerInterface|null                                                                    $logger  Where to write; null writes nothing.
+	 * @param array{app: string, endpoint: string, register: string, schema: string, keys: list<string>} $context The log context.
+	 *
+	 * @return void
+	 */
+	private static function logUnknownKeys(?LoggerInterface $logger, array $context): void {
+		if ($logger === null || $context['keys'] === []) {
+			return;
+		}
+
+		$message = sprintf(
+			'[OpenRegister] %s: filter key(s) "%s" name no property of schema "%s" in register "%s", so they do not'
+			. ' filter on a property. Check the spelling; an unknown filter key is meant to become an HTTP 400.',
+			$context['endpoint'],
+			implode('", "', $context['keys']),
+			$context['schema'],
+			$context['register']
+		);
+		$logger->warning($message, $context);
+	}//end logUnknownKeys()
+
+	/**
+	 * The names an aggregation action never reads as a filter: its own control
+	 * parameters, the route placeholders, and `filter` itself.
+	 *
+	 * One builder for both readers on purpose. {@see hasBareCandidates()}
+	 * decides whether the schema is worth resolving and {@see forAggregation()}
+	 * decides what filters; if those two disagreed, a key could be called a
+	 * candidate and then dropped, or skipped before it was ever considered.
+	 *
+	 * @param string[] $controlParams The action's control parameters.
+	 *
+	 * @return string[] Every name that is never a filter on this action.
+	 */
+	private static function reservedForAggregation(array $controlParams): array {
+		return array_merge($controlParams, self::AGGREGATION_ROUTE_PARAMS, [self::FILTER_KEY]);
+	}//end reservedForAggregation()
+
+	/**
+	 * The form a property filter value is compared in, whatever PHP type it came as.
+	 *
+	 * Every object-filter builder turns a value into SQL text. PHP casts `false`
+	 * to `''`, which PostgreSQL refuses for a boolean column (SQLSTATE 22P02), so a
+	 * PHP caller's `['isDraft' => false]` returned zero rows while `'false'` worked.
+	 * This gives every builder the same comparable form:
+	 *
+	 *  - boolean property: `true`/`false`/`'true'`/`'false'` (any case) become
+	 *    `'1'`/`'0'`, which PostgreSQL, MySQL and MariaDB all read as the boolean;
+	 *  - integer or number property: a PHP boolean becomes `1`/`0`;
+	 *  - any other property: a PHP boolean becomes `'true'`/`'false'`.
+	 *
+	 * An array is mapped element by element; in an operator bag the `isnull` and
+	 * `like` values keep their own rules and are returned untouched. Every other
+	 * value is returned as it came. A null or missing column still matches neither
+	 * true nor false: this changes the value, not the predicate.
+	 *
+	 * @param mixed  $value        The filter value as the caller passed it.
+	 * @param string $propertyType The property's declared JSON-Schema type.
+	 *
+	 * @return mixed The value in its comparable form.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
+	 */
+	public static function comparableValue(mixed $value, string $propertyType): mixed {
+		if (is_array($value) === true) {
+			return self::comparableList(values: $value, propertyType: $propertyType);
+		}
+
+		if ($propertyType === 'boolean') {
+			return self::booleanColumnValue(value: $value);
+		}
+
+		if (is_bool($value) === false) {
+			return $value;
+		}
+
+		if (in_array($propertyType, ['integer', 'number'], true) === true) {
+			return (int)$value;
+		}
+
+		// `'true'` or `'false'`, the value's JSON spelling.
+		return var_export($value, true);
+	}//end comparableValue()
+
+	/**
+	 * Map a value list or an operator bag element by element.
+	 *
+	 * The `isnull` and `like` operator values keep their own rules and are
+	 * returned untouched.
+	 *
+	 * @param array<array-key, mixed> $values       The list or operator bag.
+	 * @param string                  $propertyType The property's declared JSON-Schema type.
+	 *
+	 * @return array<array-key, mixed> The mapped list or bag.
+	 */
+	private static function comparableList(array $values, string $propertyType): array {
+		$mapped = [];
+		foreach ($values as $key => $item) {
+			$mapped[$key] = $item;
+			if (in_array($key, ['isnull', 'like'], true) === false) {
+				$mapped[$key] = self::comparableValue(value: $item, propertyType: $propertyType);
+			}
+		}
+
+		return $mapped;
+	}//end comparableList()
+
+	/**
+	 * The `'1'`/`'0'` form of a boolean-column filter value.
+	 *
+	 * @param mixed $value A scalar filter value.
+	 *
+	 * @return mixed `'1'` or `'0'` for a boolean or its word, the value itself otherwise.
+	 */
+	private static function booleanColumnValue(mixed $value): mixed {
+		if (is_bool($value) === true) {
+			return (string)(int)$value;
+		}
+
+		if (is_string($value) === true) {
+			return self::BOOLEAN_WORDS[strtolower($value)] ?? $value;
+		}
+
+		return $value;
+	}//end booleanColumnValue()
+
+	/**
+	 * Whether a bracket key names nothing an aggregation row carries.
+	 *
+	 * Underscore-prefixed keys are metadata and the object keys in
+	 * {@see AGGREGATION_OBJECT_KEYS} are on every row, so neither is reported.
+	 *
+	 * @param int|string              $key        The bracket key.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return bool True when the key should be reported as unknown.
+	 */
+	private static function isUnknownBracketKey(int|string $key, array $properties): bool {
+		if (is_string($key) === false || $key === '' || str_starts_with($key, '_') === true) {
+			return false;
+		}
+
+		if (in_array($key, self::AGGREGATION_OBJECT_KEYS, true) === true) {
+			return false;
+		}
+
+		return array_key_exists($key, $properties) === false;
+	}//end isUnknownBracketKey()
+
+	/**
+	 * Whether a request key can name a property filter at all.
+	 *
+	 * @param int|string $key      The request key.
+	 * @param string[]   $reserved Names that are never filters on this endpoint.
+	 *
+	 * @return bool False for numeric, empty, underscore-prefixed and reserved keys.
+	 */
+	private static function isFilterName(int|string $key, array $reserved): bool {
+		if (is_string($key) === false || $key === '' || str_starts_with($key, '_') === true) {
+			return false;
+		}
+
+		return in_array($key, $reserved, true) === false;
+	}//end isFilterName()
+}//end class

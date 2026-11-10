@@ -5,6 +5,9 @@
  *
  * Registers Twig functions and filters for the mapping engine.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
@@ -35,39 +38,47 @@ use Twig\TwigFunction;
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  */
-class MappingExtension extends AbstractExtension
-{
-    /**
-     * Get the Twig filters provided by this extension.
-     *
-     * @return TwigFilter[] Array of Twig filters
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
-     */
-    public function getFilters(): array
-    {
-        return [
-            new TwigFilter('b64enc', [MappingRuntime::class, 'b64enc']),
-            new TwigFilter('b64dec', [MappingRuntime::class, 'b64dec']),
-            new TwigFilter('json_decode', [MappingRuntime::class, 'jsonDecode']),
-            new TwigFilter('zgw_enum', [MappingRuntime::class, 'zgwEnum']),
-            new TwigFilter('zgw_enum_reverse', [MappingRuntime::class, 'zgwEnumReverse']),
-            new TwigFilter('zgw_extract_uuid', [MappingRuntime::class, 'zgwExtractUuid']),
-        ];
-    }//end getFilters()
+class MappingExtension extends AbstractExtension {
+	/**
+	 * Get the Twig filters provided by this extension.
+	 *
+	 * @return TwigFilter[] Array of Twig filters
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFilters(): array {
+		return [
+			new TwigFilter('b64enc', [MappingRuntime::class, 'b64enc']),
+			new TwigFilter('b64dec', [MappingRuntime::class, 'b64dec']),
+			new TwigFilter('json_decode', [MappingRuntime::class, 'jsonDecode']),
+			new TwigFilter('zgw_enum', [MappingRuntime::class, 'zgwEnum']),
+			new TwigFilter('zgw_enum_reverse', [MappingRuntime::class, 'zgwEnumReverse']),
+			new TwigFilter('zgw_extract_uuid', [MappingRuntime::class, 'zgwExtractUuid']),
+		];
+	}//end getFilters()
 
-    /**
-     * Get the Twig functions provided by this extension.
-     *
-     * @return TwigFunction[] Array of Twig functions
-     *
-     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
-     */
-    public function getFunctions(): array
-    {
-        return [
-            new TwigFunction(name: 'executeMapping', callable: [MappingRuntime::class, 'executeMapping']),
-            new TwigFunction(name: 'generateUuid', callable: [MappingRuntime::class, 'generateUuid']),
-        ];
-    }//end getFunctions()
+	/**
+	 * Get the Twig functions provided by this extension.
+	 *
+	 * @return TwigFunction[] Array of Twig functions
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFunctions(): array {
+		return [
+			new TwigFunction(name: 'executeMapping', callable: [MappingRuntime::class, 'executeMapping']),
+			new TwigFunction(name: 'generateUuid', callable: [MappingRuntime::class, 'generateUuid']),
+			// Ported from OpenConnector's copy so mappings authored there keep
+			// evaluating once that copy is retired. `json_decode` is the name
+			// those templates use; `jsonDecode` is OpenRegister's own spelling.
+			// BOTH are registered rather than renaming either — a mapping is
+			// authored data, and renaming a function it calls breaks it
+			// silently at evaluation time.
+			new TwigFunction(name: 'json_decode', callable: [MappingRuntime::class, 'json_decode']),
+			new TwigFunction(name: 'jsonDecode', callable: [MappingRuntime::class, 'jsonDecode']),
+			new TwigFunction(name: 'createSlug', callable: [MappingRuntime::class, 'createSlug']),
+			new TwigFunction(name: 'b64enc', callable: [MappingRuntime::class, 'b64enc']),
+			new TwigFunction(name: 'b64dec', callable: [MappingRuntime::class, 'b64dec']),
+		];
+	}//end getFunctions()
 }//end class

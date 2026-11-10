@@ -1,0 +1,44 @@
+{
+    "none": [],
+    "everything as strings": {
+        "_hasLabels": true,
+        "_noLabels": false,
+        "labels": [
+            "a",
+            "b",
+            "c"
+        ],
+        "extension": "pdf",
+        "extensions": [
+            "jpg",
+            "PNG"
+        ],
+        "minSize": 10,
+        "maxSize": 20,
+        "title": "Report",
+        "search": "q"
+    },
+    "arrays kept as given": {
+        "labels": [
+            " x ",
+            "y"
+        ],
+        "extensions": [
+            "a"
+        ]
+    },
+    "scalars that are neither": [],
+    "nulls ignored": [],
+    "falsy kept": {
+        "_hasLabels": false,
+        "extension": "",
+        "minSize": 0,
+        "title": ""
+    },
+    "underscore search": {
+        "search": "alt"
+    },
+    "search wins over underscore search": {
+        "search": "main"
+    }
+}

@@ -1,0 +1,676 @@
+{
+    "blank message": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "missing_message",
+                    "message": "message content is required"
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit error"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "channel streams frames": {
+        "frames": [
+            {
+                "type": "heartbeat",
+                "payload": {
+                    "ts": "TS"
+                }
+            },
+            {
+                "type": "token",
+                "payload": {
+                    "delta": "Hel"
+                }
+            },
+            {
+                "type": "tool_call",
+                "payload": {
+                    "name": "search"
+                }
+            },
+            {
+                "type": "tool_result",
+                "payload": {
+                    "name": "search",
+                    "ok": true
+                }
+            },
+            {
+                "type": "final",
+                "payload": {
+                    "messageId": "m-3",
+                    "conversationUuid": "c-new",
+                    "fullText": "done",
+                    "context": null
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAgent": "a-2"
+            },
+            {
+                "insert": [
+                    "alice",
+                    5,
+                    "New conversation"
+                ]
+            },
+            {
+                "processMessage": [
+                    12,
+                    "alice",
+                    "hi",
+                    [],
+                    [],
+                    [],
+                    []
+                ],
+                "channel": true
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit final"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "conversation lookup fails": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findConversation": "c-9"
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "not found"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "empty body": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "missing_message",
+                    "message": "message content is required"
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit error"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "explicit agent creates conversation": {
+        "frames": [
+            {
+                "type": "heartbeat",
+                "payload": {
+                    "ts": "TS"
+                }
+            },
+            {
+                "type": "final",
+                "payload": {
+                    "messageId": "",
+                    "conversationUuid": "c-new",
+                    "fullText": "from message key",
+                    "context": {
+                        "page": "x"
+                    }
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAgent": "a-2"
+            },
+            {
+                "insert": [
+                    "alice",
+                    5,
+                    "New conversation"
+                ]
+            },
+            {
+                "processMessage": [
+                    12,
+                    "alice",
+                    "hi",
+                    [],
+                    [],
+                    [],
+                    {
+                        "page": "x"
+                    }
+                ],
+                "channel": true
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit final"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "explicit agent missing": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAgent": "a-gone"
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "agent not found"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "fallback finds none": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "missing_agent",
+                    "message": "No agent available; configure one in OpenRegister settings."
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAllAgents": [
+                    20,
+                    null,
+                    [],
+                    []
+                ]
+            },
+            {
+                "canAccess": [
+                    "a-x",
+                    "alice"
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit error"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "fallback lookup throws": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "missing_agent",
+                    "message": "No agent available; configure one in OpenRegister settings."
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAllAgents": [
+                    20,
+                    null,
+                    [],
+                    []
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[ChatStreamController] Agent fallback lookup failed",
+                "error": "agents table gone"
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit error"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "fallback picks second accessible agent": {
+        "frames": [
+            {
+                "type": "heartbeat",
+                "payload": {
+                    "ts": "TS"
+                }
+            },
+            {
+                "type": "final",
+                "payload": {
+                    "messageId": "7",
+                    "conversationUuid": "c-new",
+                    "fullText": "answer",
+                    "context": null
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAllAgents": [
+                    20,
+                    null,
+                    [],
+                    []
+                ]
+            },
+            {
+                "canAccess": [
+                    "a-x",
+                    "alice"
+                ]
+            },
+            {
+                "canAccess": [
+                    "a-y",
+                    "alice"
+                ]
+            },
+            {
+                "findAgent": "a-y"
+            },
+            {
+                "insert": [
+                    "alice",
+                    5,
+                    "New conversation"
+                ]
+            },
+            {
+                "processMessage": [
+                    12,
+                    "alice",
+                    "hello",
+                    [],
+                    [],
+                    [],
+                    []
+                ],
+                "channel": true
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit final"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "foreign conversation": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "forbidden",
+                    "message": "Forbidden"
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findConversation": "c-1"
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit error"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "invalid json": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "missing_message",
+                    "message": "message content is required"
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit error"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "no user": {
+        "frames": [
+            {
+                "type": "error",
+                "payload": {
+                    "code": "unauthenticated",
+                    "message": "Authentication required"
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit error"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "non-string message": {
+        "frames": [
+            {
+                "type": "heartbeat",
+                "payload": {
+                    "ts": "TS"
+                }
+            },
+            {
+                "type": "final",
+                "payload": {
+                    "messageId": "",
+                    "conversationUuid": "c-new",
+                    "fullText": "ok",
+                    "context": null
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAgent": "a-1"
+            },
+            {
+                "insert": [
+                    "alice",
+                    5,
+                    "New conversation"
+                ]
+            },
+            {
+                "processMessage": [
+                    12,
+                    "alice",
+                    "42",
+                    [],
+                    [],
+                    [],
+                    []
+                ],
+                "channel": true
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit final"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "own conversation with list context": {
+        "frames": [
+            {
+                "type": "heartbeat",
+                "payload": {
+                    "ts": "TS"
+                }
+            },
+            {
+                "type": "final",
+                "payload": {
+                    "messageId": "",
+                    "conversationUuid": "c-1",
+                    "fullText": "",
+                    "context": [
+                        1,
+                        2
+                    ]
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findConversation": "c-1"
+            },
+            {
+                "processMessage": [
+                    11,
+                    "alice",
+                    "hi",
+                    [],
+                    [],
+                    [],
+                    [
+                        1,
+                        2
+                    ]
+                ],
+                "channel": true
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit final"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "own conversation with scalar context": {
+        "frames": [
+            {
+                "type": "heartbeat",
+                "payload": {
+                    "ts": "TS"
+                }
+            },
+            {
+                "type": "final",
+                "payload": {
+                    "messageId": "",
+                    "conversationUuid": "c-1",
+                    "fullText": "r",
+                    "context": "flat"
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findConversation": "c-1"
+            },
+            {
+                "processMessage": [
+                    11,
+                    "alice",
+                    "hi",
+                    [],
+                    [],
+                    [],
+                    []
+                ],
+                "channel": true
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "exit final"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    },
+    "processing fails": {
+        "frames": [
+            {
+                "type": "heartbeat",
+                "payload": {
+                    "ts": "TS"
+                }
+            },
+            {
+                "type": "error",
+                "payload": {
+                    "code": "stream_failed",
+                    "message": "An internal error occurred."
+                }
+            }
+        ],
+        "calls": [
+            {
+                "findAgent": "a-2"
+            },
+            {
+                "insert": [
+                    "alice",
+                    5,
+                    "New conversation"
+                ]
+            },
+            {
+                "processMessage": [
+                    12,
+                    "alice",
+                    "hi",
+                    [],
+                    [],
+                    [],
+                    []
+                ],
+                "channel": true
+            },
+            {
+                "log": "error",
+                "message": "[ChatStreamController] Stream failed",
+                "error": "llm down"
+            }
+        ],
+        "escaped": "OCA\\OpenRegister\\Tests\\Unit\\Controller\\ChatStreamGoldenStop: exit error"
+    }
+}

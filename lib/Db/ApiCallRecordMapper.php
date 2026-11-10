@@ -1,0 +1,203 @@
+<?php
+
+/**
+ * Reads and increments the caller record.
+ *
+ * 🔑 THE INCREMENT IS AN UPDATE, NOT A READ-MODIFY-WRITE. Two concurrent calls
+ * from the same leverancier on the same route would both read the same count
+ * and both write count+1, losing one. `SET call_count = call_count + 1` lets
+ * the database do the arithmetic, so the number an administrator reads is the
+ * number of calls that happened rather than the number that did not race.
+ *
+ * 🔴 A FAILED RECORD MUST NEVER FAIL THE CALL. Every write here is wrapped by
+ * its caller and swallowed. This table exists so a deprecation can be a
+ * conversation; a gemeente's API going down because its usage log had a
+ * deadlock would be an outage caused by an ornament.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/api-surface-governance/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Db;
+
+use DateTime;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
+use Throwable;
+
+/**
+ * Mapper for {@see ApiCallRecord}.
+ *
+ * @template-extends QBMapper<ApiCallRecord>
+ *
+ * @category Db
+ * @package  OCA\OpenRegister\Db
+ *
+ * @psalm-suppress UnusedClass Registered through the container and used by ApiCallRecorder.
+ */
+class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterface {
+
+	/**
+	 * The table this mapper owns.
+	 *
+	 * @var string
+	 */
+	public const TABLE = 'openregister_api_calls';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $db The database connection.
+	 *
+	 * @return void
+	 */
+	public function __construct(IDBConnection $db) {
+		parent::__construct(db: $db, tableName: self::TABLE, entityClass: ApiCallRecord::class);
+
+	}//end __construct()
+
+	/**
+	 * Count one call against a caller, route, method and version.
+	 *
+	 * Tries the increment first and inserts only when nothing was updated, so
+	 * the common path (a caller that has called before) is one statement. A
+	 * concurrent insert of the same combination loses the unique index race and
+	 * is retried as an increment, which is why the insert failure is not simply
+	 * swallowed.
+	 *
+	 * @param ApiCallKey $key    The caller, route, method and version.
+	 * @param DateTime   $moment When the call happened.
+	 *
+	 * @return bool True when the call was counted.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	public function count(ApiCallKey $key, DateTime $moment): bool {
+		if ($this->increment(key: $key, moment: $moment) > 0) {
+			return true;
+		}
+
+		try {
+			$this->insert(entity: $this->newRecord(key: $key, moment: $moment));
+
+			return true;
+		} catch (Throwable) {
+			// Another request inserted the same combination between our update
+			// and our insert. The row exists now, so the increment that failed
+			// to find it a moment ago will find it.
+			return ($this->increment(key: $key, moment: $moment) > 0);
+		}//end try
+
+	}//end count()
+
+	/**
+	 * A first record for a combination, counting its first call.
+	 *
+	 * @param ApiCallKey $key    The caller, route, method and version.
+	 * @param DateTime   $moment When the call happened.
+	 *
+	 * @return ApiCallRecord The record, not yet inserted.
+	 */
+	private function newRecord(ApiCallKey $key, DateTime $moment): ApiCallRecord {
+		$record = new ApiCallRecord();
+		$record->setPrincipal($key->principal);
+		$record->setRoute($key->route);
+		$record->setMethod($key->method);
+		$record->setApiVersion($key->apiVersion);
+		$record->setCallCount(1);
+		$record->setFirstSeen($moment);
+		$record->setLastSeen($moment);
+
+		return $record;
+
+	}//end newRecord()
+
+	/**
+	 * The records whose last call falls in a period.
+	 *
+	 * @param DateTime $from The start of the period.
+	 * @param DateTime $to The end of the period.
+	 * @param string|null $apiVersion Narrow to one contract version, or null for all.
+	 * @param int $limit The most rows to return.
+	 *
+	 * @return array<int, ApiCallRecord> The records, busiest first.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	public function findInPeriod(DateTime $from, DateTime $to, ?string $apiVersion = null, int $limit = 500): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->lte('last_seen', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->orderBy('call_count', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		if ($apiVersion !== null && $apiVersion !== '') {
+			$qb->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($apiVersion)));
+		}
+
+		return $this->findEntities(query: $qb);
+
+	}//end findInPeriod()
+
+	/**
+	 * Drop records nothing has called since a moment.
+	 *
+	 * The record is an operational aid with no evidential value, so it does not
+	 * accumulate forever. A row for a route nobody has called in a year answers
+	 * no question an administrator is asking.
+	 *
+	 * @param DateTime $before Drop records last seen before this.
+	 *
+	 * @return int The number of records dropped.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md
+	 */
+	public function pruneBefore(DateTime $before): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete(self::TABLE)
+			->where($qb->expr()->lt('last_seen', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+
+		return (int)$qb->executeStatement();
+
+	}//end pruneBefore()
+
+	/**
+	 * Increment an existing row, if there is one.
+	 *
+	 * @param ApiCallKey $key    The caller, route, method and version.
+	 * @param DateTime   $moment When the call happened.
+	 *
+	 * @return int The number of rows updated: one, or none.
+	 *
+	 * @phpstan-impure
+	 */
+	private function increment(ApiCallKey $key, DateTime $moment): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update(self::TABLE)
+			->set('call_count', $qb->createFunction($qb->getColumnName('call_count') . ' + 1'))
+			->set('last_seen', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			->where($qb->expr()->eq('principal', $qb->createNamedParameter($key->principal)))
+			->andWhere($qb->expr()->eq('route', $qb->createNamedParameter($key->route)))
+			->andWhere($qb->expr()->eq('method', $qb->createNamedParameter($key->method)))
+			->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($key->apiVersion)));
+
+		return (int)$qb->executeStatement();
+
+	}//end increment()
+}//end class

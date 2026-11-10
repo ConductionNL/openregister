@@ -1,0 +1,167 @@
+{
+  "change": "mail-sidebar",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1006,
+  "parent_issue": 1001,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "EmailLink entity and EmailLinkMapper",
+      "github_issue": 1007,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#reverse-lookup-api",
+      "acceptance_criteria": [
+        "GIVEN openregister_email_links table exists WHEN an EmailLink entity is created THEN it persists with all required fields",
+        "GIVEN EmailLinkMapper WHEN findByAccountAndMessage is called THEN it returns matching email links"
+      ],
+      "files_likely_affected": [
+        "lib/Db/EmailLink.php",
+        "lib/Db/EmailLinkMapper.php",
+        "lib/Migration/Version1Date20260325120000.php"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 2,
+      "title": "EmailService with reverse-lookup methods",
+      "github_issue": 1008,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#reverse-lookup-api",
+      "acceptance_criteria": [
+        "GIVEN email links exist WHEN findByMessageId is called THEN objects are returned with resolved metadata",
+        "GIVEN emails from a sender WHEN findObjectsBySender is called THEN distinct objects with email counts are returned",
+        "GIVEN valid params WHEN quickLink is called THEN a new email link is created"
+      ],
+      "files_likely_affected": [
+        "lib/Service/EmailService.php"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 3,
+      "title": "EmailsController endpoints",
+      "github_issue": 1009,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#reverse-lookup-api",
+      "acceptance_criteria": [
+        "GIVEN a valid accountId/messageId WHEN GET /api/emails/by-message/{accountId}/{messageId} THEN linked objects are returned",
+        "GIVEN a valid sender WHEN GET /api/emails/by-sender?sender=x THEN discovered objects are returned",
+        "GIVEN valid body WHEN POST /api/emails/quick-link THEN link is created and 201 returned"
+      ],
+      "files_likely_affected": [
+        "lib/Controller/EmailsController.php"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 4,
+      "title": "Routes and input validation",
+      "github_issue": 1010,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#reverse-lookup-api",
+      "acceptance_criteria": [
+        "GIVEN routes.php WHEN email routes are added THEN by-message, by-sender, quick-link are accessible",
+        "GIVEN invalid input WHEN endpoints are called THEN 400 errors with messages are returned"
+      ],
+      "files_likely_affected": [
+        "appinfo/routes.php"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 5,
+      "title": "MailAppScriptListener and Application registration",
+      "github_issue": 1011,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#mail-app-script-injection",
+      "acceptance_criteria": [
+        "GIVEN Mail app is enabled WHEN BeforeTemplateRenderedEvent fires THEN sidebar script is injected",
+        "GIVEN Mail app is not installed WHEN any page loads THEN no script is registered",
+        "GIVEN user without OpenRegister access WHEN Mail app opens THEN script is not injected"
+      ],
+      "files_likely_affected": [
+        "lib/Listener/MailAppScriptListener.php",
+        "lib/AppInfo/Application.php"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 6,
+      "title": "Webpack mail-sidebar entry point",
+      "github_issue": 1012,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#webpack-entry-point",
+      "acceptance_criteria": [
+        "GIVEN webpack config has mail-sidebar entry WHEN npm run build runs THEN openregister-mail-sidebar.js is produced",
+        "GIVEN the bundle THEN it uses externalized Vue and @nextcloud/axios"
+      ],
+      "files_likely_affected": [
+        "webpack.config.js",
+        "src/mail-sidebar.js"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 7,
+      "title": "Vue sidebar components",
+      "github_issue": 1013,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#sidebar-panel-ui",
+      "acceptance_criteria": [
+        "GIVEN sidebar loads WHEN linked objects exist THEN LinkedObjectsList shows object cards",
+        "GIVEN sidebar loads WHEN sender has other cases THEN SuggestedObjectsList shows discovery results",
+        "GIVEN user clicks Link to Object WHEN dialog opens THEN search and link flow works"
+      ],
+      "files_likely_affected": [
+        "src/mail-sidebar/MailSidebar.vue",
+        "src/mail-sidebar/components/LinkedObjectsList.vue",
+        "src/mail-sidebar/components/SuggestedObjectsList.vue",
+        "src/mail-sidebar/components/ObjectCard.vue",
+        "src/mail-sidebar/components/LinkObjectDialog.vue"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 8,
+      "title": "Composables and API layer",
+      "github_issue": 1014,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#email-url-observation",
+      "acceptance_criteria": [
+        "GIVEN Mail app URL changes WHEN observer detects it THEN accountId/messageId are extracted",
+        "GIVEN 300ms debounce WHEN rapid navigation occurs THEN only last change triggers refresh",
+        "GIVEN API calls WHEN responses arrive THEN results are cached per messageId"
+      ],
+      "files_likely_affected": [
+        "src/mail-sidebar/composables/useMailObserver.js",
+        "src/mail-sidebar/composables/useEmailLinks.js",
+        "src/mail-sidebar/api/emailLinks.js"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 9,
+      "title": "CSS, i18n, accessibility",
+      "github_issue": 1015,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md#i18n-support",
+      "acceptance_criteria": [
+        "GIVEN sidebar renders THEN NL Design System CSS variables are used",
+        "GIVEN Dutch user WHEN sidebar loads THEN all text is in Dutch",
+        "GIVEN keyboard navigation WHEN Tab is pressed THEN all interactive elements are reachable"
+      ],
+      "files_likely_affected": [
+        "css/mail-sidebar.css"
+      ],
+      "status": "todo"
+    },
+    {
+      "id": 10,
+      "title": "Unit tests",
+      "github_issue": 1016,
+      "spec_ref": "openspec/changes/mail-sidebar/specs/mail-sidebar/spec.md",
+      "acceptance_criteria": [
+        "GIVEN EmailService WHEN tested THEN 3+ unit tests pass",
+        "GIVEN EmailsController WHEN tested THEN 3+ unit tests pass",
+        "GIVEN MailAppScriptListener WHEN tested THEN 2+ unit tests pass"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Service/EmailServiceTest.php",
+        "tests/Unit/Controller/EmailsControllerTest.php",
+        "tests/Unit/Listener/MailAppScriptListenerTest.php"
+      ],
+      "status": "todo"
+    }
+  ]
+}

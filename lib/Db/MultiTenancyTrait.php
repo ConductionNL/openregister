@@ -6,6 +6,9 @@
  * This trait provides reusable multi-tenancy and RBAC functionality for mappers.
  * It handles organisation filtering, permission checks, and security validation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Trait
  * @package  OCA\OpenRegister\Db
  *
@@ -20,16 +23,12 @@
 
 namespace OCA\OpenRegister\Db;
 
-use Exception;
-use OCP\AppFramework\Db\Entity;
+use OCA\OpenRegister\Db\Tenancy\EntityRbacTrait;
+use OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions;
+use OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait;
+use OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait;
+use OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IAppConfig;
-use OCP\Security\ISecureRandom;
-use Psr\Log\LoggerInterface;
-use DateTime;
-use DateInterval;
-use Symfony\Component\HttpFoundation\Response;
-use OCP\AppFramework\Http\JSONResponse;
 
 /**
  * Trait MultiTenancyTrait
@@ -49,813 +48,140 @@ use OCP\AppFramework\Http\JSONResponse;
  * - LoggerInterface ($this->logger) - for debug logging
  *   Classes should define this property themselves if needed (e.g., private LoggerInterface $logger)
  *
+ * The behaviour is split over four role traits in lib/Db/Tenancy, composed
+ * here so that a mapper keeps using this one trait: TenancyIdentityTrait (who
+ * the caller is, which organisations they act in), OrganisationFilterTrait
+ * (read scoping), OrganisationWriteGuardTrait (what a write stamps, and the
+ * refusal of a cross-tenant write) and EntityRbacTrait (entity RBAC).
+ *
  * Note: The trait does not declare the $appConfig and $logger properties to avoid conflicts.
  * Classes using this trait should declare these properties with their preferred visibility
  * (private/protected) and nullability. The trait methods check isset() before using them.
  *
  * @package OCA\OpenRegister\Db
  */
-trait MultiTenancyTrait
-{
-    /**
-     * Get the active organisation UUID from the session.
-     *
-     * Falls back to the default organisation from config if no active organisation is set.
-     * Automatically sets the default as active if user has no active organisation.
-     *
-     * @return string|null The active organisation UUID or default organisation UUID, or null if neither set
-     */
-    protected function getActiveOrganisationUuid(): ?string
-    {
-        if (isset($this->logger) === true) {
-            $this->logger->info(
-                message: '[MultiTenancyTrait] 🔹 MultiTenancyTrait: getActiveOrganisationUuid called',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
-
-        // Get current user.
-        if (isset($this->userSession) === false) {
-            return null;
-        }
-
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return $this->getDefaultOrganisationUuid();
-        }
-
-        // Use OrganisationMapper to get active org with automatic fallback to default.
-        if (isset($this->organisationMapper) === true) {
-            $organisationMapper = $this->organisationMapper;
-            if (isset($this->logger) === true) {
-                $this->logger->info(
-                    message: '[MultiTenancyTrait] Calling getActiveOrganisationWithFallback for user: '.$user->getUID(),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }
-
-            // @psalm-suppress UndefinedMethod
-            return $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
-        }
-
-        // Fallback if mapper not available.
-        return $this->getDefaultOrganisationUuid();
-    }//end getActiveOrganisationUuid()
-
-    /**
-     * Get default organisation UUID from config
-     *
-     * This method provides a fallback for when OrganisationMapper is not available.
-     * Prefer using OrganisationMapper::getDefaultOrganisationFromConfig() when possible.
-     *
-     * @return string|null Default organisation UUID or null if not set
-     */
-    protected function getDefaultOrganisationUuid(): ?string
-    {
-        // Prefer using OrganisationMapper if available.
-        if (isset($this->organisationMapper) === true) {
-            $organisationMapper = $this->organisationMapper;
-            // @psalm-suppress UndefinedMethod
-            return $organisationMapper->getDefaultOrganisationFromConfig();
-        }
-
-        // Fallback to direct config access if mapper not available.
-        if (isset($this->appConfig) === false) {
-            return null;
-        }
-
-        // Try direct config key (newer format).
-        $defaultOrg = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-        if (empty($defaultOrg) === false) {
-            return $defaultOrg;
-        }
-
-        // Try nested organisation config (legacy format).
-        $organisationConfig = $this->appConfig->getValueString('openregister', 'organisation', '');
-        if (empty($organisationConfig) === false) {
-            $storedData = json_decode($organisationConfig, true);
-            if (isset($storedData['default_organisation']) === true) {
-                return $storedData['default_organisation'];
-            }
-        }
-
-        return null;
-    }//end getDefaultOrganisationUuid()
-
-    /**
-     * Get active organisation UUIDs (active + all parents)
-     *
-     * Returns array of organisation UUIDs that the current user can access.
-     * Includes the active organisation and all parent organisations in the hierarchy.
-     * Falls back to default organisation if no active organisation is set.
-     * Used for filtering queries to allow access to parent resources.
-     *
-     * @return (mixed|null|string)[] Array of organisation UUIDs
-     *
-     * @psalm-return array{0?: mixed|null|string,...}
-     */
-    protected function getActiveOrganisationUuids(): array
-    {
-        $activeOrgUuid = $this->getActiveOrganisationUuid();
-        if ($activeOrgUuid === null) {
-            return [];
-        }
-
-        // If we have OrganisationMapper, get the full hierarchy (active + parents).
-        if (isset($this->organisationMapper) === true) {
-            try {
-                $organisationMapper = $this->organisationMapper;
-                // @psalm-suppress UndefinedMethod
-                $uuids = $organisationMapper->getOrganisationHierarchy($activeOrgUuid);
-                if (empty($uuids) === false) {
-                    return $uuids;
-                }
-            } catch (\Exception $e) {
-                // Fall back to just the active org.
-                if (isset($this->logger) === true) {
-                    $this->logger->warning(
-                        message: '[MultiTenancyTrait] Failed to get organisation hierarchy: '.$e->getMessage(),
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'activeOrgUuid' => $activeOrgUuid]
-                    );
-                }
-            }
-        }//end if
-
-        // Fall back to just the active organisation.
-        return [$activeOrgUuid];
-    }//end getActiveOrganisationUuids()
-
-    /**
-     * Get the current user ID.
-     *
-     * @return string|null The current user ID or null if no user is logged in
-     */
-    protected function getCurrentUserId(): ?string
-    {
-        if (isset($this->userSession) === false) {
-            return null;
-        }
-
-        $user = $this->userSession->getUser();
-        if (($user !== null) === false) {
-            return null;
-        }
-
-        return $user->getUID();
-    }//end getCurrentUserId()
-
-    /**
-     * Check if the current user is an admin.
-     *
-     * @return bool True if the current user is an admin, false otherwise
-     */
-    protected function isCurrentUserAdmin(): bool
-    {
-        $userId = $this->getCurrentUserId();
-        if ($userId === null) {
-            return false;
-        }
-
-        if (isset($this->groupManager) === false) {
-            return false;
-        }
-
-        return $this->groupManager->isAdmin($userId);
-    }//end isCurrentUserAdmin()
-
-    /**
-     * Apply organisation filter to a query builder with advanced multi-tenancy support.
-     *
-     * This method provides comprehensive organisation filtering including:
-     * - Hierarchical organisation support (active org + all parents)
-     * - Published entity bypass for multi-tenancy (Register/Schema entities only)
-     * - Admin override capabilities
-     * - System default organisation special handling
-     * - NULL organisation legacy data access for admins
-     * - Unauthenticated request handling
-     *
-     * Features:
-     * 1. Hierarchical Access: Users see entities from their active org AND parent orgs
-     * 2. Published Entities: Register/Schema entities can bypass multi-tenancy via published/depublished columns
-     * 3. Admin Override: Admins can see all entities if enabled in config
-     * 4. Default Org: Special behavior for system-wide default organisation
-     * 5. Legacy Data: Admins can access NULL organisation entities
-     *
-     * Example hierarchy:
-     * - Organisation A (root)
-     * - Organisation B (parent: A)
-     * - Organisation C (parent: B)
-     * When C is active, entities from A, B, and C are visible.
-     *
-     * @param IQueryBuilder $qb                  The query builder
-     * @param string        $columnName          The column name for organisation
-     * @param bool          $allowNullOrg        Whether admins can see NULL organisation entities
-     * @param string        $tableAlias          Optional table alias
-     * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * NPath from parameter combinations
-     */
-    protected function applyOrganisationFilter(
-        IQueryBuilder $qb,
-        string $columnName='organisation',
-        bool $allowNullOrg=false,
-        string $tableAlias='',
-        bool $multiTenancyEnabled=true
-    ): void {
-        if ($this->shouldSkipFiltering(multiTenancyEnabled: $multiTenancyEnabled) === true) {
-            return;
-        }
-
-        $user = $this->getUserFromSession();
-        if ($user === null && isset($this->userSession) === false) {
-            return;
-        }
-
-        $activeOrgUuids     = $this->getActiveOrganisationUuids();
-        $organisationColumn = $this->buildQualifiedColumnName(columnName: $columnName, tableAlias: $tableAlias);
-
-        if (empty($activeOrgUuids) === true) {
-            $this->applyNoActiveOrgFilter(
-                qb: $qb,
-                user: $user,
-                allowNullOrg: $allowNullOrg,
-                organisationColumn: $organisationColumn
-            );
-            return;
-        }
-
-        $this->applyActiveOrgFilter(
-            qb: $qb,
-            user: $user,
-            activeOrgUuids: $activeOrgUuids,
-            allowNullOrg: $allowNullOrg,
-            organisationColumn: $organisationColumn
-        );
-    }//end applyOrganisationFilter()
-
-    /**
-     * Check if filtering should be skipped entirely
-     *
-     * @param bool $multiTenancyEnabled Whether multitenancy is enabled via parameter
-     *
-     * @return bool True if filtering should be skipped
-     */
-    private function shouldSkipFiltering(bool $multiTenancyEnabled): bool
-    {
-        if ($multiTenancyEnabled === false) {
-            return true;
-        }
-
-        if (isset($this->appConfig) === false) {
-            return false;
-        }
-
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return ($multitenancyData['enabled'] ?? true) === false;
-    }//end shouldSkipFiltering()
-
-    /**
-     * Get the current user from the session
-     *
-     * @return mixed|null The user object or null
-     */
-    private function getUserFromSession(): mixed
-    {
-        if (isset($this->userSession) === false) {
-            if (($this->logger ?? null) !== null) {
-                $this->logger->debug(
-                    message: '[MultiTenancyTrait] UserSession not available, skipping filter',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }
-
-            return null;
-        }
-
-        $user = $this->userSession->getUser();
-        if ($user === null && isset($this->logger) === true) {
-            $this->logger->debug(
-                message: '[MultiTenancyTrait] Unauthenticated request, no automatic access',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
-
-        return $user;
-    }//end getUserFromSession()
-
-    /**
-     * Build a qualified column name with optional table alias
-     *
-     * @param string $columnName Column name
-     * @param string $tableAlias Optional table alias
-     *
-     * @return string Qualified column name
-     */
-    private function buildQualifiedColumnName(string $columnName, string $tableAlias): string
-    {
-        if ($tableAlias !== null && $tableAlias !== '') {
-            return $tableAlias.'.'.$columnName;
-        }
-
-        return $columnName;
-    }//end buildQualifiedColumnName()
-
-    /**
-     * Check if user is an admin
-     *
-     * @param mixed $user The user object
-     *
-     * @return bool True if user is admin
-     */
-    private function isUserAdmin(mixed $user): bool
-    {
-        if ($user === null || isset($this->groupManager) === false) {
-            return false;
-        }
-
-        $userGroups = $this->groupManager->getUserGroupIds($user);
-        return in_array('admin', $userGroups);
-    }//end isUserAdmin()
-
-    /**
-     * Check if admin override is enabled
-     *
-     * In SaaS mode, admin override is always disabled to enforce hard tenant boundaries.
-     *
-     * @return bool True if admin override is enabled
-     */
-    private function isAdminOverrideEnabled(): bool
-    {
-        if (isset($this->appConfig) === false) {
-            return false;
-        }
-
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-
-        // In SaaS mode, admin override is always disabled for organisation boundary.
-        if (($multitenancyData['saasMode'] ?? false) === true) {
-            if (isset($this->logger) === true) {
-                $this->logger->debug(
-                    '[MultiTenancyTrait] SaaS mode active — admin override disabled for organisation boundary',
-                    ['file' => __FILE__, 'line' => __LINE__]
-                );
-            }
-
-            return false;
-        }
-
-        return $multitenancyData['adminOverride'] ?? false;
-    }//end isAdminOverrideEnabled()
-
-    /**
-     * Check if SaaS mode is enabled
-     *
-     * @return bool True if SaaS mode is enabled
-     */
-    protected function isSaasMode(): bool
-    {
-        if (isset($this->appConfig) === false) {
-            return false;
-        }
-
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return ($multitenancyData['saasMode'] ?? false) === true;
-    }//end isSaasMode()
-
-    /**
-     * Apply filter when no active organisation is set
-     *
-     * @param IQueryBuilder $qb                 Query builder
-     * @param mixed         $user               User object
-     * @param bool          $allowNullOrg       Allow NULL organisation
-     * @param string        $organisationColumn Organisation column name
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
-     */
-    private function applyNoActiveOrgFilter(
-        IQueryBuilder $qb,
-        mixed $user,
-        bool $allowNullOrg,
-        string $organisationColumn
-    ): void {
-        $isAdmin = $this->isUserAdmin(user: $user);
-
-        if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
-            return;
-        }
-
-        // Allow null organisation entities when explicitly permitted by the caller.
-        // This is used for system-wide resources like Registers and Schemas.
-        if ($allowNullOrg === true) {
-            $qb->andWhere($qb->expr()->isNull($organisationColumn));
-            return;
-        }
-
-        // No active org and no null-org permission: block all results.
-        $qb->andWhere('1 = 0');
-    }//end applyNoActiveOrgFilter()
-
-    /**
-     * Apply filter when active organisation(s) are set
-     *
-     * @param IQueryBuilder $qb                 Query builder
-     * @param mixed         $user               User object
-     * @param array         $activeOrgUuids     Active organisation UUIDs
-     * @param bool          $allowNullOrg       Allow NULL organisation
-     * @param string        $organisationColumn Organisation column name
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
-     */
-    private function applyActiveOrgFilter(
-        IQueryBuilder $qb,
-        mixed $user,
-        array $activeOrgUuids,
-        bool $allowNullOrg,
-        string $organisationColumn
-    ): void {
-        $isAdmin = $this->isUserAdmin(user: $user);
-
-        if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
-            // Audit log the admin cross-tenant override.
-            if (isset($this->logger) === true) {
-                $hasGetUid = ($user !== null && method_exists($user, 'getUID'));
-                $userId    = ($hasGetUid === true) ? $user->getUID() : 'unknown';
-                $this->logger->info(
-                    '[MultiTenancyTrait] Admin override: cross-organisation access granted',
-                    [
-                        'type'   => 'cross_tenant_access_admin_override',
-                        'userId' => $userId,
-                    ]
-                );
-            }
-
-            return;
-        }
-
-        $orgConditions = $qb->expr()->orX();
-
-        $this->addOrganisationConditions(
-            qb: $qb,
-            orgConditions: $orgConditions,
-            activeOrgUuids: $activeOrgUuids,
-            organisationColumn: $organisationColumn
-        );
-
-        // Allow null organisation entities when explicitly permitted by the caller.
-        // This is used for system-wide resources like Registers and Schemas.
-        if ($allowNullOrg === true) {
-            $orgConditions->add($qb->expr()->isNull($organisationColumn));
-        }
-
-        $qb->andWhere($orgConditions);
-    }//end applyActiveOrgFilter()
-
-    /**
-     * Add organisation conditions to the query
-     *
-     * @param IQueryBuilder $qb                 Query builder
-     * @param mixed         $orgConditions      Organisation conditions object
-     * @param array         $activeOrgUuids     Active organisation UUIDs
-     * @param string        $organisationColumn Organisation column name
-     *
-     * @return void
-     */
-    private function addOrganisationConditions(
-        IQueryBuilder $qb,
-        mixed $orgConditions,
-        array $activeOrgUuids,
-        string $organisationColumn
-    ): void {
-        $directActiveOrgUuid = $this->getActiveOrganisationUuid();
-
-        if ($directActiveOrgUuid !== null) {
-            $orgConditions->add(
-                $qb->expr()->eq(
-                    $organisationColumn,
-                    $qb->createNamedParameter($directActiveOrgUuid, IQueryBuilder::PARAM_STR)
-                )
-            );
-
-            $parentOrgs = array_filter(
-                $activeOrgUuids,
-                function ($uuid) use ($directActiveOrgUuid) {
-                    return $uuid !== $directActiveOrgUuid;
-                }
-            );
-
-            if (count($parentOrgs) > 0) {
-                $orgConditions->add(
-                    $qb->expr()->in(
-                        $organisationColumn,
-                        $qb->createNamedParameter($parentOrgs, IQueryBuilder::PARAM_STR_ARRAY)
-                    )
-                );
-            }
-
-            return;
-        }//end if
-
-        $orgConditions->add(
-            $qb->expr()->in(
-                $organisationColumn,
-                $qb->createNamedParameter($activeOrgUuids, IQueryBuilder::PARAM_STR_ARRAY)
-            )
-        );
-    }//end addOrganisationConditions()
-
-    /**
-     * Set organisation on an entity during creation.
-     *
-     * SECURITY: Always overwrites the organisation with the active organisation UUID
-     * from the session, ignoring any value provided by the frontend.
-     * This ensures users can only create entities in their active organisation.
-     *
-     * @param Entity $entity The entity to set organisation on
-     *
-     * @return void
-     */
-    protected function setOrganisationOnCreate(Entity $entity): void
-    {
-        // Only set organisation if the entity has an organisation property.
-        // Note: We use property_exists() instead of method_exists() because Nextcloud's Entity
-        // class uses magic methods (__call) for getters/setters, which method_exists() doesn't detect.
-        if (property_exists($entity, 'organisation') === false) {
-            return;
-        }
-
-        // SECURITY: Always use active organisation from session, ignore frontend input.
-        $activeOrgUuid = $this->getActiveOrganisationUuid();
-        if ($activeOrgUuid !== null) {
-            $entity->setOrganisation($activeOrgUuid);
-            return;
-        }
-
-        // Fall back to default organisation if no active organisation and entity has no org set.
-        if ($entity->getOrganisation() === null && isset($this->appConfig) === true) {
-            $defaultOrgUuid = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-            if (empty($defaultOrgUuid) === false) {
-                $entity->setOrganisation($defaultOrgUuid);
-            }
-        }
-    }//end setOrganisationOnCreate()
-
-    /**
-     * Set the owner field on entity creation from the current user session
-     *
-     * This method automatically sets the owner field to the current logged-in user
-     * when creating a new entity. It only sets the owner if:
-     * - The entity has owner getter/setter methods
-     * - The owner is not already set
-     * - A user is currently logged in
-     *
-     * @param Entity $entity The entity being created
-     *
-     * @return void
-     */
-    protected function setOwnerOnCreate(Entity $entity): void
-    {
-        // Only set owner if the entity has an owner property.
-        if (method_exists($entity, 'getOwner') === false || method_exists($entity, 'setOwner') === false) {
-            return;
-        }
-
-        // Only set owner if not already set (allow explicit owner assignment).
-        if ($entity->getOwner() !== null && $entity->getOwner() !== '') {
-            return;
-        }
-
-        // Get current user from session.
-        if (isset($this->userSession) === false) {
-            return;
-        }
-
-        $user = $this->userSession->getUser();
-        if ($user !== null) {
-            $entity->setOwner($user->getUID());
-        }
-    }//end setOwnerOnCreate()
-
-    /**
-     * Verify that an entity belongs to the active organisation.
-     *
-     * Throws an exception if the entity's organisation doesn't match
-     * the active organisation. This applies to ALL users including admins.
-     *
-     * @param Entity $entity The entity to verify
-     *
-     * @return void
-     *
-     * @throws \Exception If organisation doesn't match
-     */
-    protected function verifyOrganisationAccess(Entity $entity): void
-    {
-        // Check if entity has organisation property.
-        if (method_exists($entity, 'getOrganisation') === false) {
-            return;
-        }
-
-        $entityOrgUuid = $entity->getOrganisation();
-        $activeOrgUuid = $this->getActiveOrganisationUuid();
-
-        // If entity has no organisation set, allow it.
-        if ($entityOrgUuid === null) {
-            return;
-        }
-
-        // Verify the organisations match (applies to everyone including admins).
-        if ($entityOrgUuid !== $activeOrgUuid) {
-            // Audit log the cross-tenant access attempt.
-            if (isset($this->logger) === true) {
-                $userId = $this->getCurrentUserId() ?? 'anonymous';
-                $this->logger->warning(
-                    '[MultiTenancyTrait] Cross-tenant access denied',
-                    [
-                        'type'               => 'cross_tenant_access_denied',
-                        'userId'             => $userId,
-                        'sourceOrganisation' => $activeOrgUuid,
-                        'targetOrganisation' => $entityOrgUuid,
-                        'entityType'         => get_class($entity),
-                        'entityId'           => $entity->getId(),
-                    ]
-                );
-            }
-
-            throw new Exception(
-                'Security violation: You do not have permission to access this resource from a different organisation.',
-                Response::HTTP_FORBIDDEN
-            );
-        }//end if
-    }//end verifyOrganisationAccess()
-
-    /**
-     * Check if the current user has permission to perform an action.
-     *
-     * Checks RBAC permissions from the active organisation's authorization configuration.
-     *
-     * Expected authorization structure in Organization entity:
-     * {
-     *   "authorization": {
-     *     "schema": {
-     *       "create": ["group-name-1", "group-name-2"],
-     *       "read": ["group-name-1"],
-     *       "update": ["group-name-1"],
-     *       "delete": []
-     *     }
-     *   }
-     * }
-     *
-     * @param string $action     The action to check (create, read, update, delete)
-     * @param string $entityType The type of entity (e.g., 'schema', 'register', 'configuration')
-     *
-     * @return bool True if user has permission, false otherwise
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC permission checking requires many conditional paths
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    protected function hasRbacPermission(string $action, string $entityType): bool
-    {
-        // Admins always have all permissions.
-        if ($this->isCurrentUserAdmin() === true) {
-            return true;
-        }
-
-        // Get current user.
-        $userId = $this->getCurrentUserId();
-        if ($userId === null) {
-            // No user logged in, deny access.
-            return false;
-        }
-
-        // Get active organisation.
-        if (isset($this->organisationService) === false) {
-            // No organisation service, allow access (backward compatibility).
-            return true;
-        }
-
-        $activeOrg = $this->organisationService->getActiveOrganisation();
-        if ($activeOrg === null) {
-            // CLI context — no active organisation is expected. Allow access.
-            if (PHP_SAPI === 'cli') {
-                return true;
-            }
-
-            // No active organisation, deny access.
-            return false;
-        }
-
-        // Check if user is in the organisation's users list.
-        $orgUsers = $activeOrg->getUserIds();
-        if (in_array($userId, $orgUsers) === true) {
-            // User is explicitly listed in the organisation - check authorization.
-        }
-
-        // Check if user has access via organisation membership.
-        // Note: $organisationUsers was intended for group-based access but is currently unused.
-        // Access is determined by $orgUsers check above.
-        // If (in_array($userId, $organisationUsers, true) === false) {
-        // Return false;
-        // }
-        // Get user's groups.
-        if (isset($this->groupManager) === false) {
-            // No group manager, allow access (backward compatibility).
-            return true;
-        }
-
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            // CLI context (occ commands, repair steps, cron jobs) — no user session exists.
-            // These are trusted system operations that must always succeed.
-            if (PHP_SAPI === 'cli') {
-                return true;
-            }
-
-            return false;
-        }
-
-        $userGroups = $this->groupManager->getUserGroupIds($user);
-
-        // Get organisation's authorization configuration.
-        $authorization = $activeOrg->getAuthorization();
-        if ($authorization === null || empty($authorization) === true) {
-            // No RBAC configured, allow access (backward compatibility).
-            return true;
-        }
-
-        // Check if the entity type exists in authorization.
-        if (isset($authorization[$entityType]) === false) {
-            // Entity type not in authorization, allow access (backward compatibility).
-            return true;
-        }
-
-        // Check if the action exists for this entity type.
-        if (isset($authorization[$entityType][$action]) === false) {
-            // Action not configured, allow access (backward compatibility).
-            return true;
-        }
-
-        $allowedGroups = $authorization[$entityType][$action];
-
-        // If the array is empty, it means no restrictions (allow all).
-        if (empty($allowedGroups) === true) {
-            return true;
-        }
-
-        // Check if user is in any of the allowed groups.
-        foreach ($userGroups as $groupId) {
-            if (in_array($groupId, $allowedGroups) === true) {
-                return true;
-            }
-        }
-
-        // Check for wildcard group.
-        if (in_array('*', $allowedGroups) === true) {
-            return true;
-        }
-
-        // No matching permission found.
-        return false;
-    }//end hasRbacPermission()
-
-    /**
-     * Verify RBAC permission and throw exception if denied.
-     *
-     * @param string $action     The action to check (create, read, update, delete)
-     * @param string $entityType The type of entity
-     *
-     * @return void
-     *
-     * @throws \Exception If user doesn't have permission
-     */
-    protected function verifyRbacPermission(string $action, string $entityType): void
-    {
-        if ($this->hasRbacPermission(action: $action, entityType: $entityType) === false) {
-            throw new Exception(
-                "Access denied: You do not have permission to {$action} {$entityType} entities.",
-                Response::HTTP_FORBIDDEN
-            );
-        }
-    }//end verifyRbacPermission()
+trait MultiTenancyTrait {
+	use TenancyIdentityTrait;
+	use OrganisationFilterTrait;
+	use OrganisationWriteGuardTrait;
+	use EntityRbacTrait;
+
+	/**
+	 * Apply organisation filter to a query builder with advanced multi-tenancy support.
+	 *
+	 * This method provides comprehensive organisation filtering including:
+	 * - Hierarchical organisation support (active org + all parents)
+	 * - Admin override capabilities
+	 * - System default organisation special handling
+	 * - NULL organisation legacy data access for admins
+	 * - Unauthenticated request handling
+	 *
+	 * Features:
+	 * 1. Hierarchical Access: Users see entities from their active org AND parent orgs
+	 * 2. Admin Override: Admins can see all entities if enabled in config
+	 * 3. Default Org: Special behavior for system-wide default organisation
+	 * 4. Legacy Data: Admins can access NULL organisation entities
+	 *
+	 * Note: The published/depublished column bypass for Register/Schema multi-tenancy
+	 * has been removed. Anonymous access is now controlled exclusively via RBAC
+	 * (authorization.read containing 'public' in the register/schema entity).
+	 *
+	 * Example hierarchy:
+	 * - Organisation A (root)
+	 * - Organisation B (parent: A)
+	 * - Organisation C (parent: B)
+	 * When C is active, entities from A, B, and C are visible.
+	 *
+	 * @param IQueryBuilder $qb The query builder
+	 * @param string $columnName The column name for organisation
+	 * @param bool $allowNullOrg Whether admins can see NULL organisation entities
+	 * @param string $tableAlias Optional table alias
+	 * @param bool $multiTenancyEnabled Whether multitenancy is enabled (default: true)
+	 *
+	 * @spec openspec/specs/deprecate-published-metadata/spec.md#REQ-5 (MultiTenancyTrait Documentation —
+	 *       published/depublished column bypass removed; Register/Schema visibility now governed by RBAC only)
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
+	 */
+	protected function applyOrganisationFilter(
+		IQueryBuilder $qb,
+		string $columnName = 'organisation',
+		bool $allowNullOrg = false,
+		string $tableAlias = '',
+		bool $multiTenancyEnabled = true,
+	): void {
+		$options = new OrganisationFilterOptions(
+			columnName: $columnName, allowNullOrg: $allowNullOrg,
+			tableAlias: $tableAlias, multiTenancyEnabled: $multiTenancyEnabled
+		);
+		$this->applyOrganisationScope(qb: $qb, options: $options);
+	}//end applyOrganisationFilter()
+
+	/**
+	 * Apply the organisation filter described by an options object.
+	 *
+	 * The same filter as applyOrganisationFilter(), which builds the options
+	 * and delegates here.
+	 *
+	 * @param IQueryBuilder             $qb      The query builder
+	 * @param OrganisationFilterOptions $options Column, alias, NULL-organisation and on/off settings
+	 *
+	 * @return void
+	 */
+	protected function applyOrganisationScope(IQueryBuilder $qb, OrganisationFilterOptions $options = new OrganisationFilterOptions()): void {
+		if ($this->shouldSkipFiltering(multiTenancyEnabled: $options->multiTenancyEnabled) === true) {
+			return;
+		}
+
+		$user = $this->getUserFromSession();
+		if ($user !== null || isset($this->userSession) === true) {
+			$this->applyScopedFilter(qb: $qb, scope: $this->organisationScope(options: $options, user: $user));
+		}
+	}//end applyOrganisationScope()
+
+	/**
+	 * Apply the filter for a resolved scope: with or without an active organisation.
+	 *
+	 * @param IQueryBuilder $qb    The query builder
+	 * @param array         $scope The scope (see OrganisationFilterTrait) plus the session user under `user`.
+	 *
+	 * @return void
+	 */
+	private function applyScopedFilter(IQueryBuilder $qb, array $scope): void {
+		$user = $scope['user'];
+		if (empty($scope['activeOrgUuids']) === true) {
+			$this->applyNoActiveOrgFilter(qb: $qb, user: $user, allowNullOrg: $scope['allowNullOrg'], organisationColumn: $scope['organisationColumn']);
+			return;
+		}
+
+		$this->applyActiveOrgFilter(qb: $qb, user: $user, scope: $scope);
+	}//end applyScopedFilter()
+
+	/**
+	 * The scope an organisation filter is built from (see OrganisationFilterTrait).
+	 *
+	 * Shared master data (REQ-SLE-001): rows held by ANOTHER organisation that
+	 * declared this one a consumer, OR-ed into the same predicate by ROW ID
+	 * rather than by organisation, so a consumer of one code list gains that
+	 * code list and nothing else the holder owns.
+	 *
+	 * @param OrganisationFilterOptions $options Column, alias and NULL-organisation settings.
+	 * @param mixed                     $user    The session user, or null.
+	 *
+	 * @return array The scope.
+	 */
+	private function organisationScope(OrganisationFilterOptions $options, mixed $user): array {
+		$activeOrgUuids = $this->getActiveOrganisationUuids();
+		$organisationColumn = $this->buildQualifiedColumnName(columnName: $options->columnName, tableAlias: $options->tableAlias);
+		return [
+			'user' => $user,
+			'activeOrgUuids' => $activeOrgUuids,
+			'allowNullOrg' => $options->allowNullOrg,
+			'organisationColumn' => $organisationColumn,
+			'sharedIds' => $this->sharedMasterDataIds(activeOrgUuids: $activeOrgUuids),
+			'sharedIdColumn' => $this->buildQualifiedColumnName(columnName: 'id', tableAlias: $options->tableAlias),
+		];
+	}//end organisationScope()
 }//end trait

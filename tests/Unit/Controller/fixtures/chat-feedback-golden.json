@@ -1,0 +1,656 @@
+{
+    "conversation not found": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ChatController] Failed to save feedback",
+                    {
+                        "file": "ChatController.php",
+                        "conversationUuid": "conv-uuid",
+                        "messageId": 42,
+                        "error": "no conversation"
+                    }
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Failed to save feedback"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "t:Failed to save feedback",
+            "message": "no conversation"
+        }
+    },
+    "conversation of another user": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Access denied"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "You do not have access to this conversation"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "t:Access denied",
+            "message": "t:You do not have access to this conversation"
+        }
+    },
+    "conversation with an empty owner": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Access denied"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "You do not have access to this conversation"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "t:Access denied",
+            "message": "t:You do not have access to this conversation"
+        }
+    },
+    "conversation without an owner": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Access denied"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "You do not have access to this conversation"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "t:Access denied",
+            "message": "t:You do not have access to this conversation"
+        }
+    },
+    "existing feedback of the acting user": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "messageMapper.find": [
+                    42
+                ]
+            },
+            {
+                "organisationService.getActiveOrganisation": []
+            },
+            {
+                "feedbackMapper.findByMessage": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "feedbackMapper.update": [
+                    [
+                        "type",
+                        "comment"
+                    ],
+                    {
+                        "id": 8,
+                        "uuid": "",
+                        "messageId": 42,
+                        "conversationId": 3,
+                        "agentId": 0,
+                        "userId": "alice",
+                        "organisation": null,
+                        "type": "negative",
+                        "comment": "Changed my mind",
+                        "created": null,
+                        "updated": null
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ChatController] Message feedback updated",
+                    {
+                        "file": "ChatController.php",
+                        "feedbackId": 8,
+                        "messageId": 42,
+                        "type": "negative",
+                        "hasComment": true
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 8,
+            "uuid": "",
+            "messageId": 42,
+            "conversationId": 3,
+            "agentId": 0,
+            "userId": "alice",
+            "organisation": null,
+            "type": "negative",
+            "comment": "Changed my mind",
+            "created": null,
+            "updated": null
+        }
+    },
+    "insert throws an error": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "messageMapper.find": [
+                    42
+                ]
+            },
+            {
+                "organisationService.getActiveOrganisation": []
+            },
+            {
+                "feedbackMapper.findByMessage": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "feedbackMapper.insert": [
+                    [
+                        "messageId",
+                        "conversationId",
+                        "userId",
+                        "type",
+                        "comment"
+                    ],
+                    {
+                        "id": null,
+                        "uuid": "",
+                        "messageId": 42,
+                        "conversationId": 3,
+                        "agentId": 0,
+                        "userId": "alice",
+                        "organisation": null,
+                        "type": "positive",
+                        "comment": "",
+                        "created": null,
+                        "updated": null
+                    }
+                ]
+            }
+        ],
+        "thrown": "Error",
+        "message": "insert failed"
+    },
+    "invalid type": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Invalid feedback type"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "type must be \"positive\" or \"negative\""
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "t:Invalid feedback type",
+            "message": "t:type must be \"positive\" or \"negative\""
+        }
+    },
+    "message of another conversation": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "messageMapper.find": [
+                    42
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Message not found"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Message does not belong to this conversation"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "t:Message not found",
+            "message": "t:Message does not belong to this conversation"
+        }
+    },
+    "missing type": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "l10n.t": [
+                    "Invalid feedback type"
+                ]
+            },
+            {
+                "l10n.t": [
+                    "type must be \"positive\" or \"negative\""
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "t:Invalid feedback type",
+            "message": "t:type must be \"positive\" or \"negative\""
+        }
+    },
+    "new feedback with an empty comment": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "messageMapper.find": [
+                    42
+                ]
+            },
+            {
+                "organisationService.getActiveOrganisation": []
+            },
+            {
+                "feedbackMapper.findByMessage": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "feedbackMapper.insert": [
+                    [
+                        "messageId",
+                        "conversationId",
+                        "userId",
+                        "organisation",
+                        "type",
+                        "comment"
+                    ],
+                    {
+                        "id": null,
+                        "uuid": "",
+                        "messageId": 42,
+                        "conversationId": 3,
+                        "agentId": 0,
+                        "userId": "alice",
+                        "organisation": "org-1",
+                        "type": "negative",
+                        "comment": "",
+                        "created": null,
+                        "updated": null
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ChatController] Message feedback created",
+                    {
+                        "file": "ChatController.php",
+                        "feedbackId": 9,
+                        "messageId": 42,
+                        "type": "negative",
+                        "hasComment": false
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 9,
+            "uuid": "",
+            "messageId": 42,
+            "conversationId": 3,
+            "agentId": 0,
+            "userId": "alice",
+            "organisation": "org-1",
+            "type": "negative",
+            "comment": "",
+            "created": null,
+            "updated": null
+        }
+    },
+    "new negative feedback without a comment or organisation": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "messageMapper.find": [
+                    42
+                ]
+            },
+            {
+                "organisationService.getActiveOrganisation": []
+            },
+            {
+                "feedbackMapper.findByMessage": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "feedbackMapper.insert": [
+                    [
+                        "messageId",
+                        "conversationId",
+                        "userId",
+                        "type",
+                        "comment"
+                    ],
+                    {
+                        "id": null,
+                        "uuid": "",
+                        "messageId": 42,
+                        "conversationId": 3,
+                        "agentId": 0,
+                        "userId": "alice",
+                        "organisation": null,
+                        "type": "negative",
+                        "comment": "",
+                        "created": null,
+                        "updated": null
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ChatController] Message feedback created",
+                    {
+                        "file": "ChatController.php",
+                        "feedbackId": 9,
+                        "messageId": 42,
+                        "type": "negative",
+                        "hasComment": false
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 9,
+            "uuid": "",
+            "messageId": 42,
+            "conversationId": 3,
+            "agentId": 0,
+            "userId": "alice",
+            "organisation": null,
+            "type": "negative",
+            "comment": "",
+            "created": null,
+            "updated": null
+        }
+    },
+    "new positive feedback with a comment": {
+        "calls": [
+            {
+                "request.getParam": [
+                    "type",
+                    null
+                ]
+            },
+            {
+                "request.getParam": [
+                    "comment",
+                    ""
+                ]
+            },
+            {
+                "conversationMapper.findByUuid": [
+                    "conv-uuid"
+                ]
+            },
+            {
+                "messageMapper.find": [
+                    42
+                ]
+            },
+            {
+                "organisationService.getActiveOrganisation": []
+            },
+            {
+                "feedbackMapper.findByMessage": [
+                    42,
+                    "alice"
+                ]
+            },
+            {
+                "feedbackMapper.insert": [
+                    [
+                        "messageId",
+                        "conversationId",
+                        "agentId",
+                        "userId",
+                        "organisation",
+                        "type",
+                        "comment"
+                    ],
+                    {
+                        "id": null,
+                        "uuid": "",
+                        "messageId": 42,
+                        "conversationId": 3,
+                        "agentId": 5,
+                        "userId": "alice",
+                        "organisation": "org-1",
+                        "type": "positive",
+                        "comment": "Helpful",
+                        "created": null,
+                        "updated": null
+                    }
+                ]
+            },
+            {
+                "logger.info": [
+                    "[ChatController] Message feedback created",
+                    {
+                        "file": "ChatController.php",
+                        "feedbackId": 9,
+                        "messageId": 42,
+                        "type": "positive",
+                        "hasComment": true
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 9,
+            "uuid": "",
+            "messageId": 42,
+            "conversationId": 3,
+            "agentId": 5,
+            "userId": "alice",
+            "organisation": "org-1",
+            "type": "positive",
+            "comment": "Helpful",
+            "created": null,
+            "updated": null
+        }
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "standard": "mdto-xml",
+    "version": "MDTO-XML1.0.1",
+    "release": "1.0.1",
+    "source": "https://github.com/NationaalArchief/MDTO-XSD/blob/afae5f300c8a92bbe3564d642017213bc7f4156f/schema/v1.0.1/MDTO-XML1.0.1.xsd",
+    "alsoPublishedAt": "https://www.nationaalarchief.nl/sites/default/mdto/MDTO-XML1.0.1.xsd",
+    "sha256": "048d745a17f479995f14c938d342b2f13382072d0fdf1f1b28113126df715648",
+    "retrieved": "2026-09-11",
+    "modified": false,
+    "note": "Verbatim copy of the Nationaal Archief's XML Schema Definition for MDTO (Metagegevens voor Duurzaam Toegankelijke Overheidsinformatie), XML syntax version 1.0.1. Not edited in any way. The copy at nationaalarchief.nl differs only in using CRLF line endings; its sha256 is edad88821a1023a9eafca0fa399ee7735ef03481aa186e07bbdaabdc123def34. Used by MdtoXmlGeneratorXsdTest to validate generated documents, so a change to this file changes what the export is held to.",
+    "licence": "CC BY-SA (version not stated by the publisher)",
+    "licenceSource": "Forum Standaardisatie, Intakeadvies MDTO, FS-20241002.3C, section 'Beschikbaarheid documentatie en intellectueel eigendomsrecht': \"Het Nationaal Archief hanteert de licentie CC BY SA voor al diens kennisproducten en dus ook voor MDTO.\" https://www.forumstandaardisatie.nl/sites/default/files/FS/2024/1002/FS-20241002.3C-intakeadvies-MDTO.pdf",
+    "attribution": "MDTO-XML 1.0.1, Nationaal Archief, https://www.nationaalarchief.nl/archiveren/mdto, licensed CC BY-SA. Redistributed unmodified.",
+    "licenceNote": "The upstream repositories (NationaalArchief/MDTO-XSD, NationaalArchief/MDTO-Metagegevensschema) carry no LICENSE file and their respec 'license' setting is commented out, so the statement above is the only licence declaration found. The share-alike term binds adaptations of THIS FILE; it does not reach openregister's own code, which ships the file alongside itself and does not adapt it."
+}

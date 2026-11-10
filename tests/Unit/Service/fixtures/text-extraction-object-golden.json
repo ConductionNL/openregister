@@ -1,0 +1,737 @@
+{
+    "deleted object": [
+        [
+            "log.debug",
+            "[TextExtractionService] Starting object extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.info",
+            "[TextExtractionService] Object no longer exists, skipping extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "up to date": [
+        [
+            "log.debug",
+            "[TextExtractionService] Starting object extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "chunk.latest",
+            "object",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Object already processed and up-to-date",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "stale chunks": [
+        [
+            "log.debug",
+            "[TextExtractionService] Starting object extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "chunk.latest",
+            "object",
+            42
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.info",
+            "[ObjectHandler] Extracting text from object",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 148,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 148
+            }
+        ],
+        [
+            "chunk.delete",
+            "object",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 148,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "property-path",
+                    "path": null
+                },
+                "text": "Object ID: obj-uuid Content: id: obj-uuid subject: Een besluit over een zaak. note: The quick brown fox jumps over the lazy dog. Organisation: org-1",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"object\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce\",\n    \"text_length\": 148,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": \"org-1\",\n    \"owner\": \"alice\",\n    \"extraction_method\": \"object_extraction\",\n    \"file_metadata\": {\n        \"uuid\": \"obj-uuid\",\n        \"schema_id\": null,\n        \"register_id\": null,\n        \"version\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "entities",
+            "object",
+            42,
+            {
+                "method": "hybrid",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity extraction complete",
+            {
+                "objectId": 42,
+                "entities_found": 3,
+                "relations_created": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Object extraction completed",
+            {
+                "objectId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "forced while up to date": [
+        [
+            "log.debug",
+            "[TextExtractionService] Starting object extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.info",
+            "[ObjectHandler] Extracting text from object",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 148,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 148
+            }
+        ],
+        [
+            "chunk.delete",
+            "object",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 148,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "property-path",
+                    "path": null
+                },
+                "text": "Object ID: obj-uuid Content: id: obj-uuid subject: Een besluit over een zaak. note: The quick brown fox jumps over the lazy dog. Organisation: org-1",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"object\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce\",\n    \"text_length\": 148,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": \"org-1\",\n    \"owner\": \"alice\",\n    \"extraction_method\": \"object_extraction\",\n    \"file_metadata\": {\n        \"uuid\": \"obj-uuid\",\n        \"schema_id\": null,\n        \"register_id\": null,\n        \"version\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "entities",
+            "object",
+            42,
+            {
+                "method": "hybrid",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity extraction complete",
+            {
+                "objectId": 42,
+                "entities_found": 3,
+                "relations_created": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Object extraction completed",
+            {
+                "objectId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "no updated timestamp": [
+        [
+            "log.debug",
+            "[TextExtractionService] Starting object extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "chunk.latest",
+            "object",
+            42
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.info",
+            "[ObjectHandler] Extracting text from object",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 148,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 148
+            }
+        ],
+        [
+            "chunk.delete",
+            "object",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 148,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "property-path",
+                    "path": null
+                },
+                "text": "Object ID: obj-uuid Content: id: obj-uuid subject: Een besluit over een zaak. note: The quick brown fox jumps over the lazy dog. Organisation: org-1",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"object\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce\",\n    \"text_length\": 148,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": \"org-1\",\n    \"owner\": \"alice\",\n    \"extraction_method\": \"object_extraction\",\n    \"file_metadata\": {\n        \"uuid\": \"obj-uuid\",\n        \"schema_id\": null,\n        \"register_id\": null,\n        \"version\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "entities",
+            "object",
+            42,
+            {
+                "method": "hybrid",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity extraction complete",
+            {
+                "objectId": 42,
+                "entities_found": 3,
+                "relations_created": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Object extraction completed",
+            {
+                "objectId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "entity pass fails": [
+        [
+            "log.debug",
+            "[TextExtractionService] Starting object extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "chunk.latest",
+            "object",
+            42
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.info",
+            "[ObjectHandler] Extracting text from object",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 148,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 148
+            }
+        ],
+        [
+            "chunk.delete",
+            "object",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 148,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "property-path",
+                    "path": null
+                },
+                "text": "Object ID: obj-uuid Content: id: obj-uuid subject: Een besluit over een zaak. note: The quick brown fox jumps over the lazy dog. Organisation: org-1",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"object\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"385d36c5cb1448b8d6913336a2c872e3a648af7ac8d5cf7cb8a13d14ff6f05ce\",\n    \"text_length\": 148,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": \"org-1\",\n    \"owner\": \"alice\",\n    \"extraction_method\": \"object_extraction\",\n    \"file_metadata\": {\n        \"uuid\": \"obj-uuid\",\n        \"schema_id\": null,\n        \"register_id\": null,\n        \"version\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "entities",
+            "object",
+            42,
+            {
+                "method": "hybrid",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Entity extraction failed",
+            {
+                "objectId": 42,
+                "error": "entity recognition unavailable"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Object extraction completed",
+            {
+                "objectId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "empty object": [
+        [
+            "log.debug",
+            "[TextExtractionService] Starting object extraction",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "chunk.latest",
+            "object",
+            42
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.info",
+            "[ObjectHandler] Extracting text from object",
+            {
+                "objectId": 42
+            }
+        ],
+        [
+            "object.find",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 61,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 61
+            }
+        ],
+        [
+            "chunk.delete",
+            "object",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 61,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "fb40db6207985d17103bdea17a4e10f51b566e13def6196b2b28f14aa3700896",
+                "positionReference": {
+                    "type": "property-path",
+                    "path": null
+                },
+                "text": "Object ID: obj-uuid Content: id: obj-uuid Organisation: org-1",
+                "detectionMethod": "none"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "object",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 450,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": "org-1",
+                "checksum": "fb40db6207985d17103bdea17a4e10f51b566e13def6196b2b28f14aa3700896",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"object\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"fb40db6207985d17103bdea17a4e10f51b566e13def6196b2b28f14aa3700896\",\n    \"text_length\": 61,\n    \"language\": null,\n    \"language_level\": null,\n    \"organisation\": \"org-1\",\n    \"owner\": \"alice\",\n    \"extraction_method\": \"object_extraction\",\n    \"file_metadata\": {\n        \"uuid\": \"obj-uuid\",\n        \"schema_id\": null,\n        \"register_id\": null,\n        \"version\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "entities",
+            "object",
+            42,
+            {
+                "method": "hybrid",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity extraction complete",
+            {
+                "objectId": 42,
+                "entities_found": 3,
+                "relations_created": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Object extraction completed",
+            {
+                "objectId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ]
+}

@@ -5,191 +5,176 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcModal v-if="navigationStore.modal === 'uploadFiles'"
+	<NcModal
+		v-if="navigationStore.modal === 'uploadFiles'"
 		ref="modalRef"
-		label-id="AddAttachmentModal"
+		labelId="AddAttachmentModal"
 		@close="closeModal()">
 		<div class="modal__content TestMappingMainModal">
-			<h2>Bijlage toevoegen</h2>
+			<h2>{{ t('openregister', 'Add Attachment') }}</h2>
 
 			<div class="labelAndShareContainer">
-				<NcSelect v-bind="labelOptions"
+				<NcSelect
+					v-bind="labelOptions"
 					v-model="labelOptions.value"
+					inputLabel="Label Options Value"
 					:disabled="loading || tagsLoading"
 					:loading="tagsLoading"
 					:taggable="true"
 					:multiple="true"
 					:selectable="(option) => isSelectable(option)" />
-				<NcCheckboxRadioSwitch :disabled="loading"
-					label="Automatisch delen"
-					type="switch"
-					:checked.sync="share">
-					Automatisch delen
+				<NcCheckboxRadioSwitch
+					v-model="share"
+					:disabled="loading"
+					:label="t('openregister', 'Auto share')"
+					type="switch">
+					{{ t('openregister', 'Auto share') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
 			<div class="container">
-				<div v-if="!labelOptions.value?.length || loading" class="filesListDragDropNotice" :class="'tabPanelFileUpload'">
+				<div
+					v-if="!labelOptions.value?.length || loading"
+					class="filesListDragDropNotice tabPanelFileUpload">
 					<div v-if="!labelOptions.value?.length">
 						<NcNoteCard type="info">
-							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
-						</NcNoteCard>
-					</div>
-					<div v-if="success !== null || error">
-						<NcNoteCard v-if="success" type="success">
-							<p>Bestanden succesvol toegevoegd</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>Er is iets fout gegaan bij het toevoegen van bestanden</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>{{ error }}</p>
-						</NcNoteCard>
-						<div v-if="false">
-							<NcNoteCard type="error">
-								<p>Selecteer bestanden met de juiste extensie</p>
-							</NcNoteCard>
-						</div>
-					</div>
-					<div class="filesListDragDropNoticeWrapper" :class="{ 'filesListDragDropNoticeWrapper--disabled': !labelOptions.value?.length || loading }">
-						<div class="filesListDragDropNoticeWrapperIcon">
-							<TrayArrowDown :size="48" />
-							<h3 class="filesListDragDropNoticeTitle">
-								Sleep een bestand of bestanden hierheen
-							</h3>
-						</div>
-
-						<h3 class="filesListDragDropNoticeTitle">
-							Of
-						</h3>
-
-						<div class="filesListDragDropNoticeTitle">
-							<NcButton
-								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
-								@click="openFileUpload()">
-								<template #icon>
-									<Plus :size="20" />
-								</template>
-								Een bestand of bestanden toevoegen
-							</NcButton>
-						</div>
-					</div>
-				</div>
-				<div v-if="labelOptions.value?.length && !loading"
-					ref="dropzone"
-					class="filesListDragDropNotice"
-					:class="'tabPanelFileUpload'">
-					<div v-if="!labelOptions.value?.length">
-						<NcNoteCard type="info">
-							<p>Selecteer of maak labels aan of selecteer "Geen label" om bestanden toe te voegen</p>
-						</NcNoteCard>
-					</div>
-					<div v-if="checkForTooBigFiles(filesComputed)">
-						<NcNoteCard type="warning">
-							<p class="folderLink">
-								Als je bestanden groter of gelijk aan 512MB wilt toevoegen, ga dan naar de
-								<NcButton type="secondary"
-									class="folderLinkButton"
-									aria-label="Open map"
-									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
-									<template #icon>
-										<FolderOutline :size="20" />
-									</template>
-									map
-								</NcButton>
-								en voeg de bestanden daar toe.
+							<p>
+								{{
+									t(
+										'openregister',
+										'Select or create labels, or select "No label" to add files',
+									)
+								}}
 							</p>
 						</NcNoteCard>
 					</div>
-					<div v-if="success !== null || error">
-						<NcNoteCard v-if="success" type="success">
-							<p>Bestanden succesvol toegevoegd</p>
+					<UploadNotice
+						:success="success"
+						:error="error"
+						disabled
+						@add="openFileUpload()" />
+				</div>
+				<div
+					v-if="labelOptions.value?.length && !loading"
+					ref="dropzone"
+					class="filesListDragDropNotice tabPanelFileUpload">
+					<div v-if="checkForTooBigFiles(filesComputed)">
+						<NcNoteCard type="warning">
+							<p class="folderLink">
+								{{
+									t(
+										'openregister',
+										'To add files larger than or equal to 512MB, go to the',
+									)
+								}}
+								<NcButton
+									variant="secondary"
+									class="folderLinkButton"
+									:aria-label="t('openregister', 'Open folder')"
+									@click="
+										openFolder(
+											objectStore.objectItem?.['@self']
+												?.folder,
+										)
+									">
+									<template #icon>
+										<FolderOutline :size="20" />
+									</template>
+									{{ t('openregister', 'folder') }}
+								</NcButton>
+								{{ t('openregister', 'and add the files there.') }}
+							</p>
 						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>Er is iets fout gegaan bij het toevoegen van bestanden</p>
-						</NcNoteCard>
-						<NcNoteCard v-if="error && !success" type="error">
-							<p>{{ error }}</p>
-						</NcNoteCard>
-						<div v-if="false">
-							<NcNoteCard type="error">
-								<p>Selecteer bestanden met de juiste extensie</p>
-							</NcNoteCard>
-						</div>
 					</div>
-					<div class="filesListDragDropNoticeWrapper" :class="{ 'filesListDragDropNoticeWrapper--disabled': !labelOptions.value?.length }">
-						<div class="filesListDragDropNoticeWrapperIcon">
-							<TrayArrowDown :size="48" />
-							<h3 class="filesListDragDropNoticeTitle">
-								Sleep een bestand of bestanden hierheen
-							</h3>
-						</div>
-
-						<h3 class="filesListDragDropNoticeTitle">
-							Of
-						</h3>
-
-						<div class="filesListDragDropNoticeTitle">
-							<NcButton
-								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
-								@click="openFileUpload()">
-								<template #icon>
-									<Plus :size="20" />
-								</template>
-								Een bestand of bestanden toevoegen
-							</NcButton>
-						</div>
-					</div>
+					<UploadNotice
+						:success="success"
+						:error="error"
+						@add="openFileUpload()" />
 				</div>
 				<div v-if="!filesComputed">
-					Geen bestanden geselecteerd
+					{{ t('openregister', 'No files selected') }}
 				</div>
 
 				<table v-if="filesComputed" class="files-table">
 					<thead>
 						<tr class="files-table-tr">
 							<th class="files-table-td-status" />
-							<th>
-								Bestandsnaam
+							<th scope="col">
+								{{ t('openregister', 'File name') }}
 							</th>
-							<th>
-								Grootte
+							<th scope="col">
+								{{ t('openregister', 'Size') }}
 							</th>
-							<th>
-								Labels
+							<th scope="col">
+								{{ t('openregister', 'Labels') }}
 							</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="file of filesComputed" :key="file.name" class="files-table-tr">
+						<tr
+							v-for="file of filesComputed"
+							:key="file.name"
+							class="files-table-tr">
 							<td>
-								<CheckCircle v-if="file.status === 'uploaded'" class="success" :size="20" />
-								<NcLoadingIcon v-if="file.status === 'uploading'" :size="20" />
-								<AlphaXCircle v-if="file.status === 'failed'" class="failed" :size="20" />
-								<Exclamation v-if="file.status === 'too_large'" class="failed" :size="20" />
+								<CheckCircle
+									v-if="file.status === 'uploaded'"
+									class="success"
+									:size="20" />
+								<NcLoadingIcon
+									v-if="file.status === 'uploading'"
+									:size="20" />
+								<AlphaXCircle
+									v-if="file.status === 'failed'"
+									class="failed"
+									:size="20" />
+								<Exclamation
+									v-if="file.status === 'too_large'"
+									class="failed"
+									:size="20" />
 							</td>
-							<td class="files-table-td-name" :class="{ 'files-table-name-wrong': getTooBigFiles(file.size) }">
-								<span class="files-table-name">{{ getFileNameAndExtension(file.name).name }}</span>
-								<span class="files-table-extension">.{{ getFileNameAndExtension(file.name).extension }}</span>
+							<td
+								class="files-table-td-name"
+								:class="{
+									'files-table-name-wrong': getTooBigFiles(
+										file.size,
+									),
+								}">
+								<span class="files-table-name">{{
+									getFileNameAndExtension(file.name).name
+								}}</span>
+								<span class="files-table-extension"
+									>.{{
+										getFileNameAndExtension(file.name).extension
+									}}</span
+								>
 							</td>
 							<td>
 								{{ bytesToSize(file.size) }}
 							</td>
 							<td class="files-table-td-labels">
-								<span v-if="editingTags !== file.name"
+								<span
+									v-if="editingTags !== file.name"
 									class="files-list__row-action--inline files-list__row-action-system-tags">
-									<ul v-if="file.tags && file.tags.length > 0" class="files-list__system-tags" aria-label="Assigned collaborative tags">
-										<li v-for="label of file.tags"
+									<ul
+										v-if="file.tags && file.tags.length > 0"
+										class="files-list__system-tags"
+										:aria-label="
+											t(
+												'openregister',
+												'Assigned collaborative tags',
+											)
+										">
+										<li
+											v-for="label of file.tags"
 											:key="label"
 											class="files-list__system-tag"
 											:title="label">
 											{{ label }}
 										</li>
 									</ul>
-									<span v-if="!file.tags || file.tags.length === 0">
-										Geen labels
+									<span
+										v-if="!file.tags || file.tags.length === 0">
+										{{ t('openregister', 'No labels') }}
 									</span>
 								</span>
 								<NcSelect
@@ -199,28 +184,51 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									:loading="tagsLoading"
 									:taggable="true"
 									:multiple="true"
-									:aria-label-combobox="labelOptionsEdit.inputLabel"
+									:aria-label-combobox="
+										labelOptionsEdit.inputLabel
+									"
 									:options="labelOptionsEdit.options" />
 
 								<span class="buttonContainer">
 									<!-- Tags Buttons -->
 									<NcButton
 										v-if="editingTags !== file.name"
-										v-tooltip="'Labels bewerken'"
-										:disabled="editingTags && editingTags !== file.name || loading || file.status === 'too_large' || tagsLoading"
-										:aria-label="`edit tags for ${file.name}`"
-										type="secondary"
+										:title="t('openregister', 'Edit labels')"
+										:disabled="
+											(editingTags
+												&& editingTags !== file.name)
+											|| loading
+											|| file.status === 'too_large'
+											|| tagsLoading
+										"
+										:aria-label="
+											t(
+												'openregister',
+												'Edit tags for {name}',
+												{ name: file.name },
+											)
+										"
+										variant="secondary"
 										class="editTagsButton"
-										@click="editingTags = file.name, editedTags = file.tags">
+										@click="
+											((editingTags = file.name),
+											(editedTags = file.tags))
+										">
 										<template #icon>
 											<TagEdit :size="20" />
 										</template>
 									</NcButton>
 									<NcButton
 										v-if="editingTags === file.name"
-										v-tooltip="'Labels opslaan'"
-										type="primary"
-										:aria-label="`save tags for ${file.name}`"
+										:title="t('openregister', 'Save labels')"
+										variant="primary"
+										:aria-label="
+											t(
+												'openregister',
+												'Save tags for {name}',
+												{ name: file.name },
+											)
+										"
 										class="editTagsButton"
 										@click="saveTags(file, editedTags)">
 										<template #icon>
@@ -229,9 +237,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 
 									<!-- File Actions -->
-									<NcButton v-if="file.status === 'failed'"
-										v-tooltip="'Opnieuw uploaden'"
-										type="primary"
+									<NcButton
+										v-if="file.status === 'failed'"
+										:title="t('openregister', 'Retry upload')"
+										variant="primary"
 										@click="addAttachments(file)">
 										<template #icon>
 											<Refresh :size="20" />
@@ -239,8 +248,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="file.status === 'too_large'"
-										v-tooltip="'Verwijder uit lijst'"
-										type="primary"
+										:title="
+											t('openregister', 'Remove from list')
+										"
+										variant="primary"
 										@click="removeFile(file.name)">
 										<template #icon>
 											<Minus :size="20" />
@@ -257,19 +268,26 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcLoadingIcon,
+	NcModal,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import { ref } from 'vue'
-import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
-import { useFileSelection } from './../../composables/UseFileSelection.js'
-import Plus from 'vue-material-design-icons/Plus.vue'
-import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
-import TagEdit from 'vue-material-design-icons/TagEdit.vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
-import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import AlphaXCircle from 'vue-material-design-icons/AlphaXCircle.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Exclamation from 'vue-material-design-icons/Exclamation.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Minus from 'vue-material-design-icons/Minus.vue'
+import Refresh from 'vue-material-design-icons/Refresh.vue'
+import TagEdit from 'vue-material-design-icons/TagEdit.vue'
+import UploadNotice from './UploadNotice.vue'
+import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
+import { useFileSelection } from './../../composables/UseFileSelection.js'
 
 const dropzone = ref(null)
 
@@ -278,17 +296,25 @@ const { openFileUpload, files, reset, setTags } = useFileSelection({
 	dropzone,
 })
 
+/**
+ * The settings of a label multiselect before its options are loaded.
+ *
+ * @return {{inputLabel: string, multiple: boolean}} The settings
+ */
+function labelSelect() {
+	return { inputLabel: 'Labels', multiple: true }
+}
+
 export default {
 	name: 'UploadFiles',
 	components: {
+		UploadNotice,
 		NcModal,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		NcCheckboxRadioSwitch,
-		Plus,
-		TrayArrowDown,
 		TagEdit,
 		ContentSaveOutline,
 		FolderOutline,
@@ -298,6 +324,7 @@ export default {
 		Exclamation,
 		Minus,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -306,62 +333,100 @@ export default {
 			share: false,
 			editingTags: null,
 			editedTags: [],
-			labelOptions: {
-				inputLabel: 'Labels',
-				multiple: true,
-			},
-			labelOptionsEdit: {
-				inputLabel: 'Labels',
-				multiple: true,
-			},
+			labelOptions: labelSelect(),
+			labelOptionsEdit: labelSelect(),
 			tagsLoading: false,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing objectStore.objectItem to the template; UI state helper.
+		 */
 		objectItem() {
 			return objectStore.objectItem
 		},
+
+		/**
+		 * @spec exclude Computed register-id extraction from the object's @self metadata; UI state helper.
+		 */
 		registerId() {
 			const register = this.objectItem?.['@self']?.register
-			return typeof register === 'object' && register !== null ? register.id : register
+			return typeof register === 'object' && register !== null
+				? register.id
+				: register
 		},
+
+		/**
+		 * @spec exclude Computed schema-id extraction from the object's @self metadata; UI state helper.
+		 */
 		schemaId() {
 			const schema = this.objectItem?.['@self']?.schema
 			return typeof schema === 'object' && schema !== null ? schema.id : schema
 		},
+
+		/**
+		 * @spec exclude Computed object-id extraction from the object's @self metadata; UI state helper.
+		 */
 		objectId() {
 			return this.objectItem?.['@self']?.id || this.objectItem?.id
 		},
+
+		/**
+		 * @spec exclude Computed passthrough exposing the upload-queue ref to the template; UI state helper.
+		 */
 		filesComputed() {
 			return files.value
 		},
 	},
+
 	watch: {
 		filesComputed: {
+			/**
+			 * @param {Array<File>|null} newFiles
+			 * @param {Array<File>|null} _oldFiles
+			 * @spec exclude Watcher auto-triggering upload when files are queued; UI reactivity plumbing.
+			 */
 			handler(newFiles, _oldFiles) {
 				if (newFiles?.length) {
 					this.addAttachments()
 				}
 			},
+
 			deep: true,
 		},
+
 		labelOptions: {
+			/**
+			 * @spec exclude UI handler/computed reactive label-options sync
+			 */
 			handler() {
 				setTags(this.getLabels())
 			},
+
 			deep: true,
 		},
 	},
+
 	mounted() {
 		this.getAllTags()
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close handler resetting upload state and navigationStore.modal; UI plumbing.
+		 */
 		closeModal() {
 			this.success = null
 			this.error = null
 			reset()
 			navigationStore.setModal(false)
 		},
+
+		/**
+		 * @param {number} bytes
+		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
+		 */
 		bytesToSize(bytes) {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
 			if (bytes === 0) return 'n/a'
@@ -371,6 +436,10 @@ export default {
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
 		},
 
+		/**
+		 * @param {string} fullname
+		 * @spec exclude Splits a filename into name + extension for display; UI presentation helper.
+		 */
 		getFileNameAndExtension(fullname) {
 			const lastDot = fullname.lastIndexOf('.')
 			const name = fullname.slice(0, lastDot)
@@ -378,13 +447,17 @@ export default {
 			return { name, extension }
 		},
 
+		/**
+		 * @param {Array<File>|null} files
+		 * @spec exclude Flags over-size files in the queue with a status; UI validation helper.
+		 */
 		checkForTooBigFiles(files) {
 			if (!files) return false
-			const wrongFiles = files.filter(file => {
+			const wrongFiles = files.filter((file) => {
 				return this.getTooBigFiles(file.size)
 			})
 
-			wrongFiles.forEach(file => {
+			wrongFiles.forEach((file) => {
 				file.status = 'too_large'
 			})
 
@@ -395,66 +468,67 @@ export default {
 			return size > 536870480 // 512MB
 		},
 
+		/**
+		 * @param {string} option
+		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
+		 */
 		isSelectable(option) {
-			if (this.labelOptions.value?.includes('Geen label') && option !== 'Geen label') {
-				return false
+			const noLabel = t('openregister', 'No label')
+			const chosen = this.labelOptions.value
+			if (chosen?.includes(noLabel)) {
+				return option === noLabel
 			}
-			if (this.labelOptions.value?.length >= 1 && !this.labelOptions.value?.includes('Geen label') && option === 'Geen label') {
-				return false
-			}
-			return true
+			return !(chosen?.length >= 1 && option === noLabel)
 		},
 
+		/**
+		 * @spec exclude Maps the "No label" sentinel to null for the tag value; UI selection helper.
+		 */
 		getLabels() {
-			if (this.labelOptions.value?.includes('Geen label')) {
+			if (this.labelOptions.value?.includes(t('openregister', 'No label'))) {
 				return null
 			} else {
 				return this.labelOptions.value
 			}
 		},
 
+		/**
+		 * @spec exclude Loads available tags via objectStore.fetchTags to populate the label multiselect; UI form-loading plumbing.
+		 */
 		getAllTags() {
 			this.tagsLoading = true
 			// @TODO - this functionality always calls and therefore always has to wait.
 			// split this up into a computed value and action, the computed value can dervive tags from `objectStore.getTags` (getter) or `objectStore.tags` (state)
 			// this avoids the waiting time in later calls
-			objectStore.fetchTags().then((tags) => {
-				const newLabelOptions = new Set()
-				const newLabelOptionsEdit = new Set()
-
-				// add labels to set
-				newLabelOptions.add('Geen label')
-
-				tags.map(tag => newLabelOptions.add(tag))
-				tags.map(tag => newLabelOptionsEdit.add(tag))
-
-				// convert set to array
-				this.labelOptions.options = Array.from(newLabelOptions)
-				this.labelOptionsEdit.options = Array.from(newLabelOptionsEdit)
-			}).finally(() => {
-				this.tagsLoading = false
-			})
+			objectStore
+				.fetchTags()
+				.then((tags) => this.applyTags(tags))
+				.finally(() => {
+					this.tagsLoading = false
+				})
 		},
 
 		/**
-		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
-		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
+		 * Offer the stored tags as labels: with "No label" first when adding,
+		 * without it when editing, each tag once.
+		 *
+		 * @param {Array<string>} tags The stored tags
+		 * @spec exclude Fills the label multiselects; UI form-loading plumbing.
+		 * @return {void}
 		 */
-		 openFolder(url) {
-			// Parse the encoded URL by replacing escaped characters
-			const decodedUrl = url.replace(/\\\//g, '/')
-
-			// Ensure URL starts with forward slash
-			const normalizedUrl = decodedUrl.startsWith('/') ? decodedUrl : '/' + decodedUrl
-
-			// Construct the proper Nextcloud Files app URL with the normalized path
-			// Use window.location.origin to get the current domain instead of hardcoding
-			const nextcloudUrl = `${window.location.origin}/index.php/apps/files/files?dir=${encodeURIComponent(normalizedUrl)}`
-
-			// Open URL in new tab
-			window.open(nextcloudUrl, '_blank')
+		applyTags(tags) {
+			const noLabel = t('openregister', 'No label')
+			this.labelOptions.options = Array.from(new Set([noLabel, ...tags]))
+			this.labelOptionsEdit.options = Array.from(new Set(tags))
 		},
 
+		openFolder: nextcloudFiles.openFolder,
+
+		/**
+		 * @param {File} file
+		 * @param {Array<string>} editedTags
+		 * @spec exclude Applies edited tags to a queued file and re-triggers upload; UI selection plumbing.
+		 */
 		saveTags(file, editedTags) {
 			file.tags = editedTags
 			file.status = 'pending'
@@ -464,93 +538,177 @@ export default {
 			this.editedTags = []
 		},
 
+		/**
+		 * @param {string} fileName
+		 * @spec exclude Removes a file from the upload queue; UI file-picker plumbing.
+		 */
 		removeFile(fileName) {
 			reset(fileName)
 			if (this.editingTags === fileName) {
 				this.editingTags = null
 			}
 		},
+
+		/**
+		 * @spec exclude Computed-style enablement guard for the upload action; UI state helper.
+		 */
 		checkIfDisabled() {
-			if (this.objectStore.objectItem.downloadUrl || this.objectStore.objectItem.title) return true
+			if (
+				this.objectStore.objectItem.downloadUrl
+				|| this.objectStore.objectItem.title
+			)
+				return true
 			return false
 		},
 
-		async addAttachments(specificFile = null) {
-			if (!this.registerId || !this.schemaId || !this.objectId) {
+		/**
+		 * @param {File|null} specificFile
+		 * @spec exclude Uploads queued attachments to the object via objectStore; entity-file persistence lives in the store, this is modal orchestration plumbing.
+		 */
+		async addAttachments(specificFile) {
+			if (!this.hasObjectContext()) {
 				this.error = 'Missing object context'
 				return
 			}
 			this.loading = true
 			this.error = null
-
 			try {
-				let filesToUpload = []
-
-				// only get the specific file if it is passed
-				if (specificFile) {
-					filesToUpload = [specificFile]
-				} else {
-					// filter out successful and pending files
-					filesToUpload = this.filesComputed.filter(file => file.status !== 'uploaded' && file.status !== 'uploading')
-
-					// filter out files too large
-					filesToUpload = filesToUpload.filter(file => !this.getTooBigFiles(file.size))
-				}
-
-				if (filesToUpload.length === 0) {
-					this.loading = false
-					return
-				}
-
-				// Build and register the type
-				const type = `${this.registerId}-${this.schemaId}`
-				if (!objectStore.objectTypes?.includes(type)) {
-					objectStore.registerObjectType(type, this.schemaId, this.registerId)
-				}
-
-				// file calls
-				const calls = await Promise.all(filesToUpload.map(async (file) => {
-					file.status = 'uploading'
-
-					try {
-						const formData = new FormData()
-						formData.append('files[]', file)
-						if (Array.isArray(file.tags)) {
-							file.tags.forEach(tag => formData.append('tags[]', tag))
-						}
-						if (this.share) {
-							formData.append('share', '1')
-						}
-
-						const responseJson = await objectStore.uploadFiles(type, this.objectId, formData)
-
-						file.status = 'uploaded'
-
-						return [true, responseJson]
-					} catch (error) {
-						file.status = 'failed'
-						return [false, error]
-					}
-				}))
-
-				this.getAllTags()
-
-				// Refresh files for the object
-				await objectStore.fetchFiles(type, this.objectId)
-
-				const failed = calls.filter(result => result[0] === false)
-
-				if (failed.length > 0) {
-					this.error = failed[0][1].message
-				} else {
-					this.success = true
-				}
+				await this.uploadAll(this.filesToSend(specificFile))
 			} catch (err) {
 				// This block generally catches unexpected errors.
 				this.error = err.response?.data?.error ?? err
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The files an upload sends: the one given, or every uploadable queued file.
+		 *
+		 * @param {File|null} specificFile The one file to send, if any
+		 * @return {Array<File>} The files
+		 * @spec exclude UI state helper selecting the files to upload
+		 */
+		filesToSend(specificFile) {
+			return specificFile ? [specificFile] : this.uploadableFiles()
+		},
+
+		/**
+		 * Whether the modal knows the register, schema and object to upload to.
+		 *
+		 * @return {boolean} Whether all three are set
+		 * @spec exclude UI state guard for the upload action
+		 */
+		hasObjectContext() {
+			return Boolean(this.registerId && this.schemaId && this.objectId)
+		},
+
+		/**
+		 * The queued files that are not uploaded or uploading yet and not too big.
+		 *
+		 * @return {Array<File>} The files
+		 * @spec exclude UI state helper selecting the files to upload
+		 */
+		uploadableFiles() {
+			return this.filesComputed
+				.filter(
+					(file) =>
+						file.status !== 'uploaded' && file.status !== 'uploading',
+				)
+				.filter((file) => !this.getTooBigFiles(file.size))
+		},
+
+		/**
+		 * Upload files to the object, refresh its files and record the outcome.
+		 *
+		 * @param {Array<File>} files The files
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 */
+		async uploadAll(files) {
+			if (files.length === 0) {
+				return
+			}
+			const type = this.objectType()
+			const calls = await Promise.all(
+				files.map((file) => this.uploadOne(type, file)),
+			)
+			this.getAllTags()
+			await objectStore.fetchFiles(type, this.objectId)
+			this.recordUploads(calls)
+		},
+
+		/**
+		 * The object type of the register and schema, registered with the
+		 * object store when it does not know it yet.
+		 *
+		 * @return {string} The object type
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 */
+		objectType() {
+			const type = `${this.registerId}-${this.schemaId}`
+			if (!objectStore.objectTypes?.includes(type)) {
+				objectStore.registerObjectType(type, this.schemaId, this.registerId)
+			}
+			return type
+		},
+
+		/**
+		 * Record the outcome of the uploads: the first failure, or success.
+		 *
+		 * @param {Array} calls The upload results, each [succeeded, error]
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 * @return {void}
+		 */
+		recordUploads(calls) {
+			const failed = calls.filter((result) => result[0] === false)
+			if (failed.length > 0) {
+				this.error = failed[0][1].message
+			} else {
+				this.success = true
+			}
+		},
+
+		/**
+		 * Upload one file and track its status on the file.
+		 *
+		 * @param {string} type The register-schema object type
+		 * @param {File} file The file
+		 * @return {Promise<Array>} [true, response] or [false, error]
+		 * @spec exclude Uploads one attachment via objectStore; modal orchestration plumbing.
+		 */
+		async uploadOne(type, file) {
+			file.status = 'uploading'
+			try {
+				const responseJson = await objectStore.uploadFiles(
+					type,
+					this.objectId,
+					this.uploadForm(file),
+				)
+				file.status = 'uploaded'
+				return [true, responseJson]
+			} catch (error) {
+				file.status = 'failed'
+				return [false, error]
+			}
+		},
+
+		/**
+		 * The form data that uploads one file with its tags.
+		 *
+		 * @param {File} file The file
+		 * @return {FormData} The form data
+		 * @spec exclude UI plumbing building the upload form data
+		 */
+		uploadForm(file) {
+			const formData = new FormData()
+			formData.append('files[]', file)
+			if (Array.isArray(file.tags)) {
+				file.tags.forEach((tag) => formData.append('tags[]', tag))
+			}
+			if (this.share) {
+				formData.append('share', '1')
+			}
+			return formData
 		},
 	},
 }
@@ -572,14 +730,6 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	margin-block-start: var(--OC-margin-20);
 	margin-inline-start: var(--OC-margin-20);
 	margin-inline-end: var(--OC-margin-20);
-}
-
-.filesListDragDropNoticeWrapper--disabled{
-	opacity: 0.4;
-}
-
-.success {
-	color: green;
 }
 
 .folderLink {
@@ -610,7 +760,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	border-collapse: collapse;
 }
 
-.files-table-td-name{
+.files-table-td-name {
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
@@ -679,7 +829,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	min-width: calc(var(--min-size)* 2);
+	min-width: calc(var(--min-size) * 2);
 	max-width: 300px;
 }
 
@@ -712,11 +862,10 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 	justify-content: space-between;
 	text-align: unset;
 	align-items: center;
-	-webkit-box-align: end;
 	box-sizing: border-box;
 }
 
-.labelAndShareContainer{
+.labelAndShareContainer {
 	display: flex;
 	justify-content: center;
 	align-items: end;

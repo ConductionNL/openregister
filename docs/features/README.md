@@ -46,6 +46,8 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Feature | Doc | Category | Status | Key Standards |
 |---------|-----|----------|--------|---------------|
 | Registers & Schemas | [registers-and-schemas.md](registers-and-schemas.md) | Core | Implemented | JSON Schema, Schema.org, GGM |
+| External Databases as Virtual Registers | [dbal-virtual-registers.md](dbal-virtual-registers.md) | Core | Implemented | Doctrine DBAL, JSON Schema, Common Ground (data at the source) |
+| Nextcloud Tables as Virtual Registers | [tables-virtual-register.md](tables-virtual-register.md) | Core | Implemented | Nextcloud Tables, JSON Schema, Common Ground (data at the source) |
 | Object Storage & Lifecycle | [object-storage.md](object-storage.md) | Core | Implemented | UUID, soft delete, versioning |
 | Search, Filtering & Faceting | [search-and-faceting.md](search-and-faceting.md) | Core | Implemented | NL API Design Rules, PostgreSQL, Solr, Elasticsearch |
 | Access Control (RBAC) | [access-control.md](access-control.md) | Security | Implemented | OAuth2 scopes, ZGW Autorisaties, BIO |
@@ -53,6 +55,12 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Data Import & Export | [data-import-export.md](data-import-export.md) | Integration | Implemented | CSV, Excel, JSON, XML, OpenAPI |
 | Event-Driven Architecture | [event-driven-architecture.md](event-driven-architecture.md) | Integration | Implemented | CloudEvents v1.0, PSR-14 |
 | Webhooks & Notifications | [webhooks-and-notifications.md](webhooks-and-notifications.md) | Integration | Implemented | CloudEvents, HMAC, VNG Notificaties |
+| Object Read State | [object-read-state.md](object-read-state.md) | Collaboration | Implemented | Per-user unread, tab badges, bell cleared by the work |
+| Favourites & Recently Opened | [favourites-and-recent.md](favourites-and-recent.md) | Collaboration | Implemented | Per-user star, view history, two index lenses |
+| Access Links | [access-links.md](access-links.md) | Collaboration | Implemented | Scoped, expiring link that opens one record without an account |
+| Generated Identifiers | [generated-identifier.md](generated-identifier.md) | Data Modelling | Implemented | Case numbers from a named sequence and a format, frozen after issue |
+| Object Slugs | [object-slugs.md](object-slugs.md) | Data Modelling | Implemented | Slug per object from a configured field, unique per register and schema, frozen once set, `occ openregister:backfill-slugs` |
+| Forms into their destination | [form-destination.md](form-destination.md) | Data Modelling | Implemented | A form is checked against its destination schema and submits into that object in one request |
 | Workflow Automation | [workflow-automation.md](workflow-automation.md) | Automation | Implemented | n8n, Windmill, BPMN |
 | Archiving & Records Management | [archiving.md](archiving.md) | Compliance | Implemented | Archiefwet, MDTO, NEN 15489, e-Depot |
 | OpenAPI & GraphQL APIs | [api-generation.md](api-generation.md) | Integration | Implemented | OpenAPI 3.1.0, GraphQL, NL API Design Rules |
@@ -61,6 +69,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Real-Time Updates | [realtime-updates.md](realtime-updates.md) | Integration | Implemented | SSE, WebSocket, notify_push |
 | Multi-Tenancy & SaaS | [multi-tenancy.md](multi-tenancy.md) | Platform | Implemented | Organisation scoping, quota management |
 | Deep Link Registry | [deep-link-registry.md](deep-link-registry.md) | Integration | Implemented | Nextcloud app interoperability |
+| Schema-Scoped Reference Providers | [schema-scoped-reference-providers.md](schema-scoped-reference-providers.md) | Platform | Implemented | Nextcloud Smart Picker, unified search |
 | Computed Fields | [computed-fields.md](computed-fields.md) | Core | Implemented | Twig expressions, server-side evaluation |
 | Geo Metadata & Map Visualization | [geo-metadata.md](geo-metadata.md) | Core | Planned | GeoJSON, PDOK, RD/WGS84 |
 
@@ -84,6 +93,7 @@ Meeting Dutch government regulatory requirements.
 
 - [Content Versioning & Audit Trail](versioning-and-audit.md) — Immutable hash-chained audit log, semantic versioning, rollback
 - [Archiving & Records Management](archiving.md) — Retention schedules, destruction workflows, MDTO XML, e-Depot transfer (SIP)
+- [DSAR Deadline Escalation & DPIA Detection](dsar-escalation-and-dpia.md) — Temporal deadline-reminder/escalation/breach sweep + GDPR art-35 DPIA pattern detection, policy-pack-driven (ADR-047)
 
 ### Integration
 Connecting OpenRegister to external systems and workflows.
@@ -91,9 +101,14 @@ Connecting OpenRegister to external systems and workflows.
 - [Data Import & Export](data-import-export.md) — CSV, Excel, JSON, XML, OpenAPI configuration portability
 - [Event-Driven Architecture](event-driven-architecture.md) — Typed PHP events, pre/post mutation hooks, StoppableEventInterface
 - [Webhooks & Notifications](webhooks-and-notifications.md) — CloudEvents delivery, HMAC signing, VNG Notificaties, retry
+- [Object Read State](object-read-state.md) — Per-user unread state, the unread filter, tab badges, snooze and archive
+- [Favourites & Recently Opened](favourites-and-recent.md) — Per-user star, view history, the `_favourite` and `_recent` lenses
+- [Access Links](access-links.md): share one record with somebody who has no account, revocably and on the audit trail
+- [Generated Identifiers](generated-identifier.md) — `x-openregister-generated`, a named counter, a format, and a value that cannot be edited
 - [Workflow Automation](workflow-automation.md) — Schema hooks, n8n/Windmill integration, import-time workflow triggers
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register
 - [Real-Time Updates](realtime-updates.md) — SSE subscriptions, RBAC-filtered events, reconnection with replay
+- [Semantic Object Handoff](semantic-object-handoff.md) — Cross-app object conversion via canonical kinds (ns#Case, ns#Quote, …), declarative dialect, queue-mode deferral, provenance both ways (ADR-051)
 
 ### AI & Agent Interfaces
 Enabling AI systems and LLMs to access register data.
@@ -108,5 +123,8 @@ Human-to-human and human-to-system interaction on objects.
 ### Platform
 Infrastructure for multi-tenancy and app interoperability.
 
+- [Instance Hardening](instance-hardening.md): one page of security controls with the floor beside each one, and a refusal for a change that crosses it
+
 - [Multi-Tenancy & SaaS](multi-tenancy.md) — Organisation isolation, quota enforcement, tenant lifecycle
 - [Deep Link Registry](deep-link-registry.md) — Boot-time URL routing from consuming Nextcloud apps
+- [Schema-Scoped Reference Providers](schema-scoped-reference-providers.md) — Reusable base classes letting a consuming app expose one schema as its own Smart Picker entry

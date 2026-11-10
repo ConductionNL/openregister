@@ -1,0 +1,1196 @@
+<?php
+
+/**
+ * Run history and retry — the execution-tooling surface over flow runs.
+ *
+ * A run is persisted with everything a person needs to work with it: its
+ * status, its per-step log, the items it carried, its error. This controller
+ * exposes that — list runs (filter by flow and status), inspect one, retry a
+ * finished one, and requeue a dead-lettered one. It is the answer to "what did
+ * my flow do, and can I run it again".
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use DateTime;
+use DateTimeZone;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
+use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
+use OCA\OpenRegister\Db\FlowActivityWindow;
+use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunFilter;
+use OCA\OpenRegister\Db\FlowRunListing;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
+use OCA\OpenRegister\Db\FlowRunViewer;
+use OCA\OpenRegister\Exception\FlowSignalRefused;
+use OCA\OpenRegister\Service\Flow\FlowCaller;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunSignals;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUserSession;
+use Throwable;
+
+/**
+ * REST surface for inspecting and retrying flow runs.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Two over, from the run guard's
+ * FlowService. It exists so a flow can be resolved under the CALLER's scoping at
+ * the request boundary — the resolver deliberately loads with RBAC off for the
+ * engine, and inheriting that bypass here is what left retry() open to an IDOR.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Over budget for the same
+ * reason: the three authorization concerns this controller now carries — the run
+ * guard (retry/resume/signalByKey may not act on somebody else's flow), history
+ * scoping (a run log is subject data, so it is visible per caller), and the
+ * editor-rights guard on `test()` (see its docblock: `flow.update`, not mere
+ * org membership) — are all request-boundary checks. They belong at the
+ * boundary rather than in the engine, which is deliberately unauthenticated
+ * because it runs flows as their owner with no session. Moving them out would
+ * either re-open a bypass or add a second indirection over a handful of small
+ * private helpers.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Twelve constructor parameters, the
+ * last five nullable-with-default precisely so adding them broke no existing
+ * construction site. They are collaborators of those same guards, not options.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) or#3643's fix is what pushed this
+ * over: a new authorization guard plus the paragraph explaining WHY it exists
+ * and why it picks `flow.update` over `flow.run` — the reasoning a caller
+ * relying on this endpoint's security posture needs in front of them, not
+ * filed away in a PR description nobody reads at the call site. Trimming that
+ * explanation to duck the line counter is the same corrosive trade the other
+ * three suppressions on this class already decline to make.
+ */
+class FlowRunController extends Controller {
+	/**
+	 * Reads runs.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Retries, requeues and runs.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves a flow id to its document.
+	 *
+	 * @var FlowLocatorInterface
+	 */
+	private readonly FlowLocatorInterface $resolvers;
+
+	/**
+	 * Attributes a retried run to the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Scopes the active-runs list to the caller's tenant.
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisationService;
+
+	/**
+	 * Whether the caller may run the flow a run belongs to.
+	 *
+	 * @var FlowRunnableGuardInterface
+	 */
+	private readonly FlowRunnableGuardInterface $guard;
+
+	/**
+	 * Distinguishes an administrator, who gets
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * Reads which flows the caller owns, from the
+	 *
+	 * @var ?FlowCaller
+	 */
+	private readonly ?FlowCaller $flowOwnership;
+
+	/**
+	 * Reads the attribution stamped on
+	 *
+	 * @var ?AuditFlowAttributionInterface
+	 */
+	private readonly ?AuditFlowAttributionInterface $auditTrails;
+
+	/**
+	 * The guarded signal seam the
+	 *
+	 * @var ?FlowRunSignalInterface
+	 */
+	private readonly ?FlowRunSignalInterface $signalService;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The request.
+	 * @param FlowRunControllerServices $services The flow run controller services.
+	 */
+	public function __construct(
+		IRequest $request,
+		FlowRunControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->mapper = $services->runs->mapper;
+		$this->runner = $services->runs->runner;
+		$this->resolvers = $services->runs->resolvers;
+		$this->userSession = $services->platform->userSession;
+		$this->organisationService = $services->access->organisationService;
+		$this->guard = $services->access->guard;
+		$this->groupManager = $services->platform->groupManager;
+		$this->flowOwnership = $services->access->flowOwnership;
+		$this->auditTrails = $services->runs->auditTrails;
+		$this->signalService = $services->access->signalService;
+
+	}//end __construct()
+
+	/**
+	 * List runs, newest first, optionally filtered by flow and status.
+	 *
+	 * `flowIds` (comma separated) narrows to any of several flows and `since`
+	 * (ISO 8601) to runs created at or after that moment; an unreadable
+	 * `since` is a 400 rather than an unfiltered list.
+	 *
+	 * @return JSONResponse The runs plus the paging window.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function index(): JSONResponse {
+		$flowId = $this->request->getParam('flowId');
+		$status = $this->request->getParam('status');
+		$limit = min(200, max(1, (int)$this->request->getParam('limit', 50)));
+		$offset = max(0, (int)$this->request->getParam('offset', 0));
+
+		// Scope the history. Until this landed the endpoint returned EVERY run on
+		// the instance to any authenticated caller — including each run's log,
+		// which records the subject data the flow touched. Design D7 of
+		// `shared-credentials-and-flows`: a recipient sees their OWN runs; runs
+		// triggered by the owner or by other recipients stay invisible.
+		$scope = $this->historyScope();
+		if ($scope === null) {
+			return new JSONResponse(
+				[
+					'results' => [],
+					'limit' => $limit,
+					'offset' => $offset,
+				]
+			);
+		}
+
+		$since = $this->sinceParam();
+		if ($since === false) {
+			return $this->badSince();
+		}
+
+		$filter = new FlowRunFilter(
+			flowId: $this->stringOrNull(value: $flowId),
+			status: $this->stringOrNull(value: $status),
+			since: $since,
+			flowIds: $this->flowIdsParam()
+		);
+		$runs = $this->mapper->findAllRuns(
+			listing: new FlowRunListing(filter: $filter, limit: $limit, offset: $offset),
+			viewer: $scope
+		);
+
+		return new JSONResponse(
+			[
+				'results' => array_map(static fn (FlowRun $r): array => $r->jsonSerialize(), $runs),
+				'limit' => $limit,
+				'offset' => $offset,
+			]
+		);
+
+	}//end index()
+
+	/**
+	 * Whom the run history is scoped to.
+	 *
+	 * A null uid means no scoping, which is correct only for an administrator.
+	 * No session means there is nobody to scope to — and a null uid reaches
+	 * findAllRuns() as "do not scope", which is an ADMINISTRATOR's semantics.
+	 * Falling through would therefore turn the absence of a caller into the
+	 * widest possible read, so it answers null instead: a non-admin with no
+	 * identity owns no runs.
+	 *
+	 * @return FlowRunViewer|null The caller and the flows they own, or null when the read must come back empty.
+	 */
+	private function historyScope(): FlowRunViewer|null {
+		if ($this->isAdmin() === true) {
+			return new FlowRunViewer(requesterUid: null, ownedFlowIds: []);
+		}
+
+		$requesterUid = $this->callerUid();
+		$ownedFlowIds = $this->flowIdsOwnedByCaller();
+		if ($requesterUid === null || $requesterUid === '') {
+			return null;
+		}
+
+		return new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+	}//end historyScope()
+
+	/**
+	 * A request parameter as a string filter, or null when it is absent.
+	 *
+	 * @param mixed $value The parameter.
+	 *
+	 * @return string|null
+	 */
+	private function stringOrNull(mixed $value): string|null {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end stringOrNull()
+
+	/**
+	 * Per flow: the newest run and the number of runs since a moment.
+	 *
+	 * The read behind a flow list's "last run" and "runs this week" columns, so
+	 * a list of flows does not page through every run to draw two cells.
+	 * `flowIds` (comma separated, at most 200) names the flows; `since`
+	 * (ISO 8601) defaults to seven days ago. Scoped exactly like `index()`: a
+	 * non-admin counts the runs they triggered plus the runs of flows they own,
+	 * so a summary never counts a run the history would hide.
+	 *
+	 * @return JSONResponse `{results: {flowId: {lastRun, runsSince}}, since}`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function summary(): JSONResponse {
+		$since = $this->sinceParam();
+		if ($since === false) {
+			return $this->badSince();
+		}
+
+		if ($since === null) {
+			$since = (new DateTime('-7 days'))->setTimezone(new DateTimeZone('UTC'));
+		}
+
+		$flowIds = array_slice($this->flowIdsParam(), 0, 200);
+		$sinceText = $since->format(DateTime::ATOM);
+
+		$scope = $this->summaryScope();
+		if ($scope === null) {
+			return new JSONResponse(['results' => (object) [], 'since' => $sinceText]);
+		}
+
+		$summary = $this->mapper->summarizeByFlow(
+			window: new FlowActivityWindow(flowIds: $flowIds, since: $since),
+			viewer: $scope
+		);
+
+		return new JSONResponse(['results' => (object) $summary, 'since' => $sinceText]);
+	}//end summary()
+
+	/**
+	 * Whom the summary is scoped to: nobody for an administrator, else the caller and the flows they own.
+	 *
+	 * @return FlowRunViewer|null The caller and the flows they own, or null when there is no session.
+	 */
+	private function summaryScope(): FlowRunViewer|null {
+		if ($this->isAdmin() === true) {
+			return new FlowRunViewer(requesterUid: null, ownedFlowIds: []);
+		}
+
+		$requesterUid = $this->callerUid();
+		if ($requesterUid === null || $requesterUid === '') {
+			return null;
+		}
+
+		return new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $this->flowIdsOwnedByCaller());
+	}//end summaryScope()
+
+	/**
+	 * The `flowIds` request parameter as a list of non-empty ids.
+	 *
+	 * Accepts a comma-separated string or an array, so both `?flowIds=a,b` and
+	 * `?flowIds[]=a&flowIds[]=b` work.
+	 *
+	 * @return array<int, string> The flow ids, empty when none were given.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	private function flowIdsParam(): array {
+		$raw = $this->request->getParam('flowIds');
+		if (is_string($raw) === true) {
+			$raw = explode(',', $raw);
+		}
+
+		if (is_array($raw) === false) {
+			return [];
+		}
+
+		return array_values(array_unique($this->trimmedIds(raw: $raw)));
+	}//end flowIdsParam()
+
+	/**
+	 * The non-blank string entries of a list, trimmed, in order.
+	 *
+	 * @param array $raw The list.
+	 *
+	 * @return list<string>
+	 */
+	private function trimmedIds(array $raw): array {
+		$ids = [];
+		foreach ($raw as $id) {
+			if (is_string($id) === true && trim($id) !== '') {
+				$ids[] = trim($id);
+			}
+		}
+
+		return $ids;
+	}//end trimmedIds()
+
+	/**
+	 * The `since` request parameter as a moment.
+	 *
+	 * @return DateTime|false|null The moment, null when absent, false when unreadable.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	private function sinceParam(): DateTime|false|null {
+		$raw = $this->request->getParam('since');
+		if ($this->isBlankParam(raw: $raw) === true) {
+			return null;
+		}
+
+		if (is_string($raw) === false) {
+			return false;
+		}
+
+		return $this->parseSince(raw: $raw);
+	}//end sinceParam()
+
+	/**
+	 * Whether a parameter is absent or blank.
+	 *
+	 * @param mixed $raw The parameter.
+	 *
+	 * @return bool
+	 */
+	private function isBlankParam(mixed $raw): bool {
+		return $raw === null || (is_string($raw) === true && trim($raw) === '');
+	}//end isBlankParam()
+
+	/**
+	 * Parse a since moment, in UTC.
+	 *
+	 * @param string $raw The parameter.
+	 *
+	 * @return DateTime|false The moment, or false when it does not parse.
+	 */
+	private function parseSince(string $raw): DateTime|false {
+		try {
+			// 🔴 NORMALISED TO UTC BEFORE IT IS BOUND. The mapper binds the moment
+			// with PARAM_DATETIME_MUTABLE, which formats the object's own wall
+			// clock without converting, and the `created` column is UTC:
+			// `12:00:00+02:00` was compared as 12:00:00, two hours off the instant.
+			return (new DateTime(trim($raw)))->setTimezone(new DateTimeZone('UTC'));
+		} catch (Throwable) {
+			return false;
+		}
+	}//end parseSince()
+
+	/**
+	 * The 400 for a `since` that is not a date.
+	 *
+	 * @return JSONResponse The refusal naming the parameter.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	private function badSince(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'The since parameter must be an ISO 8601 date or date-time.'],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end badSince()
+
+	/**
+	 * The runs that are still going, for the caller's organisation.
+	 *
+	 * This is the read behind the shared "running flows" widget every app can
+	 * place on a dashboard, so it is deliberately narrow: non-terminal runs
+	 * only, newest first, a bounded list plus an honest total, and each run
+	 * carrying the flow's NAME rather than only its id — a uuid on a dashboard
+	 * tells a person nothing.
+	 *
+	 * Scoping is strict (see FlowRunMapper::findActive): a caller with no
+	 * resolvable organisation gets an empty list rather than everybody's runs.
+	 *
+	 * The two surfaces scope DIFFERENTLY on purpose. This one is a tenant view of
+	 * live activity — a dashboard widget, deliberately showing the organisation's
+	 * runs. `index()` is the history surface, and history carries each run's LOG,
+	 * which records the subject data the flow touched; it is therefore scoped per
+	 * CALLER (runs you triggered, plus runs of flows you own) per design D7 of
+	 * `shared-credentials-and-flows`. Until that landed `index()` was unscoped and
+	 * returned every run on the instance to any authenticated user.
+	 *
+	 * An optional `subject` (a subject object uuid) narrows the list to the
+	 * runs anchored to that one object: a case detail page's view of the
+	 * engine. It narrows INSIDE the organisation scope and can never widen it;
+	 * the mapper applies both predicates, and the total counts the filtered
+	 * set. Without `subject` the read is bit-identical to what it was.
+	 *
+	 * @return JSONResponse `{results, total, limit}` — the live runs.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function active(): JSONResponse {
+		$limit = $this->pageLimit();
+		$subject = $this->subjectFilter();
+		$organisation = $this->activeOrganisation();
+
+		if ($organisation === null) {
+			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
+		}
+
+		$runs = $this->mapper->findActive(
+			scope: new FlowRunSubjectScope(organisation: $organisation, subject: $subject),
+			limit: $limit
+		);
+		$total = $this->mapper->countActive(organisation: $organisation, subject: $subject);
+
+		return $this->page(runs: $runs, total: $total);
+
+	}//end active()
+
+	/**
+	 * The finished runs on ONE subject object: a case page's run history.
+	 *
+	 * The other half of the case view. A flow that completed on a case must
+	 * not look like nothing ever happened, so this returns the terminal runs
+	 * (`FlowRun::TERMINAL`: completed, stopped, dead_letter, failed) anchored
+	 * to the given subject, newest first, bounded, with an honest total.
+	 *
+	 * The subject is REQUIRED. There is no org-wide "everything that ever
+	 * finished" here: `or-flow-active-runs` requires the history surface
+	 * (`index()`, with its per-caller visibility rule) to stay unchanged, and
+	 * this read exists beside it rather than as a loosening of it. A request
+	 * without a subject is refused, not answered widely.
+	 *
+	 * Authorization is the organisation scope, exactly as on `active()`: the
+	 * mapper's organisation predicate is unconditional, a caller with no
+	 * resolvable organisation reads nothing without a query being issued, and
+	 * a subject uuid from another tenant matches zero rows. Rows are the same
+	 * summarised shape as the live read, so a widget renders one list.
+	 *
+	 * @return JSONResponse `{results, total, limit}`, or 400 when no subject was given.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function completedForSubject(): JSONResponse {
+		$subject = $this->subjectFilter();
+		if ($subject === null) {
+			return new JSONResponse(
+				['error' => 'The completed-runs read needs a subject: pass the subject object uuid as `subject`.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$limit = $this->pageLimit();
+		$organisation = $this->activeOrganisation();
+
+		if ($organisation === null) {
+			return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
+		}
+
+		$runs = $this->mapper->findCompletedForSubject(
+			scope: new FlowRunSubjectScope(organisation: $organisation, subject: $subject),
+			limit: $limit
+		);
+		$total = $this->mapper->countCompletedForSubject(organisation: $organisation, subject: $subject);
+
+		return $this->page(runs: $runs, total: $total);
+
+	}//end completedForSubject()
+
+	/**
+	 * The bounded page size for the two case-widget reads, capped at 50.
+	 *
+	 * @return integer The limit.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function pageLimit(): int {
+		return min(50, max(1, (int)$this->request->getParam('limit', 10)));
+	}//end pageLimit()
+
+	/**
+	 * The `subject` request parameter as a uuid, or null when none was given.
+	 *
+	 * Blank and non-string values count as absent: a filter that is not a
+	 * uuid cannot name a subject, and treating it as one would either match
+	 * nothing (misleading) or be coerced into something the caller did not
+	 * send (worse).
+	 *
+	 * @return string|null The subject object uuid.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function subjectFilter(): ?string {
+		$subject = $this->request->getParam('subject');
+		if (is_string($subject) === false) {
+			return null;
+		}
+
+		$subject = trim($subject);
+		if ($subject === '') {
+			return null;
+		}
+
+		return $subject;
+	}//end subjectFilter()
+
+	/**
+	 * A bounded list of summarised runs plus its honest total.
+	 *
+	 * Shared by the live read and the completed read so the two cannot drift
+	 * apart on shape: the spec makes one row contract a requirement.
+	 *
+	 * The limit is the page size `pageLimit()` applied to the read.
+	 *
+	 * @param array<int, FlowRun> $runs  The page of runs.
+	 * @param integer             $total How many runs matched in all.
+	 *
+	 * @return JSONResponse `{results, total, limit}`.
+	 *
+	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
+	 */
+	private function page(array $runs, int $total): JSONResponse {
+		return new JSONResponse(
+			[
+				'results' => array_map(fn (FlowRun $run): array => $this->summarise(run: $run), $runs),
+				'total' => $total,
+				'limit' => $this->pageLimit(),
+			]
+		);
+	}//end page()
+
+	/**
+	 * The caller's active organisation uuid, or null when none resolves.
+	 *
+	 * @return string|null The organisation uuid.
+	 *
+	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 */
+	private function activeOrganisation(): ?string {
+		$uuid = $this->organisationService->getActiveOrganisation()?->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return null;
+		}
+
+		return (string)$uuid;
+	}//end activeOrganisation()
+
+	/**
+	 * A run reduced to what a dashboard row needs.
+	 *
+	 * The full `jsonSerialize()` carries the marking, the items and the whole
+	 * step log — kilobytes per run that a list view never renders, and items
+	 * can hold the record data itself. Summarising keeps the widget's payload
+	 * proportional to what it shows, and keeps run *contents* on the
+	 * single-run endpoint where a caller asks for one run explicitly.
+	 *
+	 * @param FlowRun $run The run to summarise.
+	 *
+	 * @return array<string, mixed> The row shape.
+	 *
+	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 */
+	private function summarise(FlowRun $run): array {
+		$flowId = (string)$run->getFlowId();
+		$created = $run->getCreated();
+
+		return [
+			'uuid' => $run->getUuid(),
+			'flowId' => $flowId,
+			'flowName' => $this->flowName(flowId: $flowId),
+			'status' => $run->getStatus(),
+			'trigger' => $run->getTrigger(),
+			'startedBy' => $run->getTriggeredBy(),
+			'subject' => [
+				'uuid' => $run->getSubjectUuid(),
+				'register' => $run->getSubjectRegister(),
+				'schema' => $run->getSubjectSchema(),
+			],
+			'step' => $this->currentStep(run: $run),
+			'resumeAt' => $run->getResumeAt()?->format('c'),
+			'created' => $created?->format('c'),
+			'updated' => $run->getUpdated()?->format('c'),
+		];
+
+	}//end summarise()
+
+	/**
+	 * The flow's human name, falling back to its id.
+	 *
+	 * Resolution is memoised per flow id by FlowLocator, so a list of
+	 * runs over a handful of flows costs one resolve per DISTINCT flow rather
+	 * than one per row. A flow whose owning app is disabled no longer resolves;
+	 * the id is returned so the row still identifies something.
+	 *
+	 * @param string $flowId The flow id.
+	 *
+	 * @return string The name, or the id.
+	 *
+	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 */
+	private function flowName(string $flowId): string {
+		$flow = $this->resolvers->resolveFlow(flowId: $flowId);
+		$name = trim((string)($flow['name'] ?? ''));
+
+		if ($name === '') {
+			return $flowId;
+		}
+
+		return $name;
+	}//end flowName()
+
+	/**
+	 * Where the run currently is, as a step label — or null when unknown.
+	 *
+	 * The marking is the Petri net's token placement: the places that hold a
+	 * token are the steps the run sits on right now. That is the one piece of
+	 * "what is it doing" a person can read off a live run, so it is worth the
+	 * one line it takes to surface.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return string|null The step name(s), comma-joined.
+	 *
+	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 */
+	private function currentStep(FlowRun $run): ?string {
+		$marking = $run->getMarking();
+		if (is_array($marking) === false || $marking === []) {
+			return null;
+		}
+
+		$places = array_keys($marking);
+
+		return implode(', ', array_map(static fn ($place): string => (string)$place, $places));
+	}//end currentStep()
+
+	/**
+	 * One run in full — its log, items, context and error.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The run, or 404.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function show(string $uuid): JSONResponse {
+		// Scoped, as `index()` has been since `shared-credentials-and-flows`
+		// D7. It was not, and the omission was the whole point of that scoping:
+		// a run's serialisation carries its log, which records the subject data
+		// the flow touched, so an unscoped read by uuid handed any authenticated
+		// caller the contents of anyone's run.
+		$run = $this->visibleRun(uuid: $uuid);
+		if ($run === null) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse($run->jsonSerialize());
+	}//end show()
+
+	/**
+	 * The objects one run touched, grouped by the node that touched them.
+	 *
+	 * A run recorded what it DID (its steps) and, of what it did it TO, only
+	 * the object that triggered it. This reads back the attribution stamped on
+	 * every audit row the run caused, which is the other half.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The touched objects grouped by node, or 404.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function objects(string $uuid): JSONResponse {
+		// Resolved through the SAME visibility rule as reading the run itself.
+		// A new endpoint that answered for runs `show()` refuses would widen
+		// access without anything looking like an access change.
+		$run = $this->visibleRun(uuid: $uuid);
+		if ($run === null) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->auditTrails === null) {
+			return new JSONResponse(['error' => 'Audit trail unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$rows = $this->auditTrails->findByRun(runUuid: $uuid);
+
+		$byNode = [];
+		foreach ($rows as $row) {
+			$node = (string)$row->getFlowNode();
+
+			if (isset($byNode[$node]) === false) {
+				$byNode[$node] = [
+					'node' => $node,
+					'step' => $row->getFlowStep(),
+					'objects' => [],
+				];
+			}
+
+			$byNode[$node]['objects'][] = [
+				'objectUuid' => $row->getObjectUuid(),
+				'register' => $row->getRegister(),
+				'schema' => $row->getSchema(),
+				'action' => $row->getAction(),
+				'step' => $row->getFlowStep(),
+				'created' => $row->getCreated()?->format('c'),
+				'auditUuid' => $row->getUuid(),
+			];
+		}
+
+		// Step order, so a reader follows the run in the order it happened
+		// rather than in whatever order the rows came back.
+		usort(
+			$byNode,
+			static fn (array $a, array $b): int => (((int)$a['step']) <=> ((int)$b['step']))
+		);
+
+		return new JSONResponse(
+			[
+				'run' => $uuid,
+				'flowId' => $run->getFlowId(),
+				// An empty list is the honest answer for a run that wrote
+				// nothing, and for a suspended run that has not written
+				// anything YET. Neither is an error, and neither is withheld
+				// until the run finishes.
+				// usort() re-indexed $byNode into a list, so no array_values()
+				// here: it would be a no-op that reads as a safeguard.
+				'nodes' => $byNode,
+			]
+		);
+	}//end objects()
+
+	/**
+	 * Resolve a run by uuid, or null when this caller may not see it.
+	 *
+	 * One place, so `show()` and `objects()` cannot drift apart on who may read
+	 * a run. Delegates the predicate itself to the mapper, which is where the
+	 * list read gets it too.
+	 *
+	 * A non-admin with no session resolves to null rather than falling through:
+	 * a null uid means "no scoping" at the mapper, which is an ADMINISTRATOR's
+	 * semantics, so treating an absent caller as one would turn having no
+	 * identity into the widest possible read.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun|null The run, or null when absent or not visible.
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	private function visibleRun(string $uuid): ?FlowRun {
+		if ($this->isAdmin() === true) {
+			return $this->mapper->findByUuidVisibleTo(uuid: $uuid, viewer: new FlowRunViewer(requesterUid: null, ownedFlowIds: []));
+		}
+
+		$uid = $this->callerUid();
+		if ($uid === null || $uid === '') {
+			return null;
+		}
+
+		return $this->mapper->findByUuidVisibleTo(
+			uuid: $uuid,
+			viewer: new FlowRunViewer(requesterUid: $uid, ownedFlowIds: $this->flowIdsOwnedByCaller())
+		);
+	}//end visibleRun()
+
+	/**
+	 * Retry a finished run: queue a fresh one, leave the original untouched.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The new run, or a 4xx when the source cannot be retried.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function retry(string $uuid): JSONResponse {
+		try {
+			$run = $this->mapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$new = $this->runner->retry($run);
+		if ($new === null) {
+			// The source is not terminal — queued, running, or suspended. Retry
+			// is for finished runs; the others are already progressing.
+			return new JSONResponse(
+				['error' => 'Only a finished run can be retried; this one is ' . $run->getStatus() . '.'],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		return new JSONResponse($new->jsonSerialize(), Http::STATUS_CREATED);
+	}//end retry()
+
+	/**
+	 * Tell a suspended run that the thing it was waiting for has happened.
+	 *
+	 * The delivery point for {@see FlowSuspension} with no `resumeAt` — an
+	 * approval granted, a webhook received, a child run finished. Without it
+	 * such a run could never be woken by anything, and because `hasActiveRun()`
+	 * counts suspended runs, it also blocked its flow from being scheduled ever
+	 * again.
+	 *
+	 * Guarded by the same ownership check as `retry()`, and for the same reason:
+	 * resuming somebody else's run is the same IDOR as re-running it.
+	 *
+	 * Accepted on a SUSPENDED run only. The response is the parked run, not a
+	 * finished one — the worker advances it on its next pass.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return JSONResponse The parked run, or a 4xx when it cannot be signalled.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function resume(string $uuid): JSONResponse {
+		try {
+			$run = $this->mapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+		}
+
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$payload = $this->request->getParams();
+		// Routing artefacts, not part of what the signaller is telling the run.
+		unset($payload['uuid'], $payload['_route']);
+
+		// The guard and the delivery are ONE seam — the same one a PHP consumer
+		// calls — so who may answer is decided in exactly one place.
+		try {
+			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+		} catch (FlowSignalRefused $refused) {
+			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'resumed'));
+		}
+
+		return new JSONResponse($signalled->jsonSerialize());
+	}//end resume()
+
+	/**
+	 * Deliver a signal addressed by BUSINESS KEY instead of run uuid.
+	 *
+	 * The caller that knows "the vote on proposal X closed" does not know a
+	 * run uuid; an await-signal step that declared a `correlationKey` made
+	 * its suspension addressable by that key. Resolution is FAIL-CLOSED in
+	 * both directions (flow-approval-consolidation design D-7):
+	 *
+	 * - zero matches is a 404 and the signal is NOT buffered: a run that
+	 *   suspends with that key later was never the addressee
+	 * - more than one match is a 409 and wakes NOTHING: picking one is
+	 *   picking wrong half the time, silently
+	 *
+	 * The authority is exactly {@see resume()}'s — the same flow-level check
+	 * and the same recorded-assignee check, on the resolved run. A
+	 * correlated signal cannot complete, claim or advance a user task: a run
+	 * suspended on a user-task node treats any signal as a nudge, and a
+	 * nudge is not an answer.
+	 *
+	 * @param string $key The business key.
+	 *
+	 * @return JSONResponse The signalled run, 404 when unmatched, 409 when
+	 *                      ambiguous or not suspended.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @contract tests/integration/openregister-integrations.postman_collection.json
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function signalByKey(string $key): JSONResponse {
+		$run = $this->soleSuspendedRun(key: $key);
+		if ($run instanceof JSONResponse) {
+			return $run;
+		}
+
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$payload = $this->request->getParams();
+		// Routing artefacts, not part of what the signaller is telling the run.
+		unset($payload['key'], $payload['_route']);
+
+		// Same seam as resume() and as every PHP consumer: one guard.
+		try {
+			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+		} catch (FlowSignalRefused $refused) {
+			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'signalled'));
+		}
+
+		return new JSONResponse($signalled->jsonSerialize());
+	}//end signalByKey()
+
+	/**
+	 * The one suspended run waiting for a correlation key.
+	 *
+	 * @param string $key The correlation key, untrimmed.
+	 *
+	 * @return FlowRun|JSONResponse The run, 404 when none waits, 409 when more than one does.
+	 */
+	private function soleSuspendedRun(string $key): FlowRun|JSONResponse {
+		$key = trim($key);
+		$matches = [];
+		if ($key !== '') {
+			$matches = $this->mapper->findSuspendedByCorrelationKey(correlationKey: $key);
+		}
+
+		if ($matches === []) {
+			return new JSONResponse(
+				['error' => 'No suspended run is waiting for this key. The signal was not stored.'],
+				Http::STATUS_NOT_FOUND
+			);
+		}
+
+		if (count($matches) > 1) {
+			return new JSONResponse(
+				['error' => 'More than one suspended run carries this key. Nothing was signalled; address the run by its uuid instead.'],
+				Http::STATUS_CONFLICT
+			);
+		}
+
+		return $matches[0];
+	}//end soleSuspendedRun()
+
+	/**
+	 * Translate the seam's typed refusal into this endpoint's HTTP contract.
+	 *
+	 * The GUARD lives in {@see FlowRunSignalService} — the same seam a PHP
+	 * consumer calls, so who may answer is decided in one place (ADR-098 named
+	 * the gap this closes: "no task authz — anyone reaching the resume endpoint
+	 * can decide"). What stays here is only the WORDING, which differs per
+	 * endpoint and is part of the existing HTTP contract.
+	 *
+	 * A step with no assignee is unchanged — silence still means anyone,
+	 * because tightening that would break every existing webhook and child-run
+	 * signal, which are not human decisions at all.
+	 *
+	 * @param FlowSignalRefused $refused  The seam's refusal.
+	 * @param string            $conflict The 409 wording when the run is not suspended.
+	 *
+	 * @return JSONResponse The 403 or 409 the refusal maps to.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 */
+	private function refusalResponse(FlowSignalRefused $refused, string $conflict): JSONResponse {
+		if ($refused->getReason() === FlowSignalRefused::NOT_ASSIGNEE) {
+			if ($refused->getActorUid() === null) {
+				return new JSONResponse(
+					['error' => 'This step is assigned; sign in as the assignee to answer it.'],
+					Http::STATUS_FORBIDDEN
+				);
+			}
+
+			return new JSONResponse(
+				['error' => 'This step is assigned to someone else.'],
+				Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return new JSONResponse(['error' => $conflict], Http::STATUS_CONFLICT);
+	}//end refusalResponse()
+
+	/**
+	 * The 409 wording for a signal that addressed a run which is not suspended.
+	 *
+	 * @param FlowRun $run  The run the signal addressed.
+	 * @param string  $verb This endpoint's verb ('resumed' or 'signalled').
+	 *
+	 * @return string The wording, naming the run's status.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 */
+	private function notSuspended(FlowRun $run, string $verb): string {
+		return 'Only a suspended run can be ' . $verb . '; this one is ' . $run->getStatus() . '.';
+	}//end notSuspended()
+
+	/**
+	 * The guarded signal seam, made on demand when none was injected.
+	 *
+	 * Built locally rather than required as a constructor argument so adding it
+	 * breaks no existing construction site. The refusal a locally-built seam
+	 * cannot log still reaches the caller as the 403 above, so nothing is
+	 * silent; the container-built instance audits too.
+	 *
+	 * @return FlowRunSignalInterface The seam.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 */
+	private function signals(): FlowRunSignalInterface {
+		return ($this->signalService ?? (new FlowRunSignals(
+			mapper: $this->mapper,
+			runner: $this->runner,
+			groupManager: $this->groupManager
+		))->seam());
+	}//end signals()
+
+	/**
+	 * The current caller's uid, or null when anonymous.
+	 *
+	 * @return string|null
+	 */
+	private function callerUid(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
+
+		return $user->getUID();
+	}//end callerUid()
+
+	/**
+	 * Whether the caller is a Nextcloud administrator.
+	 *
+	 * Fails CLOSED — no group manager, or no session, means "not an admin", so
+	 * the caller gets the scoped view rather than the unscoped one. The scoping
+	 * switch in `index()` treats a null uid as "no scoping", which is only ever
+	 * correct for an administrator; combined with this method returning false for
+	 * an anonymous caller, `index()` must and does resolve a real uid before it
+	 * can skip scoping.
+	 *
+	 * @return boolean
+	 */
+	private function isAdmin(): bool {
+		if ($this->groupManager === null) {
+			return false;
+		}
+
+		$uid = $this->callerUid();
+		if ($uid === null) {
+			return false;
+		}
+
+		return $this->groupManager->isAdmin($uid);
+	}//end isAdmin()
+
+	/**
+	 * Flow ids the caller owns.
+	 *
+	 * Resolved in ONE query rather than per run: the owner filter is a metadata
+	 * filter, and OpenRegister only recognises those NESTED under `@self` — a bare
+	 * `owner` key is read as a filter on a schema PROPERTY called `owner`, which
+	 * the flow schema does not have, so it silently matches nothing and this would
+	 * return an empty list for everybody. `_rbac: false` is deliberate and safe:
+	 * the query is already constrained to objects owned by this exact uid, so RBAC
+	 * could only narrow a set the caller is by definition entitled to.
+	 *
+	 * Degrades to an empty list, which NARROWS the run history rather than
+	 * widening it — the safe direction for a failure in a visibility filter.
+	 *
+	 * @return array<int, string> The owned flow ids (uuids), possibly empty.
+	 */
+	private function flowIdsOwnedByCaller(): array {
+		// Reads the NATIVE flow store. This used to enumerate flow OBJECTS in a
+		// register named by `flow_register`/`flow_schema` config — a store that
+		// no longer exists. The visibility RULE is unchanged (D7): a caller sees
+		// the runs they triggered plus the runs of flows they own.
+		if ($this->flowOwnership === null) {
+			return [];
+		}
+
+		return $this->flowOwnership->idsOwnedByCaller();
+	}//end flowIdsOwnedByCaller()
+
+}//end class

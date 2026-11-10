@@ -1,14 +1,20 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { configurationStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import {
+	configurationStore,
+	navigationStore,
+	registerStore,
+	schemaStore,
+} from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'importConfiguration'"
 		name="importConfiguration"
-		title="Import Configuration"
+		:title="t('openregister', 'Import Configuration')"
 		size="large"
-		:can-close="!loading"
+		:noClose="loading"
 		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ successMessage }}</p>
@@ -19,26 +25,36 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<BTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 				<!-- Discover Tab -->
-				<BTab active>
+				<AppTab active>
 					<template #title>
 						<Magnify :size="16" />
 						<span>Discover</span>
 					</template>
 					<div class="tabContent">
 						<p class="tabDescription">
-							Search GitHub and GitLab for OpenRegister configurations created by the community.
+							Search GitHub and GitLab for OpenRegister configurations
+							created by the community.
 						</p>
 
 						<!-- Token Warning -->
-						<NcNoteCard v-if="!hasGithubToken || !hasGitlabToken" type="warning">
+						<NcNoteCard
+							v-if="!hasGithubToken || !hasGitlabToken"
+							type="warning">
 							<p>
-								<strong>{{ getTokenWarningTitle() }}</strong><br>
+								<strong>{{ getTokenWarningTitle() }}</strong
+								><br />
 								{{ getTokenWarningMessage() }}
 							</p>
-							<p style="margin-top: 8px;">
-								<a :href="settingsUrl" target="_blank" style="color: var(--color-primary-element); font-weight: 600;">
+							<p style="margin-top: 8px">
+								<a
+									:href="settingsUrl"
+									target="_blank"
+									style="
+										color: var(--color-primary-element);
+										font-weight: 600;
+									">
 									→ Configure API Tokens in Settings
 								</a>
 							</p>
@@ -46,9 +62,14 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 
 						<div class="searchContainer">
 							<NcTextField
-								:value.sync="searchQuery"
-								label="Search configurations"
-								placeholder="Enter search terms or leave empty to browse all"
+								v-model="searchQuery"
+								:label="t('openregister', 'Search configurations')"
+								:placeholder="
+									t(
+										'openregister',
+										'Enter search terms or leave empty to browse all',
+									)
+								"
 								@keyup.enter="searchConfigurations">
 								<Magnify :size="20" />
 							</NcTextField>
@@ -56,7 +77,12 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<NcButton
 								class="github-button"
 								:disabled="!hasGithubToken || searchLoading"
-								@click="searchSource = 'github'; searchConfigurations()">
+								@click="
+									() => {
+										searchSource = 'github'
+										searchConfigurations()
+									}
+								">
 								<template #icon>
 									<Github :size="20" />
 								</template>
@@ -66,7 +92,12 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<NcButton
 								class="gitlab-button"
 								:disabled="!hasGitlabToken || searchLoading"
-								@click="searchSource = 'gitlab'; searchConfigurations()">
+								@click="
+									() => {
+										searchSource = 'gitlab'
+										searchConfigurations()
+									}
+								">
 								<template #icon>
 									<Gitlab :size="20" />
 								</template>
@@ -75,14 +106,22 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</div>
 
 						<!-- Individual Token Warnings -->
-						<div v-if="!hasGithubToken || !hasGitlabToken" class="token-warnings">
+						<div
+							v-if="!hasGithubToken || !hasGitlabToken"
+							class="token-warnings">
 							<div v-if="!hasGithubToken" class="token-warning-item">
 								<Github :size="16" />
-								<span>GitHub token not configured - Search disabled</span>
+								<span
+									>GitHub token not configured - Search
+									disabled</span
+								>
 							</div>
 							<div v-if="!hasGitlabToken" class="token-warning-item">
 								<Gitlab :size="16" />
-								<span>GitLab token not configured - Search disabled</span>
+								<span
+									>GitLab token not configured - Search
+									disabled</span
+								>
 							</div>
 						</div>
 
@@ -94,16 +133,19 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<p>{{ searchError }}</p>
 						</NcNoteCard>
 
-						<div v-else-if="searchResults.length > 0" class="resultsGrid">
+						<div
+							v-else-if="searchResults.length > 0"
+							class="resultsGrid">
 							<ConfigurationCard
 								v-for="(result, index) in searchResults"
 								:key="index"
 								:configuration="result"
 								@import="importDiscoveredConfiguration(result)"
-								@check-version="handleCheckVersion" />
+								@checkVersion="handleCheckVersion" />
 						</div>
 
-						<NcEmptyContent v-else-if="hasSearched"
+						<NcEmptyContent
+							v-else-if="hasSearched"
 							name="No configurations found"
 							description="Try adjusting your search terms or browse a different source.">
 							<template #icon>
@@ -111,39 +153,44 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							</template>
 						</NcEmptyContent>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- GitHub/GitLab Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<Github :size="16" />
 						<span>GitHub / GitLab</span>
 					</template>
 					<div class="tabContent">
 						<p class="tabDescription">
-							Import a configuration from a specific GitHub or GitLab repository and branch.
+							Import a configuration from a specific GitHub or GitLab
+							repository and branch.
 						</p>
 
 						<NcSelect
 							v-model="repoSource"
 							:options="['GitHub', 'GitLab']"
-							input-label="Source Platform" />
+							inputLabel="Source Platform" />
 
 						<NcTextField
 							v-if="repoSource === 'GitHub'"
-							:value.sync="repoOwner"
+							v-model="repoOwner"
 							label="Repository Owner"
 							placeholder="e.g., ConductionNL" />
 
 						<NcTextField
 							v-if="repoSource === 'GitLab'"
-							:value.sync="repoNamespace"
+							v-model="repoNamespace"
 							label="Namespace"
 							placeholder="e.g., conduction" />
 
 						<NcTextField
-							:value.sync="repoName"
-							:label="repoSource === 'GitHub' ? 'Repository Name' : 'Project Name'"
+							v-model="repoName"
+							:label="
+								repoSource === 'GitHub'
+									? 'Repository Name'
+									: 'Project Name'
+							"
 							placeholder="e.g., openregister" />
 
 						<NcButton
@@ -156,11 +203,11 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</NcButton>
 
 						<NcSelect
-							v-if="branches.length > 0"
+							v-if="branches.length !== 0"
 							v-model="selectedBranch"
 							:options="branches"
-							input-label="Branch"
-							@change="fetchConfigurationFiles" />
+							inputLabel="Branch"
+							@update:modelValue="fetchConfigurationFiles" />
 
 						<div v-if="configFiles.length > 0" class="filesGrid">
 							<div
@@ -168,43 +215,51 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 								:key="file.path"
 								class="fileCard"
 								:class="{ selected: selectedFile === file }"
-								@click="selectedFile = file">
+								role="button"
+								tabindex="0"
+								:aria-pressed="selectedFile === file"
+								@click="selectedFile = file"
+								@keydown.enter="selectedFile = file"
+								@keydown.space.prevent="selectedFile = file">
 								<h4>{{ file.config.title }}</h4>
 								<p class="fileDescription">
 									{{ file.config.description || 'No description' }}
 								</p>
 								<span class="filePath">{{ file.path }}</span>
-								<span class="fileVersion">v{{ file.config.version }}</span>
+								<span class="fileVersion"
+									>v{{ file.config.version }}</span
+								>
 							</div>
 						</div>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- URL Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<LinkVariant :size="16" />
 						<span>Import from URL</span>
 					</template>
 					<div class="tabContent">
 						<p class="tabDescription">
-							Import a configuration from a direct URL. The URL must point to a valid OpenRegister JSON file.
+							Import a configuration from a direct URL. The URL must
+							point to a valid OpenRegister JSON file.
 						</p>
 
 						<NcTextField
-							:value.sync="importUrl"
+							v-model="importUrl"
 							label="Configuration URL"
 							placeholder="https://example.com/config.json"
-							@input="urlError = null" />
+							@update:modelValue="urlError = null" />
 
 						<NcNoteCard v-if="urlError" type="warning">
 							<p>{{ urlError }}</p>
 						</NcNoteCard>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- File Upload Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<FileUpload :size="16" />
 						<span>Import from File</span>
@@ -214,9 +269,22 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							Upload a configuration JSON file from your computer.
 						</p>
 
-						<div class="fileUploadZone"
-							:class="{ 'dragover': isDragging }"
+						<!-- Only a button while the zone is empty: once a file is picked the
+							click handler is inert and the body contains a real "Clear" button,
+							which role="button" would hide (children-presentational). The zone is
+							then named by its visible text in both states, so no aria-label. -->
+						<div
+							class="fileUploadZone"
+							:class="{ dragover: isDragging }"
+							:role="selectedUploadFile ? null : 'button'"
+							:tabindex="selectedUploadFile ? null : 0"
 							@click="!selectedUploadFile && $refs.fileInput.click()"
+							@keydown.enter="
+								!selectedUploadFile && $refs.fileInput.click()
+							"
+							@keydown.space.prevent="
+								!selectedUploadFile && $refs.fileInput.click()
+							"
 							@drop.prevent="handleFileDrop"
 							@dragover.prevent="isDragging = true"
 							@dragleave.prevent="isDragging = false">
@@ -225,19 +293,22 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 								ref="fileInput"
 								type="file"
 								accept=".json,application/json"
-								style="display: none;"
-								@change="handleFileSelect">
+								style="display: none"
+								@change="handleFileSelect" />
 
 							<FileUpload :size="48" class="uploadIcon" />
 
 							<p v-if="!selectedUploadFile" class="uploadText">
-								<strong>Drop your configuration file here</strong><br>
+								<strong>Drop your configuration file here</strong
+								><br />
 								or click anywhere to browse
 							</p>
 
 							<div v-else class="selectedFileInfo">
 								<Check :size="32" class="checkIcon" />
-								<p><strong>{{ selectedUploadFile.name }}</strong></p>
+								<p>
+									<strong>{{ selectedUploadFile.name }}</strong>
+								</p>
 								<p class="fileSize">
 									{{ formatFileSize(selectedUploadFile.size) }}
 								</p>
@@ -254,44 +325,44 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<p>{{ fileError }}</p>
 						</NcNoteCard>
 					</div>
-				</BTab>
-			</BTabs>
+				</AppTab>
+			</AppTabs>
 		</div>
 
 		<!-- Synchronization Settings - Always Visible -->
 		<div v-if="!success" class="syncSettings">
 			<h4>{{ t('openregister', 'Synchronization Settings') }}</h4>
 			<NcCheckboxRadioSwitch
-				:checked="syncEnabled"
+				:modelValue="syncEnabled"
 				type="switch"
-				@update:checked="syncEnabled = $event">
+				@update:modelValue="syncEnabled = $event">
 				{{ t('openregister', 'Enable automatic synchronization') }}
 			</NcCheckboxRadioSwitch>
 
 			<NcTextField
 				v-if="syncEnabled"
-				:value.sync="syncInterval"
+				v-model="syncInterval"
 				type="number"
 				label="Sync Interval (hours)"
 				placeholder="24"
 				:min="1"
 				:max="168">
 				<template #helper>
-					{{ t('openregister', 'How often to check for updates (1-168 hours)') }}
+					{{
+						t(
+							'openregister',
+							'How often to check for updates (1-168 hours)',
+						)
+					}}
 				</template>
 			</NcTextField>
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="loading" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="loading" @click="closeModal" />
 			<NcButton
 				:disabled="loading || !canImport"
-				type="primary"
+				variant="primary"
 				@click="performImport">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -304,34 +375,88 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-	NcCheckboxRadioSwitch,
-	NcTextField,
-	NcSelect,
-	NcEmptyContent,
-} from '@nextcloud/vue'
-
-import { BTabs, BTab } from 'bootstrap-vue'
-
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Import from 'vue-material-design-icons/Import.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
-import Github from 'vue-material-design-icons/Github.vue'
-import Gitlab from 'vue-material-design-icons/Gitlab.vue'
-import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
-import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
-import FileUpload from 'vue-material-design-icons/FileUpload.vue'
-import Check from 'vue-material-design-icons/Check.vue'
-
-import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
-
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
+import Cancel from 'vue-material-design-icons/Cancel.vue'
+import Check from 'vue-material-design-icons/Check.vue'
+import FileUpload from 'vue-material-design-icons/FileUpload.vue'
+import Github from 'vue-material-design-icons/Github.vue'
+import Gitlab from 'vue-material-design-icons/Gitlab.vue'
+import Import from 'vue-material-design-icons/Import.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
+import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import { checkConfigurationVersion } from '../../services/configurationDisplay.js'
+
+/**
+ * Import a discovered configuration from GitHub (a result with a repository) or GitLab.
+ *
+ * @param {object} result The discovered configuration
+ * @return {Promise<void>}
+ */
+async function importDiscovered(result) {
+	if (result.repository) {
+		const [owner, repo] = result.repository.split('/')
+		await configurationStore.importFromGitHub({
+			owner,
+			repo,
+			path: result.path,
+			branch: result.ref || 'main',
+			syncEnabled: true,
+			syncInterval: 24,
+		})
+		return
+	}
+	await configurationStore.importFromGitLab({
+		namespace: result.namespace,
+		project: result.project,
+		path: result.path,
+		ref: result.ref || 'main',
+		syncEnabled: true,
+		syncInterval: 24,
+	})
+}
+
+/**
+ * Reload the configuration, register and schema lists after an import.
+ *
+ * @return {Promise<Array>}
+ */
+function refreshImportedLists() {
+	return Promise.all([
+		configurationStore.refreshConfigurationList(),
+		registerStore.refreshRegisterList(),
+		schemaStore.refreshSchemaList(),
+	])
+}
+
+/**
+ * Whether a text is a URL.
+ *
+ * @param {string} value The text
+ * @return {boolean} True for a valid URL
+ */
+function isValidUrl(value) {
+	try {
+		return Boolean(new URL(value).href)
+	} catch {
+		return false
+	}
+}
 
 export default {
 	name: 'ImportConfiguration',
@@ -341,14 +466,15 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		NcTextField,
 		NcSelect,
 		NcEmptyContent,
 		ConfigurationCard,
 		// Icons
 		Cancel,
+		CloseCancelButton,
 		Import,
 		Magnify,
 		Github,
@@ -358,6 +484,7 @@ export default {
 		FileUpload,
 		Check,
 	},
+
 	data() {
 		return {
 			activeTab: 0,
@@ -404,18 +531,32 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude Computed deep-link to the admin api-tokens settings page; UI presentation helper.
+		 */
 		settingsUrl() {
-			return window.location.origin + '/index.php/settings/admin/openregister#api-tokens'
+			return (
+				window.location.origin
+				+ '/index.php/settings/admin/openregister#api-tokens'
+			)
 		},
+
+		/**
+		 * @spec exclude Computed form-enablement guard for the fetch-branches button; UI validation helper.
+		 */
 		canFetchBranches() {
 			if (this.repoSource === 'GitHub') {
 				return this.repoOwner && this.repoName
 			}
 			return this.repoNamespace && this.repoName
 		},
+
+		/**
+		 * @spec exclude Computed per-tab form-enablement guard for the import button; UI validation helper.
+		 */
 		canImport() {
-		// Tab 0: Discover (imports are handled per-card, not via main button)
-		// Tab 1: GitHub/GitLab
+			// Tab 0: Discover (imports are handled per-card, not via main button)
+			// Tab 1: GitHub/GitLab
 			if (this.activeTab === 1) {
 				return this.selectedFile !== null
 			}
@@ -434,20 +575,33 @@ export default {
 	async mounted() {
 		await this.checkTokenAvailability()
 	},
+
 	methods: {
+		handleCheckVersion: checkConfigurationVersion,
+
 		/**
 		 * Check if API tokens are configured
+		 *
+		 * @spec exclude On-mount fetch of masked api-token presence to toggle UI warnings; modal init plumbing.
 		 */
 		async checkTokenAvailability() {
 			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/api-tokens'))
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/settings/api-tokens'),
+				)
 				// Check if tokens exist and are not empty strings
 				// The backend returns masked tokens, so we just check if they exist
-				this.hasGithubToken = !!(response.data.github_token && response.data.github_token.length > 0)
-				this.hasGitlabToken = !!(response.data.gitlab_token && response.data.gitlab_token.length > 0)
+				this.hasGithubToken = !!(
+					response.data.github_token
+					&& response.data.github_token.length > 0
+				)
+				this.hasGitlabToken = !!(
+					response.data.gitlab_token
+					&& response.data.gitlab_token.length > 0
+				)
 
 				// Debug logging removed for production
-			} catch (error) {
+			} catch {
 				// Debug logging removed for production
 				// Assume no tokens if check fails
 				this.hasGithubToken = false
@@ -459,6 +613,7 @@ export default {
 		 * Get token warning title based on which tokens are missing
 		 *
 		 * @return {string}
+		 * @spec exclude Computes a warning-banner title string from token-presence flags; UI presentation helper.
 		 */
 		getTokenWarningTitle() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
@@ -474,6 +629,7 @@ export default {
 		 * Get token warning message based on which tokens are missing
 		 *
 		 * @return {string}
+		 * @spec exclude Computes a warning-banner message string from token-presence flags; UI presentation helper.
 		 */
 		getTokenWarningMessage() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
@@ -485,10 +641,17 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and form state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.resetForm()
 		},
+
+		/**
+		 * @spec exclude Resets all local form/search/upload state to defaults; UI plumbing.
+		 */
 		resetForm() {
 			this.loading = false
 			this.success = false
@@ -513,6 +676,10 @@ export default {
 			this.syncEnabled = true
 			this.syncInterval = 24
 		},
+
+		/**
+		 * @spec exclude Discover-tab search handler delegating to configurationStore.discoverConfigurations; UI search plumbing.
+		 */
 		async searchConfigurations() {
 			this.searchLoading = true
 			this.hasSearched = true
@@ -535,60 +702,40 @@ export default {
 				this.searchLoading = false
 			}
 		},
+
+		/**
+		 * @param {object} result
+		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
+		 */
 		async importDiscoveredConfiguration(result) {
 			this.loading = true
 			this.error = null
 
 			try {
-				// Determine import method based on source
-				if (result.repository) {
-					// GitHub result
-					const [owner, repo] = result.repository.split('/')
-					await configurationStore.importFromGitHub({
-						owner,
-						repo,
-						path: result.path,
-						branch: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				} else {
-					// GitLab result
-					await configurationStore.importFromGitLab({
-						namespace: result.namespace,
-						project: result.project,
-						path: result.path,
-						ref: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				}
+				await importDiscovered(result)
 
 				this.successMessage = 'Configuration imported successfully!'
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				// Don't show error if configuration already exists (UI shows this visually)
-				const errorMessage = error.message || 'Failed to import configuration'
+				const errorMessage =
+					error.message || 'Failed to import configuration'
 				if (!errorMessage.includes('already exists')) {
 					this.error = errorMessage
 				}
 				// Always refresh all lists to update UI
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 			} finally {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * @spec exclude Fetches repo branches via configurationStore.getBranches to populate the branch select; UI form-loading plumbing.
+		 */
 		async fetchBranches() {
 			this.loading = true
 			this.error = null
@@ -598,20 +745,26 @@ export default {
 			this.selectedFile = null
 
 			try {
-				const params = this.repoSource === 'GitHub'
-					? { owner: this.repoOwner, repo: this.repoName }
-					: { namespace: this.repoNamespace, project: this.repoName }
+				const params =
+					this.repoSource === 'GitHub'
+						? { owner: this.repoOwner, repo: this.repoName }
+						: { namespace: this.repoNamespace, project: this.repoName }
 
 				const branches = await configurationStore.getBranches(
 					this.repoSource.toLowerCase(),
 					params,
 				)
 
-				this.branches = branches.map(b => ({ id: b.name, label: b.name }))
+				this.branches = branches.map((b) => ({ id: b.name, label: b.name }))
 				// Pre-select default/main branch if available
-				const defaultBranch = branches.find(b => b.default || b.name === 'main' || b.name === 'master')
+				const defaultBranch = branches.find(
+					(b) => b.default || b.name === 'main' || b.name === 'master',
+				)
 				if (defaultBranch) {
-					this.selectedBranch = { id: defaultBranch.name, label: defaultBranch.name }
+					this.selectedBranch = {
+						id: defaultBranch.name,
+						label: defaultBranch.name,
+					}
 					await this.fetchConfigurationFiles()
 				}
 			} catch (error) {
@@ -620,6 +773,10 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * @spec exclude Fetches config files for the selected branch via configurationStore.getConfigurationFiles; UI form-loading plumbing.
+		 */
 		async fetchConfigurationFiles() {
 			if (!this.selectedBranch) return
 
@@ -629,9 +786,18 @@ export default {
 			this.selectedFile = null
 
 			try {
-				const params = this.repoSource === 'GitHub'
-					? { owner: this.repoOwner, repo: this.repoName, branch: this.selectedBranch.id }
-					: { namespace: this.repoNamespace, project: this.repoName, ref: this.selectedBranch.id }
+				const params =
+					this.repoSource === 'GitHub'
+						? {
+								owner: this.repoOwner,
+								repo: this.repoName,
+								branch: this.selectedBranch.id,
+							}
+						: {
+								namespace: this.repoNamespace,
+								project: this.repoName,
+								ref: this.selectedBranch.id,
+							}
 
 				this.configFiles = await configurationStore.getConfigurationFiles(
 					this.repoSource.toLowerCase(),
@@ -643,72 +809,26 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * @spec exclude Main import-button handler dispatching per-tab to configurationStore import actions and refreshing lists; UI orchestration plumbing.
+		 */
 		async performImport() {
 			this.loading = true
 			this.error = null
 
 			try {
-			// Tab 1: GitHub/GitLab
-				if (this.activeTab === 1) {
-					const params = {
-						path: this.selectedFile.path,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					}
-
-					if (this.repoSource === 'GitHub') {
-						await configurationStore.importFromGitHub({
-							owner: this.repoOwner,
-							repo: this.repoName,
-							branch: this.selectedBranch.id,
-							...params,
-						})
-					} else {
-						await configurationStore.importFromGitLab({
-							namespace: this.repoNamespace,
-							project: this.repoName,
-							ref: this.selectedBranch.id,
-							...params,
-						})
-					}
-
-					this.successMessage = `Configuration imported from ${this.repoSource}!`
-				} else if (this.activeTab === 2) {
-					// Tab 2: URL
-					// Validate URL
-					try {
-						// eslint-disable-next-line no-new
-						const validUrl = new URL(this.importUrl) // URL validation successful
-						// Use validUrl.href to avoid no-new and no-void rule violations
-						if (!validUrl.href) {
-							throw new Error('Invalid URL')
-						}
-					} catch {
-						this.urlError = 'Please enter a valid URL'
-						this.loading = false
-						return
-					}
-
-					await configurationStore.importFromUrl({
-						url: this.importUrl,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					})
-
-					this.successMessage = 'Configuration imported from URL!'
-				} else if (this.activeTab === 3) {
-					// Tab 3: File Upload
-					await this.importFromFile()
-					this.successMessage = 'Configuration imported from file!'
+				const message = await this.importFromTab()
+				if (message === false) {
+					return
+				}
+				if (message) {
+					this.successMessage = message
 				}
 
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				this.error = error.message || 'Failed to import configuration'
@@ -716,12 +836,95 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * Import from the active tab: 1 a repository, 2 a URL, 3 a file.
+		 *
+		 * @spec exclude Per-tab import dispatch for the import button; UI orchestration plumbing.
+		 * @return {Promise<string|false|undefined>} The success message, false when the URL is not valid, undefined for another tab
+		 */
+		async importFromTab() {
+			if (this.activeTab === 1) {
+				await this.importFromRepository()
+				return `Configuration imported from ${this.repoSource}!`
+			}
+			if (this.activeTab === 2) {
+				return this.importFromUrlTab()
+			}
+			if (this.activeTab === 3) {
+				await this.importFromFile()
+				return 'Configuration imported from file!'
+			}
+			return undefined
+		},
+
+		/**
+		 * Import the selected file from the chosen GitHub or GitLab repository.
+		 *
+		 * @spec exclude Repository-tab import delegating to configurationStore.importFromGitHub/GitLab; UI orchestration plumbing.
+		 * @return {Promise<void>}
+		 */
+		async importFromRepository() {
+			const params = {
+				path: this.selectedFile.path,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			}
+
+			if (this.repoSource === 'GitHub') {
+				await configurationStore.importFromGitHub({
+					owner: this.repoOwner,
+					repo: this.repoName,
+					branch: this.selectedBranch.id,
+					...params,
+				})
+			} else {
+				await configurationStore.importFromGitLab({
+					namespace: this.repoNamespace,
+					project: this.repoName,
+					ref: this.selectedBranch.id,
+					...params,
+				})
+			}
+		},
+
+		/**
+		 * Import from the entered URL, or mark the URL as not valid.
+		 *
+		 * @spec exclude URL-tab import delegating to configurationStore.importFromUrl; UI orchestration plumbing.
+		 * @return {Promise<string|false>} The success message, or false when the URL is not valid
+		 */
+		async importFromUrlTab() {
+			if (!isValidUrl(this.importUrl)) {
+				this.urlError = 'Please enter a valid URL'
+				this.loading = false
+				return false
+			}
+
+			await configurationStore.importFromUrl({
+				url: this.importUrl,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			})
+
+			return 'Configuration imported from URL!'
+		},
+
+		/**
+		 * @param {Event} event
+		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
+		 */
 		handleFileSelect(event) {
 			const file = event.target.files[0]
 			if (file) {
 				this.validateAndSetFile(file)
 			}
 		},
+
+		/**
+		 * @param {DragEvent} event
+		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
+		 */
 		handleFileDrop(event) {
 			this.isDragging = false
 			const file = event.dataTransfer.files[0]
@@ -729,6 +932,11 @@ export default {
 				this.validateAndSetFile(file)
 			}
 		},
+
+		/**
+		 * @param {File} file
+		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
+		 */
 		validateAndSetFile(file) {
 			this.fileError = null
 
@@ -746,6 +954,10 @@ export default {
 
 			this.selectedUploadFile = file
 		},
+
+		/**
+		 * @spec exclude Clears the selected upload file and resets the file input; UI file-picker plumbing.
+		 */
 		clearFileSelection() {
 			this.selectedUploadFile = null
 			this.fileError = null
@@ -753,11 +965,20 @@ export default {
 				this.$refs.fileInput.value = ''
 			}
 		},
+
+		/**
+		 * @param {number} bytes
+		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
+		 */
 		formatFileSize(bytes) {
 			if (bytes < 1024) return bytes + ' B'
 			if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
 			return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 		},
+
+		/**
+		 * @spec exclude Uploads the selected JSON file to the configurations/import endpoint; modal-local import call, list refresh handled by performImport.
+		 */
 		async importFromFile() {
 			const formData = new FormData()
 			formData.append('file', this.selectedUploadFile)
@@ -779,28 +1000,6 @@ export default {
 			}
 
 			return response.data
-		},
-		async handleCheckVersion(configuration) {
-			// Handle check version for already imported configurations
-			try {
-				const response = await axios.post(
-					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`),
-				)
-
-				if (response.data.hasUpdate) {
-					showSuccess(
-						`Update available: ${response.data.localVersion} → ${response.data.remoteVersion}`,
-					)
-				} else {
-					showSuccess('Configuration is up to date')
-				}
-
-				// Refresh the list to show updated version info
-				await configurationStore.refreshConfigurationList()
-			} catch (error) {
-				console.error('Failed to check version:', error)
-				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
-			}
 		},
 	},
 }
@@ -1014,5 +1213,12 @@ export default {
 .fileSize {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fileCard,
+	.fileUploadZone {
+		transition: none;
+	}
 }
 </style>

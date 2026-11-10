@@ -1,0 +1,140 @@
+<?php
+
+/**
+ * OpenRegister LifecycleTransitionResolver
+ *
+ * Decides which declared transition a lifecycle-field change is.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Lifecycle
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Lifecycle;
+
+/**
+ * Resolves an old-to-new lifecycle change to one declared transition.
+ *
+ * One implementation for every listener that needs the answer. There were two
+ * identical private loops before, in LifecycleValidationListener and
+ * LifecycleActionListener, and a fix to one would have left the other judging
+ * a different transition than the one whose actions it ran.
+ *
+ * THE RULE
+ * --------
+ * 1. When TransitionEngine has declared a named action for this object, and
+ *    that transition really does move `old` to `new`, it is the answer.
+ * 2. Otherwise the first declared transition whose `to` is `new` and whose
+ *    `from` holds `old`, which is the long-standing behaviour for a direct
+ *    edit of the lifecycle field, where no action was named.
+ *
+ * A declared action that does NOT match the edit is ignored rather than
+ * trusted. The declaration only says which of several equally valid
+ * transitions the caller meant; it must never make an undeclared move legal.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
+ */
+class LifecycleTransitionResolver implements LifecycleTransitionResolverInterface {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param LifecycleActionContext $context The named action being performed, if any.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		private readonly LifecycleActionContext $context,
+	) {
+	}//end __construct()
+
+	/**
+	 * The (action, spec) pair this change is, or null when none allows it.
+	 *
+	 * @param array<string, mixed> $transitions The annotation's transition map.
+	 * @param string $uuid The object's uuid, for the declared-action lookup.
+	 * @param string $oldValue The lifecycle value being moved away from.
+	 * @param string $newValue The lifecycle value being moved to.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}|null
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array {
+		foreach ($this->candidates(transitions: $transitions, uuid: $uuid) as $candidate) {
+			$spec = $candidate[1];
+			if (is_array($spec) === true && ($spec['to'] ?? null) === $newValue && self::leaves(spec: $spec, state: $oldValue) === true) {
+				return [(string)$candidate[0], $spec];
+			}
+		}
+
+		return null;
+	}//end resolve()
+
+	/**
+	 * The (action, spec) pairs to try, in order: the declared action first, then every transition.
+	 *
+	 * @param array<string, mixed> $transitions The annotation's transition map.
+	 * @param string $uuid The object's uuid, for the declared-action lookup.
+	 *
+	 * @return list<array{0: int|string, 1: mixed}> The candidates.
+	 */
+	private function candidates(array $transitions, string $uuid): array {
+		$candidates = [];
+		$declared = $this->context->declaredFor(uuid: $uuid);
+		if ($declared !== null) {
+			$candidates[] = [$declared, ($transitions[$declared] ?? null)];
+		}
+
+		foreach ($transitions as $action => $spec) {
+			$candidates[] = [$action, $spec];
+		}
+
+		return $candidates;
+	}//end candidates()
+
+	/**
+	 * Whether a transition may leave the given state.
+	 *
+	 * `from` may be a single state or a list; a string is read as a one-element
+	 * list so both authoring shapes work.
+	 *
+	 * @param array<string, mixed> $spec  The transition's spec.
+	 * @param string               $state The lifecycle value being moved away from.
+	 *
+	 * @return bool
+	 */
+	private static function leaves(array $spec, string $state): bool {
+		$from = ($spec['from'] ?? []);
+		if (is_string($from) === true) {
+			$from = [$from];
+		}
+
+		return is_array($from) === true && in_array($state, $from, true) === true;
+	}//end leaves()
+
+	/**
+	 * Whether the write of this object in flight sets declared state (a seed or example-set refresh).
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function writesDeclaredState(string $uuid): bool {
+		return $this->context->writesDeclaredState(uuid: $uuid);
+	}//end writesDeclaredState()
+}//end class

@@ -1,0 +1,390 @@
+<!--Documentatie-->
+<!--20230109 ONDERWERP: aanpassing schema. WAT: maxOccurs bij attribuut archiefvormer aangepast naar 'unbounded', minOccurs bij attribuut beperkingGebruik aangepast naar '1'. Beiden nu conform metagegevensschema MDTO. Versie XML schema aangepast naar 1.0.1.-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="https://www.nationaalarchief.nl/mdto" targetNamespace="https://www.nationaalarchief.nl/mdto" elementFormDefault="qualified" attributeFormDefault="unqualified" version="v1.0.1">
+	<xsd:element name="MDTO" type="mdtoType"/>
+	<xsd:complexType name="mdtoType">
+		<xsd:choice>
+			<xsd:element name="informatieobject" type="informatieobjectType">
+				<xsd:annotation>
+					<xsd:documentation>Een op zichzelf staand geheel van gegevens met een eigen identiteit. (bron: DUTO-eisen)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="bestand" type="bestandType">
+				<xsd:annotation>
+					<xsd:documentation>Een geordende verzameling van gegevens in elektronische vorm, die door een elektronisch apparaat onder één naam kan worden behandeld en aangesproken. </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:choice>
+	</xsd:complexType>
+	<xsd:complexType name="objectType">
+		<xsd:sequence>
+			<xsd:element name="identificatie" type="identificatieGegevens" minOccurs="1" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Gegevens waarmee  het object geïdentificeerd kan worden.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="naam" type="xsd:string" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Een betekenisvolle aanduiding waaronder het object bekend is.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="informatieobjectType">
+		<xsd:complexContent>
+			<xsd:extension base="objectType">
+				<xsd:sequence>
+					<xsd:element name="aggregatieniveau" type="begripGegevens" minOccurs="0" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>Het aggregatieniveau van het informatieobject.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="classificatie" type="begripGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Ordening van informatieobjecten in een logisch verband, zoals vastgelegd in een classificatieschema.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="trefwoord" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Trefwoord dat aan het informatieobject is toegekend.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="omschrijving" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Omschrijving van de inhoud van het informatieobject.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="raadpleeglocatie" type="raadpleeglocatieGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Actuele verwijzing naar de locatie waar het informatieobject ter inzage ligt.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="dekkingInTijd" type="dekkingInTijdGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Een tijdstip of de periode waarop de inhoud van het informatieobject betrekking heeft. </xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="dekkingInRuimte" type="verwijzingGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Plaats of locatie waar de inhoud van het informatieobject betrekking op heeft.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="taal" type="xsd:language" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>De taal waarin het informatieobject gesteld is.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="event" type="eventGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Gebeurtenis die heeft plaatsgevonden met betrekking tot het ontstaan, wijzigen, vernietigen en beheer van het informatieobject en de bijbehorende metagegevens.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="waardering" type="begripGegevens" minOccurs="1" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>De waardering van het informatieobject volgens de van toepassing zijnde en vastgestelde selectielijst.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="bewaartermijn" type="termijnGegevens" minOccurs="0" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>Termijn waarin het informatieobject bewaard dient te worden, zoals gespecificeerd in de van toepassing zijnde en vastgestelde selectielijst.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="informatiecategorie" type="begripGegevens" minOccurs="0" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>De informatiecategorie uit een vastgestelde selectielijst of hotspotlijst waar de bewaartermijn op gebaseerd is.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="isOnderdeelVan" type="verwijzingGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>De direct bovenliggende aggregatie waar dit informatieobject onderdeel van is. </xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="bevatOnderdeel" type="verwijzingGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Een Informatieobject dat direct onderliggend onderdeel is van deze aggregatie. Opmerking: Dit is de omgekeerde relatie van isOnderdeelVan.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="heeftRepresentatie" type="verwijzingGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Verwijzing naar het bestand dat een (deel van een) representatie van het informatieobject is.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="aanvullendeMetagegevens" type="verwijzingGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Verwijzing naar een bestand dat aanvullende (domeinspecifieke) metagegevens over het informatieobject bevat.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="gerelateerdInformatieobject" type="gerelateerdInformatieobjectGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Relatie met een ander informatieobject dat relevant is binnen de context van het ontstaan, gebruik en/of beheer van dit informatieobject.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="archiefvormer" type="verwijzingGegevens" minOccurs="1" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>De organisatie die verantwoordelijk is voor het opmaken en/of ontvangen van het informatieobject.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="betrokkene" type="betrokkeneGegevens" minOccurs="0" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Persoon of organisatie die relevant is binnen de context van het ontstaan en gebruik van dit informatieobject.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="activiteit" type="verwijzingGegevens" minOccurs="0" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>De bedrijfsactiviteit waarbij het informatieobject door de archiefvormer is ontvangen of gemaakt. </xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="beperkingGebruik" type="beperkingGebruikGegevens" minOccurs="1" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Een beperking die gesteld is aan het gebruik van het informatieobject.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	<xsd:complexType name="bestandType">
+		<xsd:complexContent>
+			<xsd:extension base="objectType">
+				<xsd:sequence>
+					<xsd:element name="omvang" type="xsd:integer" minOccurs="1" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>Aantal bytes in het bestand.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="bestandsformaat" type="begripGegevens" minOccurs="1" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>De manier waarop de informatie in een computerbestand binair gecodeerd is.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="checksum" type="checksumGegevens" minOccurs="1" maxOccurs="unbounded">
+						<xsd:annotation>
+							<xsd:documentation>Gegevens om te bepalen of het bestand beschadigd of gewijzigd is. </xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="URLBestand" type="xsd:anyURI" minOccurs="0" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>Actuele verwijzing naar het bestand.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+					<xsd:element name="isRepresentatieVan" type="verwijzingGegevens" minOccurs="1" maxOccurs="1">
+						<xsd:annotation>
+							<xsd:documentation>Verwijzing naar het informatieobject waarvan het bestand een (deel van een) representatie is.</xsd:documentation>
+						</xsd:annotation>
+					</xsd:element>
+				</xsd:sequence>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	<xsd:complexType name="identificatieGegevens">
+		<xsd:sequence>
+			<xsd:element name="identificatieKenmerk" type="xsd:string" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Een kenmerk waarmee een object geïdentificeerd kan worden.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="identificatieBron" type="xsd:string" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Herkomst van het kenmerk.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="verwijzingGegevens">
+		<xsd:sequence>
+			<xsd:element name="verwijzingNaam" type="xsd:string" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De naam van het object waarnaar verwezen wordt.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="verwijzingIdentificatie" type="identificatieGegevens" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De identificatie van het object waarnaar verwezen wordt.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="begripGegevens">
+		<xsd:sequence>
+			<xsd:element name="begripLabel" type="xsd:string" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De tekstweergave van het begrip dat is toegekend in de begrippenlijst.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="begripCode" type="xsd:string" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De code die aan het begrip is toegekend in de begrippenlijst.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="begripBegrippenlijst" type="verwijzingGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Een beschrijving van de begrippen die voor een bepaald toepassingsgebied gebruikt worden is opgesomd. Samen met hun betekenis en hun onderlinge relaties.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="dekkingInTijdGegevens">
+		<xsd:sequence>
+			<xsd:element name="dekkingInTijdType" type="begripGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Nadere typering van het tijdstip of de periode waar de inhoud van het informatieobject betrekking op heeft. </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="dekkingInTijdBegindatum" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Datum waar de inhoud van het informatieobject betrekking op heeft. Bij een periode is dit de begindatum.</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:gYear xsd:gYearMonth xsd:date"/>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="dekkingInTijdEinddatum" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Einddatum van de periode waar de inhoud van het informatieobject betrekking op heeft.</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:gYear xsd:gYearMonth xsd:date"/>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="eventGegevens">
+		<xsd:sequence>
+			<xsd:element name="eventType" type="begripGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Aanduiding van het type event.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="eventTijd" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Het tijdstip waarop het event heeft plaatsgevonden.</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:gYear xsd:gYearMonth xsd:date xsd:dateTime"/>
+				</xsd:simpleType>
+			</xsd:element>
+			<xsd:element name="eventVerantwoordelijkeActor" type="verwijzingGegevens" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De actor die verantwoordelijk was voor de gebeurtenis.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="eventResultaat" type="xsd:string" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Beschrijving van het resultaat van het event voor zover relevant voor de duurzame toegankelijkheid van het informatieobject.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="gerelateerdInformatieobjectGegevens">
+		<xsd:sequence>
+			<xsd:element name="gerelateerdInformatieobjectVerwijzing" type="verwijzingGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Verwijzing naar het gerelateerde informatieobject.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gerelateerdInformatieobjectTypeRelatie" type="begripGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Typering van de relatie met het andere informatieobject.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="betrokkeneGegevens">
+		<xsd:sequence>
+			<xsd:element name="betrokkeneTypeRelatie" type="begripGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Typering van de betrokkenheid van de actor bij het informatieobject.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="betrokkeneActor" type="verwijzingGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De persoon of organisatie die betrokken is bij het informatieobject.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="beperkingGebruikGegevens">
+		<xsd:sequence>
+			<xsd:element name="beperkingGebruikType" type="begripGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Typering van de beperking. Op grond waarvan bepaald kan worden wie toegang heeft tot het informatieobject en welke voorwaarden op het gebruik van toepassing zijn.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="beperkingGebruikNadereBeschrijving" type="xsd:string" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Nadere beschrijving van de beperking op het gebruik. Als aanvulling op beperkingGebruikType.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="beperkingGebruikDocumentatie" type="verwijzingGegevens" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Verwijzing naar een tekstdocument waarin een nadere beschrijving van de beperking is opgenomen.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="beperkingGebruikTermijn" type="termijnGegevens" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De termijn waarbinnen de beperking op het gebruik van toepassing is.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="termijnGegevens">
+		<xsd:sequence>
+			<xsd:element name="termijnTriggerStartLooptijd" type="begripGegevens" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Gebeurtenis waarna de looptijd van de termijn start.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="termijnStartdatumLooptijd" type="xsd:date" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De datum waarop de trigger heeft plaatsgevonden en de looptijd is gestart.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="termijnLooptijd" type="xsd:duration" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De hoeveelheid tijd waarin de termijnEindDatum bereikt wordt, nadat de trigger heeft plaatsgevonden.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="termijnEinddatum" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Datum waarop de termijn eindigt.</xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:gYear xsd:gYearMonth xsd:date"/>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="checksumGegevens">
+		<xsd:sequence>
+			<xsd:element name="checksumAlgoritme" type="begripGegevens" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Naam van het checksum algoritme dat is gebruikt om de checksum te maken. </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="checksumWaarde" type="xsd:string" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>De waarde van de checksum. </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="checksumDatum" type="xsd:dateTime" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>Datum waarop de checksum is gemaakt.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="raadpleeglocatieGegevens">
+		<xsd:sequence>
+			<xsd:element name="raadpleeglocatieFysiek" type="verwijzingGegevens" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Actuele fysieke locatie waar het informatieobject ter inzage ligt.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="raadpleeglocatieOnline" type="xsd:anyURI" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Actuele verwijzing naar een online raadpleeglocatie die het informatieobject en de bijbehorende metagegevens weergeeft. </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>

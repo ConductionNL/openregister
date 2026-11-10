@@ -14,6 +14,7 @@
  * typically just an interface declaration or a minimal class body — so that
  * PHP can evaluate the OCP interface files without fatal errors.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  */
 
@@ -534,6 +535,7 @@ if (class_exists(\OCA\DAV\CalDAV\CalDavBackend::class) === false) {
 	eval('namespace OCA\DAV\CalDAV;
     class CalDavBackend {
         public function getCalendarsForUser(string $principal): array { return []; }
+        public function getCalendarById(int $calendarId): ?array { return null; }
         public function createCalendar(string $principal, string $name, array $properties): int { return 0; }
         public function createCalendarObject(int $calendarId, string $objectUri, string $data): string { return ""; }
         public function getCalendarObjects(int $calendarId): array { return []; }
@@ -635,4 +637,23 @@ if (interface_exists(\Sabre\DAV\ICollection::class) === false) {
 if (class_exists(\Sabre\DAV\Exception\Forbidden::class) === false) {
 	eval('namespace Sabre\DAV\Exception;
     class Forbidden extends \Exception {}');
+}//end if
+
+// `OC_User` is a legacy global class from the Nextcloud server source, not part
+// of `nextcloud/ocp`. ObjectService::runAsAnonymous() uses its incognito mode —
+// the same mechanism core uses to serve a public link while a session exists
+// (ShareController, PublicAuth, BearerAuth) — because it is the only switch
+// `Session::getUser()` honours BEFORE its `user_id` fallback.
+if (class_exists('OC_User') === false) {
+	eval('class OC_User {
+    private static bool $incognitoMode = false;
+
+    public static function setIncognitoMode(bool $status): void {
+        self::$incognitoMode = $status;
+    }
+
+    public static function isIncognitoMode(): bool {
+        return self::$incognitoMode;
+    }
+}');
 }//end if

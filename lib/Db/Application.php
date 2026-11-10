@@ -6,6 +6,9 @@
  * This file contains the Application entity class for the OpenRegister application.
  * Applications represent software applications or modules within an organisation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Entity
  * @package  OCA\OpenRegister\Db
  *
@@ -24,6 +27,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Application\ApplicationFieldTypes;
+use OCA\OpenRegister\Db\Application\ApplicationQuota;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
@@ -61,6 +66,10 @@ use Symfony\Component\Uid\Uuid;
  * @method void setBandwidthQuota(?int $bandwidthQuota)
  * @method int|null getRequestQuota()
  * @method void setRequestQuota(?int $requestQuota)
+ * @method int|null getUserQuota()
+ * @method void setUserQuota(?int $userQuota)
+ * @method int|null getGroupQuota()
+ * @method void setGroupQuota(?int $groupQuota)
  * @method array|null getGroups()
  * @method self setGroups(?array $groups)
  * @method array|null getAuthorization()
@@ -76,682 +85,470 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class Application extends Entity implements JsonSerializable
-{
+class Application extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
+	use AuthorizationRulesTrait;
+	use JsonFieldsTrait;
+	use OrganisationFieldTrait;
+	use ManagedByConfigurationTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
-    /**
-     * Unique identifier for the application
-     *
-     * @var string|null UUID of the application
-     */
-    protected ?string $uuid = null;
+	/**
+	 * Unique identifier for the application
+	 *
+	 * @var string|null UUID of the application
+	 */
+	protected ?string $uuid = null;
 
-    /**
-     * Name of the application
-     *
-     * @var string|null The application name
-     */
-    protected ?string $name = null;
+	/**
+	 * Name of the application
+	 *
+	 * @var string|null The application name
+	 */
+	protected ?string $name = null;
 
-    /**
-     * Description of the application
-     *
-     * @var string|null The application description
-     */
-    protected ?string $description = null;
+	/**
+	 * Description of the application
+	 *
+	 * @var string|null The application description
+	 */
+	protected ?string $description = null;
 
-    /**
-     * Version of the application
-     *
-     * @var string|null Version string (e.g., "1.0.0")
-     */
-    protected ?string $version = null;
+	/**
+	 * Version of the application
+	 *
+	 * @var string|null Version string (e.g., "1.0.0")
+	 */
+	protected ?string $version = null;
 
-    /**
-     * Organisation UUID that owns this application
-     *
-     * @var string|null Organisation UUID
-     */
-    protected ?string $organisation = null;
+	/**
+	 * Organisation UUID that owns this application
+	 *
+	 * @var string|null Organisation UUID
+	 */
+	protected ?string $organisation = null;
 
-    /**
-     * Configuration that manages this application (transient, not stored in DB)
-     *
-     * @var Configuration|null
-     */
-    private ?Configuration $managedByConfig = null;
+	/**
+	 * Array of configuration IDs associated with this application
+	 *
+	 * @var array|null Array of configuration IDs
+	 */
+	protected ?array $configurations = [];
 
-    /**
-     * Array of configuration IDs associated with this application
-     *
-     * @var array|null Array of configuration IDs
-     */
-    protected ?array $configurations = [];
+	/**
+	 * Array of register IDs managed by this application
+	 *
+	 * @var array|null Array of register IDs
+	 */
+	protected ?array $registers = [];
 
-    /**
-     * Array of register IDs managed by this application
-     *
-     * @var array|null Array of register IDs
-     */
-    protected ?array $registers = [];
+	/**
+	 * Array of schema IDs used by this application
+	 *
+	 * @var array|null Array of schema IDs
+	 */
+	protected ?array $schemas = [];
 
-    /**
-     * Array of schema IDs used by this application
-     *
-     * @var array|null Array of schema IDs
-     */
-    protected ?array $schemas = [];
+	/**
+	 * Owner of the application (user ID)
+	 *
+	 * @var string|null The user ID who owns this application
+	 */
+	protected ?string $owner = null;
 
-    /**
-     * Owner of the application (user ID)
-     *
-     * @var string|null The user ID who owns this application
-     */
-    protected ?string $owner = null;
+	/**
+	 * Whether this application is active
+	 *
+	 * @var boolean|null Whether this application is active
+	 */
+	protected ?bool $active = true;
 
-    /**
-     * Whether this application is active
-     *
-     * @var boolean|null Whether this application is active
-     */
-    protected ?bool $active = true;
+	/**
+	 * Storage quota allocated to this application in bytes
+	 * NULL = unlimited storage
+	 *
+	 * @var integer|null Storage quota in bytes
+	 */
+	protected ?int $storageQuota = null;
 
-    /**
-     * Storage quota allocated to this application in bytes
-     * NULL = unlimited storage
-     *
-     * @var integer|null Storage quota in bytes
-     */
-    protected ?int $storageQuota = null;
+	/**
+	 * Bandwidth/traffic quota allocated to this application in bytes per month
+	 * NULL = unlimited bandwidth
+	 *
+	 * @var integer|null Bandwidth quota in bytes per month
+	 */
+	protected ?int $bandwidthQuota = null;
 
-    /**
-     * Bandwidth/traffic quota allocated to this application in bytes per month
-     * NULL = unlimited bandwidth
-     *
-     * @var integer|null Bandwidth quota in bytes per month
-     */
-    protected ?int $bandwidthQuota = null;
+	/**
+	 * API request quota allocated to this application per day
+	 * NULL = unlimited API requests
+	 *
+	 * @var integer|null API request quota per day
+	 */
+	protected ?int $requestQuota = null;
 
-    /**
-     * API request quota allocated to this application per day
-     * NULL = unlimited API requests
-     *
-     * @var integer|null API request quota per day
-     */
-    protected ?int $requestQuota = null;
+	/**
+	 * Maximum number of users allowed for this application
+	 * NULL = unlimited users
+	 *
+	 * @var integer|null User quota
+	 */
+	protected ?int $userQuota = null;
 
-    /**
-     * Array of Nextcloud group IDs that have access to this application
-     * Stored as simple array of group ID strings for efficiency
-     *
-     * @var array|null Array of group IDs (strings)
-     */
-    protected ?array $groups = [];
+	/**
+	 * Maximum number of groups allowed for this application
+	 * NULL = unlimited groups
+	 *
+	 * @var integer|null Group quota
+	 */
+	protected ?int $groupQuota = null;
 
-    /**
-     * Authorization rules for this application
-     *
-     * Simple CRUD structure defining permissions:
-     * {
-     *   "create": [],
-     *   "read": [],
-     *   "update": [],
-     *   "delete": []
-     * }
-     *
-     * @var array|null Authorization rules as JSON structure
-     */
-    protected ?array $authorization = null;
+	/**
+	 * Array of Nextcloud group IDs that have access to this application
+	 * Stored as simple array of group ID strings for efficiency
+	 *
+	 * @var array|null Array of group IDs (strings)
+	 */
+	protected ?array $groups = [];
 
-    /**
-     * Date when the application was created
-     *
-     * @var DateTime|null Creation timestamp
-     */
-    protected ?DateTime $created = null;
+	/**
+	 * Authorization rules for this application
+	 *
+	 * Simple CRUD structure defining permissions:
+	 * {
+	 *   "create": [],
+	 *   "read": [],
+	 *   "update": [],
+	 *   "delete": []
+	 * }
+	 *
+	 * @var array|null Authorization rules as JSON structure
+	 */
+	protected ?array $authorization = null;
 
-    /**
-     * Date when the application was last updated
-     *
-     * @var DateTime|null Last update timestamp
-     */
-    protected ?DateTime $updated = null;
+	/**
+	 * Date when the application was created
+	 *
+	 * @var DateTime|null Creation timestamp
+	 */
+	protected ?DateTime $created = null;
 
-    /**
-     * Application constructor
-     *
-     * Sets up the entity type mappings for proper database handling.
-     */
-    public function __construct()
-    {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'description', type: 'string');
-        $this->addType(fieldName: 'version', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'configurations', type: 'json');
-        $this->addType(fieldName: 'registers', type: 'json');
-        $this->addType(fieldName: 'schemas', type: 'json');
-        $this->addType(fieldName: 'owner', type: 'string');
-        $this->addType(fieldName: 'active', type: 'boolean');
-        $this->addType(fieldName: 'storage_quota', type: 'integer');
-        $this->addType(fieldName: 'bandwidth_quota', type: 'integer');
-        $this->addType(fieldName: 'request_quota', type: 'integer');
-        $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'authorization', type: 'json');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
-    }//end __construct()
+	/**
+	 * Date when the application was last updated
+	 *
+	 * @var DateTime|null Last update timestamp
+	 */
+	protected ?DateTime $updated = null;
 
-    /**
-     * Validate UUID format
-     *
-     * @param string $uuid The UUID to validate
-     *
-     * @return bool True if UUID format is valid
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
-     */
-    public static function isValidUuid(string $uuid): bool
-    {
-        try {
-            Uuid::fromString($uuid);
-            return true;
-        } catch (\InvalidArgumentException $e) {
-            return false;
-        }
-    }//end isValidUuid()
+	/**
+	 * Application constructor
+	 *
+	 * Sets up the entity type mappings for proper database handling.
+	 */
+	public function __construct() {
+		foreach (ApplicationFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
+	}//end __construct()
 
-    /**
-     * Get the organisation UUID
-     *
-     * @return string|null The organisation UUID
-     */
-    public function getOrganisation(): ?string
-    {
-        return $this->organisation;
-    }//end getOrganisation()
+	/**
+	 * Get configurations associated with this application
+	 *
+	 * @return array Array of configuration IDs
+	 */
+	public function getConfigurations(): array {
+		return $this->configurations ?? [];
+	}//end getConfigurations()
 
-    /**
-     * Set the organisation UUID
-     *
-     * @param string|null $organisation The organisation UUID
-     *
-     * @return void
-     */
-    public function setOrganisation(?string $organisation): void
-    {
-        $this->organisation = $organisation;
-        $this->markFieldUpdated(attribute: 'organisation');
-    }//end setOrganisation()
+	/**
+	 * Set configurations for this application
+	 *
+	 * @param array|null $configurations Array of configuration IDs
+	 *
+	 * @return static Returns this application for method chaining
+	 */
+	public function setConfigurations(?array $configurations): static {
+		$this->configurations = $configurations ?? [];
+		$this->markFieldUpdated(attribute: 'configurations');
+		return $this;
+	}//end setConfigurations()
 
-    /**
-     * Get configurations associated with this application
-     *
-     * @return array Array of configuration IDs
-     */
-    public function getConfigurations(): array
-    {
-        return $this->configurations ?? [];
-    }//end getConfigurations()
+	/**
+	 * Get registers managed by this application
+	 *
+	 * @return array Array of register IDs
+	 */
+	public function getRegisters(): array {
+		return $this->registers ?? [];
+	}//end getRegisters()
 
-    /**
-     * Set configurations for this application
-     *
-     * @param array|null $configurations Array of configuration IDs
-     *
-     * @return static Returns this application for method chaining
-     */
-    public function setConfigurations(?array $configurations): static
-    {
-        $this->configurations = $configurations ?? [];
-        $this->markFieldUpdated(attribute: 'configurations');
-        return $this;
-    }//end setConfigurations()
+	/**
+	 * Set registers for this application
+	 *
+	 * @param array|null $registers Array of register IDs
+	 *
+	 * @return static Returns this application for method chaining
+	 */
+	public function setRegisters(?array $registers): static {
+		$this->registers = $registers ?? [];
+		$this->markFieldUpdated(attribute: 'registers');
+		return $this;
+	}//end setRegisters()
 
-    /**
-     * Get registers managed by this application
-     *
-     * @return array Array of register IDs
-     */
-    public function getRegisters(): array
-    {
-        return $this->registers ?? [];
-    }//end getRegisters()
+	/**
+	 * Get schemas used by this application
+	 *
+	 * @return array Array of schema IDs
+	 */
+	public function getSchemas(): array {
+		return $this->schemas ?? [];
+	}//end getSchemas()
 
-    /**
-     * Set registers for this application
-     *
-     * @param array|null $registers Array of register IDs
-     *
-     * @return static Returns this application for method chaining
-     */
-    public function setRegisters(?array $registers): static
-    {
-        $this->registers = $registers ?? [];
-        $this->markFieldUpdated(attribute: 'registers');
-        return $this;
-    }//end setRegisters()
+	/**
+	 * Set schemas for this application
+	 *
+	 * @param array|null $schemas Array of schema IDs
+	 *
+	 * @return static Returns this application for method chaining
+	 */
+	public function setSchemas(?array $schemas): static {
+		$this->schemas = $schemas ?? [];
+		$this->markFieldUpdated(attribute: 'schemas');
+		return $this;
+	}//end setSchemas()
 
-    /**
-     * Get schemas used by this application
-     *
-     * @return array Array of schema IDs
-     */
-    public function getSchemas(): array
-    {
-        return $this->schemas ?? [];
-    }//end getSchemas()
+	/**
+	 * Check whether this application is active
+	 *
+	 * @return bool Whether this application is active
+	 */
+	public function isActive(): bool {
+		return $this->active ?? true;
+	}//end isActive()
 
-    /**
-     * Set schemas for this application
-     *
-     * @param array|null $schemas Array of schema IDs
-     *
-     * @return static Returns this application for method chaining
-     */
-    public function setSchemas(?array $schemas): static
-    {
-        $this->schemas = $schemas ?? [];
-        $this->markFieldUpdated(attribute: 'schemas');
-        return $this;
-    }//end setSchemas()
+	/**
+	 * Set whether this application is active
+	 *
+	 * @param bool|null|string $active Whether this should be active
+	 *
+	 * @return static Returns this application for method chaining
+	 */
+	public function setActive(mixed $active): static {
+		// Handle various input types defensively (including empty strings from API).
+		$this->active = true;
+		// Default to true for applications.
+		if ($active !== '' && $active !== null) {
+			$this->active = (bool)$active;
+		}
 
-    /**
-     * Check whether this application is active
-     *
-     * @return bool Whether this application is active
-     */
-    public function isActive(): bool
-    {
-        return $this->active ?? true;
-    }//end isActive()
+		$this->markFieldUpdated(attribute: 'active');
+		return $this;
+	}//end setActive()
 
-    /**
-     * Set whether this application is active
-     *
-     * @param bool|null|string $active Whether this should be active
-     *
-     * @return static Returns this application for method chaining
-     */
-    public function setActive(mixed $active): static
-    {
-        // Handle various input types defensively (including empty strings from API).
-        $this->active = true;
-        // Default to true for applications.
-        if ($active !== '' && $active !== null) {
-            $this->active = (bool) $active;
-        }
+	/**
+	 * Get groups that have access to this application
+	 *
+	 * @return array Array of group definitions
+	 */
+	public function getGroups(): array {
+		return $this->groups ?? [];
+	}//end getGroups()
 
-        $this->markFieldUpdated(attribute: 'active');
-        return $this;
-    }//end setActive()
+	/**
+	 * Set groups that have access to this application
+	 *
+	 * @param array|null $groups Array of group definitions
+	 *
+	 * @return static Returns this application for method chaining
+	 */
+	public function setGroups(?array $groups): static {
+		$this->groups = $groups ?? [];
+		$this->markFieldUpdated(attribute: 'groups');
+		return $this;
+	}//end setGroups()
 
-    /**
-     * Get groups that have access to this application
-     *
-     * @return array Array of group definitions
-     */
-    public function getGroups(): array
-    {
-        return $this->groups ?? [];
-    }//end getGroups()
+	/**
+	 * Get default authorization structure for applications
+	 *
+	 * Provides sensible defaults with empty arrays for all CRUD permissions
+	 *
+	 * @return array[] Default authorization structure
+	 *
+	 * @psalm-return array{create: array<never, never>,
+	 *     read: array<never, never>, update: array<never, never>,
+	 *     delete: array<never, never>}
+	 */
+	private function getDefaultAuthorization(): array {
+		return [
+			'create' => [],
+			'read' => [],
+			'update' => [],
+			'delete' => [],
+		];
+	}//end getDefaultAuthorization()
 
-    /**
-     * Set groups that have access to this application
-     *
-     * @param array|null $groups Array of group definitions
-     *
-     * @return static Returns this application for method chaining
-     */
-    public function setGroups(?array $groups): static
-    {
-        $this->groups = $groups ?? [];
-        $this->markFieldUpdated(attribute: 'groups');
-        return $this;
-    }//end setGroups()
+	/**
+	 * Get authorization rules for this application
+	 *
+	 * @return array Authorization rules structure
+	 */
+	public function getAuthorization(): array {
+		return $this->authorization ?? $this->getDefaultAuthorization();
+	}//end getAuthorization()
 
-    /**
-     * Get JSON fields from the entity
-     *
-     * Returns all fields that are of type 'json'
-     *
-     * @return string[] List of JSON field names
-     *
-     * @psalm-return list<string>
-     */
-    public function getJsonFields(): array
-    {
-        return array_keys(
-            array_filter(
-                $this->getFieldTypes(),
-                function ($field) {
-                    return $field === 'json';
-                }
-            )
-        );
-    }//end getJsonFields()
+	/**
+	 * Set the quota allocations from the nested API structure
+	 *
+	 * The API exposes quota as one nested object (see self::getQuotaData())
+	 * while the entity stores a column per allocation. Without this setter
+	 * hydrate()'s generic set{Key} call resolves to a non-existent setQuota(),
+	 * which Entity rejects and hydrate() swallows — silently dropping every
+	 * quota posted to /api/applications.
+	 *
+	 * @param array|string|null $quota Nested quota structure or JSON string
+	 *
+	 * @return static Returns this application for method chaining
+	 *
+	 * @spec exclude Entity field-mapping boilerplate: unpacks the nested API
+	 *     quota object onto the per-allocation columns. Quota enforcement is
+	 *     the tenant-quotas capability's contract, not this setter's.
+	 */
+	public function setQuota(array|string|null $quota): static {
+		foreach ((new ApplicationQuota())->allocations(quota: $quota) as $setter => $value) {
+			$this->$setter($value);
+		}
 
-    /**
-     * Hydrate the entity with data from an array
-     *
-     * Sets entity properties based on input array values
-     *
-     * @param array $object The data array to hydrate from
-     *
-     * @return static Returns $this for method chaining
-     */
-    public function hydrate(array $object): static
-    {
-        $jsonFields = $this->getJsonFields();
+		return $this;
+	}//end setQuota()
 
-        foreach ($object as $key => $value) {
-            if (in_array($key, $jsonFields) === true && $value === []) {
-                $value = null;
-            }
+	/**
+	 * JSON serialization for API responses
+	 *
+	 * @return (array|bool|int|null|string)[]
+	 *
+	 * @psalm-return array{id: int, uuid: null|string, name: null|string,
+	 *     description: null|string, version: null|string,
+	 *     organisation: null|string, configurations: array|null,
+	 *     registers: array|null, schemas: array|null, owner: null|string,
+	 *     active: bool|null, groups: array|null,
+	 *     quota: array{storage: int|null, bandwidth: int|null,
+	 *     requests: int|null, users: int|null, groups: int|null},
+	 *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
+	 *     groups: int<0, max>}, authorization: array,
+	 *     created: null|string, updated: null|string,
+	 *     managedByConfiguration: array{id: int, uuid: null|string,
+	 *     title: null|string}|null}
+	 */
+	public function jsonSerialize(): array {
+		return array_merge($this->identityJson(), $this->accessJson());
+	}//end jsonSerialize()
 
-            $method = 'set'.ucfirst($key);
+	/**
+	 * The serialised identity, membership and owner.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function identityJson(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'name' => $this->name,
+			'description' => $this->description,
+			'version' => $this->version,
+			'organisation' => $this->organisation,
+			'configurations' => $this->getConfigurations(),
+			'registers' => $this->getRegisters(),
+			'schemas' => $this->getSchemas(),
+			'owner' => $this->owner,
+		];
+	}//end identityJson()
 
-            try {
-                $this->$method($value);
-            } catch (\Exception $exception) {
-                // Silently ignore invalid properties.
-            }
-        }
+	/**
+	 * The serialised activity, groups, quota, usage, authorization and timestamps.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function accessJson(): array {
+		$groups = $this->getGroups();
 
-        return $this;
-    }//end hydrate()
+		return [
+			'active' => $this->isActive(),
+			'groups' => $groups,
+			'quota' => $this->getQuotaData(),
+			'usage' => $this->getUsageData(groups: $groups),
+			'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
+			'created' => $this->getCreatedFormatted(),
+			'updated' => $this->getUpdatedFormatted(),
+			'managedByConfiguration' => null,
+		];
+	}//end accessJson()
 
-    /**
-     * Get default authorization structure for applications
-     *
-     * Provides sensible defaults with empty arrays for all CRUD permissions
-     *
-     * @return array[] Default authorization structure
-     *
-     * @psalm-return array{create: array<never, never>,
-     *     read: array<never, never>, update: array<never, never>,
-     *     delete: array<never, never>}
-     */
-    private function getDefaultAuthorization(): array
-    {
-        return [
-            'create' => [],
-            'read'   => [],
-            'update' => [],
-            'delete' => [],
-        ];
-    }//end getDefaultAuthorization()
+	/**
+	 * String representation of the application
+	 *
+	 * This magic method returns the application UUID. If no UUID exists,
+	 * it creates a new one, sets it to the application, and returns it.
+	 *
+	 * @return string UUID of the application
+	 */
+	public function __toString(): string {
+		// Generate new UUID if none exists or is empty.
+		if ($this->uuid === null || $this->uuid === '') {
+			$this->uuid = Uuid::v4()->toRfc4122();
+		}
 
-    /**
-     * Get authorization rules for this application
-     *
-     * @return array Authorization rules structure
-     */
-    public function getAuthorization(): array
-    {
-        return $this->authorization ?? $this->getDefaultAuthorization();
-    }//end getAuthorization()
+		return $this->uuid;
+	}//end __toString()
 
-    /**
-     * Set authorization rules for this application
-     *
-     * @param array|string|null $authorization Authorization rules structure or JSON string
-     *
-     * @return static Returns this application for method chaining
-     */
-    public function setAuthorization(array|string|null $authorization): static
-    {
-        // Handle JSON string from database (type safety).
-        if (is_string($authorization) === true) {
-            try {
-                $decoded = json_decode($authorization, true);
-                // Invalid JSON, use default.
-                $authorization = null;
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-                    $authorization = $decoded;
-                }
-            } catch (\Exception $e) {
-                // If decoding fails, use default.
-                $authorization = null;
-            }
-        }
+	/**
+	 * The ids a configuration lists as its applications, see ManagedByConfigurationTrait.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return array|null
+	 */
+	protected function configurationMembers(Configuration $configuration): ?array {
+		return $configuration->getApplications();
+	}//end configurationMembers()
 
-        $this->authorization = $authorization ?? $this->getDefaultAuthorization();
-        $this->markFieldUpdated(attribute: 'authorization');
-        return $this;
-    }//end setAuthorization()
+	/**
+	 * Get quota data for JSON serialization.
+	 *
+	 * Returns the quota allocation structure for storage, bandwidth, requests,
+	 * users, and groups. NULL means unlimited for every allocation.
+	 *
+	 * @return array{storage: int|null, bandwidth: int|null, requests: int|null, users: int|null, groups: int|null}
+	 */
+	private function getQuotaData(): array {
+		return [
+			'storage' => $this->storageQuota,
+			'bandwidth' => $this->bandwidthQuota,
+			'requests' => $this->requestQuota,
+			'users' => $this->userQuota,
+			'groups' => $this->groupQuota,
+		];
+	}//end getQuotaData()
 
-    /**
-     * JSON serialization for API responses
-     *
-     * @return (array|bool|int|null|string)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, version: null|string,
-     *     organisation: null|string, configurations: array|null,
-     *     registers: array|null, schemas: array|null, owner: null|string,
-     *     active: bool|null, groups: array|null,
-     *     quota: array{storage: int|null, bandwidth: int|null,
-     *     requests: int|null, users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, authorization: array,
-     *     created: null|string, updated: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null}
-     */
-    public function jsonSerialize(): array
-    {
-        $groups = $this->getGroups();
-
-        return [
-            'id'                     => $this->id,
-            'uuid'                   => $this->uuid,
-            'name'                   => $this->name,
-            'description'            => $this->description,
-            'version'                => $this->version,
-            'organisation'           => $this->organisation,
-            'configurations'         => $this->getConfigurations(),
-            'registers'              => $this->getRegisters(),
-            'schemas'                => $this->getSchemas(),
-            'owner'                  => $this->owner,
-            'active'                 => $this->isActive(),
-            'groups'                 => $groups,
-            'quota'                  => $this->getQuotaData(),
-            'usage'                  => $this->getUsageData(groups: $groups),
-            'authorization'          => $this->authorization ?? $this->getDefaultAuthorization(),
-            'created'                => $this->getCreatedFormatted(),
-            'updated'                => $this->getUpdatedFormatted(),
-            'managedByConfiguration' => $this->getManagedByConfigurationData(),
-        ];
-    }//end jsonSerialize()
-
-    /**
-     * String representation of the application
-     *
-     * This magic method returns the application UUID. If no UUID exists,
-     * it creates a new one, sets it to the application, and returns it.
-     *
-     * @return string UUID of the application
-     */
-    public function __toString(): string
-    {
-        // Generate new UUID if none exists or is empty.
-        if ($this->uuid === null || $this->uuid === '') {
-            $this->uuid = Uuid::v4()->toRfc4122();
-        }
-
-        return $this->uuid;
-    }//end __toString()
-
-    /**
-     * Get the configuration that manages this application (transient property)
-     *
-     * @return Configuration|null The managing configuration or null
-     */
-    public function getManagedByConfigurationEntity(): ?Configuration
-    {
-        return $this->managedByConfig;
-    }//end getManagedByConfigurationEntity()
-
-    /**
-     * Set the configuration that manages this application (transient property)
-     *
-     * @param Configuration|null $configuration The managing configuration
-     *
-     * @return void
-     */
-    public function setManagedByConfigurationEntity(?Configuration $configuration): void
-    {
-        $this->managedByConfig = $configuration;
-    }//end setManagedByConfigurationEntity()
-
-    /**
-     * Check if this application is managed by a configuration
-     *
-     * Returns true if this application's ID appears in any of the provided configurations' applications arrays.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return bool True if managed by a configuration, false otherwise
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function isManagedByConfiguration(array $configurations): bool
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return false;
-        }
-
-        foreach ($configurations as $configuration) {
-            $applications = $configuration->getApplications();
-            if (in_array($this->id, $applications ?? [], true) === true) {
-                return true;
-            }
-        }
-
-        return false;
-    }//end isManagedByConfiguration()
-
-    /**
-     * Get the configuration that manages this application
-     *
-     * Returns the first configuration that has this application's ID in its applications array.
-     * Returns null if the application is not managed by any configuration.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return Configuration|null The configuration managing this application, or null
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function getManagedByConfiguration(array $configurations): ?Configuration
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return null;
-        }
-
-        foreach ($configurations as $configuration) {
-            $applications = $configuration->getApplications();
-            if (in_array($this->id, $applications ?? [], true) === true) {
-                return $configuration;
-            }
-        }
-
-        return null;
-    }//end getManagedByConfiguration()
-
-    /**
-     * Get quota data for JSON serialization.
-     *
-     * Returns the quota allocation structure for storage, bandwidth, and requests.
-     *
-     * @return array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}
-     */
-    private function getQuotaData(): array
-    {
-        return [
-            'storage'   => $this->storageQuota,
-            'bandwidth' => $this->bandwidthQuota,
-            'requests'  => $this->requestQuota,
-            'users'     => null,
-            // To be set via admin configuration.
-            'groups'    => null,
-            // To be set via admin configuration.
-        ];
-    }//end getQuotaData()
-
-    /**
-     * Get usage data for JSON serialization.
-     *
-     * Returns the current usage statistics structure.
-     *
-     * @param array $groups The groups array to calculate group count from.
-     *
-     * @return array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}
-     */
-    private function getUsageData(array $groups): array
-    {
-        return [
-            'storage'   => 0,
-            // To be calculated from actual usage.
-            'bandwidth' => 0,
-            // To be calculated from actual usage.
-            'requests'  => 0,
-            // To be calculated from actual usage.
-            'users'     => 0,
-            // Applications don't have direct users.
-            'groups'    => count($groups ?? []),
-        ];
-    }//end getUsageData()
-
-    /**
-     * Get formatted created date for JSON serialization
-     *
-     * @return string|null Formatted date or null
-     */
-    private function getCreatedFormatted(): ?string
-    {
-        if ($this->created !== null) {
-            return $this->created->format('c');
-        }
-
-        return null;
-    }//end getCreatedFormatted()
-
-    /**
-     * Get formatted updated date for JSON serialization
-     *
-     * @return string|null Formatted date or null
-     */
-    private function getUpdatedFormatted(): ?string
-    {
-        if ($this->updated !== null) {
-            return $this->updated->format('c');
-        }
-
-        return null;
-    }//end getUpdatedFormatted()
-
-    /**
-     * Get managed by configuration data for JSON serialization
-     *
-     * @return (int|null|string)[]|null Configuration data or null
-     *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-     */
-    private function getManagedByConfigurationData(): array|null
-    {
-        if ($this->managedByConfig !== null) {
-            return [
-                'id'    => $this->managedByConfig->getId(),
-                'uuid'  => $this->managedByConfig->getUuid(),
-                'title' => $this->managedByConfig->getTitle(),
-            ];
-        }
-
-        return null;
-    }//end getManagedByConfigurationData()
+	/**
+	 * Get usage data for JSON serialization.
+	 *
+	 * Returns the current usage statistics structure.
+	 *
+	 * @param array $groups The groups array to calculate group count from.
+	 *
+	 * @return array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}
+	 */
+	private function getUsageData(array $groups): array {
+		return [
+			'storage' => 0,
+			// To be calculated from actual usage.
+			'bandwidth' => 0,
+			// To be calculated from actual usage.
+			'requests' => 0,
+			// To be calculated from actual usage.
+			'users' => 0,
+			// Applications don't have direct users.
+			'groups' => count($groups ?? []),
+		];
+	}//end getUsageData()
 }//end class

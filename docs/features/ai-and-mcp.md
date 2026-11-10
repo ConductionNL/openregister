@@ -104,6 +104,83 @@ GET /api/mcp/v1/discover/{capability}/data
 
 Returns live data samples from the capability (e.g., the first 5 objects from a schema). Enables few-shot context injection.
 
+## Schema-Declared MCP Tools (`x-openregister-mcp` dialect)
+
+Per ADR-063 (MCP as Platform Abstraction) and ADR-031 (schema-declarative
+business logic), a schema can declare which coarse CRUD MCP tools it exposes
+via a top-level `x-openregister-mcp` annotation in
+`lib/Settings/{app}_register.json`, a member of the `x-openregister-*`
+dialect family alongside `x-openregister-lifecycle`,
+`x-openregister-calculations`, `x-openregister-notifications`, etc. This is
+the **declaration** step of a three-change arc — this change (validation +
+storage only) is followed by a derived tool provider that emits the actual
+MCP tools, then a `#[McpTool]` service attribute for non-CRUD behaviour. All
+three chain changes have since shipped: schema-derived tools go live the
+moment `enabled: true` is saved, and `#[McpTool]` now accepts the same
+`readOnlyHint`/`destructiveHint`/`idempotentHint`/`scope` vocabulary shown
+below, forwarded to both serving surfaces when a service author sets them
+(`or-mcp-attribute-hints`).
+
+### Shape
+
+```jsonc
+"x-openregister-mcp": {
+  "enabled": true,                       // REQUIRED. Default OFF: absent or false = no tools.
+  "tools": {                             // OPTIONAL. Absent => all five verbs with defaults.
+    "search": {
+      "description": "Search cases by status, assignee and free text.",
+      "filters": ["status", "assignee", "createdAt"],   // search only; each MUST be a schema property
+      "scope": "read",
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true
+    },
+    "get":    { "description": "...", "scope": "read",   "readOnlyHint": true },
+    "create": { "description": "...", "scope": "create", "destructiveHint": false, "idempotentHint": false },
+    "update": { "description": "...", "scope": "update", "destructiveHint": false, "idempotentHint": true },
+    "delete": { "description": "...", "scope": "delete", "destructiveHint": true,  "idempotentHint": true }
+  }
+}
+```
+
+- **`enabled`** (boolean, required when the block is present) is the opt-in
+  gate — the dialect is **default OFF** fleet-wide. A schema with no block,
+  or `enabled:false`, exposes no MCP tools.
+- **`tools`** (object, optional) keys are restricted to the closed verb set
+  `{search, get, create, update, delete}` — this is a **coarse CRUD
+  template**, not a mechanism for declaring arbitrary per-REST-endpoint
+  tools. Naive OpenAPI→MCP (one tool per endpoint) measurably degrades LLM
+  tool-selection accuracy and burns tokens on large surfaces; the dialect
+  reuses the schema itself as the tool's input/output schema instead.
+  Non-CRUD, behaviour-specific tools belong to the `#[McpTool]` service
+  attribute, not this dialect.
+- Per-verb `description` / `scope` (`read|create|update|delete`) / the MCP
+  2025-11-25 annotation hints `readOnlyHint` / `destructiveHint` /
+  `idempotentHint` are validated for **type and shape only**. `search` also
+  accepts `filters` — property names the search tool accepts as query
+  filters; every entry must name a real property on the schema.
+
+### Untrusted hints vs. authoritative RBAC
+
+The `readOnlyHint` / `destructiveHint` / `idempotentHint` values are
+**untrusted UX hints** passed through to the tool descriptor for client-side
+display — they are never treated as a security decision. The authoritative
+gate at invoke time is always OpenRegister RBAC via `ObjectService`,
+identical to every other access path (UI, REST, GraphQL). A schema author
+declaring `destructiveHint: false` on `delete` does not weaken RBAC in any
+way; it only affects how an MCP client chooses to surface the tool to a
+human-in-the-loop.
+
+### Validation
+
+A malformed `x-openregister-mcp` block fails the schema save loudly — the
+same failure mode as every sibling `x-openregister-*` dialect — via
+`McpAnnotationValidator` (`lib/Service/Mcp/McpAnnotationValidator.php`),
+invoked from `SchemaMapper::cleanObject()`. Unknown verbs, unknown `filters`
+property references, `filters` on a non-`search` verb, invalid `scope`
+values, and non-boolean hints are all rejected with a schema-identifying
+error rather than silently mis-exposing data.
+
 ## Agent Use Cases
 
 OpenRegister is designed to serve as a data backend for AI-driven applications:

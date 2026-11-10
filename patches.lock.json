@@ -1,0 +1,39 @@
+{
+    "_hash": "cdc3807f243c7fcd3cc1dfe309c6a41b32bdae7a133a8d9d9f74965598929aa0",
+    "patches": {
+        "theodo-group/llphant": [
+            {
+                "package": "theodo-group/llphant",
+                "description": "Forward think:false + keep_alive:-1 to the Ollama API (qwen3 ~5x speedup, no idle-unload wedge) — drop when LLPhant adds a per-call keep_alive/think model option",
+                "url": "patches/llphant-ollama-think-keepalive.patch",
+                "sha256": "c52322dc441b2cbe00f8984b1aeb879af3091b37867080e6f0dee51eb5a9fae7",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "theodo-group/llphant",
+                "description": "Capture Ollama token/latency usage on OllamaChat::$lastUsage so ChatService can record per-run cost (run-analytics) — drop when LLPhant exposes response usage",
+                "url": "patches/llphant-ollama-usage-capture.patch",
+                "sha256": "dbaf29562f2a256f6a523c8cfe43f7edc8249b38c873daa311c4ebaecca0d742",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ],
+        "phpoffice/phpspreadsheet": [
+            {
+                "package": "phpoffice/phpspreadsheet",
+                "description": "Prefer ZipStream3 when zipstream-php v3 is installed — a co-installed app's leaked zipstream v2 Option\\Archive otherwise mis-selects the v2 shim and 500s every .xlsx export on the shared Nextcloud autoloader",
+                "url": "patches/phpspreadsheet-zipstream3-prefer.patch",
+                "sha256": "4db2040bf84051d0285d9ea79ee5afb96d244d48a499215ac86806047bc1fc0d",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ]
+    }
+}

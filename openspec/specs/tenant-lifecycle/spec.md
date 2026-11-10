@@ -1,10 +1,14 @@
 ---
-retrofit_extensions: [REQ-005]
+status: done
+retrofit_extensions:
+  - REQ-005
 ---
 
 # Tenant Lifecycle
 
 ## Purpose
+
+@e2e exclude backend Organisation state machine — covered by PHPUnit
 Define the provisioning, suspension, and deprovisioning workflow for tenant organisations in a SaaS multi-tenant OpenRegister deployment. Each tenant maps to an Organisation entity with a lifecycle state machine that governs API access, data retention, and administrative operations.
 
 **Source**: SaaS deployment requirements; BIO/ISO 27001 tenant management; 67% of government tenders require demonstrable tenant isolation with controlled provisioning.
@@ -12,7 +16,7 @@ Define the provisioning, suspension, and deprovisioning workflow for tenant orga
 ## Requirements
 
 ### Requirement: Organisation entities MUST have a lifecycle status field with defined state transitions
-The Organisation entity MUST include a `status` field representing the tenant lifecycle state. Valid states are: `provisioning`, `active`, `suspended`, `deprovisioning`, `archived`. State transitions MUST follow the defined state machine and MUST be enforced at the service layer.
+The Organisation entity MUST include a `status` field representing the tenant lifecycle state. Valid states are: `provisioning`, `active`, `suspended`, `deprovisioning`, `archived`, `retained`. State transitions MUST follow the defined state machine and MUST be enforced at the service layer.
 
 #### Scenario: New organisation starts in provisioning state
 - **WHEN** an administrator creates a new Organisation via the API with `name: "Gemeente Utrecht"`
@@ -82,6 +86,53 @@ After deprovisioning completes, the Organisation MUST transition to `archived` s
 - **AND** the Organisation entity itself MUST be permanently deleted
 - **AND** an audit trail entry MUST be created recording the permanent deletion
 
+### Requirement: A terminated organisation MUST be able to keep its data in the retained state
+An organisation whose tenancy ended can carry a legal duty to keep its records, often for a fixed period. The lifecycle MUST offer a terminal `retained` state for it: access is blocked as for `suspended`, and nothing is deleted. `retained` MUST be enterable from `active` and `suspended` only, the same two states `deprovisioning` is entered from, so an operator ending a tenancy chooses between deleting it and keeping it. There MUST be no transition from `retained` back to `active`. The one transition out of `retained` MUST be to `deprovisioning`, taken on purpose when the retention period is over, so the data leaves through the same deletion path and grace period as every other organisation. No background job may select a `retained` organisation, and `TenantPurgeJob` MUST NOT delete one.
+
+#### Scenario: An active organisation is retained
+- **WHEN** an administrator retains an active Organisation via `PUT /api/organisations/{uuid}/retain`
+- **THEN** the Organisation status MUST transition to `retained`
+- **AND** a `retainedAt` timestamp MUST be set, marking the start of its retention period
+- **AND** `deprovisionedAt` MUST NOT be set, because the purge job measures its deletion window from it
+
+#### Scenario: A suspended organisation is retained
+- **WHEN** an administrator retains a suspended Organisation
+- **THEN** the Organisation status MUST transition to `retained`
+
+#### Scenario: A retained organisation has its API access blocked
+- **WHEN** an API request is scoped to an Organisation with `status: "retained"`
+- **THEN** the middleware MUST return HTTP 403 Forbidden
+- **AND** the response MUST include `{"error": "Organisation access has ended and its data is retained", "status": "retained"}`
+
+#### Scenario: A retained organisation cannot be reactivated
+- **WHEN** an administrator attempts to transition a `retained` Organisation to `active`
+- **THEN** the API MUST return HTTP 409 Conflict
+
+#### Scenario: Retention ends through deprovisioning
+- **WHEN** an administrator deprovisions a `retained` Organisation after its retention period
+- **THEN** the Organisation status MUST transition to `deprovisioning` and `deprovisionedAt` MUST be set
+- **AND** it MUST then follow the ordinary path to `archived` and, after the retention window, to purge
+
+#### Scenario: The purge job never deletes a retained organisation
+- **GIVEN** a `retained` Organisation, even one carrying a `deprovisionedAt` older than the retention window
+- **WHEN** `TenantPurgeJob` runs, including when its status filter is not applied
+- **THEN** the Organisation MUST NOT be deleted
+- **AND** its usage records MUST NOT be deleted
+
+### Requirement: A purge MUST touch only the organisation it purges
+When `TenantPurgeJob` permanently deletes an archived Organisation, every delete it issues MUST be scoped to that Organisation. The usage records of every other Organisation MUST survive, whatever their period. An Organisation without a uuid MUST be skipped, because a delete that cannot name its Organisation cannot be scoped.
+
+#### Scenario: Purging one organisation leaves another's usage records intact
+- **GIVEN** usage records for an archived Organisation past its retention window and for a second, active Organisation
+- **WHEN** `TenantPurgeJob` runs
+- **THEN** the archived Organisation and its usage records MUST be deleted
+- **AND** every usage record of the second Organisation MUST still exist
+
+#### Scenario: An organisation without a uuid is not purged
+- **GIVEN** an archived Organisation past its retention window with no uuid
+- **WHEN** `TenantPurgeJob` runs
+- **THEN** no usage record MUST be deleted and the Organisation MUST NOT be deleted
+
 ### Requirement: Database migration MUST add lifecycle fields to Organisation entity
 The migration MUST add the required fields to support tenant lifecycle management.
 
@@ -113,3 +164,137 @@ The `TenantLifecycleService` MUST expose utility methods for validating OTAP (De
 - **GIVEN** an unknown environment string (e.g. `"staging"`) is passed as source or target
 - **WHEN** `isValidPromotionOrder("staging", "production")` is called
 - **THEN** the method MUST return `false`
+
+### Requirement: Organisation and multitenancy configuration API
+The system SHALL expose an admin-gated API for reading and writing organisation settings
+and multitenancy configuration that govern tenant isolation. `ConfigurationSettingsController`
+provides `getOrganisationSettings`/`updateOrganisationSettings` (delegating to
+`SettingsService::getOrganisationSettingsOnly()` / `updateOrganisationSettingsOnly()`) and
+`getMultitenancySettings`/`updateMultitenancySettings` (delegating to
+`getMultitenancySettingsOnly()` / `updateMultitenancySettingsOnly()`). All four return HTTP
+500 with an `error` field on service failure.
+
+#### Scenario: Read multitenancy settings
+- **WHEN** `getMultitenancySettings` is called
+- **THEN** it MUST return the multitenancy settings from `SettingsService::getMultitenancySettingsOnly()`
+
+#### Scenario: Update organisation settings
+- **GIVEN** an admin posts updated organisation defaults
+- **WHEN** `updateOrganisationSettings` runs
+- **THEN** it MUST persist them via `SettingsService::updateOrganisationSettingsOnly()` and return the result
+
+### Requirement: OrganisationService MUST resolve per-user organisation membership and active context
+
+`OrganisationService` MUST provide the runtime membership-resolution layer that sits
+beneath the tenant provisioning state machine. The system MUST always guarantee a user
+has at least one organisation: a user with no memberships MUST be auto-added to the
+default organisation, which MUST itself be auto-created on first demand. Every user MUST
+have an active organisation; when none is explicitly set the system MUST auto-select the
+oldest organisation the user belongs to, falling back to the default organisation. Joining
+and leaving MUST be guarded — a user MUST NOT be able to leave their last organisation, and
+setting an active organisation the user does not belong to MUST be rejected.
+
+#### Scenario: User with no organisations is added to the default
+- **WHEN** `getUserOrganisations()` is called for a user with no memberships
+- **THEN** the default organisation MUST be ensured (created if absent) and the user added to it
+- **AND** the returned list MUST contain that default organisation
+
+#### Scenario: Active organisation auto-selects the oldest membership
+- **GIVEN** a user with two organisations and no explicitly-set active organisation
+- **WHEN** `getActiveOrganisation()` resolves from the database
+- **THEN** the oldest organisation (by created date) MUST be selected and persisted as active
+- **AND** when the user belongs to none, the default organisation MUST be used as the fallback
+
+#### Scenario: Setting an active organisation requires membership
+- **WHEN** `setActiveOrganisation($uuid)` is called
+- **THEN** an organisation the user does not belong to MUST raise an exception
+- **AND** a non-existent organisation UUID MUST raise an exception
+- **AND** on success the choice MUST be persisted to user config so it survives across sessions
+
+#### Scenario: Leaving the last organisation is forbidden
+- **WHEN** `leaveOrganisation($uuid)` would remove the user's only remaining organisation
+- **THEN** an exception MUST be raised preventing the user from being orphaned
+- **AND** when the left organisation was the active one, the active selection MUST be cleared and re-resolved
+
+#### Scenario: Admin users bypass membership for access checks
+- **WHEN** `hasAccessToOrganisation($uuid)` is called for a user in the `admin` group
+- **THEN** access MUST be granted regardless of explicit membership
+- **AND** for non-admin users access MUST require explicit membership
+
+#### Scenario: Active-organisation resolution includes the parent chain
+- **WHEN** `getUserActiveOrganisations()` is called with a hierarchical organisation active
+- **THEN** the result MUST contain the active organisation UUID followed by every ancestor UUID resolved via the parent chain
+- **AND** this list is what multi-tenancy query filtering uses to grant children visibility of parent resources
+
+#### Scenario: Creating an organisation never takes over the organisation holding its slug
+- **WHEN** `createOrganisation($name, ...)` produces a slug that another organisation already holds
+- **THEN** the create MUST be refused with an `OrganisationSlugConflictException`, and `POST /api/organisations` MUST answer 409
+- **AND** the organisation holding the slug MUST keep its owner, members, authorization and uuid; a requested uuid MUST NOT be written onto it
+- **AND** `OrganisationMapper::save()` on an organisation without an id MUST insert or fail, never update an existing row, also when the unique index rejects a slug taken after the check
+- **AND** when the auto-generated default organisation's slug is taken, the organisation holding it MUST be used as the default unchanged
+- **AND** a newly-created organisation MUST seed the `admin` group into its RBAC authorization and add all admin-group users as members
+
+### Requirement: Active and default organisation lookups MUST be cached with bounded staleness
+
+`OrganisationService` MUST cache organisation lookups to keep RBAC-path resolution cheap.
+The active organisation MUST be cached in the session (per user) and the default
+organisation in static (cross-instance) memory, both with a 15-minute TTL. Cached
+organisations MUST be stored as plain arrays and reconstructed into `Organisation` entities
+on read to avoid serialization issues. The cache MUST self-invalidate when the underlying
+membership becomes stale: a cached active organisation the user no longer belongs to, or
+that no longer exists, MUST be cleared and re-resolved.
+
+#### Scenario: Active organisation is served from session cache within TTL
+- **GIVEN** an active organisation cached less than 15 minutes ago
+- **WHEN** `getActiveOrganisation()` is called
+- **THEN** the organisation MUST be reconstructed from the cached array without a database query
+
+#### Scenario: Stale active-organisation membership is invalidated
+- **GIVEN** a persisted active organisation UUID the user no longer belongs to
+- **WHEN** the active organisation is resolved from the database
+- **THEN** the stale user-config value and session cache MUST be cleared
+- **AND** resolution MUST continue to the oldest-membership / default fallback
+
+#### Scenario: Switching the active organisation clears and re-primes the cache
+- **WHEN** `setActiveOrganisation($uuid)` succeeds
+- **THEN** the prior session caches MUST be removed and the new active organisation cached immediately
+
+#### Scenario: Cache reconstruction round-trips DateTime fields
+- **GIVEN** a cached organisation whose `created`/`updated` were stored as ISO strings
+- **WHEN** `reconstructOrganisationFromCache()` runs
+- **THEN** the string timestamps MUST be parsed back into `DateTime` instances on the rebuilt entity
+
+### Requirement: An organisation's lifecycle is on the audit trail
+
+Every change of an organisation's status through TenantLifecycleService (suspend, reactivate, deprovision, retain,
+archive) SHALL write one sealed audit-trail entry with action `organisation.status_changed`, `object_uuid` the
+organisation's uuid, the acting user, and `changed.status` holding the old and new status. An edit through
+`PUT/PATCH /api/organisations/{uuid}` that changes the name, description or slug SHALL write one entry with action
+`organisation.updated` holding the changed fields. A refused transition SHALL write nothing, and a failure to write the
+entry SHALL NOT fail the change.
+
+#### Scenario: Suspend an organisation
+
+- **GIVEN** an active organisation
+- **WHEN** an administrator suspends it
+- **THEN** `GET /api/audit-trails?object_uuid={uuid}` lists an `organisation.status_changed` entry from active to
+  suspended, with the administrator as its user
+
+### Requirement: Only an administrator or the organisation's administrator changes an organisation
+
+`PUT` and `PATCH /api/organisations/{uuid}` SHALL answer 403 to a caller who is neither a Nextcloud administrator nor
+the organisation's administrator (its owner), before anything is written, with a message saying members can read the
+organisation. A Nextcloud administrator and the organisation's administrator SHALL be able to change its name and
+description.
+
+#### Scenario: A member renames the organisation
+
+- **GIVEN** Pieter, a member but not the owner of "Gemeente Waterland"
+- **WHEN** he sends a new name
+- **THEN** the answer is 403 and the name is unchanged
+
+#### Scenario: The organisation's administrator renames it
+
+- **GIVEN** Marieke, the owner of "Gemeente Waterland"
+- **WHEN** she sends a new name
+- **THEN** the answer is 200 and the organisation carries the new name

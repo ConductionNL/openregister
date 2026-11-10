@@ -1,0 +1,254 @@
+<?php
+
+/**
+ * The interactive test run: execute a flow now and hand back the trace.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Controller;
+
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use OCP\IUserSession;
+use stdClass;
+
+/**
+ * REST surface for the flow editor's "Test" button.
+ *
+ * Kept apart from the run history surface because it is the AUTHORING loop,
+ * not a read of what already ran: it executes synchronously, it accepts
+ * `startAt` and `pins`, and it is the one flow endpoint gated on
+ * `flow.update` rather than on being allowed to see the flow.
+ *
+ * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+ */
+class FlowTestRunController extends Controller {
+
+	/**
+	 * Queues and executes a run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves the flow being tested.
+	 *
+	 * @var FlowLocatorInterface
+	 */
+	private readonly FlowLocatorInterface $resolvers;
+
+	/**
+	 * Who is asking, for attribution.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Whether the caller may run and edit this flow.
+	 *
+	 * @var FlowRunnableGuardInterface
+	 */
+	private readonly FlowRunnableGuardInterface $guard;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest          $request     The request.
+	 * @param FlowTestRunControllerServices $services The controller's collaborators.
+	 */
+	public function __construct(
+		IRequest $request,
+		FlowTestRunControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->runner = $services->runner;
+		$this->resolvers = $services->resolvers;
+		$this->userSession = $services->userSession;
+		$this->guard = $services->guard;
+	}//end __construct()
+
+	/**
+	 * Run a flow now and return its result — the interactive test run.
+	 *
+	 * Unlike a trigger, which queues a run for the worker, this runs the flow
+	 * synchronously and hands back the whole trace, so an author gets the log and
+	 * the items straight away. It carries the two authoring aids: `startAt` runs
+	 * from a chosen node (run-from-here), and `pins` supplies stored output for
+	 * named steps so the expensive ones are skipped. Together they are the
+	 * "iterate on the tail of a flow" loop.
+	 *
+	 * The run is persisted like any other (trigger `test`), so it also shows up
+	 * in the history — a test run is not a throwaway.
+	 *
+	 * CSRF IS enforced here (no `#[NoCSRFRequired]`), deliberately unlike its
+	 * siblings on this controller. `resume()` and `signalByKey()` drop it because
+	 * they are addressed by leaf apps and agents over Basic auth or app
+	 * passwords, which carry no CSRF token — `TaskController`'s docblock states
+	 * that reasoning. Nothing calls `test()` that way: it is a person's browser
+	 * pressing "Test" in the flow editor, which has a token to send. There is no
+	 * stated reason to accept a cross-site POST here, so this endpoint keeps the
+	 * ordinary protection (or#3643).
+	 *
+	 * VERIFIED, not assumed, before removing the attribute (hydra gate-48's own
+	 * question — "is any mutating caller unprotected right now"): neither this
+	 * repo's `src/` nor `nextcloud-vue`'s `useFlowStore.js` (every OpenRegister
+	 * flow API call this fleet's shared editor makes — `run()`, `create()`,
+	 * `update()`, all of it — goes through `@nextcloud/axios`, which attaches
+	 * the token itself) calls `/api/flow-runs/test` at all. The only OTHER
+	 * caller found anywhere in the org is this app's own e2e suite
+	 * (`tests/e2e/api-direct/flow-engine.spec.ts`), which authenticates over
+	 * Basic auth ("no browser session is needed", its own docblock says) — the
+	 * exact case NC's CSRF check does not apply to, for the same reason
+	 * `resume()`/`signalByKey()` never needed the attribute either. Removing it
+	 * here breaks nothing that calls this endpoint today; a future browser
+	 * caller inherits protection automatically the moment it exists, the same
+	 * way every other flow call already does.
+	 *
+	 * @return JSONResponse The finished run, or a 4xx when the flow is unknown
+	 *                       or the caller may not edit it.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 */
+	#[NoAdminRequired]
+	public function test(): JSONResponse {
+		$editRefusal = $this->guard->refusalUnlessMayEditFlow();
+		if ($editRefusal !== null) {
+			return $editRefusal;
+		}
+
+		$flowId = trim((string)$this->request->getParam('flowId', ''));
+		if ($flowId === '') {
+			return new JSONResponse(['error' => 'A test run needs a flowId.'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$refusal = $this->guard->refusalUnlessRunnable(flowId: $flowId);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$flow = $this->resolvers->resolveFlow(flowId: $flowId);
+		if ($flow === null) {
+			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->runTest(flowId: $flowId, flow: $flow);
+	}//end test()
+
+	/**
+	 * Queue and execute the test run of a resolved flow.
+	 *
+	 * @param string $flowId The flow id.
+	 * @param array  $flow   The resolved flow definition.
+	 *
+	 * @return JSONResponse The run, or 409 when the engine declines to run it.
+	 */
+	private function runTest(string $flowId, array $flow): JSONResponse {
+		$startAt = $this->startAtParam();
+		$pins = (array)$this->request->getParam('pins', []);
+		$seed = $this->seedItemsParam();
+
+		// Attribute the test run to the caller. Without this the run is
+		// ownerless, so `context['triggeredBy']` is null and every
+		// attribution-requiring node refuses — ObjectWriteNode returns "this
+		// flow run has no owner". An interactive test run has a session by
+		// definition, so there is no reason for it to be the one dispatch path
+		// that discards its actor. Same defect class as or#2158 in
+		// FlowMcpToolProvider::runFlow().
+		// 🔴 A REFUSAL MUST NOT LEAVE HERE AS A 500. A dead end, or a flow with
+		// no published version, is the engine DECLINING to run something — an
+		// answer the author can act on. Unwrapped, both reached the editor as
+		// an HTML error page, which reads as "the server is broken" and sends
+		// the author to the wrong place entirely.
+		try {
+			$run = $this->runner->queue(
+				flowId: $flowId,
+				subject: [],
+				trigger: 'test',
+				context: ['pins' => $pins],
+				user: $this->userSession->getUser()?->getUID()
+			);
+
+			$run = $this->runner->execute(
+				run: $run,
+				flow: $flow,
+				subject: new stdClass(),
+				seedItems: $seed,
+				startAt: $startAt
+			);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return new JSONResponse(
+				[
+					'error' => $e->getMessage(),
+					'reason' => $e->getReason(),
+					'lifecycleStatus' => $e->getState(),
+					'flowId' => $e->getFlowId(),
+				],
+				Http::STATUS_CONFLICT
+			);
+		} catch (FlowDeadEndInterface $e) {
+			return new JSONResponse(
+				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],
+				Http::STATUS_CONFLICT
+			);
+		}//end try
+
+		return new JSONResponse($run->jsonSerialize());
+	}//end runTest()
+
+	/**
+	 * The node a test run starts at, or null to start at the trigger.
+	 *
+	 * @return string|null
+	 */
+	private function startAtParam(): string|null {
+		$startAt = trim((string)$this->request->getParam('startAt', ''));
+		if ($startAt === '') {
+			return null;
+		}
+
+		return $startAt;
+	}//end startAtParam()
+
+	/**
+	 * The items a test run is seeded with, normalised, or null when none are sent.
+	 *
+	 * @return array|null
+	 */
+	private function seedItemsParam(): array|null {
+		$seedParam = $this->request->getParam('seedItems');
+		if ($seedParam === null) {
+			return null;
+		}
+
+		return $this->runner->seedItemsFrom(value: $seedParam);
+	}//end seedItemsParam()
+}//end class

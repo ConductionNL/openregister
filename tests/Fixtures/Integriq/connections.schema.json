@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://conduction.nl/schemas/integriq/connections.schema.json",
+  "title": "Connection declarations",
+  "description": "The shape of lib/Settings/connections.json. An app lists its outside connections here, and integriq turns each entry into one connection row. Contract: hydra openspec/changes/connection-registry/design.md, section D2. Integriq's runtime check is lib/Service/ConnectionDeclarationValidator.php, which mirrors this file rule for rule.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["app", "connections"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema, for editors."
+    },
+    "app": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$",
+      "description": "The app id from appinfo/info.xml. Integriq refuses a file whose app differs from the app it was read from."
+    },
+    "connections": {
+      "type": "array",
+      "description": "One entry per outside connection.",
+      "items": {
+        "$ref": "#/$defs/connection"
+      }
+    }
+  },
+  "$defs": {
+    "connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "title"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Unique within the file and frozen once shipped. A row is keyed by app and key."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Sentence case, no em-dash."
+        },
+        "description": {
+          "type": "string",
+          "description": "One or two short sentences."
+        },
+        "order": {
+          "type": "integer",
+          "description": "Sort order on the page. Default 100."
+        },
+        "settingsUrl": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "Absolute path into the Nextcloud instance. Omit it when no settings section exists."
+        },
+        "requiredConfig": {
+          "type": "array",
+          "description": "App-config keys of the declaring app. All non-empty means the settings are saved.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The adapter seam behind this connection.",
+          "properties": {
+            "configKey": {
+              "type": "string",
+              "minLength": 1,
+              "description": "App-config key that selects the adapter: a class name, a provider name or a JSON settings blob."
+            },
+            "jsonPath": {
+              "type": "string",
+              "pattern": "^[^.]+(\\.[^.]+)*$",
+              "description": "Dot path into the value when configKey holds a JSON object, such as chat.provider. A missing path reads as empty."
+            },
+            "simulatedValues": {
+              "type": "array",
+              "description": "The values that mean a mock adapter answers. Compared case-insensitively after trimming. Default: one empty string.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "simulatedMessage": {
+              "type": "string",
+              "description": "Shown while the mock answers."
+            }
+          }
+        },
+        "available": {
+          "type": "boolean",
+          "description": "false means declared and not usable yet. Default true."
+        },
+        "unavailableMessage": {
+          "type": "string",
+          "description": "Why the connection is not usable."
+        },
+        "unconfiguredMessage": {
+          "type": "string",
+          "description": "Shown while nothing is known about the connection yet. Default: Not checked yet."
+        },
+        "sourceTemplate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Slug of an integriq source template, offered first when an admin links a source."
+        },
+        "reportedOnly": {
+          "type": "boolean",
+          "description": "true means only the app can tell what answers. Integriq then skips the adapter and settings rules. Default false."
+        }
+      }
+    }
+  }
+}

@@ -20,13 +20,15 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SchemaService;
-use Psr\Log\LoggerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Unit tests for SchemaService refactored methods.
@@ -45,8 +47,7 @@ use ReflectionClass;
  * 8. normalizeSingleType()
  * 9. getDominantType()
  */
-class SchemaServiceRefactoredMethodsTest extends TestCase
-{
+class SchemaServiceRefactoredMethodsTest extends TestCase {
 	private SchemaService $schemaService;
 	private ReflectionClass $reflection;
 
@@ -64,8 +65,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	protected function setUp(): void
-	{
+	protected function setUp(): void {
 		parent::setUp();
 
 		// Create mocks for all dependencies.
@@ -75,8 +75,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 
 		// Create SchemaService instance.
 		$this->schemaService = new SchemaService(
-			$this->schemaMapper,
-			$this->objectMapper,
+			new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper),
 			$this->logger
 		);
 
@@ -88,12 +87,11 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 * Helper method to invoke private methods using reflection.
 	 *
 	 * @param string $methodName The name of the private method.
-	 * @param array  $parameters The parameters to pass to the method.
+	 * @param array $parameters The parameters to pass to the method.
 	 *
 	 * @return mixed The result of the method invocation.
 	 */
-	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed
-	{
+	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed {
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
@@ -107,8 +105,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareTypeWithMatchingTypes(): void
-	{
+	public function testCompareTypeWithMatchingTypes(): void {
 		$currentConfig = ['type' => 'string'];
 		$recommendedType = 'string';
 
@@ -129,8 +126,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareTypeWithMismatchedTypes(): void
-	{
+	public function testCompareTypeWithMismatchedTypes(): void {
 		$currentConfig = ['type' => 'string'];
 		$recommendedType = 'integer';
 
@@ -149,8 +145,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareTypeWithMissingType(): void
-	{
+	public function testCompareTypeWithMissingType(): void {
 		$currentConfig = [];
 		$recommendedType = 'string';
 
@@ -169,8 +164,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareStringConstraintsWithMatchingMaxLength(): void
-	{
+	public function testCompareStringConstraintsWithMatchingMaxLength(): void {
 		$currentConfig = [
 			'type' => 'string',
 			'maxLength' => 255
@@ -194,8 +188,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareStringConstraintsWithInadequateMaxLength(): void
-	{
+	public function testCompareStringConstraintsWithInadequateMaxLength(): void {
 		$currentConfig = [
 			'type' => 'string',
 			'maxLength' => 50
@@ -219,8 +212,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareStringConstraintsWithFormat(): void
-	{
+	public function testCompareStringConstraintsWithFormat(): void {
 		$currentConfig = ['type' => 'string'];
 		$analysis = [
 			'detected_format' => 'email'
@@ -240,8 +232,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareStringConstraintsWithPattern(): void
-	{
+	public function testCompareStringConstraintsWithPattern(): void {
 		$currentConfig = ['type' => 'string'];
 		$analysis = [
 			'string_patterns' => ['url', 'http']
@@ -263,8 +254,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareNumericConstraintsWithValidRange(): void
-	{
+	public function testCompareNumericConstraintsWithValidRange(): void {
 		$currentConfig = [
 			'type' => 'integer',
 			'minimum' => 0,
@@ -288,8 +278,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareNumericConstraintsWithInadequateMinimum(): void
-	{
+	public function testCompareNumericConstraintsWithInadequateMinimum(): void {
 		$currentConfig = [
 			'type' => 'integer',
 			'minimum' => 50
@@ -313,8 +302,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareNumericConstraintsWithInadequateMaximum(): void
-	{
+	public function testCompareNumericConstraintsWithInadequateMaximum(): void {
 		$currentConfig = [
 			'type' => 'integer',
 			'maximum' => 50
@@ -338,8 +326,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareNumericConstraintsWithMissingConstraints(): void
-	{
+	public function testCompareNumericConstraintsWithMissingConstraints(): void {
 		$currentConfig = ['type' => 'integer'];
 		$analysis = [
 			'numeric_range' => ['min' => 10, 'max' => 90]
@@ -361,8 +348,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareNullableConstraintWithNullableData(): void
-	{
+	public function testCompareNullableConstraintWithNullableData(): void {
 		$currentConfig = ['type' => 'string'];
 		$analysis = ['nullable' => true];
 
@@ -379,8 +365,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareNullableConstraintWithNonNullableData(): void
-	{
+	public function testCompareNullableConstraintWithNonNullableData(): void {
 		$currentConfig = ['type' => 'string'];
 		$analysis = ['nullable' => false];
 
@@ -397,8 +382,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareNullableConstraintAlreadyNullable(): void
-	{
+	public function testCompareNullableConstraintAlreadyNullable(): void {
 		$currentConfig = [
 			'type' => ['string', 'null']
 		];
@@ -419,8 +403,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareEnumConstraintWithEnumLikeData(): void
-	{
+	public function testCompareEnumConstraintWithEnumLikeData(): void {
 		$currentConfig = ['type' => 'string'];
 		$analysis = [
 			'enum_values' => ['active', 'inactive', 'pending'],
@@ -440,8 +423,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareEnumConstraintWithTooManyValues(): void
-	{
+	public function testCompareEnumConstraintWithTooManyValues(): void {
 		$currentConfig = ['type' => 'string'];
 		$analysis = [
 			'enum_values' => range(1, 50), // 50 unique values.
@@ -461,8 +443,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testCompareEnumConstraintAlreadyHasEnum(): void
-	{
+	public function testCompareEnumConstraintAlreadyHasEnum(): void {
 		$currentConfig = [
 			'type' => 'string',
 			'enum' => ['active', 'inactive']
@@ -487,8 +468,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromFormatWithEmail(): void
-	{
+	public function testGetTypeFromFormatWithEmail(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromFormat',
 			parameters: ['email']
@@ -502,8 +482,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromFormatWithDateTime(): void
-	{
+	public function testGetTypeFromFormatWithDateTime(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromFormat',
 			parameters: ['date-time']
@@ -517,8 +496,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromFormatWithUuid(): void
-	{
+	public function testGetTypeFromFormatWithUuid(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromFormat',
 			parameters: ['uuid']
@@ -532,8 +510,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromFormatWithNull(): void
-	{
+	public function testGetTypeFromFormatWithNull(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromFormat',
 			parameters: [null]
@@ -547,8 +524,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromFormatWithEmpty(): void
-	{
+	public function testGetTypeFromFormatWithEmpty(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromFormat',
 			parameters: ['']
@@ -564,8 +540,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromPatternsWithBoolean(): void
-	{
+	public function testGetTypeFromPatternsWithBoolean(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromPatterns',
 			parameters: [['boolean_string']]
@@ -579,8 +554,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromPatternsWithInteger(): void
-	{
+	public function testGetTypeFromPatternsWithInteger(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromPatterns',
 			parameters: [['integer_string']]
@@ -594,8 +568,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromPatternsWithFloat(): void
-	{
+	public function testGetTypeFromPatternsWithFloat(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromPatterns',
 			parameters: [['float_string']]
@@ -609,8 +582,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetTypeFromPatternsWithNoMatch(): void
-	{
+	public function testGetTypeFromPatternsWithNoMatch(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'getTypeFromPatterns',
 			parameters: [['url', 'http']]
@@ -626,8 +598,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeSingleTypeWithIntegerString(): void
-	{
+	public function testNormalizeSingleTypeWithIntegerString(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'normalizeSingleType',
 			parameters: ['string', ['integer_string']]
@@ -641,8 +612,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeSingleTypeWithFloatString(): void
-	{
+	public function testNormalizeSingleTypeWithFloatString(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'normalizeSingleType',
 			parameters: ['string', ['float_string']]
@@ -656,8 +626,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeSingleTypeWithBooleanString(): void
-	{
+	public function testNormalizeSingleTypeWithBooleanString(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'normalizeSingleType',
 			parameters: ['string', ['boolean_string']]
@@ -671,8 +640,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeSingleTypeWithDouble(): void
-	{
+	public function testNormalizeSingleTypeWithDouble(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'normalizeSingleType',
 			parameters: ['double', []]
@@ -686,8 +654,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeSingleTypeWithNull(): void
-	{
+	public function testNormalizeSingleTypeWithNull(): void {
 		$result = $this->invokePrivateMethod(
 			methodName: 'normalizeSingleType',
 			parameters: ['NULL', []]
@@ -701,8 +668,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testNormalizeSingleTypePreservesStandardTypes(): void
-	{
+	public function testNormalizeSingleTypePreservesStandardTypes(): void {
 		$standardTypes = ['string', 'integer', 'number', 'boolean', 'object', 'array'];
 
 		foreach ($standardTypes as $type) {
@@ -722,8 +688,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetDominantTypeWithClearMajority(): void
-	{
+	public function testGetDominantTypeWithClearMajority(): void {
 		$types = ['string', 'string', 'string', 'integer', 'integer'];
 
 		$result = $this->invokePrivateMethod(
@@ -739,8 +704,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetDominantTypeWithMixedTypes(): void
-	{
+	public function testGetDominantTypeWithMixedTypes(): void {
 		$types = ['string', 'integer', 'boolean', 'string'];
 
 		$result = $this->invokePrivateMethod(
@@ -756,8 +720,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetDominantTypeWithNumericTypes(): void
-	{
+	public function testGetDominantTypeWithNumericTypes(): void {
 		$types = ['integer', 'integer', 'number', 'integer'];
 
 		$result = $this->invokePrivateMethod(
@@ -773,8 +736,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetDominantTypeWithSingleType(): void
-	{
+	public function testGetDominantTypeWithSingleType(): void {
 		$types = ['object', 'object', 'object'];
 
 		$result = $this->invokePrivateMethod(
@@ -790,8 +752,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	 *
 	 * @return void
 	 */
-	public function testGetDominantTypeWithBooleanPatterns(): void
-	{
+	public function testGetDominantTypeWithBooleanPatterns(): void {
 		$types = ['string', 'string'];
 		$patterns = ['boolean_string'];
 
@@ -803,14 +764,3 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 		$this->assertEquals('boolean', $result, 'Boolean pattern should convert strings to boolean.');
 	}
 }
-
-
-
-
-
-
-
-
-
-
-

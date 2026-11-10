@@ -1,0 +1,55 @@
+{
+  "$comment": "The retired approval surface (flow-approval-consolidation task 7.2). The contract the hydra-gates anti-pattern gate reads: an app calling one of these routes or registering a listener for one of these classes is a BROKEN INTEGRATION finding, not a style finding. The shapes block lists what a leaf app must not ship at all.",
+  "retiredRoutes": [
+    "/api/approval-chains",
+    "/api/approval-chains/{id}",
+    "/api/approval-chains/{id}/objects",
+    "/api/approval-steps",
+    "/api/approval-steps/{id}/approve",
+    "/api/approval-steps/{id}/reject"
+  ],
+  "retiredEventClasses": [
+    "OCA\\OpenRegister\\Event\\ApprovalStepInitiatedEvent",
+    "OCA\\OpenRegister\\Event\\ApprovalStepApprovedEvent",
+    "OCA\\OpenRegister\\Event\\ApprovalStepRejectedEvent",
+    "OCA\\OpenRegister\\Event\\ApprovalStepCompletedEvent"
+  ],
+  "retiredClasses": [
+    "OCA\\OpenRegister\\Db\\ApprovalChain",
+    "OCA\\OpenRegister\\Db\\ApprovalChainMapper",
+    "OCA\\OpenRegister\\Db\\ApprovalStep",
+    "OCA\\OpenRegister\\Db\\ApprovalStepMapper",
+    "OCA\\OpenRegister\\Service\\ApprovalService",
+    "OCA\\OpenRegister\\Controller\\ApprovalController"
+  ],
+  "antiPatternShapes": [
+    {
+      "rule": "no-own-step-engine",
+      "description": "Ordered approval steps with the app's own advance-on-approval logic; provision a task template and open a sequence instead."
+    },
+    {
+      "rule": "no-own-role-resolution",
+      "description": "The app resolves approver groups or roles itself; the task's group performer resolves membership at decision time."
+    },
+    {
+      "rule": "no-own-approval-state-machine",
+      "description": "A pending/approved/rejected state machine over an app-owned approval object; the task lifecycle is the state machine."
+    },
+    {
+      "rule": "no-own-deadline-sweep",
+      "description": "A background sweep over approval rows for expiry; business timers with purpose 'expiry' own the clock."
+    },
+    {
+      "rule": "no-stored-overdue",
+      "description": "A stored overdue flag, status value or column; overdue is computed from the clock against due and expiry dates."
+    },
+    {
+      "rule": "no-flow-definition-mirror",
+      "description": "A schema mirroring nodes, edges, limits, trigger or schedule of a flow definition; contribute node types through RegisterFlowNodesEvent and resolve definitions from the flow entity. hermiq's agentflow/agentflowrun are the measured instance; their removal is 'hermiq: retire-agentflow-object-store'."
+    }
+  ],
+  "keptErrorCodes": [
+    "approval-chain-pending",
+    "approval-chain-misconfigured"
+  ]
+}

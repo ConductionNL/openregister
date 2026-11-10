@@ -1,0 +1,250 @@
+<?php
+
+/**
+ * OpenRegister CodedFilterExpander
+ *
+ * Turns `?categorie[branch]=<uri>` into the value set the query can actually
+ * match: the branch root plus every narrower concept under it, bounded by
+ * depth, resolved at query time (design.md D-3).
+ *
+ * Resolving it here rather than storing a denormalised path is the whole
+ * design. A gemeente moves `kapvergunning` under a new broader term and the
+ * next filter on `vergunning` follows it, with no reindex and no schema save.
+ * A stored path would have gone stale at the moment of the move, and a stale
+ * path is a filter that silently returns the wrong set, which is the failure
+ * nobody notices because it still returns rows.
+ *
+ * An unresolvable branch is left as it arrived rather than expanded to
+ * nothing: a filter that quietly becomes the empty set is indistinguishable
+ * from a filter that matched nothing, and one of those is a bug.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Vocabulary
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/skos-concept-registers/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Vocabulary;
+
+use OCA\OpenRegister\Db\Schema;
+use Throwable;
+
+/**
+ * Expands a branch filter into the concept values it stands for.
+ */
+class CodedFilterExpander {
+
+	/**
+	 * The filter key that asks for a branch rather than an exact value.
+	 *
+	 * @var string
+	 */
+	public const BRANCH_KEY = 'branch';
+
+	/**
+	 * The filter key that bounds the branch walk.
+	 *
+	 * @var string
+	 */
+	public const DEPTH_KEY = 'depth';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ConceptSchemeAccess $scheme Reads the scheme's concepts and walks broader and narrower.
+	 * @param CodedSchemaTables   $tables Resolves the schema being queried and reads its coded declarations.
+	 */
+	public function __construct(
+		private readonly ConceptSchemeAccess $scheme,
+		private readonly CodedSchemaTables $tables,
+	) {
+
+	}//end __construct()
+
+	/**
+	 * Expand every branch filter in `$filters` against `$schemaRef`.
+	 *
+	 * @param array<string,mixed> $filters The object-field filters as parsed from the request.
+	 * @param int|string|array|null $schemaRef The schema being queried.
+	 *
+	 * @return array<string,mixed> The filters with branch filters expanded.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md
+	 */
+	public function expand(array $filters, int|string|array|null $schemaRef): array {
+		$declarations = $this->declarationsFor(filters: $filters, schemaRef: $schemaRef);
+		if ($declarations === []) {
+			return $filters;
+		}
+
+		foreach ($filters as $property => $value) {
+			$expanded = $this->expandValue(value: $value, declaration: ($declarations[(string)$property] ?? null));
+			if ($expanded !== []) {
+				$filters[$property] = ['in' => $expanded];
+			}
+		}
+
+		return $filters;
+	}//end expand()
+
+	/**
+	 * The coded-property declarations of the filtered schema, or [] when no
+	 * filter carries a branch, the schema does not resolve, or it declares none.
+	 *
+	 * @param array<string, mixed>        $filters   The filters.
+	 * @param int|string|array<mixed>|null $schemaRef The schema reference.
+	 *
+	 * @return array<string, CodedPropertyDeclaration>
+	 */
+	private function declarationsFor(array $filters, int|string|array|null $schemaRef): array {
+		if ($this->carriesBranchFilter(filters: $filters) === false) {
+			return [];
+		}
+
+		$schema = $this->resolveSchema(schemaRef: $schemaRef);
+		if ($schema === null) {
+			return [];
+		}
+
+		return $this->tables->declarations->fromProperties(properties: ($schema->getProperties() ?? []));
+	}//end declarationsFor()
+
+	/**
+	 * The expanded values of one filter value, or [] to leave it as it is.
+	 *
+	 * @param mixed                         $value       The filter value.
+	 * @param CodedPropertyDeclaration|null $declaration The property's declaration, if coded.
+	 *
+	 * @return string[]
+	 */
+	private function expandValue(mixed $value, ?CodedPropertyDeclaration $declaration): array {
+		$filter = BranchFilter::fromFilterValue(value: $value);
+		if ($filter === null || $declaration === null) {
+			return [];
+		}
+
+		return $this->valuesForBranch(declaration: $declaration, filter: $filter);
+	}//end expandValue()
+
+	/**
+	 * The stored values a branch stands for, in the declaration's storage form.
+	 *
+	 * @param CodedPropertyDeclaration $declaration The property's declaration.
+	 * @param BranchFilter             $filter      The branch asked for and its optional depth bound.
+	 *
+	 * @return array<int,string> The stored values, empty when the branch is unresolvable.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md
+	 */
+	public function valuesForBranch(CodedPropertyDeclaration $declaration, BranchFilter $filter): array {
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $declaration->scheme);
+		if (isset($conceptsByUri[$filter->root]) === false) {
+			return [];
+		}
+
+		$uris = $this->scheme->hierarchy->branchUris(
+			branch: new ConceptBranch(rootUri: $filter->root, conceptsByUri: $conceptsByUri, maxDepth: ($filter->depth ?? $declaration->maxDepth))
+		);
+
+		if ($declaration->store === 'uri') {
+			return $uris;
+		}
+
+		return $this->notationsOf(uris: $uris, conceptsByUri: $conceptsByUri);
+	}//end valuesForBranch()
+
+	/**
+	 * The non-blank notations of the given concepts, in order.
+	 *
+	 * @param string[]                            $uris          The concept URIs.
+	 * @param array<string, array<string, mixed>> $conceptsByUri The scheme's concepts by URI.
+	 *
+	 * @return string[]
+	 */
+	private function notationsOf(array $uris, array $conceptsByUri): array {
+		$notations = [];
+		foreach ($uris as $uri) {
+			$notation = trim((string)(($conceptsByUri[$uri]['notation'] ?? '')));
+			if ($notation !== '') {
+				$notations[] = $notation;
+			}
+		}
+
+		return $notations;
+	}//end notationsOf()
+
+	/**
+	 * Whether any filter asks for a branch.
+	 *
+	 * Checked first so a query with no branch filter costs one loop over the
+	 * filters and never touches the schema or the vocabulary register.
+	 *
+	 * @param array<string,mixed> $filters The object-field filters.
+	 *
+	 * @return boolean True when at least one filter is a branch filter.
+	 */
+	private function carriesBranchFilter(array $filters): bool {
+		foreach ($filters as $value) {
+			if (BranchFilter::fromFilterValue(value: $value) !== null) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end carriesBranchFilter()
+
+	/**
+	 * Resolve the single schema a query names, or null.
+	 *
+	 * A cross-schema query names several, and a branch filter over several
+	 * schemas is not something this expander guesses at: it leaves the filter
+	 * alone rather than picking one schema's declaration and applying it to
+	 * all of them.
+	 *
+	 * @param int|string|array|null $schemaRef The schema reference from the query.
+	 *
+	 * @return Schema|null The resolved schema.
+	 */
+	private function resolveSchema(int|string|array|null $schemaRef): ?Schema {
+		$schemaRef = $this->singleReference(schemaRef: $schemaRef);
+		if ($schemaRef === null || $schemaRef === '') {
+			return null;
+		}
+
+		try {
+			return $this->tables->schemas->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+		} catch (Throwable $missing) {
+			return null;
+		}
+	}//end resolveSchema()
+
+	/**
+	 * The one reference a list holds (null when it holds none or several), or the reference itself.
+	 *
+	 * @param int|string|array<mixed>|null $schemaRef The schema reference.
+	 *
+	 * @return mixed
+	 */
+	private function singleReference(int|string|array|null $schemaRef): mixed {
+		if (is_array($schemaRef) === false) {
+			return $schemaRef;
+		}
+
+		if (count($schemaRef) !== 1) {
+			return null;
+		}
+
+		return reset($schemaRef);
+	}//end singleReference()
+}//end class

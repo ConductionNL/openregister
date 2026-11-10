@@ -1,77 +1,102 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { configurationStore, navigationStore } from '../../store/store.js'
-import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
+import { configurationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'exportConfiguration'"
+	<NcDialog
+		v-if="navigationStore.modal === 'exportConfiguration'"
 		name="export-configuration-dialog"
-		title="Export Configuration"
+		:title="t('openregister', 'Export Configuration')"
 		size="small"
-		:can-close="false">
+		noClose>
 		<NcNoteCard v-if="errorMessage" type="error">
 			<p>{{ errorMessage }}</p>
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p v-if="configTitle">
-				Export configuration "{{ configTitle }}"?
-			</p>
+			<p v-if="configTitle">Export configuration "{{ configTitle }}"?</p>
 
 			<NcCheckboxRadioSwitch
-				:checked="includeObjects"
-				@update:checked="includeObjects = $event">
+				:modelValue="includeObjects"
+				@update:modelValue="includeObjects = $event">
 				Include related objects
 			</NcCheckboxRadioSwitch>
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
-			<NcButton
+			<CloseCancelButton label="Cancel" @click="closeModal" />
+			<BusyButton
+				:busy="loading"
 				:disabled="loading || !isValid"
-				type="primary"
+				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				Export
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-	NcCheckboxRadioSwitch,
-} from '@nextcloud/vue'
+/**
+ * The file name of an export: the one the server names, or a dated default.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {string} The file name
+ */
+function exportFilename(response, id) {
+	const contentDisposition = response.headers['content-disposition']
+	return contentDisposition
+		? contentDisposition.split('filename=')[1].replace(/"/g, '')
+		: `configuration_${id}_${new Date().toISOString().split('T')[0]}.json`
+}
 
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+/**
+ * Hand an export to the browser as a JSON file download.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {void}
+ */
+function downloadExport(response, id) {
+	const blob = new Blob([response.data], { type: 'application/json' })
+	const downloadUrl = window.URL.createObjectURL(blob)
+	const link = document.createElement('a')
+	link.href = downloadUrl
+	link.download = exportFilename(response, id)
+	document.body.appendChild(link)
+	link.click()
+	document.body.removeChild(link)
+	window.URL.revokeObjectURL(downloadUrl)
+}
+
+import {
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcNoteCard,
+} from '@nextcloud/vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'ExportConfiguration',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		// Icons
-		Cancel,
+		BusyButton,
+		CloseCancelButton,
 		Export,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -79,15 +104,27 @@ export default {
 			includeObjects: false,
 		}
 	},
+
 	computed: {
+		/**
+		 * @spec exclude UI display helper — returns the configuration title for the modal heading.
+		 */
 		configTitle() {
 			const item = configurationStore.configurationItem
 			return item?.title || ''
 		},
+
+		/**
+		 * @spec exclude UI state helper — enables the export button when a configuration is selected.
+		 */
 		isValid() {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.id)
 		},
+
+		/**
+		 * @spec exclude UI display helper — derives the reactive error message for the modal.
+		 */
 		errorMessage() {
 			// Computed error message that updates reactively
 			if (!configurationStore.configurationItem?.id) {
@@ -96,13 +133,21 @@ export default {
 			return this.error
 		},
 	},
+
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — clears modal state.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
 			this.includeObjects = false
 		},
+
+		/**
+		 * @spec exclude Modal action plumbing — triggers configuration export download.
+		 */
 		async exportConfiguration() {
 			const item = configurationStore.configurationItem
 			if (!item?.id) {
@@ -115,7 +160,9 @@ export default {
 
 			try {
 				// Generate the export URL with query parameters
-				const url = generateUrl(`/apps/openregister/api/configurations/${item.id}/export`)
+				const url = generateUrl(
+					`/apps/openregister/api/configurations/${item.id}/export`,
+				)
 				const params = { includeObjects: this.includeObjects }
 
 				// Make the API call
@@ -126,27 +173,13 @@ export default {
 					responseType: 'blob', // Important for file download
 				})
 
-				// Create a download link
-				const blob = new Blob([response.data], { type: 'application/json' })
-				const downloadUrl = window.URL.createObjectURL(blob)
-				const link = document.createElement('a')
-
-				// Get filename from response headers or generate a default one
-				const contentDisposition = response.headers['content-disposition']
-				const filename = contentDisposition
-					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `configuration_${item.id}_${new Date().toISOString().split('T')[0]}.json`
-
-				link.href = downloadUrl
-				link.download = filename
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				window.URL.revokeObjectURL(downloadUrl)
-
+				downloadExport(response, item.id)
 				this.closeModal()
 			} catch (error) {
-				this.error = error.response?.data?.error || error.message || 'Failed to export configuration'
+				this.error =
+					error.response?.data?.error
+					|| error.message
+					|| 'Failed to export configuration'
 			} finally {
 				this.loading = false
 			}
@@ -155,10 +188,8 @@ export default {
 }
 </script>
 
-<style>
-.formContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
+
+@include form-container;
 </style>
