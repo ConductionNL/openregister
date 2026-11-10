@@ -48,15 +48,14 @@ interface ContentReportMapperInterface {
 	/**
 	 * List reports, newest first, optionally filtered.
 	 *
-	 * @param string|null $status Optional review filter.
-	 * @param string|null $organisationId Optional organisation filter.
-	 * @param int|null $limit Optional page size.
+	 * @param ListQuery $query Optional `status` and `organisation_id` filters (empty is no filter) and the page size
+	 *                         (unbounded or not positive is no limit).
 	 *
 	 * @return ContentReport[] The matching reports.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function findAll(?string $status = null, ?string $organisationId = null, ?int $limit = null): array;
+	public function findAll(ListQuery $query): array;
 
 	/**
 	 * Every report filed against one object, newest first.
