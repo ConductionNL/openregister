@@ -471,6 +471,23 @@ After installation:
   empty `installGroups` used to let any signed-in user install; it now means
   administrators only. Members of a configured install group can no longer
   install a bundle that seeds objects (403); an administrator installs those.
+- **Review the federation shares that exist before the upgrade.** Creating a share
+  now needs the right to manage its schema, but shares created before this release
+  keep working: any signed-in user could create one, read-write included, and the
+  table does not record who did. After upgrading, list them and revoke every share
+  you do not recognise:
+
+  ```sql
+  SELECT id, register, `schema`, permissions, organisation, remote_instance_url, created
+  FROM oc_openregister_federated_shares
+  WHERE direction = 'outgoing' AND status <> 'revoked'
+  ORDER BY permissions DESC, created;
+  ```
+
+  (`oc_` is the default table prefix; on PostgreSQL write `"schema"` instead of
+  `` `schema` ``.) Revoke a share as an administrator with
+  `DELETE /index.php/apps/openregister/api/federation/shares/{id}` and the header
+  `OCS-APIRequest: true`. Start with the `read-write` rows.
 
 ### From Nextcloud App Store
 
