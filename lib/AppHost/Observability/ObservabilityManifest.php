@@ -189,6 +189,18 @@ final class ObservabilityManifest {
 			return ['checks' => [], 'valid' => false];
 		}
 
+		return self::parseEachCheck(rawChecks: $rawChecks, diagnostics: $diagnostics);
+	}//end parseChecks()
+
+	/**
+	 * Parse every entry of a checks list.
+	 *
+	 * @param array    $rawChecks   The `checks` list.
+	 * @param string[] $diagnostics Diagnostics accumulator (by ref).
+	 *
+	 * @return array{checks: HealthCheckDescriptor[], valid: bool}
+	 */
+	private static function parseEachCheck(array $rawChecks, array &$diagnostics): array {
 		$parsed = ['checks' => [], 'valid' => true];
 		foreach ($rawChecks as $index => $rawCheck) {
 			try {
@@ -200,7 +212,7 @@ final class ObservabilityManifest {
 		}
 
 		return $parsed;
-	}//end parseChecks()
+	}//end parseEachCheck()
 
 	/**
 	 * Parse one health check.

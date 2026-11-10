@@ -184,7 +184,7 @@ final class HealthCheckDescriptor {
 	private static function oneOf(mixed $value, array $rule): string {
 		if (is_string($value) === false || in_array($value, $rule['allowed'], true) === false) {
 			throw new ObservabilityValidationException(
-				sprintf($rule['message'], self::describe(value: $value), implode(', ', $rule['allowed']))
+				sprintf($rule['message'], DescriptorValue::describe(value: $value), implode(', ', $rule['allowed']))
 			);
 		}
 
@@ -235,20 +235,4 @@ final class HealthCheckDescriptor {
 
 		return new HealthCheckTarget(key: $key, assert: $assert);
 	}//end appConfigTarget()
-
-	/**
-	 * Render a raw (possibly non-scalar) value as a short string for an
-	 * error message, without leaking object internals.
-	 *
-	 * @param mixed $value Raw value.
-	 *
-	 * @return string
-	 */
-	private static function describe(mixed $value): string {
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		return gettype($value);
-	}//end describe()
 }//end class

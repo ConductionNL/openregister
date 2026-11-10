@@ -121,13 +121,24 @@ class ObjectMetricSource implements MetricSourceInterface {
 				$appId,
 				$e->getMessage()
 			);
-			$this->lookups->logger->warning(
-				message: $logMessage,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->warn(message: $logMessage);
 			return null;
 		}
 	}//end resolvedBaseQuery()
+
+	/**
+	 * Log a collection failure as a warning.
+	 *
+	 * @param string $message What failed.
+	 *
+	 * @return void
+	 */
+	private function warn(string $message): void {
+		$this->lookups->logger->warning(
+			message: $message,
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end warn()
 
 	/**
 	 * The samples of a descriptor: one aggregate, or one per group.
