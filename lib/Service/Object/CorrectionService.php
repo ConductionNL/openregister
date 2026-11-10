@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -34,7 +33,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -88,20 +86,6 @@ class CorrectionService implements CorrectionServiceInterface {
 	public const ACTION = 'correction';
 
 	/**
-	 * The audit trail.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface     $objectService The write path a correction goes through.
@@ -113,10 +97,8 @@ class CorrectionService implements CorrectionServiceInterface {
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly OpenRegisterActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
-		CorrectionAuditing $auditing,
+		private readonly CorrectionAuditing $auditing,
 	) {
-		$this->auditTrailMapper = $auditing->auditTrailMapper;
-		$this->logger = $auditing->logger;
 	}//end __construct()
 
 	/**
@@ -134,26 +116,53 @@ class CorrectionService implements CorrectionServiceInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function correct(CorrectionTarget $target, array $values, ?string $reason): array {
-		$register = $target->register;
-		$schema   = $target->schema;
-		$id       = $target->id;
-		$user     = $this->correctingUser();
-		$reason = self::requiredReason(reason: $reason);
-		$values = self::correctableValues(values: $values);
+		$user = $this->correctingUser();
 
-		$this->objectService->setRegister(register: $register);
-		$this->objectService->setSchema(schema: $schema);
-		$existing  = $this->objectService->findSilent(
-			id: $id, _extend: [], files: false, register: $register, schema: $schema, _rbac: false, _multitenancy: false
+		return $this->applyCorrection(
+			user: $user,
+			correction: new Correction(target: $target, reason: self::requiredReason(reason: $reason), values: self::correctableValues(values: $values))
 		);
-		$before    = ($existing->getObject() ?? []);
-		$merged    = array_merge($before, $values);
-		$corrected = $this->objectService->saveObject(object: $merged, register: $register, schema: $schema, uuid: $existing->getUuid());
-
-		$fields  = self::fieldChanges(before: $before, values: $values);
-		$context = ['correction' => ['reason' => $reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];
-		return ['object' => $corrected, 'audit' => $this->recordCorrection(object: $corrected, context: $context)];
 	}//end correct()
+
+	/**
+	 * Write a checked correction through the save path and record it on the audit trail.
+	 *
+	 * @param IUser      $user       The correcting user, who holds the right.
+	 * @param Correction $correction The record, the reason and the values.
+	 *
+	 * @return array{object: ObjectEntity, audit: AuditTrail|null} The corrected record and its entry.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyCorrection(IUser $user, Correction $correction): array {
+		$target    = $correction->target;
+		$existing  = $this->storedRecord(target: $target);
+		$before    = ($existing->getObject() ?? []);
+		$merged    = array_merge($before, $correction->values);
+		$corrected = $this->objectService->saveObject(object: $merged, register: $target->register, schema: $target->schema, uuid: $existing->getUuid());
+
+		$fields  = self::fieldChanges(before: $before, values: $correction->values);
+		$context = ['correction' => ['reason' => $correction->reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];
+		return ['object' => $corrected, 'audit' => $this->recordCorrection(object: $corrected, context: $context)];
+	}//end applyCorrection()
+
+	/**
+	 * The record as stored, read without RBAC: the right was checked on the caller.
+	 *
+	 * @param CorrectionTarget $target The register, schema and object id.
+	 *
+	 * @return ObjectEntity The stored record.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function storedRecord(CorrectionTarget $target): ObjectEntity {
+		$this->objectService->setRegister(register: $target->register);
+		$this->objectService->setSchema(schema: $target->schema);
+
+		return $this->objectService->findSilent(
+			id: $target->id, _extend: [], files: false, register: $target->register, schema: $target->schema, _rbac: false, _multitenancy: false
+		);
+	}//end storedRecord()
 
 	/**
 	 * The signed-in user, who must hold the correction right.
@@ -285,9 +294,9 @@ class CorrectionService implements CorrectionServiceInterface {
 	private function writeCorrectionEntry(ObjectEntity $object, array $context): ?AuditTrail {
 		$actor = $context['correction']['actor'];
 		try {
-			return $this->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION, context: $context, actorId: $actor);
+			return $this->auditing->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION, context: $context, actorId: $actor);
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->auditing->logger->error(
 				message: '[CorrectionService] The correction landed and the audit entry did not',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $object->getUuid(), 'error' => $e->getMessage()]
 			);
@@ -319,9 +328,9 @@ class CorrectionService implements CorrectionServiceInterface {
 		$entry->setAction(self::ACTION);
 		$entry->setChanged(array_merge($entry->getChanged(), $context));
 		try {
-			return $this->auditTrailMapper->update($entry);
+			return $this->auditing->auditTrailMapper->update($entry);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->auditing->logger->warning(
 				message: '[CorrectionService] Could not relabel the audit entry as a correction',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'auditId' => $auditId, 'error' => $e->getMessage()]
 			);
@@ -347,7 +356,7 @@ class CorrectionService implements CorrectionServiceInterface {
 		}
 
 		try {
-			$entry = $this->auditTrailMapper->find((int)$auditId);
+			$entry = $this->auditing->auditTrailMapper->find((int)$auditId);
 		} catch (Throwable $e) {
 			return null;
 		}

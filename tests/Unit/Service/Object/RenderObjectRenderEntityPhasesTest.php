@@ -528,7 +528,11 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$entity = $this->entity();
 		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
 
-		$this->assertIsArray($this->render()->renderEntity(entity: $entity)->getArchivalRetention());
+		$retention = $this->render()->renderEntity(entity: $entity)->getArchivalRetention();
+		$this->assertIsArray($retention);
+		// The schema's default of one year runs from the creation date.
+		$this->assertSame('P1Y', $retention['retentionPeriod']);
+		$this->assertSame('2027-01-02T00:00:00+00:00', $retention['disposalDate']);
 	}//end testTheArchivalDecisionLandsOnTheEntity()
 
 	/**

@@ -138,27 +138,6 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	}//end principal()
 
 	/**
-	 * Record one call against the caller making the current request.
-	 *
-	 * @param string $path The request path.
-	 * @param string $method The HTTP method.
-	 * @param string $apiVersion The contract version that served it.
-	 * @param DateTime|null $moment When it happened; defaults to now.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
-	 */
-	public function record(
-		string $path,
-		string $method,
-		string $apiVersion,
-		?DateTime $moment = null,
-	): void {
-		$this->recordCall(call: new ApiCallObservation(path: $path, method: $method, apiVersion: $apiVersion, moment: $moment));
-	}//end record()
-
-	/**
 	 * Count one observed call against the caller making the current request.
 	 *
 	 * A failure to count is logged and never fails the call itself.

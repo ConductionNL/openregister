@@ -131,7 +131,7 @@ class AuditTrailMapperBuildGoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new AuditTrailMapper($this->createMock(IDBConnection::class), $session, $request, new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)));
+		return new AuditTrailMapper($this->createMock(IDBConnection::class), new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $session, $request));
 	}//end mapper()
 
 	#[DataProvider('cases')]

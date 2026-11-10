@@ -130,7 +130,13 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 		// The registry guarantees a non-empty id — a candidate without one
 		// is dropped there, so every id here is one a resolver can load.
 		$uuid = $candidate['id'];
-		if ($this->isDue(candidate: $candidate, cron: $cron, now: $now) === false) {
+		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
+		if ($baseline === null) {
+			return false;
+		}
+
+		$next = $this->nextRunAfter(cron: $cron, baseline: $baseline);
+		if ($next === null || $next > $now) {
 			return false;
 		}
 
@@ -325,28 +331,20 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 	}//end isScheduleCandidate()
 
 	/**
-	 * Whether a cron occurrence has passed since the flow's baseline.
+	 * The first cron occurrence after a flow's baseline, or null when the cron or the baseline cannot be read.
 	 *
-	 * @param array $candidate The candidate flow, shaped `{id, since, ...}`.
-	 * @param string $cron The cron expression.
-	 * @param DateTimeInterface $now The moment to evaluate against.
+	 * @param string $cron     The cron expression.
+	 * @param string $baseline The last fire, or the moment the flow was scheduled from.
 	 *
-	 * @return boolean Whether the flow is due.
+	 * @return DateTimeInterface|null The next run date.
 	 */
-	private function isDue(array $candidate, string $cron, DateTimeInterface $now): bool {
-		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
-		if ($baseline === null) {
-			return false;
-		}
-
+	private function nextRunAfter(string $cron, string $baseline): ?DateTimeInterface {
 		try {
-			$next = (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($baseline));
+			return (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($baseline));
 		} catch (Throwable $e) {
-			return false;
+			return null;
 		}
-
-		return $next <= $now;
-	}//end isDue()
+	}//end nextRunAfter()
 
 	/**
 	 * The moment a flow's next occurrence is measured from.

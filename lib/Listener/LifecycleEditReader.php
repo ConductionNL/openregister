@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolverInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateMove;
 use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use Psr\Log\LoggerInterface;
 
@@ -129,9 +130,7 @@ class LifecycleEditReader {
 	public function attemptOf(LifecycleEdit $edit): ?LifecycleAttempt {
 		$matched = $this->transitionResolver->resolve(
 			transitions: $edit->declaration->transitions(),
-			uuid: $edit->uuid(),
-			oldValue: $edit->getFromState(),
-			newValue: $edit->getToState()
+			move: new StateMove(uuid: $edit->uuid(), from: $edit->getFromState(), to: $edit->getToState())
 		);
 		if ($matched === null) {
 			return null;
