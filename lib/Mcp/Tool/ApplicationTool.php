@@ -209,9 +209,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Create application
 	 *
-	 * @param string $name Application name
-	 * @param string|null $description Application description
-	 * @param string|null $_domain Application domain/URL (unused, kept for API compatibility)
+	 * @param CreateApplicationCommand $command The application's name and optional description; the domain is not stored
 	 *
 	 * @return (bool|mixed|string)[] Response with created application
 	 *
@@ -219,12 +217,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createApplication(
-		string $name,
-		?string $description = null,
-		?string $_domain = null,
-	): array {
-		return $this->insertApplication(name: $name, description: $description);
+	public function createApplication(CreateApplicationCommand $command): array {
+		return $this->insertApplication(name: $command->name, description: $command->description);
 	}//end createApplication()
 
 	/**
@@ -275,10 +269,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Update application
 	 *
-	 * @param string $uuid Application UUID
-	 * @param string|null $name New name
-	 * @param string|null $description New description
-	 * @param string|null $_domain New domain (unused, kept for API compatibility)
+	 * @param UpdateApplicationCommand $command The application's UUID and the fields to change; null keeps one, the domain is not stored
 	 *
 	 * @return (bool|mixed|string)[] Response with updated application
 	 *
@@ -286,13 +277,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateApplication(
-		string $uuid,
-		?string $name = null,
-		?string $description = null,
-		?string $_domain = null,
-	): array {
-		return $this->patchApplication(uuid: $uuid, fields: ['setName' => $name, 'setDescription' => $description]);
+	public function updateApplication(UpdateApplicationCommand $command): array {
+		return $this->patchApplication(uuid: $command->uuid, fields: ['setName' => $command->name, 'setDescription' => $command->description]);
 	}//end updateApplication()
 
 	/**

@@ -21,6 +21,10 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand;
+use OCA\OpenRegister\Mcp\Tool\UpdateAgentCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateAgentCommand;
 use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
@@ -92,7 +96,7 @@ class CrudToolsCharacterisationTest extends TestCase
         $context->setOwner('alice');
         $tool->setAgent($context);
 
-        $result = $tool->createAgent('Helper', 'Helps', '', 'Be kind');
+        $result = $tool->createAgent(new CreateAgentCommand('Helper', 'Helps', '', 'Be kind'));
 
         $this->assertTrue($result['success']);
         $this->assertSame("Agent 'Helper' created successfully with UUID agent-uuid.", $result['message']);
@@ -108,7 +112,7 @@ class CrudToolsCharacterisationTest extends TestCase
         $seen = [];
         $tool = $this->agentTool($seen);
 
-        $tool->createAgent('Helper', null, 'chat', null);
+        $tool->createAgent(new CreateAgentCommand('Helper', null, 'chat', null));
 
         $this->assertNull($seen[0]->getDescription());
         $this->assertSame('chat', $seen[0]->getType());
@@ -119,7 +123,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testCreateAgentFailureIsAnError(): void
     {
         $seen = [];
-        $result = $this->agentTool($seen, new Exception('db down'))->createAgent('Helper');
+        $result = $this->agentTool($seen, new Exception('db down'))->createAgent(new CreateAgentCommand('Helper'));
 
         $this->assertSame(['success' => false, 'error' => 'Failed to create agent: db down'], $result);
     }
@@ -127,7 +131,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateAgentChangesOnlyTheGivenFields(): void
     {
         $seen = [];
-        $result = $this->agentTool($seen)->updateAgent('a-1', null, '', 'New prompt');
+        $result = $this->agentTool($seen)->updateAgent(new UpdateAgentCommand('a-1', null, '', 'New prompt'));
 
         $this->assertTrue($result['success']);
         $this->assertSame('Agent updated successfully.', $result['message']);
@@ -141,11 +145,11 @@ class CrudToolsCharacterisationTest extends TestCase
         $seen = [];
         $this->assertSame(
             ['success' => false, 'error' => "Agent with UUID 'missing' not found."],
-            $this->agentTool($seen)->updateAgent('missing', 'x')
+            $this->agentTool($seen)->updateAgent(new UpdateAgentCommand('missing', 'x'))
         );
         $this->assertSame(
             ['success' => false, 'error' => 'Failed to update agent: db down'],
-            $this->agentTool($seen, new Exception('db down'))->updateAgent('a-1', 'x')
+            $this->agentTool($seen, new Exception('db down'))->updateAgent(new UpdateAgentCommand('a-1', 'x'))
         );
     }
 
@@ -191,8 +195,8 @@ class CrudToolsCharacterisationTest extends TestCase
         $seen = [];
         $tool = $this->applicationTool($seen);
 
-        $result = $tool->createApplication('Zaken', 'Cases', 'ignored');
-        $tool->createApplication('Leeg', '');
+        $result = $tool->createApplication(new CreateApplicationCommand('Zaken', 'Cases', 'ignored'));
+        $tool->createApplication(new CreateApplicationCommand('Leeg', ''));
 
         $this->assertTrue($result['success']);
         $this->assertSame("Application 'Zaken' created successfully with UUID app-uuid.", $result['message']);
@@ -200,25 +204,25 @@ class CrudToolsCharacterisationTest extends TestCase
         $this->assertNull($seen[1]->getDescription());
         $this->assertSame(
             ['success' => false, 'error' => 'Failed to create application: db down'],
-            $this->applicationTool($seen, new Exception('db down'))->createApplication('Zaken')
+            $this->applicationTool($seen, new Exception('db down'))->createApplication(new CreateApplicationCommand('Zaken'))
         );
     }
 
     public function testUpdateApplication(): void
     {
         $seen = [];
-        $result = $this->applicationTool($seen)->updateApplication('a-1', 'New', null);
+        $result = $this->applicationTool($seen)->updateApplication(new UpdateApplicationCommand('a-1', 'New', null));
 
         $this->assertSame('Application updated successfully.', $result['message']);
         $this->assertSame('New', $seen[0]->getName());
         $this->assertSame('old description', $seen[0]->getDescription());
         $this->assertSame(
             ['success' => false, 'error' => "Application with UUID 'missing' not found."],
-            $this->applicationTool($seen)->updateApplication('missing', 'x')
+            $this->applicationTool($seen)->updateApplication(new UpdateApplicationCommand('missing', 'x'))
         );
         $this->assertSame(
             ['success' => false, 'error' => 'Failed to update application: db down'],
-            $this->applicationTool($seen, new Exception('db down'))->updateApplication('a-1', 'x')
+            $this->applicationTool($seen, new Exception('db down'))->updateApplication(new UpdateApplicationCommand('a-1', 'x'))
         );
     }
 

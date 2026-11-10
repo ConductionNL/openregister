@@ -6,6 +6,8 @@ use BadMethodCallException;
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Tool\AbstractTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCall;
+use OCA\OpenRegister\Mcp\Tool\ToolLogOptions;
 use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -76,7 +78,7 @@ class AbstractToolTest extends TestCase {
 			}
 
 			public function publicLog(string $functionName, array $parameters, string $level = 'info', string $message = ''): void {
-				$this->log($functionName, $parameters, $level, $message);
+				$this->log(new ToolCall($functionName, $parameters), new ToolLogOptions($level, $message));
 			}
 
 			// Methods for __call testing.

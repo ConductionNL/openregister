@@ -207,28 +207,18 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Create agent
 	 *
-	 * @param string $name Agent name
-	 * @param string|null $description Agent description
-	 * @param string|null $type Agent type
-	 * @param string|null $systemPrompt Agent system prompt
+	 * @param CreateAgentCommand $command The agent's name and optional description, type and system prompt
 	 *
 	 * @return (bool|mixed|string)[] Response with created agent
 	 *
 	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for agent creation
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createAgent(
-		string $name,
-		?string $description = null,
-		?string $type = null,
-		?string $systemPrompt = null,
-	): array {
+	public function createAgent(CreateAgentCommand $command): array {
 		return $this->insertAgent(
-			name: $name,
-			fields: ['setDescription' => $description, 'setType' => $type, 'setPrompt' => $systemPrompt]
+			name: $command->name,
+			fields: ['setDescription' => $command->description, 'setType' => $command->type, 'setPrompt' => $command->systemPrompt]
 		);
 	}//end createAgent()
 
@@ -299,28 +289,18 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Update agent
 	 *
-	 * @param string $uuid Agent UUID
-	 * @param string|null $name New name
-	 * @param string|null $description New description
-	 * @param string|null $systemPrompt New system prompt
+	 * @param UpdateAgentCommand $command The agent's UUID and the fields to change; null keeps one
 	 *
 	 * @return (bool|mixed|string)[] Response with updated agent
 	 *
 	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateAgent(
-		string $uuid,
-		?string $name = null,
-		?string $description = null,
-		?string $systemPrompt = null,
-	): array {
+	public function updateAgent(UpdateAgentCommand $command): array {
 		return $this->patchAgent(
-			uuid: $uuid,
-			fields: ['setName' => $name, 'setDescription' => $description, 'setPrompt' => $systemPrompt]
+			uuid: $command->uuid,
+			fields: ['setName' => $command->name, 'setDescription' => $command->description, 'setPrompt' => $command->systemPrompt]
 		);
 	}//end updateAgent()
 

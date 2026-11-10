@@ -126,7 +126,7 @@ class RegisterTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
+		return $this->executeWithUser(call: new ToolCall(functionName: $functionName, parameters: $parameters), userId: $userId);
 	}//end executeFunction()
 
 	/**
