@@ -48,6 +48,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ActionDateFollower;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\CategoryDeclaration;
 use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
@@ -158,7 +159,7 @@ class RetentionService implements RetentionServiceInterface {
 		// The schema's category, unless this record names its own through the
 		// property the schema declares for that (DECISIONS row 48).
 		$classification = (new ClassificationOverride())->effective(
-			archive: $archiveConfig,
+			declaration: new CategoryDeclaration(archive: $archiveConfig),
 			data: ($object->getObject() ?? [])
 		);
 
@@ -337,7 +338,8 @@ class RetentionService implements RetentionServiceInterface {
 
 		$this->guardClassificationOverride(schema: $update->schema, data: $data);
 
-		return $this->rederiveCategory(update: $update, effective: $override->effective(archive: $archive, data: $data, configuration: ($update->schema->getConfiguration() ?? [])));
+		$declaration = new CategoryDeclaration(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
+		return $this->rederiveCategory(update: $update, effective: $override->effective(declaration: $declaration, data: $data));
 	}//end applyClassification()
 
 	/**
