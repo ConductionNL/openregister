@@ -1847,3 +1847,4 @@
 2026-11-10T10:21:23Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8731 376bc46e
 2026-11-10T10:21:53Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8736 85a3d99a
 2026-11-10T10:24:57Z precheck-20261110T063008-5e5865e2 GREEN tree 348465e0eb on dev f091692031 prs 1 front=skip: Tests: 54804, Assertions: 181031, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-10T10:26:37Z integrator-20261110T083641-bf44b7c8 RED tree 8934bdcd34 prs 50 front=skip: Tests: 54817, Assertions: 181025, Errors: 31, Failures: 15, Warnings: 3, Deprecations: 4, ; first failures: OCA\OpenRegister\Tests\Unit\Service\Object\RelationHandlerBatchFailureTest::testAFailingBatchIsLoggedAndSkippe;OCA\OpenRegister\Tests\Unit\Service\Object\RelationHandlerBulkLoadGoldenTest::testBulkLoadMatchesGolden;OCA\OpenRegister\Tests\Unit\Service\Object\RelationHandlerChunkLoadTest::testBulkLoadIndexesTheLoadedObjects
