@@ -67,6 +67,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
+	use SelectByColumnTrait;
 	use MultiTenancyTrait;
 
 	/**
@@ -155,16 +156,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		$this->verifyRbacPermission(action: 'read', entityType: 'application');
 
 		// Build query to find application by ID.
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->tableName)
-			->where(
-				$qb->expr()->eq(
-					'id',
-					$qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
-				)
-			);
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'id', value: $id));
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
@@ -194,16 +186,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		$this->verifyRbacPermission(action: 'read', entityType: 'application');
 
 		// Build query to find application by UUID.
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->tableName)
-			->where(
-				$qb->expr()->eq(
-					'uuid',
-					$qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)
-				)
-			);
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid));
 
 		// Apply organisation filter to ensure user can only access their organisation's applications.
 		$this->applyOrganisationFilter(qb: $qb);
@@ -232,17 +215,8 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		$this->verifyRbacPermission(action: 'read', entityType: 'application');
 
 		// Build query to find applications by organisation.
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->tableName)
-			->where(
-				$qb->expr()->eq(
-					'organisation',
-					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
-				)
-			)
-			->setMaxResults($query->limit)
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'organisation', value: $organisationUuid));
+		$qb->setMaxResults($query->limit)
 			->setFirstResult($query->offset ?? 0)
 			->orderBy('created', 'DESC');
 
@@ -515,12 +489,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from($this->tableName)
-			->where(
-				$qb->expr()->eq(
-					'organisation',
-					$qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR)
-				)
-			);
+			->where((new LinkColumn(name: 'organisation', value: $organisationUuid))->equals(qb: $qb));
 
 		// Execute query and get count.
 		$result = $qb->executeQuery();
