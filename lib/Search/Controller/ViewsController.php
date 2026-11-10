@@ -24,6 +24,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
+use OCA\OpenRegister\Search\Service\CalendarRange;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use OCA\OpenRegister\Search\Service\ViewAudience;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
@@ -848,8 +849,7 @@ class ViewsController extends Controller {
 			// they can rule it out.
 			$result = $this->viewPresentationService->getCalendarObjects(
 				view: $view,
-				rangeStart: $rangeStart,
-				rangeEnd: $rangeEnd
+				range: new CalendarRange(start: $rangeStart, end: $rangeEnd)
 			);
 
 			return new JSONResponse(data: $result);
