@@ -68,7 +68,7 @@ class ContentSearchHandler {
 	 *
 	 * Perf note: the earlier "cheap pre-dedupe on 'object' hits" branch was
 	 * intentionally removed when dedup switched to UUID keying (see the
-	 * `$seenUuids` block in `augmentWithChunkMatches()` for why — metadata-
+	 * `uuidSet()` docblock for why — metadata-
 	 * arm rows come from `searchObjectsInRegisterSchemaTable` which does not
 	 * populate `Entity::$id`). Every 'object' chunk hit therefore now pays
 	 * one `MagicMapper::find()` call before dedup even when it fully
@@ -115,30 +115,10 @@ class ContentSearchHandler {
 	}//end __construct()
 
 	/**
-	 * Widen a metadata-match result set with chunk-body-text matches, per ZKN-CONTENT-002.
+	 * Widen a metadata page with the chunk owners the caller can see, per ZKN-CONTENT-002.
 	 *
-	 * Builds the widening request and delegates to {@see widen()}.
-	 *
-	 * No-op (returns `$results`/`$total` unchanged) when: no `_search` term is present,
-	 * the page limit is 0 (count/facets-only request), or no chunk hits are found.
-	 *
-	 * @param array $query The original search query (read for `_search` and
-	 *                     register/schema scope; see {@see
-	 *                     resolveScope()}).
-	 * @param ObjectEntity[] $results The metadata-match rows already resolved by the
-	 *                                pre-change search path.
-	 * @param int $total The metadata-match total already computed by the
-	 *                   pre-change search path.
-	 * @param int $limit The page's `_limit` (0 = unlimited/count-only).
-	 * @param bool $_rbac Whether to apply RBAC checks when resolving chunk-hit objects.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering when resolving chunk-hit objects.
-	 * @param int $offset The page's `_offset` over the COMBINED list (metadata
-	 *                    rows first, chunk-only rows behind them).
-	 * @param string|null $activeOrgUuid The caller's active organisation, forwarded
-	 *                                   to the overlap probe so it sees exactly
-	 *                                   what the metadata arm saw.
-	 *
-	 * @return array{results: ObjectEntity[], total: int}
+	 * No-op (the page unchanged) when no `_search` term is present, the page
+	 * limit is 0 (count/facets-only request), or no chunk hits are found.
 	 *
 	 * THE CHUNK ARM IS A SECOND LIST BEHIND THE METADATA ARM, AND IT MUST NOT
 	 * CONTAIN THE METADATA ARM'S ROWS. Both arms are paged as ONE list: the
@@ -146,7 +126,7 @@ class ContentSearchHandler {
 	 * arm is exhausted. That only works when the second list is (a) the same
 	 * on every page and (b) disjoint from the first.
 	 *
-	 * Deduplicating against `$results` gave neither. `$results` is only THIS
+	 * Deduplicating against the page's rows gave neither. The rows are only THIS
 	 * page of the metadata arm, so an owner that the metadata arm serves on
 	 * page 2 was still counted as a chunk-only owner on page 1, and `total`
 	 * moved from page to page. And without an offset into the chunk arm every
@@ -160,38 +140,6 @@ class ContentSearchHandler {
 	 * arm which of the resolved owners it matches too, so the answer is a
 	 * property of the query, not of the page; {@see pageChunkArm()} slices
 	 * the remainder by the offset past the metadata arm.
-	 *
-	 * @psalm-param   array<string, mixed> $query
-	 * @phpstan-param array<string, mixed> $query
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags mirror the
-	 *   established QueryHandler/MagicMapper API pattern.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	public function augmentWithChunkMatches(
-		array $query,
-		array $results,
-		int $total,
-		int $limit,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		int $offset = 0,
-		?string $activeOrgUuid = null,
-	): array {
-		$page     = new MetadataArmPage(results: $results, total: $total, limit: $limit, offset: $offset);
-		$widening = new ContentSearchWidening(query: $query, page: $page, activeOrgUuid: $activeOrgUuid);
-
-		return $this->widen(widening: $widening, _rbac: $_rbac, _multitenancy: $_multitenancy);
-	}//end augmentWithChunkMatches()
-
-	/**
-	 * Widen a metadata page with the chunk owners the caller can see, per ZKN-CONTENT-002.
-	 *
-	 * No-op (the page unchanged) when no `_search` term is present, the page
-	 * limit is 0 (count/facets-only request), or no chunk hits are found. See
-	 * {@see augmentWithChunkMatches()} for why the chunk arm is a second list
-	 * behind the metadata arm and disjoint from it.
 	 *
 	 * @param ContentSearchWidening $widening      The query, the metadata page and the caller's organisation.
 	 * @param bool                  $_rbac         Whether to apply RBAC checks when resolving chunk-hit objects.
@@ -219,8 +167,8 @@ class ContentSearchHandler {
 		$resolved = $this->ownersInScope(query: $widening->query, candidates: $candidates);
 
 		// Owners the metadata arm matches too are already in its total; the
-		// rest is the chunk arm. See augmentWithChunkMatches() for why this is
-		// asked of the metadata arm itself rather than read off this page.
+		// rest is the chunk arm. See the docblock for why this is asked of the
+		// metadata arm itself rather than read off this page.
 		$overlap   = $this->metadataArmOverlap(widening: $widening, owners: $resolved, _rbac: $_rbac, _multitenancy: $_multitenancy);
 		$chunkOnly = array_diff_key($resolved, $overlap);
 

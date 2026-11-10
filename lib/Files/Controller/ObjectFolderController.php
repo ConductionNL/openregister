@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
+use OCA\OpenRegister\Files\Service\File\ObjectFolderPath;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -220,7 +221,7 @@ class ObjectFolderController extends Controller {
 		}
 
 		return $this->responder->uploaded(
-			outcome: $this->services->uploads->uploadAll(object: $object, path: $path, uploads: $uploads),
+			outcome: $this->services->uploads->uploadAll(folder: new ObjectFolderPath(object: $object, path: $path), uploads: $uploads),
 			total: count($uploads)
 		);
 	}//end uploadInto()

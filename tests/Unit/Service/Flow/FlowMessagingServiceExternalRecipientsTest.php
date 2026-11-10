@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -69,6 +70,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
 use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
 use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
 use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * External recipients, FlowEmailSentEvent and role fields.
@@ -367,12 +369,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	 * @return array The report.
 	 */
 	private function sendEmail(array $config, array $json = ['name' => 'Case 7']): array {
-		return $this->makeService()->sendEmail(
-			config: $config + ['subject' => 'About {{ name }}', 'body' => 'Dear reader of {{ name }}'],
-			items: [FlowItems::item(json: $json)],
-			context: $this->context(),
-			stepName: 'openregister.send-email'
-		);
+		return $this->makeService()->email(request: new MessageSend(config: $config + ['subject' => 'About {{ name }}', 'body' => 'Dear reader of {{ name }}'], items: [FlowItems::item(json: $json)], context: $this->context(), stepName: 'openregister.send-email'));
 	}//end sendEmail()
 
 	// ---- Allowlist modes ---------------------------------------------------
@@ -459,12 +456,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testAUidThatLooksLikeAnAddressStaysAUser()
 
 	public function testANotificationStepStillReadsAnAddressAsUnknown(): void {
-		$report = $this->makeService()->sendNotification(
-			config: ['recipients' => ['citizen@example.org', 'bob'], 'message' => 'hi', 'externalRecipients' => 'any'],
-			items: [FlowItems::item(json: ['name' => 'Case 7'])],
-			context: $this->context(),
-			stepName: 'openregister.send-notification'
-		);
+		$report = $this->makeService()->notify(request: new MessageSend(config: ['recipients' => ['citizen@example.org', 'bob'], 'message' => 'hi', 'externalRecipients' => 'any'], items: [FlowItems::item(json: ['name' => 'Case 7'])], context: $this->context(), stepName: 'openregister.send-notification'));
 
 		$this->assertSame(['bob'], $this->notified);
 		$this->assertSame(['citizen@example.org'], $report['unknownRecipients']['sample']);
@@ -488,7 +480,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	// ---- FlowEmailSentEvent ------------------------------------------------
 
 	public function testEachSentEmailIsAnnouncedWithTheWholeContract(): void {
-		$this->runContext->push(runUuid: 'run-7', nodeId: 'mail-the-citizen', sequence: 3);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: 'run-7', nodeId: 'mail-the-citizen', sequence: 3));
 		try {
 			$this->sendEmail(
 				config: ['recipients' => ['bob', 'x@example.org'], 'externalRecipients' => 'any'],
@@ -699,12 +691,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	 */
 	#[\PHPUnit\Framework\Attributes\DataProvider('roleShapes')]
 	public function testSendNotificationReadsRoleShapedFields(mixed $value, array $expected, array $unknown): void {
-		$report = $this->makeService()->sendNotification(
-			config: ['recipients' => ['{{ handler }}'], 'message' => 'Case {{ name }} needs you'],
-			items: [FlowItems::item(json: ['name' => 'Case 7', 'handler' => $value])],
-			context: $this->context(),
-			stepName: 'openregister.send-notification'
-		);
+		$report = $this->makeService()->notify(request: new MessageSend(config: ['recipients' => ['{{ handler }}'], 'message' => 'Case {{ name }} needs you'], items: [FlowItems::item(json: ['name' => 'Case 7', 'handler' => $value])], context: $this->context(), stepName: 'openregister.send-notification'));
 
 		$this->assertSame($expected, $this->notified);
 		if ($unknown === []) {

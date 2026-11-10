@@ -143,7 +143,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	private function createAdministered(CasePlanCreation $creation): void {
 		$normalised = $this->mechanics->definitions->validate(definition: $creation->definition);
-		$this->anchorAccess->authorization->assertMayAdminister(verb: 'create-plan', settings: $normalised['settings'], uid: $creation->actor);
+		$act = new CasePlanAct(verb: 'create-plan', actor: $creation->actor);
+		$this->anchorAccess->authorization->assertMayAdminister(act: $act, settings: $normalised['settings']);
 		$this->insertNormalised(creation: $creation, normalised: $normalised);
 	}//end createAdministered()
 
@@ -438,7 +439,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$type = ($query->filters['type'] ?? null);
 		$state = ($query->filters['state'] ?? null);
 		$offset = (int)$query->offset;
-		$rows = $this->store->items->findByTypeAndState(type: $type, state: $state, limit: $query->limit, offset: $offset);
+		$rows = $this->store->items->findByTypeAndState(query: $query);
 
 		return [
 			'results' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
@@ -499,7 +500,8 @@ class CasePlanService implements CasePlanServiceInterface {
 		$rows = $this->rowsOf(objectUuid: $completion->objectUuid);
 		$tree = new CasePlanTree(items: $rows);
 		$settings = $tree->settings();
-		$this->anchorAccess->authorization->assertMayAdminister(verb: 'complete-case', settings: $settings, uid: $completion->actor);
+		$act = new CasePlanAct(verb: 'complete-case', actor: $completion->actor);
+		$this->anchorAccess->authorization->assertMayAdminister(act: $act, settings: $settings);
 		$this->assertAllowedResult(result: $completion->result, settings: $settings);
 		$this->assertFinished(tree: $tree);
 
@@ -525,7 +527,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	public function deletePlan(string $objectUuid, ?string $uid): int {
 		$rows = $this->rowsOf(objectUuid: $objectUuid);
-		$this->anchorAccess->authorization->assertMayAdminister(verb: 'delete-plan', settings: (new CasePlanTree(items: $rows))->settings(), uid: $uid);
+		$act = new CasePlanAct(verb: 'delete-plan', actor: $uid);
+		$this->anchorAccess->authorization->assertMayAdminister(act: $act, settings: (new CasePlanTree(items: $rows))->settings());
 
 		return $this->store->items->deleteByObject(objectUuid: $objectUuid);
 	}//end deletePlan()
@@ -796,7 +799,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	private function authorizeOrRecord(CasePlanAct $act, CaseItemMove $move): void {
 		$uid = $act->actor;
 		try {
-			$this->anchorAccess->authorization->assertMayAct(verb: $act->verb, item: $move->item, tree: $move->tree, uid: $uid);
+			$this->anchorAccess->authorization->assertMayAct(act: $act, item: $move->item, tree: $move->tree);
 		} catch (CaseAccessDeniedException $denial) {
 			$refusal = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $uid, reason: $denial->getMessage());
 			$this->mechanics->machine->recordRefusal(attempt: new CasePlanMove(item: $move->item, to: $move->to, why: $refusal, tree: null));
@@ -821,7 +824,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	private function authorizeAttach(?CaseItem $parent, CaseAdHocAttachment $attachment): void {
 		$tree = $attachment->tree;
 		if ($parent === null) {
-			$this->anchorAccess->authorization->assertMayAct(verb: 'attach', item: null, tree: $tree, uid: $attachment->actor);
+			$act = new CasePlanAct(verb: 'attach', actor: $attachment->actor);
+			$this->anchorAccess->authorization->assertMayAct(act: $act, item: null, tree: $tree);
 			return;
 		}
 

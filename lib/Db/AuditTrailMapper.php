@@ -220,7 +220,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// sealed hash forward, so a tail of them is a smaller claim, never a
 		// false alarm.
 		//
-		// Attribution is applied here as well as in buildAuditTrail(), which
+		// Attribution is applied here as well as in buildEntry(), which
 		// covers the entry points that do NOT build their row there —
 		// createAuditTrailEntry() (archival/retention) and
 		// recordToolInvocation() (MCP). Both can be reached from inside a
@@ -1079,42 +1079,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findMergeCandidate()
 
 	/**
-	 * Build (but do not persist) an audit trail entity for object changes.
-	 *
-	 * Contains the complete row-building logic shared by {@see createAuditTrail()}
-	 * (single insert) and {@see insertAuditTrails()} (batched multi-row insert),
-	 * so both paths produce identical audit rows.
-	 *
-	 * @param ObjectEntity|null $old The old state of the object
-	 * @param ObjectEntity|null $new The new state of the object
-	 * @param string|null $action The action to record. NULL (the default) infers it from which
-	 *                            entities are present: no `new` is a delete, no `old` is a create,
-	 *                            otherwise an update. A NAMED action is used verbatim — the
-	 *                            inference used to overwrite an explicit 'update' because it was
-	 *                            indistinguishable from the old default (#2217).
-	 * @param array|null $cascadeContext Optional referential-integrity cascade context to fold
-	 *                                   into the `changed` column (keys: triggerObject,
-	 *                                   triggerSchema, action_type, property).
-	 *
-	 * @return AuditTrail The populated (unpersisted) audit trail entity
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function buildAuditTrail(
-		?ObjectEntity $old = null,
-		?ObjectEntity $new = null,
-		?string $action = null,
-		?array $cascadeContext = null,
-	): AuditTrail {
-		return $this->buildEntry(change: new AuditedChange(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext));
-	}//end buildAuditTrail()
-
-	/**
 	 * Build (but do not persist) the audit row of one change.
-	 *
-	 * The typed form of {@see buildAuditTrail()}, which keeps its signature for other apps.
 	 *
 	 * @param AuditedChange $change The old and new state, the action and the cascade context.
 	 *
@@ -1577,7 +1542,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * Each entry is an array with keys `old` (?ObjectEntity), `new` (?ObjectEntity)
 	 * and `action` (string). Rows are built through the exact same
-	 * {@see buildAuditTrail()} logic as {@see createAuditTrail()} so their content
+	 * {@see buildEntry()} logic as {@see createAuditTrail()} so their content
 	 * is identical, but they are persisted with one multi-row INSERT per chunk of
 	 * 100 instead of one INSERT (plus 3 hash-chain queries) per row. After each
 	 * chunk the rows are sealed into the SHA-256 hash chain in a single batched
@@ -1586,7 +1551,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * rather than losing the audit records.
 	 *
 	 * @param array $entries Mixed list: ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string,
-	 *                       'cascadeContext' => ?array] entries built through {@see buildAuditTrail()}, and/or
+	 *                       'cascadeContext' => ?array] entries built through {@see buildEntry()}, and/or
 	 *                       pre-built AuditTrail entities (each must carry a uuid) persisted as-is
 	 * @param int $chunkSize Number of rows per multi-row INSERT statement
 	 *
@@ -1618,7 +1583,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * The row one insertAuditTrails() entry stands for.
 	 *
-	 * Pre-built rows (e.g. cascade deletes assembled via buildAuditTrail()
+	 * Pre-built rows (e.g. cascade deletes assembled via buildEntry()
 	 * with cascade context) are persisted as-is; array entries are built
 	 * through the shared row logic so both shapes yield identical rows.
 	 *
@@ -1643,11 +1608,13 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			throw new InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
 		}
 
-		return $this->buildAuditTrail(
-			old: ($entry['old'] ?? null),
-			new: ($entry['new'] ?? null),
-			action: ($entry['action'] ?? 'update'),
-			cascadeContext: ($entry['cascadeContext'] ?? null)
+		return $this->buildEntry(
+			change: new AuditedChange(
+				old: ($entry['old'] ?? null),
+				new: ($entry['new'] ?? null),
+				action: ($entry['action'] ?? 'update'),
+				cascadeContext: ($entry['cascadeContext'] ?? null)
+			)
 		);
 	}//end auditTrailFromEntry()
 
@@ -1715,7 +1682,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * The union of updated properties across a chunk, in first-seen order, without `id`.
 	 *
-	 * Rows built by buildAuditTrail() set the same fields, but optional fields
+	 * Rows built by buildEntry() set the same fields, but optional fields
 	 * like processingActivityId/importJobId can differ per row.
 	 *
 	 * @param AuditTrail[] $chunk The chunk.
@@ -2302,23 +2269,19 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $hours Optional number of hours to look back for recent activity (default: 24)
+	 * @param AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 *                                    back for recent activity (default: 24).
 	 *
 	 * @return int[]
 	 *
 	 * @psalm-return array{total: int, creates: int, updates: int,
 	 *     deletes: int, reads: int}
 	 */
-	public function getDetailedStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array {
-		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
-		$scope->hours = $hours;
-
-		$total = $this->getStatistics(registerId: $registerId, schemaId: $schemaId)['total'];
+	public function detailedStatistics(AuditStatisticsScope $scope): array {
+		$total = $this->getStatistics(registerId: $scope->registerId, schemaId: $scope->schemaId)['total'];
 
 		return $this->actionStatistics()->windowedActions(scope: $scope, total: $total);
-	}//end getDetailedStatistics()
+	}//end detailedStatistics()
 
 	/**
 	 * Lifetime row counts per action, for the actions that start with a prefix
@@ -2340,7 +2303,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * Get lifetime audit trail counts grouped by action
 	 *
-	 * Unlike getDetailedStatistics(), which windows the per-action counts to
+	 * Unlike detailedStatistics(), which windows the per-action counts to
 	 * the last N hours, this returns lifetime counts so the audit-trail page
 	 * statistics line up with the (unwindowed) audit-trail list beside them.
 	 * Keys are singular to match the audit-trail REST surface; the windowed
@@ -2363,40 +2326,30 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * Get action distribution data with percentages
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $hours Optional number of hours to look back (default: 24)
+	 * @param AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 *                                    back (default: 24).
 	 *
 	 * @return (int|mixed)[][][]
 	 *
 	 * @psalm-return array{actions: list<array{count: int, name: mixed}>}
 	 */
-	public function getActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array {
-		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
-		$scope->hours = $hours;
-
+	public function actionDistribution(AuditStatisticsScope $scope): array {
 		return $this->actionStatistics()->actionDistribution(scope: $scope);
-	}//end getActionDistribution()
+	}//end actionDistribution()
 
 	/**
 	 * Get most active objects based on audit trail activity
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $limit Optional limit for number of results (default: 10)
-	 * @param int|null $hours Optional number of hours to look back (default: 24)
+	 * @param AuditStatisticsScope $scope The register and schema to filter by (each optional), the number of results
+	 *                                    (default: 10) and the hours to look back (default: 24).
 	 *
 	 * @return (int|mixed|string)[][][]
 	 *
 	 * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
 	 */
-	public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array {
-		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
-		$scope->limit = $limit;
-		$scope->hours = $hours;
-
+	public function mostActiveObjects(AuditStatisticsScope $scope): array {
 		return $this->statistics()->mostActiveObjects(scope: $scope);
-	}//end getMostActiveObjects()
+	}//end mostActiveObjects()
 
 	/**
 	 * Purge expired audit rows, leaving a verifiable chain tombstone.
@@ -2495,33 +2448,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end clearLogs()
 
 	/**
-	 * Count the audit rows that belong to one object, excluding the evidence
-	 * of its own destruction.
-	 *
-	 * Already-tombstoned rows are excluded: their payload is gone, so there is
-	 * nothing left to destroy and counting them would make a preview promise
-	 * work it will not do.
-	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
-	 *
-	 * @return int The number of rows that would be tombstoned.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function countForObject(
-		string $objectUuid,
-		?array $onlyActions = null,
-		array $excludeActions = [],
-	): int {
-		return $this->countObjectTrail(objectUuid: $objectUuid, scope: new ActionScope(onlyActions: $onlyActions, excludeActions: $excludeActions));
-	}//end countForObject()
-
-	/**
 	 * Count the live rows of one object's trail within an action scope.
-	 *
-	 * The typed form of {@see countForObject()}, which keeps its signature for other apps.
 	 *
 	 * @param string      $objectUuid The object's UUID.
 	 * @param ActionScope $scope      The actions included and the actions never touched.
@@ -2595,40 +2522,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findObjectActions()
 
 	/**
-	 * Tombstone the audit rows that belong to one object.
-	 *
-	 * ⚠️ Tombstones rather than deletes, for the same reason {@see clearLogs()}
-	 * does: the table carries a SHA-256 chain and physically removing a row
-	 * mid-chain is indistinguishable from tampering (or#2265). The payload and
-	 * the personal identifiers go; the row, its `created` and its hash pair
-	 * stay, so the destruction stays provable.
-	 *
-	 * Rows whose action is listed in `$excludeActions` are never touched. That
-	 * is how the evidence of a destruction survives the destruction it
-	 * describes.
-	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
-	 *
-	 * @return int The number of rows tombstoned.
-	 *
-	 * @throws \Exception When the statement fails.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function tombstoneForObject(
-		string $objectUuid,
-		?array $onlyActions = null,
-		array $excludeActions = [],
-	): int {
-		return $this->tombstoneObjectTrail(objectUuid: $objectUuid, scope: new ActionScope(onlyActions: $onlyActions, excludeActions: $excludeActions));
-	}//end tombstoneForObject()
-
-	/**
 	 * Tombstone the rows of one object's trail within an action scope.
-	 *
-	 * The typed form of {@see tombstoneForObject()}, which keeps its signature for other apps.
 	 *
 	 * @param string      $objectUuid The object's UUID.
 	 * @param ActionScope $scope      The actions included and the actions never touched.
@@ -3266,36 +3160,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end refusalActor()
 
 	/**
-	 * Create one immutable, hash-chained audit record for a party query that
-	 * was refused for exceeding the administered cap.
-	 *
-	 * A refusal is the interesting event, not the search: proportionality is
-	 * the duty a functionaris gegevensbescherming asks about, and "who tried
-	 * to pull four hundred people out of the register" is the question the
-	 * trail has to answer. The entry carries no result, because there was
-	 * none — that is the point of a refusal rather than a truncation.
-	 *
-	 * The query text is recorded verbatim so the attempt can be read back.
-	 * It is a search term an authenticated caller typed, not a record about a
-	 * person, and the trail is already the instance's protected surface.
-	 *
-	 * @param string $query The query that was refused.
-	 * @param int $cap The administered maximum result count.
-	 * @param int $would How many parties the query would have matched.
-	 * @param int|null $schema Schema id searched, when the query named one.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
-	 */
-	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
-		return $this->recordPartyQueryRefusal(refusal: new PartyQueryRefusal(query: $query, cap: $cap, would: $would, schema: $schema));
-	}//end createPartyQueryRefusalEntry()
-
-	/**
 	 * Record a person query refused over the administered cap.
-	 *
-	 * The typed form of {@see createPartyQueryRefusalEntry()}, which keeps its signature for other apps.
 	 *
 	 * @param PartyQueryRefusal $refusal The query, the cap, the count it would have matched and the schema.
 	 *

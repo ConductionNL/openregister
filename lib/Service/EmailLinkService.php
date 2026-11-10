@@ -66,6 +66,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
+use OCA\OpenRegister\Db\MailMessageKey;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -173,12 +174,12 @@ class EmailLinkService implements EmailLinkServiceInterface {
 
 		// Idempotent path: return the existing row if the composite key
 		// already exists.
-		$existing = $this->mapper->findByObjectAccountMessageUid(
-			objectUuid: $target->objectUuid,
+		$key      = new MailMessageKey(
 			mailAccountId: $message->mailAccountId,
 			mailMessageId: $message->messageNumber(),
 			mailMessageUid: $message->uidForMatch()
 		);
+		$existing = $this->mapper->findByObjectAccountMessageUid(objectUuid: $target->objectUuid, message: $key);
 		if ($existing !== null) {
 			return $existing;
 		}
@@ -437,25 +438,16 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	 * per row is `{id, uid, subject, sender, date}` and the response
 	 * wraps `{items, nextCursor}`.
 	 *
-	 * @param int $accountId Mail account id (ownership-checked).
-	 * @param string $mailbox Mailbox path (matches mail_mailboxes.name).
-	 * @param string|null $afterCursor Numeric message id to start after; null for first page.
-	 * @param int $limit Page size (clamped to [1, MAX_LIMIT]).
+	 * @param MailboxPage $page The mail account id (ownership-checked), the mailbox path (matches mail_mailboxes.name),
+	 *                          the numeric message id to start after (null for the first page) and the page size
+	 *                          (clamped to [1, MAX_LIMIT]).
 	 *
 	 * @return array{items: array<int,array{id:int,uid:string,subject:?string,sender:?string,date:?string}>, nextCursor: ?int}
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getMessagesForMailbox(
-		int $accountId,
-		string $mailbox,
-		?string $afterCursor,
-		int $limit = self::DEFAULT_LIMIT,
-	): array {
-		$page = (new MailboxPage(accountId: $accountId, mailbox: $mailbox))
-			->startingAfter(afterCursor: $afterCursor, limit: max(1, min($limit, self::MAX_LIMIT)));
-
-		return $this->messagesOn(page: $page);
+	public function getMessagesForMailbox(MailboxPage $page): array {
+		return $this->messagesOn(page: $page->withLimitAtMost(max: self::MAX_LIMIT));
 	}//end getMessagesForMailbox()
 
 	/**

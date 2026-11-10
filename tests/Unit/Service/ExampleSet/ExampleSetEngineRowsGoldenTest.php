@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
@@ -163,9 +164,9 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 				'f.json: thing "refused": bad is refused for alice,bob',
 				'f.json: thing "gap": cannot resolve {{cast:nobody.uid}}',
 			],
-			$rows->checkFragment(fragment: $fragment, context: ['cast' => []], users: ['alice', 'bob'], values: new ExampleSetValues())
+			$rows->checkFragment(fragment: $fragment, check: new ExampleSetFragmentCheck(context: ['cast' => []], users: ['alice', 'bob'], values: new ExampleSetValues()))
 		);
-		$this->assertSame([], $rows->checkFragment(fragment: ['app' => 'demo', 'file' => 'f.json'], context: [], users: [], values: new ExampleSetValues()));
+		$this->assertSame([], $rows->checkFragment(fragment: ['app' => 'demo', 'file' => 'f.json'], check: new ExampleSetFragmentCheck(context: [], users: [], values: new ExampleSetValues())));
 		$this->assertSame([], $calls);
 	}//end testCheckFragment()
 

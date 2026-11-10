@@ -41,6 +41,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use Psr\Log\LoggerInterface;
 
@@ -179,10 +181,8 @@ class ReportRenderService {
 				// schema's `list` permission. The dashboard's own
 				// RBAC gate already filtered the viewer at load time.
 				return $this->aggregationRunner->run(
-					registerRef: $register,
-					schemaRef: $schema,
-					name: $aggregation,
-					bypassRbac: true
+					ref: new NamedAggregationRef(register: $register, schema: $schema, name: $aggregation),
+					options: new NamedAggregationOptions(bypassRbac: true)
 				);
 			}
 

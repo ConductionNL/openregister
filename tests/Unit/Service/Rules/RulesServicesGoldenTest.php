@@ -67,6 +67,9 @@ use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
+use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
 use OCP\IAppConfig;
@@ -273,23 +276,23 @@ class RulesServicesGoldenTest extends TestCase {
 		$low = ['bedrag' => 1];
 		$draft = ['expression' => ['ok' => 'draft']];
 		$actual = [
-			'calculation' => $trials->trySample($schema, 'calculation:bezwaar:uiterlijkeDatum', ['a' => 1]),
-			'property calculation' => $trials->trySample($schema, 'calculation:bezwaar:termijn', []),
-			'calculation throws' => $trials->trySample($schema, 'calculation:bezwaar:kapot', []),
-			'condition holds' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:sluiten', $high),
-			'condition fails' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:sluiten', $low),
-			'ast condition' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:ast', $low),
-			'state rule' => $trials->trySample($schema, 'stateFieldRule:bezwaar:open', []),
-			'flow' => $trials->trySample($schema, 'flow:bezwaar:flow-a', []),
-			'unknown' => $trials->trySample($schema, 'calculation:bezwaar:nope', []),
-			'unknown draft' => $trials->trySample($schema, 'calculation:bezwaar:nope', [], $draft),
-			'draft on condition' => $trials->trySample($schema, 'lifecycleCondition:bezwaar:sluiten', $high, ['expression' => ['==' => [1, 1]]]),
-			'override without expression' => $trials->trySample($schema, 'calculation:bezwaar:nope', [], ['x' => 1]),
-			'object' => $trials->tryObject($schema, 'lifecycleCondition:bezwaar:sluiten', 'reg', 'o1'),
-			'object calculation draft' => $trials->tryObject($schema, 'calculation:bezwaar:geen', 'reg', 'o2', $draft),
-			'object register missing' => $trials->tryObject($schema, 'calculation:bezwaar:uiterlijkeDatum', 'missing', 'o1'),
-			'object gone' => $trials->tryObject($schema, 'calculation:bezwaar:uiterlijkeDatum', 'reg', 'gone'),
-			'object unknown rule' => $trials->tryObject($schema, 'calculation:bezwaar:nope', 'missing', 'gone'),
+			'calculation' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:uiterlijkeDatum'), ['a' => 1]),
+			'property calculation' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:termijn'), []),
+			'calculation throws' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:kapot'), []),
+			'condition holds' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten'), $high),
+			'condition fails' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten'), $low),
+			'ast condition' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:ast'), $low),
+			'state rule' => $trials->trySample(new RuleTrialRequest($schema, 'stateFieldRule:bezwaar:open'), []),
+			'flow' => $trials->trySample(new RuleTrialRequest($schema, 'flow:bezwaar:flow-a'), []),
+			'unknown' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:nope'), []),
+			'unknown draft' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:nope', $draft), []),
+			'draft on condition' => $trials->trySample(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten', ['expression' => ['==' => [1, 1]]]), $high),
+			'override without expression' => $trials->trySample(new RuleTrialRequest($schema, 'calculation:bezwaar:nope', ['x' => 1]), []),
+			'object' => $trials->tryObject(new RuleTrialRequest($schema, 'lifecycleCondition:bezwaar:sluiten'), new ObjectRef('reg', (string)$schema->getId(), 'o1')),
+			'object calculation draft' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:geen', $draft), new ObjectRef('reg', (string)$schema->getId(), 'o2')),
+			'object register missing' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:uiterlijkeDatum'), new ObjectRef('missing', (string)$schema->getId(), 'o1')),
+			'object gone' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:uiterlijkeDatum'), new ObjectRef('reg', (string)$schema->getId(), 'gone')),
+			'object unknown rule' => $trials->tryObject(new RuleTrialRequest($schema, 'calculation:bezwaar:nope'), new ObjectRef('missing', (string)$schema->getId(), 'gone')),
 		];
 		$this->assertGolden('trial', $actual);
 	}//end testTrial()

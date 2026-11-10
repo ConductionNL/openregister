@@ -139,10 +139,7 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 		$sources = [];
 		foreach ($target['properties'] as $property) {
 			$sources[$property] = $this->resolveSourceLanguage(
-				schema: $target['schema'],
-				object: $object,
-				property: $property,
-				registerDefault: $defaultLanguage
+				lookup: new SourceLanguageLookup(schema: $target['schema'], object: $object, property: $property, registerDefault: $defaultLanguage)
 			);
 		}
 
@@ -385,23 +382,16 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 	 *   3. supplied register default
 	 *   4. hardcoded `'nl'` fallback
 	 *
-	 * @param Schema $schema The schema declaring the property.
-	 * @param ObjectEntity $object The object body containing optional override.
-	 * @param string $property The translatable property name.
-	 * @param string $registerDefault Register-level default language.
+	 * @param SourceLanguageLookup $lookup The schema declaring the property, the object body containing an
+	 *                                     optional override, the property name and the register's default language.
 	 *
 	 * @return string The resolved BCP-47 source language for the property.
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
 	 */
-	public function resolveSourceLanguage(
-		Schema $schema,
-		ObjectEntity $object,
-		string $property,
-		string $registerDefault,
-	): string {
-		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
-		return $rule->forProperty(body: (array)($object->getObject() ?? []), property: $property);
+	public function resolveSourceLanguage(SourceLanguageLookup $lookup): string {
+		$rule = new PropertySourceLanguage(schema: $lookup->schema, registerDefault: $lookup->registerDefault);
+		return $rule->forProperty(body: (array)($lookup->object->getObject() ?? []), property: $lookup->property);
 	}//end resolveSourceLanguage()
 
 	/**

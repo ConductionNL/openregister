@@ -10,9 +10,8 @@
  *
  *   - linkWorkPackage(uuid, registerId, schemaId, workPackageId)
  *       — link an existing OpenProject work package
- *   - createAndLinkWorkPackage(uuid, registerId, schemaId, projectId,
- *       subject, type) — create a new work package in OpenProject and
- *       link it
+ *   - createAndLinkDraft(target, draft) — create a new work package in
+ *       OpenProject and link it
  *   - unlink(uuid, workPackageId)
  *       — remove a link (the work package itself stays in OpenProject)
  *   - getLinkedWorkPackages(uuid)
@@ -208,25 +207,6 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	/**
 	 * Create a new OpenProject work package and link it to an OR object.
 	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string $projectId Target OpenProject project id.
-	 * @param string $subject New work-package subject.
-	 * @param string $type Optional work-package type (id or label).
-	 *
-	 * @return OpenProjectLink The persisted link row.
-	 *
-	 * @throws Exception On missing user (401), empty subject (400),
-	 *                   missing project (400), source unavailable (503).
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
-	 */
-	public function createAndLinkWorkPackage(LinkTarget $target, string $projectId, string $subject, string $type = ''): OpenProjectLink {
-		return $this->createAndLinkDraft(target: $target, draft: new WorkPackageDraft(projectId: $projectId, subject: $subject, type: $type));
-	}//end createAndLinkWorkPackage()
-
-	/**
-	 * Create a new OpenProject work package from a draft and link it to an OR object.
-	 *
 	 * @param LinkTarget       $target The object to link to.
 	 * @param WorkPackageDraft $draft  The project, subject and type of the new work package.
 	 *
@@ -291,7 +271,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		} catch (ProviderUnavailableException $e) {
 			throw $this->unavailable(exception: $e);
 		} catch (Throwable $e) {
-			$this->runtime->logger()->warning('OpenProjectLinkService::createAndLinkWorkPackage failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('OpenProjectLinkService::createAndLinkDraft failed: ' . $e->getMessage());
 			throw new Exception('Failed to create OpenProject work package', 500);
 		}
 	}//end createWorkPackage()

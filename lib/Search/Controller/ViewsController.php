@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\Service\Rbac\ReachedView;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
@@ -236,8 +237,7 @@ class ViewsController extends Controller {
 		);
 
 		$refused = $this->viewers->refusedFields(
-			view: $view->jsonSerialize(),
-			reach: $this->viewers->reachOf(userId: $userId),
+			reached: new ReachedView(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
 			update: $fields
 		);
 
@@ -448,7 +448,10 @@ class ViewsController extends Controller {
 	 */
 	private function saveNew(string $userId, ViewPatch $write): JSONResponse {
 		$data = $write->data;
-		$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
+		$this->viewers->assertMayNameRecipients(
+			reached: new ReachedView(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId)),
+			data: $data
+		);
 		$view = $this->viewService->create(
 			definition: new ViewDefinition(
 				name: $data['name'],
@@ -537,8 +540,7 @@ class ViewsController extends Controller {
 		if ($refusal === null) {
 			// PUT writes `isPublic` false when omitted, so the recipients are judged on that body.
 			$this->viewers->assertMayNameRecipients(
-				view: $update->view->jsonSerialize(),
-				reach: $this->viewers->reachOf(userId: $userId),
+				reached: new ReachedView(view: $update->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
 				data: ($update->data + ['isPublic' => false])
 			);
 		}
@@ -638,7 +640,10 @@ class ViewsController extends Controller {
 		// additionally carries `@NoCSRFRequired`.
 		$refusal = $this->refuseForbiddenViewFields(write: $patch, userId: $userId);
 		if ($refusal === null) {
-			$this->viewers->assertMayNameRecipients(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $patch->data);
+			$this->viewers->assertMayNameRecipients(
+				reached: new ReachedView(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
+				data: $patch->data
+			);
 		}
 
 		return $refusal ?? $this->savePatch(patch: $patch);

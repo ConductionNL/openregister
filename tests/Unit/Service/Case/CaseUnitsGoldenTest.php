@@ -1021,13 +1021,13 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$out = [];
 		foreach ($rows as $label => $row) {
-			$out['entered'][$label] = $timers->onEntered(item: $row, actor: 'alice', now: $now);
+			$out['entered'][$label] = $timers->onEntered(item: $row, act: new FlowTimerAct(actor: 'alice', now: DateTimeImmutable::createFromInterface($now)));
 			$out['rearm'][$label] = $timers->rearmStatutoryExpiry(item: $row, act: new FlowTimerAct(actor: null, now: $now));
 			$out['mark'][$label] = $timers->markIfStatutory(item: $row);
 		}
 
 		$refuse = true;
-		$out['refused'] = $timers->onEntered(item: $rows['both statutory'], actor: null, now: $now);
+		$out['refused'] = $timers->onEntered(item: $rows['both statutory'], act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now)));
 		$out['refused rearm'] = $timers->rearmStatutoryExpiry(item: $rows['both statutory'], act: new FlowTimerAct(actor: 'bob', now: $now));
 		$out['armed'] = $armed;
 		$out['marked'] = array_keys($markers->all());
