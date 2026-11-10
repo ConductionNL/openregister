@@ -643,7 +643,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$translations = $this->enrichers->translations->translationHandler;
 		$row->setObject(
-			$translations->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+			$translations->resolveTranslationsForRender(objectData: $row->getObject(), scope: new TranslationScope(schema: $schema, register: $register))
 		);
 	}//end translateEntityRow()
 
@@ -664,8 +664,7 @@ class RenderObject implements RenderObjectInterface {
 
 		return $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $row,
-			schema: $schema,
-			register: $this->arrayRowRegister(row: $row)
+			scope: new TranslationScope(schema: $schema, register: $this->arrayRowRegister(row: $row))
 		);
 	}//end translateArrayRow()
 
@@ -1541,7 +1540,14 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$this->hydrateFilesOf(entity: $entity);
 		} catch (Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not render the file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;
@@ -1852,7 +1858,14 @@ class RenderObject implements RenderObjectInterface {
 				$entity->setImage(self::fileUrlOf(value: $value));
 			}
 		} catch (\Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not hydrate the image metadata from file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;
@@ -3060,8 +3073,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$run->data = $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $run->data,
-			schema: $run->schema,
-			register: $register
+			scope: new TranslationScope(schema: $run->schema, register: $register)
 		);
 		if ($this->shouldAttachLanguageMeta() === false) {
 			return $run->data;

@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\CospendProjectDraft;
 use Exception;
 use OCA\OpenRegister\Db\CospendEntryKey;
 use OCA\OpenRegister\Db\CospendLink;
@@ -199,7 +200,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), 'Holiday', 'EUR');
+		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), new CospendProjectDraft('Holiday', 'EUR'));
 	}//end testCreateAndLinkProjectThrowsWhenNoUser()
 
 	public function testCreateAndLinkProjectThrowsOnEmptyName(): void {
@@ -208,7 +209,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), '   ', 'EUR');
+		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), new CospendProjectDraft('   ', 'EUR'));
 	}//end testCreateAndLinkProjectThrowsOnEmptyName()
 
 	public function testCreateAndLinkProjectThrowsWhenCospendUnavailable(): void {
@@ -218,7 +219,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), 'Holiday', 'EUR');
+		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), new CospendProjectDraft('Holiday', 'EUR'));
 	}//end testCreateAndLinkProjectThrowsWhenCospendUnavailable()
 
 	public function testUnlinkThrowsWhenNoUser(): void {

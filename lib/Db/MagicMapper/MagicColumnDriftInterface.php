@@ -130,15 +130,14 @@ interface MagicColumnDriftInterface {
 	 * `#>> '{}'` extracts a JSON scalar as text, so a column that already holds only
 	 * UUID strings (or nulls) converts cleanly.
 	 *
-	 * @param string $tableName The magic table.
-	 * @param array $currentColumns Live columns, keyed by physical column name.
-	 * @param array $requiredColumns Desired columns, keyed by property name.
+	 * @param string           $tableName The magic table.
+	 * @param MagicColumnDrift $columns   The live columns (keyed by physical column name) and the desired ones (keyed by property name).
 	 *
 	 * @return array<string> The column names actually retyped.
 	 *
 	 * @spec exclude magic-table DDL sync
 	 */
-	public function migrateRelationColumnsToVarchar(string $tableName, array $currentColumns, array $requiredColumns): array;
+	public function migrateRelationColumnsToVarchar(string $tableName, MagicColumnDrift $columns): array;
 
 	/**
 	 * Find number columns narrower than their property now maps to.
@@ -161,15 +160,14 @@ interface MagicColumnDriftInterface {
 	 * A failure is logged and the column left as it is: the write path refuses
 	 * a value the property's column size cannot hold, so nothing is rounded.
 	 *
-	 * @param string $tableName       The magic table (without prefix).
-	 * @param array  $currentColumns  Live columns, keyed by physical column name.
-	 * @param array  $requiredColumns Desired columns, keyed by property name.
+	 * @param string           $tableName The magic table (without prefix).
+	 * @param MagicColumnDrift $columns   The live columns (keyed by physical column name) and the desired ones (keyed by property name).
 	 *
 	 * @return array<string> The column names widened.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
-	public function widenDecimalColumns(string $tableName, array $currentColumns, array $requiredColumns): array;
+	public function widenDecimalColumns(string $tableName, MagicColumnDrift $columns): array;
 
 	/**
 	 * Widen every number column of a table to at least the default DECIMAL(20,6).

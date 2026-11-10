@@ -189,10 +189,8 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	/**
 	 * List objects of a register/schema ascending by quality score.
 	 *
-	 * @param int|string $register Register id, uuid or slug.
-	 * @param int|string $schema Schema id, uuid or slug.
-	 * @param string|null $qualityStatus Optional status filter (`good`/`fair`/`poor`).
-	 * @param QualityListingWindow $window Sort field and order, page size and offset.
+	 * @param QualityListingRequest $request The register and schema (id, uuid or slug), the optional status filter
+	 *                                       (`good`/`fair`/`poor`) and the window: sort field and order, page size and offset.
 	 *
 	 * @return array{
 	 *   items: array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>,
@@ -203,30 +201,12 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 *
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
-	public function lowestQuality(
-		$register,
-		$schema,
-		?string $qualityStatus = null,
-		QualityListingWindow $window = new QualityListingWindow(),
-	): array {
-		return $this->lowest(request: new QualityListingRequest(register: $register, schema: $schema, qualityStatus: $qualityStatus, window: $window));
-	}//end lowestQuality()
-
-	/**
-	 * The lowest-quality listing of one request: score, filter, sort and page.
-	 *
-	 * @param QualityListingRequest $request The register, schema, status filter and window.
-	 *
-	 * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
-	 *
-	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
-	 */
-	private function lowest(QualityListingRequest $request): array {
+	public function lowestQuality(QualityListingRequest $request): array {
 		$rows = $this->statusRows(request: $request);
 		$this->sortRows(rows: $rows, window: $request->window);
 
 		return self::page(rows: $rows, window: $request->window);
-	}//end lowest()
+	}//end lowestQuality()
 
 	/**
 	 * Every loaded object's listing row, scored under the schema's annotation, filtered by status.

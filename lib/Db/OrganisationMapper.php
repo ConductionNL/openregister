@@ -512,13 +512,24 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
 	 */
 	public function findLocalTenants(int $limit = 50, int $offset = 0, ?array $filters = []): array {
-		$qb = $this->db->getQueryBuilder();
+		return $this->findLocalTenantList(query: new ListQuery(limit: $limit, offset: $offset, filters: ($filters ?? [])));
+	}//end findLocalTenants()
 
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('name', 'ASC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+	/**
+	 * Find the organisations that are tenants of this installation, one list query at a time.
+	 *
+	 * The ListQuery form of {@see findLocalTenants()}; the same NULL-counts-as-tenant rule applies.
+	 *
+	 * @param ListQuery $query The limit, offset and column => value equality filters.
+	 *
+	 * @return Organisation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+	 *
+	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
+	 */
+	public function findLocalTenantList(ListQuery $query): array {
+		$qb = $this->orderedPage(query: $query);
 
 		$qb->andWhere(
 			$qb->expr()->orX(
@@ -527,10 +538,10 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			)
 		);
 
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 
 		return $this->findEntities(query: $qb);
-	}//end findLocalTenants()
+	}//end findLocalTenantList()
 
 	/**
 	 * Find all organisations with pagination and optional column filters
@@ -552,18 +563,25 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 */
 	public function findAll(int $limit = 50, int $offset = 0, ?array $filters = []): array {
-		$qb = $this->db->getQueryBuilder();
+		return $this->findList(query: new ListQuery(limit: $limit, offset: $offset, filters: ($filters ?? [])));
+	}//end findAll()
 
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('name', 'ASC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
-
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
+	/**
+	 * Find the organisations one list query asks for, ordered by name.
+	 *
+	 * @param ListQuery $query The limit, offset and column => value equality filters (also
+	 *                         accepting the 'IS NULL' / 'IS NOT NULL' sentinels).
+	 *
+	 * @return Organisation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+	 */
+	public function findList(ListQuery $query): array {
+		$qb = $this->orderedPage(query: $query);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findList()
 
 	/**
 	 * Find organisations by name with pagination
@@ -577,17 +595,44 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 */
 	public function findByName(string $name, int $limit = 50, int $offset = 0): array {
+		return $this->findListByName(name: $name, query: new ListQuery(limit: $limit, offset: $offset));
+	}//end findByName()
+
+	/**
+	 * Find the organisations whose name contains a pattern, one page at a time.
+	 *
+	 * @param string    $name  The name pattern to search for.
+	 * @param ListQuery $query The limit and offset (its filters are not applied).
+	 *
+	 * @return Organisation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+	 */
+	public function findListByName(string $name, ListQuery $query): array {
+		$qb = $this->orderedPage(query: $query);
+		$qb->where($qb->expr()->like('name', $qb->createNamedParameter('%' . $name . '%')));
+
+		return $this->findEntities(query: $qb);
+	}//end findListByName()
+
+	/**
+	 * Start a select of this table ordered by name and paged as the list query asks.
+	 *
+	 * @param ListQuery $query The limit and offset.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function orderedPage(ListQuery $query): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->like('name', $qb->createNamedParameter('%' . $name . '%')))
 			->orderBy('name', 'ASC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult(($query->offset ?? 0));
 
-		return $this->findEntities(query: $qb);
-	}//end findByName()
+		return $qb;
+	}//end orderedPage()
 
 	/**
 	 * Find an organisation by its slug
@@ -956,11 +1001,13 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 
 		// Build parent map for efficient lookup.
 		$parentMap = $this->buildParentMap(childrenUuids: $childrenUuids);
+		// A walk stops at the root: with the root's own parent left out, it has nowhere further to go.
+		unset($parentMap[$rootUuid]);
 
 		// Calculate depth for each child.
 		$maxDepth = 0;
 		foreach ($childrenUuids as $childUuid) {
-			$depth = $this->calculateDepthFromRoot(nodeUuid: $childUuid, rootUuid: $rootUuid, parentMap: $parentMap);
+			$depth = $this->calculateDepthFromRoot(nodeUuid: $childUuid, parentMap: $parentMap);
 			$maxDepth = max($maxDepth, $depth);
 		}
 
@@ -994,19 +1041,18 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	/**
 	 * Calculate depth of a node from root
 	 *
-	 * @param string $nodeUuid The node UUID
-	 * @param string $rootUuid The root UUID
-	 * @param array $parentMap Parent mapping array
+	 * @param string $nodeUuid  The node UUID
+	 * @param array  $parentMap Parent mapping array, without an entry for the root.
 	 *
 	 * @return int Depth from root
 	 *
 	 * @psalm-return int<0, 20>
 	 */
-	private function calculateDepthFromRoot(string $nodeUuid, string $rootUuid, array $parentMap): int {
+	private function calculateDepthFromRoot(string $nodeUuid, array $parentMap): int {
 		$depth = 0;
 		$current = $nodeUuid;
 
-		while (($parentMap[$current] ?? null) !== null && ($current !== $rootUuid) === true && ($depth < 20) === true) {
+		while (($parentMap[$current] ?? null) !== null && ($depth < 20) === true) {
 			$depth++;
 			$current = $parentMap[$current];
 		}

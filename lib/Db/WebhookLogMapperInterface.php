@@ -61,14 +61,13 @@ interface WebhookLogMapperInterface {
 	 * Find logs for a specific webhook
 	 *
 	 * @param int $webhookId Webhook ID
-	 * @param int|null $limit Limit results
-	 * @param int|null $offset Offset results
+	 * @param ListQuery $page The page (limit, offset); unbounded by default. Other fields are ignored.
 	 *
 	 * @return WebhookLog[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
 	 */
-	public function findByWebhook(int $webhookId, ?int $limit = null, ?int $offset = null): array;
+	public function findByWebhook(int $webhookId, ListQuery $page=new ListQuery(limit: ListQuery::UNBOUNDED)): array;
 
 	/**
 	 * Find failed logs that need retry

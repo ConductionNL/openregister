@@ -103,19 +103,16 @@ interface ExportProfileServiceInterface {
 	/**
 	 * Refuse a caller who is neither the owner nor an administrator.
 	 *
-	 * @param ExportProfile $profile       The profile.
-	 * @param string        $callerUid     The caller.
-	 * @param bool          $callerIsAdmin Whether the caller is an administrator.
+	 * @param ExportProfile       $profile The profile.
+	 * @param ExportProfileCaller $caller  The caller's uid, and whether they are an administrator.
 	 *
 	 * @return void
 	 *
 	 * @throws ExportRefusedException When the caller may not touch the profile.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
-	 *
-	 *     a property of the caller, not a second code path.
 	 */
-	public function assertOwnerOrAdmin(ExportProfile $profile, string $callerUid, bool $callerIsAdmin): void;
+	public function assertOwnerOrAdmin(ExportProfile $profile, ExportProfileCaller $caller): void;
 
 	/**
 	 * Run a profile as a named principal, and record what left.

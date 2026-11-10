@@ -298,12 +298,18 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end validateImmutableConstraints()
 
 	/**
+	 * Reads and applies the recorded-incompleteness record; constructed on first use.
+	 *
+	 * @var NotSuppliedHandler|null
+	 */
+	private ?NotSuppliedHandler $notSuppliedHandler = null;
+
+	/**
 	 * Constructor for ValidateObject
 	 *
-	 * @param ValidationSchemaSource  $schemas            Loads the schemas and resolves their references.
-	 * @param ValidationLookups       $lookups            Looks existing objects and users up.
-	 * @param LoggerInterface         $logger             Logger for logging operations.
-	 * @param NotSuppliedHandler|null $notSuppliedHandler Reads and applies the recorded-incompleteness record.
+	 * @param ValidationSchemaSource $schemas Loads the schemas and resolves their references.
+	 * @param ValidationLookups      $lookups Looks existing objects and users up.
+	 * @param LoggerInterface        $logger  Logger for logging operations.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -311,7 +317,6 @@ class ValidateObject implements ValidateObjectInterface {
 		private readonly ValidationSchemaSource $schemas,
 		private readonly ValidationLookups $lookups,
 		private readonly LoggerInterface $logger,
-		private ?NotSuppliedHandler $notSuppliedHandler = null,
 	) {
 	}//end __construct()
 
@@ -1375,13 +1380,28 @@ class ValidateObject implements ValidateObjectInterface {
 		object $schemaObject = new stdClass(),
 		array $plannedUsers = [],
 	): ValidationResult {
-		$this->plannedUsers = array_values(array_filter($plannedUsers, 'is_string'));
+		$check = new PlannedAccountsCheck(schema: $schema, schemaObject: $schemaObject, plannedUsers: $plannedUsers);
+		return $this->validateWithPlannedAccounts(object: $object, check: $check);
+	}//end validateObjectWithPlannedUsers()
+
+	/**
+	 * Validates an object against a schema, letting a `user` format accept the accounts a check plans to create.
+	 *
+	 * @param array                $object The object to validate.
+	 * @param PlannedAccountsCheck $check  The schema to validate against and the account ids to accept.
+	 *
+	 * @return ValidationResult The result of the validation.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	public function validateWithPlannedAccounts(array $object, PlannedAccountsCheck $check): ValidationResult {
+		$this->plannedUsers = array_values(array_filter($check->plannedUsers, 'is_string'));
 		try {
-			return $this->validateObject(object: $object, schema: $schema, schemaObject: $schemaObject);
+			return $this->validateObject(object: $object, schema: $check->schema, schemaObject: $check->schemaObject);
 		} finally {
 			$this->plannedUsers = [];
 		}
-	}//end validateObjectWithPlannedUsers()
+	}//end validateWithPlannedAccounts()
 
 	/**
 	 * Validates an object against a schema.

@@ -84,8 +84,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 * The run history, filtered by job, outcome and period.
 	 *
 	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
-	 * @param int          $limit  How many rows to return.
-	 * @param int          $offset Where to start.
+	 * @param ListQuery    $page   How many rows to return, and where to start.
 	 *
 	 * @return array<string, mixed> The rows, and how many there are.
 	 *
@@ -93,10 +92,9 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 */
 	public function runs(
 		JobRunFilter $filter = new JobRunFilter(),
-		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
-		int $offset = 0,
+		ListQuery $page = new ListQuery(limit: JobRunMapperInterface::DEFAULT_LIMIT, offset: 0),
 	): array {
-		return $this->runPage(filter: $filter, page: new ListQuery(limit: $limit, offset: $offset));
+		return $this->runPage(filter: $filter, page: $page);
 
 	}//end runs()
 
@@ -163,11 +161,10 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		$job = $this->resolve(class: $class);
 
 		$this->runNow->recorder->around(
-			jobClass: $class,
+			start: new JobRunStart(jobClass: $class, context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)),
 			work: function () use ($job): void {
 				$job->start($this->runNow->jobList);
-			},
-			context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)
+			}
 		);
 
 		$started = $this->runs->findRecent(filter: new RunQuery(jobClass: $class), limit: 1);

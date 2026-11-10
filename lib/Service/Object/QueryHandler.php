@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\AppFramework\IAppContainer;
 
 /**
@@ -552,15 +553,16 @@ class QueryHandler implements QueryHandlerInterface {
 		}
 
 		$contentSearchStart = microtime(true);
-		$augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
-			query: $query,
+		$page               = new MetadataArmPage(
 			results: $searchResult['results'],
 			total: $searchResult['total'],
 			limit: $scope['limit'],
+			offset: $scope['offset']
+		);
+		$augmented          = $this->contentSearchHandler->widen(
+			widening: new ContentSearchWidening(query: $query, page: $page, activeOrgUuid: $scope['activeOrgUuid']),
 			_rbac: $scope['rbac'],
-			_multitenancy: $scope['multitenancy'],
-			offset: $scope['offset'],
-			activeOrgUuid: $scope['activeOrgUuid']
+			_multitenancy: $scope['multitenancy']
 		);
 		$searchResult['results']   = $augmented['results'];
 		$searchResult['total']     = $augmented['total'];
@@ -746,8 +748,7 @@ class QueryHandler implements QueryHandlerInterface {
 
 		return $dictionary->expand(
 			term: $term,
-			perGroupCap: $this->dictionary->perGroupCap(),
-			perQueryCap: $this->dictionary->perQueryCap()
+			caps: new SynonymCaps(perGroup: $this->dictionary->perGroupCap(), perQuery: $this->dictionary->perQueryCap())
 		);
 	}//end expandSearchTerm()
 

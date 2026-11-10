@@ -158,6 +158,11 @@ class GraphQLServiceGoldenTest extends TestCase {
 			IUserSession::class              => $session,
 			LoggerInterface::class           => $logger,
 		];
+		$this->deps[\OCA\OpenRegister\Db\SchemaCatalogInterface::class] = new \OCA\OpenRegister\Db\SchemaCatalog(
+			registers: $this->deps[RegisterMapperInterface::class],
+			schemas: $this->deps[SchemaMapperInterface::class],
+			tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+		);
 
 		// High enough that an APCu-enabled build never reaches the limit.
 		$this->config = ['graphql_rate_limit' => '100000'];

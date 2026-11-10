@@ -7,14 +7,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\WebhooksController;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -173,8 +175,8 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 
 			return $this->log($case['log'] ?? []);
 		});
-		$mapper->method('findByWebhook')->willReturnCallback(function (...$args) use ($case) {
-			$this->calls[] = ['logMapper.findByWebhook' => $args];
+		$mapper->method('findByWebhook')->willReturnCallback(function (int $webhookId, ListQuery $page) use ($case) {
+			$this->calls[] = ['logMapper.findByWebhook' => [$webhookId, $page->limitOrNull(), $page->offset]];
 			return array_map(fn (array $fields) => $this->log($fields), $case['latest'] ?? []);
 		});
 		return $mapper;
@@ -204,8 +206,9 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 	 */
 	private function service(array $case): WebhookService {
 		$service = $this->createMock(WebhookService::class);
-		$service->method('deliverWebhook')->willReturnCallback(function (...$args) use ($case) {
-			$args[0] = 'webhook#' . $args[0]->getId();
+		$service->method('deliverWebhook')->willReturnCallback(function (WebhookDelivery $delivery) use ($case) {
+			$event = $delivery->event;
+			$args  = ['webhook#' . $delivery->webhook->getId(), $event->name, $event->payload, $delivery->attempt, $delivery->timeoutCapSeconds];
 			$this->calls[] = ['service.deliverWebhook' => $args];
 			if (isset($case['deliveryThrows']) === true) {
 				throw new Exception($case['deliveryThrows']);

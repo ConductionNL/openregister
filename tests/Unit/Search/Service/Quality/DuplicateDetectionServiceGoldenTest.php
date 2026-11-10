@@ -35,6 +35,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 
 /**
  * Each case configures a schema annotation, a stored object set and the
@@ -168,14 +169,14 @@ class DuplicateDetectionServiceGoldenTest extends TestCase {
 	private function invoke(DuplicateDetectionService $service, array $case): mixed {
 		$register = ($case['register'] ?? 1);
 		return match ($case['call']) {
-			'find' => $service->findDuplicates($register, 1, ($case['rules'] ?? null), ($case['threshold'] ?? null)),
+			'find' => $service->findDuplicates(request: new DedupRun(register: $register, schema: 1, matchRules: ($case['rules'] ?? null), threshold: ($case['threshold'] ?? null))),
 			'check' => $service->checkCandidate($register, 1, $case['candidate'], ($case['threshold'] ?? null)),
-			'threshold' => $service->effectiveThreshold($register, 1, ($case['threshold'] ?? null)),
+			'threshold' => $service->effectiveThreshold(request: new DedupRun(register: $register, schema: 1, threshold: ($case['threshold'] ?? null))),
 			'rules' => $service->effectiveRules($register, 1),
 			'annotation' => $service->dedupAnnotation($register, 1),
 			'fingerprint' => [
-				$service->pairFingerprint(self::payloads()['a1'], self::payloads()['a2'], ($case['fingerprintRules'] ?? self::ANNOTATION['matchRules'])),
-				$service->pairFingerprint(self::payloads()['a2'], self::payloads()['a1'], ($case['fingerprintRules'] ?? self::ANNOTATION['matchRules'])),
+				$service->pairFingerprint(payloads: [self::payloads()['a1'], self::payloads()['a2']], rules: ($case['fingerprintRules'] ?? self::ANNOTATION['matchRules'])),
+				$service->pairFingerprint(payloads: [self::payloads()['a2'], self::payloads()['a1']], rules: ($case['fingerprintRules'] ?? self::ANNOTATION['matchRules'])),
 			],
 			default => throw new RuntimeException('unknown call'),
 		};
@@ -248,7 +249,7 @@ class DuplicateDetectionServiceGoldenTest extends TestCase {
 				[$first, $second] = explode('|', $pairKey);
 				$fingerprint = 'stale';
 				if ($kind === 'current' && $this->service !== null) {
-					$fingerprint = $this->service->pairFingerprint(self::payloads()[$first], self::payloads()[$second], $case['rules']);
+					$fingerprint = $this->service->pairFingerprint(payloads: [self::payloads()[$first], self::payloads()[$second]], rules: $case['rules']);
 				}
 				$out[DismissedPairStore::key($second, $first)] = ['fingerprint' => $fingerprint];
 			}
