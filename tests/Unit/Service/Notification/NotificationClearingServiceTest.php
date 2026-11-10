@@ -145,6 +145,22 @@ class NotificationClearingServiceTest extends TestCase {
 	}//end testOpeningATabClearsOnlyThatTab()
 
 	/**
+	 * A sub-resource opened anonymously, or without an id, clears nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 */
+	public function testASubResourceClearsOnlyTheCallersOwnNotices(): void {
+		$this->mapper->expects($this->never())->method('markReadForSubject');
+
+		$this->assertSame(0, $this->serviceAs(null)->clearForSubResource(objectUuid: 'uuid-case-1', subjectId: 'files'));
+		$this->assertSame(0, $this->serviceAs('alice')->clearForSubResource(objectUuid: 'uuid-case-1', subjectId: ''));
+		$this->assertSame(0, $this->serviceAs('alice')->clearForSubResource(objectUuid: '', subjectId: 'files'));
+
+	}//end testASubResourceClearsOnlyTheCallersOwnNotices()
+
+	/**
 	 * An anonymous read clears nothing, and asks nothing.
 	 *
 	 * @return void
