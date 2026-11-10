@@ -1165,7 +1165,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
 	 */
 	public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force = false): bool {
-		return $this->tableHandler->ensureTableForRegisterSchema(register: $register, schema: $schema, force: $force);
+		return $this->tableHandler->ensureTargetTable(target: new MagicTableTarget(register: $register, schema: $schema), force: $force);
 	}//end ensureTableForRegisterSchema()
 
 	/**
@@ -3271,11 +3271,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return ObjectEntity|null Converted entity or null on failure
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
-		return $this->statisticsHandler->convertRowToObjectEntity(
-			row: $row,
-			_register: $_register,
-			_schema: $_schema
-		);
+		return $this->statisticsHandler->toObjectEntity(row: $row, table: new RegisterSchema(register: $_register, schema: $_schema));
 	}//end convertRowToObjectEntity()
 
 	/**
