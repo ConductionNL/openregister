@@ -222,20 +222,7 @@ class AppHostSettingsService {
 	 */
 	private function auditSettingsChange(array $before, array $after): void {
 		try {
-			$auditor = $this->container->get(
-				'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
-			);
-
-			if (method_exists($auditor, 'recordUpdate') === false) {
-				return;
-			}
-
-			$auditor->recordUpdate(
-				$this->appId,
-				$before,
-				$after,
-				$this->secretKeysFor(auditor: $auditor, changedKeys: array_keys(array_merge($before, $after)))
-			);
+			$this->recordSettingsChange(before: $before, after: $after);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf(
@@ -246,6 +233,31 @@ class AppHostSettingsService {
 			);
 		}
 	}//end auditSettingsChange()
+
+	/**
+	 * Hand a settings change to OpenRegister's settings-change auditor, when it can record one.
+	 *
+	 * @param array<string, mixed> $before The values before the change.
+	 * @param array<string, mixed> $after  The values after the change.
+	 *
+	 * @return void
+	 */
+	private function recordSettingsChange(array $before, array $after): void {
+		$auditor = $this->container->get(
+			'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
+		);
+
+		if (method_exists($auditor, 'recordUpdate') === false) {
+			return;
+		}
+
+		$auditor->recordUpdate(
+			$this->appId,
+			$before,
+			$after,
+			$this->secretKeysFor(auditor: $auditor, changedKeys: array_keys(array_merge($before, $after)))
+		);
+	}//end recordSettingsChange()
 
 	/**
 	 * The feature toggles this app declares.
@@ -270,9 +282,20 @@ class AppHostSettingsService {
 			return $this->featureDeclarations;
 		}
 
+		$this->featureDeclarations = $this->declaredFeatures();
+
+		return $this->featureDeclarations;
+	}//end featureDeclarations()
+
+	/**
+	 * The `features` block of the register configuration, as a list; none when it is unreadable.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function declaredFeatures(): array {
 		$declarations = [];
 		try {
-			[$data] = $this->resolveRegisterConfiguration();
+			[$data]   = $this->resolveRegisterConfiguration();
 			$declared = ($data[FeatureToggleService::DECLARATION_KEY] ?? null);
 			if (is_array($declared) === true) {
 				$declarations = array_values($declared);
@@ -283,10 +306,8 @@ class AppHostSettingsService {
 			);
 		}
 
-		$this->featureDeclarations = $declarations;
-
 		return $declarations;
-	}//end featureDeclarations()
+	}//end declaredFeatures()
 
 	/**
 	 * The effective feature toggles: declared defaults under instance overrides.
