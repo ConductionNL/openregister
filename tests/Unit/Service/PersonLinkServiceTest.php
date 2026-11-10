@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCA\OpenRegister\Service\PersonLinkTargets;
+use OCA\OpenRegister\Service\UserLinkRequest;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -158,7 +159,7 @@ class PersonLinkServiceTest extends TestCase {
 		$this->contacts->expects($this->never())->method('linkCard');
 		$this->userLinks->expects($this->once())
 			->method('write')
-			->with('case-1', 5, 7, 'jan', 'handler')
+			->with(new UserLinkRequest('case-1', 5, 7, 'jan'), 'handler')
 			->willReturn($this->storedLink());
 
 		$link = $this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: ['userId' => 'jan', 'role' => 'handler']);
@@ -240,7 +241,7 @@ class PersonLinkServiceTest extends TestCase {
 		$this->schemas->method('find')->willReturn(new Schema());
 		$this->userLinks->expects($this->once())
 			->method('write')
-			->with('case-1', 5, 7, 'jan', 'whatever')
+			->with(new UserLinkRequest('case-1', 5, 7, 'jan'), 'whatever')
 			->willReturn($this->storedLink(role: 'whatever'));
 
 		$this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: ['userId' => 'jan', 'role' => 'whatever']);
