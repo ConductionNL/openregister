@@ -105,8 +105,8 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a talk conversation'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a talk conversation'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a talk conversation', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a talk conversation', required: self::REQUIRED)),
 				fn (): string => $rules->strangerRefusal(people: $this->people(data: $data), users: $users),
 				fn (): string => $this->callRefusal(call: ($data['call'] ?? null)),
 			]
