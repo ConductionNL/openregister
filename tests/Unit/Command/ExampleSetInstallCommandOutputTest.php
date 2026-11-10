@@ -144,4 +144,38 @@ class ExampleSetInstallCommandOutputTest extends TestCase {
 
 		$this->assertSame("brp person: 0 declared, 0 created, 0 already there, 0 found afterwards\n", $this->printed($report));
 	}//end testAnEmptyReportPrintsOnlyItsTypes()
+
+	/**
+	 * The check report: registers, checked objects and changes, then the verdict and the exit code.
+	 *
+	 * @return void
+	 */
+	public function testTheCheckReportIsPrintedWithItsVerdict(): void {
+		$method = new ReflectionMethod(ExampleSetInstallCommand::class, 'reportCheck');
+		$result = [
+			'registers' => ['brp' => 'kept', 'zaken' => 'created'],
+			'checked' => ['brp person' => 2],
+			'checkedChanges' => ['zaken zaak' => 1],
+			'refusals' => [],
+		];
+
+		$output = new BufferedOutput();
+		$this->assertSame(0, $method->invoke($this->command(), $result, $output));
+		$this->assertSame(
+			"Register brp: already there\nRegister zaken: created\nbrp person: 2 checked\nzaken zaak: 1 change(s) checked\n"
+			."Every object passes its schema. No account, group or object of the set was written.\n"
+			."A required register the instance lacked was imported, and a cast organisation it lacked was created, because the check needs them.\n",
+			$output->fetch()
+		);
+
+		$result['refusals'] = ['brp person bsn', 'brp person name'];
+		$output = new BufferedOutput();
+		$this->assertSame(1, $method->invoke($this->command(), $result, $output));
+		$this->assertSame(
+			"Register brp: already there\nRegister zaken: created\nbrp person: 2 checked\nzaken zaak: 1 change(s) checked\n"
+			."Refused: brp person bsn\nRefused: brp person name\n"
+			."2 refusal(s). No account, group or object of the set was written.\n",
+			$output->fetch()
+		);
+	}//end testTheCheckReportIsPrintedWithItsVerdict()
 }//end class
