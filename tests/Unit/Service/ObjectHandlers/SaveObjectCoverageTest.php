@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\FilePropertyCalls;
@@ -237,6 +238,19 @@ class SaveObjectCoverageTest extends TestCase {
 		);
 
 		$this->reflection = new ReflectionClass($this->saveObject);
+	}
+
+	/**
+	 * The save call an existing-object lookup reads: the uuid, no register or schema.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return ObjectSaveCall The call.
+	 */
+	private static function lookupCall(string $uuid): ObjectSaveCall {
+		$call = new ObjectSaveCall();
+		$call->uuid = $uuid;
+		return $call;
 	}
 
 	/**
@@ -588,13 +602,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willThrowException(new DoesNotExistException('not found'));
 
-		$result = $this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$result = $this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 
 		$this->assertNull($result);
 	}
@@ -611,13 +619,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		$result = $this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$result = $this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -655,13 +657,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
-		$this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 	}
 
 	/**
@@ -680,13 +676,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$user->method('getUID')->willReturn('current-user');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$result = $this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$result = $this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -708,13 +698,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Cannot update object: Object is locked');
 
-		$this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 	}
 
 	// =========================================================================

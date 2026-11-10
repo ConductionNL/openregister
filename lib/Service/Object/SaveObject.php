@@ -84,6 +84,8 @@ use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
+use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
@@ -2049,11 +2051,7 @@ class SaveObject implements SaveObjectInterface {
 			message: '[SaveObject] UUID provided, checking for existing object'
 		);
 
-		$existingObject = $this->findAndValidateExistingObject(
-			uuid: $call->uuid,
-			register: $call->register,
-			schema: $call->schema
-		);
+		$existingObject = $this->findAndValidateExistingObject(call: $call);
 
 		if ($existingObject !== null) {
 			$this->refuseExistingWhenInsertOnly(call: $call, existingObject: $existingObject);
@@ -2389,6 +2387,21 @@ class SaveObject implements SaveObjectInterface {
 		?string $uuid,
 		?array $uploadedFiles,
 	): array {
+		[$uuid, $selfData, $data] = self::splitSelfData(data: $data, uuid: $uuid);
+		return [$uuid, $selfData, $this->injectUploadedFiles(data: $data, uploadedFiles: $uploadedFiles)];
+	}//end extractUuidAndSelfData()
+
+	/**
+	 * Takes `@self` and the identifier out of the data.
+	 *
+	 * @param array       $data The object data.
+	 * @param string|null $uuid The UUID the caller gave, if any.
+	 *
+	 * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, data without `@self` and `id`]
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function splitSelfData(array $data, ?string $uuid): array {
 		// Extract @self metadata.
 		$selfData = [];
 		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
@@ -2409,16 +2422,29 @@ class SaveObject implements SaveObjectInterface {
 		unset($data['@self']);
 		unset($data['id']);
 
-		// Process uploaded files and inject them into data.
-		if ($uploadedFiles !== null && empty($uploadedFiles) === false) {
-			$data = $this->filePropertyHandler->processUploadedFiles(
-				uploadedFiles: $uploadedFiles,
-				data: $data
-			);
+		return [$uuid, $selfData, $data];
+	}//end splitSelfData()
+
+	/**
+	 * Injects uploaded files into the object data.
+	 *
+	 * @param array      $data          The object data.
+	 * @param array|null $uploadedFiles The uploaded files, if any.
+	 *
+	 * @return array The data with the uploaded files in it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function injectUploadedFiles(array $data, ?array $uploadedFiles): array {
+		if ($uploadedFiles === null || empty($uploadedFiles) === true) {
+			return $data;
 		}
 
-		return [$uuid, $selfData, $data];
-	}//end extractUuidAndSelfData()
+		return $this->filePropertyHandler->processUploadedFiles(
+			uploadedFiles: $uploadedFiles,
+			data: $data
+		);
+	}//end injectUploadedFiles()
 
 	/**
 	 * Resolve schema and register to entity objects with their IDs.
@@ -2449,9 +2475,7 @@ class SaveObject implements SaveObjectInterface {
 	 * validating the stored object never fails on the caller's permissions;
 	 * the caller's access to the write is decided elsewhere.
 	 *
-	 * @param string $uuid Object UUID.
-	 * @param Register|null $register Optional register for magic mapper routing.
-	 * @param Schema|null $schema Optional schema for magic mapper routing.
+	 * @param ObjectSaveCall $call The save call: the object UUID, and the optional register and schema for magic mapper routing.
 	 *
 	 * @return ObjectEntity|null Existing object or null if not found.
 	 *
@@ -2459,18 +2483,15 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function findAndValidateExistingObject(
-		string $uuid,
-		?Register $register = null,
-		?Schema $schema = null,
-	): ?ObjectEntity {
+	private function findAndValidateExistingObject(ObjectSaveCall $call): ?ObjectEntity {
+		$uuid = (string)$call->uuid;
 		try {
 			// Always disable RBAC and multitenancy for internal object lookup
 			// to avoid permission errors when validating existing objects.
 			$existingObject = $this->objectEntityMapper->find(
 				identifier: $uuid,
-				register: $register,
-				schema: $schema,
+				register: $call->register,
+				schema: $call->schema,
 				includeDeleted: false,
 				_rbac: false,
 				_multitenancy: false
@@ -3072,9 +3093,25 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
 	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
+		$owner = ($this->attributedOwner(_unowned: $_unowned, _owner: $_owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
+		if ($owner !== null) {
+			$objectEntity->setOwner($owner);
+		}
+	}//end applyOwnerAttribution()
+
+	/**
+	 * The owner a new object gets from the write itself: the explicit owner, the system identity, or the session user.
+	 *
+	 * @param bool        $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner   An explicit owner; wins over the session and the system identity.
+	 *
+	 * @return string|null The owner, or null when there is no session and nothing was asked for.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function attributedOwner(bool $_unowned, ?string $_owner): ?string {
 		if ($_owner !== null && $_owner !== '') {
-			$objectEntity->setOwner($_owner);
-			return;
+			return $_owner;
 		}
 
 		// DELIBERATELY UNOWNED. The system identifier rather than an empty
@@ -3082,24 +3119,32 @@ class SaveObject implements SaveObjectInterface {
 		// REST list path's RBAC filter even for admins (openregister#1617), so
 		// "no owner" has to mean the system, not nobody.
 		if ($_unowned === true) {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
-			return;
+			return $this->organisationService->getSystemUserId();
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$objectEntity->setOwner($user->getUID());
-			return;
-		}
+		return $this->userSession->getUser()?->getUID();
+	}//end attributedOwner()
 
+	/**
+	 * The owner a new object gets when there is no session: the system identity, unless it already has one.
+	 *
+	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
+	 *
+	 * @return string|null The system identity, or null to keep the owner it has.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function ownerWithoutSession(ObjectEntity $objectEntity): ?string {
 		// No user session — only fall back to the system identifier when
 		// owner is genuinely missing (empty or null). An explicit non-empty
 		// owner (e.g. set by the caller) is preserved.
 		$currentOwner = $objectEntity->getOwner();
 		if ($currentOwner === null || $currentOwner === '') {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
+			return $this->organisationService->getSystemUserId();
 		}
-	}//end applyOwnerAttribution()
+
+		return null;
+	}//end ownerWithoutSession()
 
 	/**
 	 * Prepares an object for update by applying all necessary transformations.
@@ -3314,9 +3359,6 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction from multiple sources
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
@@ -3326,6 +3368,33 @@ class SaveObject implements SaveObjectInterface {
 		array $data = [],
 		?IUser $currentUser = null,
 	): void {
+		$this->applyClientSelfData(objectEntity: $objectEntity, selfData: $selfData);
+		$this->bindSelfFolder(objectEntity: $objectEntity, bind: FolderBind::fromSelfData(selfData: $selfData, actingUser: $currentUser));
+		self::applySelfGeo(objectEntity: $objectEntity, selfData: $selfData);
+		// SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
+		// from client input on CREATE.  The destruction pipeline keys off archiefstatus;
+		// a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
+		// destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
+		// (called after this method) will apply the correct system defaults including
+		// resetting archiefstatus to 'actief' for new objects, overriding any client value.
+		// On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
+		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
+		// (No setTmlo() call — the field is intentionally omitted).
+	}//end setSelfMetadata()
+
+	/**
+	 * Applies the client-writable @self fields that need no folder: owner refusal, status and organisation.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to set metadata on.
+	 * @param array        $selfData     The @self metadata.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When @self names an owner the caller may not set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyClientSelfData(ObjectEntity $objectEntity, array $selfData): void {
 		// The slug is not set here any more: ObjectSlugHandler::applyOnSave()
 		// decides it after hydration, so the freeze and uniqueness rules see
 		// the client slug and the stored one together (#4037).
@@ -3379,56 +3448,82 @@ class SaveObject implements SaveObjectInterface {
 			// Non-member callers silently fall through; prepareObjectForCreation() will
 			// stamp the caller's active organisation via getOrganisationForNewEntity().
 		}
+	}//end applyClientSelfData()
 
+	/**
+	 * Binds the folder @self asks for, after the access check when it names a folder id.
+	 *
+	 * @param ObjectEntity    $objectEntity The object entity to set the folder on.
+	 * @param FolderBind|null $bind         The requested bind, or null when @self names no folder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 */
+	private function bindSelfFolder(ObjectEntity $objectEntity, ?FolderBind $bind): void {
 		// Propagate @self.folder so the access-control check governs the bind
 		// (numeric → access-checked, empty/legacy → auto-create). Without
 		// propagation a user-supplied @self.folder is silently dropped —
 		// defeating the whole `self-folder-access-control` capability.
-		if (array_key_exists('folder', $selfData) === true && empty($selfData['folder']) === false) {
-			$folderValue = (string)$selfData['folder'];
+		if ($bind === null) {
+			return;
+		}
 
-			// For folder values that are a bare positive integer node id (the
-			// format produced by explicit `@self.folder` writes), require that
-			// the acting user can read the target folder — otherwise reject the
-			// bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
-			// rather than `is_numeric` so floats / scientific-notation / signed
-			// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
-			// get `(int)`-truncated to a *different* node than was validated.
-			// Legacy non-numeric values fall through to the auto-create path.
-			// A payload that echoes the folder the object already has is not a
-			// bind: the stored value was written by OpenRegister and is
-			// re-validated as a managed folder in ensureObjectFolder(). Asking
-			// the caller-supplied question here refused every editor, because a
-			// managed folder sits in the openregister account's home and in
-			// nobody's own mount.
-			$storedFolder = (string)($objectEntity->getFolder() ?? '');
-			$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
+		$folderValue = $bind->folder;
 
-			if (ctype_digit($folderValue) === true && $isUnchanged === false) {
-				// Pass `$currentUser` through so the access check uses the
-				// SAME user identity that the downstream
-				// `createObjectFolderById` check uses on the lazy-init path.
-				// When `$currentUser` is null (HTTP path), both checks fall
-				// back to `IUserSession::getUser()` and agree by default.
-				// When `$currentUser` is non-null (DI / event listener path),
-				// both checks use it explicitly — no chance of one site
-				// passing while another denies because of session vs explicit
-				// user disagreement.
-				$this->folderManagementHandler->assertFolderIsAccessible(
-					folderId: $folderValue,
-					currentUser: $currentUser,
-					objectEntity: $objectEntity
-				);
+		// For folder values that are a bare positive integer node id (the
+		// format produced by explicit `@self.folder` writes), require that
+		// the acting user can read the target folder — otherwise reject the
+		// bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
+		// rather than `is_numeric` so floats / scientific-notation / signed
+		// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
+		// get `(int)`-truncated to a *different* node than was validated.
+		// Legacy non-numeric values fall through to the auto-create path.
+		// A payload that echoes the folder the object already has is not a
+		// bind: the stored value was written by OpenRegister and is
+		// re-validated as a managed folder in ensureObjectFolder(). Asking
+		// the caller-supplied question here refused every editor, because a
+		// managed folder sits in the openregister account's home and in
+		// nobody's own mount.
+		$storedFolder = (string)($objectEntity->getFolder() ?? '');
+		$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
 
-				// Normalise to the canonical integer string so the persisted
-				// value matches the node that was validated (no "42.5" vs "42"
-				// drift in audit / analytics / equality checks).
-				$folderValue = (string)(int)$folderValue;
-			}//end if
+		if (ctype_digit($folderValue) === true && $isUnchanged === false) {
+			// Pass `$currentUser` through so the access check uses the
+			// SAME user identity that the downstream
+			// `createObjectFolderById` check uses on the lazy-init path.
+			// When `$currentUser` is null (HTTP path), both checks fall
+			// back to `IUserSession::getUser()` and agree by default.
+			// When `$currentUser` is non-null (DI / event listener path),
+			// both checks use it explicitly — no chance of one site
+			// passing while another denies because of session vs explicit
+			// user disagreement.
+			$this->folderManagementHandler->assertFolderIsAccessible(
+				folderId: $folderValue,
+				currentUser: $bind->actingUser,
+				objectEntity: $objectEntity
+			);
 
-			$objectEntity->setFolder($folderValue);
+			// Normalise to the canonical integer string so the persisted
+			// value matches the node that was validated (no "42.5" vs "42"
+			// drift in audit / analytics / equality checks).
+			$folderValue = (string)(int)$folderValue;
 		}//end if
 
+		$objectEntity->setFolder($folderValue);
+	}//end bindSelfFolder()
+
+	/**
+	 * Applies @self.geo, the object's geographical metadata.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to set the geo on.
+	 * @param array        $selfData     The @self metadata.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function applySelfGeo(ObjectEntity $objectEntity, array $selfData): void {
 		// Propagate @self.geo — the object's geographical metadata (a GeoJSON-ish
 		// array rendered/edited by map widgets, e.g. CnObjectGeoWidget). Unlike
 		// organisation/tmlo this is plain descriptive data driving no security or
@@ -3439,17 +3534,7 @@ class SaveObject implements SaveObjectInterface {
 				$objectEntity->setGeo($geoValue);
 			}
 		}
-
-		// SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
-		// from client input on CREATE.  The destruction pipeline keys off archiefstatus;
-		// a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
-		// destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
-		// (called after this method) will apply the correct system defaults including
-		// resetting archiefstatus to 'actief' for new objects, overriding any client value.
-		// On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
-		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
-		// (No setTmlo() call — the field is intentionally omitted).
-	}//end setSelfMetadata()
+	}//end applySelfGeo()
 
 	/**
 	 * Refuse a write that asks for an owner the acting user may not take.
@@ -4330,13 +4415,13 @@ class SaveObject implements SaveObjectInterface {
 
 		if ($uuid === null || $uuid === '') {
 			$entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
-			$this->recordObjectSourceAudit(old: null, new: $entity, action: 'create', silent: $silent);
+			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $silent);
 			return $entity;
 		}
 
 		$old = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
 		$entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
-		$this->recordObjectSourceAudit(old: $old, new: $entity, action: 'update', silent: $silent);
+		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $silent);
 
 		return $entity;
 	}//end delegateObjectSourceWrite()
@@ -4347,25 +4432,23 @@ class SaveObject implements SaveObjectInterface {
 	 * An audit failure must never mask a successful external write; it degrades
 	 * to a structured secret-free warning.
 	 *
-	 * @param ObjectEntity|null $old The pre-write entity (null on create).
-	 * @param ObjectEntity $new The post-write entity.
-	 * @param string $action The action (`create`|`update`).
-	 * @param bool $silent Whether audit creation is suppressed.
+	 * @param ObjectSourceChange $change What the external write changed, and as which action.
+	 * @param bool               $silent Whether audit creation is suppressed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void {
+	private function recordObjectSourceAudit(ObjectSourceChange $change, bool $silent): void {
 		if ($silent === true) {
 			return;
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'[SaveObject] audit trail for external ' . $action . ' on uuid ' . ((string)$new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
+				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
 				['file' => __FILE__, 'line' => __LINE__]
 			);
 		}

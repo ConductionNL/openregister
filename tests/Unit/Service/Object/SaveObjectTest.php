@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
@@ -184,6 +185,19 @@ class SaveObjectTest extends TestCase {
 			permissionHandler: $permissionHandler,
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
+	}
+
+	/**
+	 * The save call an existing-object lookup reads: the uuid, no register or schema.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return ObjectSaveCall The call.
+	 */
+	private static function lookupCall(string $uuid): ObjectSaveCall {
+		$call = new ObjectSaveCall();
+		$call->uuid = $uuid;
+		return $call;
 	}
 
 	/**
@@ -1741,9 +1755,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willThrowException(new DoesNotExistException('Not found'));
 
-		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 
 		$this->assertNull($result);
 	}
@@ -1755,9 +1767,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -1805,9 +1815,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
-		$this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 	}
 
 	public function testFindAndValidateExistingObjectAllowsLockOwner(): void {
@@ -1820,9 +1828,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('same-user');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -1850,9 +1856,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage($runUuid);
 
-		$this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 	}
 
 	/**
@@ -1878,9 +1882,7 @@ class SaveObjectTest extends TestCase {
 
 		$this->runContext->push($runUuid, 'lock-object', 1);
 		try {
-			$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null,
-			]);
+			$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 		} finally {
 			$this->runContext->pop();
 		}
@@ -1913,9 +1915,7 @@ class SaveObjectTest extends TestCase {
 		// swallows it, so the test would report the wrong thing when it broke.
 		$refusal = null;
 		try {
-			$this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null,
-			]);
+			$this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 		} catch (Exception $refused) {
 			$refusal = $refused;
 		} finally {
@@ -1948,9 +1948,7 @@ class SaveObjectTest extends TestCase {
 
 		$refusal = null;
 		try {
-			$this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null,
-			]);
+			$this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 		} catch (Exception $refused) {
 			$refusal = $refused;
 		} finally {
@@ -1983,9 +1981,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('carol');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -3433,9 +3429,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -3448,9 +3442,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null,
-		]);
+		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 
 		// Lock owner is null, so no lock conflict.
 		$this->assertSame($entity, $result);
