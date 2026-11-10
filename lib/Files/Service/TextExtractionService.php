@@ -149,33 +149,6 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	}//end __construct()
 
 	/**
-	 * Extract text from a file by Nextcloud file ID
-	 *
-	 * This method:
-	 * 1. Looks up file in Nextcloud's oc_filecache
-	 * 2. Checks if re-extraction is needed (file modified since last extraction)
-	 * 3. Performs extraction if needed
-	 *
-	 * @param int $fileId Nextcloud file ID from oc_filecache
-	 * @param bool $forceReExtract Force re-extraction even if file hasn't changed
-	 * @param array<int, string>|null $entityTypes Entity types to detect, or null for every type.
-	 *                                             filinq passes the types an operator left switched on;
-	 *                                             before or#4115 PHP dropped this argument silently.
-	 *
-	 * @return void
-	 *
-	 * @throws NotFoundException If file doesn't exist in Nextcloud
-	 * @throws Exception If extraction fails
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function extractFile(int $fileId, bool $forceReExtract = false, ?array $entityTypes = null): void {
-		$this->extractFileWith(fileId: $fileId, options: new FileExtractionOptions(forceReExtract: $forceReExtract, entityTypes: $entityTypes));
-	}//end extractFile()
-
-	/**
 	 * Extract text from a file, chunk it and detect entities, unless its chunks are up to date.
 	 *
 	 * @param int                   $fileId  The Nextcloud file id.
@@ -188,7 +161,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function extractFileWith(int $fileId, FileExtractionOptions $options): void {
+	public function extractFile(int $fileId, FileExtractionOptions $options=new FileExtractionOptions()): void {
 		$this->analysis->logger->debug(
 			message: '[TextExtractionService] Starting file extraction',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
@@ -220,32 +193,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: 'llphant')
 		);
 		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), entityTypes: $options->entityTypes);
-	}//end extractFileWith()
-
-	/**
-	 * Index text another app extracted from a file, such as OCR of a scan (#2033)
-	 *
-	 * The text takes the path of text this service extracts itself: sanitised,
-	 * chunked, stored for the file (replacing its chunks), then entity
-	 * recognition and the risk level when entity recognition is on. The file
-	 * must exist; its content is not read. The metadata chunk records the method as
-	 * `extraction_method`, so a reader can tell provided text from extracted text.
-	 *
-	 * @param int        $fileId      The Nextcloud file id the text belongs to.
-	 * @param string     $text        The text, as the caller extracted it.
-	 * @param array|null $entityTypes Entity types to detect, or null for all.
-	 * @param string     $method      How the text was obtained, for example `ocr`.
-	 *
-	 * @return void
-	 *
-	 * @throws NotFoundException When the file does not exist.
-	 * @throws Exception         When the text is empty after sanitising.
-	 *
-	 * @spec openspec/specs/text-extraction/spec.md
-	 */
-	public function extractFromProvidedText(int $fileId, string $text, ?array $entityTypes = null, string $method = 'ocr'): void {
-		$this->indexProvidedText(request: new ProvidedTextRequest(fileId: $fileId, text: $text, entityTypes: $entityTypes, method: $method));
-	}//end extractFromProvidedText()
+	}//end extractFile()
 
 	/**
 	 * Index text a caller already extracted as the content of a file.
@@ -258,7 +206,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function indexProvidedText(ProvidedTextRequest $request): void {
+	public function extractFromProvidedText(ProvidedTextRequest $request): void {
 		$ncFile = $this->sources->storage->fileMapper->getFile($request->fileId);
 		if ($ncFile === null) {
 			throw new NotFoundException("File with ID {$request->fileId} not found in Nextcloud");
@@ -270,7 +218,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		);
 		$text = new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time()));
 		$this->indexFilePayload(text: $text, entityTypes: $request->entityTypes);
-	}//end indexProvidedText()
+	}//end extractFromProvidedText()
 
 	/**
 	 * Chunk, store and run entity recognition over a file's text payload
@@ -1244,7 +1192,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		}
 
 		try {
-			$this->extractFile(fileId: $ncFile['fileid'], forceReExtract: $force);
+			$this->extractFile(fileId: $ncFile['fileid'], options: new FileExtractionOptions(forceReExtract: $force));
 			return true;
 		} catch (Exception $e) {
 			$this->analysis->logger->error(
@@ -1366,7 +1314,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 				message: '[TextExtractionService] Processing file',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $ncFile['fileid'], 'fileName' => $ncFile['name'] ?? 'unknown']
 			);
-			$this->extractFile(fileId: $fileId, forceReExtract: false);
+			$this->extractFile(fileId: $fileId);
 			$walk->processed++;
 		} catch (Exception $e) {
 			$walk->failed++;
