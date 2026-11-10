@@ -80,11 +80,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function format(array|ObjectEntity $result, ?string $term): SearchResultEntry {
-		if ($result instanceof ObjectEntity) {
-			$result = $result->jsonSerialize();
-		}
-
-		$hit = new ObjectSearchHit(object: $result);
+		$hit = self::hitOf(result: $result);
 
 		$objectUrl = $this->resolveObjectUrl(hit: $hit);
 
@@ -101,6 +97,21 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 			$rounded
 		);
 	}//end format()
+
+	/**
+	 * The search hit for one result, normalising an entity to its rendered data.
+	 *
+	 * @param array|ObjectEntity $result The rendered object data, or the entity itself.
+	 *
+	 * @return ObjectSearchHit The hit.
+	 */
+	private static function hitOf(array|ObjectEntity $result): ObjectSearchHit {
+		if ($result instanceof ObjectEntity) {
+			$result = $result->jsonSerialize();
+		}
+
+		return new ObjectSearchHit(object: $result);
+	}//end hitOf()
 
 	/**
 	 * The hit with the per-app label of its (register, schema) pair.
