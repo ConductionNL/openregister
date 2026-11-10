@@ -410,11 +410,9 @@ class MagicSearchHandler {
 		}
 
 		// Build filtered query (applies all WHERE conditions).
-		$queryBuilder = $this->buildFilteredQuery(
+		$queryBuilder = $this->buildTableQuery(
 			query: $query,
-			schema: $schema,
-			tableName: $tableName,
-			registerId: $register->getId()
+			table: new MagicReadTable(schema: $schema, registerId: $register->getId(), tableName: $tableName)
 		);
 
 		// Check if fuzzy search is enabled for relevance scoring.
@@ -546,6 +544,24 @@ class MagicSearchHandler {
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
 	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
+		return $this->buildTableQuery(query: $query, table: new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName));
+	}//end buildFilteredQuery()
+
+	/**
+	 * Build a filtered query for one magic table with all WHERE conditions applied.
+	 *
+	 * The SINGLE SOURCE OF TRUTH for query filtering (see buildFilteredQuery()).
+	 * Returns a QueryBuilder with FROM and WHERE clauses, but NO SELECT.
+	 *
+	 * @param array          $query Search parameters including filters.
+	 * @param MagicReadTable $table The table to query, with its schema and register. A null
+	 *                              register is read from the query's reserved `register` key,
+	 *                              which is how the facet paths carry it.
+	 *
+	 * @return IQueryBuilder QueryBuilder with all filters applied.
+	 */
+	public function buildTableQuery(array $query, MagicReadTable $table): IQueryBuilder {
+		$schema = $table->schema;
 		// A filter or sort on a value that is only shown masked would read it without the reveal.
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
 
@@ -562,33 +578,36 @@ class MagicSearchHandler {
 		);
 
 		$queryBuilder = $this->db->getQueryBuilder();
-		$queryBuilder->from($tableName, 't');
+		$queryBuilder->from((string) $table->tableName, 't');
 
-		// Apply basic filters (deleted, archived, drafts).
-		$this->applyBasicFilters(
+		// The register falls back to the query's reserved `register` key, for
+		// the access-control filter and the related-row filter alike.
+		$run = new TableFilterRun(
 			qb: $queryBuilder,
 			query: $query,
-			schema: $schema,
-			missingColumns: $this->missingMetadataColumns(tableName: $tableName)
+			table: new MagicReadTable(
+				schema: $schema,
+				registerId: ($table->registerId ?? $this->registerIdFromQuery(query: $query)),
+				tableName: $table->tableName
+			)
 		);
+
+		// Apply basic filters (deleted, archived, drafts).
+		$this->applyBasicFilters(run: $run);
 
 		// Apply multi-tenancy and RBAC access control filters.
 		$this->applyAccessControlFilters(
 			qb: $queryBuilder,
-			table: new MagicReadTable(
-				schema: $schema,
-				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
-				tableName: $tableName
-			),
+			table: $run->table,
 			posture: new ReadPosture(rbac: $_rbac, multitenancy: $_multitenancy, multitenancyExplicit: $multitenancyExplicit)
 		);
 
 		// Apply metadata, object-field and ID filters.
-		$this->applyContentFilters(qb: $queryBuilder, query: $query, schema: $schema);
+		$this->applyContentFilters(run: $run);
 
 		// Apply the unread / favourites / recent lenses, full-text search and
 		// relation filters.
-		$this->applyLensAndSearchFilters(qb: $queryBuilder, query: $query, schema: $schema);
+		$this->applyLensAndSearchFilters(run: $run);
 
 		// Narrow by rows of ANOTHER schema that point at this one. Does nothing
 		// unless the query carries `_related`, so every existing call site is
@@ -598,17 +617,13 @@ class MagicSearchHandler {
 		// the bare parameter here was wrong: the facet path calls this method
 		// without a register id, so a facet request carrying `_related` was
 		// refused even when the query itself named the register.
-		$this->applyRelatedRowFilters(
-			qb: $queryBuilder,
-			query: $query,
-			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
-		);
+		$this->applyRelatedRowFilters(run: $run);
 
 		// Narrow by one element of an array property (`_element`).
-		$this->applyArrayElementFilters(qb: $queryBuilder, query: $query, schema: $schema);
+		$this->applyArrayElementFilters(run: $run);
 
 		return $queryBuilder;
-	}//end buildFilteredQuery()
+	}//end buildTableQuery()
 
 	/**
 	 * Narrow the query by `_element` blocks: an object matches when one element
@@ -618,9 +633,7 @@ class MagicSearchHandler {
 	 * the caller may not read, matches nothing and is reported as an ignored
 	 * filter, the way an unknown nested path is. An encrypted property refuses.
 	 *
-	 * @param IQueryBuilder $qb     The query being built.
-	 * @param array<mixed>  $query  The request query.
-	 * @param Schema        $schema The schema of the table.
+	 * @param TableFilterRun $run The filter pass: query builder, request query and table.
 	 *
 	 * @return void
 	 *
@@ -628,7 +641,10 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
 	 */
-	private function applyArrayElementFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
+	private function applyArrayElementFilters(TableFilterRun $run): void {
+		$qb         = $run->qb;
+		$query      = $run->query;
+		$schema     = $run->schema();
 		$elements   = new ArrayElementFilter();
 		$properties = ($schema->getProperties() ?? []);
 		$isPostgres = $this->isPostgresPlatform();
@@ -671,9 +687,7 @@ class MagicSearchHandler {
 	 * tell from the response that the narrowing was never applied. So the
 	 * exception travels.
 	 *
-	 * @param IQueryBuilder $qb         The query being built.
-	 * @param array<mixed>  $query      The request query.
-	 * @param int|null      $registerId The register, needed to resolve the related table.
+	 * @param TableFilterRun $run The filter pass: query builder, request query and table.
 	 *
 	 * @return void
 	 *
@@ -682,7 +696,9 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	private function applyRelatedRowFilters(IQueryBuilder $qb, array $query, ?int $registerId): void {
+	private function applyRelatedRowFilters(TableFilterRun $run): void {
+		$query      = $run->query;
+		$registerId = $run->table->registerId;
 		if (array_key_exists('_related', $query) === false && array_key_exists('_referenced', $query) === false) {
 			return;
 		}
@@ -698,13 +714,12 @@ class MagicSearchHandler {
 		$register->setId($registerId);
 
 		$this->relatedRows->apply(
-			qb: $qb,
+			qb: $run->qb,
 			query: $query,
 			register: $register,
 			organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
 				query: $query,
-				related: $related,
-				registerId: $relatedRegisterId
+				related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
 			)
 		);
 	}//end applyRelatedRowFilters()
@@ -749,9 +764,8 @@ class MagicSearchHandler {
 	 * the list of that table would not return. `SCOPE_ALL` when the boundary does
 	 * not apply (system context, admin bypass, an RBAC rule that waives it).
 	 *
-	 * @param array<mixed> $query      The request query, for `_rbac` and `_multitenancy`.
-	 * @param Schema       $related    The related schema.
-	 * @param int|null     $registerId The register the related table lives in.
+	 * @param array<mixed>   $query   The request query, for `_rbac` and `_multitenancy`.
+	 * @param MagicReadTable $related The related schema and the register its table lives in.
 	 *
 	 * @return array{mode: string, uuids: array<int, string>} The decided scope.
 	 *
@@ -759,7 +773,9 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function organisationScopeForRelated(array $query, Schema $related, ?int $registerId): array {
+	private function organisationScopeForRelated(array $query, MagicReadTable $related): array {
+		$registerId           = $related->registerId;
+		$related              = $related->schema;
 		$_rbac                = $this->flagFromQuery(value: ($query['_rbac'] ?? true));
 		$multitenancyExplicit = $this->isExplicitlyTrue(value: ($query['_multitenancy_explicit'] ?? false));
 		$resolved             = $this->resolveMultitenancyFlag(
@@ -808,13 +824,14 @@ class MagicSearchHandler {
 	 * filters) could not surface a just-written object in-request. Mirror the
 	 * raw-SQL UNION path, which already excludes getReservedParams().
 	 *
-	 * @param IQueryBuilder $qb     The query builder to mutate.
-	 * @param array         $query  Search parameters including filters.
-	 * @param Schema        $schema The schema for property filtering.
+	 * @param TableFilterRun $run The filter pass: query builder, request query and table.
 	 *
 	 * @return void
 	 */
-	private function applyContentFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
+	private function applyContentFilters(TableFilterRun $run): void {
+		$qb     = $run->qb;
+		$query  = $run->query;
+		$schema = $run->schema();
 		// Extract and clean filters from the query.
 		$metadataFilters = $query['@self'] ?? [];
 		$objectFilters = array_filter(
@@ -848,13 +865,14 @@ class MagicSearchHandler {
 	 * disagree about what was excluded; each filter guards itself so this method
 	 * keeps its branch count and no-op filters add no conditions.
 	 *
-	 * @param IQueryBuilder $qb     The query builder to mutate.
-	 * @param array         $query  Search parameters including filters.
-	 * @param Schema        $schema The schema for full-text search.
+	 * @param TableFilterRun $run The filter pass: query builder, request query and table.
 	 *
 	 * @return void
 	 */
-	private function applyLensAndSearchFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
+	private function applyLensAndSearchFilters(TableFilterRun $run): void {
+		$qb     = $run->qb;
+		$query  = $run->query;
+		$schema = $run->schema();
 		// The unread lens, resolved IN the query so the page, the total and the
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $qb, userId: ($query['_unreadFor'] ?? null));
@@ -2457,18 +2475,18 @@ class MagicSearchHandler {
 	/**
 	 * Apply basic filters like deleted status
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param array<string, mixed> $query The search query, for the deleted (`_deleted`), archive (`_archived`)
-	 *                                    and draft (`_drafts`, decision 201) lenses
-	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
-	 * @param string[] $missingColumns Metadata columns this table could not be given
+	 * @param TableFilterRun $run The filter pass: query builder, request query and table.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, array $query = [], ?Schema $schema = null, array $missingColumns = []): void {
+	private function applyBasicFilters(TableFilterRun $run): void {
+		$qb             = $run->qb;
+		$query          = $run->query;
+		$schema         = $run->schema();
+		$missingColumns = $this->missingMetadataColumns(tableName: $run->table->tableName);
 		$lens = new DeletedLens();
 		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: 't.');
 		if ($deleted !== null) {
