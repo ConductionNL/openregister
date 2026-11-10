@@ -154,6 +154,19 @@ class ConfigurationKeyRegistry implements ConfigurationKeyRegistryInterface {
 			return null;
 		}
 
+		return $this->declaredKeyRefusal(layer: $layer, configKey: $configKey);
+
+	}//end refusalFor()
+
+	/**
+	 * Why a key outside the open prefixes cannot be set at a layer: it is not declared, or it is an instance setting.
+	 *
+	 * @param string $layer     A known layer.
+	 * @param string $configKey The configuration key, not reserved and not open.
+	 *
+	 * @return string|null The refusal, or null when the address may be set.
+	 */
+	private function declaredKeyRefusal(string $layer, string $configKey): ?string {
 		if (isset(self::DECLARED[$configKey]) === false) {
 			return sprintf(
 				'"%s" is not a declared configuration key and matches no open prefix',
@@ -161,6 +174,19 @@ class ConfigurationKeyRegistry implements ConfigurationKeyRegistryInterface {
 			);
 		}
 
+		return $this->instanceOnlyRefusal(layer: $layer, configKey: $configKey);
+
+	}//end declaredKeyRefusal()
+
+	/**
+	 * Why a declared (instance) setting cannot be set at a lower layer.
+	 *
+	 * @param string $layer     A known layer.
+	 * @param string $configKey The declared configuration key.
+	 *
+	 * @return string|null The refusal, or null at the instance layer.
+	 */
+	private function instanceOnlyRefusal(string $layer, string $configKey): ?string {
 		if ($layer !== ConfigurationLayer::INSTANCE) {
 			return sprintf(
 				'"%s" is an instance setting and cannot be set at the %s layer',
@@ -171,7 +197,7 @@ class ConfigurationKeyRegistry implements ConfigurationKeyRegistryInterface {
 
 		return null;
 
-	}//end refusalFor()
+	}//end instanceOnlyRefusal()
 
 	/**
 	 * The declared shape of a key.
