@@ -489,8 +489,8 @@ class ConditionMatcher {
 	/**
 	 * One supported property of the current user.
 	 *
-	 * @param IUser  $user     The current user.
-	 * @param string $property A property in SUPPORTED_USER_DOT_PROPERTIES.
+	 * @param IUser                               $user     The current user.
+	 * @param 'uid'|'email'|'displayName'|'groups' $property A property in SUPPORTED_USER_DOT_PROPERTIES.
 	 *
 	 * @return mixed
 	 */

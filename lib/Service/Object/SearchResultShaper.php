@@ -76,9 +76,9 @@ final class SearchResultShaper {
 	 * @param array|int           $result  The search result.
 	 * @param SearchRenderRequest $request The query and the RBAC and multitenancy flags.
 	 *
-	 * @return array|int
+	 * @return array
 	 */
-	private function rendered(array|int $result, SearchRenderRequest $request): array|int {
+	private function rendered(array|int $result, SearchRenderRequest $request): array {
 		$query = $request->query;
 
 		return $this->renderHandler->renderEntities(
