@@ -82,6 +82,8 @@ final class KanbanBoardRun {
 	 * @param array<int, mixed>    $columnValues The column values
 	 *
 	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
 	 */
 	public function columnQueries(array $baseQuery, array $columnValues): array {
 		$queries = [];
