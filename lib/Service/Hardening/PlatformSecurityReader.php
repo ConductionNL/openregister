@@ -196,16 +196,27 @@ class PlatformSecurityReader {
 				return $none;
 			}
 
-			return [
-				'delay' => $this->throttler->getDelay($address),
-				'attempts' => $this->throttler->getAttempts($address),
-				'bypass' => $this->throttler->isBypassListed($address),
-			];
+			return $this->throttleOf(address: $address);
 		} catch (Throwable) {
 			return $none;
 		}
 
 	}//end throttleOfCaller()
+
+	/**
+	 * The throttler's view of one address.
+	 *
+	 * @param string $address The remote address.
+	 *
+	 * @return array{delay: int, attempts: int, bypass: bool} The delay, the attempts and whether it is bypass-listed.
+	 */
+	private function throttleOf(string $address): array {
+		return [
+			'delay' => $this->throttler->getDelay($address),
+			'attempts' => $this->throttler->getAttempts($address),
+			'bypass' => $this->throttler->isBypassListed($address),
+		];
+	}//end throttleOf()
 
 	/**
 	 * Read one integer from the password policy app.
