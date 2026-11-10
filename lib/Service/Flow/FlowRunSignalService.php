@@ -84,33 +84,11 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	}//end __construct()
 
 	/**
-	 * Answer a suspended run by uuid, as a named actor, guarded.
+	 * Answer a suspended run by uuid, guarded.
 	 *
-	 * The entry point for PHP consumers — a listener whose object completes a
+	 * The entry point for PHP consumers: a listener whose object completes a
 	 * task holds exactly a run uuid. Resolution, the guard and delivery are
 	 * one call, so there is nothing left for the consumer to remember.
-	 *
-	 * @param string $runUuid The run to answer.
-	 * @param array $payload What the signaller wants the run to know.
-	 * @param string|null $actorUid Who is answering; null or '' means anonymous,
-	 *                              which an ASSIGNED step refuses.
-	 * @param string|null $nodeId The node the answer addresses, when known. The
-	 *                            guard then checks THAT node's recorded
-	 *                            assignee; addressing can narrow the check but
-	 *                            never loosen it — see {@see FlowRunAssignee::recordedFor()}.
-	 *
-	 * @return FlowRun The parked run, due for the worker's next pass.
-	 *
-	 * @throws FlowSignalRefused With reason RUN_NOT_FOUND, NOT_ASSIGNEE or NOT_SUSPENDED.
-	 *
-	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
-	 */
-	public function signalAs(string $runUuid, array $payload, ?string $actorUid, ?string $nodeId = null): FlowRun {
-		return $this->answerByUuid(runUuid: $runUuid, signal: new RunSignal(payload: $payload, actorUid: $actorUid, nodeId: $nodeId));
-	}//end signalAs()
-
-	/**
-	 * Answer a suspended run by uuid, guarded.
 	 *
 	 * @param string    $runUuid The run to answer.
 	 * @param RunSignal $signal  The payload, the actor and the addressed node.
@@ -141,7 +119,7 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	 *
 	 * For callers that resolved the run themselves — the HTTP endpoints, whose
 	 * 404 wording is their own. The guard and the delivery are identical to
-	 * {@see signalAs()}; a refusal touches nothing.
+	 * {@see answerByUuid()}; a refusal touches nothing.
 	 *
 	 * @param FlowRun $run The run to answer.
 	 * @param array $payload What the signaller wants the run to know.
@@ -172,7 +150,7 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	 */
 	public function answer(FlowRun $run, RunSignal $signal): FlowRun {
 		$actor = $signal->actor();
-		if ($this->assignees->mayAnswer(run: $run, uid: $actor, nodeId: $signal->nodeId) === false) {
+		if ($this->assignees->mayAnswer(run: $run, signal: $signal) === false) {
 			$this->auditRefusal(run: $run, signal: $signal);
 
 			throw new FlowSignalRefused(

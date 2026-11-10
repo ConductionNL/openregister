@@ -25,6 +25,7 @@ use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContactsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -641,9 +642,7 @@ class ContactsController extends Controller {
 			}
 
 			$matches = $this->services->domain->matchingService->matchContact(
-				(string)$email,
-				$nameValue,
-				$organizationValue
+				contact: new ContactDetails(email: (string)$email, name: $nameValue, organization: $organizationValue)
 			);
 			$enrichedMatches = $this->enrichMatches(matches: $matches);
 

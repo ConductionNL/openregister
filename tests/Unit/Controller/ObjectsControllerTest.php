@@ -32,6 +32,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Unit tests for ObjectsController
@@ -79,7 +80,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->webhookService = $this->createMock(WebhookService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// resolveRegisterSchemaIds() reuses the entities resolved by
+		// resolveRegisterSchemaRef() reuses the entities resolved by
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so entities stay
 		// null (same as the old throwing-DI-stub behavior).
@@ -780,7 +781,7 @@ class ObjectsControllerTest extends TestCase {
 	public function testIndexReturns404WhenRegisterNotFound(): void {
 		$this->request->method('getParams')->willReturn([]);
 
-		// resolveRegisterSchemaIds calls objectService->setRegister which throws
+		// resolveRegisterSchemaRef calls objectService->setRegister which throws
 		$this->objectService->method('setRegister')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
@@ -2097,7 +2098,7 @@ class ObjectsControllerTest extends TestCase {
 
 	/**
 	 * Test objects() with register and schema query params that resolve (but no magic mapping).
-	 * When resolveRegisterSchemaIds resolves but entities are null (DI mapper throws),
+	 * When resolveRegisterSchemaRef resolves but entities are null (DI mapper throws),
 	 * falls through to normal searchObjectsPaginated path.
 	 */
 	public function testObjectsWithRegisterSchemaParamsResolvesToNormalSearch(): void {
@@ -4316,7 +4317,7 @@ class ObjectsControllerTest extends TestCase {
 		]);
 		$this->objectService->method('getExtendedObjects')->willReturn([]);
 
-		// resolveRegisterSchemaIds needs to return the register entity
+		// resolveRegisterSchemaRef needs to return the register entity
 		// Since it accesses \OC::$server, we test that the show path handles null entities gracefully
 		$result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
 
@@ -5201,7 +5202,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
-		// resolveRegisterSchemaIds accesses \OC::$server which throws in unit tests,
+		// resolveRegisterSchemaRef accesses \OC::$server which throws in unit tests,
 		// entities are null, so registers/schemas are empty arrays which get stripped
 		// by stripEmptyValues. The key @self should still exist.
 		$this->assertArrayHasKey('@self', $data);
@@ -6822,9 +6823,7 @@ class ObjectsControllerTest extends TestCase {
 			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
 		);
 		$this->exportService->expects($this->once())->method('exportToJson')->with(
-			$registerEntity,
-			$schemaEntity,
-			['status' => 'open']
+			new ObjectExportRequest(register: $registerEntity, schema: $schemaEntity, filters: ['status' => 'open'])
 		)->willReturn('{"results":[1,2]}');
 
 		$result = $this->controller->export('1', '2', $this->objectService);

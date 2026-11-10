@@ -136,17 +136,15 @@ class TasksProvider extends CoreIntegrationProvider {
 	/**
 	 * List VTODO tasks linked to the given OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>> Tasks rows.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->tasksOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->tasksOf(objectId: $ref->id);
 	}//end list()
 
 	/**
@@ -181,9 +179,7 @@ class TasksProvider extends CoreIntegrationProvider {
 	 * Payload keys honoured: `summary`, `description`, `priority`, `due`,
 	 * `status`. Anything else is ignored.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload Task payload.
 	 *
 	 * @return array<string,mixed> Created task row.
@@ -195,8 +191,8 @@ class TasksProvider extends CoreIntegrationProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		return $this->createTaskFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	public function create(ObjectRef $ref, array $payload): array {
+		return $this->createTaskFor(ref: $ref, payload: $payload);
 	}//end create()
 
 	/**
@@ -273,9 +269,7 @@ class TasksProvider extends CoreIntegrationProvider {
 	/**
 	 * Update a VTODO task linked to the OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Composite calendar/task id.
 	 * @param array<string,mixed> $payload Update payload.
 	 *
@@ -283,8 +277,8 @@ class TasksProvider extends CoreIntegrationProvider {
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $ref->id, entityId: $entityId);
 
 		return self::updatedOrFail(updated: $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload));
 	}//end update()
@@ -309,17 +303,15 @@ class TasksProvider extends CoreIntegrationProvider {
 	/**
 	 * Delete a VTODO task linked to the OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Composite calendar/task id.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $ref->id, entityId: $entityId);
 		$this->taskService->deleteTask(calendarId: $calendarId, taskUri: $taskUri);
 	}//end delete()
 

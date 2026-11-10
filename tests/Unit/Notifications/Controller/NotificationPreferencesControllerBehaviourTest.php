@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Controller\NotificationPreferencesController;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCP\IRequest;
@@ -78,20 +80,20 @@ class NotificationPreferencesControllerBehaviourTest extends TestCase {
 
 	public function testUpdateAnonymousIs401(): void {
 		$this->signedIn = false;
-		$this->prefs->expects($this->never())->method('setOverride');
+		$this->prefs->expects($this->never())->method('storeOverride');
 		$response = $this->controller(['schema' => 'case', 'notification' => 'n'])->update();
 		$this->assertSame(401, $response->getStatus());
 		$this->assertSame(['error' => 'Authentication required'], $response->getData());
 	}
 
 	public function testUpdateWithoutNotificationIs422(): void {
-		$this->prefs->expects($this->never())->method('setOverride');
+		$this->prefs->expects($this->never())->method('storeOverride');
 		$this->assertSame(422, $this->controller(['schema' => 'case'])->update()->getStatus());
 	}
 
 	public function testUpdateStoresOverrideAndAnswersStoredValue(): void {
-		$this->prefs->expects($this->once())->method('setOverride')->with('alice', 'case', 'n', ['enabled' => false], 's');
-		$this->prefs->expects($this->once())->method('getOverride')->with('alice', 'case', 'n', 's')->willReturn(['enabled' => false]);
+		$this->prefs->expects($this->once())->method('storeOverride')->with(new PreferenceWrite(party: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'n', scope: 's'), value: ['enabled' => false]));
+		$this->prefs->expects($this->once())->method('overrideAt')->with('alice', new PreferenceAddress(schemaSlug: 'case', notificationKey: 'n', scope: 's'))->willReturn(['enabled' => false]);
 		$this->assertSame(
 			['schema' => 'case', 'notification' => 'n', 'scope' => 's', 'override' => ['enabled' => false]],
 			$this->controller(['schema' => 'case', 'notification' => 'n', 'scope' => 's', 'enabled' => false])->update()->getData()
@@ -99,8 +101,8 @@ class NotificationPreferencesControllerBehaviourTest extends TestCase {
 	}
 
 	public function testUpdateResetDoesNotReadBack(): void {
-		$this->prefs->expects($this->once())->method('setOverride')->with('alice', 'case', 'n', null, null);
-		$this->prefs->expects($this->never())->method('getOverride');
+		$this->prefs->expects($this->once())->method('storeOverride')->with(new PreferenceWrite(party: 'alice', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'n'), value: null));
+		$this->prefs->expects($this->never())->method('overrideAt');
 		$this->assertSame(
 			['schema' => 'case', 'notification' => 'n', 'scope' => 'global', 'override' => null],
 			$this->controller(['schema' => 'case', 'notification' => 'n', 'reset' => true])->update()->getData()

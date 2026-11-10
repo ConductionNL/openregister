@@ -72,17 +72,15 @@ interface WebhookMapperInterface {
 	 *
 	 * Retrieves all webhooks with organisation filtering for multi-tenancy.
 	 * Returns only webhooks belonging to the current organisation.
-	 * Supports pagination and filtering.
+	 * Supports pagination and column filtering; the listing's sort and search are not applied.
 	 *
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array $filters Optional filters to apply
+	 * @param ListQuery $query The page (limitOrNull() and offset) and the column filters.
 	 *
 	 * @return Webhook[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array;
+	public function findAll(ListQuery $query): array;
 
 	/**
 	 * Find all enabled webhooks

@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
@@ -224,7 +225,8 @@ class MagicMapperUltraFastBulkSaveGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('bulkUpsert')->willReturnCallback(
-			function (array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array {
+			function (BulkUpsertCommand $command): array {
+				[$objects, $tableName, $needsPreUpdateState] = [$command->objects, $command->tableName, $command->needsPreUpdateState];
 				$ids = array_map(static fn (array $o): string => $o['id'], $objects);
 				$this->trace[] = 'upsert ' . $tableName . ' ' . implode(',', $ids) . ' pre=' . var_export($needsPreUpdateState, true);
 				return array_map(static fn (string $id): string => $tableName . ':' . $id, $ids);

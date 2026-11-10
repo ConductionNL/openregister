@@ -165,10 +165,7 @@ class SharesProvider extends CoreIntegrationProvider {
 	 *   - `url`                   — deep-link into the NC Files share panel
 	 *   - `data`                  — passthrough of the above (for the widget)
 	 *
-	 * @param string $register Register slug or numeric id (unused — link
-	 *                         convention is per-object).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -186,8 +183,8 @@ class SharesProvider extends CoreIntegrationProvider {
 	 * (register, schema, objectId, filters); $register and $schema are unused because shares are
 	 * indexed per-object-uuid and there is no register/schema scope for NC core sharing.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->sharesOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->sharesOf(objectId: $ref->id);
 	}//end list()
 
 	/**
@@ -396,9 +393,7 @@ class SharesProvider extends CoreIntegrationProvider {
 	 * defers to the abstract NotImplementedException so the controller
 	 * returns the canonical 501 — preserving backward compatibility.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload Mint options (type/label/ttlSeconds).
 	 *
 	 * @return array<string,mixed> Minted token metadata + public URL.
@@ -408,8 +403,8 @@ class SharesProvider extends CoreIntegrationProvider {
 	 *
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		return $this->mintCaseTokenFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	public function create(ObjectRef $ref, array $payload): array {
+		return $this->mintCaseTokenFor(ref: $ref, payload: $payload);
 	}//end create()
 
 	/**
@@ -425,12 +420,12 @@ class SharesProvider extends CoreIntegrationProvider {
 		if ($type !== 'public-token') {
 			// Only the public-token surface is supported by this provider;
 			// anything else defers to the abstract 501 contract.
-			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 		if ($service === null || method_exists($service, 'mintFor') === false) {
-			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
+			return parent::create(ref: $ref, payload: $payload);
 		}
 
 		return $service->mintFor(
@@ -483,17 +478,15 @@ class SharesProvider extends CoreIntegrationProvider {
 	 * path. A `token:`-prefixed entityId addresses a case token; anything
 	 * else is treated as an NC share id exactly as before.
 	 *
-	 * @param string $register Register slug.
-	 * @param string $schema Schema slug.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Share id, or `token:<token-or-id>`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-shares/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->revokeFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), entityId: $entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->revokeFor(ref: $ref, entityId: $entityId);
 	}//end delete()
 
 	/**
@@ -513,7 +506,7 @@ class SharesProvider extends CoreIntegrationProvider {
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
 		if ($service === null || method_exists($service, 'revokeShare') === false) {
-			parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
+			parent::delete(ref: $ref, entityId: $entityId);
 			return;
 		}
 
@@ -535,7 +528,7 @@ class SharesProvider extends CoreIntegrationProvider {
 			return;
 		}
 
-		parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
+		parent::delete(ref: $ref, entityId: $entityId);
 	}//end deleteCaseToken()
 
 	/**

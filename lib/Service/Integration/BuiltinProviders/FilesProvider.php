@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCP\IL10N;
@@ -107,17 +108,15 @@ class FilesProvider extends CoreIntegrationProvider {
 	/**
 	 * List files linked to the given OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved for future use.
 	 *
 	 * @return array<int,array<string,mixed>> Files rows.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->readableFilesOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->readableFilesOf(objectId: $ref->id);
 	}//end list()
 
 	/**
@@ -175,9 +174,7 @@ class FilesProvider extends CoreIntegrationProvider {
 	/**
 	 * Mutation routes via FileController for now; see class docblock.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload New linked-thing fields.
 	 *
 	 * @return array<string,mixed>
@@ -188,7 +185,7 @@ class FilesProvider extends CoreIntegrationProvider {
 	 * @spec exclude NotImplemented write stub — Files writes still route through FileController;
 	 *              the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
+	public function create(ObjectRef $ref, array $payload): array {
 		throw new NotImplementedException(
 			message: 'FilesProvider write path delegates to FileController for now (umbrella tasks 18-22).'
 		);

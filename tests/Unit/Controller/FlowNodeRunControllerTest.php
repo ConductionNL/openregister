@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowNodeRunControllerFactory;
 use OCA\OpenRegister\Controller\FlowNodeRunController;
 use OCA\OpenRegister\Db\Flow;
@@ -105,7 +106,8 @@ class FlowNodeRunControllerTest extends TestCase {
 			}
 			public function validateConfig(array $config): void {
 			}
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 			public function configForm(): array {
@@ -136,7 +138,8 @@ class FlowNodeRunControllerTest extends TestCase {
 			}
 			public function validateConfig(array $config): void {
 			}
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
@@ -382,7 +385,8 @@ class FlowNodeRunControllerTest extends TestCase {
 			}
 			public function validateConfig(array $config): void {
 			}
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
