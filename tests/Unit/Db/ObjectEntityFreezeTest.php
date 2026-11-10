@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -80,5 +81,22 @@ class ObjectEntityFreezeTest extends TestCase {
 		}
 
 		$this->assertFalse($object->isFrozen());
+	}
+
+	public function testAStateFreezeRecordsTheDeclaringState(): void {
+		$object = new ObjectEntity();
+		$object->freezeWith(userSession: $this->session(uid: 'bert'), terms: new FreezeTerms(reason: 'fase afgesloten', state: 'in_bezwaar'));
+
+		$frozen = $object->getFrozen();
+		$this->assertSame('bert', $frozen['by']);
+		$this->assertSame('fase afgesloten', $frozen['reason']);
+		$this->assertSame('in_bezwaar', $frozen['state']);
+	}
+
+	public function testAStateFreezeWithoutAUserIsRefused(): void {
+		$object = new ObjectEntity();
+
+		$this->expectExceptionMessage('No user logged in');
+		$object->freezeWith(userSession: $this->session(uid: null), terms: new FreezeTerms(state: 'in_bezwaar'));
 	}
 }
