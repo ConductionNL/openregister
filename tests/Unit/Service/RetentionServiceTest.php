@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -661,7 +663,7 @@ class RetentionServiceTest extends TestCase {
 			],
 		];
 
-		$result = $this->service->generateDestructionCertificate($listData, 3, '2026-03-22T10:00:00+00:00');
+		$result = $this->service->certify(new ExecutedDestruction($listData, 3, '2026-03-22T10:00:00+00:00'));
 
 		$this->assertEquals('verklaring_van_vernietiging', $result['type']);
 		$this->assertEquals(3, $result['totalDestroyed']);
@@ -721,7 +723,7 @@ class RetentionServiceTest extends TestCase {
 	public function testADateSetAfterCreationSetsTheDestructionDate(): void {
 		$object = $this->client(data: ['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']);
 
-		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), ['name' => 'Bakkerij Jansen']);
+		$result = $this->service->recalculateActionDate(new RecordUpdate($object, $this->clientSchema(), ['name' => 'Bakkerij Jansen']));
 
 		$this->assertSame('2028-10-01', $result->getRetention()['archiefactiedatum']);
 	}//end testADateSetAfterCreationSetsTheDestructionDate()
@@ -733,7 +735,7 @@ class RetentionServiceTest extends TestCase {
 		$object = $this->client(data: ['relationshipEndedAt' => '2026-11-15'], date: '2028-10-01');
 		$this->auditMapper->expects($this->never())->method('createAuditTrailEntry');
 
-		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']);
+		$result = $this->service->recalculateActionDate(new RecordUpdate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']));
 
 		$this->assertSame('2028-11-15', $result->getRetention()['archiefactiedatum']);
 	}//end testACorrectedDateMovesTheDestructionDate()
@@ -751,7 +753,7 @@ class RetentionServiceTest extends TestCase {
 				$this->callback(static fn (array $context): bool => $context['archiefactiedatum'] === ['old' => '2028-10-01', 'new' => null])
 			);
 
-		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']);
+		$result = $this->service->recalculateActionDate(new RecordUpdate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']));
 
 		$this->assertArrayNotHasKey('archiefactiedatum', $result->getRetention());
 	}//end testAClearedDateClearsTheDestructionDateWithAnAuditEntry()
@@ -762,11 +764,7 @@ class RetentionServiceTest extends TestCase {
 	public function testAnUnrelatedEditLeavesTheDestructionDateAlone(): void {
 		$object = $this->client(data: ['name' => 'Bakker Jansen', 'relationshipEndedAt' => '2026-10-01'], date: '1999-01-01');
 
-		$result = $this->service->recalculateArchiveActionDate(
-			$object,
-			$this->clientSchema(),
-			['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']
-		);
+		$result = $this->service->recalculateActionDate(new RecordUpdate($object, $this->clientSchema(), ['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']));
 
 		$this->assertSame('1999-01-01', $result->getRetention()['archiefactiedatum']);
 	}//end testAnUnrelatedEditLeavesTheDestructionDateAlone()
@@ -782,7 +780,7 @@ class RetentionServiceTest extends TestCase {
 		$object->setObject(['relationshipEndedAt' => '2026-10-01']);
 		$object->setRetention([]);
 
-		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), []);
+		$result = $this->service->recalculateActionDate(new RecordUpdate($object, $this->clientSchema(), []));
 
 		$retention = $result->getRetention();
 		$this->assertSame('vernietigen', $retention['archiefnominatie']);
@@ -807,7 +805,7 @@ class RetentionServiceTest extends TestCase {
 
 		$contact = $this->client(data: ['client' => 'client-b'], date: '2028-10-01');
 
-		$result = $this->service->recalculateArchiveActionDate($contact, $schema, ['client' => 'client-a']);
+		$result = $this->service->recalculateActionDate(new RecordUpdate($contact, $schema, ['client' => 'client-a']));
 
 		$this->assertSame('2029-03-01', $result->getRetention()['archiefactiedatum']);
 	}//end testAChangedSourceRelationRecalculatesFromTheNewRelatedRecord()

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -65,20 +66,16 @@ class AccessReviewGate implements AccessReviewGateInterface {
 	/**
 	 * Resolve the object through the RBAC boundary, or null when the caller cannot read it.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema   Schema slug or id.
-	 * @param string $id       Object uuid.
+	 * @param ObjectRef $ref The register and schema (slug or id) and the object uuid.
 	 *
 	 * @return ObjectEntity|null The object, or null.
 	 *
-	 * @SuppressWarnings(PHPMD.ShortVariable) `id` is the route parameter's name.
-	 *
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
-	public function resolve(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	public function resolve(ObjectRef $ref): ?ObjectEntity {
+		$this->objectService->setRegister((string)$ref->register);
+		$this->objectService->setSchema((string)$ref->schema);
+		$this->objectService->setObject($ref->id);
 
 		return $this->currentObject();
 	}//end resolve()

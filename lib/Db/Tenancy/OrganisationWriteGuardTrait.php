@@ -196,7 +196,7 @@ trait OrganisationWriteGuardTrait {
 			'entityType' => get_class($entity),
 			'entityId' => $entity->getId(),
 		];
-		$this->logRedacted(level: 'warning', message: '[MultiTenancyTrait] Cross-tenant access denied', context: $context);
+		$this->warnRedacted(message: '[MultiTenancyTrait] Cross-tenant access denied', context: $context);
 	}//end logCrossTenantDenial()
 
 	/**
@@ -267,7 +267,7 @@ trait OrganisationWriteGuardTrait {
 			return;
 		}
 
-		$this->logRedacted(level: 'warning', message: '[MultiTenancyTrait] Shared master data is read-only to a consumer', context: [
+		$this->warnRedacted(message: '[MultiTenancyTrait] Shared master data is read-only to a consumer', context: [
 			'type' => 'shared_master_data_write_denied',
 			'sourceOrganisation' => $this->getActiveOrganisationUuid(),
 			'holderOrganisation' => $refusal->getHolderUuid(),

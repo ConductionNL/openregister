@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -733,13 +734,15 @@ class MagicSearchHandler {
 		$register->setId($registerId);
 
 		$this->relatedRows->apply(
-			qb: $run->qb,
-			query: $query,
-			register: $register,
-			organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
-				query: $query,
-				related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
-			)
+			target: new RelatedRowFilterTarget(
+				qb: $run->qb,
+				register: $register,
+				organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+					query: $query,
+					related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
+				)
+			),
+			query: $query
 		);
 	}//end applyRelatedRowFilters()
 
@@ -1383,38 +1386,48 @@ class MagicSearchHandler {
 			return false;
 		}
 
-		// Check if user qualifies for any RBAC rule (simple or conditional).
-		// When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
-		$userHasRbacAccess = false;
-		$hasObjectGrants = false;
-		if ($_rbac === true) {
-			$userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
-				schema: $schema,
-				action: 'read'
-			);
-
-			// A per-object grant must never widen the tenant edge (ADR-002; design
-			// D3c). The grant branch is OR-ed into the RBAC filter, so on a schema
-			// whose conditional rules would otherwise SKIP the organisation filter a
-			// grant would become a cross-tenant hole.
-			$hasObjectGrants = $this->rbacHandler->currentCallerHoldsObjectGrants();
-		}
-
-		if ($hasObjectGrants === true) {
-			// Reached rows through a grant — the tenant edge stands.
+		// Without RBAC no rule can waive the boundary: apply multitenancy as normal.
+		if ($_rbac === false) {
 			return true;
 		}
 
-		if ($userHasRbacAccess === false) {
-			// No RBAC access - apply multitenancy as normal.
-			return true;
-		}
-
-		// User has RBAC access but explicitly requested _multi=true: apply
-		// multitenancy to further restrict results to their org. Otherwise skip
-		// it and let RBAC handle access control.
-		return $multitenancyExplicit;
+		return $this->rbacKeepsOrganisationBoundary(schema: $schema, multitenancyExplicit: $multitenancyExplicit);
 	}//end multitenancyApplies()
+
+	/**
+	 * Whether the organisation boundary still applies once RBAC is on.
+	 *
+	 * A caller who qualifies for an RBAC rule (simple or conditional) that
+	 * bypasses multitenancy reads without the boundary (RBAC controls access),
+	 * unless they explicitly asked for it with `_multi=true`, or hold a
+	 * per-object grant.
+	 *
+	 * @param Schema $schema               The schema being read.
+	 * @param bool   $multitenancyExplicit Whether the caller explicitly asked for multitenancy.
+	 *
+	 * @return bool True when the organisation filter must be emitted.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
+	 */
+	private function rbacKeepsOrganisationBoundary(Schema $schema, bool $multitenancyExplicit): bool {
+		$userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
+			schema: $schema,
+			action: 'read'
+		);
+
+		// A per-object grant must never widen the tenant edge (ADR-002; design
+		// D3c). The grant branch is OR-ed into the RBAC filter, so on a schema
+		// whose conditional rules would otherwise SKIP the organisation filter a
+		// grant would become a cross-tenant hole. Reached rows through a grant:
+		// the tenant edge stands.
+		if ($this->rbacHandler->currentCallerHoldsObjectGrants() === true) {
+			return true;
+		}
+
+		// No RBAC access: apply multitenancy as normal. With RBAC access, only an
+		// explicit `_multi=true` keeps the boundary to restrict results to the org.
+		return $userHasRbacAccess === false || $multitenancyExplicit === true;
+	}//end rbacKeepsOrganisationBoundary()
 
 	/**
 	 * Whether the organisation boundary of a default read carries a branch for
@@ -2596,23 +2609,28 @@ class MagicSearchHandler {
 			return true;
 		}
 
-		if ($_multitenancy === true) {
-			$schemaAuth = $schema->getAuthorization();
-			$readGroups = $schemaAuth['read'] ?? [];
-			$hasPublic = $this->hasPublicReadAccess(readRules: $readGroups);
-
-			// Public schemas bypass multitenancy for anonymous callers and admins
-			// UNLESS the caller explicitly set _multi=true.
-			if ($hasPublic === true
-				&& $multitenancyExplicit === false
-				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
-			) {
-				return false;
-			}
+		// Public schemas bypass multitenancy for anonymous callers and admins
+		// UNLESS the caller explicitly set _multi=true.
+		if ($_multitenancy === true && $multitenancyExplicit === false && $this->publicReadLiftsBoundary(schema: $schema) === true) {
+			return false;
 		}
 
 		return $_multitenancy;
 	}//end resolveMultitenancyFlag()
+
+	/**
+	 * Whether a schema's `public` read rule lifts the organisation boundary for this caller.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the schema has a public read rule and the caller is one it lifts the boundary for.
+	 */
+	private function publicReadLiftsBoundary(Schema $schema): bool {
+		$readGroups = ($schema->getAuthorization()['read'] ?? []);
+
+		return $this->hasPublicReadAccess(readRules: $readGroups) === true
+			&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true;
+	}//end publicReadLiftsBoundary()
 
 	/**
 	 * Read the register id out of a search query's reserved `register` key.

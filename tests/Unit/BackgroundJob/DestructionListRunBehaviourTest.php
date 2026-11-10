@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\DestructionListRun;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -209,8 +210,8 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$retention->method('hasActiveLegalHold')->willReturnCallback(
 			fn (ObjectEntity $object): bool => in_array($object->getUuid(), $this->held, true)
 		);
-		$retention->method('generateDestructionCertificate')->willReturnCallback(
-			fn (array $list, int $count, string $at): array => ['certificateFor' => $list['status'], 'count' => $count, 'at' => $at]
+		$retention->method('certify')->willReturnCallback(
+			fn (ExecutedDestruction $execution): array => ['certificateFor' => $execution->destructionList['status'], 'count' => $execution->destroyedCount, 'at' => $execution->executedAt]
 		);
 
 		$settingsReader = $this->createMock(ArchivalSettingsReaderInterface::class);
