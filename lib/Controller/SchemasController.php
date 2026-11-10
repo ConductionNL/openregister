@@ -1549,6 +1549,13 @@ class SchemasController extends Controller {
 			);
 		} catch (\Throwable $e) {
 			// Audit logging should not break the update operation.
+			$this->logger->warning(
+				message: '[SchemasController] Schema authorization change not written to the audit trail',
+				context: [
+					'schemaId' => $schema->getId(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end auditSchemaAuthorizationChange()
 

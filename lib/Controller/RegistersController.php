@@ -727,6 +727,13 @@ class RegistersController extends Controller {
 			$audit->log(service: $this->container->get(AuthorizationAuditService::class), after: $updated);
 		} catch (\Throwable $e) {
 			// Audit logging should not break the update operation.
+			$this->logger->warning(
+				message: '[RegistersController] Register access change not written to the audit trail',
+				context: [
+					'registerId' => $updated->getId(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end logAccessChanges()
 

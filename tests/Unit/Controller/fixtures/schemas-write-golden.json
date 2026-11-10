@@ -2970,6 +2970,16 @@
                 ]
             },
             {
+                "method": "logger.warning",
+                "args": [
+                    "[SchemasController] Schema authorization change not written to the audit trail",
+                    {
+                        "schemaId": 3,
+                        "exception": "Audit store down"
+                    }
+                ]
+            },
+            {
                 "method": "schemaCache.invalidate",
                 "args": [
                     3

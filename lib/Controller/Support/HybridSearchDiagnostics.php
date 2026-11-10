@@ -125,6 +125,13 @@ final class HybridSearchDiagnostics {
 			}
 		} catch (\Throwable $e) {
 			// Sidecar unavailable: reported as false.
+			$this->logger->debug(
+				message: '[HybridSearchDiagnostics] ANN sidecar not readable',
+				context: [
+					'sidecar' => $sidecar,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return [];
@@ -165,6 +172,12 @@ final class HybridSearchDiagnostics {
 			$result->closeCursor();
 		} catch (\Throwable $e) {
 			// Reported as false.
+			$this->logger->debug(
+				message: '[HybridSearchDiagnostics] Could not read the search indexes',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $found;
@@ -241,6 +254,12 @@ final class HybridSearchDiagnostics {
 			return (int)$total;
 		} catch (\Throwable $inner) {
 			// Reported as zero.
+			$this->logger->debug(
+				message: '[HybridSearchDiagnostics] Could not count plain vectors',
+				context: [
+					'exception' => $inner->getMessage(),
+				]
+			);
 		}
 
 		return 0;
