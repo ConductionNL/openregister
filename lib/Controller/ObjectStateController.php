@@ -106,7 +106,7 @@ class ObjectStateController extends Controller {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
 		return $this->asSignedInUser(
-			verb: fn (?string $reason): array => $this->archiveHandler->archive(request: $this->stateRequest(ref: $ref, reason: $reason))
+			verb: fn (?string $reason): array => $this->archiveHandler->archiveWith(request: $this->stateRequest(ref: $ref, reason: $reason))
 		);
 	}//end archive()
 
@@ -129,7 +129,7 @@ class ObjectStateController extends Controller {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
 		return $this->asSignedInUser(
-			verb: fn (?string $reason): array => $this->archiveHandler->unarchive(request: $this->stateRequest(ref: $ref, reason: $reason))
+			verb: fn (?string $reason): array => $this->archiveHandler->unarchiveWith(request: $this->stateRequest(ref: $ref, reason: $reason))
 		);
 	}//end unarchive()
 
@@ -197,7 +197,7 @@ class ObjectStateController extends Controller {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
 		return $this->asSignedInUser(
-			verb: fn (?string $reason): array => $this->archiveHandler->unfreeze(request: $this->stateRequest(ref: $ref, reason: $reason))
+			verb: fn (?string $reason): array => $this->archiveHandler->unfreezeWith(request: $this->stateRequest(ref: $ref, reason: $reason))
 		);
 	}//end unfreeze()
 

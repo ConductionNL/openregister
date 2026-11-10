@@ -93,6 +93,29 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	}//end __construct()
 
 	/**
+	 * Archive an object.
+	 *
+	 * Kept for the apps that call it by class name; archiveWith takes the request.
+	 *
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being archived.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
+	 *
+	 * @return array{uuid: string|null, archived: array|null} The stored marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function archive(
+		string $identifier,
+		?string $reason = null,
+		?string $register = null,
+		?string $schema = null,
+	): array {
+		return $this->archiveWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
+	}//end archive()
+
+	/**
 	 * Archive the object a request names.
 	 *
 	 * @param ObjectStateRequest $request The object, its address and the reason.
@@ -105,7 +128,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function archive(ObjectStateRequest $request): array {
+	public function archiveWith(ObjectStateRequest $request): array {
 		$context = $this->resolveAndAuthorize(request: $request);
 		$object = $context['object'];
 
@@ -129,7 +152,30 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'uuid' => $saved->getUuid(),
 			'archived' => $saved->getArchived(),
 		];
-	}//end archive()
+	}//end archiveWith()
+
+	/**
+	 * Restore an object from the archive.
+	 *
+	 * Kept for the apps that call it by class name; unarchiveWith takes the request.
+	 *
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being restored.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
+	 *
+	 * @return array{uuid: string|null, archived: null} The cleared marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unarchive(
+		string $identifier,
+		?string $reason = null,
+		?string $register = null,
+		?string $schema = null,
+	): array {
+		return $this->unarchiveWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
+	}//end unarchive()
 
 	/**
 	 * Take the object a request names out of the archive.
@@ -144,7 +190,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function unarchive(ObjectStateRequest $request): array {
+	public function unarchiveWith(ObjectStateRequest $request): array {
 		// A read by identifier is deliberately unaffected by the archive: the
 		// exclusion is a property of the LIST, not of the record. That is what
 		// keeps a `$ref` into an archived contact resolving, and it is also
@@ -173,7 +219,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'uuid' => $saved->getUuid(),
 			'archived' => null,
 		];
-	}//end unarchive()
+	}//end unarchiveWith()
 
 	/**
 	 * Freeze the object a request names.
@@ -214,6 +260,29 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	}//end freeze()
 
 	/**
+	 * Unfreeze an object.
+	 *
+	 * Kept for the apps that call it by class name; unfreezeWith takes the request.
+	 *
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being unfrozen.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
+	 *
+	 * @return array{uuid: string|null, frozen: null} The cleared marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unfreeze(
+		string $identifier,
+		?string $reason = null,
+		?string $register = null,
+		?string $schema = null,
+	): array {
+		return $this->unfreezeWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
+	}//end unfreeze()
+
+	/**
 	 * Unfreeze the object a request names.
 	 *
 	 * @param ObjectStateRequest $request The object, its address and the reason.
@@ -226,7 +295,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function unfreeze(ObjectStateRequest $request): array {
+	public function unfreezeWith(ObjectStateRequest $request): array {
 		// A frozen object never left the working views, so the ordinary lookup
 		// still finds it and no archive lens is needed here.
 		$context = $this->resolveAndAuthorize(request: $request);
@@ -251,7 +320,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'uuid' => $saved->getUuid(),
 			'frozen' => null,
 		];
-	}//end unfreeze()
+	}//end unfreezeWith()
 
 	/**
 	 * Find the object, refuse a schema that does not offer archiving, and
