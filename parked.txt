@@ -112,3 +112,4 @@ openregister#8829 dc4def29903915688fef4072d8a17a75600ec1d6 coordinator-park: sup
 openregister#8539 03e7953dac14f3386d0b8ff8e07ae67a77001442 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Db\MapperEntityEventsTest::testRegisterMapperAnnouncesInsertUpdateAndDelete
 openregister#8552 cf76399b23408fe57aa575d6030de48f92d0106a precheck-red alone on main: FAIL src/views/schema/CalendarProviderTab.dom.golden.spec.js
 openregister#8492 d543473d67d8f6afd84ffe2268fdd718ee8052ec coordinator-park: superseded, change already on main (close by hand)
+openregister#8621 e62b8b7bbdf41176d5ecde02c2a54fcc23fd40f8 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\Notification\TaskVerbActionTest::testTheNotifierRendersTheMethodItWasHande
