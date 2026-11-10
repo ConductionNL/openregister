@@ -143,6 +143,7 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	public function isTrusted(): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $this->trusted > 0 || SystemOperationContext::isActive() === true;
 	}//end isTrusted()
 

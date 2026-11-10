@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -67,7 +68,8 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
-			function (Register $r, Schema $s, string $uuid, ?string $slug): int {
+			function (RegisterSchema $table, string $uuid, ?string $slug): int {
+				[$r, $s] = [$table->register, $table->schema];
 				$this->writes[] = [$uuid, $slug];
 				return 1;
 			}
@@ -330,7 +332,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			$this->page([])
 		);
 		$magicMapper->method('updateSlugColumn')->willReturnCallback(
-			static fn (Register $r, Schema $s, string $uuid): int => (($uuid === self::UUID_A) ? 1 : 0)
+			static fn (RegisterSchema $table, string $uuid): int => (($uuid === self::UUID_A) ? 1 : 0)
 		);
 		$logger = $this->createMock(LoggerInterface::class);
 		$registerMapper = $this->createMock(RegisterMapper::class);

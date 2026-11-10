@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
@@ -182,7 +183,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		);
 
 		$out = $this->node->execute(
-			[FlowItems::item(json: ['batch' => 1], binary: ['f' => ['name' => 'x']]), FlowItems::item(json: ['batch' => 2])],
+			[FlowItems::item(json: ['batch' => 1], options: new FlowItemOptions(binary: ['f' => ['name' => 'x']])), FlowItems::item(json: ['batch' => 2])],
 			$this->config(['fanOut' => true]),
 			['runAs' => 'alice']
 		);

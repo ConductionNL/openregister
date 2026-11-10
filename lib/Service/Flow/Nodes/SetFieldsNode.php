@@ -32,7 +32,9 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
+use OCA\OpenRegister\Service\Flow\FieldAssignment;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -215,8 +217,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: $this->reshape(json: (array)($item[FlowItems::JSON] ?? []), plan: $plan->forItem(itemIndex: (int)$index)),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
@@ -342,8 +343,10 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		foreach ($set as $field => $value) {
 			FlowFieldPath::assign(
 				json: $json,
-				path: $this->renderPath(path: (string)$field, json: $json),
-				value: FlowValueTemplate::render(value: $value, json: $json)
+				write: new FieldAssignment(
+					path: $this->renderPath(path: (string)$field, json: $json),
+					value: FlowValueTemplate::render(value: $value, json: $json)
+				)
 			);
 		}
 
@@ -378,8 +381,10 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		foreach ($plan->compute as $field => $logic) {
 			FlowFieldPath::assign(
 				json: $json,
-				path: $this->renderPath(path: (string)$field, json: $json),
-				value: FlowExpression::evaluate(logic: $logic, data: $this->expressionData(json: $json, plan: $plan))
+				write: new FieldAssignment(
+					path: $this->renderPath(path: (string)$field, json: $json),
+					value: FlowExpression::evaluate(logic: $logic, data: $this->expressionData(json: $json, plan: $plan))
+				)
 			);
 		}
 

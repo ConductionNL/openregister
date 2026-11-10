@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -148,7 +150,7 @@ class AuditTrailPageQueryTest extends TestCase {
 	 * @return void
 	 */
 	public function testActorAndPeriodFilterNewestFirst(): void {
-		$page = $this->query()->page(filters: ['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09'], search: null, limit: 20);
+		$page = $this->query()->page(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09'], null), 20));
 
 		$this->assertSame([2, 1], array_map(static fn ($e): int => (int)$e->getId(), $page['results']));
 		$this->assertNull($page['nextCursor']);
@@ -160,7 +162,7 @@ class AuditTrailPageQueryTest extends TestCase {
 	 * @return void
 	 */
 	public function testABareToDateKeepsTheWholeDay(): void {
-		$page = $this->query()->page(filters: ['to' => '2026-10-08'], search: null, limit: 20);
+		$page = $this->query()->page(new AuditPageRequest(new AuditTrailCriteria(['to' => '2026-10-08'], null), 20));
 
 		$this->assertSame([2, 1], array_map(static fn ($e): int => (int)$e->getId(), $page['results']));
 	}//end testABareToDateKeepsTheWholeDay()
@@ -174,12 +176,12 @@ class AuditTrailPageQueryTest extends TestCase {
 		$q = $this->query();
 		$ids = static fn (array $page): array => array_map(static fn ($e): int => (int)$e->getId(), $page['results']);
 
-		$this->assertSame([3], $ids($q->page(filters: ['register' => '5'], search: null, limit: 20)));
-		$this->assertSame([2, 1], $ids($q->page(filters: ['schema' => '2'], search: null, limit: 20)));
-		$this->assertSame([3], $ids($q->page(filters: ['object' => 'o-2'], search: null, limit: 20)));
-		$this->assertSame([1], $ids($q->page(filters: ['action' => 'create'], search: null, limit: 20)));
-		$this->assertSame([3, 2], $ids($q->page(filters: ['action' => 'update,delete'], search: null, limit: 20)));
-		$this->assertSame([3], $ids($q->page(filters: [], search: 'Bezwaar', limit: 20)));
+		$this->assertSame([3], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['register' => '5'], null), 20))));
+		$this->assertSame([2, 1], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['schema' => '2'], null), 20))));
+		$this->assertSame([3], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['object' => 'o-2'], null), 20))));
+		$this->assertSame([1], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['action' => 'create'], null), 20))));
+		$this->assertSame([3, 2], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['action' => 'update,delete'], null), 20))));
+		$this->assertSame([3], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria([], 'Bezwaar'), 20))));
 	}//end testEachFilterNarrows()
 
 	/**
@@ -191,8 +193,8 @@ class AuditTrailPageQueryTest extends TestCase {
 	public function testTheCursorWalksWithoutLossOrRepeat(): void {
 		$q = $this->query();
 
-		$first = $q->page(filters: [], search: null, limit: 2);
-		$second = $q->page(filters: [], search: null, limit: 2, beforeId: $first['nextCursor']);
+		$first = $q->page(new AuditPageRequest(new AuditTrailCriteria([], null), 2));
+		$second = $q->page(new AuditPageRequest(new AuditTrailCriteria([], null), 2, $first['nextCursor']));
 
 		$this->assertSame([3, 2], array_map(static fn ($e): int => (int)$e->getId(), $first['results']));
 		$this->assertSame(2, $first['nextCursor']);
@@ -206,11 +208,11 @@ class AuditTrailPageQueryTest extends TestCase {
 	 * @return void
 	 */
 	public function testCollectStopsAtTheCeilingAndSaysSo(): void {
-		$collected = $this->query()->collect(filters: [], search: null, ceiling: 2);
+		$collected = $this->query()->collect(new AuditTrailCriteria([], null), 2);
 
 		$this->assertCount(2, $collected['results']);
 		$this->assertTrue($collected['truncated']);
-		$this->assertFalse($this->query()->collect(filters: [], search: null, ceiling: 3)['truncated']);
+		$this->assertFalse($this->query()->collect(new AuditTrailCriteria([], null), 3)['truncated']);
 	}//end testCollectStopsAtTheCeilingAndSaysSo()
 
 	/**
@@ -220,6 +222,6 @@ class AuditTrailPageQueryTest extends TestCase {
 	 */
 	public function testANonDatePeriodIsRefused(): void {
 		$this->expectException(\InvalidArgumentException::class);
-		$this->query()->page(filters: ['from' => 'gisteren'], search: null, limit: 20);
+		$this->query()->page(new AuditPageRequest(new AuditTrailCriteria(['from' => 'gisteren'], null), 20));
 	}//end testANonDatePeriodIsRefused()
 }//end class

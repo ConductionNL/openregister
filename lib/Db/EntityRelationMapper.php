@@ -32,7 +32,6 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -720,27 +719,25 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * timestamp, the subject (table + row id), and only the fields that
 	 * actually changed.
 	 *
-	 * @param EntityRelation $relation Pre-loaded relation row (callers handle find/404).
-	 * @param array $fields Subset of whitelist keys with new values.
-	 * @param IUser|null $actingUser Optional explicit acting user; falls back
-	 *                               to the session user. If null and no
-	 *                               session user, the audit entry records the
-	 *                               actor as 'system'.
+	 * @param DecisionMetadataEdit $edit The pre-loaded relation row (callers handle find/404), the
+	 *                                   whitelist keys with new values and the optional explicit acting
+	 *                                   user; without one it falls back to the session user, and without
+	 *                                   a session user the audit entry records the actor as 'system'.
 	 *
 	 * @return EntityRelation The (possibly unchanged) row.
 	 *
 	 * @throws CustomValidationException When a whitelist or shape violation
 	 *                                   is detected.
 	 */
-	public function updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation {
-		self::assertDecisionFieldsValid(fields: $fields);
-		$changedFields = self::applyDecisionChanges(relation: $relation, fields: $fields);
+	public function updateDecisionMetadata(DecisionMetadataEdit $edit): EntityRelation {
+		self::assertDecisionFieldsValid(fields: $edit->fields);
+		$changedFields = self::applyDecisionChanges(relation: $edit->relation, fields: $edit->fields);
 		if (count($changedFields) === 0) {
-			return $relation;
+			return $edit->relation;
 		}
 
-		$actingUser = ($actingUser ?? $this->userSession->getUser());
-		$change     = new DecisionMetadataChange(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
+		$actingUser = ($edit->actingUser ?? $this->userSession->getUser());
+		$change     = new DecisionMetadataChange(relation: $edit->relation, changedFields: $changedFields, actingUser: $actingUser);
 		return $this->recordDecisionChange(change: $change);
 	}//end updateDecisionMetadata()
 

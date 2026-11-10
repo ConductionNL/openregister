@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -91,13 +92,15 @@ class ContentReportRemovalListener implements IEventListener {
 		// The removal record names the copy, which is the half of the
 		// requirement the report row alone does not satisfy: somebody
 		// reading the TRAIL has to be able to get to the evidence too.
-		$this->auditTrail->createAuditTrailEntry(
-			object: $object,
-			action: ContentReportServiceInterface::ACTION_REMOVAL_NAMED,
-			context: [
-				'contentReports' => $copies,
-				'reason' => 'reported content removed; the copies taken at filing time survive it',
-			]
+		$this->auditTrail->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: ContentReportServiceInterface::ACTION_REMOVAL_NAMED,
+				context: [
+					'contentReports' => $copies,
+					'reason' => 'reported content removed; the copies taken at filing time survive it',
+				]
+			)
 		);
 	}//end onObjectDeleted()
 

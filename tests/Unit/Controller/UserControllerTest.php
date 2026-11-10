@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\UserControllerFactory;
 use OCA\OpenRegister\Controller\UserController;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -398,7 +399,7 @@ class UserControllerTest extends TestCase {
 
 		$this->securityService->expects($this->once())
 			->method('recordFailedLoginAttempt')
-			->with('testuser', '127.0.0.1', 'invalid_credentials');
+			->with(new FailedAttempt('testuser', '127.0.0.1', 'invalid_credentials'));
 
 		$result = $this->controller->login();
 
@@ -429,7 +430,7 @@ class UserControllerTest extends TestCase {
 
 		$this->securityService->expects($this->once())
 			->method('recordFailedLoginAttempt')
-			->with('testuser', '10.0.0.1', 'account_disabled');
+			->with(new FailedAttempt('testuser', '10.0.0.1', 'account_disabled'));
 
 		$result = $this->controller->login();
 

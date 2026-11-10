@@ -32,7 +32,9 @@ use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -250,7 +252,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			$test->getMockBuilder(DateTimeNormalizer::class)->disableOriginalConstructor()->getMock(),
 			relatedRows: $test->getMockBuilder(RelatedRowQueryApplier::class)->disableOriginalConstructor()->getMock()
 		);
-		$conditions = $search->buildWhereConditionsSql(query: [], schema: $schema);
+		$conditions = $search->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: $schema)));
 
 		$pdo = new PDO('sqlite::memory:');
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

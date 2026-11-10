@@ -45,7 +45,8 @@ class LinkedEntityPropertyHandlerGoldenTest extends TestCase {
 		$schema->setProperties($properties);
 		$object ??= new ObjectEntity();
 		$handler = new LinkedEntityPropertyHandler($logger ?? $this->createMock(LoggerInterface::class));
-		$result = $handler->extractAndPopulate($object, $schema, $data);
+		$object->setObject($data);
+		$result = $handler->extractAndPopulate($object, $schema);
 		$this->assertSame($object, $result);
 
 		return $result;
