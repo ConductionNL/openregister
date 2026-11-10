@@ -49,6 +49,48 @@ function jsonRequest(method, body) {
 }
 
 /**
+ * Send a request and read its JSON answer, whatever its status.
+ *
+ * @param {string} endpoint The URL.
+ * @param {object} init The fetch options.
+ * @return {Promise<{response: Response, data: object}>} The answer.
+ */
+async function readJson(endpoint, init) {
+	const response = await fetch(endpoint, init)
+	return { response, data: await response.json() }
+}
+
+/**
+ * The search query of an organisation search: the trimmed text, when any.
+ *
+ * @param {string} query The text typed.
+ * @return {URLSearchParams} The query parameters.
+ */
+function organisationQuery(query) {
+	const params = new URLSearchParams()
+	if (query.trim()) {
+		params.append('query', query.trim())
+	}
+	return params
+}
+
+/**
+ * The id an organisation is updated under: its uuid, else its id.
+ *
+ * @param {object} organisationData The organisation.
+ * @return {string|number} The uuid or id.
+ * @throws {Error} When it has neither.
+ */
+function organisationIdOf(organisationData) {
+	if (!organisationData.id && !organisationData.uuid) {
+		throw new Error('Organisation UUID is required for updates')
+	}
+
+	// API expects UUID, not ID
+	return organisationData.uuid || organisationData.id
+}
+
+/**
  * Send a request and read its JSON answer; a refusal throws its status.
  *
  * @param {string} endpoint The URL.
@@ -95,6 +137,7 @@ const FAILURES = {
 	createOrganisation: ['creating organisation', 'create organisation'],
 	updateOrganisation: ['updating organisation', 'update organisation'],
 	searchOrganisations: ['searching organisations', 'search organisations'],
+	clearCache: ['clearing cache', 'clear cache'],
 }
 
 /**
@@ -242,12 +285,10 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — GET /api/organisations/active; observable contract owned by tenant-lifecycle.
 		 */
 		async getActiveOrganisation() {
-			const endpoint = '/index.php/apps/openregister/api/organisations/active'
 			try {
-				const response = await fetch(endpoint, {
+				const { data } = await readJson(`${ORGANISATIONS}/active`, {
 					method: 'GET',
 				})
-				const data = await response.json()
 
 				if (data.activeOrganisation) {
 					this.setActiveOrganisation(data.activeOrganisation)
@@ -266,12 +307,10 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — GET /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
 		 */
 		async getOrganisation(uuid, options = { setItem: false }) {
-			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}`
 			try {
-				const response = await fetch(endpoint, {
+				const { data } = await readJson(`${ORGANISATIONS}/${uuid}`, {
 					method: 'GET',
 				})
-				const data = await response.json()
 
 				if (data.organisation) {
 					options.setItem && this.setOrganisationItem(data.organisation)
@@ -410,12 +449,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — PUT /api/organisations/{uuid}; observable contract owned by tenant-lifecycle.
 		 */
 		async updateOrganisation(organisationData) {
-			if (!organisationData.id && !organisationData.uuid) {
-				throw new Error('Organisation UUID is required for updates')
-			}
-
-			// API expects UUID, not ID
-			const organisationId = organisationData.uuid || organisationData.id
+			const organisationId = organisationIdOf(organisationData)
 
 			// Clean the data before sending - remove read-only fields
 			const cleanedData = this.cleanOrganisationForSave(organisationData)
@@ -492,10 +526,7 @@ export const useOrganisationStore = defineStore('organisation', {
 		 */
 		async searchOrganisations(query = '', limit = 50, offset = 0) {
 			// Build query parameters
-			const params = new URLSearchParams()
-			if (query.trim()) {
-				params.append('query', query.trim())
-			}
+			const params = organisationQuery(query)
 			params.append('_limit', limit)
 			params.append('_offset', offset)
 
@@ -514,24 +545,18 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — POST /api/organisations/clear-cache; observable contract owned by tenant-lifecycle.
 		 */
 		async clearCache() {
-			const endpoint =
-				'/index.php/apps/openregister/api/organisations/clear-cache'
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-				})
-
-				const data = await response.json()
+				const { response, data } = await readJson(
+					`${ORGANISATIONS}/clear-cache`,
+					{ method: 'POST' },
+				)
 
 				// Refresh organisation data after cache clear
 				await this.refreshOrganisationList()
 
 				return { response, data }
 			} catch (error) {
-				console.error('Error clearing cache:', error)
-				throw new Error(`Failed to clear cache: ${error.message}`, {
-					cause: error,
-				})
+				throw failureOf('clearCache', error)
 			}
 		},
 		/**
