@@ -387,6 +387,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 			$values[$field] = ($payload[$field] ?? null);
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1((string)json_encode($values));
 	}//end fingerprint()
 }//end class

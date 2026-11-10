@@ -265,6 +265,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	public function templateIdFor(int $schemaId, string $chainKey): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaId . ':' . $chainKey);
 
 		return sprintf(

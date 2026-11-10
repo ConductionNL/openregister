@@ -326,6 +326,7 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	 * @return array{id: int, uuid: string, url: string}
 	 */
 	private static function standIn(string $app, string $key): array {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5($app.'/'.$key);
 
 		return [

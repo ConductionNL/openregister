@@ -349,6 +349,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		// Ensure table name doesn't exceed maximum length (should be fine with numeric IDs).
 		if (strlen($tableName) > MagicMapper::MAX_TABLE_NAME_LENGTH) {
 			// This should rarely happen with numeric IDs, but handle it safely.
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 			$hash = substr(md5($registerId . '_' . $schemaId), 0, 8);
 			$tableName = MagicMapper::TABLE_PREFIX . $hash;
 		}

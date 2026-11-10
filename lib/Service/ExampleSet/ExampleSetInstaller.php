@@ -1006,6 +1006,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return array<string, mixed>
 	 */
 	private function standIn(string $name, array $data): array {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5($name);
 		$id   = sprintf(
 			'%s-%s-4%s-8%s-%s',

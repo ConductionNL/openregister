@@ -538,6 +538,7 @@ class FileTextController extends Controller {
 			$entities[] = [
 				'text'       => $value,
 				'entityType' => $entity['entity_type'],
+				// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 				'key'        => substr(md5($value . $entity['entity_type']), 0, 8),
 			];
 		}
