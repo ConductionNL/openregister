@@ -379,6 +379,58 @@ class ViewsControllerTest extends TestCase {
 		$this->assertEquals(5, $data['total']);
 	}
 
+	/**
+	 * Five views with ids 1..5, for the pagination cases.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Search\Db\View>
+	 */
+	private function fiveViews(): array {
+		$views = [];
+		for ($i = 0; $i < 5; $i++) {
+			$v = new \OCA\OpenRegister\Search\Db\View();
+			$prop = (new \ReflectionClass($v))->getProperty('id');
+			$prop->setAccessible(true);
+			$prop->setValue($v, $i + 1);
+			$v->setName("View $i");
+			$v->setQuery([]);
+			$views[] = $v;
+		}
+
+		return $views;
+	}
+
+	public function testIndexWithLimitAndOffsetSlicesFromTheOffset(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_limit' => '2', '_offset' => '3']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([4, 5], array_column($data['results'], 'id'));
+		$this->assertSame(5, $data['total']);
+	}
+
+	public function testIndexPageWinsOverOffsetWhenALimitIsGiven(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_limit' => '2', '_offset' => '0', '_page' => '3']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([5], array_column($data['results'], 'id'));
+	}
+
+	public function testIndexWithoutALimitIgnoresOffsetAndPage(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['_offset' => '3', '_page' => '2']);
+		$this->viewService->method('findAllFor')->willReturn($this->fiveViews());
+
+		$data = $this->controller->index()->getData();
+
+		$this->assertSame([1, 2, 3, 4, 5], array_column($data['results'], 'id'));
+		$this->assertSame(5, $data['total']);
+	}
+
 	public function testIndexException(): void {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn([]);
@@ -1152,6 +1204,61 @@ class ViewsControllerTest extends TestCase {
 
 		$this->assertEquals(200, $result->getStatus());
 		$this->assertEquals($calendarResult, $result->getData());
+	}
+
+	public function testCalendarAcceptsTheRangeStartAndRangeEndAliases(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['rangeStart' => '2026-07-01', 'rangeEnd' => '2026-07-31']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->expects($this->once())->method('getCalendarObjects')
+			->with($view, $this->callback(fn ($range) => $range->start === '2026-07-01' && $range->end === '2026-07-31'))
+			->willReturn(['objects' => []]);
+
+		$this->assertSame(200, $this->controller->calendar('1')->getStatus());
+	}
+
+	public function testCalendarWithOnlyAStartIsABadRequest(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-01']);
+		$this->viewService->expects($this->never())->method('find');
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Both start and end (the visible date range) are required'], $result->getData());
+	}
+
+	public function testCalendarAnInvalidRangeIsRefusedWithItsMessage(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-31', 'end' => '2026-07-01']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->method('getCalendarObjects')
+			->willThrowException(new \InvalidArgumentException('The range ends before it starts'));
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'The range ends before it starts'], $result->getData());
+	}
+
+	public function testCalendarAnUnexpectedFailureIsLoggedAndA500(): void {
+		$this->mockAuthenticatedUser();
+		$this->request->method('getParams')->willReturn(['start' => '2026-07-01', 'end' => '2026-07-31']);
+		$view = $this->createViewEntity();
+		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewPresentationService->method('getCalendarObjects')->willThrowException(new \RuntimeException('db down'));
+		$this->logger->expects($this->once())->method('error')
+			->with('[ViewsController] Error querying calendar range', $this->callback(fn ($c) => $c['id'] === '1' && $c['exception'] === 'db down'));
+
+		$result = $this->controller->calendar('1');
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Failed to query calendar range', 'message' => 'db down'], $result->getData());
 	}
 
 	public function testCalendarNotFound(): void {
