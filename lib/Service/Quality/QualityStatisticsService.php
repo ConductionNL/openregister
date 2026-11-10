@@ -209,28 +209,60 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 		?string $qualityStatus = null,
 		QualityListingWindow $window = new QualityListingWindow(),
 	): array {
-		$quality = $this->loadAnnotation(register: $register, schema: $schema);
-		$reading = new QualityScoreReading(
-			field: $this->scoreField(quality: $quality),
-			thresholds: $this->thresholds(quality: $quality)
-		);
+		return $this->lowest(request: new QualityListingRequest(register: $register, schema: $schema, qualityStatus: $qualityStatus, window: $window));
+	}//end lowestQuality()
 
-		$objects = $this->loadObjects(register: $register, schema: $schema);
+	/**
+	 * The lowest-quality listing of one request: score, filter, sort and page.
+	 *
+	 * @param QualityListingRequest $request The register, schema, status filter and window.
+	 *
+	 * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
+	 */
+	private function lowest(QualityListingRequest $request): array {
+		$rows = $this->statusRows(request: $request);
+		$this->sortRows(rows: $rows, window: $request->window);
 
-		$rows = $this->withStatus(rows: $this->listingRows(objects: $objects, reading: $reading), qualityStatus: $qualityStatus);
+		return self::page(rows: $rows, window: $request->window);
+	}//end lowest()
 
-		$this->sortRows(rows: $rows, window: $window);
+	/**
+	 * Every loaded object's listing row, scored under the schema's annotation, filtered by status.
+	 *
+	 * @param QualityListingRequest $request The register, schema and status filter.
+	 *
+	 * @return array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> The rows.
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
+	 */
+	private function statusRows(QualityListingRequest $request): array {
+		$quality = $this->loadAnnotation(register: $request->register, schema: $request->schema);
+		$reading = new QualityScoreReading(field: $this->scoreField(quality: $quality), thresholds: $this->thresholds(quality: $quality));
+		$objects = $this->loadObjects(register: $request->register, schema: $request->schema);
 
-		$total = count($rows);
-		$page = array_slice($rows, max(0, $window->offset), max(0, $window->limit));
+		return $this->withStatus(rows: $this->listingRows(objects: $objects, reading: $reading), qualityStatus: $request->qualityStatus);
+	}//end statusRows()
 
+	/**
+	 * One window of sorted rows, with the total before paging.
+	 *
+	 * @param array<int, array<string, mixed>> $rows   The sorted rows.
+	 * @param QualityListingWindow             $window The page size and offset.
+	 *
+	 * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
+	 */
+	private static function page(array $rows, QualityListingWindow $window): array {
 		return [
-			'items' => $page,
-			'total' => $total,
+			'items' => array_slice($rows, max(0, $window->offset), max(0, $window->limit)),
+			'total' => count($rows),
 			'limit' => $window->limit,
 			'offset' => $window->offset,
 		];
-	}//end lowestQuality()
+	}//end page()
 
 	/**
 	 * Build one listing row per object.

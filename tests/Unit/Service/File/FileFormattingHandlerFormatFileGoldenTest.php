@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCP\IGroupManager;
+use OCA\OpenRegister\Service\File\FileSession;
 use DateTime;
 use OCA\OpenRegister\Files\Db\File;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -156,8 +158,7 @@ class FileFormattingHandlerFormatFileGoldenTest extends TestCase {
 
 		$handler = new FileFormattingHandler(
 			lockManager: $lockManager,
-			userSession: $session,
-			logger: $logger,
+			session: new FileSession($session, $this->createMock(IGroupManager::class), $logger),
 			fileMapper: $this->mapperFor(mode: ($scenario['mapper'] ?? null))
 		);
 

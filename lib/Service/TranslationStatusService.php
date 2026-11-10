@@ -70,8 +70,25 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation {
+		return $this->setSlotStatus(slot: new TranslationSlot(objectUuid: $objectUuid, property: $property, language: $language), status: $status);
+	}//end setStatus()
+
+	/**
+	 * Update the workflow status of one translation slot.
+	 *
+	 * The translator uid is derived from the active session.
+	 *
+	 * @param TranslationSlot $slot   The object, property and language of the slot.
+	 * @param string          $status The new workflow status.
+	 *
+	 * @return Translation The persisted translation row.
+	 *
+	 * @throws InvalidArgumentException When status is invalid or no slot exists.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	public function setSlotStatus(TranslationSlot $slot, string $status): Translation {
 		$this->assertKnownStatus(status: $status);
-		$slot = new TranslationSlot(objectUuid: $objectUuid, property: $property, language: $language);
 		$existing = $this->requireSlot(slot: $slot);
 
 		$translator = $this->userSession->getUser()?->getUID();
@@ -80,7 +97,7 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 			slot: $slot,
 			edit: new TranslationEdit(value: $existing->getValue(), status: $status, translator: $translator)
 		);
-	}//end setStatus()
+	}//end setSlotStatus()
 
 	/**
 	 * Refuse a status that is not one of the known workflow statuses.
@@ -187,18 +204,24 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function search(
-		?string $query = null,
-		?string $language = null,
-		?string $status = null,
-		?string $objectUuid = null,
-		int $limit = 100,
-		?string $sourceLanguage = null,
-		bool $isOutOfDate = false,
-	): array {
-		$rows = $this->findRows(filters: compact('query', 'language', 'status', 'objectUuid', 'limit', 'sourceLanguage', 'isOutOfDate'));
-		return array_map(fn (Translation $t) => $t->jsonSerialize(), $rows);
+	public function search(?string $query = null, ?string $language = null, ?string $status = null, ?string $objectUuid = null,
+		int $limit = 100, ?string $sourceLanguage = null, bool $isOutOfDate = false): array {
+		$filter = new TranslationFilter(language: $language, status: $status, objectUuid: $objectUuid, sourceLanguage: $sourceLanguage);
+		return $this->find(search: new TranslationSearch(filter: $filter, query: $query, limit: $limit, isOutOfDate: $isOutOfDate));
 	}//end search()
+
+	/**
+	 * Search translation rows.
+	 *
+	 * @param TranslationSearch $search The filter, full-text query, limit and outdated restriction.
+	 *
+	 * @return array<string, mixed>[]
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+	 */
+	public function find(TranslationSearch $search): array {
+		return array_map(fn (Translation $t) => $t->jsonSerialize(), $this->findRows(search: $search));
+	}//end find()
 
 	/**
 	 * Search translation rows and attach the source-language value side-by-side.
@@ -219,18 +242,24 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function searchWithSourceValues(
-		?string $query = null,
-		?string $language = null,
-		?string $status = null,
-		?string $objectUuid = null,
-		int $limit = 100,
-		?string $sourceLanguage = null,
-		bool $isOutOfDate = false,
-	): array {
-		$rows = $this->findRows(filters: compact('query', 'language', 'status', 'objectUuid', 'limit', 'sourceLanguage', 'isOutOfDate'));
-		return $this->withSourceValues(rows: $rows);
+	public function searchWithSourceValues(?string $query = null, ?string $language = null, ?string $status = null, ?string $objectUuid = null,
+		int $limit = 100, ?string $sourceLanguage = null, bool $isOutOfDate = false): array {
+		$filter = new TranslationFilter(language: $language, status: $status, objectUuid: $objectUuid, sourceLanguage: $sourceLanguage);
+		return $this->findWithSourceValues(search: new TranslationSearch(filter: $filter, query: $query, limit: $limit, isOutOfDate: $isOutOfDate));
 	}//end searchWithSourceValues()
+
+	/**
+	 * Search translation rows and attach the source-language value side-by-side.
+	 *
+	 * @param TranslationSearch $search The filter, full-text query, limit and outdated restriction.
+	 *
+	 * @return array<string, mixed>[] Each row carries an extra `sourceValue` field.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+	 */
+	public function findWithSourceValues(TranslationSearch $search): array {
+		return $this->withSourceValues(rows: $this->findRows(search: $search));
+	}//end findWithSourceValues()
 
 	/**
 	 * Serialise each row with its source-language value as an extra `sourceValue` field.
@@ -253,21 +282,19 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	}//end withSourceValues()
 
 	/**
-	 * Run the mapper search with the caller's filters.
+	 * Run the mapper search.
 	 *
-	 * @param array<string, mixed> $filters The search() parameters by name.
+	 * @param TranslationSearch $search The filter, full-text query, limit and outdated restriction.
 	 *
 	 * @return Translation[]
 	 */
-	private function findRows(array $filters): array {
-		$filter = new TranslationFilter(
-			language: $filters['language'],
-			status: $filters['status'],
-			objectUuid: $filters['objectUuid'],
-			sourceLanguage: $filters['sourceLanguage']
+	private function findRows(TranslationSearch $search): array {
+		return $this->translationMapper->search(
+			filter: $search->filter,
+			query: $search->query,
+			limit: $search->limit,
+			isOutOfDate: $search->isOutOfDate
 		);
-
-		return $this->translationMapper->search(filter: $filter, query: $filters['query'], limit: $filters['limit'], isOutOfDate: $filters['isOutOfDate']);
 	}//end findRows()
 
 	/**
@@ -313,17 +340,28 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
 	 */
-	public function markDerivedTranslationsOutdated(
-		string $objectUuid,
-		string $property,
-		string $sourceLanguage,
-	): int {
-		if ($objectUuid === '' || $property === '' || $sourceLanguage === '') {
+	public function markDerivedTranslationsOutdated(string $objectUuid, string $property, string $sourceLanguage): int {
+		return $this->markDerivedOutdated(source: new TranslationSlot(objectUuid: $objectUuid, property: $property, language: $sourceLanguage));
+	}//end markDerivedTranslationsOutdated()
+
+	/**
+	 * Mark every translation derived from a source-language slot as `outdated`.
+	 *
+	 * An empty object uuid, property or language marks nothing.
+	 *
+	 * @param TranslationSlot $source The object, property and source language whose value changed.
+	 *
+	 * @return int Number of derived rows transitioned to `outdated`.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+	 */
+	public function markDerivedOutdated(TranslationSlot $source): int {
+		if ($source->objectUuid === '' || $source->property === '' || $source->language === '') {
 			return 0;
 		}
 
-		return $this->translationMapper->markDerivedOutdated($objectUuid, $property, $sourceLanguage);
-	}//end markDerivedTranslationsOutdated()
+		return $this->translationMapper->markDerivedOutdated($source->objectUuid, $source->property, $source->language);
+	}//end markDerivedOutdated()
 
 	/**
 	 * Find objects missing translation slots in a language.

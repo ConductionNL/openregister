@@ -191,18 +191,35 @@ class EscalationLadderService {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
 	public function validateAgainstTimeline(array $rungs, DateTimeInterface $anchorAt, DateTimeInterface $fireAt, WorkingCalendar $calendar): void {
-		foreach ($rungs as $rung) {
+		$this->refuseBeforeAnchor(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $calendar), anchorAt: $anchorAt);
+	}//end validateAgainstTimeline()
+
+	/**
+	 * Refuse the first `preBreach` rung whose instant falls before the anchor.
+	 *
+	 * @param RungTimeline      $timeline The rungs, the fire moment and the calendar.
+	 * @param DateTimeInterface $anchorAt The instant the term runs from.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowTimerValidationException When an offset exceeds the SLA, naming the anchor.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
+	 */
+	private function refuseBeforeAnchor(RungTimeline $timeline, DateTimeInterface $anchorAt): void {
+		$calendar = $timeline->calendar;
+		foreach ($timeline->rungs as $rung) {
 			if ($rung['trigger'] !== self::TRIGGER_PRE_BREACH) {
 				continue;
 			}
 
-			$instant = $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar);
+			$instant = $this->rungInstant(rung: $rung, fireAt: $timeline->fireAt, calendar: $calendar);
 			if ($instant < $anchorAt) {
 				$where = sprintf("it resolves to %s, before the anchor %s (calendar '%s')", $instant->format('c'), $anchorAt->format('c'), $calendar->getSlug());
 				throw new FlowTimerValidationException(message: self::offsetLabel(rung: $rung) . ' exceeds the SLA — ' . $where . '.');
 			}
 		}
-	}//end validateAgainstTimeline()
+	}//end refuseBeforeAnchor()
 
 	/**
 	 * The instant a rung falls on: `preBreach` is offset BEFORE the fire
@@ -239,15 +256,28 @@ class EscalationLadderService {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function nextRungAt(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): ?DateTimeImmutable {
+		return $this->earliestUnfired(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar));
+	}//end nextRungAt()
+
+	/**
+	 * The instant of the earliest unfired rung on a timeline.
+	 *
+	 * @param RungTimeline $timeline The rungs, the fire moment, the fired keys and the calendar.
+	 *
+	 * @return DateTimeImmutable|null The instant, or null when every rung has fired.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 */
+	private function earliestUnfired(RungTimeline $timeline): ?DateTimeImmutable {
 		$earliest = null;
-		foreach ($this->unfired(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar)) as $entry) {
+		foreach ($this->unfired(timeline: $timeline) as $entry) {
 			if ($earliest === null || $entry['at'] < $earliest) {
 				$earliest = $entry['at'];
 			}
 		}
 
 		return $earliest;
-	}//end nextRungAt()
+	}//end earliestUnfired()
 
 	/**
 	 * The rungs whose instant has passed and which have no fire row, in
@@ -314,16 +344,30 @@ class EscalationLadderService {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function resolveRecipients(array $rung, ?Task $subject, array $roleBindings): array {
+		return $this->recipientsOf(rung: $rung, audience: new EscalationAudience(subject: $subject, roleBindings: $roleBindings));
+	}//end resolveRecipients()
+
+	/**
+	 * The deduplicated recipients of every role a rung notifies or escalates to.
+	 *
+	 * @param array<string, mixed> $rung     The normalised rung.
+	 * @param EscalationAudience   $audience The subject task and the ladder's bindings.
+	 *
+	 * @return array<int, array{type: string, id: string, role: string}> The recipients, deduplicated.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 */
+	private function recipientsOf(array $rung, EscalationAudience $audience): array {
 		$roles = array_values(array_unique(array_merge($rung['notifyRole'], $rung['escalateToRole'])));
 		$recipients = [];
 		foreach ($roles as $role) {
-			foreach ($this->recipientsForRole(role: (string)$role, subject: $subject, roleBindings: $roleBindings) as $recipient) {
+			foreach ($this->recipientsForRole(role: (string)$role, audience: $audience) as $recipient) {
 				$recipients[$recipient['type'] . ':' . $recipient['id']] = $recipient;
 			}
 		}
 
 		return array_values($recipients);
-	}//end resolveRecipients()
+	}//end recipientsOf()
 
 	/**
 	 * A ladder definition by slug.
@@ -499,19 +543,18 @@ class EscalationLadderService {
 	/**
 	 * The recipients one role resolves to.
 	 *
-	 * @param string $role The role.
-	 * @param Task|null $subject The subject task.
-	 * @param array<string, string> $roleBindings The ladder's bindings.
+	 * @param string             $role     The role.
+	 * @param EscalationAudience $audience The subject task and the ladder's bindings.
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The recipients.
 	 */
-	private function recipientsForRole(string $role, ?Task $subject, array $roleBindings): array {
-		$bound = $this->boundRecipients(binding: ($roleBindings[$role] ?? null), role: $role);
+	private function recipientsForRole(string $role, EscalationAudience $audience): array {
+		$bound = $this->boundRecipients(binding: ($audience->roleBindings[$role] ?? null), role: $role);
 		if ($bound !== []) {
 			return $bound;
 		}
 
-		$performer = $this->handlerRecipients(role: $role, subject: $subject);
+		$performer = $this->handlerRecipients(role: $role, subject: $audience->subject);
 		if ($performer !== []) {
 			return $performer;
 		}

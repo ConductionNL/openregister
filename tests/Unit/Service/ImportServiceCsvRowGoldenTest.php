@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Import\ImportTarget;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -165,7 +166,7 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$service = (new \ReflectionClass(ImportService::class))->newInstanceWithoutConstructor();
 		$transform = new \ReflectionMethod(ImportService::class, 'transformExcelRowToObject');
 
-		$row = $transform->invoke($service, ['2024' => 'x', 'name' => 'y'], null, null, null);
+		$row = $transform->invoke($service, ['2024' => 'x', 'name' => 'y'], new ImportTarget(null, null, null));
 
 		$this->assertSame([2024 => 'x', 'name' => 'y'], $row);
 	}
@@ -180,6 +181,6 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$transform = new \ReflectionMethod(ImportService::class, 'transformExcelRowToObject');
 		$row = ['_hidden' => 'a', '@self.owner' => 'b', '@other' => 'c', 'name' => 'd', 'empty' => '', 'id' => 'e'];
 
-		$this->assertSame(['name' => 'd', 'id' => 'e', '@self' => ['id' => 'e']], $transform->invoke($service, $row, null, null, null));
+		$this->assertSame(['name' => 'd', 'id' => 'e', '@self' => ['id' => 'e']], $transform->invoke($service, $row, new ImportTarget(null, null, null)));
 	}
 }

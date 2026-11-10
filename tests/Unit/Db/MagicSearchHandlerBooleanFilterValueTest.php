@@ -56,6 +56,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 
 /**
  * A boolean filter value reaches every object-filter builder as its string form.
@@ -150,7 +152,7 @@ class MagicSearchHandlerBooleanFilterValueTest extends TestCase {
 	public function testRawSqlPath(array $filters, string $_qb, string $expected): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
-		$conditions = $method->invoke($this->handler, $filters, $this->makeSchema(), $this->makeConnection(), true);
+		$conditions = $method->invoke($this->handler, new ConditionSqlRun(query: $filters, table: new MagicReadTable(schema: $this->makeSchema()), connection: $this->makeConnection(), isPostgres: true));
 
 		$this->assertSame([$expected], $conditions);
 	}//end testRawSqlPath()

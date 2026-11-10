@@ -111,7 +111,8 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 			$folderIds = $this->magicMapper->findFolderIdsByOrganisation(organisationUuid: $uuid);
 			return $this->fileMapper->sumSizesByFileIds(fileIds: $folderIds);
 		} catch (Exception $e) {
-			return $this->unmeasured(message: '[OrganisationUsageService] Could not measure storage', uuid: $uuid, error: $e);
+			$this->logger->warning(message: '[OrganisationUsageService] Could not measure storage', context: self::failure(uuid: $uuid, error: $e));
+			return null;
 		}
 	}//end measureStorage()
 
@@ -133,7 +134,8 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 		try {
 			return $this->countQuotaObjects(organisation: $organisation, uuid: $uuid);
 		} catch (Exception $e) {
-			return $this->unmeasured(message: '[OrganisationUsageService] Could not count objects', uuid: $uuid, error: $e);
+			$this->logger->warning(message: '[OrganisationUsageService] Could not count objects', context: self::failure(uuid: $uuid, error: $e));
+			return null;
 		}
 	}//end measureObjects()
 
@@ -159,20 +161,18 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 	}//end countQuotaObjects()
 
 	/**
-	 * Log a figure that could not be measured; it is null, never 0.
+	 * The log context of a figure that could not be measured; the figure is null, never 0.
 	 *
-	 * @param string    $message What could not be measured.
-	 * @param string    $uuid    The organisation uuid.
-	 * @param Exception $error   Why.
+	 * @param string    $uuid  The organisation uuid.
+	 * @param Exception $error Why.
 	 *
-	 * @return null Always null.
+	 * @return array{uuid: string, error: string}
 	 *
 	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
-	private function unmeasured(string $message, string $uuid, Exception $error): null {
-		$this->logger->warning(message: $message, context: ['uuid' => $uuid, 'error' => $error->getMessage()]);
-		return null;
-	}//end unmeasured()
+	private static function failure(string $uuid, Exception $error): array {
+		return ['uuid' => $uuid, 'error' => $error->getMessage()];
+	}//end failure()
 
 	/**
 	 * The schema ids the object quota counts.

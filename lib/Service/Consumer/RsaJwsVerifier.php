@@ -48,17 +48,16 @@ class RsaJwsVerifier {
 	/**
 	 * Whether the token verifies with the RSA public key under the pinned algorithm.
 	 *
-	 * @param string $token     The compact JWS.
-	 * @param string $algorithm The pinned algorithm (RS* or PS*).
-	 * @param string $key       A PEM public key, or base64 of one.
+	 * @param string $token The compact JWS.
+	 * @param JwsKey $key   The pinned algorithm (RS* or PS*) and a PEM public key, or base64 of one.
 	 *
 	 * @return bool True when the signature is valid; false for anything else, including a key that is not RSA.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
-	public function verify(string $token, string $algorithm, string $key): bool {
-		$verifierAlgorithm = $this->asymmetricAlgorithm(algorithm: $algorithm);
-		$jwk = $this->rsaPublicKey(key: $key, algorithm: $algorithm);
+	public function verify(string $token, JwsKey $key): bool {
+		$verifierAlgorithm = $this->asymmetricAlgorithm(algorithm: $key->algorithm);
+		$jwk = $this->rsaPublicKey(key: $key->material, algorithm: $key->algorithm);
 		if ($verifierAlgorithm === null || $jwk === null) {
 			return false;
 		}

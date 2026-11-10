@@ -270,7 +270,7 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$this->assertSame([], $this->mints);
 		$this->assertSame('OLD', $this->resolves[0]['credential']['clientId']);
 		$this->assertSame('OLDREF', $this->resolves[0]['credential']['clientCredentialRef']);
-		$this->assertSame([['credentialId' => 'existing-uuid', 'scope' => 'personal', 'extraMetadata' => ['status' => 'active']]], $this->persists);
+		$this->assertSame([['credentialId' => 'existing-uuid', 'scope' => 'personal']], $this->persists);
 		$this->assertSame([['credentialId' => 'existing-uuid', 'scope' => 'personal', 'owner' => 'carol']], $this->records);
 	}
 
@@ -458,14 +458,14 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		});
 
 		$refresh = $this->createMock(OAuth2RefreshService::class);
-		$refresh->method('persist')->willReturnCallback(function (string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
-			$this->persists[] = ['credentialId' => $credentialId, 'scope' => $scope, 'extraMetadata' => $extraMetadata];
+		$refresh->method('persist')->willReturnCallback(function (TokenSetAddress $address, OAuth2TokenSet $set): void {
+			$this->persists[] = ['credentialId' => $address->credentialId, 'scope' => $address->scope];
 		});
 		$refresh->method('storedSet')->willReturn(OAuth2TokenSet::fromTokenResponse(response: ['access_token' => 'STORED_AT']));
 
 		$identities = $this->createMock(OAuth2AccountIdentity::class);
-		$identities->method('record')->willReturnCallback(function (array $provider, TokenSetAddress $address, OAuth2TokenSet $set, string $owner): void {
-			$this->records[] = ['credentialId' => $address->credentialId, 'scope' => $address->scope, 'owner' => $owner];
+		$identities->method('record')->willReturnCallback(function (\OCA\OpenRegister\Service\Credential\RedeemedConnection $connection, TokenSetAddress $address): void {
+			$this->records[] = ['credentialId' => $address->credentialId, 'scope' => $address->scope, 'owner' => $connection->owner()];
 		});
 
 		$clients = $this->createMock(OAuth2ClientResolver::class);
