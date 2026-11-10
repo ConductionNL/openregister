@@ -4,6 +4,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\ApplicationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -43,9 +44,10 @@ class ApplicationServiceTest extends TestCase {
 		$this->applicationMapper
 			->expects($this->once())
 			->method('findAll')
+			->with(null, null, [])
 			->willReturn([$app1, $app2]);
 
-		$result = $this->service->findAll();
+		$result = $this->service->findAll(ListQuery::unbounded());
 
 		$this->assertCount(2, $result);
 	}
@@ -54,9 +56,10 @@ class ApplicationServiceTest extends TestCase {
 		$this->applicationMapper
 			->expects($this->once())
 			->method('findAll')
+			->with(10, 5, ['key' => 'value'])
 			->willReturn([]);
 
-		$result = $this->service->findAll(10, 5, ['key' => 'value']);
+		$result = $this->service->findAll(new ListQuery(10, 5, ['key' => 'value']));
 
 		$this->assertSame([], $result);
 	}
@@ -67,7 +70,7 @@ class ApplicationServiceTest extends TestCase {
 			->method('findAll')
 			->willReturn([]);
 
-		$result = $this->service->findAll();
+		$result = $this->service->findAll(ListQuery::unbounded());
 
 		$this->assertSame([], $result);
 	}
@@ -127,6 +130,24 @@ class ApplicationServiceTest extends TestCase {
 
 		$this->assertSame($app, $result);
 		$this->assertSame(1, $result->getId());
+	}
+
+	public function testCreateAndUpdateLogFieldNamesNotValues(): void {
+		$logged = [];
+		$this->logger->method('info')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				$logged[] = $context;
+			}
+		);
+		$this->applicationMapper->method('createFromArray')->willReturn(new Application());
+		$this->applicationMapper->method('updateFromArray')->willReturn(new Application());
+
+		$this->service->create(['description' => 'Contact: Jan Jansen']);
+		$this->service->update(1, ['description' => 'Contact: Jan Jansen']);
+
+		$this->assertNotSame([], $logged);
+		$this->assertStringContainsString('description', (string)json_encode($logged));
+		$this->assertStringNotContainsString('Jan Jansen', (string)json_encode($logged));
 	}
 
 	public function testCreateWithEmptyData(): void {

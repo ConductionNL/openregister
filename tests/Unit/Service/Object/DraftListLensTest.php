@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use PHPUnit\Framework\TestCase;
@@ -91,7 +92,7 @@ class DraftListLensTest extends TestCase {
 	public function testHidingKeepsEverythingThatIsNotADraft(): void {
 		$this->assertSame(
 			"(t._status IS NULL OR t._status <> 'draft')",
-			(new DraftListLens())->sql(mode: DraftListLens::EXCLUDE, columnPrefix: 't.', owner: null)
+			(new DraftListLens())->clauseFor(listing: new DraftListing(mode: DraftListLens::EXCLUDE, owner: null), columnPrefix: 't.')
 		);
 	}//end testHidingKeepsEverythingThatIsNotADraft()
 
@@ -101,11 +102,11 @@ class DraftListLensTest extends TestCase {
 	public function testTheOwnerKeepsTheirOwnDrafts(): void {
 		$this->assertSame(
 			"((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')",
-			(new DraftListLens())->sql(mode: DraftListLens::EXCLUDE, columnPrefix: '', owner: "'alice'")
+			(new DraftListLens())->clauseFor(listing: new DraftListing(mode: DraftListLens::EXCLUDE, owner: "'alice'"), columnPrefix: '')
 		);
 		$this->assertSame(
 			"((t._status IS NULL OR t._status <> 'draft') OR t._owner = :dcValue1)",
-			(new DraftListLens())->sql(mode: DraftListLens::EXCLUDE, columnPrefix: 't.', owner: ':dcValue1'),
+			(new DraftListLens())->clauseFor(listing: new DraftListing(mode: DraftListLens::EXCLUDE, owner: ':dcValue1'), columnPrefix: 't.'),
 			'The owner is whatever the emitter quoted or bound; the lens never quotes.'
 		);
 	}//end testTheOwnerKeepsTheirOwnDrafts()
@@ -148,9 +149,12 @@ class DraftListLensTest extends TestCase {
 
 		$this->assertSame(
 			"(t._status IS NULL OR t._status <> 'draft')",
-			$lens->sql(mode: DraftListLens::NONE, columnPrefix: 't.', owner: ':dcValue1')
+			$lens->clauseFor(listing: new DraftListing(mode: DraftListLens::NONE, owner: ':dcValue1'), columnPrefix: 't.')
 		);
-		$this->assertSame("(_status IS NULL OR _status <> 'draft')", $lens->sql(mode: DraftListLens::NONE, columnPrefix: '', owner: "'alice'"));
+		$this->assertSame("(_status IS NULL OR _status <> 'draft')", $lens->clauseFor(
+			listing: new DraftListing(mode: DraftListLens::NONE, owner: "'alice'"),
+			columnPrefix: ''
+		));
 		$this->assertSame(DraftListLens::NONE, $lens->modeFor(query: ['_drafts' => 'none', '@self' => ['status' => 'draft']]), 'The parameter, when sent, wins.');
 	}//end testNoneLeavesOutTheCallersOwnDraftsToo()
 
@@ -163,7 +167,10 @@ class DraftListLensTest extends TestCase {
 	public function testOnlyAndAny(): void {
 		$lens = new DraftListLens();
 
-		$this->assertSame("t._status = 'draft'", $lens->sql(mode: DraftListLens::ONLY, columnPrefix: 't.', owner: "'alice'"));
-		$this->assertNull($lens->sql(mode: DraftListLens::ANY, columnPrefix: 't.', owner: "'alice'"));
+		$this->assertSame("t._status = 'draft'", $lens->clauseFor(
+			listing: new DraftListing(mode: DraftListLens::ONLY, owner: "'alice'"),
+			columnPrefix: 't.'
+		));
+		$this->assertNull($lens->clauseFor(listing: new DraftListing(mode: DraftListLens::ANY, owner: "'alice'"), columnPrefix: 't.'));
 	}//end testOnlyAndAny()
 }//end class

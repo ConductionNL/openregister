@@ -37,9 +37,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -52,6 +49,7 @@ use Throwable;
 class TalkObjectSourceProvider implements ObjectSourceProvider {
 
 	use CountsThroughFindAll;
+	use ReadsRowsById;
 	use InstalledAppCheck;
 	use ContainerServiceLookup;
 	use DefensiveGetters;
@@ -85,21 +83,41 @@ class TalkObjectSourceProvider implements ObjectSourceProvider {
 	private const PARTICIPANT_SERVICE = 'OCA\\Talk\\Service\\ParticipantService';
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Server container (lazy app-service lookup).
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager App availability checks.
-	 * @param IUserSession $userSession The acting-user session.
-	 * @param ContainerInterface $container Server container (lazy Talk-service lookup).
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge $app         Whether the app is installed, its services, and the log of failed reads.
+	 * @param IUserSession      $userSession The acting-user session.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
+		OptionalAppBridge $app,
 		private readonly IUserSession $userSession,
-		private readonly ContainerInterface $container,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->appManager = $app->appManager;
+		$this->container = $app->container;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -114,65 +132,6 @@ class TalkObjectSourceProvider implements ObjectSourceProvider {
 	}//end getId()
 
 	/**
-	 * {@inheritDoc}
-	 *
-	 * MUST return null when the conversation is absent OR the acting user is not
-	 * a participant, so the two cases are indistinguishable (no enumeration
-	 * oracle).
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param string $id The Talk room token.
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $config reserved for future scoping options.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		foreach ($this->readRooms() as $room) {
-			if ((string)($room['id'] ?? '') === $id) {
-				return $this->toObjectEntity(register: $register, schema: $schema, room: $room);
-			}
-		}
-
-		return null;
-	}//end find()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * Honours `limit` and `offset`. The result is scoped by Talk's `Manager` to
-	 * the acting user's own conversations.
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return ObjectEntity[] The matching virtual objects.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $config reserved for future scoping options.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$limit = (int)($query['limit'] ?? 200);
-		$offset = (int)($query['offset'] ?? 0);
-
-		$rooms = array_slice($this->readRooms(), $offset, $limit);
-
-		$objects = [];
-		foreach ($rooms as $room) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, room: $room);
-		}
-
-		return $objects;
-	}//end findAll()
-
-	/**
 	 * Read the Talk rooms the acting user participates in, failing closed to an
 	 * empty list.
 	 *
@@ -183,56 +142,79 @@ class TalkObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	private function readRooms(): array {
+	protected function readRows(): array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
+		$rooms = $this->listRooms(userId: $user->getUID());
+		if ($rooms === null) {
+			return [];
+		}
+
+		return $this->normaliseRooms(rooms: $rooms, userId: $user->getUID());
+	}//end readRows()
+
+	/**
+	 * The rooms of a user, or null when Talk's manager is missing or throws.
+	 *
+	 * @param string $userId The acting user's uid.
+	 *
+	 * @return mixed The rooms (whatever Manager::getRoomsForUser() returns), or null.
+	 */
+	private function listRooms(string $userId): mixed {
 		$manager = $this->resolveService(class: self::MANAGER);
 		if ($manager === null) {
-			return [];
+			return null;
 		}
 
 		try {
-			$rooms = $manager->getRoomsForUser($user->getUID());
+			return $manager->getRoomsForUser($userId);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:talk-source] could not list rooms: ' . $e->getMessage());
-			return [];
+			return null;
 		}
+	}//end listRooms()
 
-		$participantService = $this->resolveService(class: self::PARTICIPANT_SERVICE);
+	/**
+	 * Normalise the object entries of a room list.
+	 *
+	 * @param mixed  $rooms  The rooms.
+	 * @param string $userId The acting user's uid.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised rooms.
+	 */
+	private function normaliseRooms(mixed $rooms, string $userId): array {
+		$viewer = new TalkRoomViewer(userId: $userId, participantService: $this->resolveService(class: self::PARTICIPANT_SERVICE));
 
 		$result = [];
 		foreach ($rooms as $room) {
-			if (is_object($room) === false) {
-				continue;
+			if (is_object($room) === true) {
+				$result[] = $this->normaliseRoom(room: $room, viewer: $viewer);
 			}
-
-			$result[] = $this->normaliseRoom(room: $room, userId: $user->getUID(), participantService: $participantService);
 		}
 
 		return $result;
-	}//end readRooms()
+	}//end normaliseRooms()
 
 	/**
 	 * Normalise a single Talk room entity into a flat array.
 	 *
-	 * @param object $room The Talk room entity.
-	 * @param string $userId The acting user's uid (for the display name).
-	 * @param object|null $participantService Talk's participant service (may be null).
+	 * @param object         $room   The Talk room entity.
+	 * @param TalkRoomViewer $viewer The acting user and Talk's participant service.
 	 *
 	 * @return array<string, mixed> The normalised room array.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	private function normaliseRoom(object $room, string $userId, ?object $participantService): array {
+	private function normaliseRoom(object $room, TalkRoomViewer $viewer): array {
 		return [
 			'id' => $this->stringGetter(entity: $room, getter: 'getToken'),
 			'name' => $this->stringGetter(entity: $room, getter: 'getName'),
-			'displayName' => $this->displayName(room: $room, userId: $userId),
+			'displayName' => $this->displayName(room: $room, userId: $viewer->userId),
 			'type' => $this->intGetter(entity: $room, getter: 'getType'),
-			'participantCount' => $this->participantCount(room: $room, participantService: $participantService),
+			'participantCount' => $this->participantCount(room: $room, participantService: $viewer->participantService),
 			'lastActivity' => $this->lastActivity(room: $room),
 		];
 	}//end normaliseRoom()
@@ -296,31 +278,14 @@ class TalkObjectSourceProvider implements ObjectSourceProvider {
 			}
 		} catch (Throwable $e) {
 			// Getter missing on this Talk version — leave null.
+			$this->logger->debug(
+				message: '[TalkObjectSourceProvider] Room last activity not readable',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;
 	}//end lastActivity()
-
-	/**
-	 * Map a normalised Talk room array onto a non-persisted virtual ObjectEntity.
-	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $room The normalised room array.
-	 *
-	 * @return ObjectEntity The virtual object (never saved).
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $room): ObjectEntity {
-		$token = (string)($room['id'] ?? '');
-
-		$entity = new ObjectEntity();
-		$entity->setUuid($token);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($room);
-
-		return $entity;
-	}//end toObjectEntity()
 }//end class

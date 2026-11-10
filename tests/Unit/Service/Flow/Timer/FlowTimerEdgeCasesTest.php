@@ -28,6 +28,7 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
@@ -47,6 +48,11 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Exception\FlowTimerValidationException
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
  */
 class FlowTimerEdgeCasesTest extends TestCase {
 
@@ -83,7 +89,7 @@ class FlowTimerEdgeCasesTest extends TestCase {
 		}
 
 		try {
-			$this->calculator->measure(from: $this->at('1926-01-01 00:00'), to: $this->at('2026-09-01 00:00'), unit: 'businessDays', calendar: $noWork);
+			$this->calculator->measure(span: new CalendarSpan(from: $this->at('1926-01-01 00:00'), to: $this->at('2026-09-01 00:00'), calendar: $noWork), unit: 'businessDays');
 			self::fail('an unbounded measure terminated');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('exceeds 20000 calendar days', $refused->getMessage());
@@ -165,7 +171,7 @@ class FlowTimerEdgeCasesTest extends TestCase {
 		);
 		self::assertSame(['handler'], $rungs[0]['notifyRole']);
 		$fireAt = $this->at('2026-09-20 12:00');
-		$due = $ladder->dueRungs(rungs: $rungs, fireAt: $fireAt, now: $fireAt, firedKeys: [], calendar: $this->calendar);
+		$due = $ladder->dueRungs(timeline: new \OCA\OpenRegister\Service\Flow\Timer\RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $this->calendar), now: $fireAt);
 		self::assertSame(['b', 'a'], array_map(static fn (array $entry): string => (string)$entry['rung']['key'], $due));
 	}//end testLadderRefusalsNameTheRule()
 

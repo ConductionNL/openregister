@@ -19,9 +19,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\SearchReferenceResolver;
 use OCP\AppFramework\IAppContainer;
@@ -42,6 +44,11 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Object\SearchRenderRequest
  * @uses   \OCA\OpenRegister\Service\Object\SearchResultShaper
+ * @uses \OCA\OpenRegister\Service\Object\SearchPaging
+ * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
+ * @uses \OCA\OpenRegister\Service\Object\SearchRenderNeed
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -132,10 +139,11 @@ class QueryHandlerSearchObjectsGoldenTest extends TestCase {
 				query: $setup['query'],
 				_rbac: ($setup['rbac'] ?? true),
 				_multitenancy: ($setup['multi'] ?? true),
-				ids: ($setup['ids'] ?? null),
-				uses: ($setup['uses'] ?? null),
-				views: ($setup['views'] ?? null),
-				_viewScopeRequired: ($setup['required'] ?? false)
+				options: new SearchOptions(
+					selection: new ObjectSelection(ids: ($setup['ids'] ?? null), uses: ($setup['uses'] ?? null)),
+					views: ($setup['views'] ?? null),
+					viewScopeRequired: ($setup['required'] ?? false)
+				)
 			);
 			$returned = is_int($found) === true ? ['int' => $found] : ['objects' => array_map(fn ($o) => is_array($o) ? $o : $o->getUuid(), $found)];
 		} catch (\Throwable $e) {

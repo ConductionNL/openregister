@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\MapLink;
-use OCA\OpenRegister\Db\MapLinkMapper;
+use OCA\OpenRegister\Db\MapLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -65,13 +65,48 @@ class MapsProvider extends AbstractIntegrationProvider {
 		'url' => '/index.php/apps/maps/#/m=',
 	];
 
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param LeafMarkerScanning     $leaf          The DB connection, app manager, localisation and marker-scan logger.
+	 * @param MapLinkMapperInterface $mapLinkMapper Map-link mapper (Tier-2 link table).
+	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private MapLinkMapper $mapLinkMapper,
-		private LoggerInterface $logger,
+		LeafMarkerScanning $leaf,
+		private MapLinkMapperInterface $mapLinkMapper,
 	) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	public function getId(): string {
@@ -93,9 +128,9 @@ class MapsProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return MapLinkMapper
+	 * @return MapLinkMapperInterface
 	 */
-	protected function linkMapper(): MapLinkMapper {
+	protected function linkMapper(): MapLinkMapperInterface {
 		return $this->mapLinkMapper;
 	}//end linkMapper()
 

@@ -1,7 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	navigationStore,
 	objectStore,
 	registerStore,
 	schemaStore,
@@ -38,6 +37,7 @@ import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import ObjectDetails from './ObjectDetails.vue'
 import ObjectsList from './ObjectsList.vue'
+import { openAddObjectModal } from '../../composables/openAddObject.js'
 
 export default {
 	name: 'ObjectsIndex',
@@ -149,16 +149,7 @@ export default {
 		 * @return {void}
 		 */
 		addObject() {
-			// Clear any existing object and open the add object modal
-			objectStore.setObjectItem(null)
-			// Ensure register and schema are set for new object creation
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
-			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
-			}
-			navigationStore.setModal('viewObject')
+			openAddObjectModal()
 		},
 	},
 }

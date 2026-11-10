@@ -25,6 +25,8 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\RemovalOptions;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\Files\Folder;
@@ -331,9 +333,8 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			$mapper,
 			$cache,
 			$session,
-			$auditMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($auditMapper, $logger),
 			$settings,
-			$logger,
 			$this->createMock(ReferentialIntegrityService::class),
 			$this->createMock(IDBConnection::class),
 			$organisations,
@@ -349,10 +350,7 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 		try {
 			$result = $handler->delete(
 				object: $object,
-				cascadeContext: $cascade,
-				permanent: $permanent,
-				register: $passRegister === true ? $passedRegister : null,
-				schema: $passSchema === true ? $passedSchema : null
+				options: new RemovalOptions(cascadeContext: $cascade, permanent: $permanent, table: ($passRegister === true && $passSchema === true) ? new RegisterSchema(register: $passedRegister, schema: $passedSchema) : null)
 			);
 		} catch (Exception $e) {
 			$exception = [get_class($e), $e->getMessage()];

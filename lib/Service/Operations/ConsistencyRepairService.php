@@ -44,7 +44,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
-class ConsistencyRepairService {
+class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 
 	/**
 	 * The act, as the run log names it.
@@ -151,14 +151,16 @@ class ConsistencyRepairService {
 		$changed = $this->delete(table: (string)$plan['table'], ids: $ids);
 
 		$this->recorder->recordAct(
-			jobClass: self::ACT,
-			actor: $actor,
-			details: [
-				'check' => $slug,
-				'table' => $plan['table'],
-				'objects' => $plan['objects'],
-			],
-			message: 'Repaired '.$changed.' row(s) found by the "'.$slug.'" check.'
+			act: new OperatorAct(
+				jobClass: self::ACT,
+				actor: $actor,
+				details: [
+					'check' => $slug,
+					'table' => $plan['table'],
+					'objects' => $plan['objects'],
+				],
+				message: 'Repaired '.$changed.' row(s) found by the "'.$slug.'" check.'
+			)
 		);
 
 		return [

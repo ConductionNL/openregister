@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
+import l10nMethods from '../../composables/l10nMethods.js'
 
 /**
  * One trace, rendered as the three facts it carries.
@@ -49,6 +49,7 @@ import { translate as t } from '@nextcloud/l10n'
  */
 export default {
 	name: 'RuleTraceView',
+	mixins: [l10nMethods],
 
 	props: {
 		/** The trace: verdict, operand, operandValue, message. */
@@ -73,14 +74,12 @@ export default {
 			return found ? found.description : ''
 		},
 	},
-
-	methods: {
-		t,
-	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .ruleTrace dl {
 	display: grid;
 	grid-template-columns: max-content 1fr;
@@ -96,14 +95,5 @@ export default {
 	margin: 0;
 }
 
-.verdictSentence,
-.operandValue {
-	display: block;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-}
-
-.muted {
-	color: var(--color-text-maxcontrast);
-}
+@include rule-detail-text('.verdictSentence', '.operandValue');
 </style>

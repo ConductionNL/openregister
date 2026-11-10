@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\ObjectMigration;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -30,7 +32,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
-use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use PHPUnit\Framework\TestCase;
@@ -41,6 +42,8 @@ use Psr\Log\NullLogger;
  * register/schema, so it is re-checked against the target's holders first.
  */
 class MigrationHandlerSlugTest extends TestCase {
+
+	use BuildsMigrationHandler;
 
 	public function testAMigratedObjectGetsTheSlugDecidedForTheTarget(): void {
 		$sourceRegister = new Register();
@@ -71,6 +74,7 @@ class MigrationHandlerSlugTest extends TestCase {
 		);
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('findMultiple')->willReturn([$object]);
+		$mapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$written = 'unset';
 		$mapper->method('update')->willReturnCallback(
 			function (ObjectEntity $entity) use (&$written): ObjectEntity {
@@ -84,14 +88,16 @@ class MigrationHandlerSlugTest extends TestCase {
 			->with($object, $targetRegister, $targetSchema)
 			->willReturn('hello-world-20261030120000');
 
-		$handler = new MigrationHandler(
-			$mapper,
-			$utility,
-			$manip,
-			new NullLogger()
-		);
+		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $manip);
 
-		$report = $handler->migrateObjects(1, 10, 2, 20, ['11111111-1111-1111-1111-111111111111'], ['title' => 'title']);
+		$report = $handler->migrateObjects(
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: 1, schema: 10),
+				target: new RegisterSchemaRef(register: 2, schema: 20),
+				objectIds: ['11111111-1111-1111-1111-111111111111'],
+				mapping: ['title' => 'title']
+			)
+		);
 
 		$this->assertSame(1, $report['statistics']['objectsMigrated'], json_encode($report));
 		$this->assertSame('hello-world-20261030120000', $written);

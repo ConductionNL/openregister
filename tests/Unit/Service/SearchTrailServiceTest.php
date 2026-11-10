@@ -12,6 +12,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
+use OCA\OpenRegister\Service\SearchMeasurement;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -30,8 +33,7 @@ class SearchTrailServiceTest extends TestCase {
 
 		$this->service = new SearchTrailService(
 			$this->searchTrailMapper,
-			$this->registerMapper,
-			$this->schemaMapper
+			new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper)
 		);
 	}
 
@@ -41,13 +43,7 @@ class SearchTrailServiceTest extends TestCase {
 		$trail = new SearchTrail();
 		$this->searchTrailMapper->method('createSearchTrail')->willReturn($trail);
 
-		$result = $this->service->createSearchTrail(
-			['search' => 'test'],
-			10,
-			100,
-			50.5,
-			'sync'
-		);
+		$result = $this->service->createSearchTrail(['search' => 'test'], new SearchMeasurement(10, 100, 50.5, 'sync'));
 
 		$this->assertSame($trail, $result);
 	}
@@ -59,14 +55,13 @@ class SearchTrailServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Search trail creation failed: DB error');
 
-		$this->service->createSearchTrail([], 0, 0);
+		$this->service->createSearchTrail([], new SearchMeasurement(0, 0));
 	}
 
 	public function testCreateSearchTrailWithSelfClearingEnabled(): void {
 		$service = new SearchTrailService(
 			$this->searchTrailMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
+			new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
 			365,
 			true
 		);
@@ -76,7 +71,7 @@ class SearchTrailServiceTest extends TestCase {
 		// clearLogs should be called because self-clearing is enabled.
 		$this->searchTrailMapper->expects($this->once())->method('clearLogs')->willReturn(false);
 
-		$service->createSearchTrail([], 0, 0);
+		$service->createSearchTrail([], new SearchMeasurement(0, 0));
 	}
 
 	// ── clearExpiredSearchTrails ──
@@ -146,7 +141,7 @@ class SearchTrailServiceTest extends TestCase {
 
 		$result = $this->service->getSearchTrail(1);
 
-		$this->assertInstanceOf(SearchTrail::class, $result);
+		$this->assertSame($trail, $result);
 	}
 
 	// ── cleanupSearchTrails ──
@@ -240,7 +235,7 @@ class SearchTrailServiceTest extends TestCase {
 			['term' => 'hello', 'count' => 5, 'avg_results' => 0.0],
 		]);
 
-		$result = $this->service->getPopularSearchTerms(10);
+		$result = $this->service->getPopularSearchTerms(new SearchPeriod(), 10);
 
 		$this->assertCount(2, $result['terms']);
 		$this->assertSame(15, $result['total_searches']);
@@ -256,7 +251,7 @@ class SearchTrailServiceTest extends TestCase {
 			['period' => '2024-01-02', 'count' => 20],
 		]);
 
-		$result = $this->service->getSearchActivity('day');
+		$result = $this->service->getSearchActivity(new SearchPeriod(), 'day');
 
 		$this->assertArrayHasKey('activity', $result);
 		$this->assertArrayHasKey('insights', $result);
@@ -267,7 +262,7 @@ class SearchTrailServiceTest extends TestCase {
 	public function testGetSearchActivityReturnsNoDataForEmptyActivity(): void {
 		$this->searchTrailMapper->method('getSearchActivityByTime')->willReturn([]);
 
-		$result = $this->service->getSearchActivity('day');
+		$result = $this->service->getSearchActivity(new SearchPeriod(), 'day');
 
 		$this->assertSame('no_data', $result['insights']['trend']);
 	}
@@ -286,21 +281,6 @@ class SearchTrailServiceTest extends TestCase {
 		$this->assertSame('excellent', $result['statistics'][0]['performance_rating']);
 	}
 
-	// ── constructor with custom retention and selfClearing ──
-
-	public function testConstructorWithCustomRetention(): void {
-		$service = new SearchTrailService(
-			$this->searchTrailMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			30,
-			false
-		);
-
-		// No direct way to verify, but constructor should not throw.
-		$this->assertInstanceOf(SearchTrailService::class, $service);
-	}
-
 	// ── getUserAgentStatistics ──
 
 	public function testGetUserAgentStatisticsReturnsEnhancedStats(): void {
@@ -309,7 +289,7 @@ class SearchTrailServiceTest extends TestCase {
 			['user_agent' => 'Mozilla/5.0 Firefox/121.0', 'count' => 30],
 		]);
 
-		$result = $this->service->getUserAgentStatistics(10);
+		$result = $this->service->getUserAgentStatistics(new SearchPeriod(), 10);
 
 		$this->assertArrayHasKey('user_agents', $result);
 		$this->assertArrayHasKey('browser_distribution', $result);
@@ -330,7 +310,7 @@ class SearchTrailServiceTest extends TestCase {
 			['user_agent' => 'Mozilla/5.0 Safari/605.1.15', 'count' => 20],
 		]);
 
-		$result = $this->service->getUserAgentStatistics(5, $from, $to);
+		$result = $this->service->getUserAgentStatistics(new SearchPeriod($from, $to), 5);
 
 		$this->assertSame('2024-01-01 00:00:00', $result['period']['from']);
 		$this->assertSame('2024-01-31 00:00:00', $result['period']['to']);
@@ -541,7 +521,7 @@ class SearchTrailServiceTest extends TestCase {
 			['period' => '2024-01-01', 'count' => 10],
 		]);
 
-		$result = $this->service->getSearchActivity('day');
+		$result = $this->service->getSearchActivity(new SearchPeriod(), 'day');
 
 		// Single data point => stable trend.
 		$this->assertSame('stable', $result['insights']['trend']);
@@ -557,7 +537,7 @@ class SearchTrailServiceTest extends TestCase {
 			['period' => '2024-01-05', 'count' => 20],
 		]);
 
-		$result = $this->service->getSearchActivity('day');
+		$result = $this->service->getSearchActivity(new SearchPeriod(), 'day');
 
 		$this->assertSame('decreasing', $result['insights']['trend']);
 	}
@@ -569,7 +549,7 @@ class SearchTrailServiceTest extends TestCase {
 			['period' => '2024-01-03', 'count' => 10],
 		]);
 
-		$result = $this->service->getSearchActivity('day');
+		$result = $this->service->getSearchActivity(new SearchPeriod(), 'day');
 
 		$this->assertSame('stable', $result['insights']['trend']);
 	}
@@ -752,7 +732,9 @@ class SearchTrailServiceTest extends TestCase {
 		$result = $this->service->getSearchTrail(1);
 
 		// Should not throw, register/schema names remain null.
-		$this->assertInstanceOf(SearchTrail::class, $result);
+		$this->assertSame($trail, $result);
+		$this->assertNull($result->getRegisterName());
+		$this->assertNull($result->getSchemaName());
 	}
 
 	// ── cleanupSearchTrails additional branches ──
@@ -786,7 +768,7 @@ class SearchTrailServiceTest extends TestCase {
 			['term' => 'test', 'count' => 5, 'avg_results' => 3.0],
 		]);
 
-		$result = $this->service->getPopularSearchTerms(10, $from, $to);
+		$result = $this->service->getPopularSearchTerms(new SearchPeriod($from, $to), 10);
 
 		$this->assertSame('2024-06-01 00:00:00', $result['period']['from']);
 		$this->assertSame('2024-06-30 00:00:00', $result['period']['to']);
@@ -815,7 +797,7 @@ class SearchTrailServiceTest extends TestCase {
 			['period' => '2024-03', 'count' => 70],
 		]);
 
-		$result = $this->service->getSearchActivity('month', $from, $to);
+		$result = $this->service->getSearchActivity(new SearchPeriod($from, $to), 'month');
 
 		$this->assertSame('month', $result['interval']);
 		$this->assertSame('2024-01-01 00:00:00', $result['period']['from']);

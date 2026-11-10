@@ -6,7 +6,7 @@
  * Parsing only: no mapping, no validation, no decision, no write. The
  * decisive steps a previewed import takes are the ones the import path
  * already owns — {@see \OCA\OpenRegister\Service\MigrationPack\MappingEngine}
- * maps a row, {@see \OCA\OpenRegister\Service\ImportService::transformCsvRowToObject()}
+ * maps a row, {@see \OCA\OpenRegister\Service\ImportService::transformCsvRow()}
  * turns it into an object, {@see \OCA\OpenRegister\Service\ObjectService::saveObjects()}
  * writes it. This class only gets the bytes into the shape all three already
  * take, so CSV, Excel and JSON reach them by one road.
@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
+use Closure;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
@@ -42,39 +43,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
-class SourceRowReader {
-
-	/**
-	 * Comma-separated values.
-	 *
-	 * @var string
-	 */
-	public const FORMAT_CSV = 'csv';
-
-	/**
-	 * A spreadsheet.
-	 *
-	 * @var string
-	 */
-	public const FORMAT_EXCEL = 'excel';
-
-	/**
-	 * A JSON list, or a `{"results": [...]}` envelope.
-	 *
-	 * @var string
-	 */
-	public const FORMAT_JSON = 'json';
-
-	/**
-	 * Every format a preview reads.
-	 *
-	 * @var array<int, string>
-	 */
-	public const FORMATS = [
-		self::FORMAT_CSV,
-		self::FORMAT_EXCEL,
-		self::FORMAT_JSON,
-	];
+class SourceRowReader implements SourceRowReaderInterface {
 
 	/**
 	 * Read a file into rows.
@@ -205,14 +174,7 @@ class SourceRowReader {
 	 * @return array<int, array{row: int, data: array<string, mixed>}> The rows.
 	 */
 	private function readSpreadsheet(string $filePath, string $format): array {
-		$reader = new Xlsx();
-
-		if ($format === self::FORMAT_CSV) {
-			$reader = new Csv();
-			$reader->setDelimiter(',');
-			$reader->setEnclosure('"');
-		}
-
+		$reader = self::spreadsheetReader(format: $format);
 		$reader->setReadDataOnly(true);
 		$sheet = $reader->load($filePath)->getActiveSheet();
 
@@ -226,15 +188,10 @@ class SourceRowReader {
 		$highestRow = $sheet->getHighestRow();
 
 		for ($rowNumber = 2; $rowNumber <= $highestRow; $rowNumber++) {
-			$data = [];
-			foreach ($headers as $column => $header) {
-				$value = $sheet->getCell($column.$rowNumber)->getValue();
-				if ($value === null || $value === '') {
-					continue;
-				}
-
-				$data[$header] = $value;
-			}
+			$data = self::rowData(
+				headers: $headers,
+				cell: static fn (string $column): mixed => $sheet->getCell($column.$rowNumber)->getValue()
+			);
 
 			if ($data === []) {
 				continue;
@@ -248,6 +205,47 @@ class SourceRowReader {
 
 		return $rows;
 	}//end readSpreadsheet()
+
+	/**
+	 * The reader for a spreadsheet format: CSV, or else Excel.
+	 *
+	 * @param string $format The spreadsheet format.
+	 *
+	 * @return Csv|Xlsx The reader.
+	 */
+	private static function spreadsheetReader(string $format): Csv|Xlsx {
+		if ($format !== self::FORMAT_CSV) {
+			return new Xlsx();
+		}
+
+		$reader = new Csv();
+		$reader->setDelimiter(',');
+		$reader->setEnclosure('"');
+
+		return $reader;
+	}//end spreadsheetReader()
+
+	/**
+	 * One sheet row as header => value, leaving out blank cells.
+	 *
+	 * @param array<string, string> $headers The headers, column letter => name.
+	 * @param Closure               $cell    The value of this row's cell in a column letter.
+	 *
+	 * @return array<string, mixed> The row's data, empty when every cell is blank.
+	 */
+	private static function rowData(array $headers, Closure $cell): array {
+		$data = [];
+		foreach ($headers as $column => $header) {
+			$value = $cell((string)$column);
+			if ($value === null || $value === '') {
+				continue;
+			}
+
+			$data[$header] = $value;
+		}
+
+		return $data;
+	}//end rowData()
 
 	/**
 	 * The header row as column letter => header name.
@@ -286,27 +284,7 @@ class SourceRowReader {
 	 * @return array<int, array{row: int, data: array<string, mixed>}> The rows.
 	 */
 	private function readJson(string $filePath): array {
-		$contents = file_get_contents($filePath);
-
-		if ($contents === false) {
-			throw new InvalidArgumentException('The source file could not be read: '.$filePath);
-		}
-
-		$decoded = json_decode($contents, true);
-
-		if (is_array($decoded) === false) {
-			throw new InvalidArgumentException('The source file is not a JSON document.');
-		}
-
-		if (array_is_list($decoded) === false) {
-			$decoded = ($decoded['results'] ?? null);
-		}
-
-		if (is_array($decoded) === false || array_is_list($decoded) === false) {
-			throw new InvalidArgumentException(
-				'The source file holds no list of objects. Pass a JSON array, or an object with a "results" array.'
-			);
-		}
+		$decoded = self::jsonList(decoded: self::decodeJson(filePath: $filePath));
 
 		$rows = [];
 		foreach ($decoded as $index => $entry) {
@@ -322,4 +300,52 @@ class SourceRowReader {
 
 		return $rows;
 	}//end readJson()
+
+	/**
+	 * Decode a JSON file into an array.
+	 *
+	 * @param string $filePath Path to the file on disk.
+	 *
+	 * @return array<mixed> The decoded document.
+	 *
+	 * @throws InvalidArgumentException When the file cannot be read or holds no JSON array or object.
+	 */
+	private static function decodeJson(string $filePath): array {
+		$contents = file_get_contents($filePath);
+
+		if ($contents === false) {
+			throw new InvalidArgumentException('The source file could not be read: '.$filePath);
+		}
+
+		$decoded = json_decode($contents, true);
+
+		if (is_array($decoded) === false) {
+			throw new InvalidArgumentException('The source file is not a JSON document.');
+		}
+
+		return $decoded;
+	}//end decodeJson()
+
+	/**
+	 * The list a decoded document holds: itself, or its `results` envelope.
+	 *
+	 * @param array<mixed> $decoded The decoded document.
+	 *
+	 * @return array<int, mixed> The list.
+	 *
+	 * @throws InvalidArgumentException When the document holds no list.
+	 */
+	private static function jsonList(array $decoded): array {
+		if (array_is_list($decoded) === false) {
+			$decoded = ($decoded['results'] ?? null);
+		}
+
+		if (is_array($decoded) === false || array_is_list($decoded) === false) {
+			throw new InvalidArgumentException(
+				'The source file holds no list of objects. Pass a JSON array, or an object with a "results" array.'
+			);
+		}
+
+		return $decoded;
+	}//end jsonList()
 }//end class

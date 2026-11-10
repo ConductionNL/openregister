@@ -34,7 +34,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
  */
-class TaskRelationMapper extends QBMapper {
+class TaskRelationMapper extends QBMapper implements TaskRelationMapperInterface {
 
 	use SelectByColumnTrait;
 

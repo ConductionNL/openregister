@@ -1,0 +1,1620 @@
+{
+    "consumer: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: defaults": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: defaults": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: defaults": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: paged": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: paged": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: paged": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: null offset": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: null offset": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: null offset": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNull(status)",
+            "#1 andWhere(isNull(status))",
+            "#1 expr.isNotNull(title)",
+            "#1 andWhere(isNotNull(title))",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNull(status)",
+            "#1 andWhere(isNull(status))",
+            "#1 expr.isNotNull(title)",
+            "#1 andWhere(isNotNull(title))",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p2, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNull(status)",
+            "#1 andWhere(isNull(status))",
+            "#1 expr.isNotNull(title)",
+            "#1 andWhere(isNotNull(title))",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p2, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNull(status)",
+            "#1 andWhere(isNull(status))",
+            "#1 expr.isNotNull(title)",
+            "#1 andWhere(isNotNull(title))",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 expr.isNull(status)",
+            "#1 andWhere(isNull(status))",
+            "#1 expr.isNotNull(title)",
+            "#1 andWhere(isNotNull(title))",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = IS NULL, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 andWhere(eq(status, :p1, NULL))",
+            "#1 param :p2 = IS NOT NULL, 2",
+            "#1 expr.eq(title, :p2, NULL)",
+            "#1 andWhere(eq(title, :p2, NULL))",
+            "#1 param :p3 = abc, 2",
+            "#1 expr.eq(slug, :p3, NULL)",
+            "#1 andWhere(eq(slug, :p3, NULL))",
+            "#1 param :p4 = org-1, 2",
+            "#1 expr.eq(organisation, :p4, NULL)",
+            "#1 expr.orX(eq(organisation, :p4, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNull(status)",
+            "#1 andWhere(isNull(status))",
+            "#1 expr.isNotNull(title)",
+            "#1 andWhere(isNotNull(title))",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.orX(eq(organisation, :p2, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = IS NULL, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 andWhere(eq(status, :p1, NULL))",
+            "#1 param :p2 = IS NOT NULL, 2",
+            "#1 expr.eq(title, :p2, NULL)",
+            "#1 andWhere(eq(title, :p2, NULL))",
+            "#1 param :p3 = abc, 2",
+            "#1 expr.eq(slug, :p3, NULL)",
+            "#1 andWhere(eq(slug, :p3, NULL))",
+            "#1 param :p4 = org-1, 2",
+            "#1 expr.eq(organisation, :p4, NULL)",
+            "#1 expr.orX(eq(organisation, :p4, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: column filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNull(status)",
+            "#1 andWhere(isNull(status))",
+            "#1 expr.isNotNull(title)",
+            "#1 andWhere(isNotNull(title))",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.orX(eq(organisation, :p2, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: column filters": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: column filters": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: null filters": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: null filters": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: null filters": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t OR description LIKE :t))",
+            "#1 setParameter(t, %x%, NULL)",
+            "#1 setParameter(n, 3, NULL)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t OR description LIKE :t))",
+            "#1 setParameter(t, %x%, NULL)",
+            "#1 setParameter(n, 3, NULL)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t OR description LIKE :t))",
+            "#1 setParameter(t, %x%, NULL)",
+            "#1 setParameter(n, 3, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t OR description LIKE :t))",
+            "#1 setParameter(t, %x%, NULL)",
+            "#1 setParameter(n, 3, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: search with params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: search with params": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: search with params": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t))",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t))",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 andWhere((title LIKE :t))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: search with null params": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: search with null params": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: search with null params": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: params without search": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: params without search": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: params without search": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "consumer: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_consumers, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt true: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 andWhere((a = :a))",
+            "#1 setParameter(a, 1, NULL)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p2, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt true: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 andWhere((a = :a))",
+            "#1 setParameter(a, 1, NULL)",
+            "#2 select(id, title, organisation, shared_with)",
+            "#2 from(openregister_registers, NULL)",
+            "#2 expr.isNotNull(shared_with)",
+            "#2 where(isNotNull(shared_with))",
+            "#2 executeQuery()",
+            "#3 select(id, title, organisation, shared_with)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 expr.isNotNull(shared_with)",
+            "#3 where(isNotNull(shared_with))",
+            "#3 executeQuery()",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p2, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL), isNull(organisation)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac true mt false: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 andWhere((a = :a))",
+            "#1 setParameter(a, 1, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "register rbac false mt false: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 andWhere((a = :a))",
+            "#1 setParameter(a, 1, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application admin: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.orX(eq(organisation, :p2, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source admin: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.orX(eq(organisation, :p2, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application granted user: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_applications, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.orX(eq(organisation, :p2, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "source granted user: everything": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sources, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 param :p1 = abc, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 andWhere(eq(slug, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 expr.orX(eq(organisation, :p2, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "application refused user: everything": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read application entities.",
+        "code": 403,
+        "queries": []
+    },
+    "source refused user: everything": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to read source entities.",
+        "code": 403,
+        "queries": []
+    },
+    "clean: bare": {
+        "register": {
+            "uuid": "set",
+            "slug": "register",
+            "version": "0.0.1",
+            "source": "internal"
+        },
+        "queries": []
+    },
+    "clean: titled": {
+        "register": {
+            "uuid": "set",
+            "slug": "zaken-besluiten-2026",
+            "version": "0.0.1",
+            "source": "internal"
+        },
+        "queries": []
+    },
+    "clean: complete": {
+        "register": {
+            "uuid": "set",
+            "slug": "kept",
+            "version": "2.0.0",
+            "source": "external"
+        },
+        "queries": []
+    },
+    "clean: empty source and zero slug": {
+        "register": {
+            "uuid": "set",
+            "slug": "register",
+            "version": "0.0.1",
+            "source": "internal"
+        },
+        "queries": []
+    },
+    "clean: only dashes": {
+        "register": {
+            "uuid": "set",
+            "slug": "",
+            "version": "0.0.1",
+            "source": "internal"
+        },
+        "queries": []
+    },
+    "deny: null block": {
+        "register": {
+            "uuid": null,
+            "slug": "zaken",
+            "version": null,
+            "source": null
+        },
+        "queries": []
+    },
+    "deny: empty block": {
+        "register": {
+            "uuid": null,
+            "slug": "zaken",
+            "version": null,
+            "source": null
+        },
+        "queries": []
+    },
+    "deny: empty block, null roles": {
+        "register": {
+            "uuid": null,
+            "slug": "zaken",
+            "version": null,
+            "source": null
+        },
+        "queries": []
+    },
+    "deny: empty block, valid roles": {
+        "register": {
+            "uuid": null,
+            "slug": "zaken",
+            "version": null,
+            "source": null
+        },
+        "queries": []
+    },
+    "deny: unknown verb in a role definition": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException",
+        "message": "The role \"editor\" on the register \"zaken\" names \"frobnicate\", which no app declares.",
+        "code": 0,
+        "queries": []
+    },
+    "deny: null block, unknown verb in a role definition": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException",
+        "message": "The role \"editor\" on the register \"zaken\" names \"frobnicate\", which no app declares.",
+        "code": 0,
+        "queries": []
+    },
+    "deny: plain grants": {
+        "register": {
+            "uuid": null,
+            "slug": "zaken",
+            "version": null,
+            "source": null
+        },
+        "queries": []
+    },
+    "deny: unknown verb in the block": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException",
+        "message": "The register \"zaken\" names \"frobnicate\", which no app declares. Grantable here: \"read\", \"create\", \"update\", \"delete\", \"destroy\", \"list\", \"export\", \"manage\", \"assign\", \"readFiles\", \"addFiles\", \"deleteFiles\", \"readGrants\".",
+        "code": 0,
+        "queries": []
+    },
+    "deny: deny contradicting nothing": {
+        "register": {
+            "uuid": null,
+            "slug": "zaken",
+            "version": null,
+            "source": null
+        },
+        "queries": []
+    },
+    "deny: grant and deny on one principal": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException",
+        "message": "The authorization of the register \"zaken\" both grants and denies \"delete\" to \"behandelaars\" at the same level: the rule \"behandelaars\" in delete and the rule \"behandelaars\" in delete.deny. Remove one of the two; a deny wins, so leaving both stored would grant nothing and read as a grant.",
+        "code": 0,
+        "queries": []
+    },
+    "deny: manage denied to its last holder": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException",
+        "message": "The authorization of the register \"zaken\" both grants and denies \"manage\" to \"beheerders\" at the same level: the rule \"beheerders\" in manage and the rule \"beheerders\" in manage.deny. Remove one of the two; a deny wins, so leaving both stored would grant nothing and read as a grant. The authorization of the register \"zaken\" would deny \"manage\" to \"beheerders\" and leave no principal holding it, so nobody could edit the access rules of the register \"zaken\" afterwards. Grant \"manage\" to another group first, then write the deny.",
+        "code": 0,
+        "queries": []
+    },
+    "deny: refusal subject from the title": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException",
+        "message": "The authorization of the register \"Alleen titel\" both grants and denies \"delete\" to \"b\" at the same level: the rule \"b\" in delete and the rule \"b\" in delete.deny. Remove one of the two; a deny wins, so leaving both stored would grant nothing and read as a grant.",
+        "code": 0,
+        "queries": []
+    },
+    "deny: refusal subject with neither": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException",
+        "message": "The authorization of the register \"\" both grants and denies \"delete\" to \"b\" at the same level: the rule \"b\" in delete and the rule \"b\" in delete.deny. Remove one of the two; a deny wins, so leaving both stored would grant nothing and read as a grant.",
+        "code": 0,
+        "queries": []
+    },
+    "deny: roles and block both valid": {
+        "register": {
+            "uuid": null,
+            "slug": "zaken",
+            "version": null,
+            "source": null
+        },
+        "queries": []
+    }
+}

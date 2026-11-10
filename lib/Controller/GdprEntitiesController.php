@@ -28,9 +28,10 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices;
+use OCA\OpenRegister\Controller\Support\OrganisationScopeFilter;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Service\Decision\DecisionVisibility;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -66,9 +67,9 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * GDPR entity mapper
 	 *
-	 * @var GdprEntityMapper
+	 * @var GdprEntityMapperInterface
 	 */
-	private readonly GdprEntityMapper $entityMapper;
+	private readonly GdprEntityMapperInterface $entityMapper;
 
 	/**
 	 * Entity relation mapper
@@ -115,9 +116,9 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * Masks another reviewer's hidden decision
 	 *
-	 * @var DecisionVisibility
+	 * @var DecisionVisibilityInterface
 	 */
-	private readonly DecisionVisibility $decisionVisibility;
+	private readonly DecisionVisibilityInterface $decisionVisibility;
 
 	/**
 	 * GdprEntitiesController constructor
@@ -325,7 +326,7 @@ class GdprEntitiesController extends Controller {
 				->orderBy('type', 'ASC');
 
 			// Tenant scoping for non-admins (#1825).
-			$this->applyOrgFilter(qb: $qb, orgUuids: $orgUuids, column: 'organisation');
+			(new OrganisationScopeFilter(uuids: $orgUuids))->narrow(qb: $qb, column: 'organisation');
 
 			$result = $qb->executeQuery();
 			$types = [];
@@ -386,7 +387,7 @@ class GdprEntitiesController extends Controller {
 				->orderBy('category', 'ASC');
 
 			// Tenant scoping for non-admins (#1825).
-			$this->applyOrgFilter(qb: $qb, orgUuids: $orgUuids, column: 'organisation');
+			(new OrganisationScopeFilter(uuids: $orgUuids))->narrow(qb: $qb, column: 'organisation');
 
 			$result = $qb->executeQuery();
 			$categories = [];
@@ -637,7 +638,7 @@ class GdprEntitiesController extends Controller {
 			->selectAlias($qb->createFunction('(' . $subQb->getSQL() . ')'), 'relation_count')
 			->from('openregister_entities', 'e');
 
-		$this->applyOrgFilter(qb: $qb, orgUuids: $orgUuids, column: 'e.organisation');
+		(new OrganisationScopeFilter(uuids: $orgUuids))->narrow(qb: $qb, column: 'e.organisation');
 		$this->applySearchFilters(qb: $qb, filters: $filters);
 
 		return $qb;
@@ -656,7 +657,7 @@ class GdprEntitiesController extends Controller {
 		$countQb->select($countQb->func()->count('*', 'total'))
 			->from('openregister_entities', 'e');
 
-		$this->applyOrgFilter(qb: $countQb, orgUuids: $orgUuids, column: 'e.organisation');
+		(new OrganisationScopeFilter(uuids: $orgUuids))->narrow(qb: $countQb, column: 'e.organisation');
 		$this->applySearchFilters(qb: $countQb, filters: $filters);
 
 		return $this->fetchCount(qb: $countQb);
@@ -702,7 +703,7 @@ class GdprEntitiesController extends Controller {
 		$totalQb = $this->db->getQueryBuilder();
 		$totalQb->select($totalQb->func()->count('*', 'total'))
 			->from('openregister_entities');
-		$this->applyOrgFilter(qb: $totalQb, orgUuids: $orgUuids, column: 'organisation');
+		(new OrganisationScopeFilter(uuids: $orgUuids))->narrow(qb: $totalQb, column: 'organisation');
 
 		return $this->fetchCount(qb: $totalQb);
 	}//end countAllEntities()
@@ -722,7 +723,7 @@ class GdprEntitiesController extends Controller {
 			->from('openregister_entities')
 			->groupBy($column)
 			->orderBy('count', 'DESC');
-		$this->applyOrgFilter(qb: $qb, orgUuids: $orgUuids, column: 'organisation');
+		(new OrganisationScopeFilter(uuids: $orgUuids))->narrow(qb: $qb, column: 'organisation');
 
 		$result = $qb->executeQuery();
 		$counts = [];
@@ -776,29 +777,6 @@ class GdprEntitiesController extends Controller {
 
 		return $count;
 	}//end fetchCount()
-
-	/**
-	 * Apply the non-admin organisation filter to a query builder.
-	 *
-	 * Centralises the `WHERE <column> IN (:orgUuids)` clause used to
-	 * tenant-scope the entity queries (#1825). For admins (a null scope)
-	 * this is a no-op.
-	 *
-	 * @param IQueryBuilder           $qb       Query builder to constrain.
-	 * @param array<int, string>|null $orgUuids Accessible organisation UUIDs, null for admins.
-	 * @param string                  $column   Column holding the org UUID.
-	 *
-	 * @return void
-	 */
-	private function applyOrgFilter(IQueryBuilder $qb, ?array $orgUuids, string $column): void {
-		if ($orgUuids === null) {
-			return;
-		}
-
-		$qb->andWhere(
-			$qb->expr()->in($column, $qb->createNamedParameter($orgUuids, IQueryBuilder::PARAM_STR_ARRAY))
-		);
-	}//end applyOrgFilter()
 
 	/**
 	 * Apply the optional search / type / category filters to a query.

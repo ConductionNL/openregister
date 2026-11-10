@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OC\DB\Exceptions\DbalException;
 use OCA\OpenRegister\Controller\OrganisationController;
@@ -30,7 +31,9 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\Support\ConfigServices;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationUsageService;
@@ -253,8 +256,7 @@ class OrganisationSlugConflictTest extends TestCase {
 		$userSession->method('getUser')->willReturnCallback(fn (): ?IUser => $this->actingUser);
 		$provider = new OrganisationObjectSourceProvider(
 			organisationMapper: $this->mapper,
-			userSession: $userSession,
-			groupManager: $this->createMock(IGroupManager::class),
+			actingUser: new OrganisationActingUser(userSession: $userSession, groupManager: $this->createMock(IGroupManager::class)),
 			logger: new NullLogger(),
 			organisationService: $this->service()
 		);
@@ -445,9 +447,8 @@ class OrganisationSlugConflictTest extends TestCase {
 		return new OrganisationMapper(
 			db: $database->idbConnection(),
 			logger: new NullLogger(),
-			eventDispatcher: $this->createMock(IEventDispatcher::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			config: $this->createMock(IConfig::class)
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
+			configs: new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end mapperOn()
 
@@ -461,7 +462,12 @@ class OrganisationSlugConflictTest extends TestCase {
 			private int $lookups = 0;
 
 			public function __construct($db, $dispatcher, $appConfig, $config) {
-				parent::__construct(db: $db, logger: new NullLogger(), eventDispatcher: $dispatcher, appConfig: $appConfig, config: $config);
+				parent::__construct(
+					db: $db,
+					logger: new NullLogger(),
+					entityEvents: new EntityEventPublisher(dispatcher: $dispatcher),
+					configs: new ConfigServices($appConfig, $config)
+				);
 			}
 
 			public function findBySlug(string $slug): Organisation {

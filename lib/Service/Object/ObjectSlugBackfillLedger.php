@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -40,17 +42,31 @@ use Throwable;
 class ObjectSlugBackfillLedger {
 
 	/**
+	 * Records the audit entry of a run that changed slugs.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrail;
+
+	/**
+	 * Receives the overflow lines and the failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CacheHandlerInterface     $cacheHandler Object cache, evicted after writing.
-	 * @param AuditTrailMapperInterface $auditTrail   Records the audit entry of a run that changed slugs.
-	 * @param LoggerInterface  $logger       Receives the overflow lines and the failures.
+	 * @param ObjectCacheInvalidationInterface $cacheHandler Object cache, evicted after writing.
+	 * @param AuditRecording                   $audit        The audit trail and the log for overflow lines and failures.
 	 */
 	public function __construct(
-		private readonly CacheHandlerInterface $cacheHandler,
-		private readonly AuditTrailMapperInterface $auditTrail,
-		private readonly LoggerInterface $logger,
+		private readonly ObjectCacheInvalidationInterface $cacheHandler,
+		AuditRecording $audit,
 	) {
+		$this->auditTrail = $audit->trail;
+		$this->logger = $audit->logger;
 	}//end __construct()
 
 	/**
@@ -90,23 +106,20 @@ class ObjectSlugBackfillLedger {
 	 * A failure to write the entry is logged with the full list, so the change
 	 * stays reconstructable, and does not undo the slugs already written.
 	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $applied The writes that were applied.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $summary  The run's counters.
+	 * @param ObjectSlugChangeSet $applied The writes that were applied, their table and the run's counters.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function record(array $applied, Register $register, Schema $schema, array $summary): void {
-		$this->logLargeRun(applied: $applied, register: $register, schema: $schema);
+	public function record(ObjectSlugChangeSet $applied): void {
+		$register = $applied->register;
+		$schema = $applied->schema;
+		$this->logLargeRun(applied: $applied);
 		try {
-			$this->auditTrail->createSlugBackfillEntry(
-				changes: $applied,
-				summary: $summary,
-				register: (int)$register->getId(),
-				schema: (int)$schema->getId()
+			$target = new AuditedObject(register: (int)$register->getId(), schema: (int)$schema->getId());
+			$this->auditTrail->recordSlugBackfill(
+				backfill: new SlugBackfill(changes: $applied->changes, summary: $applied->summary, target: $target)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -115,7 +128,7 @@ class ObjectSlugBackfillLedger {
 					(string)$register->getId(),
 					(string)$schema->getId(),
 					$e->getMessage(),
-					$this->encodeChanges(changes: $applied)
+					$this->encodeChanges(changes: $applied->changes)
 				),
 				context: ['app' => 'openregister', 'path' => 'backfill']
 			);
@@ -146,18 +159,18 @@ class ObjectSlugBackfillLedger {
 	 * The entry lists the first {@see AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES}
 	 * changes; the rest of a large run is reconstructable from these lines.
 	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $applied  The writes that were applied.
-	 * @param Register                                              $register The register.
-	 * @param Schema                                                $schema   The schema.
+	 * @param ObjectSlugChangeSet $applied The writes that were applied and their table.
 	 *
 	 * @return void
 	 */
-	private function logLargeRun(array $applied, Register $register, Schema $schema): void {
-		if (count($applied) <= AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES) {
+	private function logLargeRun(ObjectSlugChangeSet $applied): void {
+		if (count($applied->changes) <= AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES) {
 			return;
 		}
 
-		$parts = array_chunk($applied, AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES);
+		$register = $applied->register;
+		$schema = $applied->schema;
+		$parts = array_chunk($applied->changes, AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES);
 		foreach ($parts as $index => $part) {
 			// Warning, not info: Nextcloud's default loglevel (2) drops info lines,
 			// and these are the only record of the changes beyond the audit entry.

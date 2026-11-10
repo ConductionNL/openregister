@@ -40,33 +40,30 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
+			<CloseCancelButton :label="t('openregister', 'Cancel')" @click="closeModal" />
+			<BusyButton
+				:busy="loading"
+				:disabled="loading"
+				variant="primary"
+				@click="exportObjects">
 				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton :disabled="loading" variant="primary" @click="exportObjects">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				{{ t('openregister', 'Export') }}
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 /**
  * Whether both the register and the schema have an id.
@@ -94,13 +91,12 @@ export default {
 	name: 'ExportRegister',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		// Icons
 		Export,
-		Cancel,
+		BusyButton,
+		CloseCancelButton,
 	},
 
 	data() {

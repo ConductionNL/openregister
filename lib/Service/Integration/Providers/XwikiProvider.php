@@ -45,7 +45,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-use OCA\OpenRegister\Db\XwikiLinkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Db\XwikiLink;
+use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -81,12 +83,31 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'integriq';
 
 	/**
+	 * External-call router.
+	 *
+	 * @var ExternalIntegrationRouterInterface
+	 */
+	private ExternalIntegrationRouterInterface $router;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
-	 * @param XwikiLinkMapper|null $xwikiLinkMapper Tier-2 local link table
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
+	 * @param XwikiLinkMapperInterface|null $xwikiLinkMapper Tier-2 local link table
 	 *                                              (nullable so the Tier-1
 	 *                                              external-only wiring + the
 	 *                                              provider unit test keep
@@ -95,11 +116,12 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private ?XwikiLinkMapper $xwikiLinkMapper = null,
+		ConnectorRouting $routing,
+		private ?XwikiLinkMapperInterface $xwikiLinkMapper = null,
 	) {
+		$this->router     = $routing->router;
+		$this->appManager = $routing->appManager;
+		$this->l10n       = $routing->l10n;
 	}//end __construct()
 
 	/**
@@ -164,6 +186,16 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * translates it to a 503 with a cause the UI can render as a
 	 * degraded/reconnect state — never a broken tab (AD-23).
 	 *
+	 * Tier-2: when a local link table is wired AND we have an object
+	 * context, the linked pages are read from the link table first (so
+	 * the sidebar tab survives even when the upstream xWiki is down),
+	 * then enriched from remote xWiki best-effort. With no object context
+	 * (the picker's "browse available pages" call) or no mapper (Tier-1
+	 * wiring / unit test) we delegate straight to the router, preserving
+	 * the original external-only behaviour + the 4-state auth UX (router
+	 * raises ProviderUnavailableException which the controller maps to
+	 * details.cause).
+	 *
 	 * @param string $register Register slug or numeric id.
 	 * @param string $schema Schema slug or numeric id.
 	 * @param string $objectId Object uuid.
@@ -174,33 +206,48 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		// Tier-2: when a local link table is wired AND we have an object
-		// context, the linked pages are read from the link table first
-		// (so the sidebar tab survives even when the upstream xWiki is
-		// down), then enriched from remote xWiki best-effort. With no
-		// object context (the picker's "browse available pages" call) or
-		// no mapper (Tier-1 wiring / unit test) we delegate straight to
-		// the router, preserving the original external-only behaviour +
-		// the 4-state auth UX (router raises ProviderUnavailableException
-		// which the controller maps to details.cause).
-		if ($this->xwikiLinkMapper !== null && $objectId !== '') {
-			return $this->listLinkedPages(objectId: $objectId, register: $register, schema: $schema);
+		return $this->linkedOrSourced(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $filters);
+	}//end list()
+
+	/**
+	 * The object's pages: the link table when there is one, else the external source.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters, passed to the source.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedOrSourced(ObjectRef $ref, array $filters): array {
+		if ($this->xwikiLinkMapper !== null && $ref->id !== '') {
+			$scope = $this->contextQuery(ref: $ref, filters: []);
+			return $this->listLinkedPages(mapper: $this->xwikiLinkMapper, scope: $scope);
 		}
 
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: '',
-			options: ['query' => $query, 'headers' => $this->requestHeaders()]
-		);
-
-		return $this->normalizeList(response: $response);
-	}//end list()
+		$query = $this->contextQuery(ref: $ref, filters: $filters);
+		return $this->listFromSource(query: $query);
+	}//end linkedOrSourced()
 
 	/**
 	 * List the locally-linked xWiki pages for an object, enriching each
 	 * row from remote xWiki best-effort.
+	 *
+	 * @param XwikiLinkMapperInterface     $mapper The Tier-2 link table.
+	 * @param array<string,mixed> $scope  The `{register, schema, object}` context.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function listLinkedPages(XwikiLinkMapperInterface $mapper, array $scope): array {
+		$out = [];
+		foreach ($mapper->findByObjectUuid($scope['object']) as $link) {
+			$out[] = $this->linkedPageRow(link: $link, scope: $scope);
+		}
+
+		return $out;
+	}//end listLinkedPages()
+
+	/**
+	 * One linked page: the cached link-table row, overridden by the live
+	 * values from remote xWiki when it answers.
 	 *
 	 * The link-table row alone carries `{ reference, title, space, url }`
 	 * so the tab renders even when the upstream is unreachable; when the
@@ -208,78 +255,85 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * values. An upstream failure never breaks the list — the cached row
 	 * is used as-is (AD-23).
 	 *
-	 * @param string $objectId Object uuid.
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
+	 * @param XwikiLink           $link  The link-table row.
+	 * @param array<string,mixed> $scope The `{register, schema, object}` context.
 	 *
-	 * @return array<int,array<string,mixed>>
+	 * @return array<string,mixed>
 	 */
-	private function listLinkedPages(string $objectId, string $register, string $schema): array {
-		$links = $this->xwikiLinkMapper->findByObjectUuid($objectId);
+	private function linkedPageRow(XwikiLink $link, array $scope): array {
+		$row = $this->cachedLinkRow(link: $link);
+		try {
+			$enriched = $this->get(register: $scope['register'], schema: $scope['schema'], objectId: $scope['object'], entityId: $row['reference']);
+		} catch (Throwable $e) {
+			// Upstream unreachable — fall back to the cached row.
+			return $this->normalizeRow(row: $row);
+		}
 
-		$out = [];
-		foreach ($links as $link) {
-			$reference = (string)$link->getPageReference();
-			$row = [
-				'id' => $reference,
-				'reference' => $reference,
-				'title' => (string)$link->getTitle(),
-				'space' => (string)($link->getSpace() ?? ''),
-				'url' => (string)($link->getUrl() ?? ''),
-				'breadcrumb' => null,
-			];
+		// Live values override the cached ones when present.
+		return array_merge($row, array_filter($enriched, static fn ($v) => $v !== null && $v !== ''));
+	}//end linkedPageRow()
 
-			try {
-				$enriched = $this->get(register: $register, schema: $schema, objectId: $objectId, entityId: $reference);
-				// Live values override the cached ones when present.
-				$row = array_merge($row, array_filter($enriched, static fn ($v) => $v !== null && $v !== ''));
-			} catch (Throwable $e) {
-				// Upstream unreachable — fall back to the cached row.
-				$row = $this->normalizeRow(row: $row);
-			}
-
-			$out[] = $row;
-		}//end foreach
-
-		return $out;
-	}//end listLinkedPages()
+	/**
+	 * The row a link-table entry yields on its own, before enrichment.
+	 *
+	 * @param XwikiLink $link The link-table row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function cachedLinkRow(XwikiLink $link): array {
+		$reference = (string)$link->getPageReference();
+		return [
+			'id' => $reference,
+			'reference' => $reference,
+			'title' => (string)$link->getTitle(),
+			'space' => (string)($link->getSpace() ?? ''),
+			'url' => (string)($link->getUrl() ?? ''),
+			'breadcrumb' => null,
+		];
+	}//end cachedLinkRow()
 
 	/**
 	 * Normalise the source's list response into a plain array of
-	 * normalised rows. The rows array is pulled from whichever envelope
-	 * key is present: `results` / `items` (a purpose-built OpenConnector
-	 * source), or XWiki's own `pageSummaries` (space listing) /
-	 * `searchResults` (search) when the source proxies XWiki's REST API
-	 * directly. A bare list response is used as-is; an assoc response
-	 * with none of those keys yields an empty list (rather than
-	 * iterating the envelope's values as if they were rows).
+	 * normalised rows; non-array rows are dropped.
 	 *
 	 * @param array<string,mixed> $response Decoded source response.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Called from
+	 *     ConnectorEntityCallsTrait::listFromSource(), which PHPMD does not follow.
 	 */
 	private function normalizeList(array $response): array {
-		$rows = [];
+		$rows = array_filter($this->extractRows(response: $response), 'is_array');
+		return array_values(array_map(fn (array $row): array => $this->normalizeRow(row: $row), $rows));
+	}//end normalizeList()
+
+	/**
+	 * Pull the rows array out of whichever envelope key is present:
+	 * `results` / `items` (a purpose-built OpenConnector source), or
+	 * XWiki's own `pageSummaries` (space listing) / `searchResults`
+	 * (search) when the source proxies XWiki's REST API directly. A bare
+	 * list response is used as-is; an assoc response with none of those
+	 * keys yields an empty list (rather than iterating the envelope's
+	 * values as if they were rows).
+	 *
+	 * @param array<string,mixed> $response Decoded source response.
+	 *
+	 * @return array<mixed>
+	 */
+	private function extractRows(array $response): array {
 		foreach (['results', 'items', 'pageSummaries', 'searchResults'] as $key) {
 			if (isset($response[$key]) === true && is_array($response[$key]) === true) {
-				$rows = $response[$key];
-				break;
+				return $response[$key];
 			}
 		}
 
-		if ($rows === [] && array_is_list($response) === true) {
-			$rows = $response;
+		if (array_is_list($response) === true) {
+			return $response;
 		}
 
-		$out = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === true) {
-				$out[] = $this->normalizeRow(row: $row);
-			}
-		}
-
-		return $out;
-	}//end normalizeList()
+		return [];
+	}//end extractRows()
 
 	/**
 	 * Shape one XWiki page row into the
@@ -288,67 +342,99 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * keys on the source row are preserved so the source can pass
 	 * extra fields through without a provider change.
 	 *
+	 * `content` is the HTML-rendered content the UI truncates for the text
+	 * preview (AD-1). Macros are NOT executed here — whatever the source
+	 * returns is passed through; the UI strips to text + ~500 chars.
+	 *
 	 * @param array<string,mixed> $row One source row (or single-page response).
 	 *
 	 * @return array<string,mixed>
 	 */
 	private function normalizeRow(array $row): array {
-		$reference = (string)($row['reference'] ?? $row['pageReference'] ?? $row['id'] ?? '');
-		$space = (string)($row['space'] ?? $row['spaceName'] ?? '');
-		$page = (string)($row['page'] ?? $row['pageName'] ?? $row['name'] ?? '');
-		// `$page` is cast to string above so it's never null — `??` would
-		// never fall through to `$reference`. Use elvis to skip empty
-		// strings so we land on whichever piece carries real content.
-		$title = (string)($row['title'] ?? '');
-		if ($title === '') {
-			$title = $reference;
-			if ($page !== '') {
-				$title = $page;
-			}
-		}
-
-		$breadcrumb = $row['breadcrumb'] ?? null;
-		if (is_array($breadcrumb) === false || $breadcrumb === []) {
-			// Best-effort breadcrumb from the reference if the source
-			// didn't supply one — "Space / Page" or just the reference.
-			$spaceSegments = [];
-			if ($space !== '') {
-				$spaceSegments = explode('.', $space);
-			}
-
-			$breadcrumb = array_values(
-				array_filter(
-					array_merge(
-						$spaceSegments,
-						[$title]
-					)
-				)
-			);
-		}
-
+		$identity = $this->pageIdentity(row: $row);
 		return array_merge(
 			$row,
+			$identity,
 			[
-				'id' => $reference,
-				'reference' => $reference,
-				'title' => $title,
-				'space' => $space,
-				'page' => $page,
-				'breadcrumb' => $breadcrumb,
-				// `url` is the source-mapped field; `link` /
-				// `xwikiAbsoluteUrl` are fallbacks if the source mapping
-				// was left at XWiki's raw field name; finally fall back
-				// to the `rel=".../rel/page"` href from XWiki's REST
-				// `links` array (present on page summaries / search hits).
-				'url' => (string)($row['url'] ?? $row['link'] ?? $row['xwikiAbsoluteUrl'] ?? $this->pageLinkHref(row: $row) ?? ''),
-				// The HTML-rendered content the UI truncates for the
-				// text preview (AD-1). Macros are NOT executed here —
-				// whatever the source returns is passed through; the
-				// UI strips to text + ~500 chars.
+				'breadcrumb' => $this->breadcrumb(row: $row, identity: $identity),
+				'url' => $this->pageUrl(row: $row),
 				'content' => $row['content'] ?? $row['renderedContent'] ?? null,
 			]
 		);
 	}//end normalizeRow()
+
+	/**
+	 * The `{ id, reference, title, space, page }` part of a row, in that order.
+	 *
+	 * @param array<string,mixed> $row One source row.
+	 *
+	 * @return array<string,string>
+	 */
+	private function pageIdentity(array $row): array {
+		$reference = (string)($row['reference'] ?? $row['pageReference'] ?? $row['id'] ?? '');
+		$page = (string)($row['page'] ?? $row['pageName'] ?? $row['name'] ?? '');
+		return [
+			'id' => $reference,
+			'reference' => $reference,
+			'title' => $this->firstNonEmpty(candidates: [$row['title'] ?? '', $page, $reference]),
+			'space' => (string)($row['space'] ?? $row['spaceName'] ?? ''),
+			'page' => $page,
+		];
+	}//end pageIdentity()
+
+	/**
+	 * The first candidate that is not an empty string, or '' when none is.
+	 *
+	 * @param array<int,mixed> $candidates Values in order of preference.
+	 *
+	 * @return string
+	 */
+	private function firstNonEmpty(array $candidates): string {
+		foreach ($candidates as $candidate) {
+			if ((string)$candidate !== '') {
+				return (string)$candidate;
+			}
+		}
+
+		return '';
+	}//end firstNonEmpty()
+
+	/**
+	 * The source's breadcrumb, or a best-effort one built from the space
+	 * segments and the title ("Space / Page") when it supplied none.
+	 *
+	 * @param array<string,mixed>  $row      One source row.
+	 * @param array<string,string> $identity The row's identity (space, title).
+	 *
+	 * @return array<mixed>
+	 */
+	private function breadcrumb(array $row, array $identity): array {
+		$breadcrumb = $row['breadcrumb'] ?? null;
+		if (is_array($breadcrumb) === true && $breadcrumb !== []) {
+			return $breadcrumb;
+		}
+
+		$spaceSegments = [];
+		if ($identity['space'] !== '') {
+			$spaceSegments = explode('.', $identity['space']);
+		}
+
+		return array_values(array_filter(array_merge($spaceSegments, [$identity['title']])));
+	}//end breadcrumb()
+
+	/**
+	 * The page URL: `url` is the source-mapped field; `link` /
+	 * `xwikiAbsoluteUrl` are fallbacks if the source mapping was left at
+	 * XWiki's raw field name; finally the `rel=".../rel/page"` href from
+	 * XWiki's REST `links` array (present on page summaries / search hits).
+	 *
+	 * @param array<string,mixed> $row One source row.
+	 *
+	 * @return string
+	 */
+	private function pageUrl(array $row): string {
+		return (string)($row['url'] ?? $row['link'] ?? $row['xwikiAbsoluteUrl'] ?? $this->pageLinkHref(row: $row) ?? '');
+	}//end pageUrl()
 
 	/**
 	 * Extract the page URL from an XWiki REST `links` array — the entry
@@ -361,21 +447,33 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @return string|null The page href, or null if not found.
 	 */
 	private function pageLinkHref(array $row): ?string {
-		if (isset($row['links']) === false || is_array($row['links']) === false) {
+		$links = $row['links'] ?? null;
+		if (is_array($links) === false) {
 			return null;
 		}
 
-		foreach ($row['links'] as $link) {
-			if (is_array($link) === false || isset($link['href']) === false) {
-				continue;
-			}
-
-			$rel = (string)($link['rel'] ?? '');
-			if (str_ends_with($rel, '/rel/page') === true || str_ends_with($rel, '/rel/pagechild') === true) {
+		foreach ($links as $link) {
+			if ($this->isPageLink(link: $link) === true) {
 				return (string)$link['href'];
 			}
 		}
 
 		return null;
 	}//end pageLinkHref()
+
+	/**
+	 * Whether one `links` entry carries an href to the page (or page child).
+	 *
+	 * @param mixed $link One entry of the `links` array.
+	 *
+	 * @return bool
+	 */
+	private function isPageLink(mixed $link): bool {
+		if (is_array($link) === false || isset($link['href']) === false) {
+			return false;
+		}
+
+		$rel = (string)($link['rel'] ?? '');
+		return str_ends_with($rel, '/rel/page') === true || str_ends_with($rel, '/rel/pagechild') === true;
+	}//end isPageLink()
 }//end class

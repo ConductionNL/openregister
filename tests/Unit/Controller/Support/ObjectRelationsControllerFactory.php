@@ -44,7 +44,6 @@ final class ObjectRelationsControllerFactory {
 		\OCA\OpenRegister\Db\RegisterMapper $registerMapper,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\ObjectRelationsMappers(

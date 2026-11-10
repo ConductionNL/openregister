@@ -34,6 +34,8 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -140,9 +142,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$schemaMapper->method('findInIds')->willReturn($this->schema());
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			placeholders: new PlaceholderResolver($session),
 			db: $this->createMock(originalClassName: IDBConnection::class),
 			cache: $this->createMock(originalClassName: AggregationCache::class),
@@ -214,7 +214,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->expectException(exception: NotAuthorizedException::class);
 		$this->expectExceptionMessage(message: 'shown only on request');
 
-		$this->runner()->run(registerRef: 'brp', schemaRef: 'brp-person', name: 'byBsn');
+		$this->runner()->run(ref: new NamedAggregationRef(register: 'brp', schema: 'brp-person', name: 'byBsn'));
 	}//end testADeclaredGroupByOnItIsRefused()
 
 	/**
@@ -227,10 +227,11 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->expectExceptionMessage(message: 'shown only on request');
 
 		$this->runner()->run(
-			registerRef: 'brp',
-			schemaRef: 'brp-person',
-			name: 'perMunicipality',
-			extraFilter: ['citizenServiceNumber' => '123457609']
+			ref: new NamedAggregationRef(register: 'brp', schema: 'brp-person', name: 'perMunicipality'),
+			options: new NamedAggregationOptions(
+				bypassRbac: false,
+				extraFilter: ['citizenServiceNumber' => '123457609']
+			)
 		);
 	}//end testANarrowingFilterOnItIsRefused()
 
@@ -261,7 +262,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->expectException(exception: NotAuthorizedException::class);
 		$this->expectExceptionMessage(message: 'shown only on request');
 
-		$this->runner()->run(registerRef: 'brp', schemaRef: 'brp-person', name: 'byBsn', bypassRbac: true);
+		$this->runner()->run(ref: new NamedAggregationRef(register: 'brp', schema: 'brp-person', name: 'byBsn'), options: new NamedAggregationOptions(bypassRbac: true));
 	}//end testABypassingDeclaredGroupByOnItIsRefused()
 
 	/**

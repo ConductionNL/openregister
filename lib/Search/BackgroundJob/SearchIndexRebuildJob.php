@@ -24,11 +24,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
-use OCA\OpenRegister\Service\Operations\JobRunRecorder;
-use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
-use OCP\AppFramework\Utility\ITimeFactory;
-use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\RecordedQueuedJob;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use RuntimeException;
 
 /**
  * Rebuilds the search index and leaves a run row behind.
@@ -50,16 +50,14 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time     Time factory for the parent job class.
-	 * @param JobRunRecorder         $recorder The wrapper that writes the run row.
-	 * @param SearchIndexMaintenance $index    The rebuild itself.
+	 * @param RecordedJobRuntime     $runtime The scheduler clock and the recorder that writes the run row.
+	 * @param SearchIndexMaintenance $index   The rebuild itself.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		JobRunRecorder $recorder,
+		RecordedJobRuntime $runtime,
 		private readonly SearchIndexMaintenance $index,
 	) {
-		parent::__construct(time: $time, recorder: $recorder);
+		parent::__construct(time: $runtime->time, recorder: $runtime->recorder);
 
 	}//end __construct()
 
@@ -81,7 +79,8 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 			$registerId = (int)$argument['registerId'];
 		}
 
-		$report = $this->index->rebuild(registerId: $registerId, apply: true);
+		$pass   = new SearchIndexPass(apply: true, progress: null);
+		$report = $this->index->rebuild(registerId: $registerId, pass: $pass);
 
 		if (($report['state'] ?? null) === 'refused') {
 			throw new RuntimeException((string)($report['reason'] ?? 'The rebuild was refused.'));

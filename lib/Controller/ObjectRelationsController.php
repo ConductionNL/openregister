@@ -32,23 +32,34 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\DerivedLineage;
+use OCA\OpenRegister\Controller\Support\ObjectDerivation;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope;
+use OCA\OpenRegister\Controller\Support\ObjectRelationsRequest;
+use OCA\OpenRegister\Controller\Support\ProseReference;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
-use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Service\Export\ExportGate;
-use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Relation\AffectedSet;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Export\ExportGateInterface;
+use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
-use OCA\OpenRegister\Service\Relation\ObjectRelationService;
-use OCA\OpenRegister\Service\Relation\ObjectTreeService;
-use OCA\OpenRegister\Service\Relation\RelationGraphService;
-use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
+use OCA\OpenRegister\Service\Relation\AffectedSets;
+use OCA\OpenRegister\Service\Relation\ExternalLink;
+use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
+use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
+use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
+use OCA\OpenRegister\Service\Relation\ProseMention;
+use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\RelationEndpoint;
+use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
+use OCA\OpenRegister\Service\Relation\RelationTypeResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -69,25 +80,29 @@ use OCP\IRequest;
  */
 class ObjectRelationsController extends Controller {
 	/**
+	 * The directions a tree walk may take, in the order a refusal names them.
+	 *
+	 * @var array<int, string>
+	 */
+	private const TREE_DIRECTIONS = [
+		ObjectTreeServiceInterface::DIRECTION_DESCENDANTS,
+		ObjectTreeServiceInterface::DIRECTION_ANCESTORS,
+		ObjectTreeServiceInterface::DIRECTION_BOTH,
+	];
+
+	/**
 	 * The relation row service.
 	 *
-	 * @var ObjectRelationService
+	 * @var ObjectRelationServiceInterface
 	 */
-	private readonly ObjectRelationService $relations;
+	private readonly ObjectRelationServiceInterface $relations;
 
 	/**
 	 * The bounded graph walk.
 	 *
-	 * @var RelationGraphService
+	 * @var RelationGraphServiceInterface
 	 */
-	private readonly RelationGraphService $graphs;
-
-	/**
-	 * Filters the graph to who else is affected.
-	 *
-	 * @var AffectedSet
-	 */
-	private readonly AffectedSet $affectedSet;
+	private readonly RelationGraphServiceInterface $graphs;
 
 	/**
 	 * Reads and writes objects, with RBAC.
@@ -99,61 +114,73 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * The export verb, checked before the graph leaves.
 	 *
-	 * @var ExportGate
+	 * @var ExportGateInterface
 	 */
-	private readonly ExportGate $exportGate;
+	private readonly ExportGateInterface $exportGate;
 
 	/**
 	 * Resolves an object under the caller's own RBAC.
 	 *
-	 * @var ObjectReadAccess
+	 * @var ObjectReadAccessInterface
 	 */
-	private readonly ObjectReadAccess $access;
+	private readonly ObjectReadAccessInterface $access;
 
 	/**
 	 * The bounded walk along a schema's parent property.
 	 *
-	 * @var ObjectTreeService
+	 * @var ObjectTreeServiceInterface
 	 */
-	private readonly ObjectTreeService $trees;
+	private readonly ObjectTreeServiceInterface $trees;
 
 	/**
 	 * The doelbinding guard the object read runs, asked before a tree or a graph is answered.
 	 *
-	 * @var PurposeGuard
+	 * @var ObjectRelationsPurposeScope
 	 */
-	private readonly PurposeGuard $purposeGuard;
+	private readonly ObjectRelationsPurposeScope $purposeScope;
 
 	/**
-	 * Resolves an object's register for that guard.
+	 * The request parameters these routes read.
 	 *
-	 * @var RegisterMapperInterface
+	 * @var ObjectRelationsRequest
 	 */
-	private readonly RegisterMapperInterface $registerMapper;
+	private readonly ObjectRelationsRequest $params;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param ObjectRelationsControllerServices $services The object relations controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->relations = $services->graph->relations;
 		$this->graphs = $services->graph->graphs;
-		$this->affectedSet = new AffectedSet();
 		$this->objectService = $services->graph->objectService;
 		$this->exportGate = $services->graph->exportGate;
 		$this->access = $services->guards->access;
 		$this->trees = $services->guards->trees;
-		$this->purposeGuard = $services->guards->purposeGuard;
-		$this->registerMapper = $services->mappers->registerMapper;
+		$this->purposeScope = self::purposeScopeOf(services: $services);
+		$this->params = new ObjectRelationsRequest(request: $request);
 	}//end __construct()
+
+	/**
+	 * The doelbinding scope over the guards and the register lookup the services bundle.
+	 *
+	 * @param ObjectRelationsControllerServices $services The object relations controller services.
+	 *
+	 * @return ObjectRelationsPurposeScope The scope.
+	 */
+	private static function purposeScopeOf(ObjectRelationsControllerServices $services): ObjectRelationsPurposeScope {
+		return new ObjectRelationsPurposeScope(
+			access: $services->guards->access,
+			purposeGuard: $services->guards->purposeGuard,
+			registerMapper: $services->mappers->registerMapper
+		);
+	}//end purposeScopeOf()
 
 	/**
 	 * The stored relation rows on an object, in both directions.
@@ -169,18 +196,29 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * The stored relation rows on an object, in both directions: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
+		$object = $this->readableObject(ref: $ref);
 		if ($object === null) {
 			return $this->access->notReadable();
 		}
 
 		$rows = $this->relations->relationsFor(
 			objectUuid: (string)$object->getUuid(),
-			language: $this->language()
+			language: $this->params->language()
 		);
 
 		return new JSONResponse(data: ['results' => $rows, 'total' => count($rows)]);
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Add a relation row to an object: an external address, or a reference
@@ -205,46 +243,72 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function addLink(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+		return $this->addLinkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end addLink()
+
+	/**
+	 * Add a relation row to an object: an external address, or a reference: the body of addLink() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function addLinkFor(ObjectRef $ref): JSONResponse {
+		$object = $this->readableObject(ref: $ref);
 		if ($object === null) {
 			return $this->access->notReadable();
 		}
 
-		$target = $this->stringParam(name: 'target');
-		$anchor = $this->stringParam(name: 'anchor');
+		$target = $this->params->stringParam(name: 'target');
 		if ($target !== null) {
 			return $this->addProseReference(
 				source: $object,
-				register: $register,
-				schema: $schema,
-				target: $target,
-				anchor: $anchor
+				far: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $target)
 			);
 		}
 
+		return $this->addExternalLink(object: $object);
+	}//end addLinkFor()
+
+	/**
+	 * Add an external address to an object.
+	 *
+	 * @param ObjectEntity $object The object the link hangs off.
+	 *
+	 * @return JSONResponse The row, or the refusal.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function addExternalLink(ObjectEntity $object): JSONResponse {
 		try {
-			$row = $this->relations->addExternalLink(
-				sourceUuid: (string)$object->getUuid(),
-				url: (string)$this->request->getParam('url', ''),
-				title: $this->stringParam(name: 'title'),
-				relationType: $this->stringParam(name: 'type'),
-				label: $this->stringParam(name: 'label'),
-				register: $this->asInt(value: $object->getRegister()),
-				schema: $this->asInt(value: $object->getSchema())
-			);
+			$row = $this->externalLink(object: $object);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
-		return new JSONResponse(
-			data: $this->relations->render(
-				row: $row,
-				direction: RelationTypeResolver::DIRECTION_OUTGOING,
-				language: $this->language()
-			),
-			statusCode: 201
+		return new JSONResponse(data: $this->renderOutgoing(row: $row), statusCode: 201);
+	}//end addExternalLink()
+
+	/**
+	 * Write the external address the request names onto an object.
+	 *
+	 * @param ObjectEntity $object The object the link hangs off.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @throws InvalidArgumentException When the store refuses the address.
+	 */
+	private function externalLink(ObjectEntity $object): ObjectRelation {
+		return $this->relations->addExternalLink(
+			source: $this->endpoint(object: $object),
+			link: new ExternalLink(
+				url: (string)$this->request->getParam('url', ''),
+				title: $this->params->stringParam(name: 'title'),
+				relationType: $this->params->stringParam(name: 'type'),
+				label: $this->params->stringParam(name: 'label')
+			)
 		);
-	}//end addLink()
+	}//end externalLink()
 
 	/**
 	 * Record a reference written in prose, on both sides.
@@ -253,23 +317,18 @@ class ObjectRelationsController extends Controller {
 	 * on the far object, and writing onto an object somebody may not see would
 	 * let a reference leak the existence of one they may.
 	 *
-	 * @param ObjectEntity $source The object the text belongs to.
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $target The object the text names.
-	 * @param string|null $anchor What identifies the text, so it can be withdrawn.
+	 * The anchor, what identifies the text so it can be withdrawn, is read
+	 * off the request here.
+	 *
+	 * @param ObjectEntity    $source The object the text belongs to.
+	 * @param ObjectLinkRoute $far    The object the text names, in the route's register and schema.
 	 *
 	 * @return JSONResponse The rows, or the refusal.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function addProseReference(
-		ObjectEntity $source,
-		string $register,
-		string $schema,
-		string $target,
-		?string $anchor,
-	): JSONResponse {
+	private function addProseReference(ObjectEntity $source, ObjectLinkRoute $far): JSONResponse {
+		$anchor = $this->params->stringParam(name: 'anchor');
 		if ($anchor === null) {
 			return new JSONResponse(
 				data: ['error' => 'A reference recorded from text needs an "anchor", or nothing can withdraw it'],
@@ -277,33 +336,62 @@ class ObjectRelationsController extends Controller {
 			);
 		}
 
-		$far = $this->access->readable(register: $register, schema: $schema, id: $target);
-		if ($far === null) {
+		$named = $this->access->readable(register: $far->register, schema: $far->schema, id: $far->id);
+		if ($named === null) {
 			return $this->access->notReadable();
 		}
 
+		return $this->proseAnswer(rendered: $this->recordProse(reference: new ProseReference(source: $source, far: $named, anchor: $anchor)));
+	}//end addProseReference()
+
+	/**
+	 * Write the rows of one prose reference and render them.
+	 *
+	 * @param ProseReference $reference The two ends, the far one already read under the caller's RBAC, and the anchor.
+	 *
+	 * @return array<int, array<string, mixed>> The rendered rows written; none when the mention was already there.
+	 */
+	private function recordProse(ProseReference $reference): array {
 		$rows = $this->relations->recordProseReference(
-			sourceUuid: (string)$source->getUuid(),
-			targetUuid: (string)$far->getUuid(),
-			anchor: $anchor,
-			relationType: $this->stringParam(name: 'type'),
-			scope: [
-				'sourceRegister' => $this->asInt(value: $source->getRegister()),
-				'sourceSchema' => $this->asInt(value: $source->getSchema()),
-				'targetRegister' => $this->asInt(value: $far->getRegister()),
-				'targetSchema' => $this->asInt(value: $far->getSchema()),
-			]
+			mention: new ProseMention(
+				source: $this->endpoint(object: $reference->source),
+				target: $this->endpoint(object: $reference->far),
+				anchor: $reference->anchor,
+				relationType: $this->params->stringParam(name: 'type')
+			)
 		);
 
 		$rendered = [];
 		foreach ($rows as $row) {
-			$rendered[] = $this->relations->render(
-				row: $row,
-				direction: RelationTypeResolver::DIRECTION_OUTGOING,
-				language: $this->language()
-			);
+			$rendered[] = $this->renderOutgoing(row: $row);
 		}
 
+		return $rendered;
+	}//end recordProse()
+
+	/**
+	 * One end of a relation row: the object, in its register and schema.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return RelationEndpoint The end.
+	 */
+	private function endpoint(ObjectEntity $object): RelationEndpoint {
+		return new RelationEndpoint(
+			uuid: (string)$object->getUuid(),
+			register: $this->params->idOf(reference: $object->getRegister()),
+			schema: $this->params->idOf(reference: $object->getSchema())
+		);
+	}//end endpoint()
+
+	/**
+	 * The answer to a recorded prose reference.
+	 *
+	 * @param array<int, array<string, mixed>> $rendered The rendered rows written.
+	 *
+	 * @return JSONResponse 201 with the rows, or 200 when nothing was written.
+	 */
+	private function proseAnswer(array $rendered): JSONResponse {
 		// 200 rather than 201 when the mention was already there: saving the
 		// same text twice writes nothing, and answering 201 would tell the
 		// caller a row was created when none was.
@@ -316,7 +404,7 @@ class ObjectRelationsController extends Controller {
 			data: ['results' => $rendered, 'total' => count($rendered)],
 			statusCode: $status
 		);
-	}//end addProseReference()
+	}//end proseAnswer()
 
 	/**
 	 * Withdraw every relation row one piece of text wrote, on both sides.
@@ -332,7 +420,19 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function removeReferences(string $register, string $schema, string $id, string $anchor): JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+		return $this->removeReferencesFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), anchor: $anchor);
+	}//end removeReferences()
+
+	/**
+	 * Withdraw every relation row one piece of text wrote, on both sides: the body of removeReferences() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $anchor The anchor.
+	 *
+	 * @return JSONResponse
+	 */
+	private function removeReferencesFor(ObjectRef $ref, string $anchor): JSONResponse {
+		$object = $this->readableObject(ref: $ref);
 		if ($object === null) {
 			return $this->access->notReadable();
 		}
@@ -345,7 +445,7 @@ class ObjectRelationsController extends Controller {
 				),
 			]
 		);
-	}//end removeReferences()
+	}//end removeReferencesFor()
 
 	/**
 	 * Remove one stored relation row.
@@ -361,33 +461,52 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function removeLink(string $register, string $schema, string $id, string $relationId): JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+		return $this->removeLinkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), relationId: $relationId);
+	}//end removeLink()
+
+	/**
+	 * Remove one stored relation row: the body of removeLink() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $relationId The row's uuid.
+	 *
+	 * @return JSONResponse
+	 */
+	private function removeLinkFor(ObjectRef $ref, string $relationId): JSONResponse {
+		$object = $this->readableObject(ref: $ref);
 		if ($object === null) {
 			return $this->access->notReadable();
 		}
 
-		$objectUuid = (string)$object->getUuid();
-		$owned = false;
-		foreach ($this->relations->relationsFor(objectUuid: $objectUuid) as $row) {
-			if (($row['uuid'] ?? null) === $relationId) {
-				$owned = true;
-				break;
-			}
-		}
-
-		// A row uuid is not a capability. Without this the route would delete
-		// any row on any object for anybody who could read one object, which
-		// is the shape of every IDOR that ever shipped.
-		if ($owned === false) {
-			return new JSONResponse(data: ['error' => 'No such relation on this object'], statusCode: 404);
-		}
-
-		if ($this->relations->remove(uuid: $relationId) === false) {
+		// A row uuid is not a capability. Without the ownership check the route
+		// would delete any row on any object for anybody who could read one
+		// object, which is the shape of every IDOR that ever shipped.
+		if ($this->ownsRelation(objectUuid: (string)$object->getUuid(), relationId: $relationId) === false
+			|| $this->relations->remove(uuid: $relationId) === false
+		) {
 			return new JSONResponse(data: ['error' => 'No such relation on this object'], statusCode: 404);
 		}
 
 		return new JSONResponse(data: ['removed' => $relationId]);
-	}//end removeLink()
+	}//end removeLinkFor()
+
+	/**
+	 * Whether a relation row is one of an object's own.
+	 *
+	 * @param string $objectUuid The object's uuid.
+	 * @param string $relationId The row's uuid.
+	 *
+	 * @return bool True when the object carries the row.
+	 */
+	private function ownsRelation(string $objectUuid, string $relationId): bool {
+		foreach ($this->relations->relationsFor(objectUuid: $objectUuid) as $row) {
+			if (($row['uuid'] ?? null) === $relationId) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end ownsRelation()
 
 	/**
 	 * Create a new object out of this one, keeping the provenance.
@@ -406,7 +525,18 @@ class ObjectRelationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function derive(string $register, string $schema, string $id): JSONResponse {
-		$source = $this->access->readable(register: $register, schema: $schema, id: $id);
+		return $this->deriveFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end derive()
+
+	/**
+	 * Create a new object out of this one, keeping the provenance: the body of derive() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function deriveFor(ObjectRef $ref): JSONResponse {
+		$source = $this->readableObject(ref: $ref);
 		if ($source === null) {
 			return $this->access->notReadable();
 		}
@@ -419,71 +549,122 @@ class ObjectRelationsController extends Controller {
 			);
 		}
 
-		$entry = $this->stringParam(name: 'entry');
-		$relationType = $this->stringParam(name: 'type');
-		$property = $this->stringParam(name: 'property');
+		return $this->deriveFrom(
+			derivation: new ObjectDerivation(source: $source, register: (string)$ref->register, schema: (string)$ref->schema),
+			data: $data
+		);
+	}//end deriveFor()
 
-		// The inheritance a relation type declares, read off the SOURCE
-		// object's schema, because that is where the property naming the link
-		// lives.
-		$inherits = [];
-		if ($property !== null) {
-			$descriptor = $this->relations->declarationFor(
-				schemaId: $this->asInt(value: $source->getSchema()),
-				property: $property,
-				language: $this->language()
-			);
-
-			if ($descriptor !== null) {
-				$inherits = ($descriptor['inherits'] ?? []);
-				if ($relationType === null) {
-					$relationType = ($descriptor['type'] ?? null);
-				}
-			}
+	/**
+	 * Create the derived object and record where it came from.
+	 *
+	 * @param ObjectDerivation     $derivation The object it comes out of, already read under the caller's RBAC, and where the new one goes.
+	 * @param array<string, mixed> $data       The body the new object starts from.
+	 *
+	 * @return JSONResponse The created object and the relation row, or the refusal.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	private function deriveFrom(ObjectDerivation $derivation, array $data): JSONResponse {
+		$source = $derivation->source;
+		$link = $this->declaredLink(source: $source);
+		$applied = $this->relations->applyInheritance(parent: $source, childData: $data, inherits: $link['inherits']);
+		$created = $this->saveDerived(data: $applied['data'], derivation: $derivation);
+		if ($created instanceof JSONResponse) {
+			return $created;
 		}
 
-		$applied = $this->relations->applyInheritance(
-			parent: $source,
-			childData: $data,
-			inherits: $inherits
+		$row = $this->recordProvenance(
+			lineage: new DerivedLineage(source: $source, created: $created, inherited: $applied['inherited']),
+			link: $link
 		);
 
+		return $this->derivedAnswer(created: $created, row: $row);
+	}//end deriveFrom()
+
+	/**
+	 * The answer to a derive: the created object and its provenance row.
+	 *
+	 * @param ObjectEntity   $created The created object.
+	 * @param ObjectRelation $row     The provenance row.
+	 *
+	 * @return JSONResponse The 201 answer.
+	 */
+	private function derivedAnswer(ObjectEntity $created, ObjectRelation $row): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'object' => $created->jsonSerialize(),
+				'relation' => $this->renderOutgoing(row: $row),
+			],
+			statusCode: 201
+		);
+	}//end derivedAnswer()
+
+	/**
+	 * The link a derive asks for: its entry, its type and what the type inherits.
+	 *
+	 * The inheritance a relation type declares is read off the SOURCE object's
+	 * schema, because that is where the property naming the link lives. The
+	 * declared type applies only when the request names none.
+	 *
+	 * @param ObjectEntity $source The object the derive starts from.
+	 *
+	 * @return array{entry: ?string, type: ?string, inherits: array} The link.
+	 */
+	private function declaredLink(ObjectEntity $source): array {
+		$link = ['entry' => $this->params->stringParam(name: 'entry'), 'type' => $this->params->stringParam(name: 'type'), 'inherits' => []];
+		$descriptor = $this->declaration(source: $source);
+		if ($descriptor === null) {
+			return $link;
+		}
+
+		$link['inherits'] = ($descriptor['inherits'] ?? []);
+		if ($link['type'] === null) {
+			$link['type'] = ($descriptor['type'] ?? null);
+		}
+
+		return $link;
+	}//end declaredLink()
+
+	/**
+	 * The declaration of the property the request names on the source's schema, or null.
+	 *
+	 * @param ObjectEntity $source The object the derive starts from.
+	 *
+	 * @return array<string, mixed>|null The descriptor, or null when no property is named or none is declared.
+	 */
+	private function declaration(ObjectEntity $source): ?array {
+		$property = $this->params->stringParam(name: 'property');
+		if ($property === null) {
+			return null;
+		}
+
+		return $this->relations->declarationFor(
+			schemaId: $this->params->idOf(reference: $source->getSchema()),
+			property: $property,
+			language: $this->params->language()
+		);
+	}//end declaration()
+
+	/**
+	 * Save the derived object.
+	 *
+	 * @param array<string, mixed> $data       The object's data, with what it inherited.
+	 * @param ObjectDerivation     $derivation The register and schema the new object goes into.
+	 *
+	 * @return ObjectEntity|JSONResponse The created object, or the 422 when the save refuses it.
+	 */
+	private function saveDerived(array $data, ObjectDerivation $derivation): ObjectEntity|JSONResponse {
 		try {
-			$created = $this->objectService->saveObject(
-				object: $applied['data'],
-				register: $register,
-				schema: $schema
+			return $this->objectService->saveObject(
+				object: $data,
+				register: $derivation->register,
+				schema: $derivation->schema
 			);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
-
-		// A derive that inherited something is a derivation; one that only
-		// names where it came from is a split. Writing the split row and then
-		// mutating it into a derivation was two writes for one act, and left
-		// recordDerivation() with no caller at all: a write capability nobody
-		// reaches is a capability nobody can exercise, which is the shape
-		// gate-orphaned-write-capability exists to catch.
-		$row = $this->recordProvenance(
-			source: $source,
-			created: $created,
-			entry: $entry,
-			relationType: $relationType,
-			inherited: $applied['inherited']
-		);
-
-		return new JSONResponse(
-			data: [
-				'object' => $created->jsonSerialize(),
-				'relation' => $this->relations->render(
-					row: $row,
-					direction: RelationTypeResolver::DIRECTION_OUTGOING,
-					language: $this->language()
-				),
-			],
-			statusCode: 201
-		);
-	}//end derive()
+	}//end saveDerived()
 
 	/**
 	 * Record where a newly created object came from: one row, not two.
@@ -491,42 +672,44 @@ class ObjectRelationsController extends Controller {
 	 * A derive that inherited something is a derivation; one that only names
 	 * where it came from is a split. Both carry the entry, because a
 	 * derivation and a split are the same act seen twice and a sub-case
-	 * started from a timeline entry is both.
+	 * started from a timeline entry is both. Writing the split row and then
+	 * mutating it into a derivation was two writes for one act, and left
+	 * recordDerivation() with no caller at all: a write capability nobody
+	 * reaches is a capability nobody can exercise, which is the shape
+	 * gate-orphaned-write-capability exists to catch.
 	 *
-	 * @param ObjectEntity $source The object it came out of.
-	 * @param ObjectEntity $created The new object.
-	 * @param string|null $entry The entry it came out of, when it came out of one.
-	 * @param string|null $relationType The vocabulary key naming the link.
-	 * @param array<string, mixed> $inherited What the child took at creation.
+	 * @param DerivedLineage       $lineage The object it came out of, the new object and what that inherited.
+	 * @param array<string, mixed> $link    The link: the entry it came out of and the vocabulary key naming it.
 	 *
 	 * @return ObjectRelation The provenance row.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function recordProvenance(
-		ObjectEntity $source,
-		ObjectEntity $created,
-		?string $entry,
-		?string $relationType,
-		array $inherited,
-	): ObjectRelation {
-		if ($inherited !== []) {
-			return $this->relations->recordDerivation(
-				parent: $source,
-				child: $created,
-				relationType: $relationType,
-				inherited: $inherited,
-				entry: $entry
+	private function recordProvenance(DerivedLineage $lineage, array $link): ObjectRelation {
+		$provenance = new ProvenanceLink(entry: $link['entry'], relationType: $link['type']);
+		if ($lineage->inherited !== []) {
+			return $this->relations->recordDerived(
+				derivation: new Derivation(parent: $lineage->source, child: $lineage->created, link: $provenance, inherited: $lineage->inherited)
 			);
 		}
 
-		return $this->relations->recordSplit(
-			source: $source,
-			created: $created,
-			entry: $entry,
-			relationType: $relationType
-		);
+		return $this->relations->recordSplit(source: $lineage->source, created: $lineage->created, link: $provenance);
 	}//end recordProvenance()
+
+	/**
+	 * One relation row as the API answers it, seen from the object it hangs off.
+	 *
+	 * @param ObjectRelation $row The row.
+	 *
+	 * @return array<string, mixed> The rendered row.
+	 */
+	private function renderOutgoing(ObjectRelation $row): array {
+		return $this->relations->render(
+			row: $row,
+			direction: RelationTypeResolverInterface::DIRECTION_OUTGOING,
+			language: $this->params->language()
+		);
+	}//end renderOutgoing()
 
 	/**
 	 * What an object is linked to, within a bounded depth.
@@ -542,18 +725,24 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function graph(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
-		if ($object === null) {
-			return $this->access->notReadable();
-		}
+		return $this->graphFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end graph()
 
-		$refusal = $this->purposeRefusal(object: $object);
-		if ($refusal !== null) {
-			return $refusal;
+	/**
+	 * What an object is linked to, within a bounded depth: the body of graph() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function graphFor(ObjectRef $ref): JSONResponse {
+		$object = $this->readableWithinPurpose(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		return new JSONResponse(data: $this->graphWithinPurpose(object: $object));
-	}//end graph()
+	}//end graphFor()
 
 	/**
 	 * Who else is affected by an object: the objects and parties its relations reach.
@@ -573,14 +762,20 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function affected(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
-		if ($object === null) {
-			return $this->access->notReadable();
-		}
+		return $this->affectedFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end affected()
 
-		$refusal = $this->purposeRefusal(object: $object);
-		if ($refusal !== null) {
-			return $refusal;
+	/**
+	 * Who else is affected by an object: the objects and parties its relations reach: the body of affected() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function affectedFor(ObjectRef $ref): JSONResponse {
+		$object = $this->readableWithinPurpose(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		try {
@@ -589,8 +784,8 @@ class ObjectRelationsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
 
-		return new JSONResponse(data: $this->affectedSet->derive(graph: $this->graphWithinPurpose(object: $object), query: $query));
-	}//end affected()
+		return new JSONResponse(data: AffectedSets::deriver()->derive(graph: $this->graphWithinPurpose(object: $object), query: $query));
+	}//end affectedFor()
 
 	/**
 	 * The affected-set query the request asks for.
@@ -602,10 +797,31 @@ class ObjectRelationsController extends Controller {
 	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
 	 */
 	private function affectedQuery(): AffectedSetQuery {
-		$query = new AffectedSetQuery(types: $this->listParam(name: 'types'), prune: ($this->listParam(name: 'prune') ?? []));
+		$query = new AffectedSetQuery(types: $this->params->listParam(name: 'types'), prune: ($this->params->listParam(name: 'prune') ?? []));
 
-		return $query->withPartySchemas(schemas: ($this->listParam(name: 'partySchemas') ?? []));
+		return $query->withPartySchemas(schemas: ($this->params->listParam(name: 'partySchemas') ?? []));
 	}//end affectedQuery()
+
+	/**
+	 * The object a graph or tree route answers for, or the refusal.
+	 *
+	 * The read check comes first, so a purpose refusal never confirms an
+	 * object the caller may not see.
+	 *
+	 * @param ObjectRef $ref The object as the route names it.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the 404 or purpose refusal.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function readableWithinPurpose(ObjectRef $ref): ObjectEntity|JSONResponse {
+		$object = $this->readableObject(ref: $ref);
+		if ($object === null) {
+			return $this->access->notReadable();
+		}
+
+		return ($this->purposeScope->refusalFor(object: $object) ?? $object);
+	}//end readableWithinPurpose()
 
 	/**
 	 * The bounded graph from an object, without the nodes whose purpose the caller did not name.
@@ -617,172 +833,13 @@ class ObjectRelationsController extends Controller {
 	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
 	 */
 	private function graphWithinPurpose(ObjectEntity $object): array {
-		return $this->withinPurpose(
+		return $this->purposeScope->narrow(
 			graph: $this->graphs->graph(
 				rootUuid: (string)$object->getUuid(),
-				depth: $this->depth(),
-				language: $this->language()
+				options: new GraphExportOptions(depth: $this->params->depth(), language: $this->params->language())
 			)
 		);
 	}//end graphWithinPurpose()
-
-	/**
-	 * The graph without the nodes of schemas whose purpose the caller did not name.
-	 *
-	 * The root's schema is checked before the walk; a node carries the title and
-	 * schema of a related object that may sit in another schema, so every schema
-	 * present in the answer passes the same guard. A refused node leaves the
-	 * answer with its edges, and so does everything that was only reachable
-	 * through it.
-	 *
-	 * @param array<string, mixed> $graph The graph the walk answered.
-	 *
-	 * @return array<string, mixed> The graph the caller may see.
-	 */
-	private function withinPurpose(array $graph): array {
-		$refused = [];
-		$decided = [];
-		foreach (($graph['nodes'] ?? []) as $node) {
-			if (($node['resolved'] ?? false) !== true || ($node['external'] ?? false) === true) {
-				continue;
-			}
-
-			$key = ((string)($node['register'] ?? '')).'/'.((string)($node['schema'] ?? ''));
-			if (isset($decided[$key]) === false) {
-				$decided[$key] = $this->purposeAdmits(registerId: $node['register'] ?? null, schemaId: $node['schema'] ?? null);
-			}
-
-			if ($decided[$key] === false) {
-				$refused[(string)($node['uuid'] ?? '')] = true;
-			}
-		}
-
-		if ($refused === []) {
-			return $graph;
-		}
-
-		return $this->reachableFromRoot(graph: $graph, refused: $refused);
-	}//end withinPurpose()
-
-	/**
-	 * Whether the doelbinding guard admits a read of the schema of one node.
-	 *
-	 * @param mixed $registerId The node's register id.
-	 * @param mixed $schemaId   The node's schema id.
-	 *
-	 * @return bool False when a purpose is needed and none is usable, or the schema does not resolve.
-	 */
-	private function purposeAdmits(mixed $registerId, mixed $schemaId): bool {
-		$schema = null;
-		if (is_scalar($schemaId) === true) {
-			$schema = $this->access->schemaById(schemaId: $schemaId);
-		}
-
-		$register = null;
-		if (is_scalar($registerId) === true && $registerId !== '') {
-			try {
-				$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
-			} catch (\Throwable $e) {
-				$register = null;
-			}
-		}
-
-		if ($schema === null || $register === null) {
-			return false;
-		}
-
-		try {
-			$this->purposeGuard->enforce(register: $register, schema: $schema);
-		} catch (PurposeRefusedException $refusal) {
-			return false;
-		}
-
-		return true;
-	}//end purposeAdmits()
-
-	/**
-	 * The graph without the refused nodes, their edges and what hangs only on them.
-	 *
-	 * @param array<string, mixed> $graph   The graph.
-	 * @param array<string, true>  $refused The uuids of the refused nodes.
-	 *
-	 * @return array<string, mixed> The graph.
-	 */
-	private function reachableFromRoot(array $graph, array $refused): array {
-		$allEdges = $this->rowsIn(value: ($graph['edges'] ?? null));
-		$allNodes = $this->rowsIn(value: ($graph['nodes'] ?? null));
-
-		$edges = array_values(
-			array_filter(
-				$allEdges,
-				static fn (array $edge): bool => isset($refused[(string)($edge['from'] ?? '')]) === false
-					&& isset($refused[(string)($edge['to'] ?? '')]) === false
-			)
-		);
-
-		$reached = $this->reached(root: (string)($graph['root'] ?? ''), edges: $edges);
-
-		$graph['nodes'] = array_values(
-			array_filter(
-				$allNodes,
-				static fn (array $node): bool => isset($reached[(string)($node['uuid'] ?? '')]) === true
-					&& isset($refused[(string)($node['uuid'] ?? '')]) === false
-			)
-		);
-		$graph['edges'] = array_values(
-			array_filter(
-				$edges,
-				static fn (array $edge): bool => isset($reached[(string)($edge['from'] ?? '')]) === true
-					&& isset($reached[(string)($edge['to'] ?? '')]) === true
-			)
-		);
-
-		return $graph;
-	}//end reachableFromRoot()
-
-	/**
-	 * A graph list (its nodes or edges) as a list of rows; anything else is no rows.
-	 *
-	 * @param mixed $value The list as the graph holds it.
-	 *
-	 * @return array<int, array<string, mixed>> The rows.
-	 */
-	private function rowsIn(mixed $value): array {
-		if (is_array($value) === false) {
-			return [];
-		}
-
-		return array_values(array_filter($value, static fn (mixed $row): bool => is_array($row) === true));
-	}//end rowsIn()
-
-	/**
-	 * The uuids connected to the root through the given edges, either direction.
-	 *
-	 * @param string                           $root  The root uuid.
-	 * @param array<int, array<string, mixed>> $edges The edges that remain.
-	 *
-	 * @return array<string, true> The reached uuids.
-	 */
-	private function reached(string $root, array $edges): array {
-		$reached = [$root => true];
-		do {
-			$grew = false;
-			foreach ($edges as $edge) {
-				$from = (string)($edge['from'] ?? '');
-				$to = (string)($edge['to'] ?? '');
-				if (isset($reached[$from]) === isset($reached[$to])) {
-					continue;
-				}
-
-				$reached[$from] = true;
-				$reached[$to] = true;
-				$grew = true;
-			}
-		} while ($grew === true);
-
-		return $reached;
-	}//end reached()
-
 
 	/**
 	 * The ancestors and descendants of an object along its schema's parent property.
@@ -803,50 +860,53 @@ class ObjectRelationsController extends Controller {
 	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
 	public function tree(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
-		if ($object === null) {
-			return $this->access->notReadable();
+		return $this->treeFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end tree()
+
+	/**
+	 * The ancestors and descendants of an object along its schema's parent property: the body of tree() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function treeFor(ObjectRef $ref): JSONResponse {
+		$object = $this->readableWithinPurpose(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
-		$refusal = $this->purposeRefusal(object: $object);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		$direction = (string)$this->request->getParam('direction', ObjectTreeService::DIRECTION_DESCENDANTS);
-		$directions = [
-			ObjectTreeService::DIRECTION_DESCENDANTS,
-			ObjectTreeService::DIRECTION_ANCESTORS,
-			ObjectTreeService::DIRECTION_BOTH,
-		];
-		if (in_array($direction, $directions, true) === false) {
+		$direction = (string)$this->request->getParam('direction', ObjectTreeServiceInterface::DIRECTION_DESCENDANTS);
+		if (in_array($direction, self::TREE_DIRECTIONS, true) === false) {
 			return new JSONResponse(
-				data: ['error' => 'direction must be one of: '.implode(', ', $directions)],
+				data: ['error' => 'direction must be one of: '.implode(', ', self::TREE_DIRECTIONS)],
 				statusCode: 400
 			);
 		}
 
-		$depth = null;
-		if ($this->stringParam(name: 'depth') !== null) {
-			$depth = $this->depth();
-		}
+		return new JSONResponse(data: $this->treeOf(object: $object, direction: $direction));
+	}//end treeFor()
 
-		$fields = array_values(
-			array_filter(
-				array_map('trim', explode(',', (string)$this->stringParam(name: 'fields'))),
-				static fn (string $field): bool => $field !== ''
-			)
-		);
-
-		return new JSONResponse(
-			data: $this->trees->tree(
-				root: $object,
+	/**
+	 * The tree walk from an object, at the depth and with the fields the request asks for.
+	 *
+	 * @param ObjectEntity $object    The root, already read under the caller's RBAC.
+	 * @param string       $direction The direction of the walk.
+	 *
+	 * @return array<string, mixed> The tree.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	private function treeOf(ObjectEntity $object, string $direction): array {
+		return $this->trees->tree(
+			root: $object,
+			query: new ObjectTreeQuery(
 				direction: $direction,
-				depth: $depth,
-				fields: $fields
+				depth: $this->params->optionalDepth(),
+				fields: $this->params->csvParam(name: 'fields')
 			)
 		);
-	}//end tree()
+	}//end treeOf()
 
 	/**
 	 * The same graph, as rows a spreadsheet opens.
@@ -862,14 +922,20 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function exportGraph(string $register, string $schema, string $id): DataDownloadResponse|JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
-		if ($object === null) {
-			return $this->access->notReadable();
-		}
+		return $this->exportGraphFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end exportGraph()
 
-		$purposeRefusal = $this->purposeRefusal(object: $object);
-		if ($purposeRefusal !== null) {
-			return $purposeRefusal;
+	/**
+	 * The same graph, as rows a spreadsheet opens: the body of exportGraph() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return DataDownloadResponse|JSONResponse
+	 */
+	private function exportGraphFor(ObjectRef $ref): DataDownloadResponse|JSONResponse {
+		$object = $this->readableWithinPurpose(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		// REQ-EXP-001: a relation graph as a CSV is the object's data leaving
@@ -883,23 +949,39 @@ class ObjectRelationsController extends Controller {
 			registerId: $this->access->registerIdOf(object: $object)
 		);
 
-		if ($refusal !== null) {
-			return $refusal;
-		}
+		return ($refusal ?? $this->graphDownload(object: $object));
+	}//end exportGraphFor()
 
-		// The CSV carries the titles and uuids of every node, so it is narrowed by
-		// the same doelbinding rule as the graph answer before its rows are written.
-		$uuid = (string)$object->getUuid();
-		$graph = $this->withinPurpose(
-			graph: $this->graphs->graph(
-				rootUuid: $uuid,
-				depth: $this->depth(),
-				language: $this->language()
-			)
+	/**
+	 * The graph from an object as a CSV download.
+	 *
+	 * The CSV carries the titles and uuids of every node, so it is narrowed by
+	 * the same doelbinding rule as the graph answer before its rows are written.
+	 *
+	 * @param ObjectEntity $object The root, already read under the caller's RBAC and export right.
+	 *
+	 * @return DataDownloadResponse The export.
+	 */
+	private function graphDownload(ObjectEntity $object): DataDownloadResponse {
+		$csv = $this->csvOf(rows: $this->graphs->rowsOf(graph: $this->graphWithinPurpose(object: $object)));
+
+		return new DataDownloadResponse(
+			data: $csv,
+			filename: 'relation-graph-'.(string)$object->getUuid().'.csv',
+			contentType: 'text/csv'
 		);
+	}//end graphDownload()
 
+	/**
+	 * Rows as CSV text.
+	 *
+	 * @param iterable<array<int, mixed>> $rows The rows.
+	 *
+	 * @return string The CSV.
+	 */
+	private function csvOf(iterable $rows): string {
 		$handle = fopen('php://temp', 'r+');
-		foreach ($this->graphs->rowsOf(graph: $graph) as $row) {
+		foreach ($rows as $row) {
 			fputcsv($handle, $row, escape: '');
 		}
 
@@ -907,156 +989,18 @@ class ObjectRelationsController extends Controller {
 		$csv = (string)stream_get_contents($handle);
 		fclose($handle);
 
-		return new DataDownloadResponse(
-			data: $csv,
-			filename: 'relation-graph-'.$uuid.'.csv',
-			contentType: 'text/csv'
-		);
-	}//end exportGraph()
+		return $csv;
+	}//end csvOf()
+
 
 	/**
-	 * The refusal for a read that has to name a purpose and did not, or null.
+	 * The object a route names, read under the caller's RBAC, or null when the caller may not read it.
 	 *
-	 * The doelbinding guard the object GET runs, asked after the read check so
-	 * a refusal never confirms an object the caller may not see. The names and
-	 * properties these routes answer for many objects at once are the same
-	 * data the object GET would refuse, and the accepted purpose is what puts
-	 * the read in the processing register. An object whose register or schema
-	 * does not resolve is answered as not readable: the rule cannot be applied.
+	 * @param ObjectRef $ref The object as the route names it.
 	 *
-	 * @param ObjectEntity $object The object the route answers for, already read under the caller's RBAC.
-	 *
-	 * @return JSONResponse|null The refusal, or null when the read may go on.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @return ObjectEntity|null The object, or null.
 	 */
-	private function purposeRefusal(ObjectEntity $object): ?JSONResponse {
-		$schema = $this->access->schemaOf(object: $object);
-		$register = $this->registerOf(object: $object);
-		if ($schema === null || $register === null) {
-			return $this->access->notReadable();
-		}
-
-		try {
-			$this->purposeGuard->enforce(register: $register, schema: $schema);
-		} catch (PurposeRefusedException $refusal) {
-			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
-		}
-
-		return null;
-	}//end purposeRefusal()
-
-	/**
-	 * The register an object belongs to, or null when it does not resolve.
-	 *
-	 * @param ObjectEntity $object The object.
-	 *
-	 * @return Register|null The register.
-	 */
-	private function registerOf(ObjectEntity $object): ?Register {
-		$registerId = $object->getRegister();
-		if ($registerId === null || $registerId === '') {
-			return null;
-		}
-
-		try {
-			return $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return null;
-		}
-	}//end registerOf()
-
-	/**
-	 * The depth this request asks for.
-	 *
-	 * @return int The depth.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function depth(): int {
-		$depth = $this->request->getParam('depth', 1);
-
-		if (is_numeric($depth) === false) {
-			return 1;
-		}
-
-		return max(1, (int)$depth);
-	}//end depth()
-
-	/**
-	 * The language the caller asked for, defaulting to Dutch.
-	 *
-	 * @return string The BCP-47 tag.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function language(): string {
-		$explicit = trim((string)$this->request->getParam('language', ''));
-
-		if ($explicit !== '') {
-			return $explicit;
-		}
-
-		return 'nl';
-	}//end language()
-
-	/**
-	 * Read a string request parameter, or null when it is absent or empty.
-	 *
-	 * @param string $name The parameter name.
-	 *
-	 * @return string|null The value.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name);
-
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return trim($value);
-	}//end stringParam()
-
-	/**
-	 * Read a list request parameter, comma-separated or repeated, or null when it is absent.
-	 *
-	 * @param string $name The parameter name.
-	 *
-	 * @return array<int, string>|null The values, without blanks.
-	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
-	 */
-	private function listParam(string $name): ?array {
-		$value = $this->request->getParam($name);
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_array($value) === false) {
-			$value = explode(',', (string)$value);
-		}
-
-		$items = array_map(static fn (mixed $item): string => trim((string)$item), $value);
-
-		return array_values(array_filter($items, static fn (string $item): bool => $item !== ''));
-	}//end listParam()
-
-	/**
-	 * Read a register or schema reference as an int, when it is one.
-	 *
-	 * @param mixed $value The reference.
-	 *
-	 * @return int|null The id.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function asInt(mixed $value): ?int {
-		if (is_numeric($value) === false) {
-			return null;
-		}
-
-		return (int)$value;
-	}//end asInt()
+	private function readableObject(ObjectRef $ref): ?ObjectEntity {
+		return $this->access->readable(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end readableObject()
 }//end class

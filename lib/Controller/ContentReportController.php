@@ -22,10 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
-use OCA\OpenRegister\Db\ContentReportMapper;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Service\Audit\ContentReportService;
+use OCA\OpenRegister\Db\ContentReportMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -46,24 +49,48 @@ use Throwable;
  */
 class ContentReportController extends Controller {
 	/**
+	 * The reports and their copies.
+	 *
+	 * @var ContentReportMapperInterface
+	 */
+	private readonly ContentReportMapperInterface $reports;
+
+	/**
+	 * Files a report and resolves reviewer access.
+	 *
+	 * @var ContentReportServiceInterface
+	 */
+	private readonly ContentReportServiceInterface $service;
+
+	/**
+	 * Resolves the content being reported.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objects;
+
+	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName     App identifier.
 	 * @param IRequest            $request     Active request.
-	 * @param ContentReportMapper $reports     The reports and their copies.
-	 * @param ContentReportService $service    Files a report and resolves reviewer access.
-	 * @param MagicMapperInterface         $objects     Resolves the content being reported.
-	 * @param IUserSession        $userSession Current user session.
+	 * @param ContentReportControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ContentReportMapper $reports,
-		private readonly ContentReportService $service,
-		private readonly MagicMapperInterface $objects,
-		private readonly IUserSession $userSession,
+		ContentReportControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->reports = $services->reports;
+		$this->service = $services->service;
+		$this->objects = $services->objects;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -145,10 +172,8 @@ class ContentReportController extends Controller {
 			return $this->forbidden();
 		}
 
-		$rows = $this->reports->findAll(
-			status: $this->optionalParam(key: 'status'),
-			organisationId: $this->optionalParam(key: 'organisation')
-		);
+		$filters = ['status' => $this->optionalParam(key: 'status'), 'organisation_id' => $this->optionalParam(key: 'organisation')];
+		$rows = $this->reports->findAll(query: ListQuery::unbounded(filters: $filters));
 
 		$results = [];
 		foreach ($rows as $row) {
@@ -206,7 +231,7 @@ class ContentReportController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded by the reviewer-group check below, and by
-	 *   ContentReportService::readCopy() a second time, which returns null rather than the
+	 *   ContentReportServiceInterface::readCopy() a second time, which returns null rather than the
 	 *   copy for anybody outside the group the report itself pinned when it was filed.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md

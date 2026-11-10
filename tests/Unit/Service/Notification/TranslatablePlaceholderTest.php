@@ -34,9 +34,25 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleFiring;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleMessageRenderer;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;
@@ -47,7 +63,7 @@ use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
-use ReflectionProperty;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 
 /**
  * Locks how a language map fills a placeholder.
@@ -79,14 +95,14 @@ class TranslatablePlaceholderTest extends TestCase {
 		$text = $this->templating()->interpolate('Lead changed: {{title}}', ['title' => ['nl' => 'Offerte']], [], ['de']);
 
 		$this->assertSame('Lead changed: Offerte', $text);
-		$this->assertSame([], $this->templating()->unanswered('Lead changed: {{title}}', ['title' => ['nl' => 'Offerte']], []));
+		$this->assertSame([], $this->templating()->unanswered('Lead changed: {{title}}', new PlaceholderValues(['title' => ['nl' => 'Offerte']], [])));
 	}//end testWithoutAChainLanguageTheFirstValueShows()
 
 	public function testAnObjectThatIsNotALanguageMapStaysUnanswered(): void {
 		$data = ['address' => ['street' => 'Dam', 'number' => 1], 'tags' => ['a', 'b']];
 
 		$this->assertSame('{{address}} {{tags}}', $this->templating()->interpolate('{{address}} {{tags}}', $data, [], ['nl']));
-		$this->assertSame(['address', 'tags'], $this->templating()->unanswered('{{address}} {{tags}}', $data, []));
+		$this->assertSame(['address', 'tags'], $this->templating()->unanswered('{{address}} {{tags}}', new PlaceholderValues($data, [])));
 	}//end testAnObjectThatIsNotALanguageMapStaysUnanswered()
 
 	public function testAMappedValueIsStillEscaped(): void {
@@ -105,32 +121,63 @@ class TranslatablePlaceholderTest extends TestCase {
 		$registerMapper->method('find')->willReturn($register);
 
 		$dispatcher = new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			registerMapper: $registerMapper,
-			templating: $this->templating()
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->createMock(INotificationManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					userManager: $this->createMock(IUserManager::class)
+				),
+				emailSender: new EmailSender(
+					userManager: $this->createMock(IUserManager::class),
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->createMock(IUserManager::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					serverContainer: $this->createMock(IServerContainer::class)
+				),
+				registerMapper: $registerMapper
+			),
+			rendering: new MessageRendering(
+				templating: $this->templating()
+			)
 		);
 
 		$object = new ObjectEntity();
 		$object->setRegister('20');
+		$object->setObject(['subject' => ['en' => 'Call client', 'nl' => 'Bel klant']]);
 		$languages = (new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveRegisterLanguages'))->invoke($dispatcher, $object);
-		(new ReflectionProperty(AnnotationNotificationDispatcher::class, 'registerLanguages'))->setValue($dispatcher, $languages);
-
-		$subject = (new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveLocalizedSubject'))->invoke(
-			$dispatcher,
-			['en' => 'Task changed: {{subject}}', 'nl' => 'Taak gewijzigd: {{subject}}'],
-			'fr',
-			['subject' => ['en' => 'Call client', 'nl' => 'Bel klant']],
+		$firing = new RuleFiring(
+			'task',
+			['subject' => ['en' => 'Task changed: {{subject}}', 'nl' => 'Taak gewijzigd: {{subject}}']],
+			$object,
+			new Schema(),
 			[],
-			'task'
+			'object_updated'
 		);
+		$renderer = new RuleMessageRenderer($this->templating(), $languages, null, $this->createMock(LoggerInterface::class));
+		$subject = $renderer->subject(new MessageTarget($firing, 'fr'));
 
 		$this->assertSame('Taak gewijzigd: Bel klant', $subject);
 	}//end testTheDispatcherFallsBackToTheRegistersDefaultLanguage()

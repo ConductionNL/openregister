@@ -72,31 +72,18 @@ class NestedPathFilter {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
 	public function split(array $filters, array $properties): array {
-		$plain = [];
+		$plain  = [];
 		$nested = [];
 		foreach ($filters as $key => $value) {
-			$key = (string)$key;
+			$key      = (string)$key;
 			$segments = explode('.', $key);
-			$root = array_shift($segments);
-
-			if ($segments !== [] && self::isObjectProperty(properties: $properties, name: $root) === true) {
-				self::collect(root: $root, path: $segments, value: $value, into: $nested);
-				continue;
-			}
-
-			if ($segments === []
-				&& self::isObjectProperty(properties: $properties, name: $root) === true
-				&& self::isPathMap(value: $value) === true
-			) {
-				foreach ($value as $segment => $inner) {
-					self::collect(root: $root, path: [(string)$segment], value: $inner, into: $nested);
-				}
-
+			if (self::isObjectProperty(properties: $properties, name: $segments[0]) === true && self::descends(segments: $segments, value: $value) === true) {
+				array_push($nested, ...self::collect(path: $segments, value: $value));
 				continue;
 			}
 
 			$plain[$key] = $value;
-		}//end foreach
+		}
 
 		return [$plain, $nested];
 	}//end split()
@@ -104,87 +91,90 @@ class NestedPathFilter {
 	/**
 	 * The SQL expression reading the text at a path inside an object column, or null when a segment is not a plain name.
 	 *
-	 * @param string       $column     The quoted, qualified column.
-	 * @param list<string> $path       The segments below the column.
-	 * @param bool         $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget $column The quoted, qualified column and its platform.
+	 * @param list<string>     $path   The segments below the column.
 	 *
 	 * @return string|null The expression.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
-	public function expression(string $column, array $path, bool $isPostgres): ?string {
-		if ($path === []) {
+	public function expression(NestedPathTarget $column, array $path): ?string {
+		if (self::isPlainPath(path: $path) === false) {
 			return null;
 		}
 
-		foreach ($path as $segment) {
-			if (preg_match(self::SEGMENT, $segment) !== 1) {
-				return null;
-			}
+		if ($column->isPostgres === true) {
+			return "({$column->expression} #>> '{" . implode(',', $path) . "}')";
 		}
 
-		if ($isPostgres === true) {
-			return "({$column} #>> '{" . implode(',', $path) . "}')";
-		}
-
-		return "JSON_UNQUOTE(JSON_EXTRACT({$column}, '$." . implode('.', $path) . "'))";
+		return "JSON_UNQUOTE(JSON_EXTRACT({$column->expression}, '$." . implode('.', $path) . "'))";
 	}//end expression()
 
 	/**
-	 * The SQL conditions of one path filter.
+	 * The SQL conditions of one path filter on its target.
 	 *
-	 * `$bind` turns a value into its SQL form: a named parameter on the
-	 * QueryBuilder path, a quoted literal on the raw UNION path.
+	 * The target's binder turns a value into its SQL form: a named parameter
+	 * on the QueryBuilder path, a quoted literal on the raw UNION path.
 	 *
-	 * @param string   $expression The expression from expression().
-	 * @param mixed    $value      The filter value: a scalar, a list, or an operator bag.
-	 * @param callable $bind       Value to SQL: fn(string $value): string.
-	 * @param bool     $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget $target The expression from expression(), its binder and the platform.
+	 * @param mixed            $value  The filter value: a scalar, a list, or an operator bag.
 	 *
 	 * @return list<string> The conditions, all of which must hold.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
-	public function conditions(string $expression, mixed $value, callable $bind, bool $isPostgres): array {
-		if ($value === 'IS NULL' || $value === null) {
-			return ["{$expression} IS NULL"];
-		}
-
-		if ($value === 'IS NOT NULL') {
-			return ["{$expression} IS NOT NULL"];
-		}
-
+	public function conditions(NestedPathTarget $target, mixed $value): array {
 		if (is_array($value) === false) {
-			return ["{$expression} = " . $bind(self::text(value: $value))];
+			return [self::scalarCondition(target: $target, value: $value)];
 		}
 
 		if (self::isOperatorBag(value: $value) === false) {
-			return [self::inList(expression: $expression, values: $value, bind: $bind, negate: false)];
+			return [self::inList(target: $target, values: $value)];
 		}
 
 		return [
-			...self::rangeConditions(expression: $expression, value: $value, bind: $bind, isPostgres: $isPostgres),
-			...self::setConditions(expression: $expression, value: $value, bind: $bind),
-			...self::presenceConditions(expression: $expression, value: $value, bind: $bind),
+			...self::rangeConditions(target: $target, value: $value),
+			...self::setConditions(target: $target, value: $value),
+			...self::presenceConditions(target: $target, value: $value),
 		];
 
 	}//end conditions()
 
 	/**
+	 * The condition of a value that is not a list or an operator bag.
+	 *
+	 * @param NestedPathTarget $target The expression and its binder.
+	 * @param mixed            $value  The value: null, `IS NULL`, `IS NOT NULL` or a scalar.
+	 *
+	 * @return string The condition.
+	 */
+	private static function scalarCondition(NestedPathTarget $target, mixed $value): string {
+		if ($value === 'IS NULL' || $value === null) {
+			return "{$target->expression} IS NULL";
+		}
+
+		if ($value === 'IS NOT NULL') {
+			return "{$target->expression} IS NOT NULL";
+		}
+
+		return "{$target->expression} = " . $target->bind(self::text(value: $value));
+
+	}//end scalarCondition()
+
+	/**
 	 * The comparisons of an operator bag: gt, gte, lt and lte.
 	 *
-	 * @param string       $expression The expression.
-	 * @param array<mixed> $value      The operator bag.
-	 * @param callable     $bind       Value to SQL.
-	 * @param bool         $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget $target The expression and its binder.
+	 * @param array<mixed>     $value  The operator bag.
 	 *
 	 * @return list<string> The conditions.
 	 */
-	private static function rangeConditions(string $expression, array $value, callable $bind, bool $isPostgres): array {
+	private static function rangeConditions(NestedPathTarget $target, array $value): array {
 		$conditions = [];
 		foreach (['gte' => '>=', 'lte' => '<=', 'gt' => '>', 'lt' => '<'] as $operator => $sql) {
 			if (isset($value[$operator]) === true) {
-				$conditions[] = self::compare(expression: $expression, sql: $sql, operand: $value[$operator], bind: $bind, isPostgres: $isPostgres);
+				[$left, $right] = self::sides(target: $target, operand: $value[$operator]);
+				$conditions[]    = "{$left} {$sql} {$right}";
 			}
 		}
 
@@ -194,25 +184,24 @@ class NestedPathFilter {
 	/**
 	 * The set operators of an operator bag: ne, in and notIn.
 	 *
-	 * @param string       $expression The expression.
-	 * @param array<mixed> $value      The operator bag.
-	 * @param callable     $bind       Value to SQL.
+	 * @param NestedPathTarget $target The expression and its binder.
+	 * @param array<mixed>     $value  The operator bag.
 	 *
 	 * @return list<string> The conditions.
 	 */
-	private static function setConditions(string $expression, array $value, callable $bind): array {
+	private static function setConditions(NestedPathTarget $target, array $value): array {
 		$conditions = [];
 		if (isset($value['ne']) === true) {
-			$conditions[] = "{$expression} <> " . $bind(self::text(value: $value['ne']));
+			$conditions[] = "{$target->expression} <> " . $target->bind(self::text(value: $value['ne']));
 		}
 
 		if (isset($value['in']) === true) {
-			$conditions[] = self::inList(expression: $expression, values: (array)$value['in'], bind: $bind, negate: false);
+			$conditions[] = self::inList(target: $target, values: (array)$value['in']);
 		}
 
 		$notIn = (array)($value['notIn'] ?? []);
 		if ($notIn !== []) {
-			$conditions[] = self::inList(expression: $expression, values: $notIn, bind: $bind, negate: true);
+			$conditions[] = "{$target->expression} NOT IN (" . self::boundList(target: $target, values: $notIn) . ')';
 		}
 
 		return $conditions;
@@ -221,9 +210,8 @@ class NestedPathFilter {
 	/**
 	 * The presence and text operators of an operator bag: isnull and like.
 	 *
-	 * @param string       $expression The expression.
-	 * @param array<mixed> $value      The operator bag.
-	 * @param callable     $bind       Value to SQL.
+	 * @param NestedPathTarget $target The expression and its binder.
+	 * @param array<mixed>     $value  The operator bag.
 	 *
 	 * @return list<string> The conditions.
 	 *
@@ -231,46 +219,77 @@ class NestedPathFilter {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private static function presenceConditions(string $expression, array $value, callable $bind): array {
+	private static function presenceConditions(NestedPathTarget $target, array $value): array {
 		$conditions = [];
 		if (array_key_exists('isnull', $value) === true) {
 			$predicate = 'IS NOT NULL';
 			if (NullFilter::isNullOperatorAsksForNull(value: $value['isnull']) === true) {
 				$predicate = 'IS NULL';
 			}
-
-			$conditions[] = "{$expression} {$predicate}";
+			$conditions[] = "{$target->expression} {$predicate}";
 		}
 
 		$term = self::text(value: ($value[LikeOperator::KEY] ?? ''));
 		if ($term !== '') {
-			$conditions[] = "LOWER({$expression}) LIKE " . $bind('%' . addcslashes(strtolower($term), '\\%_') . '%');
+			$conditions[] = "LOWER({$target->expression}) LIKE " . $target->bind('%' . addcslashes(strtolower($term), '\\%_') . '%');
 		}
 
 		return $conditions;
 	}//end presenceConditions()
 
 	/**
-	 * Add one path filter, descending into a nested map that is not an operator bag.
+	 * The path filters below one path, descending into a nested map that is not an operator bag.
 	 *
-	 * @param string                                                         $root  The object property.
-	 * @param list<string>                                                   $path  The segments so far.
-	 * @param mixed                                                          $value The value at that path.
-	 * @param list<array{root: string, path: list<string>, value: mixed}> $into  The collected path filters.
+	 * @param list<string> $path  The root property, then the segments so far.
+	 * @param mixed        $value The value at that path.
 	 *
-	 * @return void
+	 * @return list<array{root: string, path: list<string>, value: mixed}> The path filters, in order.
 	 */
-	private static function collect(string $root, array $path, mixed $value, array &$into): void {
-		if (self::isPathMap(value: $value) === true) {
-			foreach ($value as $segment => $inner) {
-				self::collect(root: $root, path: [...$path, (string)$segment], value: $inner, into: $into);
-			}
-
-			return;
+	private static function collect(array $path, mixed $value): array {
+		if (self::isPathMap(value: $value) === false) {
+			return [['root' => $path[0], 'path' => array_slice($path, 1), 'value' => $value]];
 		}
 
-		$into[] = ['root' => $root, 'path' => $path, 'value' => $value];
+		$collected = [];
+		foreach ($value as $segment => $inner) {
+			array_push($collected, ...self::collect(path: [...$path, (string)$segment], value: $inner));
+		}
+
+		return $collected;
 	}//end collect()
+
+	/**
+	 * Whether a path is non-empty and every segment is a plain name.
+	 *
+	 * @param list<string> $path The segments below the column.
+	 *
+	 * @return bool True when the path can be written into a JSON path literal.
+	 */
+	private static function isPlainPath(array $path): bool {
+		if ($path === []) {
+			return false;
+		}
+
+		foreach ($path as $segment) {
+			if (preg_match(self::SEGMENT, $segment) !== 1) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end isPlainPath()
+
+	/**
+	 * Whether a filter on an object property reads inside it: a dotted key, or a map of field names.
+	 *
+	 * @param list<string> $segments The key split on dots.
+	 * @param mixed        $value    The filter value.
+	 *
+	 * @return bool True when the filter names a path below the root.
+	 */
+	private static function descends(array $segments, mixed $value): bool {
+		return count($segments) > 1 || self::isPathMap(value: $value) === true;
+	}//end descends()
 
 	/**
 	 * Whether a property is declared with type object.
@@ -311,52 +330,50 @@ class NestedPathFilter {
 	}//end isOperatorBag()
 
 	/**
-	 * A comparison, numeric when the operand is a number.
+	 * The two sides of a comparison, numeric when the operand is a number.
 	 *
-	 * @param string   $expression The expression.
-	 * @param string   $sql        The SQL operator.
-	 * @param mixed    $operand    The operand.
-	 * @param callable $bind       Value to SQL.
-	 * @param bool     $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget $target  The expression and its binder.
+	 * @param mixed            $operand The operand.
 	 *
-	 * @return string The condition.
+	 * @return array{0: string, 1: string} The left side and the bound operand.
 	 */
-	private static function compare(string $expression, string $sql, mixed $operand, callable $bind, bool $isPostgres): string {
+	private static function sides(NestedPathTarget $target, mixed $operand): array {
 		if (is_numeric($operand) === false) {
-			return "{$expression} {$sql} " . $bind(self::text(value: $operand));
+			return [$target->expression, $target->bind(self::text(value: $operand))];
 		}
 
-		$numeric = "CAST({$expression} AS DECIMAL(30,10))";
-		if ($isPostgres === true) {
-			// A non-numeric text would abort the cast, so only numeric text is compared.
-			$numeric = "(CASE WHEN {$expression} ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN CAST({$expression} AS NUMERIC) END)";
-		}
-
-		return "{$numeric} {$sql} " . $bind((string)$operand);
-	}//end compare()
+		return [$target->numeric(), $target->bind((string)$operand)];
+	}//end sides()
 
 	/**
-	 * An IN or NOT IN list over text forms.
+	 * An IN list over text forms; an empty list matches nothing.
 	 *
-	 * @param string       $expression The expression.
-	 * @param array<mixed> $values     The values.
-	 * @param callable     $bind       Value to SQL.
-	 * @param bool         $negate     NOT IN when true.
+	 * @param NestedPathTarget $target The expression and its binder.
+	 * @param array<mixed>     $values The values.
 	 *
 	 * @return string The condition.
 	 */
-	private static function inList(string $expression, array $values, callable $bind, bool $negate): string {
+	private static function inList(NestedPathTarget $target, array $values): string {
 		if ($values === []) {
 			return '1=0';
 		}
 
-		$bound = array_map(static fn (mixed $item): string => $bind(self::text(value: $item)), array_values($values));
-		if ($negate === true) {
-			return "{$expression} NOT IN (" . implode(', ', $bound) . ')';
-		}
-
-		return "{$expression} IN (" . implode(', ', $bound) . ')';
+		return "{$target->expression} IN (" . self::boundList(target: $target, values: $values) . ')';
 	}//end inList()
+
+	/**
+	 * The values' text forms, bound and comma-separated, in order.
+	 *
+	 * @param NestedPathTarget $target The expression and its binder.
+	 * @param array<mixed>     $values The values.
+	 *
+	 * @return string The list.
+	 */
+	private static function boundList(NestedPathTarget $target, array $values): string {
+		$bound = array_map(static fn (mixed $item): string => $target->bind(self::text(value: $item)), array_values($values));
+
+		return implode(', ', $bound);
+	}//end boundList()
 
 	/**
 	 * A value's text form as JSON text extraction yields it: a boolean as true or false.

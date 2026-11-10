@@ -40,9 +40,11 @@ class ObjectSourceRegistrarTest extends TestCase {
 			expected: [
 				'OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry',
 				'OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider',
+				'OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge',
 				'OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider',
+				'OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser',
 				'OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider',
@@ -57,6 +59,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\ObjectSource\TablesTableReader',
 				'OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper',
 				'OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService',
+				'OCA\OpenRegister\Service\ObjectSource\TablesProviderParts',
 				'OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider',
 			],
 			actual: $context->services
@@ -220,6 +223,23 @@ class ObjectSourceRegistrarTest extends TestCase {
 			return $factories[$id]($container);
 		}
 
-		return $class->newInstanceWithoutConstructor();
+		return $this->finalWithDoubles(class: $class);
 	}//end serviceFor()
+
+	/**
+	 * A final class built over test doubles of its constructor parameters.
+	 *
+	 * @param ReflectionClass $class The final class.
+	 *
+	 * @return object
+	 */
+	private function finalWithDoubles(ReflectionClass $class): object {
+		$args = [];
+		foreach (($class->getConstructor()?->getParameters() ?? []) as $param) {
+			$type   = new ReflectionClass(objectOrClass: (string) $param->getType()?->getName());
+			$args[] = ($type->isFinal() === true) ? $this->finalWithDoubles(class: $type) : $this->createMock(originalClassName: $type->getName());
+		}
+
+		return $class->newInstanceArgs($args);
+	}//end finalWithDoubles()
 }//end class

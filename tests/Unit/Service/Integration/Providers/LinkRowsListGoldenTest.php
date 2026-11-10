@@ -38,9 +38,9 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
 /**
  * list() of the link-rows providers.
@@ -219,12 +219,12 @@ class LinkRowsListGoldenTest extends TestCase {
 		$apps->method('isInstalled')->willReturn($installed);
 		$l10n = $this->createMock(IL10N::class);
 		if ($name === 'bookmarks') {
-			return new Providers\BookmarksProvider($this->mapper(Db\BookmarkLinkMapper::class, $links), $apps, $l10n);
+			return new Providers\BookmarksProvider(new Providers\AppProviderDescription($apps, $l10n), $this->mapper(Db\BookmarkLinkMapper::class, $links));
 		}
 		if ($name === 'flow') {
-			return new Providers\FlowProvider($this->mapper(Db\FlowLinkMapper::class, $links), $this->db(), $apps, $l10n);
+			return new Providers\FlowProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\FlowLinkMapper::class, $links));
 		}
-		return new Providers\PollsProvider($this->mapper(Db\PollLinkMapper::class, $links), $this->db(), $apps, $this->createMock(IUserSession::class), $l10n);
+		return new Providers\PollsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\PollLinkMapper::class, $links));
 	}//end provider()
 
 	/**

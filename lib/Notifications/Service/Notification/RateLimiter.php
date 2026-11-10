@@ -95,18 +95,29 @@ class RateLimiter implements RateLimiterInterface {
 		private readonly LoggerInterface $logger,
 		?callable $timeProvider = null,
 	) {
+		$this->cache = $this->openCache(cacheFactory: $cacheFactory);
+		$this->timeProvider = ($timeProvider ?? static fn (): int => time());
+
+	}//end __construct()
+
+	/**
+	 * The distributed cache, or null (logged) when no backend is available.
+	 *
+	 * @param ICacheFactory $cacheFactory Distributed cache factory.
+	 *
+	 * @return ICache|null
+	 */
+	private function openCache(ICacheFactory $cacheFactory): ?ICache {
 		try {
-			$this->cache = $cacheFactory->createDistributed('openregister_notification_rate_limit');
+			return $cacheFactory->createDistributed('openregister_notification_rate_limit');
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[NotificationRateLimiter] cache backend unavailable: %s', $e->getMessage())
 			);
-			$this->cache = null;
+			return null;
 		}//end try
 
-		$this->timeProvider = ($timeProvider ?? static fn (): int => time());
-
-	}//end __construct()
+	}//end openCache()
 
 	/**
 	 * Try to consume one token for the given (rule, recipient).
@@ -129,67 +140,148 @@ class RateLimiter implements RateLimiterInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-8
 	 */
 	public function tryConsume(string $ruleId, string $recipient, ?array $perRuleOverride = null): bool {
+		return $this->consume(subject: new RateLimitSubject(ruleId: $ruleId, recipient: $recipient), perRuleOverride: $perRuleOverride);
+	}//end tryConsume()
+
+	/**
+	 * Try to spend one token for the subject's rule and recipient; see tryConsume() for the contract.
+	 *
+	 * @param RateLimitSubject          $subject         The rule and the recipient.
+	 * @param array<string, mixed>|null $perRuleOverride Optional `rateLimit` block from the rule spec.
+	 *
+	 * @return bool True when the dispatch may proceed.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-8
+	 */
+	public function consume(RateLimitSubject $subject, ?array $perRuleOverride = null): bool {
+		$ruleId    = $subject->ruleId;
+		$recipient = $subject->recipient;
 		if ($this->bypasses(ruleId: $ruleId, recipient: $recipient) === true) {
 			return true;
 		}
 
-		[$bucketSize, $refillSeconds] = $this->resolveLimits(perRuleOverride: $perRuleOverride);
-		$ruleBucket = new TokenBucket(
-			key: $this->key(ruleId: $ruleId, recipient: $recipient),
-			size: $bucketSize,
-			refillSeconds: $refillSeconds,
-			now: ($this->timeProvider)()
+		$rule = $this->read(
+			bucket: $this->ruleBucket(key: $this->key(ruleId: $ruleId, recipient: $recipient), perRuleOverride: $perRuleOverride),
+			label: sprintf('rule="%s" recipient="%s"', $ruleId, $recipient)
 		);
 
-		$ruleTokens = $this->currentTokens(bucket: $ruleBucket);
-		if ($ruleTokens === null) {
+		return $this->consumeFromRule(rule: $rule, recipient: $recipient);
+	}//end consume()
+
+	/**
+	 * Decide on the rule bucket that was read; null (cache down) fails open.
+	 * A refusal leaves the shared bucket untouched: it messaged nobody.
+	 *
+	 * @param BucketReading|null $rule      The rule bucket, or null.
+	 * @param string             $recipient Recipient identifier.
+	 *
+	 * @return bool True when the dispatch may proceed.
+	 */
+	private function consumeFromRule(?BucketReading $rule, string $recipient): bool {
+		if ($rule === null) {
 			return true;
 		}
 
-		if ($ruleTokens < 1.0) {
-			$this->logger->info(
-				sprintf(
-					'[NotificationRateLimiter] dropped rule="%s" recipient="%s" bucket=%d refillSeconds=%d',
-					$ruleId,
-					$recipient,
-					$bucketSize,
-					$refillSeconds
-				)
-			);
-			// Persist the new lastRefill so partial earnings don't
-			// get lost on the next call. The shared bucket is untouched:
-			// a refused dispatch messaged nobody.
-			$this->persist(bucket: $ruleBucket, tokens: $ruleTokens);
-			return false;
+		if ($rule->tokens < 1.0) {
+			return $this->drop(reading: $rule);
 		}
 
-		$sharedBucket = $this->sharedBucket(recipient: $recipient, now: $ruleBucket->now);
-		$sharedTokens = null;
-		if ($sharedBucket !== null) {
-			$sharedTokens = $this->currentTokens(bucket: $sharedBucket);
+		return $this->consumeWithShared(rule: $rule, recipient: $recipient);
+	}//end consumeFromRule()
+
+	/**
+	 * Consume from the shared per-recipient budget after the rule bucket allowed it.
+	 *
+	 * @param BucketReading $rule      The rule bucket, holding at least one token.
+	 * @param string        $recipient Recipient identifier.
+	 *
+	 * @return bool True when the dispatch may proceed.
+	 *
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 */
+	private function consumeWithShared(BucketReading $rule, string $recipient): bool {
+		$shared = $this->read(
+			bucket: $this->sharedBucket(recipient: $recipient, now: $rule->bucket->now),
+			label: $rule->label.' by the shared per-recipient budget'
+		);
+		if ($shared !== null && $shared->tokens < 1.0) {
+			return $this->drop(reading: $shared);
 		}
 
-		if ($sharedTokens !== null && $sharedTokens < 1.0) {
-			$this->logger->info(
-				sprintf(
-					'[NotificationRateLimiter] dropped rule="%s" recipient="%s" by the shared per-recipient budget bucket=%d refillSeconds=%d',
-					$ruleId,
-					$recipient,
-					$sharedBucket->size,
-					$sharedBucket->refillSeconds
-				)
-			);
-			$this->persist(bucket: $sharedBucket, tokens: $sharedTokens);
-			return false;
-		}
-
-		$this->persist(bucket: $ruleBucket, tokens: ($ruleTokens - 1.0));
-		if ($sharedTokens !== null) {
-			$this->persist(bucket: $sharedBucket, tokens: ($sharedTokens - 1.0));
-		}
-
+		$this->spend(reading: $rule);
+		$this->spend(reading: $shared);
 		return true;
-	}//end tryConsume()
+	}//end consumeWithShared()
+
+	/**
+	 * Log a dropped dispatch and persist the bucket's refilled state, so partial
+	 * earnings don't get lost on the next call.
+	 *
+	 * @param BucketReading $reading The bucket that had no token.
+	 *
+	 * @return false
+	 */
+	private function drop(BucketReading $reading): bool {
+		$this->logger->info(
+			sprintf(
+				'[NotificationRateLimiter] dropped %s bucket=%d refillSeconds=%d',
+				$reading->label,
+				$reading->bucket->size,
+				$reading->bucket->refillSeconds
+			)
+		);
+		$this->persist(bucket: $reading->bucket, tokens: $reading->tokens);
+		return false;
+	}//end drop()
+
+	/**
+	 * Take one token from a bucket that was read; nothing for no bucket.
+	 *
+	 * @param BucketReading|null $reading The bucket, or null.
+	 *
+	 * @return void
+	 */
+	private function spend(?BucketReading $reading): void {
+		if ($reading !== null) {
+			$this->persist(bucket: $reading->bucket, tokens: ($reading->tokens - 1.0));
+		}
+
+	}//end spend()
+
+	/**
+	 * Read a bucket's refilled tokens, or null for no bucket or when the cache
+	 * cannot answer (the limiter then fails open).
+	 *
+	 * @param TokenBucket|null $bucket The bucket, or null.
+	 * @param string           $label  The label a drop of it is logged under.
+	 *
+	 * @return BucketReading|null
+	 */
+	private function read(?TokenBucket $bucket, string $label): ?BucketReading {
+		if ($bucket === null) {
+			return null;
+		}
+
+		$tokens = $this->currentTokens(bucket: $bucket);
+		if ($tokens === null) {
+			return null;
+		}
+
+		return new BucketReading(bucket: $bucket, tokens: $tokens, label: $label);
+	}//end read()
+
+	/**
+	 * The (rule, recipient) bucket, sized from the per-rule override and read now.
+	 *
+	 * @param string                    $key             Cache key.
+	 * @param array<string, mixed>|null $perRuleOverride Per-rule rateLimit block.
+	 *
+	 * @return TokenBucket
+	 */
+	private function ruleBucket(string $key, ?array $perRuleOverride): TokenBucket {
+		$limits = $this->resolveLimits(perRuleOverride: $perRuleOverride);
+		return new TokenBucket(key: $key, size: $limits[0], refillSeconds: $limits[1], now: ($this->timeProvider)());
+	}//end ruleBucket()
 
 	/**
 	 * Whether a dispatch passes without touching a bucket.
@@ -300,57 +392,80 @@ class RateLimiter implements RateLimiterInterface {
 	 * @param array<string, mixed>|null $perRuleOverride Per-rule rateLimit block.
 	 *
 	 * @return array{0:int,1:int} Tuple of (bucketSize, refillSeconds).
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function resolveLimits(?array $perRuleOverride): array {
-		$bucketSize = self::DEFAULT_BUCKET_SIZE;
-		$refillSeconds = self::DEFAULT_REFILL_SECONDS;
-
-		try {
-			$configuredBucket = (int)$this->appConfig->getValueInt(
-				self::APP_ID,
-				self::CONFIG_DEFAULT_BUCKET_SIZE,
-				self::DEFAULT_BUCKET_SIZE
-			);
-			if ($configuredBucket > 0) {
-				$bucketSize = $configuredBucket;
-			}
-
-			$configuredRefill = (int)$this->appConfig->getValueInt(
-				self::APP_ID,
-				self::CONFIG_DEFAULT_REFILL_SECONDS,
-				self::DEFAULT_REFILL_SECONDS
-			);
-			if ($configuredRefill > 0) {
-				$refillSeconds = $configuredRefill;
-			}
-		} catch (\Throwable $e) {
-			// Fall through with class defaults.
-		}//end try
-
-		if (is_array($perRuleOverride) === true) {
-			$rawBucket = ($perRuleOverride['bucketSize'] ?? null);
-			if (is_int($rawBucket) === true && $rawBucket > 0) {
-				$bucketSize = $rawBucket;
-			} elseif (is_string($rawBucket) === true && ctype_digit($rawBucket) === true && (int)$rawBucket > 0) {
-				$bucketSize = (int)$rawBucket;
-			}
-
-			$rawRefill = ($perRuleOverride['refillSecondsPerToken'] ?? null);
-			if (is_int($rawRefill) === true && $rawRefill > 0) {
-				$refillSeconds = $rawRefill;
-			} elseif (is_string($rawRefill) === true && ctype_digit($rawRefill) === true && (int)$rawRefill > 0) {
-				$refillSeconds = (int)$rawRefill;
-			}
-		}
+		$configured = $this->configuredLimits();
+		$override = ($perRuleOverride ?? []);
 
 		return [
-			$bucketSize,
-			$refillSeconds,
+			($this->overrideValue(raw: ($override['bucketSize'] ?? null)) ?? $configured[0]),
+			($this->overrideValue(raw: ($override['refillSecondsPerToken'] ?? null)) ?? $configured[1]),
 		];
 
 	}//end resolveLimits()
+
+	/**
+	 * The app-config (bucketSize, refillSeconds), falling back to the class
+	 * defaults. A config read that throws stops reading; what was read stays.
+	 *
+	 * @return array{0:int,1:int}
+	 */
+	private function configuredLimits(): array {
+		$limits = [self::DEFAULT_BUCKET_SIZE, self::DEFAULT_REFILL_SECONDS];
+		try {
+			$limits[0] = $this->configuredPositive(key: self::CONFIG_DEFAULT_BUCKET_SIZE, default: self::DEFAULT_BUCKET_SIZE);
+			$limits[1] = $this->configuredPositive(key: self::CONFIG_DEFAULT_REFILL_SECONDS, default: self::DEFAULT_REFILL_SECONDS);
+		} catch (\Throwable $e) {
+			// Fall through with what was read so far.
+			$this->logger->warning(
+				message: '[RateLimiter] Could not read the configured limits, using what was read so far',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return $limits;
+
+	}//end configuredLimits()
+
+	/**
+	 * A positive app-config integer, or the default for zero and below.
+	 *
+	 * @param string $key     App-config key.
+	 * @param int    $default Default value.
+	 *
+	 * @return int
+	 */
+	private function configuredPositive(string $key, int $default): int {
+		$configured = (int)$this->appConfig->getValueInt(self::APP_ID, $key, $default);
+		if ($configured > 0) {
+			return $configured;
+		}
+
+		return $default;
+
+	}//end configuredPositive()
+
+	/**
+	 * A per-rule override value: a positive int or an all-digit string of one.
+	 *
+	 * @param mixed $raw The raw override value.
+	 *
+	 * @return int|null Null when the value does not override.
+	 */
+	private function overrideValue(mixed $raw): ?int {
+		if (is_string($raw) === true && ctype_digit($raw) === true) {
+			$raw = (int)$raw;
+		}
+
+		if (is_int($raw) === true && $raw > 0) {
+			return $raw;
+		}
+
+		return null;
+
+	}//end overrideValue()
 
 	/**
 	 * Build the cache key. Hashes rule + recipient so colons or
@@ -379,23 +494,18 @@ class RateLimiter implements RateLimiterInterface {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function persist(TokenBucket $bucket, float $tokens): void {
-		if ($this->cache === null) {
-			return;
-		}
-
+		$state = json_encode(['tokens' => $tokens, 'lastRefill' => $bucket->now]);
 		try {
-			$this->cache->set(
-				$bucket->key,
-				json_encode(
-					[
-						'tokens' => $tokens,
-						'lastRefill' => $bucket->now,
-					]
-				),
-				self::STATE_TTL
-			);
+			$this->cache?->set($bucket->key, $state, self::STATE_TTL);
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// The bucket refills from scratch on a lost write; not escalated.
+			$this->logger->debug(
+				message: '[RateLimiter] Could not persist the bucket state',
+				context: [
+					'key' => $bucket->key,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 	}//end persist()

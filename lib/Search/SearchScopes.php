@@ -66,21 +66,41 @@ final class SearchScopes {
 	public const FILES = 'files';
 
 	/**
+	 * App ids to keep.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $apps;
+
+	/**
+	 * Register slugs to keep.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $registers;
+
+	/**
+	 * Schema slugs to keep.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $schemas;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array<int, string> $apps      App ids to keep.
-	 * @param array<int, string> $registers Register slugs to keep.
-	 * @param array<int, string> $schemas   Schema slugs to keep.
+	 * @param SearchScopeTargets $targets   The apps, registers and schemas to keep.
 	 * @param boolean            $filesOnly Whether only file hits were asked for.
 	 * @param array<int, string> $unparsed  Scopes that named nothing this search understands.
 	 */
 	private function __construct(
-		public readonly array $apps,
-		public readonly array $registers,
-		public readonly array $schemas,
+		SearchScopeTargets $targets,
 		public readonly bool $filesOnly,
 		public readonly array $unparsed,
 	) {
+		$this->apps      = $targets->apps;
+		$this->registers = $targets->registers;
+		$this->schemas   = $targets->schemas;
 	}//end __construct()
 
 	/**
@@ -93,44 +113,20 @@ final class SearchScopes {
 	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
 	 */
 	public static function parse(mixed $raw): self {
-		$apps = [];
-		$registers = [];
-		$schemas = [];
-		$filesOnly = false;
-		$unparsed = [];
-
+		$found = ['app' => [], 'register' => [], 'schema' => [], self::FILES => [], 'unparsed' => []];
 		foreach (self::tokens(raw: $raw) as $token) {
-			if ($token === self::FILES) {
-				$filesOnly = true;
-				continue;
-			}
-
-			$colonAt = strpos($token, ':');
-			if ($colonAt === false) {
-				$unparsed[] = $token;
-				continue;
-			}
-
-			$prefix = substr($token, 0, $colonAt);
-			$value = trim(substr($token, ($colonAt + 1)));
-			if ($value === '' || in_array($prefix, self::PREFIXES, true) === false) {
-				$unparsed[] = $token;
-				continue;
-			}
-
-			match ($prefix) {
-				'app' => $apps[] = $value,
-				'register' => $registers[] = $value,
-				'schema' => $schemas[] = $value,
-			};
-		}//end foreach
+			[$bucket, $value] = self::classify(token: $token);
+			$found[$bucket][] = $value;
+		}
 
 		return new self(
-			apps: array_values(array_unique($apps)),
-			registers: array_values(array_unique($registers)),
-			schemas: array_values(array_unique($schemas)),
-			filesOnly: $filesOnly,
-			unparsed: array_values(array_unique($unparsed)),
+			targets: new SearchScopeTargets(
+				apps: self::distinct(values: $found['app']),
+				registers: self::distinct(values: $found['register']),
+				schemas: self::distinct(values: $found['schema'])
+			),
+			filesOnly: $found[self::FILES] !== [],
+			unparsed: self::distinct(values: $found['unparsed']),
 		);
 	}//end parse()
 
@@ -172,19 +168,32 @@ final class SearchScopes {
 
 		$kept = [];
 		foreach ($schemas as $schema) {
-			$bySchema = ($this->schemas !== [] && in_array((string)$schema['slug'], $this->schemas, true) === true);
-			$byRegister = ($this->registers !== [] && in_array((string)$schema['register'], $this->registers, true) === true);
-
-			// OR, not AND. Two chips are two things the reader wants to see,
-			// and intersecting them answers an empty page to somebody who
-			// asked for more rather than less.
-			if ($bySchema === true || $byRegister === true) {
+			if ($this->keeps(schema: $schema) === true) {
 				$kept[] = (int)$schema['id'];
 			}
 		}
 
 		return array_values(array_unique($kept));
 	}//end narrowSchemas()
+
+	/**
+	 * Whether a schema row is named by a schema scope or a register scope.
+	 *
+	 * OR, not AND. Two chips are two things the reader wants to see, and
+	 * intersecting them answers an empty page to somebody who asked for more
+	 * rather than less. A row's slug is only read when a schema scope exists,
+	 * and its register only when a register scope exists.
+	 *
+	 * @param array{id: int, slug: string, register: string} $schema One searchable schema.
+	 *
+	 * @return boolean True when the row is kept.
+	 */
+	private function keeps(array $schema): bool {
+		$bySchema = ($this->schemas !== [] && in_array((string)$schema['slug'], $this->schemas, true) === true);
+		$byRegister = ($this->registers !== [] && in_array((string)$schema['register'], $this->registers, true) === true);
+
+		return $bySchema === true || $byRegister === true;
+	}//end keeps()
 
 	/**
 	 * The scopes as a client reads them back.
@@ -209,17 +218,8 @@ final class SearchScopes {
 	 * @return array<int, string> The tokens.
 	 */
 	private static function tokens(mixed $raw): array {
-		$parts = [];
-		if (is_string($raw) === true) {
-			$parts = explode(',', $raw);
-		}
-
-		if (is_array($raw) === true) {
-			$parts = $raw;
-		}
-
 		$tokens = [];
-		foreach ($parts as $part) {
+		foreach (self::parts(raw: $raw) as $part) {
 			$token = strtolower(trim((string)$part));
 			if ($token !== '') {
 				$tokens[] = $token;
@@ -228,4 +228,75 @@ final class SearchScopes {
 
 		return $tokens;
 	}//end tokens()
+
+	/**
+	 * The raw parts of whatever arrived: a comma-split string, a list as-is, or nothing.
+	 *
+	 * @param mixed $raw The caller's value.
+	 *
+	 * @return array<int|string, mixed> The untrimmed parts.
+	 */
+	private static function parts(mixed $raw): array {
+		if (is_string($raw) === true) {
+			return explode(',', $raw);
+		}
+
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		return [];
+	}//end parts()
+
+	/**
+	 * Sort one token into the bucket it fills, with the value it carries.
+	 *
+	 * `files` fills its own bucket; a token without a colon is unparsed.
+	 *
+	 * @param string $token One trimmed, lower-cased token.
+	 *
+	 * @return array{string, string} The bucket key and the value to add to it.
+	 */
+	private static function classify(string $token): array {
+		if ($token === self::FILES) {
+			return [self::FILES, $token];
+		}
+
+		$colonAt = strpos($token, ':');
+		if ($colonAt === false) {
+			return ['unparsed', $token];
+		}
+
+		return self::classifyPrefixed(token: $token, colonAt: $colonAt);
+	}//end classify()
+
+	/**
+	 * Sort a `prefix:value` token: a known prefix with a non-empty value fills
+	 * that prefix's bucket, anything else is unparsed.
+	 *
+	 * @param string $token   One trimmed, lower-cased token.
+	 * @param int    $colonAt The position of its first colon.
+	 *
+	 * @return array{string, string} The bucket key and the value to add to it.
+	 */
+	private static function classifyPrefixed(string $token, int $colonAt): array {
+		$prefix = substr($token, 0, $colonAt);
+		$value = trim(substr($token, ($colonAt + 1)));
+		if ($value === '' || in_array($prefix, self::PREFIXES, true) === false) {
+			return ['unparsed', $token];
+		}
+
+		return [$prefix, $value];
+	}//end classifyPrefixed()
+
+	/**
+	 * Drop repeats, keeping first occurrences, and reindex.
+	 *
+	 * @param array<int, string> $values The values.
+	 *
+	 * @return array<int, string> The distinct values.
+	 */
+	private static function distinct(array $values): array {
+		return array_values(array_unique($values));
+	}//end distinct()
 }//end class

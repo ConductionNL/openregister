@@ -38,10 +38,8 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Notification\IManager as INotificationManager;
@@ -60,16 +58,12 @@ class TaskNotificationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher.
-	 * @param TaskNotificationRulesInterface $rules The task rule registry.
-	 * @param TaskInboxService $inbox The row the adapter is built from.
-	 * @param INotificationManager $notifications Withdrawal only, never delivery.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param TaskTransitionNotifierInterface $notifier      Delivery, through the task rule set.
+	 * @param INotificationManager            $notifications Withdrawal only, never delivery.
+	 * @param LoggerInterface                 $logger        Failure reporting.
 	 */
 	public function __construct(
-		private readonly NotificationRuleDispatcherInterface $dispatcher,
-		private readonly TaskNotificationRulesInterface $rules,
-		private readonly TaskInboxService $inbox,
+		private readonly TaskTransitionNotifierInterface $notifier,
 		private readonly INotificationManager $notifications,
 		private readonly LoggerInterface $logger,
 	) {
@@ -100,24 +94,16 @@ class TaskNotificationListener implements IEventListener {
 				$this->withdraw(task: $task);
 			}
 
-			$row = $this->inbox->enrich(task: $task);
-			$adapter = new TaskObjectAdapter(
-				task: $task,
-				row: $row,
-				extra: ['previousAssignee' => $event->getPreviousAssignee()]
-			);
-
-			$this->dispatcher->dispatchWithSchema(
-				object: $adapter,
-				trigger: 'transition',
+			$notice = new TransitionNotice(
+				extra: ['previousAssignee' => $event->getPreviousAssignee()],
 				context: [
 					'action' => $event->getAction(),
 					'from' => $event->getPreviousState(),
 					'to' => $task->getState(),
 					'actor' => $event->getActor(),
-				],
-				schema: $this->rules->buildSchema()
+				]
 			);
+			$this->notifier->notifyTransition(task: $task, notice: $notice);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[TaskNotificationListener] Task notification failed; the transition is unaffected: ' . $failure->getMessage(),

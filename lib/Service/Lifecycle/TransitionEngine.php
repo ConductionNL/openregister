@@ -38,7 +38,7 @@ use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -84,41 +84,93 @@ class TransitionEngine {
 	public const SLUG_CONTRACT_FLAG = 'transition_event_slug_contract';
 
 	/**
+	 * Reads and saves the object.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves the object's schema and its lifecycle.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Dispatches ObjectTransitionedEvent.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Resolves the acting user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the object's register.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * App config, for the slug-contract opt-in.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger for post-commit listener failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Names the transition for the listeners and wraps the automatic-transition pass.
+	 *
+	 * @var LifecycleWriteBoundary
+	 */
+	private readonly LifecycleWriteBoundary $writeBoundary;
+
+	/**
+	 * Resolves a provider-mode annotation's provider tag.
+	 *
+	 * @var LifecycleActionProviderRegistry
+	 */
+	private readonly LifecycleActionProviderRegistry $providerRegistry;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService Object CRUD service used to load + save the entity.
-	 * @param SchemaMapperInterface $schemaMapper Mapper to resolve the entity's schema.
-	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
-	 * @param IUserSession $userSession Current user session, for actor attribution.
-	 * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
-	 * @param RegisterMapperInterface $registerMapper Mapper used to resolve the register slug.
-	 * @param IAppConfig $appConfig App config, for the slug-contract opt-in.
-	 * @param LoggerInterface $logger Logger for post-commit listener failures.
-	 * @param LifecycleWriteBoundary $writeBoundary Names the transition for the listeners and wraps
-	 *                               the request-scoped automatic-transition pass.
-	 * @param LifecycleActionProviderRegistry $providerRegistry Resolves a provider-mode annotation's
-	 *                               `provider` tag to the app service that answers available actions.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten collaborators, all
-	 * constructor-injected because Nextcloud's DI offers no other route. The
-	 * tenth is the provider registry; folding it into an existing collaborator
-	 * would hide a lifecycle dependency inside something that is not about
-	 * lifecycles, which reads worse than the count.
+	 * @param TransitionSubjects         $subjects          The object service and the schema and register mappers.
+	 * @param TransitionDispatch         $dispatch          The event dispatcher, the write boundary and the action providers.
+	 * @param TransitionPlatform         $platform          The caller's session, the app config and the logger.
+	 * @param PermissionHandlerInterface $permissionHandler The access guard every transition passes.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IUserSession $userSession,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly LifecycleWriteBoundary $writeBoundary,
-		private readonly LifecycleActionProviderRegistry $providerRegistry,
+		TransitionSubjects $subjects,
+		TransitionDispatch $dispatch,
+		TransitionPlatform $platform,
+		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
+		$this->objectService = $subjects->objectService;
+		$this->schemaMapper = $subjects->schemaMapper;
+		$this->eventDispatcher = $dispatch->eventDispatcher;
+		$this->userSession = $platform->userSession;
+		$this->registerMapper = $subjects->registerMapper;
+		$this->appConfig = $platform->appConfig;
+		$this->logger = $platform->logger;
+		$this->writeBoundary = $dispatch->writeBoundary;
+		$this->providerRegistry = $dispatch->providerRegistry;
 	}//end __construct()
 
 	/**
@@ -147,9 +199,7 @@ class TransitionEngine {
 	 * a ledger posting, an outbound notification) did not happen.
 	 *
 	 * @param ObjectEntity $object The saved object, in its post-transition state.
-	 * @param string $action The transition action that was applied.
-	 * @param string $from The lifecycle value before the transition.
-	 * @param string $to The lifecycle value after the transition.
+	 * @param TransitionMove $move The action applied and the states it moved between.
 	 * @param string|null $userId The acting user, when there is a session.
 	 *
 	 * @return void
@@ -158,9 +208,7 @@ class TransitionEngine {
 	 */
 	private function dispatchTransitioned(
 		ObjectEntity $object,
-		string $action,
-		string $from,
-		string $to,
+		TransitionMove $move,
 		?string $userId,
 	): void {
 		$scope = $this->transitionEventScope(object: $object);
@@ -174,13 +222,13 @@ class TransitionEngine {
 			$this->eventDispatcher->dispatchTyped(
 				new ObjectTransitionedEvent(
 					object: $object,
-					action: $action,
-					from: $from,
-					to: $to,
+					action: $move->action,
+					from: $move->from,
+					to: $move->to,
 					userId: $userId,
 					register: $scope['register'],
 					schema: $scope['schema'],
-					automatic: ($applying !== null && $applying === $action)
+					automatic: ($applying !== null && $applying === $move->action)
 				)
 			);
 		} catch (Throwable $e) {
@@ -192,9 +240,9 @@ class TransitionEngine {
 					'uuid' => $object->getUuid(),
 					'register' => $scope['register'],
 					'schema' => $scope['schema'],
-					'action' => $action,
-					'from' => $from,
-					'to' => $to,
+					'action' => $move->action,
+					'from' => $move->from,
+					'to' => $move->to,
 					'exception' => $e,
 				]
 			);
@@ -246,6 +294,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Register slug not resolved, keeping the id',
+				context: [
+					'register' => $registerRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		try {
@@ -256,6 +311,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Schema slug not resolved, keeping the id',
+				context: [
+					'schema' => $schemaRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return [
@@ -559,12 +621,9 @@ class TransitionEngine {
 		// when no non-empty static map is declared.
 		if ($transitions === []) {
 			$delegated = $this->applyDelegatedTransition(
-				object: $object,
+				request: new TransitionRequest(object: $object, action: $action, data: $data, asSystem: $asSystem),
 				annotation: $annotation,
-				field: $field,
-				action: $action,
-				data: $data,
-				asSystem: $asSystem
+				field: $field
 			);
 			if ($delegated !== null) {
 				return $delegated;
@@ -637,9 +696,11 @@ class TransitionEngine {
 
 		$this->dispatchTransitioned(
 			object: $saved,
-			action: $action,
-			from: $currentValue,
-			to: $targetState,
+			move: new TransitionMove(
+				action: $action,
+				from: $currentValue,
+				to: $targetState
+			),
 			userId: $userId
 		);
 
@@ -660,49 +721,35 @@ class TransitionEngine {
 	 * because both modes answer with the saved entity, so there is nothing to
 	 * return separately.
 	 *
-	 * @param ObjectEntity $object The transitioning object.
+	 * @param TransitionRequest $request The object, action, payload and path of the move.
 	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
 	 * @param string $field The lifecycle field name on the object.
-	 * @param string $action The action name the caller posted.
-	 * @param array<string, mixed> $data The caller-supplied input values.
-	 * @param bool $asSystem True on the system path, see transitionAsSystem().
 	 *
 	 * @return ObjectEntity|null The saved object, or null when no delegating mode is declared.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function applyDelegatedTransition(
-		ObjectEntity $object,
+		TransitionRequest $request,
 		array $annotation,
 		string $field,
-		string $action,
-		array $data,
-		bool $asSystem = false,
 	): ?ObjectEntity {
 		$provider = trim((string)($annotation['provider'] ?? ''));
 		if ($provider !== '') {
 			return $this->applyProviderTransition(
-				object: $object,
+				request: $request,
 				tag: $provider,
-				field: $field,
-				action: $action,
-				data: $data,
-				asSystem: $asSystem
+				field: $field
 			);
 		}
 
 		$graph = (array)($annotation['graph'] ?? []);
 		if ($graph !== []) {
 			return $this->applyGraphTransition(
-				object: $object,
+				request: $request,
 				graph: $graph,
-				field: $field,
-				action: $action,
-				data: $data,
-				asSystem: $asSystem
+				field: $field
 			);
 		}
 
@@ -753,13 +800,12 @@ class TransitionEngine {
 	 * rule-driven move that follows from this one is still drained and still
 	 * wins the entity that is answered.
 	 *
-	 * @param ObjectEntity $object The transitioning object, as it stood before the move.
+	 * @param TransitionRequest $request The object as it stood before the move, the action, the
+	 *                                   payload, and the path: on the system path the re-read skips
+	 *                                   RBAC and the organisation filter. The provider performs its
+	 *                                   own write and its own checks.
 	 * @param string $tag The `provider` DI tag off the annotation.
 	 * @param string $field The lifecycle field name on the object.
-	 * @param string $action The action name the caller posted.
-	 * @param array<string, mixed> $data The caller-supplied input values.
-	 * @param bool $asSystem True on the system path: the re-read skips RBAC and the organisation
-	 *                       filter. The provider performs its own write and its own checks.
 	 *
 	 * @return ObjectEntity The object re-read after the provider's write.
 	 *
@@ -768,33 +814,28 @@ class TransitionEngine {
 	 *                          type, the provider fails unexpectedly, or the object cannot be
 	 *                          re-read afterwards.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function applyProviderTransition(
-		ObjectEntity $object,
+		TransitionRequest $request,
 		string $tag,
 		string $field,
-		string $action,
-		array $data = [],
-		bool $asSystem = false,
 	): ObjectEntity {
 		$provider = $this->providerRegistry->resolve(tag: $tag);
 
 		$actingUser = $this->userSession->getUser();
-		$objectId = (string)$object->getUuid();
-		$before = ($object->getObject() ?? []);
+		$objectId = (string)$request->object->getUuid();
+		$before = ($request->object->getObject() ?? []);
 		$from = (string)($before[$field] ?? '');
 
 		try {
 			$report = $provider->execute(
 				object: $before,
 				userId: (string)($actingUser?->getUID() ?? ''),
-				action: $action,
-				data: $data
+				action: $request->action,
+				data: $request->data
 			);
 		} catch (RuntimeException $e) {
 			// THE APP SPEAKING, in the vocabulary the interface documents, so
@@ -814,14 +855,14 @@ class TransitionEngine {
 				sprintf(
 					'Lifecycle provider "%s" failed to apply action "%s" to object "%s": %s',
 					$tag,
-					$action,
+					$request->action,
 					$objectId,
 					$e->getMessage()
 				),
 				['exception' => $e]
 			);
 			throw new LifecycleProviderException(
-				message: sprintf('Lifecycle provider "%s" could not apply action "%s".', $tag, $action),
+				message: sprintf('Lifecycle provider "%s" could not apply action "%s".', $tag, $request->action),
 				code: 0,
 				previous: $e
 			);
@@ -832,15 +873,15 @@ class TransitionEngine {
 		// side effects stamped onto it.
 		$saved = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $objectId,
-			_rbac: ($asSystem === false),
-			_multitenancy: ($asSystem === false)
+			_rbac: ($request->asSystem === false),
+			_multitenancy: ($request->asSystem === false)
 		));
 		if ($saved === null) {
 			$this->logger->error(
 				sprintf(
 					'Lifecycle provider "%s" applied action "%s" but object "%s" could not be re-read.',
 					$tag,
-					$action,
+					$request->action,
 					$objectId
 				)
 			);
@@ -848,16 +889,18 @@ class TransitionEngine {
 				message: sprintf(
 					'Lifecycle provider "%s" applied action "%s" but the object could not be read back.',
 					$tag,
-					$action
+					$request->action
 				)
 			);
 		}
 
 		$this->dispatchTransitioned(
 			object: $saved,
-			action: $action,
-			from: $from,
-			to: $this->providerTargetState(report: $report, saved: $saved, field: $field),
+			move: new TransitionMove(
+				action: $request->action,
+				from: $from,
+				to: $this->providerTargetState(report: $report, saved: $saved, field: $field)
+			),
 			userId: $actingUser?->getUID()
 		);
 
@@ -1610,41 +1653,36 @@ class TransitionEngine {
 	 * to the target UUID, saves through the unchanged ObjectService path, and
 	 * dispatches `ObjectTransitionedEvent`. Rejection never mutates the object.
 	 *
-	 * @param ObjectEntity $object The transitioning object.
+	 * @param TransitionRequest $request The object, the requested `move-to-<uuid>` action, the
+	 *                                   payload (graph-derived actions declare no `inputs`, so any
+	 *                                   payload is rejected) and the path: on the system path the
+	 *                                   save skips RBAC and the organisation filter.
 	 * @param array<string, mixed> $graph The `graph` block off the annotation.
 	 * @param string $field The lifecycle field name on the object.
-	 * @param string $action The requested `move-to-<uuid>` action.
-	 * @param array<string, mixed> $data Caller-supplied input payload; graph-derived
-	 *                                   actions declare no `inputs`, so any payload is rejected.
-	 * @param bool $asSystem True on the system path: the save skips RBAC and the organisation filter.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
 	 * @throws RuntimeException When the action is not a current candidate.
 	 * @throws InvalidTransitionInputException When `$data` is non-empty.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function applyGraphTransition(
-		ObjectEntity $object,
+		TransitionRequest $request,
 		array $graph,
 		string $field,
-		string $action,
-		array $data = [],
-		bool $asSystem = false,
 	): ObjectEntity {
 		// Graph-derived actions carry no `inputs` declaration, so nothing is
 		// allowlisted: a non-empty payload is rejected just like an undeclared
 		// key on a static transition.
-		$this->resolveTransitionInputs(inputs: [], data: $data, action: $action);
+		$this->resolveTransitionInputs(inputs: [], data: $request->data, action: $request->action);
 
-		$candidates = $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
+		$candidates = $this->deriveGraphActions(object: $request->object, graph: $graph, field: $field);
 
 		$match = null;
 		foreach ($candidates as $candidate) {
-			if ($candidate['action'] === $action) {
+			if ($candidate['action'] === $request->action) {
 				$match = $candidate;
 				break;
 			}
@@ -1652,12 +1690,12 @@ class TransitionEngine {
 
 		if ($match === null) {
 			throw new RuntimeException(
-				sprintf('Transition "%s" is not allowed from the current state.', $action)
+				sprintf('Transition "%s" is not allowed from the current state.', $request->action)
 			);
 		}
 
 		$targetState = (string)$match['to'];
-		$objectData = $object->getObject() ?? [];
+		$objectData = $request->object->getObject() ?? [];
 		$from = (string)($objectData[$field] ?? '');
 
 		$objectData[$field] = $targetState;
@@ -1668,19 +1706,21 @@ class TransitionEngine {
 
 		$saved = $this->objectService->saveObject(
 			object: $objectData,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
-			uuid: $object->getUuid(),
-			_rbac: ($asSystem === false),
-			_multitenancy: ($asSystem === false),
+			register: $request->object->getRegister(),
+			schema: $request->object->getSchema(),
+			uuid: $request->object->getUuid(),
+			_rbac: ($request->asSystem === false),
+			_multitenancy: ($request->asSystem === false),
 			currentUser: $actingUser
 		);
 
 		$this->dispatchTransitioned(
 			object: $saved,
-			action: $action,
-			from: $from,
-			to: $targetState,
+			move: new TransitionMove(
+				action: $request->action,
+				from: $from,
+				to: $targetState
+			),
 			userId: $actingUser?->getUID()
 		);
 

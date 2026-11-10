@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use OCA\OpenRegister\Command\BackfillObjectSlugsCommand;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -93,13 +95,13 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditTrail, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrail, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
 		);
 
-		return new CommandTester(new BackfillObjectSlugsCommand($this->registerMapper, $this->schemaMapper, $service));
+		return new CommandTester(new BackfillObjectSlugsCommand(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)), $service));
 	}//end tester()
 
 	/**
@@ -212,7 +214,7 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 			['rows' => [], 'fetched' => 0, 'lastId' => 1]
 		);
 		$this->magicMapper->expects($this->never())->method('updateSlugColumn');
-		$this->auditTrail->expects($this->never())->method('createSlugBackfillEntry');
+		$this->auditTrail->expects($this->never())->method('recordSlugBackfill');
 
 		$tester = $this->tester();
 		$exit = $tester->execute(['register' => 'woo', 'schema' => 'convenanten', '--dry-run' => true]);
@@ -226,7 +228,7 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 
 	public function testTheCommandHasNoRewriteOption(): void {
 		// Robert Zondervan (2026-10-23): only empty slugs are filled; there is no flag that rewrites set slugs.
-		$command = new BackfillObjectSlugsCommand($this->registerMapper, $this->schemaMapper, $this->createMock(ObjectSlugBackfillService::class));
+		$command = new BackfillObjectSlugsCommand(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)), $this->createMock(ObjectSlugBackfillService::class));
 
 		$this->assertSame(['dry-run'], array_keys($command->getDefinition()->getOptions()));
 	}

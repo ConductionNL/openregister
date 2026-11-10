@@ -61,61 +61,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						<div class="steps-section">
 							<h4>{{ t('openregister', 'Analysis steps:') }}</h4>
 							<ol class="steps-list">
-								<li>
-									{{
-										t(
-											'openregister',
-											'Retrieve all objects for this schema',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Extract properties from each object',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Detect data types and patterns',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Identify properties not in the schema',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Analyze existing properties for improvement opportunities',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Compare current schema with real object data',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Generate recommendations and confidence scores',
-										)
-									}}
+								<li v-for="step in analysisSteps" :key="step">
+									{{ step }}
 								</li>
 							</ol>
 						</div>
@@ -522,20 +469,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 							<div class="config-fields">
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].title
-									"
+									v-model="propertyConfig(suggestion).title"
 									:label="t('openregister', 'Property Title')"
 									:placeholder="suggestion.property_name" />
 
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].technicalDescription
-									"
+									v-model="propertyConfig(suggestion).technicalDescription"
 									:label="
 										t('openregister', 'Technical Description')
 									"
@@ -551,22 +490,14 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										suggestion.recommended_type
 										!== suggestion.type
 									"
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].type
-									"
+									v-model="propertyConfig(suggestion).type"
 									:options="typeOptions"
 									:inputLabel="t('openregister', 'Property Type')"
 									:labelOutside="true" />
 
 								<NcSelect
 									v-if="suggestion.detected_format"
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].format
-									"
+									v-model="propertyConfig(suggestion).format"
 									:options="formatOptions(suggestion)"
 									:inputLabel="t('openregister', 'Format')"
 									:labelOutside="true" />
@@ -574,20 +505,14 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 								<!-- String constraints -->
 								<div
 									v-if="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].type === 'string'
+										propertyConfig(suggestion).type === 'string'
 									"
 									class="constraints-section">
 									<h5>
 										{{ t('openregister', 'String Constraints') }}
 									</h5>
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].maxLength
-										"
+										v-model="propertyConfig(suggestion).maxLength"
 										:label="t('openregister', 'Max Length')"
 										type="number"
 										:placeholder="
@@ -597,11 +522,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].minLength
-										"
+										v-model="propertyConfig(suggestion).minLength"
 										:label="t('openregister', 'Min Length')"
 										type="number"
 										:placeholder="
@@ -611,11 +532,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].pattern
-										"
+										v-model="propertyConfig(suggestion).pattern"
 										:label="t('openregister', 'Pattern (regex)')"
 										placeholder="^[A-Za-z]+$" />
 								</div>
@@ -624,9 +541,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 								<div
 									v-if="
 										['number', 'integer'].includes(
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].type,
+											propertyConfig(suggestion).type,
 										)
 									"
 									class="constraints-section">
@@ -634,47 +549,27 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										{{ t('openregister', 'Number Constraints') }}
 									</h5>
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].minimum
-										"
+										v-model="propertyConfig(suggestion).minimum"
 										:label="t('openregister', 'Minimum')"
 										type="number" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].maximum
-										"
+										v-model="propertyConfig(suggestion).maximum"
 										:label="t('openregister', 'Maximum')"
 										type="number" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].multipleOf
-										"
+										v-model="propertyConfig(suggestion).multipleOf"
 										:label="t('openregister', 'Multiple Of')"
 										type="number" />
 
 									<NcCheckboxRadioSwitch
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].exclusiveMin
-										">
+										v-model="propertyConfig(suggestion).exclusiveMin">
 										{{ t('openregister', 'Exclusive Minimum') }}
 									</NcCheckboxRadioSwitch>
 
 									<NcCheckboxRadioSwitch
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].exclusiveMax
-										">
+										v-model="propertyConfig(suggestion).exclusiveMax">
 										{{ t('openregister', 'Exclusive Maximum') }}
 									</NcCheckboxRadioSwitch>
 								</div>
@@ -695,9 +590,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 												class="behavior-item">
 												<NcCheckboxRadioSwitch
 													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														][behavior.field]
+														propertyConfig(suggestion)[behavior.field]
 													">
 													{{ behavior.label }}
 												</NcCheckboxRadioSwitch>
@@ -708,20 +601,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 								<!-- Additional property configuration fields -->
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].displayTitle
-									"
+									v-model="propertyConfig(suggestion).displayTitle"
 									:label="t('openregister', 'Title')"
 									:placeholder="suggestion.property_name" />
 
 								<NcTextArea
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].userDescription
-									"
+									v-model="propertyConfig(suggestion).userDescription"
 									:label="t('openregister', 'User Description')"
 									:placeholder="
 										t(
@@ -731,11 +616,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 									" />
 
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].example
-									"
+									v-model="propertyConfig(suggestion).example"
 									:label="t('openregister', 'Example Value')"
 									:placeholder="
 										t(
@@ -745,11 +626,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 									" />
 
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].order
-									"
+									v-model="propertyConfig(suggestion).order"
 									:label="t('openregister', 'Order')"
 									type="number"
 									placeholder="0" />
@@ -880,6 +757,24 @@ import {
 	suggestedPropertyConfig,
 } from '../../services/schemaExploration.js'
 
+/**
+ * The JSON body of an explore/update response, or the error it reports: a
+ * failed HTTP status, or an `error` in the body.
+ *
+ * @param {Response} response The fetch response
+ * @return {Promise<object>} The body
+ */
+async function jsonOrThrow(response) {
+	if (!response.ok) {
+		throw new Error(`HTTP error! status: ${response.status}`)
+	}
+	const data = await response.json()
+	if (data.error) {
+		throw new Error(data.error)
+	}
+	return data
+}
+
 export default {
 	name: 'ExploreSchema',
 	components: {
@@ -920,6 +815,33 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The steps of an analysis, listed before it runs.
+		 *
+		 * @spec exclude UI display helper — static, translated step list.
+		 * @return {Array<string>}
+		 */
+		analysisSteps() {
+			return [
+				this.t('openregister', 'Retrieve all objects for this schema'),
+				this.t('openregister', 'Extract properties from each object'),
+				this.t('openregister', 'Detect data types and patterns'),
+				this.t('openregister', 'Identify properties not in the schema'),
+				this.t(
+					'openregister',
+					'Analyze existing properties for improvement opportunities',
+				),
+				this.t(
+					'openregister',
+					'Compare current schema with real object data',
+				),
+				this.t(
+					'openregister',
+					'Generate recommendations and confidence scores',
+				),
+			]
+		},
+
 		/**
 		 * @spec exclude UI display helper — the counts shown above the analysis results.
 		 * @return {Array<object>} One label and value per card.
@@ -1138,6 +1060,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The editable configuration of one suggested property.
+		 *
+		 * @param {object} suggestion The suggestion
+		 * @return {object} Its entry in selectedPropertiesConfig
+		 * @spec exclude template accessor for the property configuration form
+		 */
+		propertyConfig(suggestion) {
+			return this.selectedPropertiesConfig[suggestion.property_name]
+		},
+
 		t,
 		/**
 		 * @spec exclude UI event handler — closes the dialog and resets its state.
@@ -1203,14 +1136,7 @@ export default {
 					},
 				},
 			)
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-			const data = await response.json()
-			if (data.error) {
-				throw new Error(data.error)
-			}
-			return data
+			return jsonOrThrow(response)
 		},
 
 		/**
@@ -1331,15 +1257,7 @@ export default {
 					}),
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
+				const data = await jsonOrThrow(response)
 
 				this.success = true
 
@@ -2045,37 +1963,31 @@ export default {
 }
 
 /* Improvement and Issue Styles */
-.improvement-status {
-	background: var(--color-primary-element);
-	color: var(--color-primary-element-text);
+@mixin caps-badge {
 	padding: 0.25rem 0.5rem;
 	border-radius: var(--border-radius-small);
 	font-size: 0.7rem;
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
+}
+
+.improvement-status {
+	background: var(--color-primary-element);
+	color: var(--color-primary-element-text);
+	@include caps-badge;
 }
 
 .new-property-status {
 	background: var(--color-success);
 	color: white !important;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius-small);
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	@include caps-badge;
 }
 
 .issues-badge {
 	background: var(--color-warning);
 	color: white !important;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius-small);
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	@include caps-badge;
 }
 
 .type-warning {

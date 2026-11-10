@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * The platform services of the llm settings API.
@@ -35,13 +34,11 @@ final class LlmSettingsPlatform {
 	 * Bundle the services.
 	 *
 	 * @param ContainerInterface $container DI container.
-	 * @param LoggerInterface    $logger    Logger.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
 		public readonly ContainerInterface $container,
-		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

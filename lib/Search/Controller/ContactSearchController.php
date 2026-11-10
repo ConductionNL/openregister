@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Search\Controller\Support\ContactSearchControllerServices;
 use OCA\OpenRegister\Search\Service\Integration\ContactSearch;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -30,7 +32,6 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 /**
  * Name search for the contacts leaf.
@@ -42,18 +43,14 @@ class ContactSearchController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string        $appName The app name.
-	 * @param IRequest      $request The request.
-	 * @param ContactSearch $search      The search.
-	 * @param IUserSession  $userSession The signed-in user.
+	 * @param IRequest                        $request  The request.
+	 * @param ContactSearchControllerServices $services The search and the signed-in user.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ContactSearch $search,
-		private readonly IUserSession $userSession,
+		private readonly ContactSearchControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -72,7 +69,7 @@ class ContactSearchController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function search(): JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->services->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => 'Authentication required', 'results' => [], 'total' => 0], Http::STATUS_UNAUTHORIZED);
 		}
@@ -89,7 +86,7 @@ class ContactSearchController extends Controller {
 			);
 		}
 
-		$rows = $this->search->search(query: $query);
+		$rows = $this->services->search->search(query: $query);
 
 		return new JSONResponse(['results' => $rows, 'total' => count($rows)]);
 	}//end search()

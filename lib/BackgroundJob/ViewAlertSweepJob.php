@@ -42,17 +42,13 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Search\Db\View;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\View\ViewAlert;
-use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IUserManager;
-use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
 
 /**
  * Evaluates due view alerts, a bounded batch at a time.
@@ -84,20 +80,14 @@ class ViewAlertSweepJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory      $time       Time factory for TimedJob.
-	 * @param ViewMapperInterface        $views      The saved views.
-	 * @param ObjectOperationsInterface     $objects    Counts a view's query.
-	 * @param IUserManager      $users      Resolves the owner to count as.
-	 * @param IEventDispatcher  $dispatcher Announces a crossing.
-	 * @param LoggerInterface   $logger     Diagnostics.
+	 * @param ITimeFactory              $time       Time factory for TimedJob.
+	 * @param ViewAlertSweepSources $sources Saved views, object counting and the view query.
+	 * @param ViewAlertSweepPlatform $platform Users, event dispatcher and logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ViewMapperInterface $views,
-		private readonly ObjectOperationsInterface $objects,
-		private readonly IUserManager $users,
-		private readonly IEventDispatcher $dispatcher,
-		private readonly LoggerInterface $logger,
+		private readonly ViewAlertSweepSources $sources,
+		private readonly ViewAlertSweepPlatform $platform,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
@@ -120,17 +110,17 @@ class ViewAlertSweepJob extends TimedJob {
 		try {
 			$now = new DateTime();
 			$crossed = 0;
-			foreach ($this->views->findWithAlerts(limit: self::BATCH) as $view) {
+			foreach ($this->sources->views->findWithAlerts(limit: self::BATCH) as $view) {
 				if ($this->evaluate(view: $view, now: $now) === true) {
 					$crossed++;
 				}
 			}
 
 			if ($crossed > 0) {
-				$this->logger->info('[ViewAlertSweepJob] {count} view alerts crossed', ['count' => $crossed]);
+				$this->platform->logger->info('[ViewAlertSweepJob] {count} view alerts crossed', ['count' => $crossed]);
 			}
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				'[ViewAlertSweepJob] The pass failed; the watermark stands: {error}',
 				['error' => $e->getMessage(), 'exception' => $e]
 			);
@@ -151,7 +141,7 @@ class ViewAlertSweepJob extends TimedJob {
 		} catch (Throwable $e) {
 			// A declaration that no longer reads is not a reason to stop the
 			// pass, and not a reason to guess at what it meant.
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				'[ViewAlertSweepJob] View {view} has an unreadable alert and is skipped: {error}',
 				['view' => (string)$view->getUuid(), 'error' => $e->getMessage()]
 			);
@@ -183,13 +173,13 @@ class ViewAlertSweepJob extends TimedJob {
 			]
 		);
 		$view->setAlertEvaluatedAt($now);
-		$this->views->update($view);
+		$this->sources->views->update($view);
 
 		if ($decision['fires'] === false) {
 			return false;
 		}
 
-		$this->dispatcher->dispatchTyped(new ViewAlertCrossedEvent(view: $view, alert: $alert, count: $count));
+		$this->platform->dispatcher->dispatchTyped(new ViewAlertCrossedEvent(view: $view, alert: $alert, count: $count));
 
 		return true;
 	}//end evaluate()
@@ -206,9 +196,9 @@ class ViewAlertSweepJob extends TimedJob {
 	 * @return int|null The count, or null when it cannot be taken.
 	 */
 	private function countAsOwner(View $view): ?int {
-		$owner = $this->users->get((string)$view->getOwner());
+		$owner = $this->platform->users->get((string)$view->getOwner());
 		if ($owner === null) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				'[ViewAlertSweepJob] View {view} has no resolvable owner, so its count has no entitlement to be measured against',
 				['view' => (string)$view->getUuid()]
 			);
@@ -218,7 +208,7 @@ class ViewAlertSweepJob extends TimedJob {
 		// The VIEW's rows: its registers, schemas, filters and search terms.
 		// ObjectService::count() reads none of those, only the service's ambient
 		// register/schema context, which this sweep never sets (O5, 5 Oct).
-		$query = (new ViewObjectQuery())->forView(viewQuery: (array)($view->getQuery() ?? []));
+		$query = $this->sources->viewQuery->forView(viewQuery: (array)($view->getQuery() ?? []));
 		if ($query === null) {
 			return 0;
 		}
@@ -226,7 +216,7 @@ class ViewAlertSweepJob extends TimedJob {
 		// A view that names no register and no schema bounds nothing: the
 		// search answers 0 for it, and a silent 0 would re-arm a fired alert.
 		if (isset($query['@self']['register']) === false && isset($query['@self']['schema']) === false) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				'[ViewAlertSweepJob] View {view} names no register or schema, so its alert has nothing to count',
 				['view' => (string)$view->getUuid()]
 			);
@@ -234,12 +224,12 @@ class ViewAlertSweepJob extends TimedJob {
 		}
 
 		try {
-			return (int)$this->objects->runAs(
+			return (int)$this->sources->objects->runAs(
 				$owner,
-				fn (): int => $this->objects->countSearchObjects(query: $query)
+				fn (): int => $this->sources->objects->countSearchObjects(query: $query)
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				'[ViewAlertSweepJob] Could not count view {view}: {error}',
 				['view' => (string)$view->getUuid(), 'error' => $e->getMessage()]
 			);

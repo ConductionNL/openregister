@@ -205,12 +205,13 @@ final class AccountabilityReportScopeTest extends TestCase {
 		);
 
 		return new VerwerkingsactiviteitenController(
-			'openregister',
 			$this->createMock(IRequest::class),
-			$mapper,
-			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groups, $this->createMock(\Psr\Log\LoggerInterface::class)),
-			$this->database(),
-			$organisations
+			new \OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices(
+				$mapper,
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groups, $this->createMock(\Psr\Log\LoggerInterface::class)),
+				$this->database(),
+				$organisations,
+			)
 		);
 	}//end controller()
 

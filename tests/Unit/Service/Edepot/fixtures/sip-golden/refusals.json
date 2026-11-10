@@ -1,0 +1,67 @@
+[
+    [
+        "refused",
+        "InvalidArgumentException",
+        "No objects provided for SIP package"
+    ],
+    [
+        "refused",
+        "InvalidArgumentException",
+        "Unknown SIP output format 'tar' (expected 'zip' or 'bagit')"
+    ],
+    [
+        "preconditions",
+        "obj-1"
+    ],
+    [
+        "preconditions",
+        "no-period"
+    ],
+    [
+        "refused",
+        "InvalidArgumentException",
+        "it has no retention period"
+    ],
+    [
+        "preconditions",
+        "obj-1"
+    ],
+    [
+        "preconditions",
+        "obj-2"
+    ],
+    [
+        "preconditions",
+        "obj-3"
+    ],
+    [
+        "temp",
+        ".sip.zip"
+    ],
+    [
+        "refused",
+        "InvalidArgumentException",
+        "Failed to allocate a temporary file for the SIP archive"
+    ],
+    [
+        "preconditions",
+        "obj-1"
+    ],
+    [
+        "preconditions",
+        "obj-2"
+    ],
+    [
+        "preconditions",
+        "obj-3"
+    ],
+    [
+        "temp",
+        ".bag.zip"
+    ],
+    [
+        "refused",
+        "InvalidArgumentException",
+        "Failed to allocate a temporary file for the BagIt archive"
+    ]
+]

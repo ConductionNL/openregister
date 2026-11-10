@@ -30,34 +30,28 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
+use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Object\PropertySourceLanguage;
-use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
-class TranslationProjectionService {
+class TranslationProjectionService implements TranslationProjectionServiceInterface {
+
 	/**
 	 * Constructor.
 	 *
-	 * @param TranslationMapper $translationMapper The translation mapper.
-	 * @param TranslationHandler $translationHandler The translation handler.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param IUserSession $userSession The user session.
-	 * @param LoggerInterface $logger The logger.
+	 * @param TranslationStores     $stores      The translation mapper and translation handler.
+	 * @param RegisterSchemaMappers $mappers     The register and schema mappers.
+	 * @param IUserSession          $userSession The user session.
+	 * @param LoggerInterface       $logger      The logger.
 	 */
 	public function __construct(
-		private readonly TranslationMapper $translationMapper,
-		private readonly TranslationHandler $translationHandler,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly TranslationStores $stores,
+		private readonly RegisterSchemaMappers $mappers,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -92,28 +86,42 @@ class TranslationProjectionService {
 		}
 
 		try {
-			$schema = $this->loadSchema(object: $object);
-			if ($schema === null) {
-				return;
-			}
-
-			// With no translatable properties nothing is desired, so every
-			// row left over from when a property was translatable is removed.
-			$properties = $this->translationHandler->getTranslatableProperties($schema);
-			$keptKeys = [];
-			if (count($properties) > 0) {
-				$sources = $this->sourceLanguages(object: $object, target: ['schema' => $schema, 'properties' => $properties]);
-				$slots = $this->desiredSlots(data: (array)($object->getObject() ?? []), sources: $sources);
-				$keptKeys = $this->upsertSlots(uuid: $uuid, plan: ['slots' => $slots, 'sources' => $sources]);
-			}
-
-			$this->deleteRowsNotIn(uuid: $uuid, keptKeys: $keptKeys);
+			$this->projectObject(object: $object, uuid: $uuid);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[TranslationProjection] failed for object %s: %s', $uuid, $e->getMessage())
 			);
-		}//end try
+		}
 	}//end project()
+
+	/**
+	 * Upsert the object's desired slots, then delete every other row of the object.
+	 *
+	 * @param ObjectEntity $object The object to project.
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	private function projectObject(ObjectEntity $object, string $uuid): void {
+		$schema = $this->loadSchema(object: $object);
+		if ($schema === null) {
+			return;
+		}
+
+		// With no translatable properties nothing is desired, so every
+		// row left over from when a property was translatable is removed.
+		$properties = $this->stores->translationHandler->getTranslatableProperties($schema);
+		$keptKeys = [];
+		if (count($properties) > 0) {
+			$sources = $this->sourceLanguages(object: $object, target: ['schema' => $schema, 'properties' => $properties]);
+			$slots = $this->desiredSlots(data: (array)($object->getObject() ?? []), sources: $sources);
+			$keptKeys = $this->upsertSlots(uuid: $uuid, plan: ['slots' => $slots, 'sources' => $sources]);
+		}
+
+		$this->deleteRowsNotIn(uuid: $uuid, keptKeys: $keptKeys);
+	}//end projectObject()
 
 	/**
 	 * The resolved source language of each translatable property (i18n-source-of-truth).
@@ -126,19 +134,12 @@ class TranslationProjectionService {
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	private function sourceLanguages(ObjectEntity $object, array $target): array {
-		$register = $this->loadRegister(object: $object);
-		$defaultLanguage = 'nl';
-		if ($register !== null) {
-			$defaultLanguage = $register->getDefaultLanguage();
-		}
+		$defaultLanguage = ($this->loadRegister(object: $object)?->getDefaultLanguage() ?? 'nl');
 
 		$sources = [];
 		foreach ($target['properties'] as $property) {
 			$sources[$property] = $this->resolveSourceLanguage(
-				schema: $target['schema'],
-				object: $object,
-				property: $property,
-				registerDefault: $defaultLanguage
+				lookup: new SourceLanguageLookup(schema: $target['schema'], object: $object, property: $property, registerDefault: $defaultLanguage)
 			);
 		}
 
@@ -161,17 +162,7 @@ class TranslationProjectionService {
 	private function desiredSlots(array $data, array $sources): array {
 		$desired = [];
 		foreach ($sources as $property => $sourceLanguage) {
-			$value = $data[$property] ?? null;
-			if (is_string($value) === true && $value !== '') {
-				$desired[$property][$sourceLanguage] = $value;
-				continue;
-			}
-
-			$slots = [];
-			if (is_array($value) === true) {
-				$slots = $this->languageSlots(value: $value);
-			}
-
+			$slots = $this->propertySlots(value: ($data[$property] ?? null), sourceLanguage: $sourceLanguage);
 			if ($slots !== []) {
 				$desired[$property] = $slots;
 			}
@@ -179,6 +170,29 @@ class TranslationProjectionService {
 
 		return $desired;
 	}//end desiredSlots()
+
+	/**
+	 * The slots of one property value: a plain string is credited to the
+	 * source language, a language-keyed value gives one slot per language.
+	 *
+	 * @param mixed  $value          The property's stored value.
+	 * @param string $sourceLanguage The property's source language.
+	 *
+	 * @return array<string, string> Value by language.
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	private function propertySlots(mixed $value, string $sourceLanguage): array {
+		if (is_string($value) === true && $value !== '') {
+			return [$sourceLanguage => $value];
+		}
+
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $this->languageSlots(value: $value);
+	}//end propertySlots()
 
 	/**
 	 * The non-empty values of a language-keyed value, as strings, by language.
@@ -193,13 +207,25 @@ class TranslationProjectionService {
 		$slots = [];
 		foreach ($value as $language => $languageValue) {
 			$stringValue = $this->valueToString(value: $languageValue);
-			if (is_string($language) === true && $language !== '' && $stringValue !== null && $stringValue !== '') {
+			if ($this->isSlot(language: $language, value: $stringValue) === true) {
 				$slots[$language] = $stringValue;
 			}
 		}
 
 		return $slots;
 	}//end languageSlots()
+
+	/**
+	 * Whether a (language, value) pair is a slot: a non-empty string language and a non-empty value.
+	 *
+	 * @param int|string  $language The language key.
+	 * @param string|null $value    The coerced value.
+	 *
+	 * @return bool
+	 */
+	private function isSlot(int|string $language, ?string $value): bool {
+		return is_string($language) === true && $language !== '' && (string)$value !== '';
+	}//end isSlot()
 
 	/**
 	 * Upsert every desired slot, keeping an existing slot's status and defaulting a new one to draft.
@@ -212,25 +238,37 @@ class TranslationProjectionService {
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	private function upsertSlots(string $uuid, array $plan): array {
-		$translator = $this->userSession->getUser()?->getUID();
+		$context = ['uuid' => $uuid, 'translator' => $this->userSession->getUser()?->getUID()];
 		$keys = [];
 		foreach ($plan['slots'] as $property => $byLanguage) {
-			foreach ($byLanguage as $language => $stringValue) {
-				$this->translationMapper->upsert(
-					objectUuid: $uuid,
-					property: $property,
-					language: $language,
-					value: $stringValue,
-					status: null,
-					translator: $translator,
-					sourceLanguage: $plan['sources'][$property]
-				);
+			$slot = array_merge($context, ['property' => $property, 'sourceLanguage' => $plan['sources'][$property]]);
+			$this->upsertProperty(slot: $slot, byLanguage: $byLanguage);
+			foreach (array_keys($byLanguage) as $language) {
 				$keys[] = $property . '|' . $language;
 			}
 		}
 
 		return $keys;
 	}//end upsertSlots()
+
+	/**
+	 * Upsert one property's slots; status null keeps an existing slot's status and drafts a new one.
+	 *
+	 * @param array{uuid: string, translator: ?string, property: string, sourceLanguage: string} $slot       The row identity.
+	 * @param array<string, string>                                                           $byLanguage Value by language.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	private function upsertProperty(array $slot, array $byLanguage): void {
+		foreach ($byLanguage as $language => $stringValue) {
+			$this->stores->translationMapper->upsert(
+				slot: new TranslationSlot(objectUuid: $slot['uuid'], property: $slot['property'], language: $language),
+				edit: new TranslationEdit(value: $stringValue, status: null, translator: $slot['translator'], sourceLanguage: $slot['sourceLanguage'])
+			);
+		}
+	}//end upsertProperty()
 
 	/**
 	 * Delete, best effort, the object's rows whose `property|language` was not just written.
@@ -243,15 +281,22 @@ class TranslationProjectionService {
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	private function deleteRowsNotIn(string $uuid, array $keptKeys): void {
-		foreach ($this->translationMapper->findByObject($uuid) as $row) {
+		foreach ($this->stores->translationMapper->findByObject($uuid) as $row) {
 			if (in_array($row->getProperty() . '|' . $row->getLanguage(), $keptKeys, true) === true) {
 				continue;
 			}
 
 			try {
-				$this->translationMapper->delete($row);
+				$this->stores->translationMapper->delete($row);
 			} catch (\Throwable $e) {
-				// Best effort.
+				// Best effort: the row is retried on the next projection of this object.
+				$this->logger->warning(
+					message: '[TranslationProjection] Stale translation row not deleted',
+					context: [
+						'uuid' => $uuid,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 	}//end deleteRowsNotIn()
@@ -272,7 +317,7 @@ class TranslationProjectionService {
 		}
 
 		try {
-			$this->translationMapper->deleteByObject($uuid);
+			$this->stores->translationMapper->deleteByObject($uuid);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[TranslationProjection] purge failed for object %s: %s', $uuid, $e->getMessage())
@@ -288,16 +333,10 @@ class TranslationProjectionService {
 	 * @return Schema|null The resolved schema, or null when not resolvable.
 	 */
 	private function loadSchema(ObjectEntity $object): ?Schema {
-		$ref = $object->getSchema();
-		if ($ref === null || $ref === '') {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return null;
-		}
+		return $this->findQuietly(
+			ref: $object->getSchema(),
+			finder: fn ($ref) => $this->mappers->schemaMapper->find($ref, _rbac: false, _multitenancy: false)
+		);
 	}//end loadSchema()
 
 	/**
@@ -308,17 +347,31 @@ class TranslationProjectionService {
 	 * @return Register|null The resolved register, or null when not resolvable.
 	 */
 	private function loadRegister(ObjectEntity $object): ?Register {
-		$ref = $object->getRegister();
+		return $this->findQuietly(
+			ref: $object->getRegister(),
+			finder: fn ($ref) => $this->mappers->registerMapper->find((string)$ref, _rbac: false, _multitenancy: false)
+		);
+	}//end loadRegister()
+
+	/**
+	 * Run a finder for a non-empty reference, turning a missing reference or any failure into null.
+	 *
+	 * @param mixed    $ref    The entity reference.
+	 * @param \Closure $finder Loads the entity for the reference.
+	 *
+	 * @return mixed The entity, or null.
+	 */
+	private function findQuietly(mixed $ref, \Closure $finder): mixed {
 		if ($ref === null || $ref === '') {
 			return null;
 		}
 
 		try {
-			return $this->registerMapper->find((string)$ref, _rbac: false, _multitenancy: false);
+			return $finder($ref);
 		} catch (\Throwable $e) {
 			return null;
 		}
-	}//end loadRegister()
+	}//end findQuietly()
 
 	/**
 	 * Resolve the source language for a single (object, property) tuple.
@@ -329,23 +382,16 @@ class TranslationProjectionService {
 	 *   3. supplied register default
 	 *   4. hardcoded `'nl'` fallback
 	 *
-	 * @param Schema $schema The schema declaring the property.
-	 * @param ObjectEntity $object The object body containing optional override.
-	 * @param string $property The translatable property name.
-	 * @param string $registerDefault Register-level default language.
+	 * @param SourceLanguageLookup $lookup The schema declaring the property, the object body containing an
+	 *                                     optional override, the property name and the register's default language.
 	 *
 	 * @return string The resolved BCP-47 source language for the property.
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
 	 */
-	public function resolveSourceLanguage(
-		Schema $schema,
-		ObjectEntity $object,
-		string $property,
-		string $registerDefault,
-	): string {
-		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
-		return $rule->forProperty(body: (array)($object->getObject() ?? []), property: $property);
+	public function resolveSourceLanguage(SourceLanguageLookup $lookup): string {
+		$rule = new PropertySourceLanguage(schema: $lookup->schema, registerDefault: $lookup->registerDefault);
+		return $rule->forProperty(body: (array)($lookup->object->getObject() ?? []), property: $lookup->property);
 	}//end resolveSourceLanguage()
 
 	/**
@@ -359,21 +405,13 @@ class TranslationProjectionService {
 	 * @return string|null The coerced string, or null when not coercible.
 	 */
 	private function valueToString(mixed $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_string($value) === true) {
-			return $value;
+		if (is_array($value) === true) {
+			// Translatable-array property (rare); flatten to JSON for searchability.
+			return json_encode($value, JSON_UNESCAPED_SLASHES);
 		}
 
 		if (is_scalar($value) === true) {
 			return (string)$value;
-		}
-
-		if (is_array($value) === true) {
-			// Translatable-array property (rare); flatten to JSON for searchability.
-			return json_encode($value, JSON_UNESCAPED_SLASHES);
 		}
 
 		return null;

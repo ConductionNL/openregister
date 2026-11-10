@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -57,10 +58,12 @@ class GetObjectFindAllGoldenTest extends TestCase {
 	 */
 	private function getObject(): GetObject {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturnCallback(
-			function (...$args): array {
-				$args[10] = $args[10]?->getId();
-				$args[11] = $args[11]?->getId();
+		$mapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$q    = $request->query;
+				$args = [$q->limitOrNull(), $q->offset, $q->filters, null, null, $q->sort, $q->search, $request->ids, $request->uses, false];
+				$args[10] = $request->table?->register->getId();
+				$args[11] = $request->table?->schema->getId();
 				$this->calls[] = ['table', $args];
 				$rows = [];
 				foreach (['r1' => ['a' => 1], 'r2' => ['b' => 2]] as $uuid => $data) {
@@ -115,8 +118,10 @@ class GetObjectFindAllGoldenTest extends TestCase {
 			objectMapper: $mapper,
 			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
 			readHistory: $this->createMock(ReadHistoryService::class),
-			objectSourceRegistry: $registry,
-			logger: new NullLogger()
+			sources: new \OCA\OpenRegister\Service\Object\GetObjectSources(
+				objectSourceRegistry: $registry,
+				logger: new NullLogger()
+			)
 		);
 	}//end getObject()
 

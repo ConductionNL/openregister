@@ -21,6 +21,7 @@
   re-recorded with every styling pass.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="flowPage">
 			<NcLoadingIcon v-if="loading" :size="32" />
@@ -328,57 +329,33 @@
 								)
 							}}
 						</p>
-						<table v-else class="flowTable">
-							<thead>
-								<tr>
-									<th scope="col">
-										{{ t('openregister', 'Version') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Status') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Published') }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									v-for="version in versions"
-									:key="version.id || version.version">
-									<td>v{{ version.semver || version.version }}</td>
-									<td>
-										<CnStatusBadge
-											:label="statusLabel(version.status)"
-											:variant="statusVariant(version.status)"
-											size="small" />
-									</td>
-									<td>
-										<template
-											v-if="
-												version.publishedAt
-												&& version.publishedBy
-											">
-											{{
-												t(
-													'openregister',
-													'{date} by {person}',
-													{
-														date: formatDateTime(
-															version.publishedAt,
-														),
-														person: version.publishedBy,
-													},
-												)
-											}}
-										</template>
-										<template v-else>
-											{{ formatDateTime(version.publishedAt) }}
-										</template>
-									</td>
-								</tr>
-							</tbody>
-						</table>
+						<CnDataTable
+							v-else
+							:columns="versionColumns"
+							:rows="versionRows">
+							<template #column-semver="{ row: version }">
+								v{{ version.semver || version.version }}
+							</template>
+							<template #column-status="{ value }">
+								<CnStatusBadge
+									:label="statusLabel(value)"
+									:variant="statusVariant(value)"
+									size="small" />
+							</template>
+							<template #column-publishedAt="{ row: version }">
+								<template v-if="version.publishedAt && version.publishedBy">
+									{{
+										t('openregister', '{date} by {person}', {
+											date: formatDateTime(version.publishedAt),
+											person: version.publishedBy,
+										})
+									}}
+								</template>
+								<template v-else>
+									{{ formatDateTime(version.publishedAt) }}
+								</template>
+							</template>
+						</CnDataTable>
 					</section>
 				</div>
 
@@ -406,53 +383,36 @@
 						class="flowCard__body flowCard__note">
 						{{ t('openregister', 'No runs match this filter.') }}
 					</p>
-					<div v-else class="flowTable__scroll">
-						<table class="flowTable" data-testid="flow-overview-runs">
-							<thead>
-								<tr>
-									<th scope="col">
-										{{ t('openregister', 'Status') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Started') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Duration') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'About') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Stopped at') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Version') }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="run in pagedRuns" :key="run.uuid">
-									<td>
-										<CnStatusBadge
-											:label="statusLabel(shownStatus(run))"
-											:variant="statusVariant(shownStatus(run))"
-											size="small" />
-									</td>
-									<td>
-										<router-link :to="runRoute(run)">
-											{{ formatDateTime(run.created) }}
-										</router-link>
-									</td>
-									<td>{{ formatDuration(runDuration(run)) }}</td>
-									<td class="mono" :title="run.subjectUuid || ''">
-										{{ shortUuid(run.subjectUuid) }}
-									</td>
-									<td>{{ stoppedAt(run) }}</td>
-									<td>{{ versionLabel(run.flowVersion) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
+					<CnDataTable
+						v-else
+						data-testid="flow-overview-runs"
+						:columns="runColumns"
+						:rows="pagedRuns"
+						rowKey="uuid">
+						<template #column-status="{ row: run }">
+							<CnStatusBadge
+								:label="statusLabel(shownStatus(run))"
+								:variant="statusVariant(shownStatus(run))"
+								size="small" />
+						</template>
+						<template #column-created="{ row: run }">
+							<router-link :to="runRoute(run)">
+								{{ formatDateTime(run.created) }}
+							</router-link>
+						</template>
+						<template #column-duration="{ row: run }">
+							{{ formatDuration(runDuration(run)) }}
+						</template>
+						<template #column-subjectUuid="{ value }">
+							<span class="mono" :title="value || ''">{{ shortUuid(value) }}</span>
+						</template>
+						<template #column-stoppedAt="{ row: run }">
+							{{ stoppedAt(run) }}
+						</template>
+						<template #column-flowVersion="{ value }">
+							{{ versionLabel(value) }}
+						</template>
+					</CnDataTable>
 					<div class="flowCard__foot">
 						<span>
 							{{
@@ -482,36 +442,25 @@
 </template>
 
 <script>
-import { CnStatusBadge } from '@conduction/nextcloud-vue'
+import { CnDataTable, CnStatusBadge } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
+import { pageShellComponents } from '../pageShell.js'
 import {
 	averageDuration,
 	catalogNames,
 	failedStep,
-	formatDateTime,
-	formatDuration,
 	matchesRunFilter,
 	nodeDetail,
 	nodeLabel,
 	orderedNodes,
 	runCounts,
 	runDuration,
-	shortUuid,
-	shownStatus,
-	statusLabel,
-	statusVariant,
-	triggerLabel,
 } from './flowDetail.js'
+import { flowPageHelpers, flowVersionLabel } from './flowPageHelpers.js'
+import { flowPageMethods } from './flowPageMethods.js'
 
 /**
  * How many runs the overview reads. The history endpoint caps a page at 200;
@@ -523,12 +472,9 @@ export default {
 	name: 'FlowOverview',
 
 	components: {
+		CnDataTable,
 		CnStatusBadge,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		SitemapOutline,
 	},
 
@@ -558,6 +504,44 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The versions table columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		versionColumns() {
+			return [
+				{ key: 'semver', label: t('openregister', 'Version') },
+				{ key: 'status', label: t('openregister', 'Status') },
+				{ key: 'publishedAt', label: t('openregister', 'Published'), cellClass: 'cn-cell--wrap' },
+			]
+		},
+
+		/**
+		 * The versions keyed as the table keyed them: by id, else by number.
+		 *
+		 * @return {Array<object>} The rows.
+		 */
+		versionRows() {
+			return this.versions.map((version) => ({ ...version, id: version.id || version.version }))
+		},
+
+		/**
+		 * The runs table columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		runColumns() {
+			return [
+				{ key: 'status', label: t('openregister', 'Status') },
+				{ key: 'created', label: t('openregister', 'Started') },
+				{ key: 'duration', label: t('openregister', 'Duration') },
+				{ key: 'subjectUuid', label: t('openregister', 'About') },
+				{ key: 'stoppedAt', label: t('openregister', 'Stopped at'), cellClass: 'cn-cell--wrap' },
+				{ key: 'flowVersion', label: t('openregister', 'Version') },
+			]
+		},
+
 		/**
 		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
 		 */
@@ -638,16 +622,11 @@ export default {
 	},
 
 	methods: {
-		formatDateTime,
-		formatDuration,
+		...flowPageMethods,
+		...flowPageHelpers,
 		nodeDetail,
 		nodeLabel,
 		runDuration,
-		shortUuid,
-		shownStatus,
-		statusLabel,
-		statusVariant,
-		triggerLabel,
 
 		/**
 		 * Read the flow, its versions, the node names and its runs.
@@ -698,26 +677,6 @@ export default {
 		},
 
 		/**
-		 * A GET whose failure leaves its panel empty.
-		 *
-		 * @param {string} path The app path.
-		 * @param {object} params Query parameters.
-		 * @return {Promise<object|null>} The response body, or null.
-		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
-		 */
-		async quietGet(path, params = undefined) {
-			try {
-				const response = await axios.get(
-					generateUrl(path),
-					params ? { params } : undefined,
-				)
-				return response?.data ?? null
-			} catch {
-				return null
-			}
-		},
-
-		/**
 		 * Where a run's own page lives.
 		 *
 		 * @param {object} run The run.
@@ -751,11 +710,7 @@ export default {
 		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
 		 */
 		versionLabel(version) {
-			if (version === null || version === undefined) {
-				return ''
-			}
-			const match = this.versions.find((row) => row.version === version)
-			return 'v' + (match?.semver || version)
+			return flowVersionLabel(this.versions, version)
 		},
 
 		/**
@@ -850,68 +805,19 @@ export default {
 				this.$router.push(this.editorRoute)
 			})
 		},
-
-		/**
-		 * Run one action, and show the server's refusal in its own words.
-		 *
-		 * @param {() => Promise<void>} action The action.
-		 * @return {Promise<void>}
-		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
-		 */
-		async act(action) {
-			this.busy = true
-			this.actionError = ''
-			try {
-				await action()
-			} catch (error) {
-				this.actionError =
-					error?.response?.data?.error
-					|| t('openregister', 'That did not work. Try again.')
-			} finally {
-				this.busy = false
-			}
-		},
 	},
 }
 </script>
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './flowPage.scss' as page;
 
-.flowPage {
-	display: flex;
-	flex-direction: column;
-	gap: calc(var(--default-grid-baseline, 4px) * 5);
-	max-width: 1200px;
-	padding: calc(var(--default-grid-baseline, 4px) * 6)
-		calc(var(--default-grid-baseline, 4px) * 8)
-		calc(var(--default-grid-baseline, 4px) * 12);
-	box-sizing: border-box;
-}
+@include page.flow-page('flowPage');
+@include page.flow-card('flowCard');
 
 .flowPage__crumbs {
 	color: var(--color-text-maxcontrast);
-}
-
-.flowPage__header {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-}
-
-.flowPage__title {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.flowPage__title h1 {
-	margin: 0;
-	font-size: 30px;
-	font-weight: 700;
-	line-height: 1.2;
 }
 
 .flowPage__badges,
@@ -941,13 +847,6 @@ export default {
 	gap: 20px;
 }
 
-.flowCard {
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	min-width: 0;
-}
-
 .flowCard--stat {
 	padding: 16px 20px;
 }
@@ -957,23 +856,10 @@ export default {
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
-	padding: 12px 20px;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .flowCard__head--wrap {
 	flex-wrap: wrap;
-}
-
-.flowCard__head h2 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.flowCard__body {
-	margin: 0;
-	padding: 20px;
 }
 
 .flowCard__term,
@@ -1073,30 +959,6 @@ export default {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 16px 24px;
-}
-
-.flowTable__scroll {
-	overflow-x: auto;
-}
-
-.flowTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.flowTable th {
-	text-align: start;
-	font-weight: 600;
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-	background: var(--color-background-hover);
-	white-space: nowrap;
-}
-
-.flowTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-	vertical-align: top;
 }
 
 @include mono;

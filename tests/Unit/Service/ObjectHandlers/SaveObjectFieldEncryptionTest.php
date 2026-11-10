@@ -120,29 +120,47 @@ class SaveObjectFieldEncryptionTest extends TestCase {
 		$fieldEncryptionHandler = new FieldEncryptionHandler($this->crypto, $logger);
 
 		$this->saveObject = new SaveObject(
-			objectEntityMapper: $objectEntityMapper,
-			unifiedObjectMapper: $unifiedObjectMapper,
-			metaHydrationHandler: $metaHydrationHandler,
-			filePropertyHandler: $filePropertyHandler,
-			linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
-			userSession: $userSession,
-			auditTrailMapper: $auditTrailMapper,
-			schemaMapper: $schemaMapper,
-			registerMapper: $registerMapper,
-			urlGenerator: $urlGenerator,
-			organisationService: $organisationService,
-			cacheHandler: $cacheHandler,
-			settingsService: $settingsService,
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectEntityMapper),
+						unifiedObjectMapper: $unifiedObjectMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $auditTrailMapper,
+						settingsService: $settingsService,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $metaHydrationHandler,
+						filePropertyHandler: $filePropertyHandler,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->computedFieldHandler
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+						fieldEncryptionHandler: $fieldEncryptionHandler
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $userSession,
+					urlGenerator: $urlGenerator,
+					logger: $logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $organisationService
+				)
+			),
 			propertyRbacHandler: $propertyRbacHandler,
-			computedFieldHandler: $this->computedFieldHandler,
-			translationHandler: $this->createMock(TranslationHandler::class),
-			translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			logger: $logger,
-			tmloService: $this->createMock(TmloService::class),
-			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
 			permissionHandler: $permissionHandler,
-			fieldEncryptionHandler: $fieldEncryptionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 
 		$this->reflection = new ReflectionClass(SaveObject::class);

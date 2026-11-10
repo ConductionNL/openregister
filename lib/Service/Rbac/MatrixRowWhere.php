@@ -33,14 +33,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class MatrixRowWhere {
-
-	/**
-	 * The row key that declares a row may read across organisations.
-	 *
-	 * @var string
-	 */
-	public const CROSS_ORGANISATION_KEY = 'crossOrganisation';
+class MatrixRowWhere implements MatrixRowKeys {
 
 	/**
 	 * A row's extra conditions, key-sorted, or null when the row must be dropped.
@@ -76,7 +69,9 @@ class MatrixRowWhere {
 			}
 
 			$condition = $this->condition(value: $value);
-			if ($condition === null || $this->crossesWithoutIntent(row: $row, key: $key, value: $value) === true) {
+			if ($condition === null
+				|| ($this->declaresCrossing(row: $row) === false && $this->bindsToOrganisation(key: $key, value: $value) === true)
+			) {
 				return null;
 			}
 
@@ -89,7 +84,7 @@ class MatrixRowWhere {
 
 	/**
 	 * Findings for the conditions of a row that read across organisations
-	 * without the row saying so ({@see crossesWithoutIntent()}).
+	 * without the row saying so ({@see declaresCrossing()}, {@see bindsToOrganisation()}).
 	 *
 	 * @param array<string, mixed> $row  The row.
 	 * @param string               $name The row, as messages name it.
@@ -101,7 +96,7 @@ class MatrixRowWhere {
 	public function crossingFindings(array $row, string $name): array {
 		$findings = [];
 		foreach ((array)($row['where'] ?? []) as $key => $value) {
-			if ($this->crossesWithoutIntent(row: $row, key: (string)$key, value: $value) === true) {
+			if ($this->declaresCrossing(row: $row) === false && $this->bindsToOrganisation(key: (string)$key, value: $value) === true) {
 				$findings[] = [
 					'code' => 'matrix.where-crosses-organisations',
 					'message' => $name . ': where binds "' . (string)$key . '" to the caller\'s organisation, which reads'
@@ -114,24 +109,38 @@ class MatrixRowWhere {
 	}//end crossingFindings()
 
 	/**
-	 * Whether a condition binds a field to the caller's organisation on a row
-	 * that does not declare it crosses organisations.
+	 * Whether a row declares that it reads across organisations.
 	 *
-	 * @param array<string, mixed> $row   The row, for its `crossOrganisation` flag.
-	 * @param string               $key   The field the condition is on.
-	 * @param mixed                $value The condition as written.
+	 * A condition binding a field to the caller's organisation is refused on a
+	 * row that does not ({@see bindsToOrganisation()}).
 	 *
-	 * @return bool True when the condition must be refused.
+	 * @param array<string, mixed> $row The row, for its `crossOrganisation` flag.
+	 *
+	 * @return bool True only for a `crossOrganisation` flag that is literally true.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-a-matrix-row-may-add-conditions-and-an-end
 	 */
-	public function crossesWithoutIntent(array $row, string $key, mixed $value): bool {
-		if ($key === '_organisation' || ($row[self::CROSS_ORGANISATION_KEY] ?? false) === true) {
+	public function declaresCrossing(array $row): bool {
+		return ($row[self::CROSS_ORGANISATION_KEY] ?? false) === true;
+	}//end declaresCrossing()
+
+	/**
+	 * Whether a condition binds a field other than `_organisation` to the caller's organisation.
+	 *
+	 * @param string $key   The field the condition is on.
+	 * @param mixed  $value The condition as written.
+	 *
+	 * @return bool True when the condition reads other organisations' rows.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-a-matrix-row-may-add-conditions-and-an-end
+	 */
+	public function bindsToOrganisation(string $key, mixed $value): bool {
+		if ($key === '_organisation') {
 			return false;
 		}
 
 		return is_string($value) === true && in_array($value, ConditionMatcher::ORGANISATION_TOKENS, true) === true;
-	}//end crossesWithoutIntent()
+	}//end bindsToOrganisation()
 
 	/**
 	 * One `where` value in the scope vocabulary, or null when it cannot be read.

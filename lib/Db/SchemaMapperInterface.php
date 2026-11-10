@@ -318,6 +318,24 @@ interface SchemaMapperInterface {
 	public function updateEventCount(int $schemaId): int;
 
 	/**
+	 * From now on a notification url action that cannot be linked to only warns on save.
+	 *
+	 * @return bool Whether it already did.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function warnOnUnlinkableNotificationActions(): bool;
+
+	/**
+	 * From now on a notification url action that cannot be linked to refuses the save, as it does by default.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function refuseUnlinkableNotificationActions(): void;
+
+	/**
 	 * Updates a schema from an array
 	 *
 	 * @param int $id The id of the schema to update
@@ -439,17 +457,15 @@ interface SchemaMapperInterface {
 	 * This method searches through properties recursively to find $ref values
 	 * that match the target schema's ID, files: UUID, rbac: or slug.
 	 *
-	 * @param array $properties The properties array to search through
-	 * @param string $targetSchemaId The target schema ID to look for
-	 * @param string $targetSchemaUuid The target schema UUID to look for
-	 * @param string $targetSchemaSlug The target schema slug to look for
+	 * @param array  $properties The properties array to search through
+	 * @param Schema $target     The schema whose id, uuid or slug a reference names
 	 *
 	 * @return bool True if a reference to the target schema is found
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Recursive reference checking requires many conditions
 	 */
-	public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool;
+	public function hasReferenceToSchema(array $properties, Schema $target): bool;
 
 	/**
 	 * Get property source metadata for a schema

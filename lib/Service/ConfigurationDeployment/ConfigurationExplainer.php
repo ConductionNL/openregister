@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
-use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -58,11 +58,11 @@ class ConfigurationExplainer {
 	 * Constructor.
 	 *
 	 * @param ConfigurationValueStore       $store       The live values.
-	 * @param ConfigurationDeploymentMapper $deployments The append-only history.
+	 * @param ConfigurationDeploymentMapperInterface $deployments The append-only history.
 	 */
 	public function __construct(
 		private readonly ConfigurationValueStore $store,
-		private readonly ConfigurationDeploymentMapper $deployments
+		private readonly ConfigurationDeploymentMapperInterface $deployments
 	) {
 
 	}//end __construct()
@@ -70,34 +70,36 @@ class ConfigurationExplainer {
 	/**
 	 * Explain one setting.
 	 *
-	 * @param string      $configKey The configuration key.
-	 * @param string|null $register  The register to read within, when there is one.
-	 * @param string|null $bundle    The bundle bound to the subject, when there is one.
-	 * @param string|null $subject   The schema, case type or role, when there is one.
+	 * @param string             $configKey The configuration key.
+	 * @param ConfigurationScope $scope     The register, bundle and subject to read within; none by default.
 	 *
 	 * @return array<string, mixed> The effective value, its layer, and its deployment.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function explain(
-		string $configKey,
-		?string $register = null,
-		?string $bundle = null,
-		?string $subject = null
-	): array {
-		$chain = $this->chainFor(
+	public function explain(string $configKey, ConfigurationScope $scope = new ConfigurationScope()): array {
+		return $this->answerFor(
 			configKey: $configKey,
-			register: $register,
-			bundle: $bundle,
-			subject: $subject
+			chain: $this->chainFor(
+				configKey: $configKey,
+				register: $scope->register,
+				bundle: $scope->bundle,
+				subject: $scope->subject
+			)
 		);
 
-		$effective = null;
-		foreach ($chain as $snapshot) {
-			if ($snapshot->present === true) {
-				$effective = $snapshot;
-			}
-		}
+	}//end explain()
+
+	/**
+	 * The explanation of one key from its chain.
+	 *
+	 * @param string                            $configKey The configuration key.
+	 * @param array<int, ConfigurationSnapshot> $chain     Every layer's answer, lowest precedence first.
+	 *
+	 * @return array<string, mixed> The effective value, its layer, and its deployment.
+	 */
+	private function answerFor(string $configKey, array $chain): array {
+		$effective = $this->effectiveOf(chain: $chain);
 
 		if ($effective === null) {
 			return [
@@ -124,16 +126,33 @@ class ConfigurationExplainer {
 			'layerRef' => $effective->layerRef,
 			'deployment' => $deployment,
 			'predatesFirstDeployment' => $predates,
-			'explanation' => $this->explanationFor(
-				configKey: $configKey,
-				effective: $effective,
-				deployment: $deployment,
-				predates: $predates
+			'explanation' => self::explanationFor(
+				setAt: self::setAt(configKey: $configKey, effective: $effective),
+				deployment: $deployment
 			),
 			'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
 		];
 
-	}//end explain()
+	}//end answerFor()
+
+	/**
+	 * The highest-precedence snapshot that holds a value.
+	 *
+	 * @param array<int, ConfigurationSnapshot> $chain Every layer's answer, lowest precedence first.
+	 *
+	 * @return ConfigurationSnapshot|null The effective snapshot, or null when no layer holds one.
+	 */
+	private function effectiveOf(array $chain): ?ConfigurationSnapshot {
+		$effective = null;
+		foreach ($chain as $snapshot) {
+			if ($snapshot->present === true) {
+				$effective = $snapshot;
+			}
+		}
+
+		return $effective;
+
+	}//end effectiveOf()
 
 	/**
 	 * Every layer's answer for one key, lowest precedence first.
@@ -212,40 +231,44 @@ class ConfigurationExplainer {
 	}//end deploymentFor()
 
 	/**
-	 * The one-sentence answer a support conversation starts from.
+	 * Where a key is set, as the opening of its explanation: `"key" is set at the <layer> layer[ by <ref>]`.
 	 *
-	 * @param string                    $configKey  The configuration key.
-	 * @param ConfigurationSnapshot     $effective  The winning layer's answer.
-	 * @param array<string, mixed>|null $deployment The deployment that set it.
-	 * @param boolean                   $predates   Whether it predates the first deployment.
+	 * @param string                $configKey The configuration key.
+	 * @param ConfigurationSnapshot $effective The winning layer's answer.
 	 *
-	 * @return string The explanation.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 * @return string
 	 */
-	private function explanationFor(
-		string $configKey,
-		ConfigurationSnapshot $effective,
-		?array $deployment,
-		bool $predates
-	): string {
+	private static function setAt(string $configKey, ConfigurationSnapshot $effective): string {
 		$where = match ($effective->layerRef) {
 			null => sprintf('at the %s layer', $effective->layer),
 			default => sprintf('at the %s layer by %s', $effective->layer, $effective->layerRef),
 		};
 
-		if ($predates === true) {
-			return sprintf(
-				'"%s" is set %s and predates the first deployment, so no deployment record names it',
-				$configKey,
-				$where
-			);
+		return sprintf('"%s" is set %s', $configKey, $where);
+
+	}//end setAt()
+
+	/**
+	 * The one-sentence answer a support conversation starts from.
+	 *
+	 * A value without a deployment predates the first deployment: deploymentFor
+	 * answers null exactly when the snapshot carries no provenance.
+	 *
+	 * @param string                    $setAt      Where the key is set, from setAt().
+	 * @param array<string, mixed>|null $deployment The deployment that set it, or null when it predates the first.
+	 *
+	 * @return string The explanation.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function explanationFor(string $setAt, ?array $deployment): string {
+		if ($deployment === null) {
+			return sprintf('%s and predates the first deployment, so no deployment record names it', $setAt);
 		}
 
 		return sprintf(
-			'"%s" is set %s, last moved by the deployment "%s"',
-			$configKey,
-			$where,
+			'%s, last moved by the deployment "%s"',
+			$setAt,
 			(string)($deployment['name'] ?? $deployment['uuid'] ?? 'unknown')
 		);
 

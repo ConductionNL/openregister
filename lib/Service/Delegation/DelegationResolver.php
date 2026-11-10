@@ -45,9 +45,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Delegation;
 
-use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -70,30 +69,27 @@ class DelegationResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param DelegationGrantMapper $grants Finds candidate grants.
+	 * @param DelegationGrantMapperInterface $grants Finds candidate grants.
 	 * @param LoggerInterface       $logger Records a store that cannot be read.
 	 */
 	public function __construct(
-		private readonly DelegationGrantMapper $grants,
+		private readonly DelegationGrantMapperInterface $grants,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
 	/**
-	 * May `$principal` act as `$actingAs` at `$now`?
+	 * May the request's principal act as its `actingAs` at its moment, for its scope?
 	 *
-	 * @param string   $principal The uid that would act.
-	 * @param string   $actingAs  The uid whose rights would be used.
-	 * @param DateTime $now       The moment to judge against.
-	 * @param array    $scope     The scope the work needs.
+	 * @param DelegationRequest $request Who would act as whom, for what scope, at which moment.
 	 *
 	 * @return DelegationVerdict The verdict, carrying its reason.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function resolve(string $principal, string $actingAs, DateTime $now, array $scope = []): DelegationVerdict {
-		$principal = trim($principal);
-		$actingAs = trim($actingAs);
+	public function resolve(DelegationRequest $request): DelegationVerdict {
+		$principal = trim($request->principal);
+		$actingAs = trim($request->actingAs);
 
 		if ($principal === '' || $actingAs === '') {
 			return DelegationVerdict::refused(
@@ -133,7 +129,10 @@ class DelegationResolver {
 			);
 		}
 
-		return $this->judge(candidates: $candidates, principal: $principal, actingAs: $actingAs, now: $now, scope: $scope);
+		return $this->judge(
+			candidates: $candidates,
+			request: new DelegationRequest(principal: $principal, actingAs: $actingAs, scope: $request->scope, now: $request->now)
+		);
 	}//end resolve()
 
 	/**
@@ -145,46 +144,38 @@ class DelegationResolver {
 	 * is a different conversation from "you asked and were told no".
 	 *
 	 * @param array<int, DelegationGrant> $candidates The candidate grants.
-	 * @param string                      $principal  The acting principal.
-	 * @param string                      $actingAs   The identity sought.
-	 * @param DateTime                    $now        The moment to judge against.
-	 * @param array                       $scope      The scope needed.
+	 * @param DelegationRequest           $request    The trimmed request: its parties, moment and scope.
 	 *
 	 * @return DelegationVerdict The verdict.
 	 */
-	private function judge(
-		array $candidates,
-		string $principal,
-		string $actingAs,
-		DateTime $now,
-		array $scope,
-	): DelegationVerdict {
+	private function judge(array $candidates, DelegationRequest $request): DelegationVerdict {
 		$nearest = DelegationVerdict::REASON_NONE;
 
 		foreach ($candidates as $grant) {
-			if ($grant->isLiveAt($now) === true && $this->covers(grant: $grant, scope: $scope) === true) {
+			if ($grant->isLiveAt($request->now) === true && $this->covers(grant: $grant, scope: $request->scope) === true) {
 				return DelegationVerdict::granted($grant);
 			}
 
-			$nearest = $this->nearer(current: $nearest, candidate: $this->missReason(grant: $grant, now: $now, scope: $scope));
+			$nearest = $this->nearer(current: $nearest, candidate: $this->missReason(grant: $grant, request: $request));
 		}
 
 		return DelegationVerdict::refused(
 			reason: $nearest,
-			detail: sprintf('"%s" holds no live grant to act as "%s".', $principal, $actingAs)
+			detail: sprintf('"%s" holds no live grant to act as "%s".', $request->principal, $request->actingAs)
 		);
 	}//end judge()
 
 	/**
 	 * Why this particular grant did not permit the work.
 	 *
-	 * @param DelegationGrant $grant The grant.
-	 * @param DateTime        $now   The moment.
-	 * @param array           $scope The scope needed.
+	 * @param DelegationGrant   $grant   The grant.
+	 * @param DelegationRequest $request The request: its moment and the scope needed.
 	 *
 	 * @return string One of DelegationVerdict's reason constants.
 	 */
-	private function missReason(DelegationGrant $grant, DateTime $now, array $scope): string {
+	private function missReason(DelegationGrant $grant, DelegationRequest $request): string {
+		$now = $request->now;
+
 		if ($grant->getStatus() === DelegationGrant::STATUS_DENIED) {
 			return DelegationVerdict::REASON_DENIED;
 		}
@@ -206,7 +197,7 @@ class DelegationResolver {
 			return DelegationVerdict::REASON_PENDING;
 		}
 
-		if ($grant->isLiveAt($now) === true && $this->covers(grant: $grant, scope: $scope) === false) {
+		if ($grant->isLiveAt($now) === true && $this->covers(grant: $grant, scope: $request->scope) === false) {
 			return DelegationVerdict::REASON_OUT_OF_SCOPE;
 		}
 

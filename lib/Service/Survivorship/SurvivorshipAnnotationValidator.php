@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Survivorship;
  *
  * @spec openspec/changes/mdm-survivorship-engine/tasks.md#3.2
  */
-class SurvivorshipAnnotationValidator {
+class SurvivorshipAnnotationValidator implements SurvivorshipAnnotationValidatorInterface {
 	/**
 	 * Default ordered tier list (weakest first) when the annotation omits one.
 	 *
@@ -134,6 +134,20 @@ class SurvivorshipAnnotationValidator {
 			return [];
 		}
 
+		return $this->validateReverseFkSourceLink(sourceLink: $sourceLink);
+	}//end validateSourceLink()
+
+	/**
+	 * Validate a `reverseFk` mode `sourceLink` block: it requires
+	 * `sourceSchema` and `referenceField`.
+	 *
+	 * @param array<mixed> $sourceLink The `sourceLink` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
+	 */
+	private function validateReverseFkSourceLink(array $sourceLink): array {
 		$errors = [];
 		if ((string)($sourceLink['sourceSchema'] ?? '') === ''
 			|| (string)($sourceLink['referenceField'] ?? '') === ''
@@ -145,7 +159,7 @@ class SurvivorshipAnnotationValidator {
 		}
 
 		return $errors;
-	}//end validateSourceLink()
+	}//end validateReverseFkSourceLink()
 
 	/**
 	 * Whether the annotation carries a well-formed reverse-FK `sourceLink`.
@@ -232,6 +246,18 @@ class SurvivorshipAnnotationValidator {
 			];
 		}
 
+		return $this->validateTrustLookupKeys(trustLookup: $trustLookup);
+	}//end validateTrustLookup()
+
+	/**
+	 * Validate the optional `keys` of a `trustLookup` block: when present it
+	 * must be a non-empty array.
+	 *
+	 * @param array<mixed> $trustLookup The `trustLookup` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateTrustLookupKeys(array $trustLookup): array {
 		$keys = ($trustLookup['keys'] ?? null);
 		if ($keys === null) {
 			return [];
@@ -247,7 +273,7 @@ class SurvivorshipAnnotationValidator {
 		}
 
 		return [];
-	}//end validateTrustLookup()
+	}//end validateTrustLookupKeys()
 
 	/**
 	 * Validate the optional `overridesField` key: when present it MUST be a

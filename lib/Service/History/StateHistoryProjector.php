@@ -37,10 +37,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\History;
 
 use DateTime;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\StateHistory;
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,17 +50,17 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
  */
-class StateHistoryProjector {
+class StateHistoryProjector implements StateHistoryProjectorInterface, StateHistoryRecorderInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapper $mapper       The projection.
+	 * @param StateHistoryMapperInterface $mapper       The projection.
 	 * @param SchemaMapperInterface       $schemaMapper Resolves a schema's declared lifecycle field.
 	 * @param LoggerInterface    $logger       Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapper $mapper,
+		private readonly StateHistoryMapperInterface $mapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
@@ -67,23 +69,15 @@ class StateHistoryProjector {
 	/**
 	 * Record one transition.
 	 *
-	 * @param string      $objectUuid The object that moved.
-	 * @param Schema|null $schema     The object's schema, or null when it cannot be resolved.
-	 * @param string      $register   The register slug.
-	 * @param string      $to         The state the object is now in.
-	 * @param DateTime    $stampedAt         The moment of the move.
+	 * @param ObjectTransitionedEvent $move      The committed transition: its object, register and target state.
+	 * @param Schema|null             $schema    The object's schema, or null when it cannot be resolved.
+	 * @param DateTime                $stampedAt The moment of the move.
 	 *
 	 * @return bool True when an interval was written.
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	public function record(
-		string $objectUuid,
-		?Schema $schema,
-		string $register,
-		string $to,
-		DateTime $stampedAt,
-	): bool {
+	public function record(ObjectTransitionedEvent $move, ?Schema $schema, DateTime $stampedAt): bool {
 		$property = $this->declaredProperty(schema: $schema);
 		if ($property === null) {
 			// A schema with no declared lifecycle field has no state to
@@ -92,14 +86,15 @@ class StateHistoryProjector {
 			return false;
 		}
 
-		$this->mapper->closeOpenInterval(objectUuid: $objectUuid, property: $property, leftAt: $stampedAt);
+		$objectUuid = (string)$move->getObject()->getUuid();
+		$this->mapper->closeOpenInterval(tracked: new TrackedProperty(objectUuid: $objectUuid, property: $property), leftAt: $stampedAt);
 
 		$interval = new StateHistory();
 		$interval->setObjectUuid($objectUuid);
-		$interval->setRegister($register);
+		$interval->setRegister($move->getRegister());
 		$interval->setSchema((string)$schema?->getSlug());
 		$interval->setProperty($property);
-		$interval->setValue($to);
+		$interval->setValue($move->getTo());
 		$interval->setEnteredAt($stampedAt);
 		$interval->setLeftAt(null);
 

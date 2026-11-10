@@ -22,10 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowMapper;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
-use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use Throwable;
 
 /**
@@ -46,16 +43,13 @@ class FlowCaller {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper         $mapper      Reads which flows a uid owns.
-	 * @param IUserSession       $userSession Identifies the acting user.
-	 * @param ContainerInterface $container   Resolves OrganisationService lazily.
-	 * @param LoggerInterface    $logger      Records an unreadable ownership listing.
+	 * @param FlowMapperInterface $mapper   Reads which flows a uid owns.
+	 * @param FlowServicePlatform $platform Identifies the acting user, resolves OrganisationService lazily,
+	 *                                      and records an unreadable ownership listing.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
-		private readonly IUserSession $userSession,
-		private readonly ContainerInterface $container,
-		private readonly LoggerInterface $logger,
+		private readonly FlowMapperInterface $mapper,
+		private readonly FlowServicePlatform $platform,
 	) {
 	}//end __construct()
 
@@ -79,7 +73,7 @@ class FlowCaller {
 		try {
 			return $this->mapper->findIdsOwnedBy($uid);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[FlowCaller] Could not list the caller\'s owned flows: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -118,7 +112,7 @@ class FlowCaller {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function actingUser(): ?string {
-		$uid = (string)($this->userSession->getUser()?->getUID() ?? '');
+		$uid = (string)($this->platform->userSession->getUser()?->getUID() ?? '');
 		if ($uid === '') {
 			return null;
 		}
@@ -140,10 +134,10 @@ class FlowCaller {
 	 */
 	public function activeOrganisation(): ?string {
 		try {
-			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
+			$organisationService = $this->platform->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
 		} catch (Throwable $e) {
-			$this->logger->debug(
+			$this->platform->logger->debug(
 				message: '[FlowService] Could not resolve the active organisation: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);

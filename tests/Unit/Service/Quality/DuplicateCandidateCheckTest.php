@@ -38,6 +38,7 @@ use OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 
 class DuplicateCandidateCheckTest extends TestCase {
 
@@ -91,9 +92,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 		$this->dismissals->method('activeFor')->willReturn([]);
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
-			$this->schemaMapper,
-			$this->registerMapper,
-			new SimilarityCalculator(),
+			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()),
 			$this->dismissals,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -209,7 +208,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 			]
 		);
 
-		$pairs = $this->service->findDuplicates(1, 1);
+		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1));
 		$matches = $this->service->checkCandidate(1, 1, $left);
 
 		$this->assertCount(1, $pairs);
@@ -339,8 +338,8 @@ class DuplicateCandidateCheckTest extends TestCase {
 	public function testEffectiveThresholdPrefersTheCallerThenTheSchema(): void {
 		$this->stubSchema(['x-openregister-dedup' => ['matchRules' => $this->rules(), 'threshold' => 0.7]]);
 
-		$this->assertSame(0.7, $this->service->effectiveThreshold(1, 1));
-		$this->assertSame(0.95, $this->service->effectiveThreshold(1, 1, 0.95));
+		$this->assertSame(0.7, $this->service->effectiveThreshold(request: new DedupRun(register: 1, schema: 1)));
+		$this->assertSame(0.95, $this->service->effectiveThreshold(request: new DedupRun(register: 1, schema: 1, threshold: 0.95)));
 	}//end testEffectiveThresholdPrefersTheCallerThenTheSchema()
 
 	/**

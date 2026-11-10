@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\DeletionGraph;
 
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 
 /**
  * The visited objects and the targets and blockers of one deletion graph walk.
@@ -157,9 +158,11 @@ final class DeletionGraphWalk {
 	public function toAnalysis(): DeletionAnalysis {
 		return new DeletionAnalysis(
 			deletable: empty($this->blockers),
-			cascadeTargets: $this->cascadeTargets,
-			nullifyTargets: $this->nullifyTargets,
-			defaultTargets: $this->defaultTargets,
+			effects: new DeletionEffects(
+				cascadeTargets: $this->cascadeTargets,
+				nullifyTargets: $this->nullifyTargets,
+				defaultTargets: $this->defaultTargets
+			),
 			blockers: $this->blockers,
 			chainPaths: []
 		);

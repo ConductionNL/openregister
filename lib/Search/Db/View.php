@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Search\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Configuration;
@@ -82,7 +83,7 @@ use OCA\OpenRegister\Db\Task;
  * request and never written, and merging those two into one bag would hide
  * what they are to move a number by one.
  */
-class View extends Entity implements JsonSerializable {
+class View extends Entity implements JsonSerializable, ViewInterface {
 	use IsoTimestampsTrait;
 
 	/**
@@ -417,16 +418,7 @@ class View extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 */
 	private function getPresentationFormatted(): array {
-		$presentation = $this->presentation;
-		if (is_array($presentation) === false) {
-			return ['viewType' => 'table'];
-		}
-
-		if (empty($presentation['viewType']) === true) {
-			$presentation['viewType'] = 'table';
-		}
-
-		return $presentation;
+		return ViewFormatting::presentation(presentation: $this->presentation);
 	}//end getPresentationFormatted()
 
 	/**
@@ -437,15 +429,7 @@ class View extends Entity implements JsonSerializable {
 	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
 	 */
 	private function getManagedByConfigurationFormatted(): ?array {
-		if ($this->managedByConfig !== null) {
-			return [
-				'id' => $this->managedByConfig->getId(),
-				'uuid' => $this->managedByConfig->getUuid(),
-				'title' => $this->managedByConfig->getTitle(),
-			];
-		}
-
-		return null;
+		return ViewFormatting::managedBy(configuration: $this->managedByConfig);
 	}//end getManagedByConfigurationFormatted()
 
 	/**
@@ -519,17 +503,6 @@ class View extends Entity implements JsonSerializable {
 	 * @psalm-param   array<Configuration> $configurations
 	 */
 	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$views = $configuration->getViews();
-			if (in_array($this->id, $views, true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
+		return ViewFormatting::managing(viewId: $this->id, configurations: $configurations);
 	}//end getManagedByConfiguration()
 }//end class

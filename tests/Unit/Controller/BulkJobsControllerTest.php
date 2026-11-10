@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -44,6 +46,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 
 final class BulkJobsControllerTest extends TestCase {
 
@@ -108,6 +111,12 @@ final class BulkJobsControllerTest extends TestCase {
 
 		$this->params = [];
 		$this->service = $this->createMock(BulkJobService::class);
+		$this->service->method('actionCall')->willReturnCallback(
+			static fn (string $actionId, array $parameters): BulkJobActionCall => new BulkJobActionCall($actionId, $parameters)
+		);
+		$this->service->method('selection')->willReturnCallback(
+			static fn (array $criteria, ?int $registerId, ?int $schemaId): BulkJobSelection => new BulkJobSelection($criteria, $registerId, $schemaId)
+		);
 		$this->reversal = $this->createMock(BulkJobReversal::class);
 		$this->jobMapper = $this->createMock(BulkJobMapper::class);
 		$this->registry = $this->createMock(BulkActionRegistry::class);
@@ -425,8 +434,8 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->reversal->expects($this->once())
 			->method('reverse')
 			->willReturnCallback(
-				function (BulkJob $job, string $actorUid, ?string $justification) use (&$seen): BulkJob {
-					$seen = ['actor' => $actorUid, 'reason' => $justification];
+				function (ReversalRequest $request) use (&$seen): BulkJob {
+					$seen = ['actor' => $request->actorUid, 'reason' => $request->justification];
 
 					return $this->job('fatima');
 				}

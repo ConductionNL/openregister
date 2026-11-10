@@ -154,13 +154,23 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 			reasons: [
 				$this->refusal(data: $data, users: $users),
 				(new ExampleSetFlowRuns(container: $this->container))->taskRefusal(data: $data, context: $context),
-				(new ExampleSetTaskClaim(container: $this->container))->refusal(
-					data: $data,
-					moment: ExampleSetTaskDates::moment(value: ($data['claimedAt'] ?? null))
-				),
+				$this->claimRefusal(data: $data),
 			]
 		);
 	}//end refusalIn()
+
+	/**
+	 * Why a task's claim is inconsistent, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return string
+	 */
+	private function claimRefusal(array $data): string {
+		$moment = ExampleSetTaskDates::moment(value: ($data['claimedAt'] ?? null));
+
+		return (new ExampleSetTaskClaim(container: $this->container))->refusal(data: $data, moment: $moment);
+	}//end claimRefusal()
 
 	/**
 	 * The first reason that is not '', or ''.
@@ -183,20 +193,14 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	/**
 	 * Write a task through the engine's trusted path.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The task's key in the fragment.
-	 * @param array<string, mixed> $data The filled task fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
-		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy', 'uploadRules', 'taskKey', 'claimedBy', 'claimedAt', 'createdAt']));
-		// An app that reads its tasks by engine key, such as a tenant's onboarding steps, names that key.
-		$fields['key'] = (string) ($data['taskKey'] ?? 'example-set:'.$app.'/'.$key);
-		$fields['appId'] = $app;
-		$fields += ExampleSetExternalTask::metadata(data: $data);
+	public function write(ExampleSetRow $row): array {
+		$fields = $this->fields(row: $row);
 
 		// The task key is unique in the engine: a task that already holds it (the record lost track of it) is
 		// adopted, not written a second time.
@@ -205,27 +209,84 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 			return ['error' => '', 'entry' => ['uuid' => $holder]];
 		}
 
-		$actor = (string) ($data['completedBy'] ?? $data['assignee'] ?? '');
-		if ($actor === '' || ExampleSetExternalTask::isExternal(data: $data) === true) {
-			// A party is not an account: the app that ships the set raises its task.
-			$actor = $app;
-		}
-
 		try {
-			$task = $this->service()->import(data: $fields, actor: $actor, createdAt: ExampleSetTaskDates::moment(value: ($data['createdAt'] ?? null)));
-			if ($task->getIsTerminal() === true && isset($data['completedAt']) === true) {
-				$task->setCompletedAt(ExampleSetTaskDates::moment(value: $data['completedAt']));
-				$task->setCompletedBy((string) ($data['completedBy'] ?? $data['assignee'] ?? ''));
-				$this->mapper()->update($task);
-			}
-
-			$this->waitAndClaim(task: $task, data: $data);
+			$task = $this->import(row: $row, fields: $fields);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
 		return ['error' => '', 'entry' => ['uuid' => (string) $task->getUuid()]];
 	}//end write()
+
+	/**
+	 * The fields the engine takes: the declared ones but those the set handles itself, keyed by the declared task
+	 * key or the row's own, with the app and an external task's upload rules.
+	 *
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function fields(ExampleSetRow $row): array {
+		$fields = array_diff_key($row->data, array_flip(['completedAt', 'completedBy', 'uploadRules', 'taskKey', 'claimedBy', 'claimedAt', 'createdAt']));
+		// An app that reads its tasks by engine key, such as a tenant's onboarding steps, names that key.
+		$fields['key']   = (string) ($row->data['taskKey'] ?? 'example-set:'.$row->app.'/'.$row->key);
+		$fields['appId'] = $row->app;
+
+		return $fields + ExampleSetExternalTask::metadata(data: $row->data);
+	}//end fields()
+
+	/**
+	 * Who raises the task: who finished it, else its assignee; the app that ships the set when there is neither, or
+	 * when the task is a party's (a party is not an account).
+	 *
+	 * @param string               $app  The app that ships the fragment.
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return string
+	 */
+	private function actor(string $app, array $data): string {
+		$actor = (string) ($data['completedBy'] ?? $data['assignee'] ?? '');
+		if ($actor === '' || ExampleSetExternalTask::isExternal(data: $data) === true) {
+			return $app;
+		}
+
+		return $actor;
+	}//end actor()
+
+	/**
+	 * Import the task through the engine's trusted path, mark it completed when it is finished, and let it wait in
+	 * its run with its claim.
+	 *
+	 * @param ExampleSetRow        $row    The row: its app and its filled fields (who raises the task follows from them).
+	 * @param array<string, mixed> $fields The fields the engine takes.
+	 *
+	 * @return Task
+	 */
+	private function import(ExampleSetRow $row, array $fields): Task {
+		$data = $row->data;
+		$actor = $this->actor(app: $row->app, data: $data);
+		$task = $this->service()->import(data: $fields, actor: $actor, createdAt: ExampleSetTaskDates::moment(value: ($data['createdAt'] ?? null)));
+		$this->complete(task: $task, data: $data);
+		$this->waitAndClaim(task: $task, data: $data);
+
+		return $task;
+	}//end import()
+
+	/**
+	 * Mark a finished task completed when and by whom the row says.
+	 *
+	 * @param Task                 $task The imported task.
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return void
+	 */
+	private function complete(Task $task, array $data): void {
+		if ($task->getIsTerminal() === true && isset($data['completedAt']) === true) {
+			$task->setCompletedAt(ExampleSetTaskDates::moment(value: $data['completedAt']));
+			$task->setCompletedBy((string) ($data['completedBy'] ?? $data['assignee'] ?? ''));
+			$this->mapper()->update($task);
+		}
+	}//end complete()
 
 	/**
 	 * Put a new task in the slot of the run that waits on it, and append its claim to its audit.
@@ -238,16 +299,10 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
 	private function waitAndClaim(Task $task, array $data): void {
-		(new ExampleSetFlowRuns(container: $this->container))->fill(
-			runUuid: (string) ($data['runUuid'] ?? ''),
-			nodeId: (string) ($data['nodeId'] ?? ''),
-			taskUuid: (string) $task->getUuid()
-		);
-		(new ExampleSetTaskClaim(container: $this->container))->write(
-			task: $task,
-			data: $data,
-			moment: ExampleSetTaskDates::moment(value: ($data['claimedAt'] ?? null))
-		);
+		$run  = (string) ($data['runUuid'] ?? '');
+		$slot = new ExampleSetRunSlot(runUuid: $run, nodeId: (string) ($data['nodeId'] ?? ''), taskUuid: (string) $task->getUuid());
+		(new ExampleSetFlowRuns(container: $this->container))->fill(slot: $slot);
+		(new ExampleSetTaskClaim(container: $this->container))->write(task: $task, data: $data);
 	}//end waitAndClaim()
 
 	/**
@@ -307,6 +362,17 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 			return 'field "'.implode('", "', $unknown).'" is not a task field a set may write';
 		}
 
+		return $this->neededRefusal(data: $data);
+	}//end fieldsRefusal()
+
+	/**
+	 * Why a task lacks its title or the object it is on, or ''.
+	 *
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return string
+	 */
+	private function neededRefusal(array $data): string {
 		if (is_string($data['title'] ?? null) === false || trim($data['title']) === '') {
 			return 'a task needs a title';
 		}
@@ -316,7 +382,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		}
 
 		return '';
-	}//end fieldsRefusal()
+	}//end neededRefusal()
 
 	/**
 	 * An assignee, completer or requester that is not one of the set's own accounts.

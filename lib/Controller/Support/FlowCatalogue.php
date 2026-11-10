@@ -22,10 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\FlowStateMapper;
-use OCA\OpenRegister\Service\Flow\EventCatalogService;
-use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
+use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 
 /**
  * Services of the flow API.
@@ -34,20 +35,36 @@ use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
  */
 final class FlowCatalogue {
 	/**
+	 * The registered flow-step types.
+	 *
+	 * @var FlowNodeRegistryInterface
+	 */
+	public readonly FlowNodeRegistryInterface $nodes;
+
+	/**
+	 * Resolves a document's step types.
+	 *
+	 * @var FlowNodePreflightInterface
+	 */
+	public readonly FlowNodePreflightInterface $preflight;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param FlowStateMapper     $flowState    Reads state a flow keeps between runs.
-	 * @param EventCatalogService $eventCatalog The flow trigger catalog.
-	 * @param FlowNodeRegistry    $nodes        The registered flow-step types.
-	 * @param FlowNodePreflight   $preflight    Resolves a document's step types.
+	 * @param FlowStateMapperInterface     $flowState    Reads state a flow keeps between runs.
+	 * @param EventCatalogServiceInterface $eventCatalog The flow trigger catalog.
+	 * @param FlowNodeTypes                $nodeTypes    The step-type registry and its preflight.
+	 * @param FlowBpmnInterchangeInterface $bpmn         BPMN 2.0 export and import.
 	 *
 	 * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
 	 */
 	public function __construct(
-		public readonly FlowStateMapper $flowState,
-		public readonly EventCatalogService $eventCatalog,
-		public readonly FlowNodeRegistry $nodes,
-		public readonly FlowNodePreflight $preflight,
+		public readonly FlowStateMapperInterface $flowState,
+		public readonly EventCatalogServiceInterface $eventCatalog,
+		FlowNodeTypes $nodeTypes,
+		public readonly FlowBpmnInterchangeInterface $bpmn,
 	) {
+		$this->nodes     = $nodeTypes->nodes;
+		$this->preflight = $nodeTypes->preflight;
 	}//end __construct()
 }//end class

@@ -43,15 +43,12 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Merges branch item lists — append, merge-by-key, or unique.
  */
-class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 
 	/**
 	 * The modes this node understands.
@@ -59,19 +56,6 @@ class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IF
 	 * @var array<int, string>
 	 */
 	private const MODES = ['append', 'mergeByKey', 'unique'];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
 
 	/**
 	 * The step type.
@@ -108,17 +92,6 @@ class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IF
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/menu.svg');
 	}//end getIcon()
-
-	/**
-	 * Merging grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a merge step.
@@ -164,19 +137,36 @@ class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IF
 	 * @return array The combined items.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$mode = (string)($config['mode'] ?? 'append');
+		return $this->merged(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * The items combined the way the configured mode says.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The step configuration.
+	 *
+	 * @return array The combined items.
+	 */
+	private function merged(array $items, array $config): array {
 		$key = (string)($config['key'] ?? '');
 
-		if ($mode === 'mergeByKey') {
-			return $this->mergeByKey(items: $items, key: $key);
-		}
+		return match ((string)($config['mode'] ?? 'append')) {
+			'mergeByKey' => $this->mergeByKey(items: $items, key: $key),
+			'unique' => $this->unique(items: $items, key: $key),
+			default => $this->append(items: $items),
+		};
+	}//end merged()
 
-		if ($mode === 'unique') {
-			return $this->unique(items: $items, key: $key);
-		}
-
-		// Append: the engine already concatenated the branches; re-pair each
-		// item to its own position so provenance stays intact.
+	/**
+	 * Append: the engine already concatenated the branches; re-pair each
+	 * item to its own position so provenance stays intact.
+	 *
+	 * @param array $items The input items.
+	 *
+	 * @return array The items, re-paired.
+	 */
+	private function append(array $items): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
@@ -187,7 +177,7 @@ class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IF
 		}
 
 		return $out;
-	}//end execute()
+	}//end append()
 
 	/**
 	 * Group items by their `key` value and shallow-merge each group's records.
@@ -265,16 +255,4 @@ class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IF
 		return IFlowNodeTaxonomy::KIND_GATEWAY;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

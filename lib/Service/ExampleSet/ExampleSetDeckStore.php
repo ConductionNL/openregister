@@ -69,47 +69,63 @@ class ExampleSetDeckStore {
 	 * The live board of this owner with this title, written when absent and
 	 * then shared for editing with these groups.
 	 *
-	 * @param string             $owner  The board owner.
-	 * @param string             $title  The board title.
-	 * @param string             $color  The colour of a board written now, hex without '#'.
-	 * @param array<int, string> $groups The groups that may edit a board written now.
+	 * @param DeckBoardRequest $board The owner, the title, and the colour and editing groups of a board written now.
 	 *
 	 * @return array{id: int, created: bool}
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
-	public function board(string $owner, string $title, string $color, array $groups): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id')->from('deck_boards')
-			->where($qb->expr()->eq('owner', $qb->createNamedParameter($owner)))
-			->andWhere($qb->expr()->eq('title', $qb->createNamedParameter($title)))
-			->andWhere($qb->expr()->eq('deleted_at', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
-			->setMaxResults(1);
-		$found = $this->firstId(qb: $qb);
+	public function board(DeckBoardRequest $board): array {
+		$titled = new DeckTitled(parent: $board->owner, title: $board->title);
+		$found  = $this->liveId(rows: new DeckColumn(table: 'deck_boards', column: 'owner'), row: $titled);
 		if ($found !== null) {
 			return ['id' => $found, 'created' => false];
 		}
 
-		$id = $this->insert(
-			table: 'deck_boards',
-			values: ['title' => $title, 'owner' => $owner, 'color' => $color, 'archived' => false, 'deleted_at' => 0, 'last_modified' => time()]
-		);
-		foreach ($groups as $group) {
-			$this->insert(
-				table: 'deck_board_acl',
-				values: [
-					'board_id'          => $id,
-					'type'              => 1,
-					'participant'       => $group,
-					'permission_edit'   => true,
-					'permission_share'  => false,
-					'permission_manage' => false,
-				]
-			);
+		$id = $this->insertBoard(board: $titled, color: $board->color);
+		foreach ($board->groups as $group) {
+			$this->shareBoard(board: $id, group: $group);
 		}
 
 		return ['id' => $id, 'created' => true];
 	}//end board()
+
+	/**
+	 * Write a board and return its id.
+	 *
+	 * @param DeckTitled $board The board's owner and title.
+	 * @param string     $color The board's colour, hex without '#'.
+	 *
+	 * @return int
+	 */
+	private function insertBoard(DeckTitled $board, string $color): int {
+		return $this->insert(
+			table: 'deck_boards',
+			values: ['title' => $board->title, 'owner' => $board->parent, 'color' => $color, 'archived' => false, 'deleted_at' => 0, 'last_modified' => time()]
+		);
+	}//end insertBoard()
+
+	/**
+	 * Share a board for editing with a group.
+	 *
+	 * @param int    $board The board id.
+	 * @param string $group The group.
+	 *
+	 * @return void
+	 */
+	private function shareBoard(int $board, string $group): void {
+		$this->insert(
+			table: 'deck_board_acl',
+			values: [
+				'board_id'          => $board,
+				'type'              => 1,
+				'participant'       => $group,
+				'permission_edit'   => true,
+				'permission_share'  => false,
+				'permission_manage' => false,
+			]
+		);
+	}//end shareBoard()
 
 	/**
 	 * The board's live list with this title, written at the end of the board when absent.
@@ -122,18 +138,12 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function stack(int $board, string $title): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id')->from('deck_stacks')
-			->where($qb->expr()->eq('board_id', $qb->createNamedParameter($board, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('title', $qb->createNamedParameter($title)))
-			->andWhere($qb->expr()->eq('deleted_at', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
-			->setMaxResults(1);
-		$found = $this->firstId(qb: $qb);
+		$found = $this->liveId(rows: new DeckColumn(table: 'deck_stacks', column: 'board_id'), row: new DeckTitled(parent: $board, title: $title));
 		if ($found !== null) {
 			return ['id' => $found, 'created' => false];
 		}
 
-		$order = $this->count(table: 'deck_stacks', column: 'board_id', id: $board);
+		$order = $this->count(rows: new DeckColumn(table: 'deck_stacks', column: 'board_id'), id: $board);
 		$id    = $this->insert(
 			table: 'deck_stacks',
 			values: ['title' => $title, 'board_id' => $board, 'order' => $order, 'deleted_at' => 0, 'last_modified' => time()]
@@ -141,6 +151,25 @@ class ExampleSetDeckStore {
 
 		return ['id' => $id, 'created' => true];
 	}//end stack()
+
+	/**
+	 * The id of the first row of a table, not deleted, that points at a value and has this title; null when none does.
+	 *
+	 * @param DeckColumn $rows The table and the column holding the value.
+	 * @param DeckTitled $row  The value the row points at, and its title.
+	 *
+	 * @return int|null
+	 */
+	private function liveId(DeckColumn $rows, DeckTitled $row): ?int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')->from($rows->table)
+			->where($qb->expr()->eq($rows->column, $qb->createNamedParameter($row->parent, $this->type(value: $row->parent))))
+			->andWhere($qb->expr()->eq('title', $qb->createNamedParameter($row->title)))
+			->andWhere($qb->expr()->eq('deleted_at', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
+			->setMaxResults(1);
+
+		return $this->firstId(qb: $qb);
+	}//end liveId()
 
 	/**
 	 * The board's label with this title, written when absent.
@@ -154,12 +183,7 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function label(int $board, string $title, string $color): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id')->from('deck_labels')
-			->where($qb->expr()->eq('board_id', $qb->createNamedParameter($board, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('title', $qb->createNamedParameter($title)))
-			->setMaxResults(1);
-		$found = $this->firstId(qb: $qb);
+		$found = $this->labelId(label: new DeckTitled(parent: $board, title: $title));
 		if ($found !== null) {
 			return ['id' => $found, 'created' => false];
 		}
@@ -170,59 +194,90 @@ class ExampleSetDeckStore {
 	}//end label()
 
 	/**
-	 * Write a card with its labels and assignees.
+	 * The id of the board's label with this title, or null when it has none.
 	 *
-	 * @param int                $stack       The list id.
-	 * @param string             $owner       The card owner.
-	 * @param string             $title       The card title.
-	 * @param string             $description The card description.
-	 * @param DateTime|null      $due         The due date.
-	 * @param DateTime|null      $done        When the card was marked done.
-	 * @param array<int, int>    $labels      The label ids.
-	 * @param array<int, string> $assignees   The assigned user ids.
+	 * @param DeckTitled $label The board id and the label title.
+	 *
+	 * @return int|null
+	 */
+	private function labelId(DeckTitled $label): ?int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')->from('deck_labels')
+			->where($qb->expr()->eq('board_id', $qb->createNamedParameter($label->parent, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('title', $qb->createNamedParameter($label->title)))
+			->setMaxResults(1);
+
+		return $this->firstId(qb: $qb);
+	}//end labelId()
+
+	/**
+	 * Write a card with its labels and assignees, at the end of its list.
+	 *
+	 * @param int                  $stack The list id.
+	 * @param array<string, mixed> $card  The card: owner (string), title (string), description (string), due and
+	 *                                    done (?DateTime), labels (label ids) and assignees (user ids).
+	 *
+	 * @phpstan-param array{
+	 *     owner: string, title: string, description: string, due: ?DateTime, done: ?DateTime,
+	 *     labels: array<int, int>, assignees: array<int, string>
+	 * } $card
 	 *
 	 * @return int The card id.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
-	public function insertCard(
-		int $stack,
-		string $owner,
-		string $title,
-		string $description,
-		?DateTime $due,
-		?DateTime $done,
-		array $labels,
-		array $assignees
-	): int {
-		$card = $this->insert(
-			table: 'deck_cards',
-			values: [
-				'title'         => $title,
-				'description'   => $description,
-				'stack_id'      => $stack,
-				'type'          => 'plain',
-				'owner'         => $owner,
-				'order'         => $this->count(table: 'deck_cards', column: 'stack_id', id: $stack),
-				'archived'      => false,
-				'duedate'       => $due,
-				'done'          => $done,
-				'notified'      => false,
-				'deleted_at'    => 0,
-				'created_at'    => time(),
-				'last_modified' => time(),
-			]
-		);
-		foreach ($labels as $label) {
-			$this->insert(table: 'deck_assigned_labels', values: ['label_id' => $label, 'card_id' => $card]);
+	public function insertCard(int $stack, array $card): int {
+		$id = $this->insert(table: 'deck_cards', values: $this->cardValues(stack: $stack, card: $card));
+		foreach ($card['labels'] as $label) {
+			$this->insert(table: 'deck_assigned_labels', values: ['label_id' => $label, 'card_id' => $id]);
 		}
 
-		foreach ($assignees as $uid) {
-			$this->insert(table: 'deck_assigned_users', values: ['participant' => $uid, 'card_id' => $card, 'type' => 0]);
+		foreach ($card['assignees'] as $uid) {
+			$this->insert(table: 'deck_assigned_users', values: ['participant' => $uid, 'card_id' => $id, 'type' => 0]);
 		}
 
-		return $card;
+		return $id;
 	}//end insertCard()
+
+	/**
+	 * The column values of a new card at the end of its list.
+	 *
+	 * @param int                  $stack The list id.
+	 * @param array<string, mixed> $card  The card, as insertCard() takes it.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function cardValues(int $stack, array $card): array {
+		$order = $this->count(rows: new DeckColumn(table: 'deck_cards', column: 'stack_id'), id: $stack);
+		return [
+			'title'       => $card['title'],
+			'description' => $card['description'],
+			'stack_id'    => $stack,
+			'type'        => 'plain',
+			'owner'       => $card['owner'],
+			'order'       => $order,
+			...$this->cardState(card: $card),
+		];
+	}//end cardValues()
+
+	/**
+	 * The state columns of a new card: not archived, its dates, not notified, not deleted, written now.
+	 *
+	 * @param array<string, mixed> $card The card, as insertCard() takes it.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function cardState(array $card): array {
+		return [
+			'archived'      => false,
+			'duedate'       => $card['due'],
+			'done'          => $card['done'],
+			'notified'      => false,
+			'deleted_at'    => 0,
+			'created_at'    => time(),
+			'last_modified' => time(),
+		];
+	}//end cardState()
 
 	/**
 	 * Whether the card is still there.
@@ -252,9 +307,9 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteCard(int $card): void {
-		$this->deleteWhere(table: 'deck_assigned_labels', column: 'card_id', id: $card);
-		$this->deleteWhere(table: 'deck_assigned_users', column: 'card_id', id: $card);
-		$this->deleteWhere(table: 'deck_cards', column: 'id', id: $card);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_assigned_labels', column: 'card_id'), id: $card);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_assigned_users', column: 'card_id'), id: $card);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_cards', column: 'id'), id: $card);
 	}//end deleteCard()
 
 	/**
@@ -267,8 +322,8 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteLabel(int $label): void {
-		$this->deleteWhere(table: 'deck_assigned_labels', column: 'label_id', id: $label);
-		$this->deleteWhere(table: 'deck_labels', column: 'id', id: $label);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_assigned_labels', column: 'label_id'), id: $label);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_labels', column: 'id'), id: $label);
 	}//end deleteLabel()
 
 	/**
@@ -284,16 +339,42 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteUnused(?int $stack, ?int $board): void {
-		if ($stack !== null && $this->count(table: 'deck_cards', column: 'stack_id', id: $stack) === 0) {
-			$this->deleteWhere(table: 'deck_stacks', column: 'id', id: $stack);
+		if ($stack !== null) {
+			$this->deleteEmptyStack(stack: $stack);
 		}
 
-		if ($board !== null && $this->count(table: 'deck_stacks', column: 'board_id', id: $board) === 0) {
-			$this->deleteWhere(table: 'deck_labels', column: 'board_id', id: $board);
-			$this->deleteWhere(table: 'deck_board_acl', column: 'board_id', id: $board);
-			$this->deleteWhere(table: 'deck_boards', column: 'id', id: $board);
+		if ($board !== null) {
+			$this->deleteEmptyBoard(board: $board);
 		}
 	}//end deleteUnused()
+
+	/**
+	 * Delete a list when it holds no cards.
+	 *
+	 * @param int $stack The list id.
+	 *
+	 * @return void
+	 */
+	private function deleteEmptyStack(int $stack): void {
+		if ($this->count(rows: new DeckColumn(table: 'deck_cards', column: 'stack_id'), id: $stack) === 0) {
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_stacks', column: 'id'), id: $stack);
+		}
+	}//end deleteEmptyStack()
+
+	/**
+	 * Delete a board, with its labels and shares, when it holds no lists.
+	 *
+	 * @param int $board The board id.
+	 *
+	 * @return void
+	 */
+	private function deleteEmptyBoard(int $board): void {
+		if ($this->count(rows: new DeckColumn(table: 'deck_stacks', column: 'board_id'), id: $board) === 0) {
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_labels', column: 'board_id'), id: $board);
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_board_acl', column: 'board_id'), id: $board);
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_boards', column: 'id'), id: $board);
+		}
+	}//end deleteEmptyBoard()
 
 	/**
 	 * Insert a row and return its id.
@@ -335,17 +416,16 @@ class ExampleSetDeckStore {
 	/**
 	 * How many rows of a table point at an id.
 	 *
-	 * @param string $table  The table, without prefix.
-	 * @param string $column The column holding the id.
-	 * @param int    $id     The id.
+	 * @param DeckColumn $rows The table and the column holding the id.
+	 * @param int        $id   The id.
 	 *
 	 * @return int
 	 */
-	private function count(string $table, string $column, int $id): int {
+	private function count(DeckColumn $rows, int $id): int {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('*', 'n'))->from($table)
-			->where($qb->expr()->eq($column, $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-		if ($table !== 'deck_assigned_labels' && $table !== 'deck_labels') {
+		$qb->select($qb->func()->count('*', 'n'))->from($rows->table)
+			->where($qb->expr()->eq($rows->column, $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+		if ($rows->table !== 'deck_assigned_labels' && $rows->table !== 'deck_labels') {
 			$qb->andWhere($qb->expr()->eq('deleted_at', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
 		}
 
@@ -359,15 +439,14 @@ class ExampleSetDeckStore {
 	/**
 	 * Delete the rows of a table that point at an id.
 	 *
-	 * @param string $table  The table, without prefix.
-	 * @param string $column The column holding the id.
-	 * @param int    $id     The id.
+	 * @param DeckColumn $rows The table and the column holding the id.
+	 * @param int        $id   The id.
 	 *
 	 * @return void
 	 */
-	private function deleteWhere(string $table, string $column, int $id): void {
+	private function deleteWhere(DeckColumn $rows, int $id): void {
 		$qb = $this->db->getQueryBuilder();
-		$qb->delete($table)->where($qb->expr()->eq($column, $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+		$qb->delete($rows->table)->where($qb->expr()->eq($rows->column, $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 		$qb->executeStatement();
 	}//end deleteWhere()
 

@@ -80,37 +80,52 @@ final class PropertySourceDeclaration {
 	public const PROVIDER_PATTERN = '/^[a-z0-9][a-z0-9._-]{0,63}$/i';
 
 	/**
-	 * The provider this property's values come from.
-	 *
-	 * @var string
+	 * The refusal for a block that is not an object: annotation, path.
 	 */
-	public readonly string $provider;
+	private const MSG_NOT_AN_OBJECT = '\'%s\' at \'%s\' must be an object naming a provider, and it is not.';
 
 	/**
-	 * How the provider's value is used.
-	 *
-	 * @var string
+	 * The refusal for a config that is not an object: annotation, path.
 	 */
-	public readonly string $mode;
+	private const MSG_BAD_CONFIG = '\'%s\' at \'%s\' has a config that is not an object.';
 
 	/**
-	 * What the provider is given.
-	 *
-	 * @var array<string, mixed>
+	 * The refusal for both source keys on one property: annotation, path, annotation, other key.
 	 */
-	public readonly array $config;
+	private const MSG_BOTH_KEYS = '\'%s\' at \'%s\' carries both \'%s\' and \'%s\'. '
+		. 'The first binds this one property to a provider; the second serves the whole '
+		. 'schema\'s objects from one. Keep the one that was meant.';
+
+	/**
+	 * The refusal for a missing provider: annotation, path.
+	 */
+	private const MSG_NO_PROVIDER = '\'%s\' at \'%s\' must name a provider. Without one there is nothing to ask for the values.';
+
+	/**
+	 * The refusal for a provider that is not an id: annotation, path, provider.
+	 */
+	private const MSG_BAD_PROVIDER = '\'%s\' at \'%s\' names the provider \'%s\', which is not a provider id. '
+		. 'A typo here becomes an empty list in a form, with nothing to say why.';
+
+	/**
+	 * The refusal for an unknown mode: annotation, path, mode, the modes.
+	 */
+	private const MSG_BAD_MODE = '\'%s\' at \'%s\' has mode \'%s\'. It must be one of: %s. '
+		. 'A mode nobody knows would be read as a guess, and the two modes differ in '
+		. 'whether a person may change what the provider returned.';
 
 	/**
 	 * Build a declaration.
 	 *
-	 * @param string               $provider The provider id.
-	 * @param string               $mode     The mode.
-	 * @param array<string, mixed> $config   The provider's configuration.
+	 * @param string               $provider The provider this property's values come from.
+	 * @param string               $mode     How the provider's value is used.
+	 * @param array<string, mixed> $config   What the provider is given.
 	 */
-	private function __construct(string $provider, string $mode, array $config) {
-		$this->provider = $provider;
-		$this->mode = $mode;
-		$this->config = $config;
+	private function __construct(
+		public readonly string $provider,
+		public readonly string $mode,
+		public readonly array $config,
+	) {
 	}//end __construct()
 
 	/**
@@ -126,56 +141,67 @@ final class PropertySourceDeclaration {
 	 * @spec openspec/changes/property-source-vocabulary/specs/schema-vocabulaire/spec.md
 	 */
 	public static function fromProperty(array $property, string $path = ''): ?self {
-		if (array_key_exists(self::ANNOTATION, $property) === false) {
+		$raw = self::declaredBlock(property: $property, path: $path);
+		if ($raw === null) {
 			return null;
 		}
 
-		$raw = $property[self::ANNOTATION];
-
-		if (is_array($raw) === false || $raw === []) {
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' must be an object naming a provider, and it is not.',
-					self::ANNOTATION,
-					$path
-				)
-			);
-		}
-
 		$provider = self::validProvider(raw: $raw, path: $path);
-		$mode = self::validMode(raw: $raw, path: $path);
-
-		$config = ($raw['config'] ?? []);
-		if (is_array($config) === false) {
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' has a config that is not an object.',
-					self::ANNOTATION,
-					$path
-				)
-			);
-		}
+		$mode     = self::validMode(raw: $raw, path: $path);
+		$config   = self::validConfig(raw: $raw, path: $path);
 
 		// 🔑 BOTH SOURCE KEYS ON ONE PROPERTY IS REFUSED RATHER THAN RANKED.
 		// They answer different questions at different scopes, so a property
 		// carrying both is a schema whose author meant one of them. Picking one
 		// would be right about half the time and silent the rest.
 		if (array_key_exists(self::NOT_THIS_ONE, $property) === true) {
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' carries both \'%s\' and \'%s\'. '
-					. 'The first binds this one property to a provider; the second serves the whole '
-					. 'schema\'s objects from one. Keep the one that was meant.',
-					self::ANNOTATION,
-					$path,
-					self::ANNOTATION,
-					self::NOT_THIS_ONE
-				)
-			);
+			throw self::refusal(format: self::MSG_BOTH_KEYS, values: [$path, self::ANNOTATION, self::NOT_THIS_ONE]);
 		}
 
 		return new self(provider: $provider, mode: $mode, config: $config);
 	}//end fromProperty()
+
+	/**
+	 * The declaration block on a property, refusing one that is no object.
+	 *
+	 * @param array<string, mixed> $property The compiled property.
+	 * @param string               $path     Where the property sits, for the message.
+	 *
+	 * @return array<string, mixed>|null The block, or null when the property carries none.
+	 *
+	 * @throws PropertySourceException When the block is not a non-empty object.
+	 */
+	private static function declaredBlock(array $property, string $path): ?array {
+		if (array_key_exists(self::ANNOTATION, $property) === false) {
+			return null;
+		}
+
+		$raw = $property[self::ANNOTATION];
+		if (is_array($raw) === false || $raw === []) {
+			throw self::refusal(format: self::MSG_NOT_AN_OBJECT, values: [$path]);
+		}
+
+		return $raw;
+	}//end declaredBlock()
+
+	/**
+	 * The provider's configuration, refusing one that is not an object.
+	 *
+	 * @param array<string, mixed> $raw  The declaration block.
+	 * @param string               $path Where the property sits, for the message.
+	 *
+	 * @return array<string, mixed> The configuration, empty when none is declared.
+	 *
+	 * @throws PropertySourceException When the config is not an object.
+	 */
+	private static function validConfig(array $raw, string $path): array {
+		$config = ($raw['config'] ?? []);
+		if (is_array($config) === false) {
+			throw self::refusal(format: self::MSG_BAD_CONFIG, values: [$path]);
+		}
+
+		return $config;
+	}//end validConfig()
 
 	/**
 	 * The declared provider id, refusing anything that is not one.
@@ -192,26 +218,12 @@ final class PropertySourceDeclaration {
 	private static function validProvider(array $raw, string $path): string {
 		$provider = ($raw['provider'] ?? null);
 		if (is_string($provider) === false || trim($provider) === '') {
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' must name a provider. Without one there is nothing to ask for the values.',
-					self::ANNOTATION,
-					$path
-				)
-			);
+			throw self::refusal(format: self::MSG_NO_PROVIDER, values: [$path]);
 		}
 
 		$provider = trim($provider);
 		if (preg_match(self::PROVIDER_PATTERN, $provider) !== 1) {
-			throw new PropertySourceException(
-				sprintf(
-					'\'%s\' at \'%s\' names the provider \'%s\', which is not a provider id. '
-					. 'A typo here becomes an empty list in a form, with nothing to say why.',
-					self::ANNOTATION,
-					$path,
-					$provider
-				)
-			);
+			throw self::refusal(format: self::MSG_BAD_PROVIDER, values: [$path, $provider]);
 		}
 
 		return $provider;
@@ -244,18 +256,20 @@ final class PropertySourceDeclaration {
 			$shownMode = (string)$mode;
 		}
 
-		throw new PropertySourceException(
-			sprintf(
-				'\'%s\' at \'%s\' has mode \'%s\'. It must be one of: %s. '
-				. 'A mode nobody knows would be read as a guess, and the two modes differ in '
-				. 'whether a person may change what the provider returned.',
-				self::ANNOTATION,
-				$path,
-				$shownMode,
-				implode(', ', self::MODES)
-			)
-		);
+		throw self::refusal(format: self::MSG_BAD_MODE, values: [$path, $shownMode, implode(', ', self::MODES)]);
 	}//end validMode()
+
+	/**
+	 * A refusal whose sentence starts with the annotation and the path.
+	 *
+	 * @param string             $format The sentence, its first two placeholders the annotation and the path.
+	 * @param array<int, string> $values Where the property sits, then the values for the placeholders after it.
+	 *
+	 * @return PropertySourceException The refusal.
+	 */
+	private static function refusal(string $format, array $values): PropertySourceException {
+		return new PropertySourceException(sprintf($format, self::ANNOTATION, ...$values));
+	}//end refusal()
 
 	/**
 	 * Refuse a property whose declaration cannot be honoured.

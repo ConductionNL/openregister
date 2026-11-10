@@ -187,8 +187,18 @@ class FlowRunAssignee {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	public function mayAnswer(FlowRun $run, ?string $uid, ?string $nodeId = null): bool {
-		$recorded = $this->recordedValueFor(run: $run, nodeId: $nodeId);
+		return $this->recordedMayAnswer(recorded: $this->recordedValueFor(run: $run, nodeId: $nodeId), uid: $uid);
+	}//end mayAnswer()
 
+	/**
+	 * Whether `$uid` may answer a step whose recorded assignee is `$recorded`.
+	 *
+	 * @param mixed       $recorded The recorded assignee: a bare string, a typed reference (list), or empty.
+	 * @param string|null $uid      The answering user.
+	 *
+	 * @return bool True when the step is unassigned or `$uid` holds the assignment.
+	 */
+	private function recordedMayAnswer(mixed $recorded, ?string $uid): bool {
 		// Unassigned is deliberately open — see the class docblock. This is the
 		// one branch that must NOT be tightened without changing the spec.
 		if ($this->isUnassigned(value: $recorded) === true) {
@@ -218,7 +228,7 @@ class FlowRunAssignee {
 		// on every answer: whoever holds the post today may answer, and whoever
 		// held it in March may not.
 		return $this->matchesTypedReference(actor: $actor, recorded: $recorded);
-	}//end mayAnswer()
+	}//end recordedMayAnswer()
 
 	/**
 	 * Whether nothing was recorded, in either spelling.

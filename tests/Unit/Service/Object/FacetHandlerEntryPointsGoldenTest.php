@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\FacetLookups;
 use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -223,7 +224,7 @@ class FacetHandlerEntryPointsGoldenTest extends TestCase {
 			);
 		}
 
-		return new FacetHandler($mapper, $schemas, $cache, $logger);
+		return new FacetHandler(new FacetLookups($mapper, $schemas), $cache, $logger);
 	}//end handler()
 
 	/**

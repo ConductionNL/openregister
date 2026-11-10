@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace Unit\Service\File;
 
 use OCA\OpenRegister\Files\Service\File\SanitizationReport;
+use OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts;
+use OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -40,14 +42,18 @@ class SanitizationReportTest extends TestCase {
 	 */
 	public function testJsonSerializeKeyOrderAndValues(): void {
 		$report = new SanitizationReport(
-			commentsRemoved: 3,
-			trackedChangesAccepted: 2,
-			trackedChangesDropped: 1,
-			revisionAttributesStripped: 7,
-			hyperlinksFlattened: 4,
-			metadataFieldsScrubbed: 5,
-			customXmlPartsDropped: 1,
-			fieldCodesStripped: 2,
+			revisions: new SanitizationRevisionCounts(
+				commentsRemoved: 3,
+				trackedChangesAccepted: 2,
+				trackedChangesDropped: 1,
+				revisionAttributesStripped: 7
+			),
+			structure: new SanitizationStructureCounts(
+				hyperlinksFlattened: 4,
+				metadataFieldsScrubbed: 5,
+				customXmlPartsDropped: 1,
+				fieldCodesStripped: 2
+			),
 			sentinelApplied: 'DocuDesk Anonymisation'
 		);
 

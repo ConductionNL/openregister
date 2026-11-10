@@ -37,19 +37,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Sabre\VObject\Reader;
 
 /**
  * TaskService wraps CalDAV VTODO operations for OpenRegister objects.
@@ -66,36 +66,10 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The leaf now routes projected
  * VTODOs through the write-back gate beside its own CalDAV collaborators.
+ *
+ * @spec openspec/specs/object-interactions/spec.md
  */
-class TaskService implements ObjectCalendarTasksInterface {
-
-	/**
-	 * CalDAV backend for calendar operations.
-	 *
-	 * @var CalDavBackend
-	 */
-	private readonly CalDavBackend $calDavBackend;
-
-	/**
-	 * User session for getting current user.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger for error reporting.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * URL generator (webroot-aware deep links).
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
+class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface {
 
 	/**
 	 * Calendar selection by uid, shared with the projector.
@@ -105,13 +79,11 @@ class TaskService implements ObjectCalendarTasksInterface {
 	private readonly VtodoCalendarLocator $calendars;
 
 	/**
-	 * The write-back gate a PROJECTED VTODO's status change goes through.
-	 * Nullable so the service stays constructible bare; without it a
-	 * projected update is refused, never applied unchecked (fail closed).
+	 * Composes, edits and reads the VTODO documents this service stores.
 	 *
-	 * @var TaskVtodoWriteBackGate|null
+	 * @var TaskVtodoDocument
 	 */
-	private readonly ?TaskVtodoWriteBackGate $gate;
+	private readonly TaskVtodoDocument $documents;
 
 	/**
 	 * Constructor.
@@ -120,23 +92,21 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 * @param IUserSession $userSession User session for current user context
 	 * @param LoggerInterface $logger Logger for error reporting
 	 * @param IURLGenerator $urlGenerator URL generator for deep links
-	 * @param TaskVtodoWriteBackGate|null $gate The one path from a projected VTODO into the engine
+	 * @param TaskVtodoWriteBackGate|null $gate The one path from a projected VTODO into the engine. Nullable so the
+	 *                                          service stays constructible bare; without it a projected update is
+	 *                                          refused, never applied unchecked (fail closed).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		CalDavBackend $calDavBackend,
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		IURLGenerator $urlGenerator,
-		?TaskVtodoWriteBackGate $gate = null,
+		private readonly CalDavBackend $calDavBackend,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly ?TaskVtodoWriteBackGate $gate = null,
 	) {
-		$this->calDavBackend = $calDavBackend;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
-		$this->urlGenerator = $urlGenerator;
 		$this->calendars = new VtodoCalendarLocator(calDavBackend: $calDavBackend);
-		$this->gate = $gate;
+		$this->documents = new TaskVtodoDocument();
 	}//end __construct()
 
 	/**
@@ -168,35 +138,77 @@ class TaskService implements ObjectCalendarTasksInterface {
 		int $limit = 50,
 		int $offset = 0,
 	): array {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
+		return $this->listUserTasks(status: $status, query: new ListQuery(limit: $limit, offset: $offset));
+	}//end getAllUserTasks()
 
-		$principal = 'principals/users/' . $user->getUID();
-		$calendars = $this->calDavBackend->getCalendarsForUser($principal);
+	/**
+	 * One page of the session user's tasks across all VTODO calendars, soonest due first (see getAllUserTasks()).
+	 *
+	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
+	 * @param ListQuery   $query  The page: limit and offset (no offset is the first task).
+	 *
+	 * @return array{results: array, total: int} Task results with total count
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
+	 */
+	public function listUserTasks(?string $status, ListQuery $query): array {
+		$allTasks = $this->userTasksByDue(status: $status);
 
+		return ['results' => array_slice($allTasks, ($query->offset ?? 0), $query->limit), 'total' => count($allTasks)];
+	}//end listUserTasks()
+
+	/**
+	 * Every task of the session user's VTODO calendars, optionally only those with a status, soonest due first.
+	 *
+	 * @param string|null $status Status filter, compared case-insensitively.
+	 *
+	 * @return list<array> The tasks.
+	 *
+	 * @throws Exception If no user is logged in
+	 */
+	private function userTasksByDue(?string $status): array {
 		$allTasks = [];
-		foreach ($calendars as $calendar) {
-			$components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
-			if ($this->calendarSupportsVtodo(components: $components) === true) {
-				array_push($allTasks, ...$this->calendarTasks(calendarId: $calendar['id'], status: $status));
-			}
+		foreach ($this->calDavBackend->getCalendarsForUser('principals/users/' . $this->sessionUid()) as $calendar) {
+			$allTasks = array_merge($allTasks, $this->vtodoCalendarTasks(calendar: $calendar, status: $status));
 		}
 
-		// Sort by due date (soonest first, nulls last).
+		return $this->sortedByDue(tasks: $allTasks);
+	}//end userTasksByDue()
+
+	/**
+	 * The tasks of a calendar row, or none when the calendar does not support VTODO.
+	 *
+	 * @param array       $calendar The calendar row.
+	 * @param string|null $status   Status filter, compared case-insensitively.
+	 *
+	 * @return list<array> The tasks.
+	 */
+	private function vtodoCalendarTasks(array $calendar, ?string $status): array {
+		$components = $calendar['{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'];
+		if ($this->calendarSupportsVtodo(components: $components) === false) {
+			return [];
+		}
+
+		return $this->calendarTasks(calendarId: $calendar['id'], status: $status);
+	}//end vtodoCalendarTasks()
+
+	/**
+	 * Tasks sorted by due date, soonest first and undated last.
+	 *
+	 * @param list<array> $tasks The tasks.
+	 *
+	 * @return list<array> The sorted tasks.
+	 */
+	private function sortedByDue(array $tasks): array {
 		usort(
-			array: $allTasks,
-			callback: function ($a, $b) {
-				return strcmp($a['due'] ?? '9999-12-31', $b['due'] ?? '9999-12-31');
-			}
+			array: $tasks,
+			callback: fn ($a, $b) => strcmp(($a['due'] ?? '9999-12-31'), ($b['due'] ?? '9999-12-31'))
 		);
 
-		return [
-			'results' => array_slice($allTasks, $offset, $limit),
-			'total' => count($allTasks),
-		];
-	}//end getAllUserTasks()
+		return $tasks;
+	}//end sortedByDue()
 
 	/**
 	 * The tasks of one calendar, optionally only those with a status.
@@ -209,47 +221,62 @@ class TaskService implements ObjectCalendarTasksInterface {
 	private function calendarTasks(mixed $calendarId, ?string $status): array {
 		$tasks = [];
 		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $calendarObject) {
-			$task = $this->readTask(calendarId: $calendarId, uri: $calendarObject['uri']);
-			if ($task === null || ($status !== null && $task['status'] !== strtolower($status))) {
-				continue;
+			$task = $this->readTask(at: new TaskLocation(calendarId: $calendarId, uri: $calendarObject['uri']), needle: 'VTODO');
+			if ($task !== null && $this->hasStatus(task: $task, status: $status) === true) {
+				$tasks[] = $task;
 			}
-
-			$tasks[] = $task;
 		}
 
 		return $tasks;
 	}//end calendarTasks()
 
 	/**
-	 * One calendar object as a task, or null when it is gone, empty, not a VTODO or unreadable.
+	 * Whether a task has the status filtered on; no filter admits every task.
 	 *
-	 * @param mixed  $calendarId The calendar id.
-	 * @param string $uri        The calendar object URI.
+	 * @param array       $task   The task.
+	 * @param string|null $status Status filter, compared case-insensitively.
+	 *
+	 * @return bool
+	 */
+	private function hasStatus(array $task, ?string $status): bool {
+		return $status === null || $task['status'] === strtolower($status);
+	}//end hasStatus()
+
+	/**
+	 * One calendar object as a task, or null when it is gone, empty, not a VTODO mentioning the needle, or unreadable.
+	 *
+	 * @param TaskLocation $at     The calendar object.
+	 * @param string       $needle Text the raw iCalendar data must contain.
 	 *
 	 * @return array|null The task.
 	 */
-	private function readTask(mixed $calendarId, string $uri): ?array {
-		$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $uri);
-		if ($fullObject === null || empty($fullObject['calendardata']) === true) {
-			return null;
-		}
-
-		// Quick check: skip if this is not a VTODO.
-		$calendarData = $fullObject['calendardata'];
-		if (strpos($calendarData, 'VTODO') === false) {
+	private function readTask(TaskLocation $at, string $needle): ?array {
+		$calendarData = ($this->calDavBackend->getCalendarObject($at->calendarId, $at->uri)['calendardata'] ?? null);
+		if (empty($calendarData) === true || $this->mentionsAll(data: $calendarData, needles: [$needle, 'VTODO']) === false) {
 			return null;
 		}
 
 		try {
-			return $this->vtodoToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
+			return $this->vtodoToArray(calendarData: $calendarData, at: $at);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				'Failed to parse calendar object: ' . $e->getMessage(),
-				['uri' => $uri]
-			);
+			$this->logger->warning('Failed to parse calendar object: ' . $e->getMessage(), ['uri' => $at->uri]);
 			return null;
 		}
 	}//end readTask()
+
+	/**
+	 * Whether a string contains every needle.
+	 *
+	 * @param string       $data    The haystack.
+	 * @param list<string> $needles The needles.
+	 *
+	 * @return bool
+	 */
+	private function mentionsAll(string $data, array $needles): bool {
+		$missing = array_filter($needles, static fn (string $needle): bool => str_contains($data, $needle) === false);
+
+		return $missing === [];
+	}//end mentionsAll()
 
 	/**
 	 * Check whether a calendar supports VTODO components.
@@ -280,59 +307,33 @@ class TaskService implements ObjectCalendarTasksInterface {
 		$calendar = $this->findUserCalendar();
 		$calendarId = $calendar['id'];
 
-		// Get all calendar objects from this calendar.
-		$calendarObjects = $this->calDavBackend->getCalendarObjects($calendarId);
-
 		$tasks = [];
-		foreach ($calendarObjects as $calendarObject) {
-			// Load the full calendar data for each object.
-			$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $calendarObject['uri']);
-			if ($fullObject === null || empty($fullObject['calendardata']) === true) {
-				continue;
+		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $calendarObject) {
+			$task = $this->readTask(at: new TaskLocation(calendarId: $calendarId, uri: $calendarObject['uri']), needle: $objectUuid);
+			if ($task !== null && $task['objectUuid'] === $objectUuid) {
+				$tasks[] = $this->withTaskDeepLink(task: $task, calendarUri: ($calendar['uri'] ?? null));
 			}
-
-			$calendarData = $fullObject['calendardata'];
-
-			// Quick check: skip if this doesn't contain our object UUID.
-			if (strpos($calendarData, $objectUuid) === false) {
-				continue;
-			}
-
-			// Quick check: skip if this is not a VTODO.
-			if (strpos($calendarData, 'VTODO') === false) {
-				continue;
-			}
-
-			try {
-				$taskArray = $this->vtodoToArray(
-					calendarData: $calendarData,
-					calendarId: (string)$calendarId,
-					uri: $calendarObject['uri']
-				);
-
-				// Only include tasks that match our object UUID.
-				if ($taskArray !== null && $taskArray['objectUuid'] === $objectUuid) {
-					// Deep-link to the specific task in the Tasks app (hash route).
-					$deepLink = $this->buildTaskDeepLink(
-						calendarUri: ($calendar['uri'] ?? null),
-						taskUri: ($taskArray['id'] ?? null)
-					);
-					if ($deepLink !== null) {
-						$taskArray['url'] = $deepLink;
-					}
-
-					$tasks[] = $taskArray;
-				}
-			} catch (Exception $e) {
-				$this->logger->warning(
-					'Failed to parse calendar object: ' . $e->getMessage(),
-					['uri' => $calendarObject['uri']]
-				);
-			}//end try
-		}//end foreach
+		}
 
 		return $tasks;
 	}//end getTasksForObject()
+
+	/**
+	 * Add the Tasks-app deep link to a task, when one resolves.
+	 *
+	 * @param array       $task        The parsed task.
+	 * @param string|null $calendarUri The CalDAV calendar URI owning the task.
+	 *
+	 * @return array The task.
+	 */
+	private function withTaskDeepLink(array $task, ?string $calendarUri): array {
+		$deepLink = $this->buildTaskDeepLink(calendarUri: $calendarUri, taskUri: ($task['id'] ?? null));
+		if ($deepLink !== null) {
+			$task['url'] = $deepLink;
+		}
+
+		return $task;
+	}//end withTaskDeepLink()
 
 	/**
 	 * Build a webroot-aware deep-link to a specific task in the Tasks app.
@@ -349,18 +350,41 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 * @return string|null The deep-link URL, or null when not resolvable.
 	 */
 	private function buildTaskDeepLink(?string $calendarUri, ?string $taskUri): ?string {
-		if ($calendarUri === null || $calendarUri === '' || $taskUri === null || $taskUri === '') {
-			return null;
-		}
-
-		try {
-			$base = $this->urlGenerator->linkToRoute('tasks.page.index');
-		} catch (\Throwable $e) {
+		$base = $this->deepLinkBase(uris: [$calendarUri, $taskUri]);
+		if ($base === null) {
 			return null;
 		}
 
 		return rtrim($base, '/') . '/#/calendars/' . rawurlencode($calendarUri) . '/tasks/' . rawurlencode($taskUri);
 	}//end buildTaskDeepLink()
+
+	/**
+	 * The Tasks app's base URL, or null when a URI of the link is missing or empty.
+	 *
+	 * @param list<string|null> $uris The calendar URI and the task URI.
+	 *
+	 * @return string|null The base URL.
+	 */
+	private function deepLinkBase(array $uris): ?string {
+		if (in_array(null, $uris, true) === true || in_array('', $uris, true) === true) {
+			return null;
+		}
+
+		return $this->tasksAppBase();
+	}//end deepLinkBase()
+
+	/**
+	 * The Tasks app's webroot-aware base URL, or null when its route does not resolve.
+	 *
+	 * @return string|null The base URL.
+	 */
+	private function tasksAppBase(): ?string {
+		try {
+			return $this->urlGenerator->linkToRoute('tasks.page.index');
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end tasksAppBase()
 
 	/**
 	 * Create a new CalDAV task linked to an OpenRegister object.
@@ -387,77 +411,41 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
-	public function createTask(
-		int $registerId,
-		int $schemaId,
-		string $objectUuid,
-		string $objectTitle,
-		array $data,
-	): ?array {
-		if ($this->carriesEngineIdentity(data: $data) === true) {
+	public function createTask(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): ?array {
+		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
+		return $this->createObjectTask(ref: $ref, draft: new LinkedTaskDraft(objectTitle: $objectTitle, data: $data));
+	}//end createTask()
+
+	/**
+	 * Create a new CalDAV task linked to an OpenRegister object (see createTask()).
+	 *
+	 * A payload that carries an engine task identity is REFUSED before anything is read or stored.
+	 *
+	 * @param ObjectRef       $ref   The object to link: its register id, schema id and uuid.
+	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data: summary, description, priority, due, status
+	 *
+	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
+	 *
+	 * @throws Exception If no user is logged in or no calendar found
+	 * @throws TaskAccessDeniedException If the payload attempts to set an engine task identity
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
+	 */
+	public function createObjectTask(ObjectRef $ref, LinkedTaskDraft $draft): ?array {
+		if ($this->carriesEngineIdentity(data: $draft->data) === true) {
 			throw new TaskAccessDeniedException(
 				message: 'An engine task cannot be created through the object task endpoint; only OpenRegister projects engine tasks into a calendar.'
 			);
 		}
 
-		$calendar = $this->findUserCalendar();
-		$calendarId = $calendar['id'];
+		$calendarId = $this->findUserCalendar()['id'];
+		$link = new ObjectRef(register: (int)$ref->register, schema: (int)$ref->schema, id: $ref->id);
+		$document = $this->documents->composeFor(ref: $link, draft: $draft);
 
-		$uid = strtoupper(bin2hex(random_bytes(16)));
-		$dtstamp = gmdate('Ymd\THis\Z');
-		$summary = $this->escapeIcalText(text: $data['summary'] ?? 'Untitled task');
-		$status = strtoupper($data['status'] ?? 'NEEDS-ACTION');
-		$priority = (int)($data['priority'] ?? 0);
+		$this->calDavBackend->createCalendarObject($calendarId, $document['uri'], $document['calendarData']);
 
-		// Build the VTODO lines.
-		$lines = [];
-		$lines[] = 'BEGIN:VCALENDAR';
-		$lines[] = 'VERSION:2.0';
-		$lines[] = 'PRODID:-//OpenRegister//Tasks//EN';
-		$lines[] = 'BEGIN:VTODO';
-		$lines[] = 'UID:' . $uid;
-		$lines[] = 'DTSTAMP:' . $dtstamp;
-		$lines[] = 'SUMMARY:' . $summary;
-
-		if (empty($data['description']) === false) {
-			$lines[] = 'DESCRIPTION:' . $this->escapeIcalText(text: $data['description']);
-		}
-
-		$lines[] = 'STATUS:' . $status;
-		$lines[] = 'PRIORITY:' . $priority;
-
-		if (empty($data['due']) === false) {
-			$dueDate = new DateTime($data['due']);
-			$lines[] = 'DUE:' . $dueDate->format('Ymd\THis\Z');
-		}
-
-		// X-OPENREGISTER linking properties.
-		$lines[] = 'X-OPENREGISTER-REGISTER:' . $registerId;
-		$lines[] = 'X-OPENREGISTER-SCHEMA:' . $schemaId;
-		$lines[] = 'X-OPENREGISTER-OBJECT:' . $objectUuid;
-
-		// Non-core schema fields (e.g. assignee) are round-tripped as a single
-		// base64-encoded JSON blob so any field survives the VTODO projection
-		// (object-source-providers) without iCal escaping concerns.
-		if (empty($data['fields']) === false && is_array($data['fields']) === true) {
-			$lines[] = 'X-OPENREGISTER-DATA:' . base64_encode((string)json_encode($data['fields']));
-		}
-
-		// RFC 9253 LINK property.
-		$linkLabel = $this->escapeIcalText(text: $objectTitle);
-		$linkUri = '/apps/openregister/api/objects/' . $registerId . '/' . $schemaId . '/' . $objectUuid;
-		$lines[] = 'LINK;LINKREL="related";LABEL="' . $linkLabel . '";VALUE=URI:' . $linkUri;
-
-		$lines[] = 'END:VTODO';
-		$lines[] = 'END:VCALENDAR';
-
-		$calendarData = implode("\r\n", $lines) . "\r\n";
-		$uri = $uid . '.ics';
-
-		$this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
-
-		return $this->vtodoToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
-	}//end createTask()
+		return $this->vtodoToArray(calendarData: $document['calendarData'], at: new TaskLocation(calendarId: $calendarId, uri: $document['uri']));
+	}//end createObjectTask()
 
 	/**
 	 * Update an existing CalDAV task.
@@ -483,76 +471,52 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
 	 */
 	public function updateTask(string $calendarId, string $taskUri, array $data): ?array {
-		$calendarIdInt = (int)$calendarId;
-		$existing = $this->calDavBackend->getCalendarObject($calendarIdInt, $taskUri);
+		return $this->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskUri), data: $data);
+	}//end updateTask()
 
+	/**
+	 * Update an existing CalDAV task (see updateTask()).
+	 *
+	 * @param TaskLocation $at   The calendar and URI of the task to update
+	 * @param array        $data Fields to update: summary, description, priority, due, status
+	 *
+	 * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
+	 *
+	 * @throws Exception If the task is not found or update fails
+	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
+	 */
+	public function changeTask(TaskLocation $at, array $data): ?array {
+		$stored = $this->storedCalendarData(at: $at);
+		if (TaskCalendarProjector::taskUuidOf(calendarData: (string)$stored) !== null) {
+			$projected = new TaskLocation(calendarId: (int)$at->calendarId, uri: $at->uri);
+			return $this->updateProjectedTask(task: new StoredTask(at: $projected, calendarData: (string)$stored), data: $data);
+		}
+
+		$calendarData = $this->documents->withChanges(existing: $stored, data: $data);
+		$this->calDavBackend->updateCalendarObject((int)$at->calendarId, $at->uri, $calendarData);
+
+		return $this->vtodoToArray(calendarData: $calendarData, at: $at);
+	}//end changeTask()
+
+	/**
+	 * The stored iCalendar data of a task.
+	 *
+	 * @param TaskLocation $at The calendar and URI of the task
+	 *
+	 * @return mixed The stored calendar data.
+	 *
+	 * @throws Exception If the task is not found
+	 */
+	private function storedCalendarData(TaskLocation $at): mixed {
+		$existing = $this->calDavBackend->getCalendarObject((int)$at->calendarId, $at->uri);
 		if ($existing === null) {
 			throw new Exception('Task not found');
 		}
 
-		if (TaskCalendarProjector::taskUuidOf(calendarData: (string)$existing['calendardata']) !== null) {
-			return $this->updateProjectedTask(
-				calendarId: $calendarIdInt,
-				taskUri: $taskUri,
-				existing: (string)$existing['calendardata'],
-				data: $data
-			);
-		}
-
-		$vcalendar = Reader::read($existing['calendardata']);
-		$vtodo = $vcalendar->VTODO;
-
-		if ($vtodo === null) {
-			throw new Exception('Calendar object is not a VTODO');
-		}
-
-		// Update fields that are provided.
-		if (isset($data['summary']) === true) {
-			$vtodo->SUMMARY = $data['summary'];
-		}
-
-		if (isset($data['description']) === true) {
-			$vtodo->DESCRIPTION = $data['description'];
-		}
-
-		if (isset($data['status']) === true) {
-			$vtodo->STATUS = strtoupper($data['status']);
-
-			// If completing, set COMPLETED timestamp.
-			if (strtoupper($data['status']) === 'COMPLETED') {
-				$vtodo->COMPLETED = gmdate('Ymd\THis\Z');
-			}
-		}
-
-		if (isset($data['priority']) === true) {
-			$vtodo->PRIORITY = (int)$data['priority'];
-		}
-
-		if (isset($data['due']) === true && empty($data['due']) === true) {
-			unset($vtodo->DUE);
-		} elseif (isset($data['due']) === true) {
-			$vtodo->DUE = new DateTime($data['due']);
-		}
-
-		// Round-trip non-core schema fields (object-source-providers): replace the
-		// X-OPENREGISTER-DATA blob so a projected object's non-core fields (e.g.
-		// assignee, taskStatus) update faithfully. Linking props (REGISTER/SCHEMA/
-		// OBJECT) are left untouched above so the link + scoping survive the update.
-		if (isset($data['fields']) === true && is_array($data['fields']) === true) {
-			unset($vtodo->{'X-OPENREGISTER-DATA'});
-			if (empty($data['fields']) === false) {
-				$vtodo->add('X-OPENREGISTER-DATA', base64_encode((string)json_encode($data['fields'])));
-			}
-		}
-
-		// Update DTSTAMP.
-		$vtodo->DTSTAMP = gmdate('Ymd\THis\Z');
-
-		$calendarData = $vcalendar->serialize();
-		$this->calDavBackend->updateCalendarObject($calendarIdInt, $taskUri, $calendarData);
-
-		return $this->vtodoToArray(calendarData: $calendarData, calendarId: $calendarId, uri: $taskUri);
-	}//end updateTask()
+		return $existing['calendardata'];
+	}//end storedCalendarData()
 
 	/**
 	 * Refuse a task that is not one of the caller's tasks on the given object.
@@ -571,6 +535,22 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function requireTaskOf(string $objectUuid, string $calendarId, string $taskUri): void {
+		$this->requireTaskAt(objectUuid: $objectUuid, at: new TaskLocation(calendarId: $calendarId, uri: $taskUri));
+	}//end requireTaskOf()
+
+	/**
+	 * Refuse a task that is not one of the caller's tasks on the given object (see requireTaskOf()).
+	 *
+	 * @param string       $objectUuid The object the caller addressed.
+	 * @param TaskLocation $at         The calendar and task the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireTaskAt(string $objectUuid, TaskLocation $at): void {
 		try {
 			$tasks = $this->getTasksForObject(objectUuid: $objectUuid);
 		} catch (NoVtodoCalendarException $e) {
@@ -578,13 +558,13 @@ class TaskService implements ObjectCalendarTasksInterface {
 		}
 
 		foreach ($tasks as $task) {
-			if ((string)$task['calendarId'] === $calendarId && $task['id'] === $taskUri) {
+			if ((string)$task['calendarId'] === (string)$at->calendarId && $task['id'] === $at->uri) {
 				return;
 			}
 		}
 
 		throw new Exception('Task not found', 404);
-	}//end requireTaskOf()
+	}//end requireTaskAt()
 
 	/**
 	 * Delete a CalDAV task.
@@ -633,16 +613,27 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 */
 	public function findUserCalendar(?string $uid = null): array {
 		if ($uid === null || trim($uid) === '') {
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				throw new Exception('No user logged in');
-			}
-
-			$uid = $user->getUID();
+			$uid = $this->sessionUid();
 		}
 
 		return $this->calendars->forUser(uid: $uid);
 	}//end findUserCalendar()
+
+	/**
+	 * The uid of the session user.
+	 *
+	 * @return string The uid.
+	 *
+	 * @throws Exception If no user is logged in
+	 */
+	private function sessionUid(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		return $user->getUID();
+	}//end sessionUid()
 
 	/**
 	 * Whether a create payload attempts to set an engine task identity.
@@ -654,26 +645,31 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
 	private function carriesEngineIdentity(array $data): bool {
-		$markers = [TaskCalendarProjector::PROP_TASK, 'taskUuid', 'engineTask'];
-		foreach ($markers as $marker) {
-			if (isset($data[$marker]) === true && trim((string)$data[$marker]) !== '') {
-				return true;
-			}
+		if ($this->namesEngineTask(level: $data) === true) {
+			return true;
 		}
 
 		$fields = ($data['fields'] ?? null);
-		if (is_array($fields) === false) {
-			return false;
-		}
 
-		foreach ($markers as $marker) {
-			if (isset($fields[$marker]) === true && trim((string)$fields[$marker]) !== '') {
+		return is_array($fields) === true && $this->namesEngineTask(level: $fields) === true;
+	}//end carriesEngineIdentity()
+
+	/**
+	 * Whether one level of a payload sets a non-blank engine task marker.
+	 *
+	 * @param array $level The payload level: the payload itself or its `fields`.
+	 *
+	 * @return bool True when `X-OPENREGISTER-TASK`, `taskUuid` or `engineTask` is set and not blank
+	 */
+	private function namesEngineTask(array $level): bool {
+		foreach ([TaskCalendarProjector::PROP_TASK, 'taskUuid', 'engineTask'] as $marker) {
+			if (isset($level[$marker]) === true && trim((string)$level[$marker]) !== '') {
 				return true;
 			}
 		}
 
 		return false;
-	}//end carriesEngineIdentity()
+	}//end namesEngineTask()
 
 	/**
 	 * Route a projected VTODO's update through the write-back gate.
@@ -681,10 +677,8 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 * Only `status` can name a verb; every other field is projection-owned
 	 * and the stored document is the engine's rendering regardless.
 	 *
-	 * @param int $calendarId The calendar holding the VTODO
-	 * @param string $taskUri The VTODO uri
-	 * @param string $existing The stored document
-	 * @param array $data The requested changes
+	 * @param StoredTask $task The stored document and where it is
+	 * @param array      $data The requested changes
 	 *
 	 * @return array|null The projected task as JSON-friendly array
 	 *
@@ -693,206 +687,52 @@ class TaskService implements ObjectCalendarTasksInterface {
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-status-mapping
 	 */
-	private function updateProjectedTask(int $calendarId, string $taskUri, string $existing, array $data): ?array {
+	private function updateProjectedTask(StoredTask $task, array $data): ?array {
 		if ($this->gate === null) {
 			throw new TaskAccessDeniedException(
 				message: 'This calendar entry projects an engine task and the write-back gate is unavailable, so the change was not applied.'
 			);
 		}
 
-		$requested = $existing;
-		if (isset($data['status']) === true) {
-			$vcalendar = Reader::read($existing);
-			$vtodo = ($vcalendar->select('VTODO')[0] ?? null);
-			if ($vtodo === null) {
-				throw new Exception('Calendar object is not a VTODO');
-			}
-
-			$vtodo->remove('STATUS');
-			$vtodo->add('STATUS', strtoupper((string)$data['status']));
-			$requested = $vcalendar->serialize();
-		}
-
-		$actor = $this->userSession->getUser()?->getUID();
-		$rendered = $this->gate->handleWrite(calendarData: $requested, actor: $actor);
+		$requested = $this->requestedDocument(existing: $task->calendarData, data: $data);
+		$rendered = $this->gate->handleWrite(calendarData: $requested, actor: $this->userSession->getUser()?->getUID());
 		if ($rendered === null) {
 			// An echo or a document that is not the engine's business: stored as is.
-			return $this->vtodoToArray(calendarData: $existing, calendarId: (string)$calendarId, uri: $taskUri);
+			return $this->vtodoToArray(calendarData: $task->calendarData, at: $task->at);
 		}
 
-		$this->calDavBackend->updateCalendarObject($calendarId, $taskUri, $rendered);
+		$this->calDavBackend->updateCalendarObject($task->at->calendarId, $task->at->uri, $rendered);
 
-		return $this->vtodoToArray(calendarData: $rendered, calendarId: (string)$calendarId, uri: $taskUri);
+		return $this->vtodoToArray(calendarData: $rendered, at: $task->at);
 	}//end updateProjectedTask()
+
+	/**
+	 * The document a projected update requests: the stored one, with the requested status when one is given.
+	 *
+	 * @param string $existing The stored document
+	 * @param array  $data     The requested changes
+	 *
+	 * @return string The requested document
+	 *
+	 * @throws Exception When a status is requested on a document that holds no VTODO
+	 */
+	private function requestedDocument(string $existing, array $data): string {
+		if (isset($data['status']) === false) {
+			return $existing;
+		}
+
+		return $this->documents->withStatus(existing: $existing, status: (string)$data['status']);
+	}//end requestedDocument()
 
 	/**
 	 * Parse a VTODO iCalendar string into a JSON-friendly array.
 	 *
-	 * Extracts standard VTODO fields and X-OPENREGISTER-* properties
-	 * from the raw iCalendar data.
-	 *
-	 * @param string $calendarData The raw iCalendar string
-	 * @param string $calendarId The calendar ID
-	 * @param string $uri The calendar object URI
+	 * @param string       $calendarData The raw iCalendar string
+	 * @param TaskLocation $at           The calendar and URI of the calendar object
 	 *
 	 * @return array|null Task array or null if not a VTODO
 	 */
-	private function vtodoToArray(string $calendarData, string $calendarId, string $uri): ?array {
-		$vcalendar = Reader::read($calendarData);
-		$vtodo = $vcalendar->VTODO;
-
-		if ($vtodo === null) {
-			return null;
-		}
-
-		// Extract X-OPENREGISTER properties.
-		$linkData = $this->extractOpenRegisterProperties(vtodo: $vtodo);
-
-		// Extract standard VTODO fields.
-		$fields = $this->extractVtodoFields(vtodo: $vtodo);
-
-		return [
-			'id' => $uri,
-			'uid' => $fields['uid'],
-			'calendarId' => $calendarId,
-			'summary' => $fields['summary'],
-			'description' => $fields['description'],
-			'status' => $fields['status'],
-			'priority' => $fields['priority'],
-			'due' => $fields['due'],
-			'completed' => $fields['completed'],
-			'created' => $fields['created'],
-			'objectUuid' => $linkData['objectUuid'],
-			'registerId' => $linkData['registerId'],
-			'schemaId' => $linkData['schemaId'],
-			'fields' => $linkData['fields'],
-		];
+	private function vtodoToArray(string $calendarData, TaskLocation $at): ?array {
+		return $this->documents->taskOf(calendarData: $calendarData, at: $at);
 	}//end vtodoToArray()
-
-	/**
-	 * Extract X-OPENREGISTER-* properties from a VTODO component.
-	 *
-	 * @param mixed $vtodo The VTODO component from the parsed iCalendar.
-	 *
-	 * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null, fields: array<string, mixed>}
-	 */
-	private function extractOpenRegisterProperties(mixed $vtodo): array {
-		$objectUuid = null;
-		$registerId = null;
-		$schemaId = null;
-		$fields = [];
-
-		if (isset($vtodo->{'X-OPENREGISTER-OBJECT'}) === true) {
-			$objectUuid = (string)$vtodo->{'X-OPENREGISTER-OBJECT'};
-		}
-
-		if (isset($vtodo->{'X-OPENREGISTER-REGISTER'}) === true) {
-			$registerId = (int)(string)$vtodo->{'X-OPENREGISTER-REGISTER'};
-		}
-
-		if (isset($vtodo->{'X-OPENREGISTER-SCHEMA'}) === true) {
-			$schemaId = (int)(string)$vtodo->{'X-OPENREGISTER-SCHEMA'};
-		}
-
-		// Non-core schema fields are round-tripped as a single base64-encoded
-		// JSON blob (X-OPENREGISTER-DATA) so any field survives the VTODO
-		// projection without iCal-escaping pitfalls. Decoded best-effort.
-		if (isset($vtodo->{'X-OPENREGISTER-DATA'}) === true) {
-			$raw = base64_decode((string)$vtodo->{'X-OPENREGISTER-DATA'}, true);
-			if ($raw !== false) {
-				$decoded = json_decode($raw, true);
-				if (is_array($decoded) === true) {
-					$fields = $decoded;
-				}
-			}
-		}
-
-		return [
-			'objectUuid' => $objectUuid,
-			'registerId' => $registerId,
-			'schemaId' => $schemaId,
-			'fields' => $fields,
-		];
-	}//end extractOpenRegisterProperties()
-
-	/**
-	 * Extract standard VTODO fields from a VTODO component.
-	 *
-	 * @param mixed $vtodo The VTODO component from the parsed iCalendar.
-	 *
-	 * @return array{uid: string|null, summary: string, description: string,
-	 *     status: string, priority: int, due: string|null,
-	 *     completed: string|null, created: string|null}
-	 */
-	private function extractVtodoFields(mixed $vtodo): array {
-		$due = null;
-		if (isset($vtodo->DUE) === true) {
-			$due = $vtodo->DUE->getDateTime()->format('c');
-		}
-
-		$completed = null;
-		if (isset($vtodo->COMPLETED) === true) {
-			$completed = $vtodo->COMPLETED->getDateTime()->format('c');
-		}
-
-		$created = null;
-		if (isset($vtodo->CREATED) === true) {
-			$created = $vtodo->CREATED->getDateTime()->format('c');
-		}
-
-		// Map STATUS to lowercase.
-		$status = 'needs-action';
-		if (isset($vtodo->STATUS) === true) {
-			// Normalize: NEEDS-ACTION -> needs-action, IN-PROCESS -> in-process, etc.
-			$status = strtolower((string)$vtodo->STATUS);
-		}
-
-		$taskUid = null;
-		$taskSummary = '';
-		$taskDescription = '';
-		$taskPriority = 0;
-
-		if (isset($vtodo->UID) === true) {
-			$taskUid = (string)$vtodo->UID;
-		}
-
-		if (isset($vtodo->SUMMARY) === true) {
-			$taskSummary = (string)$vtodo->SUMMARY;
-		}
-
-		if (isset($vtodo->DESCRIPTION) === true) {
-			$taskDescription = (string)$vtodo->DESCRIPTION;
-		}
-
-		if (isset($vtodo->PRIORITY) === true) {
-			$taskPriority = (int)(string)$vtodo->PRIORITY;
-		}
-
-		return [
-			'uid' => $taskUid,
-			'summary' => $taskSummary,
-			'description' => $taskDescription,
-			'status' => $status,
-			'priority' => $taskPriority,
-			'due' => $due,
-			'completed' => $completed,
-			'created' => $created,
-		];
-	}//end extractVtodoFields()
-
-	/**
-	 * Escape text for use in iCalendar property values.
-	 *
-	 * @param string $text The text to escape
-	 *
-	 * @return string The escaped text
-	 */
-	private function escapeIcalText(string $text): string {
-		$text = str_replace('\\', '\\\\', $text);
-		$text = str_replace("\n", '\\n', $text);
-		$text = str_replace(',', '\\,', $text);
-		$text = str_replace(';', '\\;', $text);
-
-		return $text;
-	}//end escapeIcalText()
 }//end class

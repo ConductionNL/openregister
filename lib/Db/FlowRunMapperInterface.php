@@ -121,16 +121,10 @@ interface FlowRunMapperInterface {
 	 * rather than silently dropping the whole disjunction and matching nothing —
 	 * or, worse, matching everything.
 	 *
-	 * @param string|null $flowId Restrict to one flow.
-	 * @param string|null $status Restrict to one status.
-	 * @param integer $limit Page size.
-	 * @param integer $offset Page offset.
-	 * @param string|null $requesterUid The caller, or null to apply NO scoping
-	 *                                  (administrators and system reads only).
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns; runs of these
-	 *                                         are visible regardless of who triggered them.
-	 * @param DateTime|null $since Only runs created at or after this moment.
-	 * @param array<int, string> $flowIds Restrict to any of these flows; empty means no restriction.
+	 * @param FlowRunListing $listing The filters and the paging window.
+	 * @param FlowRunViewer  $viewer  The caller and the flows they own; a null
+	 *                                requester applies NO scoping (administrators
+	 *                                and system reads only).
 	 *
 	 * @return array<int, FlowRun> The runs.
 	 *
@@ -138,10 +132,7 @@ interface FlowRunMapperInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function findAllRuns(
-		?string $flowId = null, ?string $status = null, int $limit = 50, int $offset = 0, ?string $requesterUid = null,
-		array $ownedFlowIds = [], ?DateTime $since = null, array $flowIds = []
-	): array;
+	public function findAllRuns(FlowRunListing $listing, FlowRunViewer $viewer): array;
 
 	/**
 	 * Per flow: its most recent run and how many runs started since a moment.
@@ -152,30 +143,26 @@ interface FlowRunMapperInterface {
 	 * requested flow gets an entry, a flow with no visible run included, so a
 	 * caller can tell "never ran" from "not asked".
 	 *
-	 * @param array<int, string> $flowIds      The flows to summarise.
-	 * @param DateTime           $since        Count runs created at or after this.
-	 * @param string|null        $requesterUid The caller, or null for no scoping.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param FlowActivityWindow $window The flows to summarise and the moment to count from.
+	 * @param FlowRunViewer      $viewer The caller and the flows they own; a null requester means no scoping.
 	 *
 	 * @return array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> Keyed by flow id.
 	 *
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function summarizeByFlow(array $flowIds, DateTime $since, ?string $requesterUid = null, array $ownedFlowIds = []): array;
+	public function summarizeByFlow(FlowActivityWindow $window, FlowRunViewer $viewer): array;
 
 	/**
 	 * How many visible runs each flow started since a moment.
 	 *
-	 * @param array<int, string> $flowIds      The flows to count.
-	 * @param DateTime           $since        Count runs created at or after this.
-	 * @param string|null        $requesterUid The caller, or null for no scoping.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param FlowActivityWindow $window The flows to count and the moment to count from.
+	 * @param FlowRunViewer      $viewer The caller and the flows they own; a null requester means no scoping.
 	 *
 	 * @return array<string, int> Run count keyed by flow id; flows without runs are absent.
 	 *
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function countSinceByFlow(array $flowIds, DateTime $since, ?string $requesterUid, array $ownedFlowIds): array;
+	public function countSinceByFlow(FlowActivityWindow $window, FlowRunViewer $viewer): array;
 
 	/**
 	 * The newest visible run of each flow, without its log or marking.
@@ -184,15 +171,14 @@ interface FlowRunMapperInterface {
 	 * rows. Only the columns a summary shows are read, so a list of a hundred
 	 * flows never loads a hundred run logs.
 	 *
-	 * @param array<int, string> $flowIds      The flows to read.
-	 * @param string|null        $requesterUid The caller, or null for no scoping.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param array<int, string> $flowIds The flows to read.
+	 * @param FlowRunViewer      $viewer  The caller and the flows they own; a null requester means no scoping.
 	 *
 	 * @return array<int, FlowRun> At most one run per flow.
 	 *
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function latestRunsByFlow(array $flowIds, ?string $requesterUid, array $ownedFlowIds): array;
+	public function latestRunsByFlow(array $flowIds, FlowRunViewer $viewer): array;
 
 	/**
 	 * The suspended runs whose subject is this object.
@@ -226,15 +212,14 @@ interface FlowRunMapperInterface {
 	 * of a run and the absence of permission look identical from outside, which
 	 * is what stops the endpoint being a probe for which runs exist.
 	 *
-	 * @param string             $uuid         The run uuid.
-	 * @param string|null        $requesterUid The caller, or null for an administrator.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param string        $uuid   The run uuid.
+	 * @param FlowRunViewer $viewer The caller and the flows they own; a null requester is an administrator.
 	 *
 	 * @return FlowRun|null The run, or null when it does not exist or is not visible.
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
-	public function findByUuidVisibleTo(string $uuid, ?string $requesterUid, array $ownedFlowIds = []): ?FlowRun;
+	public function findByUuidVisibleTo(string $uuid, FlowRunViewer $viewer): ?FlowRun;
 
 	/**
 	 * Delete terminal runs older than a cutoff, optionally for one flow only.
@@ -335,16 +320,16 @@ interface FlowRunMapperInterface {
 	 * the total honest: a caller that filtered a bounded page client-side would
 	 * silently drop every matching run the page did not contain.
 	 *
-	 * @param string|null $organisation Restrict to one organisation uuid.
-	 * @param integer $limit Page size.
-	 * @param string|null $subject Restrict to runs anchored to one subject object uuid.
+	 * @param FlowRunSubjectScope $scope The organisation to restrict to and, optionally, the
+	 *                                   subject object the runs must be anchored to.
+	 * @param integer             $limit Page size.
 	 *
 	 * @return array<int, FlowRun> The non-terminal runs.
 	 *
 	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	public function findActive(?string $organisation = null, int $limit = 25, ?string $subject = null): array;
+	public function findActive(FlowRunSubjectScope $scope, int $limit = 25): array;
 
 	/**
 	 * Whether one flow already has a run that has not finished.
@@ -435,15 +420,14 @@ interface FlowRunMapperInterface {
 	 * returns nothing without a query rather than dropping the predicate and
 	 * answering a wider question than was asked.
 	 *
-	 * @param string $organisation The caller's organisation uuid.
-	 * @param string $subject The subject object uuid.
-	 * @param integer $limit Page size.
+	 * @param FlowRunSubjectScope $scope The caller's organisation and the subject object uuid; both required.
+	 * @param integer             $limit Page size.
 	 *
 	 * @return array<int, FlowRun> The terminal runs, newest first.
 	 *
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	public function findCompletedForSubject(string $organisation, string $subject, int $limit = 25): array;
+	public function findCompletedForSubject(FlowRunSubjectScope $scope, int $limit = 25): array;
 
 	/**
 	 * How many finished runs one subject object has, for the honest total.
@@ -611,15 +595,13 @@ interface FlowRunMapperInterface {
 	 * flow ({@see FlowScheduleService}) — one stuck run silently stops the
 	 * whole schedule. Expiring it lets the next tick fire.
 	 *
-	 * @param DateTime $before Runs queued before this moment are stale.
-	 * @param string $reason The error recorded on each expired run.
-	 * @param integer $limit Maximum runs to expire in one pass.
+	 * @param FlowRunQueueExpiry $expiry The cut-off, the recorded reason and the batch cap.
 	 *
 	 * @return array<int, FlowRun> The runs that were expired.
 	 *
 	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
-	public function expireQueuedBefore(DateTime $before, string $reason, int $limit = 500): array;
+	public function expireQueuedBefore(FlowRunQueueExpiry $expiry): array;
 
 	/**
 	 * Delete terminal runs older than a cut-off.

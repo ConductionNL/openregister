@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -266,10 +267,12 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 							'getAbsoluteURL' => fn (array $a): string => 'https://cloud.test' . $a[0],
 						]),
 						$this->createStub(IL10N::class),
-						$this->createStub(ObjectService::class),
-						$this->createStub(DeepLinkRegistryService::class),
-						$this->createStub(SchemaMapper::class),
-						$this->createStub(RegisterMapper::class),
+						new ObjectPreviewSources(
+							objectService: $this->createStub(ObjectService::class),
+							deepLinkRegistry: $this->createStub(DeepLinkRegistryService::class),
+							schemaMapper: $this->createStub(SchemaMapper::class),
+							registerMapper: $this->createStub(RegisterMapper::class)
+						),
 						$this->createStub(LoggerInterface::class)
 					),
 					DeepLinkRegistryService::class => $this->recorder(DeepLinkRegistryService::class, 'deepLinks', [

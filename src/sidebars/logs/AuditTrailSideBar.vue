@@ -17,173 +17,101 @@ import {
 		:subname="t('openregister', 'Export, view, or delete audit trails')"
 		:open="navigationStore.sidebarState.auditTrail"
 		@update:open="(e) => navigationStore.setSidebarState('auditTrail', e)">
-		<NcAppSidebarTab
-			id="filters-tab"
-			:name="t('openregister', 'Filters')"
-			:order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
-				<ScopeFilterFields
-					@registerChange="handleRegisterChange"
-					@schemaChange="handleSchemaChange" />
-				<div class="filterGroup">
-					<label for="actionSelect">{{
-						t('openregister', 'Actions')
-					}}</label>
-					<NcSelect
-						id="actionSelect"
-						v-model="selectedActions"
-						:options="actionOptions"
-						:placeholder="t('openregister', 'All actions')"
-						:inputLabel="t('openregister', 'Actions')"
-						:multiple="true"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<TrailUserDateFields
-					v-model:users="selectedUsers"
-					v-model:dateFrom="dateFrom"
-					v-model:dateTo="dateTo"
-					:userOptions="userOptions"
-					@change="applyFilters" />
-				<div class="filterGroup">
-					<label for="objectFilter">{{
-						t('openregister', 'Object ID')
-					}}</label>
-					<NcTextField
-						id="objectFilter"
-						v-model="objectFilter"
-						:label="t('openregister', 'Filter by object ID')"
-						:placeholder="t('openregister', 'Enter object ID')"
-						@update:modelValue="handleObjectFilterChange" />
-				</div>
-				<div class="filterGroup">
-					<NcCheckboxRadioSwitch
-						v-model="showOnlyWithChanges"
-						@update:modelValue="applyFilters">
-						{{ t('openregister', 'Show only entries with changes') }}
-					</NcCheckboxRadioSwitch>
-				</div>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Audit Trails')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.',
+				)
+			"
+			clearable
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange"
+			@clear="clearFilters">
+			<SidebarFilterSelect
+				id="actionSelect"
+				v-model="selectedActions"
+				:options="actionOptions"
+				:placeholder="t('openregister', 'All actions')"
+				:label="t('openregister', 'Actions')"
+				multiple
+				@update:modelValue="applyFilters" />
+			<TrailUserDateFields
+				v-model:users="selectedUsers"
+				v-model:dateFrom="dateFrom"
+				v-model:dateTo="dateTo"
+				:userOptions="userOptions"
+				@change="applyFilters" />
+			<div class="filterGroup">
+				<label for="objectFilter">{{
+					t('openregister', 'Object ID')
+				}}</label>
+				<NcTextField
+					id="objectFilter"
+					v-model="objectFilter"
+					:label="t('openregister', 'Filter by object ID')"
+					:placeholder="t('openregister', 'Enter object ID')"
+					@update:modelValue="handleObjectFilterChange" />
 			</div>
-
-			<div class="actionGroup">
-				<NcButton @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openregister', 'Clear filters') }}
-				</NcButton>
+			<div class="filterGroup">
+				<NcCheckboxRadioSwitch
+					v-model="showOnlyWithChanges"
+					@update:modelValue="applyFilters">
+					{{ t('openregister', 'Show only entries with changes') }}
+				</NcCheckboxRadioSwitch>
 			</div>
+		</ScopeFiltersTab>
 
-			<NcNoteCard type="info" class="filter-hint">
-				{{
-					t(
-						'openregister',
-						'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.',
-					)
-				}}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab
-			id="stats-tab"
-			:name="t('openregister', 'Statistics')"
-			:order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ totalAuditTrails }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Total Audit Trails') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ createCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Create Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ updateCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Update Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ deleteCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Delete Operations') }}
-					</div>
-				</div>
+				<SidebarStatCard
+					:value="totalAuditTrails"
+					:label="t('openregister', 'Total Audit Trails')" />
+				<SidebarStatCard
+					:value="createCount"
+					:label="t('openregister', 'Create Operations')" />
+				<SidebarStatCard
+					:value="updateCount"
+					:label="t('openregister', 'Update Operations')" />
+				<SidebarStatCard
+					:value="deleteCount"
+					:label="t('openregister', 'Delete Operations')" />
 			</div>
 
 			<!-- Action Distribution -->
 			<div class="actionDistribution">
 				<h4>{{ t('openregister', 'Action Distribution') }}</h4>
-				<NcListItem
+				<CountListItem
 					v-for="(action, index) in actionDistribution"
 					:key="index"
 					:name="action.action"
-					:bold="false">
+					:subname="entriesLabel(action.count)">
 					<template #icon>
 						<Pencil v-if="action.action === 'update'" :size="32" />
 						<Plus v-else-if="action.action === 'create'" :size="32" />
 						<Delete v-else-if="action.action === 'delete'" :size="32" />
 						<Eye v-else :size="32" />
 					</template>
-					<template #subname>
-						{{
-							t('openregister', '{count} entries', {
-								count: action.count,
-							})
-						}}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
 
 			<!-- Top Objects -->
 			<div class="topObjects">
 				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
-				<NcListItem
+				<CountListItem
 					v-for="(object, index) in topObjects"
 					:key="index"
 					:name="object.name"
-					:bold="false">
+					:subname="entriesLabel(object.count)">
 					<template #icon>
 						<CogOutline :size="32" />
 					</template>
-					<template #subname>
-						{{
-							t('openregister', '{count} entries', {
-								count: object.count,
-							})
-						}}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 	</NcAppSidebar>
 </template>
 
@@ -193,23 +121,15 @@ import {
  */
 import {
 	NcAppSidebar,
-	NcAppSidebarTab,
-	NcButton,
 	NcCheckboxRadioSwitch,
-	NcListItem,
-	NcNoteCard,
-	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import ScopeFilterFields from '../ScopeFilterFields.vue'
-import TrailUserDateFields from './TrailUserDateFields.vue'
+import { trailSidebar } from '../../composables/trailSidebar.js'
 import eventBus from '../../eventBus.js'
 import {
 	addDateRange,
@@ -222,9 +142,8 @@ import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
-	trailUserOptions,
 } from '../../services/trailFilters.js'
-import { routeBoundFilters } from '../routeBoundFilters.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
 /**
  * The user options a comma-separated route parameter names.
@@ -260,26 +179,20 @@ function actionOption(byValue, value) {
 export default {
 	name: 'AuditTrailSideBar',
 	components: {
-		TrailUserDateFields,
-		ScopeFilterFields,
 		NcAppSidebar,
-		NcAppSidebarTab,
-		NcSelect,
-		NcNoteCard,
-		NcButton,
-		NcListItem,
 		NcTextField,
 		NcCheckboxRadioSwitch,
-		FilterOutline,
-		ChartLine,
 		CogOutline,
+		Delete,
 		Plus,
 		Pencil,
 		Eye,
-		FilterOffOutline,
 	},
 
-	mixins: [routeBoundFilters('/audit-trails')],
+	mixins: [
+		routeBoundFilters('/audit-trails'),
+		trailSidebar(() => auditTrailStore.auditTrailList),
+	],
 
 	data() {
 		return {
@@ -304,9 +217,6 @@ export default {
 
 			activeTab: 'filters-tab',
 			selectedActions: [],
-			selectedUsers: [],
-			dateFrom: null,
-			dateTo: null,
 			objectFilter: '',
 			showOnlyWithChanges: false,
 			filteredCount: 0,
@@ -323,13 +233,6 @@ export default {
 	computed: {
 		// A <script setup> binding is not on `this`, and a watch path reads `this`.
 		auditTrailStore: () => auditTrailStore,
-
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		userOptions() {
-			return trailUserOptions(auditTrailStore.auditTrailList)
-		},
 	},
 
 	watch: {
@@ -346,25 +249,14 @@ export default {
 	 */
 	mounted() {
 		// Load required data
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-		}
-
-		// Load initial audit trail data and ensure it's refreshed
-		this.loadAuditTrailData()
+		this.refreshEmptyScopeLists()
 
 		this.loadStatistics()
 		this.loadActionDistribution()
 		this.loadTopObjects()
 
 		// Listen for filtered count updates
-		eventBus.on('audit-trail-filtered-count', (count) => {
-			this.filteredCount = count
-		})
+		this.listenFilteredCount('audit-trail-filtered-count')
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
@@ -379,31 +271,16 @@ export default {
 
 	methods: {
 		/**
-		 * Load audit trail data and update filtered count
+		 * "{count} entries", translated, for a row of a top list.
 		 *
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
 		 */
-		async loadAuditTrailData() {
-			try {
-				await auditTrailStore.refreshAuditTrailList()
-				this.updateFilteredCount()
-			} catch {
-				// Handle error silently
-			}
+		entriesLabel(count) {
+			return t('openregister', '{count} entries', { count })
 		},
 
-		/**
-		 * Clear filters (alias for clearAllFilters for template compatibility)
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		clearFilters() {
-			this.clearAllFilters()
-		},
 
 		/**
 		 * Handle object filter change with debouncing
@@ -429,19 +306,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Debounced version of applyFilters for text input
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		debouncedApplyFilters() {
-			clearTimeout(this.filterTimeout)
-			this.filterTimeout = setTimeout(() => {
-				this.applyFilters()
-			}, 500)
-		},
 
 		/**
 		 * Update changes filter
@@ -536,10 +400,7 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			addScope(query, {
-				register: registerStore.registerItem,
-				schema: schemaStore.schemaItem,
-			})
+			addScope(query, selectedScope())
 			addJoinedValues(query, ['action', this.selectedActions])
 			addJoinedValues(query, ['user', this.selectedUsers])
 			addDateRange(query, this)
@@ -586,7 +447,7 @@ export default {
 		},
 
 		/**
-		 * Build filters from state and push to store, then refresh list
+		 * Build filters from state and, when they changed, push them to the store and refresh the list
 		 *
 		 * @return {void}
 		 *
@@ -595,10 +456,7 @@ export default {
 		applyFiltersToStore() {
 			const filters = {}
 			addJoinedValues(filters, ['action', this.selectedActions])
-			addScopeIds(filters, {
-				register: registerStore.registerItem,
-				schema: schemaStore.schemaItem,
-			})
+			addScopeIds(filters, selectedScope())
 			addJoinedValues(filters, ['user', this.selectedUsers])
 			addPresent(filters, [
 				['dateFrom', this.dateFrom],
@@ -606,6 +464,13 @@ export default {
 				['object', this.objectFilter],
 			])
 			if (this.showOnlyWithChanges) filters.onlyWithChanges = true
+
+			// The index loads the list on mount; only a change of filters needs another load.
+			if (
+				JSON.stringify(filters)
+				=== JSON.stringify(auditTrailStore.auditTrailFilters)
+			)
+				return
 
 			auditTrailStore.setAuditTrailFilters(filters)
 			auditTrailStore.refreshAuditTrailList()
@@ -646,25 +511,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/sidebars.scss' as *;
 
-.filterSection,
-.statsSection {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.filterSection:last-child,
-.statsSection:last-child {
-	border-bottom: none;
-}
-
-.filterSection h3,
-.statsSection h3 {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
+@include divided-sections(filterSection, statsSection);
 
 @include filter-group-rules;
 
@@ -707,8 +554,6 @@ export default {
 .statCard.delete {
 	border-left: 4px solid var(--color-error);
 }
-
-@include stat-number-rules;
 
 .actionDistribution,
 .topObjects {

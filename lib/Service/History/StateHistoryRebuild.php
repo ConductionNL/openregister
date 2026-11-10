@@ -39,7 +39,8 @@ namespace OCA\OpenRegister\Service\History;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\StateHistory;
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,17 +48,17 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
  */
-class StateHistoryRebuild {
+class StateHistoryRebuild implements StateHistoryRebuildInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapper $intervals The projection.
+	 * @param StateHistoryMapperInterface $intervals The projection.
 	 * @param AuditTrailMapperInterface   $audit     The trail it derives from.
 	 * @param LoggerInterface    $logger    Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapper $intervals,
+		private readonly StateHistoryMapperInterface $intervals,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
@@ -154,45 +155,71 @@ class StateHistoryRebuild {
 	/**
 	 * Rebuild one object's line.
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $property   The declared lifecycle property.
-	 * @param string $register   The register slug.
-	 * @param string $schema     The schema slug.
+	 * @param ObjectRef $ref      The object, with its register and schema slugs.
+	 * @param string    $property The declared lifecycle property.
 	 *
 	 * @return int Intervals written.
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	public function rebuildObject(string $objectUuid, string $property, string $register, string $schema): int {
+	public function rebuild(ObjectRef $ref, string $property): int {
 		try {
 			$intervals = $this->intervalsFor(
-				changes: $this->audit->findChangesForObject(objectUuid: $objectUuid),
+				changes: $this->audit->findChangesForObject(objectUuid: $ref->id),
 				property: $property
 			);
 
-			$this->intervals->deleteForObject(objectUuid: $objectUuid);
+			$this->intervals->deleteForObject(objectUuid: $ref->id);
 
+			$template = self::template(ref: $ref, property: $property);
 			foreach ($intervals as $interval) {
-				$row = new StateHistory();
-				$row->setObjectUuid($objectUuid);
-				$row->setRegister($register);
-				$row->setSchema($schema);
-				$row->setProperty($property);
-				$row->setValue($interval['value']);
-				$row->setEnteredAt($interval['enteredAt']);
-				$row->setLeftAt($interval['leftAt']);
-				$this->intervals->insert($row);
+				$this->insertInterval(template: $template, interval: $interval);
 			}
 
 			return count($intervals);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[StateHistoryRebuild] Could not rebuild {object}: {error}',
-				['object' => $objectUuid, 'error' => $e->getMessage(), 'exception' => $e]
+				['object' => $ref->id, 'error' => $e->getMessage(), 'exception' => $e]
 			);
 			return 0;
 		}//end try
-	}//end rebuildObject()
+	}//end rebuild()
+
+	/**
+	 * The row every interval of one object's line shares: object, register,
+	 * schema and property.
+	 *
+	 * @param ObjectRef $ref      The object.
+	 * @param string    $property The declared lifecycle property.
+	 *
+	 * @return StateHistory The template row, without an interval.
+	 */
+	private static function template(ObjectRef $ref, string $property): StateHistory {
+		$row = new StateHistory();
+		$row->setObjectUuid($ref->id);
+		$row->setRegister((string)$ref->register);
+		$row->setSchema((string)$ref->schema);
+		$row->setProperty($property);
+
+		return $row;
+	}//end template()
+
+	/**
+	 * Write one interval of the line.
+	 *
+	 * @param StateHistory                                               $template The object's shared row.
+	 * @param array{value: string, enteredAt: ?DateTime, leftAt: ?DateTime} $interval The interval.
+	 *
+	 * @return void
+	 */
+	private function insertInterval(StateHistory $template, array $interval): void {
+		$row = clone $template;
+		$row->setValue($interval['value']);
+		$row->setEnteredAt($interval['enteredAt']);
+		$row->setLeftAt($interval['leftAt']);
+		$this->intervals->insert($row);
+	}//end insertInterval()
 
 	/**
 	 * Read a recorded moment.

@@ -585,4 +585,47 @@ class RenameDutchColumnsTest extends TestCase {
 		$this->assertStringContainsString('1 renamed', $summary);
 		$this->assertStringContainsString('1 back-filled', $summary);
 	}//end testSummaryReportsCounts()
+
+	/**
+	 * Golden: the exact statements, warnings and summary for a mixed run.
+	 *
+	 * Pinned before run() and shardTables() were split into smaller methods:
+	 * column order follows COLUMN_MAP, tables follow the listing, a table seen
+	 * through two registers is migrated once, a failed statement is not counted.
+	 *
+	 * @return void
+	 */
+	public function testGoldenMixedRun(): void {
+		$a = 'oc_openregister_table_7_1';
+		$b = 'oc_openregister_table_9_22';
+		$c = 'oc_openregister_table_7_x';
+		$d = 'oc_openregister_table_8_1';
+		$step = $this->step(
+			[7, 9, 7],
+			[$a, $b, $c, $d, $a],
+			[
+				$a => ['stem', 'classificatie', 'organisatie', 'organisation'],
+				$b => ['functie', 'role', 'eind_datum'],
+				$c => ['stem'],
+				$d => ['stem'],
+			],
+			'"eind_datum" TO'
+		);
+		$step->run($this->repairOutput());
+
+		$this->assertSame(
+			[
+				'ALTER TABLE "oc_openregister_table_7_1" RENAME COLUMN "classificatie" TO "classification"',
+				'UPDATE "oc_openregister_table_7_1" SET "organisation" = "organisatie" WHERE "organisation" IS NULL AND "organisatie" IS NOT NULL',
+				'ALTER TABLE "oc_openregister_table_7_1" RENAME COLUMN "stem" TO "vote"',
+				'UPDATE "oc_openregister_table_9_22" SET "role" = "functie" WHERE "role" IS NULL AND "functie" IS NOT NULL',
+			],
+			$this->executed
+		);
+		$this->assertSame(['RenameDutchColumns: statement failed; leaving the column as it was.'], $this->warnings);
+		$this->assertSame(
+			['RenameDutchColumns: 2 renamed, 2 back-filled, 0 refused, across 2 shard table(s).'],
+			$this->info
+		);
+	}//end testGoldenMixedRun()
 }//end class

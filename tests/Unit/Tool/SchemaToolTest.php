@@ -6,6 +6,10 @@ use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateSchemaCommand;
+use OCA\OpenRegister\Mcp\Tool\ListSchemasQuery;
+use OCA\OpenRegister\Mcp\Tool\CreateSchemaCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -24,8 +28,7 @@ class SchemaToolTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
 		$this->tool = new SchemaTool(
-			$this->userSession,
-			$this->logger,
+			new ToolCallTrail($this->userSession, $this->logger),
 			$this->schemaMapper
 		);
 
@@ -114,7 +117,7 @@ class SchemaToolTest extends TestCase {
 	public function testExecuteFunctionNoUserContext(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new SchemaTool($noUserSession, $this->logger, $this->schemaMapper);
+		$tool = new SchemaTool(new ToolCallTrail($noUserSession, $this->logger), $this->schemaMapper);
 
 		$result = $tool->executeFunction('list_schemas', []);
 		$this->assertFalse($result['success']);
@@ -134,7 +137,7 @@ class SchemaToolTest extends TestCase {
 		$schema = $this->createSchemaEntity(1, 'uuid-1', 'My Schema', 'Desc', '1.0.0');
 		$this->schemaMapper->method('findAll')->willReturn([$schema]);
 
-		$result = $this->tool->listSchemas();
+		$result = $this->tool->listSchemas(new ListSchemasQuery());
 		$this->assertTrue($result['success']);
 		$this->assertCount(1, $result['data']);
 		$this->assertSame('uuid-1', $result['data'][0]['uuid']);
@@ -144,7 +147,7 @@ class SchemaToolTest extends TestCase {
 	public function testListSchemasEmpty(): void {
 		$this->schemaMapper->method('findAll')->willReturn([]);
 
-		$result = $this->tool->listSchemas();
+		$result = $this->tool->listSchemas(new ListSchemasQuery());
 		$this->assertTrue($result['success']);
 		$this->assertCount(0, $result['data']);
 	}
@@ -161,7 +164,7 @@ class SchemaToolTest extends TestCase {
 			)
 			->willReturn([]);
 
-		$this->tool->listSchemas(100, 0, '5');
+		$this->tool->listSchemas(new ListSchemasQuery(100, 0, '5'));
 	}
 
 	public function testListSchemasWithPagination(): void {
@@ -170,7 +173,7 @@ class SchemaToolTest extends TestCase {
 			->with(10, 20, $this->anything())
 			->willReturn([]);
 
-		$this->tool->listSchemas(10, 20);
+		$this->tool->listSchemas(new ListSchemasQuery(10, 20));
 	}
 
 	public function testListSchemasViaExecuteFunction(): void {
@@ -221,7 +224,7 @@ class SchemaToolTest extends TestCase {
 		$schema = $this->createSchemaEntity(1, 'new-uuid', 'New', 'Desc', '1.0', ['x' => ['type' => 'string']]);
 		$this->schemaMapper->method('createFromArray')->willReturn($schema);
 
-		$result = $this->tool->createSchema('New', ['x' => ['type' => 'string']], 'Desc', ['x']);
+		$result = $this->tool->createSchema(new CreateSchemaCommand('New', ['x' => ['type' => 'string']], 'Desc', ['x']));
 		$this->assertTrue($result['success']);
 		$this->assertStringContainsString('created', $result['message']);
 	}
@@ -236,7 +239,7 @@ class SchemaToolTest extends TestCase {
 			}))
 			->willReturn($schema);
 
-		$this->tool->createSchema('T', ['a' => ['type' => 'int']]);
+		$this->tool->createSchema(new CreateSchemaCommand('T', ['a' => ['type' => 'int']]));
 	}
 
 	public function testCreateSchemaWithRequired(): void {
@@ -249,7 +252,7 @@ class SchemaToolTest extends TestCase {
 			}))
 			->willReturn($schema);
 
-		$this->tool->createSchema('T', [], '', ['name']);
+		$this->tool->createSchema(new CreateSchemaCommand('T', [], '', ['name']));
 	}
 
 	public function testCreateSchemaException(): void {
@@ -272,7 +275,7 @@ class SchemaToolTest extends TestCase {
 			return $entity;
 		});
 
-		$result = $this->tool->updateSchema('1', 'New', 'New desc', ['a' => 1], ['a']);
+		$result = $this->tool->updateSchema(new UpdateSchemaCommand('1', 'New', 'New desc', ['a' => 1]));
 		$this->assertTrue($result['success']);
 		$this->assertSame('New', $result['data']['title']);
 		$this->assertSame('New desc', $result['data']['description']);
@@ -288,7 +291,7 @@ class SchemaToolTest extends TestCase {
 			return $entity;
 		});
 
-		$result = $this->tool->updateSchema('1');
+		$result = $this->tool->updateSchema(new UpdateSchemaCommand('1'));
 		$this->assertTrue($result['success']);
 		// Title should remain unchanged.
 		$this->assertSame('Title', $result['data']['title']);
@@ -332,7 +335,7 @@ class SchemaToolTest extends TestCase {
 	public function testExecuteFunctionWithExplicitUserId(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new SchemaTool($noUserSession, $this->logger, $this->schemaMapper);
+		$tool = new SchemaTool(new ToolCallTrail($noUserSession, $this->logger), $this->schemaMapper);
 
 		$this->schemaMapper->method('findAll')->willReturn([]);
 

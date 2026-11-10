@@ -5,7 +5,7 @@
  *
  * WHO MAY ASK, CHECKED BEFORE ANYTHING IS READ. The object is resolved through
  * `ObjectService` first, so a caller who cannot read it gets 404 and learns
- * nothing. Then {@see AccessReviewGate::mayReadGrants()} decides whether the
+ * nothing. Then {@see AccessReviewGateInterface::mayReadGrants()} decides whether the
  * caller may see the people on it, and a refusal answers 403 without a single
  * share, ancestor or rule having been read.
  *
@@ -28,9 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
-use OCA\OpenRegister\Service\Rbac\ObjectGrantsReport;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantsReportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -38,6 +41,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ObjectGrantsControllerServices;
 
 /**
  * The grants list of one object.
@@ -47,24 +51,44 @@ use Psr\Log\LoggerInterface;
 class ObjectGrantsController extends Controller {
 
 	/**
+	 * Names the register and schema the request resolved.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves the object and decides who may ask.
+	 *
+	 * @var AccessReviewGateInterface
+	 */
+	private readonly AccessReviewGateInterface $gate;
+
+	/**
+	 * Assembles the rows.
+	 *
+	 * @var ObjectGrantsReportInterface
+	 */
+	private readonly ObjectGrantsReportInterface $report;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string             $appName       Application identifier.
 	 * @param IRequest           $request       Active HTTP request.
-	 * @param ObjectOperationsInterface      $objectService Names the register and schema the request resolved.
-	 * @param AccessReviewGate   $gate          Resolves the object and decides who may ask.
-	 * @param ObjectGrantsReport $report        Assembles the rows.
+	 * @param ObjectGrantsControllerServices $services The services, bundled.
 	 * @param LoggerInterface    $logger        Records why the rows could not be assembled.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly AccessReviewGate $gate,
-		private readonly ObjectGrantsReport $report,
+		ObjectGrantsControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objectService = $services->objectService;
+		$this->gate = $services->gate;
+		$this->report = $services->report;
 	}//end __construct()
 
 	/**
@@ -84,9 +108,21 @@ class ObjectGrantsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id, ?string $principalTypes = null): JSONResponse {
-		$object = $this->gate->resolve(register: $register, schema: $schema, id: $id);
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), principalTypes: $principalTypes);
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef   $ref            The object the route names.
+	 * @param string|null $principalTypes Comma list of principal types to keep; all when empty.
+	 *
+	 * @return JSONResponse The rows, 404, 403 or 500.
+	 */
+	private function indexForObject(ObjectRef $ref, ?string $principalTypes = null): JSONResponse {
+		$object = $this->gate->resolve(ref: $ref);
 		if ($object === null) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+			return ObjectSharingEndpoint::notFound();
 		}
 
 		if ($this->gate->mayReadGrants(object: $object) === false) {
@@ -99,25 +135,49 @@ class ObjectGrantsController extends Controller {
 		$types = array_values(array_filter(array_map('trim', explode(',', (string)$principalTypes))));
 
 		try {
-			return new JSONResponse(
-				$this->report->rowsFor(
-					object: $object,
-					registerRef: $this->objectService->getRegister(),
-					schemaRef: $this->objectService->getSchema(),
-					principalTypes: $types
-				)
-			);
+			return new JSONResponse($this->rows(object: $object, types: $types));
 		} catch (\Throwable $e) {
 			// An empty list means "nobody but the owner", so a source that
 			// could not be read must never turn into one.
-			$this->logger->error(
-				message: '[ObjectGrantsController] The grants of {uuid} could not be listed: {error}',
-				context: ['uuid' => $id, 'error' => $e->getMessage(), 'exception' => $e]
-			);
-			return new JSONResponse(
-				['message' => 'The grants of this object could not be listed'],
-				Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
-	}//end index()
+			return $this->unlisted(exception: $e, id: $ref->id);
+		}
+	}//end indexForObject()
+
+	/**
+	 * The rows of the object.
+	 *
+	 * @param ObjectEntity  $object The object.
+	 * @param array<string> $types  The principal types to keep; all when empty.
+	 *
+	 * @return array The rows.
+	 *
+	 * @throws \Throwable When a source could not be read.
+	 */
+	private function rows(ObjectEntity $object, array $types): array {
+		return $this->report->rowsFor(
+			object: $object,
+			registerRef: $this->objectService->getRegister(),
+			schemaRef: $this->objectService->getSchema(),
+			principalTypes: $types
+		);
+	}//end rows()
+
+	/**
+	 * Log why the rows could not be listed, and answer a generic 500.
+	 *
+	 * @param \Throwable $exception The failure.
+	 * @param string     $id        Object uuid.
+	 *
+	 * @return JSONResponse The 500.
+	 */
+	private function unlisted(\Throwable $exception, string $id): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectGrantsController] The grants of {uuid} could not be listed: {error}',
+			context: ['uuid' => $id, 'error' => $exception->getMessage(), 'exception' => $exception]
+		);
+		return new JSONResponse(
+			['message' => 'The grants of this object could not be listed'],
+			Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unlisted()
 }//end class

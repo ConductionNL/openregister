@@ -436,6 +436,7 @@ OC.L10N.register(
         "Costs": "Costs",
         "Count": "Count",
         "Counting objects...": "Counting objects...",
+        "We could not count the objects. Close this window and try again." : "We could not count the objects. Close this window and try again.",
         "Create": "Create",
         "Create API Token": "Create API Token",
         "Create Agent": "Create Agent",

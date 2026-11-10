@@ -17,193 +17,121 @@ import {
 		:subname="t('openregister', 'View search analytics and manage search logs')"
 		:open="navigationStore.sidebarState.searchTrail"
 		@update:open="(e) => navigationStore.setSidebarState('searchTrail', e)">
-		<NcAppSidebarTab
-			id="filters-tab"
-			:name="t('openregister', 'Filters')"
-			:order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Search Trails') }}</h3>
-				<ScopeFilterFields
-					@registerChange="handleRegisterChange"
-					@schemaChange="handleSchemaChange" />
-				<div class="filterGroup">
-					<label for="successSelect">{{
-						t('openregister', 'Success Status')
-					}}</label>
-					<NcSelect
-						id="successSelect"
-						v-model="selectedSuccessStatus"
-						:options="successOptions"
-						:placeholder="t('openregister', 'All searches')"
-						:inputLabel="t('openregister', 'Success Status')"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label, value }">
-							<div class="statusOption" :class="value">
-								{{ label }}
-							</div>
-						</template>
-					</NcSelect>
-				</div>
-				<TrailUserDateFields
-					v-model:users="selectedUsers"
-					v-model:dateFrom="dateFrom"
-					v-model:dateTo="dateTo"
-					:userOptions="userOptions"
-					@change="applyFilters" />
-				<div class="filterGroup">
-					<label for="searchTermFilter">{{
-						t('openregister', 'Search Term')
-					}}</label>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Search Trails')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.',
+				)
+			"
+			clearable
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange"
+			@clear="clearFilters">
+			<SidebarFilterSelect
+				id="successSelect"
+				v-model="selectedSuccessStatus"
+				:options="successOptions"
+				:placeholder="t('openregister', 'All searches')"
+				:label="t('openregister', 'Success Status')"
+				@update:modelValue="applyFilters">
+				<template #option="{ label, value }">
+					<div class="statusOption" :class="value">
+						{{ label }}
+					</div>
+				</template>
+			</SidebarFilterSelect>
+			<TrailUserDateFields
+				v-model:users="selectedUsers"
+				v-model:dateFrom="dateFrom"
+				v-model:dateTo="dateTo"
+				:userOptions="userOptions"
+				@change="applyFilters" />
+			<div class="filterGroup">
+				<label for="searchTermFilter">{{
+					t('openregister', 'Search Term')
+				}}</label>
+				<NcTextField
+					id="searchTermFilter"
+					v-model="searchTermFilter"
+					:label="t('openregister', 'Filter by search term')"
+					:placeholder="t('openregister', 'Enter search term')"
+					@update:modelValue="handleSearchTermFilterChange" />
+			</div>
+			<div class="filterGroup">
+				<label for="executionTimeFilter">{{
+					t('openregister', 'Execution Time Range')
+				}}</label>
+				<div class="rangeFilter">
 					<NcTextField
-						id="searchTermFilter"
-						v-model="searchTermFilter"
-						:label="t('openregister', 'Filter by search term')"
-						:placeholder="t('openregister', 'Enter search term')"
-						@update:modelValue="handleSearchTermFilterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="executionTimeFilter">{{
-						t('openregister', 'Execution Time Range')
-					}}</label>
-					<div class="rangeFilter">
-						<NcTextField
-							id="executionTimeFrom"
-							v-model="executionTimeFrom"
-							:label="t('openregister', 'Min execution time (ms)')"
-							:placeholder="t('openregister', 'Min ms')"
-							type="number"
-							@update:modelValue="handleExecutionTimeChange" />
-						<NcTextField
-							id="executionTimeTo"
-							v-model="executionTimeTo"
-							:label="t('openregister', 'Max execution time (ms)')"
-							:placeholder="t('openregister', 'Max ms')"
-							type="number"
-							@update:modelValue="handleExecutionTimeChange" />
-					</div>
-				</div>
-				<div class="filterGroup">
-					<label for="resultCountFilter">{{
-						t('openregister', 'Result Count Range')
-					}}</label>
-					<div class="rangeFilter">
-						<NcTextField
-							id="resultCountFrom"
-							v-model="resultCountFrom"
-							:label="t('openregister', 'Min result count')"
-							:placeholder="t('openregister', 'Min results')"
-							type="number"
-							@update:modelValue="handleResultCountChange" />
-						<NcTextField
-							id="resultCountTo"
-							v-model="resultCountTo"
-							:label="t('openregister', 'Max result count')"
-							:placeholder="t('openregister', 'Max results')"
-							type="number"
-							@update:modelValue="handleResultCountChange" />
-					</div>
+						id="executionTimeFrom"
+						v-model="executionTimeFrom"
+						:label="t('openregister', 'Min execution time (ms)')"
+						:placeholder="t('openregister', 'Min ms')"
+						type="number"
+						@update:modelValue="handleExecutionTimeChange" />
+					<NcTextField
+						id="executionTimeTo"
+						v-model="executionTimeTo"
+						:label="t('openregister', 'Max execution time (ms)')"
+						:placeholder="t('openregister', 'Max ms')"
+						type="number"
+						@update:modelValue="handleExecutionTimeChange" />
 				</div>
 			</div>
-
-			<div class="actionGroup">
-				<NcButton @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openregister', 'Clear filters') }}
-				</NcButton>
+			<div class="filterGroup">
+				<label for="resultCountFilter">{{
+					t('openregister', 'Result Count Range')
+				}}</label>
+				<div class="rangeFilter">
+					<NcTextField
+						id="resultCountFrom"
+						v-model="resultCountFrom"
+						:label="t('openregister', 'Min result count')"
+						:placeholder="t('openregister', 'Min results')"
+						type="number"
+						@update:modelValue="handleResultCountChange" />
+					<NcTextField
+						id="resultCountTo"
+						v-model="resultCountTo"
+						:label="t('openregister', 'Max result count')"
+						:placeholder="t('openregister', 'Max results')"
+						type="number"
+						@update:modelValue="handleResultCountChange" />
+				</div>
 			</div>
+		</ScopeFiltersTab>
 
-			<NcNoteCard type="info" class="filter-hint">
-				{{
-					t(
-						'openregister',
-						'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.',
-					)
-				}}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab
-			id="stats-tab"
-			:name="t('openregister', 'Statistics')"
-			:order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Search Trail Statistics') }}</h3>
 				<div class="statGrid">
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalSearchTrails }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Searches') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalResults }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Results') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ averageResultsPerSearch }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Results/Search') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">{{ averageExecutionTime }}ms</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Execution Time') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ (successRate * 100).toFixed(1) }}%
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Success Rate') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ uniqueSearchTerms }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Unique Search Terms') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgSearchesPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Searches/Session') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgObjectViewsPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Object Views/Session') }}
-						</div>
-					</div>
+					<SidebarStatCard
+						:value="totalSearchTrails"
+						:label="t('openregister', 'Total Searches')" />
+					<SidebarStatCard
+						:value="totalResults"
+						:label="t('openregister', 'Total Results')" />
+					<SidebarStatCard
+						:value="averageResultsPerSearch"
+						:label="t('openregister', 'Avg Results/Search')" />
+					<SidebarStatCard
+						:value="`${averageExecutionTime}ms`"
+						:label="t('openregister', 'Avg Execution Time')" />
+					<SidebarStatCard
+						:value="`${(successRate * 100).toFixed(1)}%`"
+						:label="t('openregister', 'Success Rate')" />
+					<SidebarStatCard
+						:value="uniqueSearchTerms"
+						:label="t('openregister', 'Unique Search Terms')" />
+					<SidebarStatCard
+						:value="avgSearchesPerSession"
+						:label="t('openregister', 'Avg Searches/Session')" />
+					<SidebarStatCard
+						:value="avgObjectViewsPerSession"
+						:label="t('openregister', 'Avg Object Views/Session')" />
 				</div>
 			</div>
 
@@ -211,69 +139,24 @@ import {
 			<div class="complexitySection">
 				<h4>{{ t('openregister', 'Query Complexity Distribution') }}</h4>
 				<div class="complexityBars">
-					<div class="complexityBar">
+					<div
+						v-for="level in complexityLevels"
+						:key="level.key"
+						class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="
-									t(
-										'openregister',
-										'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)',
-									)
-								"
+								:title="level.title"
 								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Simple') }}
+								{{ level.label }}
 							</span>
-							<span>{{ queryComplexity.simple }}</span>
+							<span>{{ queryComplexity[level.key] }}</span>
 						</div>
 						<div class="complexityProgress">
 							<div
-								class="complexityProgressBar simple"
+								class="complexityProgressBar"
+								:class="level.key"
 								:style="{
-									width: getComplexityPercentage('simple') + '%',
-								}" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="
-									t(
-										'openregister',
-										'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)',
-									)
-								"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Medium') }}
-							</span>
-							<span>{{ queryComplexity.medium }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div
-								class="complexityProgressBar medium"
-								:style="{
-									width: getComplexityPercentage('medium') + '%',
-								}" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="
-									t(
-										'openregister',
-										'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations',
-									)
-								"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Complex') }}
-							</span>
-							<span>{{ queryComplexity.complex }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div
-								class="complexityProgressBar complex"
-								:style="{
-									width: getComplexityPercentage('complex') + '%',
+									width: getComplexityPercentage(level.key) + '%',
 								}" />
 						</div>
 					</div>
@@ -284,22 +167,15 @@ import {
 			<div class="popularTermsSection">
 				<h4>{{ t('openregister', 'Popular Search Terms') }}</h4>
 				<div class="popularTermsList">
-					<NcListItem
+					<CountListItem
 						v-for="(term, index) in popularTerms"
 						:key="index"
 						:name="term.term"
-						:bold="false">
+						:subname="searchesLabel(term.count)">
 						<template #icon>
 							<MagnifyPlus :size="32" />
 						</template>
-						<template #subname>
-							{{
-								t('openregister', '{count} searches', {
-									count: term.count,
-								})
-							}}
-						</template>
-					</NcListItem>
+					</CountListItem>
 				</div>
 			</div>
 
@@ -307,25 +183,18 @@ import {
 			<div class="registerSchemaSection">
 				<h4>{{ t('openregister', 'Register/Schema Usage') }}</h4>
 				<div class="registerSchemaList">
-					<NcListItem
+					<CountListItem
 						v-for="(stat, index) in registerSchemaStats"
 						:key="index"
 						:name="getRegisterSchemaName(stat)"
-						:bold="false">
+						:subname="searchesLabel(stat.count)">
 						<template #icon>
 							<DatabaseOutline :size="32" />
 						</template>
-						<template #subname>
-							{{
-								t('openregister', '{count} searches', {
-									count: stat.count,
-								})
-							}}
-						</template>
-					</NcListItem>
+					</CountListItem>
 				</div>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 
 		<NcAppSidebarTab
 			id="analytics-tab"
@@ -389,22 +258,15 @@ import {
 				<div class="userAgentSection">
 					<h4>{{ t('openregister', 'User Agent Statistics') }}</h4>
 					<div class="userAgentList">
-						<NcListItem
+						<CountListItem
 							v-for="(agent, index) in userAgentStats"
 							:key="index"
 							:name="getBrowserName(agent)"
-							:bold="false">
+							:subname="searchesLabel(agent.count)">
 							<template #icon>
 								<Monitor :size="32" />
 							</template>
-							<template #subname>
-								{{
-									t('openregister', '{count} searches', {
-										count: agent.count,
-									})
-								}}
-							</template>
-						</NcListItem>
+						</CountListItem>
 					</div>
 				</div>
 			</div>
@@ -416,22 +278,15 @@ import {
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
-	NcButton,
-	NcListItem,
 	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
-import ScopeFilterFields from '../ScopeFilterFields.vue'
-import TrailUserDateFields from './TrailUserDateFields.vue'
+import { trailSidebar } from '../../composables/trailSidebar.js'
 import eventBus from '../../eventBus.js'
 import {
 	addDateRange,
@@ -444,9 +299,8 @@ import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
-	trailUserOptions,
 } from '../../services/trailFilters.js'
-import { routeBoundFilters } from '../routeBoundFilters.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
 /**
  * Leave a statistic as the API reports it.
@@ -525,26 +379,21 @@ const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 export default {
 	name: 'SearchTrailSideBar',
 	components: {
-		TrailUserDateFields,
-		ScopeFilterFields,
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
-		NcNoteCard,
-		NcButton,
-		NcListItem,
 		NcTextField,
 		NcLoadingIcon,
-		FilterOutline,
-		ChartLine,
 		TrendingUp,
 		MagnifyPlus,
 		DatabaseOutline,
 		Monitor,
-		FilterOffOutline,
 	},
 
-	mixins: [routeBoundFilters('/search-trails')],
+	mixins: [
+		routeBoundFilters('/search-trails'),
+		trailSidebar(() => searchTrailStore.searchTrailList),
+	],
 
 	data() {
 		return {
@@ -580,10 +429,7 @@ export default {
 
 			activeTab: 'filters-tab',
 			selectedSuccessStatus: null,
-			selectedUsers: [],
 			selectedActivityPeriod: { value: 'daily', label: 'Daily' },
-			dateFrom: null,
-			dateTo: null,
 			searchTermFilter: '',
 			executionTimeFrom: '',
 			executionTimeTo: '',
@@ -622,13 +468,38 @@ export default {
 		searchTrailStore: () => searchTrailStore,
 
 		/**
-		 * Derive the user filter options from the search-trail list.
+		 * The query complexity levels the distribution shows, in order.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array} User filter options
+		 * @spec exclude Presentational labels of the complexity bars.
+		 * @return {Array<{key: string, label: string, title: string}>} The levels
 		 */
-		userOptions() {
-			return trailUserOptions(searchTrailStore.searchTrailList)
+		complexityLevels() {
+			return [
+				{
+					key: 'simple',
+					label: t('openregister', 'Simple'),
+					title: t(
+						'openregister',
+						'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)',
+					),
+				},
+				{
+					key: 'medium',
+					label: t('openregister', 'Medium'),
+					title: t(
+						'openregister',
+						'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)',
+					),
+				},
+				{
+					key: 'complex',
+					label: t('openregister', 'Complex'),
+					title: t(
+						'openregister',
+						'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations',
+					),
+				},
+			]
 		},
 	},
 
@@ -646,13 +517,7 @@ export default {
 	 */
 	mounted() {
 		// Load required data
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-		}
+		this.refreshEmptyScopeLists()
 
 		// Load initial search trail data
 		this.loadSearchTrailData()
@@ -663,9 +528,7 @@ export default {
 		this.loadActivityData()
 
 		// Listen for filtered count updates
-		eventBus.on('search-trail-filtered-count', (count) => {
-			this.filteredCount = count
-		})
+		this.listenFilteredCount('search-trail-filtered-count')
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
@@ -679,6 +542,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * "{count} searches", translated, for a row of a top list.
+		 *
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
+		 */
+		searchesLabel(count) {
+			return t('openregister', '{count} searches', { count })
+		},
+
 		/**
 		 * Load search trail data and update filtered count
 		 *
@@ -726,15 +600,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Clear filters (alias for clearAllFilters for template compatibility)
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		clearFilters() {
-			this.clearAllFilters()
-		},
 
 		/**
 		 * Handle search term filter change with debouncing
@@ -779,10 +644,7 @@ export default {
 			if (this.selectedSuccessStatus) {
 				filters.success = this.selectedSuccessStatus.value
 			}
-			addScopeIds(filters, {
-				register: registerStore.registerItem,
-				schema: schemaStore.schemaItem,
-			})
+			addScopeIds(filters, selectedScope())
 			addJoinedValues(filters, ['user', this.selectedUsers])
 			addPresent(filters, [
 				['dateFrom', this.dateFrom],
@@ -805,18 +667,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Debounced version of applyFilters for text input
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		debouncedApplyFilters() {
-			clearTimeout(this.filterTimeout)
-			this.filterTimeout = setTimeout(() => {
-				this.applyFilters()
-			}, 500)
-		},
 
 		/**
 		 * Update filtered count from store
@@ -1060,28 +910,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/sidebars.scss' as *;
 
-.filterSection,
-.statsSection,
-.analyticsSection {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.filterSection:last-child,
-.statsSection:last-child,
-.analyticsSection:last-child {
-	border-bottom: none;
-}
-
-.filterSection h3,
-.statsSection h3,
-.analyticsSection h3 {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
+@include divided-sections(filterSection, statsSection, analyticsSection);
 
 @include filter-group-rules;
 
@@ -1120,16 +949,13 @@ export default {
 	text-align: center;
 }
 
-.statNumber {
+// Smaller than SidebarStatCard's own number and label, to fit two columns.
+.statGrid :deep(.statCard .statNumber) {
 	font-size: 1.5rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
 }
 
-.statLabel {
+.statGrid :deep(.statCard .statLabel) {
 	font-size: 0.8rem;
-	color: var(--color-text-maxcontrast);
 }
 
 .complexitySection,

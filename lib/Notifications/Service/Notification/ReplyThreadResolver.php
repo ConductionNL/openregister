@@ -112,14 +112,11 @@ class ReplyThreadResolver {
 		$objects = [];
 		$firstMatch = null;
 
-		foreach (self::HEADER_ORDER as $header) {
-			$this->scanHeader(
-				headers: $headers,
-				header: $header,
-				lookup: $lookup,
-				objects: $objects,
-				firstMatch: $firstMatch
-			);
+		foreach ($this->hitsByHeader(headers: $headers, lookup: $lookup) as $header => $hits) {
+			foreach ($hits as $hit) {
+				$objects[$hit['objectUuid']] = true;
+				$firstMatch ??= $hit;
+			}
 
 			// `In-Reply-To` is the direct parent, so a single unambiguous hit
 			// there is the answer and `References` is not consulted. Walking
@@ -161,38 +158,37 @@ class ReplyThreadResolver {
 	}//end resolve()
 
 	/**
-	 * Walk one header's references, collecting the objects they point at.
+	 * Walk each header's references in HEADER_ORDER, listing the objects they point at.
 	 *
-	 * Both accumulators are passed by reference because the walk is a fold
-	 * across TWO headers: `References` adds to what `In-Reply-To` already
-	 * found, and the earliest match keeps its place.
+	 * Lazy: a header is only looked up when the caller asks for it, so a
+	 * decisive `In-Reply-To` never costs a `References` lookup. The caller
+	 * folds the hits of BOTH headers: `References` adds to what `In-Reply-To`
+	 * already found, and the earliest hit keeps its place.
 	 *
-	 * @param array<string,mixed>      $headers    The reply's headers.
-	 * @param string                   $header     Which header to read.
-	 * @param callable                 $lookup     `fn(string $messageId): ?array`.
-	 * @param array<string,true>       $objects    Objects seen so far, keyed by uuid.
-	 * @param array<string,string>|null $firstMatch The earliest match, or null.
+	 * @param array<string,mixed> $headers The reply's headers.
+	 * @param callable            $lookup  `fn(string $messageId): ?array`.
 	 *
-	 * @return void
+	 * @return \Generator<string,array<int,array{objectUuid:string,matchedOn:string,messageId:string}>> The hits per header, in header order.
 	 *
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	private function scanHeader(array $headers, string $header, callable $lookup, array &$objects, ?array &$firstMatch): void {
-		foreach ($this->referencesIn(headers: $headers, header: $header) as $messageId) {
-			$link = $lookup($messageId);
-			if (is_array($link) === false) {
-				continue;
-			}
+	private function hitsByHeader(array $headers, callable $lookup): \Generator {
+		foreach (self::HEADER_ORDER as $header) {
+			$hits = [];
+			foreach ($this->referencesIn(headers: $headers, header: $header) as $messageId) {
+				$link = $lookup($messageId);
+				if (is_array($link) === false) {
+					continue;
+				}
 
-			foreach ($this->objectUuidsOf(link: $link) as $objectUuid) {
-				$objects[$objectUuid] = true;
-
-				if ($firstMatch === null) {
-					$firstMatch = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
+				foreach ($this->objectUuidsOf(link: $link) as $objectUuid) {
+					$hits[] = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
 				}
 			}
+
+			yield $header => $hits;
 		}
-	}//end scanHeader()
+	}//end hitsByHeader()
 
 	/**
 	 * The objects a recorded link names.

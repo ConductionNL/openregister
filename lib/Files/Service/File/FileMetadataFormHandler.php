@@ -27,8 +27,10 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use Throwable;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * Saves a whole dossier's file metadata in one act.
@@ -64,9 +66,9 @@ class FileMetadataFormHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService $fileService The file layer this handler edits through.
+	 * @param FileServiceInterface $fileService The file layer this handler edits through.
 	 */
-	public function __construct(private readonly FileService $fileService) {
+	public function __construct(private readonly FileServiceInterface $fileService) {
 	}//end __construct()
 
 	/**
@@ -103,7 +105,7 @@ class FileMetadataFormHandler {
 			$fileId = (int)$entry['fileId'];
 
 			try {
-				$outcome = $this->saveOne(object: $object, fileId: $fileId, entry: $entry);
+				$outcome = $this->saveOne(object: $object, entry: $entry);
 			} catch (Throwable $e) {
 				$failed[] = ['fileId' => $fileId, 'error' => $e->getMessage()];
 				continue;
@@ -131,8 +133,7 @@ class FileMetadataFormHandler {
 	 * say, which is the signal that no audit entry belongs to it.
 	 *
 	 * @param ObjectEntity $object The object the file belongs to.
-	 * @param integer $fileId The file.
-	 * @param array $entry The row.
+	 * @param array $entry The row; its numeric 'fileId' names the file.
 	 *
 	 * @return array|null What changed, or null when nothing did.
 	 *
@@ -140,7 +141,8 @@ class FileMetadataFormHandler {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function saveOne(ObjectEntity $object, int $fileId, array $entry): ?array {
+	private function saveOne(ObjectEntity $object, array $entry): ?array {
+		$fileId = (int)$entry['fileId'];
 		$node = $this->fileService->getFile(object: $object, file: (string)$fileId);
 		if ($node === null) {
 			throw new Exception(message: "File $fileId is not on this object.");
@@ -154,13 +156,13 @@ class FileMetadataFormHandler {
 
 		$name = $this->requested(entry: $entry, key: 'name');
 		if ($name !== null && $name !== $currentName && $name !== '') {
-			$this->fileService->renameFile(object: $object, fileId: $fileId, newName: $name);
+			$this->fileService->renameAttachedFile(rename: new FileRename(object: $object, fileId: $fileId, newName: $name));
 			$diff['name'] = ['old' => $currentName, 'new' => $name];
 		}
 
 		$description = $this->requested(entry: $entry, key: 'description');
 		if ($description !== null && $description !== (string)$currentDescription) {
-			$this->fileService->updateFileMetadata(fileId: $fileId, description: $description);
+			$this->fileService->changeFileMetadata(change: new FileMetadataChange(fileId: $fileId, description: $description));
 			$diff['description'] = ['old' => $currentDescription, 'new' => $description];
 		}
 

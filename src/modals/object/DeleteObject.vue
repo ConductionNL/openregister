@@ -11,11 +11,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 			+ (objectStore.objectItem?.['@self']?.schema?.title
 				? objectStore.objectItem['@self'].schema.title + ' — '
 				: '')
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
+			+ (objectName(objectStore.objectItem) || 'Object')
 		"
 		:success="success"
 		:error="error"
@@ -38,12 +34,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 			<span v-if="objectStore.objectItem?.['@self']?.schema?.title"
 				>{{ objectStore.objectItem['@self'].schema.title.toLowerCase() }}
 			</span>
-			<b>{{
-				objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-			}}</b
+			<b>{{ objectName(objectStore.objectItem) }}</b
 			>? This action cannot be undone.
 		</p>
 	</ConfirmDialogFrame>
@@ -52,6 +43,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
+import { objectName as nameOf } from './objectName.js'
 
 export default {
 	name: 'DeleteObject',
@@ -62,6 +54,7 @@ export default {
 	mixins: [confirmDialogState(null)],
 
 	methods: {
+		objectName: nameOf,
 		/**
 		 * @spec exclude Modal action plumbing — delegates deletion to objectStore.deleteObject (lifecycle owned elsewhere).
 		 */

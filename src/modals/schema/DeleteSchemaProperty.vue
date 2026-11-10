@@ -9,10 +9,18 @@ import {
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.modal === 'deleteSchemaProperty'"
 		name="Verwijder Schema-eigenschap"
-		noClose>
+		size="small"
+		:loading="loading"
+		:cancelDisabled="loading"
+		:closeLabel="success !== null ? 'Sluiten' : 'Annuleren'"
+		confirmLabel="Verwijder"
+		:showConfirm="success === null"
+		:confirmDisabled="!canDelete"
+		@cancel="closeModal"
+		@confirm="deleteProperty()">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
 				<p>Schema-eigenschap succesvol verwijderd</p>
@@ -42,45 +50,28 @@ import {
 				eigenschap gebruiken.
 			</p>
 		</NcNoteCard>
-		<template #actions>
-			<NcButton :disabled="loading" icon="" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success !== null ? 'Sluiten' : 'Annuleren' }}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || !canDelete"
-				icon="Delete"
-				variant="error"
-				@click="deleteProperty()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-if="!loading" :size="20" />
-				</template>
-				Verwijder
-			</NcButton>
+		<template #confirmIcon>
+			<Delete :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { NcNoteCard } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import {
+	objectUsageGuard,
+	refreshSchemaObjects,
+} from '../../composables/objectUsageGuard.js'
 
 export default {
 	name: 'DeleteSchemaProperty',
-	components: {
-		NcDialog,
-		NcButton,
-		NcNoteCard,
-		NcLoadingIcon,
-		// Icons
-		Cancel,
-		Delete,
-	},
+	components: { ConfirmDialogFrame, NcNoteCard, Delete },
+
+	mixins: [
+		objectUsageGuard(() => navigationStore.modal === 'deleteSchemaProperty'),
+	],
 
 	data() {
 		return {
@@ -89,26 +80,6 @@ export default {
 			error: false,
 			closeModalTimeout: null,
 			objects: [],
-			isUpdated: false,
-		}
-	},
-
-	computed: {
-		/**
-		 * @spec exclude Computed delete-enablement guard (no objects use the property); UI validation helper.
-		 */
-		canDelete() {
-			return this.objects.length === 0
-		},
-	},
-
-	/**
-	 * @spec exclude Vue updated() hook running one-time dialog init when the modal opens; modal init plumbing.
-	 */
-	updated() {
-		if (!this.isUpdated && navigationStore.modal === 'deleteSchemaProperty') {
-			this.isUpdated = true
-			this.initDialog()
 		}
 	},
 
@@ -128,11 +99,7 @@ export default {
 						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
 					)
 				) {
-					await objectStore.refreshObjectList({
-						register: reg.id,
-						schema: schemaStore.schemaItem.id,
-						search: '',
-					})
+					await refreshSchemaObjects(reg)
 					if (objectStore.getCollection(objectStore.currentType).length) {
 						for (const obj of objectStore.getCollection(
 							objectStore.currentType,

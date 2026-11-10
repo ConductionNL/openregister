@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
-use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
+use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface;
+use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
@@ -37,16 +37,16 @@ final class DsarCaseCases {
 	 * Bundle the services.
 	 *
 	 * @param ObjectOperationsInterface      $objectService    RBAC + tenant scoped object store (case creation).
-	 * @param CaseObjectAccessor $accessor         RBAC-scoped case load helper.
-	 * @param CaseAccessControl  $accessControl    Case-level access-control check (fail closed).
+	 * @param CaseObjectAccessorInterface $accessor         RBAC-scoped case load helper.
+	 * @param CaseAccessControlInterface  $accessControl    Case-level access-control check (fail closed).
 	 * @param TransitionEngine   $transitionEngine Lifecycle transition driver (runs the guard on save).
 	 *
 	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly CaseObjectAccessor $accessor,
-		public readonly CaseAccessControl $accessControl,
+		public readonly CaseObjectAccessorInterface $accessor,
+		public readonly CaseAccessControlInterface $accessControl,
 		public readonly TransitionEngine $transitionEngine,
 	) {
 	}//end __construct()

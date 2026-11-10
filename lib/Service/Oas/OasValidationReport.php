@@ -32,7 +32,7 @@ use OCA\OpenRegister\Exception\OasValidationException;
 /**
  * Collects validation issues for a single OAS generation pass.
  */
-final class OasValidationReport {
+final class OasValidationReport implements OasValidationReportInterface {
 
 	/**
 	 * Severity codes.
@@ -74,66 +74,61 @@ final class OasValidationReport {
 	private array $issues = [];
 
 	/**
-	 * Record a hard error.
+	 * Record an issue at the given severity.
 	 *
-	 * @param string $path JSON Pointer path identifying the offending location.
-	 * @param string $message Human-readable description of the failure.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue    The issue: path, message and code.
+	 * @param string   $severity One of the SEVERITY_* constants.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addError(string $path, string $message, string $code): void {
+	public function add(OasIssue $issue, string $severity): void {
 		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_ERROR,
+			'path' => $issue->path,
+			'message' => $issue->message,
+			'code' => $issue->code,
+			'severity' => $severity,
 		];
+	}//end add()
 
+	/**
+	 * Record a hard error.
+	 *
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
+	 */
+	public function addError(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_ERROR);
 	}//end addError()
 
 	/**
 	 * Record a non-blocking warning.
 	 *
-	 * @param string $path JSON Pointer path identifying the offending location.
-	 * @param string $message Human-readable description.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addWarning(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_WARNING,
-		];
-
+	public function addWarning(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_WARNING);
 	}//end addWarning()
 
 	/**
 	 * Record an auto-correction the validator applied to keep the document valid.
 	 *
-	 * @param string $path JSON Pointer path identifying the corrected location.
-	 * @param string $message Human-readable description of the correction.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addAutoCorrection(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_AUTO_CORRECTED,
-		];
-
+	public function addAutoCorrection(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_AUTO_CORRECTED);
 	}//end addAutoCorrection()
 
 	/**
@@ -255,4 +250,17 @@ final class OasValidationReport {
 		);
 
 	}//end filterBySeverity()
+
+	/**
+	 * A reference repair pass that reports here.
+	 *
+	 * @param list<string> $componentNames The component schemas of the document
+	 *
+	 * @return OasReferenceRepair
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
+	 */
+	public function referenceRepair(array $componentNames): OasReferenceRepair {
+		return new OasReferenceRepair(componentNames: $componentNames, report: $this);
+	}//end referenceRepair()
 }//end class

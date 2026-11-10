@@ -28,10 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IGroupManager;
-use OCP\IUserManager;
+use OCP\IGroup;
+use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
 
 /**
  * `kind: expression` resolver for the candidate pool.
@@ -41,18 +42,20 @@ use Throwable;
 class TaskPoolRecipientResolver implements RecipientResolverInterface {
 
 	/**
+	 * The start of a warning about one candidate group.
+	 */
+	private const GROUP_LOG = '[TaskPoolRecipientResolver] Group "%s" ';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IGroupManager $groupManager Resolves group membership.
-	 * @param IUserManager $userManager Confirms a candidate user exists.
-	 * @param LoggerInterface $logger Names groups that could not be resolved.
+	 * @param PrincipalDirectory $principals Resolves group membership and confirms a candidate user exists.
+	 * @param LoggerInterface    $logger     Names groups that could not be resolved.
 	 */
 	public function __construct(
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
+		private readonly PrincipalDirectory $principals,
 		private readonly LoggerInterface $logger,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -90,33 +93,51 @@ class TaskPoolRecipientResolver implements RecipientResolverInterface {
 	private function groupMembers(array $groupIds): array {
 		$uids = [];
 		foreach ($groupIds as $groupId) {
-			if (is_string($groupId) === false || trim($groupId) === '') {
-				continue;
+			if (is_string($groupId) === true && trim($groupId) !== '') {
+				$uids = array_merge($uids, $this->membersOf(groupId: $groupId));
 			}
-
-			try {
-				$group = $this->groupManager->get($groupId);
-			} catch (Throwable $failure) {
-				$this->logger->warning(
-					sprintf('[TaskPoolRecipientResolver] Group "%s" could not be resolved; nobody is notified for it: %s', $groupId, $failure->getMessage())
-				);
-				continue;
-			}
-
-			if ($group === null) {
-				$this->logger->warning(
-					sprintf('[TaskPoolRecipientResolver] Group "%s" does not exist; nobody is notified for it.', $groupId)
-				);
-				continue;
-			}
-
-			foreach ($group->getUsers() as $user) {
-				$uids[] = $user->getUID();
-			}
-		}//end foreach
+		}
 
 		return $uids;
 	}//end groupMembers()
+
+	/**
+	 * The members of one group; an unresolvable group adds nobody.
+	 *
+	 * @param string $groupId The group id.
+	 *
+	 * @return array<int, string> Member uids.
+	 */
+	private function membersOf(string $groupId): array {
+		$group = $this->findGroup(groupId: $groupId);
+		if ($group === null) {
+			return [];
+		}
+
+		return array_values(array_map(static fn (IUser $user): string => $user->getUID(), $group->getUsers()));
+	}//end membersOf()
+
+	/**
+	 * The group, or null (logged) when it cannot be resolved or does not exist.
+	 *
+	 * @param string $groupId The group id.
+	 *
+	 * @return IGroup|null
+	 */
+	private function findGroup(string $groupId): ?IGroup {
+		try {
+			$group = $this->principals->groupManager->get($groupId);
+		} catch (Throwable $failure) {
+			$this->logger->warning(sprintf(self::GROUP_LOG.'could not be resolved; nobody is notified for it: %s', $groupId, $failure->getMessage()));
+			return null;
+		}
+
+		if ($group === null) {
+			$this->logger->warning(sprintf(self::GROUP_LOG.'does not exist; nobody is notified for it.', $groupId));
+		}
+
+		return $group;
+	}//end findGroup()
 
 	/**
 	 * The candidate users that exist; an unknown uid is dropped.
@@ -130,7 +151,7 @@ class TaskPoolRecipientResolver implements RecipientResolverInterface {
 	private function existingUsers(array $uids): array {
 		$existing = [];
 		foreach ($uids as $uid) {
-			if (is_string($uid) === true && trim($uid) !== '' && $this->userManager->userExists($uid) === true) {
+			if (is_string($uid) === true && trim($uid) !== '' && $this->principals->userManager->userExists($uid) === true) {
 				$existing[] = $uid;
 			}
 		}

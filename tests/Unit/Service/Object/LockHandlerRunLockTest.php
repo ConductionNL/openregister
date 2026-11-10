@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use DateInterval;
 use DateTime;
 use Exception;
@@ -35,7 +36,9 @@ use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -86,14 +89,14 @@ final class LockHandlerRunLockTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			$this->magic,
-			$this->audit,
+			new LockStores(
+				magicMapper: $this->magic,
+				auditTrailMapper: $this->audit,
+				advisory: $this->createMock(AdvisoryLockStore::class),
+				runLocks: $this->registry
+			),
 			$this->createMock(LoggerInterface::class),
-			$this->session,
-			$this->groups,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(AdvisoryLockStore::class),
-			$this->registry
+			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class))
 		);
 	}//end handler()
 
@@ -228,7 +231,7 @@ final class LockHandlerRunLockTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('does not have permission to unlock');
-		$this->handler()->unlock(identifier: self::OBJ);
+		$this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 	}//end testTheObjectOwnerCannotUnlockARunsLock()
 
 	/**
@@ -246,6 +249,6 @@ final class LockHandlerRunLockTest extends TestCase {
 		$this->groups->method('isAdmin')->willReturn(false);
 		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
 
-		$this->assertTrue($this->handler()->unlock(identifier: self::OBJ));
+		$this->assertTrue($this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)));
 	}//end testTheObjectOwnerCanStillUnlockAUserLock()
 }//end class

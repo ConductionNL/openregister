@@ -29,17 +29,23 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\GrantReportSources;
 use OCA\OpenRegister\Service\Rbac\GrantRuleFit;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantsReport;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectShareReader;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCP\IAppConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -69,7 +75,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses   \OCA\OpenRegister\Service\Rbac\ShareGrantAttributes
- * @uses   \OCA\OpenRegister\Support\PermissionBit
+ * @uses   \OCA\OpenRegister\Service\Rbac\PermissionBit
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  */
 class ObjectGrantsReportTest extends TestCase {
@@ -125,9 +131,7 @@ class ObjectGrantsReportTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($denyMode);
 
 		$accessReport = new ObjectAccessReport(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
@@ -137,16 +141,15 @@ class ObjectGrantsReportTest extends TestCase {
 		// colleague made and swallows a failed read, so it is never what the
 		// grants list is built from.
 		$shareReader = $this->createMock(ObjectShareReader::class);
-		$shareReader->method('sharesOn')->willReturnCallback(
-			static fn (ObjectEntity $object, array $sharers, bool $complete = false): array => $complete === true ? $shares : []
-		);
+		$shareReader->method('completeSharesOn')->willReturn($shares);
+		$shareReader->method('sharesOn')->willReturn([]);
 		$lister = $this->createMock(InheritedGrantLister::class);
 		$lister->method('inheritedSharesFor')->willReturnCallback(
 			static fn (ObjectEntity $object, bool $complete = false): array => $complete === true ? $inherited : []
 		);
 
 		$matcher = new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
 			new NullLogger()
@@ -178,13 +181,8 @@ class ObjectGrantsReportTest extends TestCase {
 		$object->setOrganisation($organisation);
 
 		$report = new ObjectGrantsReport(
-			accessReport: $accessReport,
-			shares: $shareReader,
-			inherited: $lister,
-			rules: new GrantRuleFit($matcher),
-			scopeResolver: new ObjectScopeResolver(),
-			userManager: $users,
-			groupManager: $groups
+			sources: new GrantReportSources(accessReport: $accessReport, shares: $shareReader, inherited: $lister, rules: new GrantRuleFit($matcher)),
+			directory: new PrincipalDirectory(userManager: $users, groupManager: $groups)
 		);
 
 		return $report->rowsFor(object: $object, registerRef: 1, schemaRef: 7, principalTypes: $types);

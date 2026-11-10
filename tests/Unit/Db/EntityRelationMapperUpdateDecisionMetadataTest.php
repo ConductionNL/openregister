@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -86,7 +87,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 					$this->db,
 					$this->auditTrailMapper,
 					$this->userSession,
-					$this->eventDispatcher,
+					new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 					$this->logger,
 				]
 			)

@@ -27,8 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contacts;
 
+use OCA\OpenRegister\Contacts\Support\ContactsMenuPlatform;
+use OCA\OpenRegister\Contacts\Support\ContactsMenuSources;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\Contacts\ContactsMenu\IActionFactory;
 use OCP\Contacts\ContactsMenu\IEntry;
 use OCP\Contacts\ContactsMenu\IProvider;
@@ -58,9 +60,9 @@ class ContactsMenuProvider implements IProvider {
 	/**
 	 * The deep link registry service.
 	 *
-	 * @var DeepLinkRegistryService
+	 * @var DeepLinkResolverInterface
 	 */
-	private readonly DeepLinkRegistryService $deepLinkRegistry;
+	private readonly DeepLinkResolverInterface $deepLinkRegistry;
 
 	/**
 	 * The action factory for creating menu actions.
@@ -93,31 +95,23 @@ class ContactsMenuProvider implements IProvider {
 	/**
 	 * Constructor for ContactsMenuProvider.
 	 *
-	 * @param ContactMatcherInterface $matchingService The contact matching service
-	 * @param DeepLinkRegistryService $deepLinkRegistry The deep link registry
-	 * @param IActionFactory $actionFactory The action factory
-	 * @param IURLGenerator $urlGenerator The URL generator
-	 * @param IL10N $l10n The localization service
-	 * @param LoggerInterface $logger The logger
+	 * @param ContactsMenuSources  $sources  Contact matcher and deep-link resolver.
+	 * @param ContactsMenuPlatform $platform Action factory, URL generator, translations and logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		ContactMatcherInterface $matchingService,
-		DeepLinkRegistryService $deepLinkRegistry,
-		IActionFactory $actionFactory,
-		IURLGenerator $urlGenerator,
-		IL10N $l10n,
-		LoggerInterface $logger,
+		ContactsMenuSources $sources,
+		ContactsMenuPlatform $platform,
 	) {
-		$this->matchingService = $matchingService;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->actionFactory = $actionFactory;
-		$this->urlGenerator = $urlGenerator;
-		$this->l10n = $l10n;
-		$this->logger = $logger;
+		$this->matchingService = $sources->matchingService;
+		$this->deepLinkRegistry = $sources->deepLinkRegistry;
+		$this->actionFactory = $platform->actionFactory;
+		$this->urlGenerator = $platform->urlGenerator;
+		$this->l10n = $platform->l10n;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**
@@ -179,26 +173,33 @@ class ContactsMenuProvider implements IProvider {
 			return;
 		}
 
+		$run = new ContactMenuRun(
+			entry: $entry,
+			matches: $matches,
+			primaryEmail: $primaryEmail,
+			fullName: $fullName
+		);
+
 		// Inject count badge (highest priority = renders first).
-		$this->injectCountBadge(entry: $entry, matches: $matches, primaryEmail: $primaryEmail);
+		$this->injectCountBadge(run: $run);
 
 		// Inject individual entity actions.
-		$this->injectEntityActions(entry: $entry, matches: $matches, primaryEmail: $primaryEmail, fullName: $fullName);
+		foreach ($matches as $match) {
+			$this->injectEntityAction(run: $run, match: $match);
+		}
 	}//end doProcess()
 
 	/**
 	 * Inject a count badge summary action.
 	 *
-	 * @param IEntry $entry The contact entry
-	 * @param array $matches The matched entities
-	 * @param string $primaryEmail The primary email for the search link
+	 * @param ContactMenuRun $run The contact, its primary email (for the search link) and its matches
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void {
-		$counts = $this->matchingService->getRelatedObjectCounts($matches);
+	private function injectCountBadge(ContactMenuRun $run): void {
+		$counts = $this->matchingService->getRelatedObjectCounts($run->matches);
 
 		// Build human-readable count string.
 		$parts = [];
@@ -211,7 +212,7 @@ class ContactsMenuProvider implements IProvider {
 		// Build search URL filtered by email.
 		$searchUrl = $this->urlGenerator->linkToRouteAbsolute(
 			'openregister.dashboard.index'
-		) . '#/search?_search=' . urlencode($primaryEmail);
+		) . '#/search?_search=' . urlencode($run->primaryEmail);
 
 		$action = $this->actionFactory->newLinkAction(
 			$this->urlGenerator->imagePath('openregister', 'app-dark.svg'),
@@ -221,67 +222,72 @@ class ContactsMenuProvider implements IProvider {
 		);
 		$action->setPriority(0);
 
-		$entry->addAction($action);
+		$run->entry->addAction($action);
 	}//end injectCountBadge()
 
 	/**
-	 * Inject individual entity actions.
+	 * Inject the action for one matched entity.
 	 *
-	 * @param IEntry $entry The contact entry
-	 * @param array $matches The matched entities
-	 * @param string $primaryEmail The primary email
-	 * @param string|null $fullName The contact full name
+	 * @param ContactMenuRun $run   The contact the action is added to
+	 * @param array          $match The matched entity
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function injectEntityActions(
-		IEntry $entry,
-		array $matches,
-		string $primaryEmail,
-		?string $fullName,
-	): void {
-		foreach ($matches as $match) {
-			$registerId = (int)($match['register']['id'] ?? 0);
-			$schemaId = (int)($match['schema']['id'] ?? 0);
-			$uuid = $match['uuid'] ?? '';
+	private function injectEntityAction(ContactMenuRun $run, array $match): void {
+		$registerId = (int)($match['register']['id'] ?? 0);
+		$schemaId = (int)($match['schema']['id'] ?? 0);
+		$url = $this->entityUrl(run: $run, match: $match);
 
-			// Try deep link resolution first.
-			$contactContext = [
-				'contactId' => $entry->getProperty('UID') ?? '',
-				'contactEmail' => $primaryEmail,
-				'contactName' => $fullName ?? '',
-			];
+		$resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
+		$icon = $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
 
-			$url = $this->deepLinkRegistry->resolveUrl(
-				$registerId,
-				$schemaId,
-				array_merge($match, ['uuid' => $uuid]),
-				$contactContext
-			);
+		$label = $this->l10n->t('View in OpenRegister') . ' (' . ($match['title'] ?? 'Unknown') . ')';
 
-			if ($url === null) {
-				// Fallback to OpenRegister's generic object detail route.
-				$url = $this->urlGenerator->linkToRouteAbsolute(
-					'openregister.dashboard.index'
-				) . '#/objects/' . urlencode($uuid);
-			}
+		$action = $this->actionFactory->newLinkAction(
+			$icon,
+			$label,
+			$url,
+			'openregister'
+		);
+		$action->setPriority(10);
 
-			$resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
-			$icon = $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+		$run->entry->addAction($action);
+	}//end injectEntityAction()
 
-			$label = $this->l10n->t('View in OpenRegister') . ' (' . ($match['title'] ?? 'Unknown') . ')';
+	/**
+	 * Resolve the URL of one matched entity: the app's deep link, else OpenRegister's object detail.
+	 *
+	 * @param ContactMenuRun $run   The contact (its context is handed to the deep-link resolver)
+	 * @param array          $match The matched entity
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function entityUrl(ContactMenuRun $run, array $match): string {
+		$uuid = $match['uuid'] ?? '';
+		$contactContext = [
+			'contactId' => $run->entry->getProperty('UID') ?? '',
+			'contactEmail' => $run->primaryEmail,
+			'contactName' => $run->fullName,
+		];
 
-			$action = $this->actionFactory->newLinkAction(
-				$icon,
-				$label,
-				$url,
-				'openregister'
-			);
-			$action->setPriority(10);
+		$url = $this->deepLinkRegistry->resolveUrl(
+			(int)($match['register']['id'] ?? 0),
+			(int)($match['schema']['id'] ?? 0),
+			array_merge($match, ['uuid' => $uuid]),
+			$contactContext
+		);
 
-			$entry->addAction($action);
-		}//end foreach
-	}//end injectEntityActions()
+		if ($url === null) {
+			// Fallback to OpenRegister's generic object detail route.
+			$url = $this->urlGenerator->linkToRouteAbsolute(
+				'openregister.dashboard.index'
+			) . '#/objects/' . urlencode($uuid);
+		}
+
+		return $url;
+	}//end entityUrl()
 }//end class

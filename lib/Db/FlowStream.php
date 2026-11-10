@@ -65,6 +65,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  */
 class FlowStream extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The root stream's ordinal path.
@@ -234,19 +235,24 @@ class FlowStream extends Entity implements JsonSerializable {
 		$segments = array_map(static fn (string $path): array => explode('.', $path), $paths);
 		$common = [];
 		$depth = min(array_map('count', $segments));
-		for ($i = 0; $i < $depth; $i++) {
-			$segment = $segments[0][$i];
-			foreach ($segments as $candidate) {
-				if ($candidate[$i] !== $segment) {
-					return self::pathOrRoot(segments: $common);
-				}
-			}
-
-			$common[] = $segment;
+		for ($i = 0; $i < $depth && self::segmentShared(segments: $segments, index: $i) === true; $i++) {
+			$common[] = $segments[0][$i];
 		}
 
 		return self::pathOrRoot(segments: $common);
 	}//end commonPrefix()
+
+	/**
+	 * Whether every path has the same segment at the given depth.
+	 *
+	 * @param array<int, array<int, string>> $segments Each path split into its segments.
+	 * @param int $index The 0-based depth to compare.
+	 *
+	 * @return bool True when all paths agree at that depth.
+	 */
+	private static function segmentShared(array $segments, int $index): bool {
+		return count(array_unique(array_column($segments, $index))) === 1;
+	}//end segmentShared()
 
 	/**
 	 * Join path segments, or the root path when there are none.
@@ -262,26 +268,4 @@ class FlowStream extends Entity implements JsonSerializable {
 
 		return implode('.', $segments);
 	}//end pathOrRoot()
-
-	/**
-	 * JSON shape.
-	 *
-	 * @return array<string, mixed> The stream as an array.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'runUuid' => $this->runUuid,
-			'streamId' => $this->streamId,
-			'ordinalPath' => $this->ordinalPath,
-			'parentStreamId' => $this->parentStreamId,
-			'place' => $this->place,
-			'status' => $this->status,
-			'resumeAt' => $this->resumeAt?->format('c'),
-			'nextSequence' => $this->nextSequence,
-			'error' => $this->error,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

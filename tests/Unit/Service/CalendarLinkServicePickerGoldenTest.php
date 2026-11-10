@@ -25,6 +25,8 @@ use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -117,11 +119,11 @@ class CalendarLinkServicePickerGoldenTest extends TestCase {
 		$user->method('getUID')->willReturn('admin');
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
-		$service = new CalendarLinkService($this->createMock(CalendarLinkMapper::class), $this->createMock(CalendarEventService::class), $dav, $session, $logger);
+		$service = new CalendarLinkService($this->createMock(CalendarLinkMapper::class), $this->createMock(CalendarEventService::class), $dav, new LinkSessionRuntime($session, $logger));
 
 		$afterValue = $after === null ? null : new DateTimeImmutable($after);
 		try {
-			$actual = ['rows' => $service->getEventsForCalendar($uri, $limit, $afterValue)];
+			$actual = ['rows' => $service->getEventsForCalendar($uri, new CalendarPickerWindow($afterValue, $limit))];
 		} catch (Throwable $e) {
 			$actual = ['error' => [get_class($e), $e->getMessage()]];
 		}

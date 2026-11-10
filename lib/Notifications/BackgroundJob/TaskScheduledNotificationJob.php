@@ -34,22 +34,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
-use DateTimeImmutable;
-use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
-use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -90,30 +91,17 @@ class TaskScheduledNotificationJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time The clock.
-	 * @param TaskNotificationRules $rules The task rule registry.
-	 * @param TaskMapper $tasks The candidate query.
-	 * @param TaskInboxService $inbox The row the adapter is built from.
-	 * @param ScheduledFilterEvaluator $filters The operator-object filter evaluator.
-	 * @param NotificationDedupeStateMapper $dedupe Per-(rule, task) fire state.
-	 * @param AnnotationNotificationDispatcher $dispatcher The one dispatcher.
-	 * @param IAppConfig $appConfig Last-fire timestamps per rule.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param ITimeFactory               $time       The clock.
+	 * @param TaskNotificationCandidates $candidates The rules, the candidate query, the inbox row and the filter evaluator.
+	 * @param TaskNotificationDelivery   $delivery   The dedupe state, the dispatcher, the app config and the logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly TaskNotificationRules $rules,
-		private readonly TaskMapper $tasks,
-		private readonly TaskInboxService $inbox,
-		private readonly ScheduledFilterEvaluator $filters,
-		private readonly NotificationDedupeStateMapper $dedupe,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		private readonly TaskNotificationCandidates $candidates,
+		private readonly TaskNotificationDelivery $delivery,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 3600);
-
 	}//end __construct()
 
 	/**
@@ -130,107 +118,167 @@ class TaskScheduledNotificationJob extends TimedJob {
 	protected function run($argument): void {
 		$now = $this->time->getTime();
 
-		foreach ($this->rules->getRules() as $name => $rule) {
-			$trigger = ($rule['trigger'] ?? null);
-			if (is_array($trigger) === false || (string)($trigger['type'] ?? '') !== 'scheduled') {
-				continue;
-			}
-
-			if (($rule['enabled'] ?? true) === false) {
+		foreach ($this->candidates->rules->getRules() as $name => $rule) {
+			$trigger = $this->scheduledTrigger(rule: $rule);
+			if ($trigger === null) {
 				continue;
 			}
 
 			$interval = max(60, (int)($trigger['intervalSec'] ?? 86400));
-			if ($this->isDue(name: (string)$name, intervalSec: $interval, now: $now) === false) {
+			if (($now - $this->lastFiredAt(name: (string)$name)) < $interval) {
 				continue;
 			}
 
-			$this->fire(name: (string)$name, rule: $rule, trigger: $trigger);
-			$this->appConfig->setValueString('openregister', $this->stateKey(name: (string)$name), (string)$now);
+			$this->fire(name: (string)$name, rule: $rule);
+			$this->delivery->appConfig->setValueString('openregister', $this->stateKey(name: (string)$name), (string)$now);
 		}//end foreach
 	}//end run()
 
 	/**
+	 * The trigger block of an enabled scheduled rule, or null for any other rule.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return array<string, mixed>|null The trigger block.
+	 */
+	private function scheduledTrigger(array $rule): ?array {
+		$trigger = ($rule['trigger'] ?? null);
+		if (is_array($trigger) === false || (string)($trigger['type'] ?? '') !== 'scheduled') {
+			return null;
+		}
+
+		if (($rule['enabled'] ?? true) === false) {
+			return null;
+		}
+
+		return $trigger;
+	}//end scheduledTrigger()
+
+	/**
 	 * Evaluate one scheduled rule over the open, past-due tasks.
+	 *
+	 * The rule's trigger block was already checked by scheduledTrigger().
 	 *
 	 * @param string $name The rule name.
 	 * @param array<string, mixed> $rule The rule.
-	 * @param array<string, mixed> $trigger Its trigger block.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-deadline-notifications-filter-on-the-derived-predicate
 	 */
-	private function fire(string $name, array $rule, array $trigger): void {
-		$filter = (array)($trigger['filter'] ?? []);
+	private function fire(string $name, array $rule): void {
+		$trigger = (array)$rule['trigger'];
 		// One clock instant for the whole sweep: the candidate query's
 		// derived-overdue filter and the rule's declared filter read the same
 		// "now", so the two derivations cannot disagree within a run.
-		$nowMutable = $this->time->getDateTime();
-		$nowDt = DateTimeImmutable::createFromMutable($nowMutable);
-		$schema = $this->schemaFor(name: $name, rule: $rule);
-		$watched = $this->watchedFields(trigger: $trigger);
+		$run = new TaskSweepRun(
+			sweep: new TaskSweep(
+				name: $name,
+				filter: (array)($trigger['filter'] ?? []),
+				watched: $this->watchedFields(trigger: $trigger),
+				schema: $this->schemaFor(name: $name, rule: $rule)
+			),
+			now: $this->time->getDateTime()
+		);
 
-		$matched = 0;
-		$dispatched = 0;
+		$this->sweepCandidates(run: $run);
+
+		$this->delivery->logger->info(
+			sprintf('[TaskScheduledNotificationJob] Rule "%s": matched=%d dispatched=%d', $name, $run->matched, $run->dispatched)
+		);
+	}//end fire()
+
+	/**
+	 * Page through the candidates and evaluate each, up to MAX_PER_RUN.
+	 *
+	 * @param TaskSweepRun $run The sweep; its tally is updated.
+	 *
+	 * @return void
+	 */
+	private function sweepCandidates(TaskSweepRun $run): void {
 		$offset = 0;
 		while ($offset < self::MAX_PER_RUN) {
-			$page = $this->candidates(now: $nowMutable, offset: $offset);
+			$page = $this->candidates(now: $run->now, offset: $offset);
 			if ($page === []) {
 				break;
 			}
 
 			$offset += count($page);
-
 			foreach ($page as $task) {
-				$row = $this->inbox->enrich(task: $task);
-				$adapter = new TaskObjectAdapter(task: $task, row: $row);
-				$payload = ($adapter->getObject() ?? []);
-
-				if ($this->filters->matches(objectData: $payload, filter: $filter, now: $nowDt) === false) {
-					continue;
-				}
-
-				$matched++;
-				$uuid = (string)$task->getUuid();
-				$fingerprint = $this->fingerprint(payload: $payload, watched: $watched);
-				$existing = $this->dedupe->findOne(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $name, objectUuid: $uuid);
-				if ($existing !== null && (string)$existing->getFingerprint() === $fingerprint) {
-					continue;
-				}
-
-				try {
-					$this->dispatcher->dispatchWithSchema(
-						object: $adapter,
-						trigger: 'scheduled',
-						context: ['notificationName' => $name],
-						schema: $schema
-					);
-					$this->dedupe->upsert(
-						schemaId: self::DEDUPE_SCHEMA_ID,
-						ruleKey: $name,
-						objectUuid: $uuid,
-						fingerprint: $fingerprint,
-						now: $nowMutable,
-						dispatched: true
-					);
-					$dispatched++;
-				} catch (Throwable $failure) {
-					$this->logger->warning(
-						sprintf('[TaskScheduledNotificationJob] Rule "%s" failed for task %s: %s', $name, $uuid, $failure->getMessage())
-					);
-				}
-			}//end foreach
+				$this->fireTask(task: $task, run: $run);
+			}
 
 			if (count($page) < self::PAGE) {
 				break;
 			}
-		}//end while
+		}
+	}//end sweepCandidates()
 
-		$this->logger->info(
-			sprintf('[TaskScheduledNotificationJob] Rule "%s": matched=%d dispatched=%d', $name, $matched, $dispatched)
+	/**
+	 * Evaluate one candidate task: filter, dedupe, then dispatch.
+	 *
+	 * @param Task         $task The candidate task.
+	 * @param TaskSweepRun $run  The sweep; its tally is updated.
+	 *
+	 * @return void
+	 */
+	private function fireTask(Task $task, TaskSweepRun $run): void {
+		$adapter = new TaskObjectAdapter(task: $task, row: $this->candidates->inbox->enrich(task: $task));
+		$payload = ($adapter->getObject() ?? []);
+
+		$target = new ScheduledFilterTarget(objectData: $payload, now: $run->nowDt);
+		if ($this->candidates->filters->matchesTarget(filter: $run->sweep->filter, target: $target) === false) {
+			return;
+		}
+
+		$run->matched++;
+		$fingerprint = $this->fingerprint(payload: $payload, watched: $run->sweep->watched);
+		$existing = $this->delivery->dedupe->findByKey(
+			key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $run->sweep->name, objectUuid: (string)$task->getUuid())
 		);
-	}//end fire()
+		if ($existing !== null && (string)$existing->getFingerprint() === $fingerprint) {
+			return;
+		}
+
+		$run->dispatched += $this->dispatchTask(adapter: $adapter, run: $run);
+	}//end fireTask()
+
+	/**
+	 * Dispatch one task and record its fingerprint; a failure is logged, not raised.
+	 *
+	 * @param TaskObjectAdapter $adapter The task as a notifiable object.
+	 * @param TaskSweepRun      $run     The sweep.
+	 *
+	 * @return int 1 when dispatched, 0 when the dispatch failed.
+	 */
+	private function dispatchTask(TaskObjectAdapter $adapter, TaskSweepRun $run): int {
+		// The adapter carries the task uuid as its own.
+		$uuid = (string)$adapter->getUuid();
+		$name = $run->sweep->name;
+
+		try {
+			$this->delivery->dispatcher->dispatchWithSchema(
+				object: $adapter,
+				trigger: 'scheduled',
+				context: ['notificationName' => $name],
+				schema: $run->sweep->schema
+			);
+			$this->delivery->dedupe->upsert(
+				key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $name, objectUuid: $uuid),
+				sighting: new DedupeSighting(
+					fingerprint: $this->fingerprint(payload: ($adapter->getObject() ?? []), watched: $run->sweep->watched),
+					now: $run->now,
+					dispatched: true
+				)
+			);
+			return 1;
+		} catch (Throwable $failure) {
+			$this->delivery->logger->warning(
+				sprintf('[TaskScheduledNotificationJob] Rule "%s" failed for task %s: %s', $name, $uuid, $failure->getMessage())
+			);
+			return 0;
+		}
+	}//end dispatchTask()
 
 	/**
 	 * The candidate page: open tasks whose deadline lies before now, through
@@ -245,18 +293,18 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 */
 	private function candidates(DateTime $now, int $offset): array {
 		$criteria = new TaskInboxCriteria(
-			uid: self::SWEEP_UID,
-			isAdmin: true,
-			scope: TaskInboxCriteria::SCOPE_ALL,
-			isTerminal: false,
-			overdueAt: $now,
-			sort: TaskInboxCriteria::SORT_CREATED
+			audience: new TaskInboxAudience(uid: self::SWEEP_UID, isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL),
+			selection: new TaskInboxSelection(
+				filter: new TaskInboxFilter(isTerminal: false),
+				window: new TaskInboxDueWindow(overdueAt: $now),
+				order: new TaskInboxOrder(sort: TaskInboxCriteria::SORT_CREATED)
+			)
 		);
 
 		try {
-			return $this->tasks->findInbox(criteria: $criteria, limit: self::PAGE, offset: $offset);
+			return $this->candidates->tasks->findInbox(criteria: $criteria, page: new ListQuery(limit: self::PAGE, offset: $offset));
 		} catch (Throwable $failure) {
-			$this->logger->warning('[TaskScheduledNotificationJob] Candidate query failed: ' . $failure->getMessage());
+			$this->delivery->logger->warning('[TaskScheduledNotificationJob] Candidate query failed: ' . $failure->getMessage());
 
 			return [];
 		}
@@ -274,28 +322,24 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-deadline-notifications-filter-on-the-derived-predicate
 	 */
 	private function schemaFor(string $name, array $rule): Schema {
-		$schema = $this->rules->buildSchema();
+		$schema = $this->candidates->rules->buildSchema();
 		$schema->setConfiguration(['x-openregister-notifications' => [$name => $rule]]);
 
 		return $schema;
 	}//end schemaFor()
 
 	/**
-	 * Whether a rule's interval has elapsed since it last fired.
+	 * When a rule last fired, as a Unix timestamp; 0 when it never did.
 	 *
 	 * @param string $name The rule name.
-	 * @param int $intervalSec The declared interval.
-	 * @param int $now The clock.
 	 *
-	 * @return bool True when due.
+	 * @return int The last fire time.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-deadline-notifications-filter-on-the-derived-predicate
 	 */
-	private function isDue(string $name, int $intervalSec, int $now): bool {
-		$last = (int)$this->appConfig->getValueString('openregister', $this->stateKey(name: $name), '0');
-
-		return ($now - $last) >= $intervalSec;
-	}//end isDue()
+	private function lastFiredAt(string $name): int {
+		return (int)$this->delivery->appConfig->getValueString('openregister', $this->stateKey(name: $name), '0');
+	}//end lastFiredAt()
 
 	/**
 	 * The app-config key holding a rule's last fire time.

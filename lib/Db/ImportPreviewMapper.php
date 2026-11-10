@@ -36,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ImportPreview>
  */
-class ImportPreviewMapper extends QBMapper {
+class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterface, ImportPreviewMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -86,15 +86,14 @@ class ImportPreviewMapper extends QBMapper {
 	/**
 	 * List the previews of one actor, newest first.
 	 *
-	 * @param string $createdBy The actor's uid.
-	 * @param string|null $state Optional state filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param string    $createdBy The actor's uid.
+	 * @param ListQuery $query     The page (unbounded for every preview) and the optional `state` filter.
 	 *
 	 * @return ImportPreview[] The actor's previews.
 	 */
-	public function findByActor(string $createdBy, ?string $state = null, ?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
+	public function findByActor(string $createdBy, ListQuery $query=new ListQuery(limit: ListQuery::UNBOUNDED)): array {
+		$state = ($query->filters['state'] ?? null);
+		$qb    = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('created_by', $qb->createNamedParameter($createdBy)))
@@ -104,7 +103,7 @@ class ImportPreviewMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByActor()

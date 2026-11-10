@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
@@ -85,7 +86,7 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$verbs = ['offer', 'claim', 'unclaim', 'assign', 'reassign', 'delegate', 'resolve', 'complete', 'cancel', 'checklist'];
 		foreach ($verbs as $verb) {
 			try {
-				$service->assertMay(verb: $verb, task: $task, uid: 'mallory');
+				$service->assertMay(act: new TaskAct(verb: $verb, actor: 'mallory'), task: $task);
 				$this->fail(sprintf("Verb '%s' admitted a stranger.", $verb));
 			} catch (TaskAccessDeniedException $denied) {
 				$this->assertStringContainsString($verb, $denied->getMessage());
@@ -102,7 +103,7 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$service = new TaskAuthorizationService(groupManager: $this->emptyGroupBackend());
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'complete', task: $this->assignedTask(), uid: null);
+		$service->assertMay(act: new TaskAct(verb: 'complete', actor: null), task: $this->assignedTask());
 	}//end testNoIdentityIsDenied()
 
 	/**
@@ -114,12 +115,12 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$service = new TaskAuthorizationService(groupManager: $this->emptyGroupBackend());
 
 		$human = $this->assignedTask();
-		$service->assertMay(verb: 'complete', task: $human, uid: 'alice');
+		$service->assertMay(act: new TaskAct(verb: 'complete', actor: 'alice'), task: $human);
 
 		$agent = $this->assignedTask();
 		$agent->setPerformerType(Task::PERFORMER_AGENT);
 		$agent->setAssignee('agent-7');
-		$service->assertMay(verb: 'complete', task: $agent, uid: 'agent-7');
+		$service->assertMay(act: new TaskAct(verb: 'complete', actor: 'agent-7'), task: $agent);
 
 		// Reaching here means neither threw.
 		$this->assertTrue(true);
@@ -140,7 +141,7 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$task->setPerformerType('robot');
 
 		try {
-			$service->assertMay(verb: 'complete', task: $task, uid: 'alice');
+			$service->assertMay(act: new TaskAct(verb: 'complete', actor: 'alice'), task: $task);
 			$this->fail('An unknown performer type was admitted.');
 		} catch (TaskAccessDeniedException $denied) {
 			$this->assertStringContainsString("'robot'", $denied->getMessage());
@@ -161,7 +162,7 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$task->setCandidateRole('GHOST_ROLE');
 
 		try {
-			$service->assertMay(verb: 'claim', task: $task, uid: 'alice');
+			$service->assertMay(act: new TaskAct(verb: 'claim', actor: 'alice'), task: $task);
 			$this->fail('An unresolvable role was treated as passable.');
 		} catch (TaskAccessDeniedException $denied) {
 			$this->assertStringContainsString('GHOST_ROLE', $denied->getMessage());
@@ -183,7 +184,7 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$task->setCandidateGroups(['reviewers']);
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'claim', task: $task, uid: 'alice');
+		$service->assertMay(act: new TaskAct(verb: 'claim', actor: 'alice'), task: $task);
 	}//end testAnAbsentGroupBackendDenies()
 
 	/**
@@ -203,15 +204,52 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$byUser = new Task();
 		$byUser->setPerformerType(Task::PERFORMER_USER);
 		$byUser->setCandidateUsers(['ursula']);
-		$service->assertMay(verb: 'claim', task: $byUser, uid: 'ursula');
+		$service->assertMay(act: new TaskAct(verb: 'claim', actor: 'ursula'), task: $byUser);
 
 		$byGroup = new Task();
 		$byGroup->setPerformerType(Task::PERFORMER_GROUP);
 		$byGroup->setCandidateGroups(['reviewers']);
-		$service->assertMay(verb: 'claim', task: $byGroup, uid: 'greta');
+		$service->assertMay(act: new TaskAct(verb: 'claim', actor: 'greta'), task: $byGroup);
 
 		$this->assertTrue(true);
 	}//end testPoolMembershipAdmitsAClaim()
+
+	/**
+	 * A typed `{type, id}` candidate-group entry is not read as a bare group name.
+	 *
+	 * The legacy group branch only knows bare group ids; a typed entry is the
+	 * typed-principal branch's to resolve. Without a principal resolver that
+	 * branch fails closed, so the caller is denied and the group backend is
+	 * never asked about a group the task does not name.
+	 *
+	 * @return void
+	 */
+	public function testATypedCandidateGroupEntryIsNotReadAsAGroupName(): void {
+		$asked   = [];
+		$manager = $this->createMock(IGroupManager::class);
+		$manager->method('isAdmin')->willReturn(false);
+		$manager->method('groupExists')->willReturn(true);
+		$manager->method('isInGroup')->willReturnCallback(
+			static function (string $uid, string $gid) use (&$asked): bool {
+				$asked[] = $gid;
+				return true;
+			}
+		);
+		$service = new TaskAuthorizationService(groupManager: $manager);
+
+		$task = new Task();
+		$task->setPerformerType(Task::PERFORMER_GROUP);
+		$task->setCandidateGroups([['type' => 'group', 'id' => 'reviewers']]);
+
+		try {
+			$service->assertMay(act: new TaskAct(verb: 'claim', actor: 'greta'), task: $task);
+			$this->fail('A typed entry must not admit through the bare-group branch.');
+		} catch (TaskAccessDeniedException $e) {
+			$this->assertStringContainsString('candidate pool', $e->getMessage());
+		}
+
+		$this->assertSame([], $asked);
+	}//end testATypedCandidateGroupEntryIsNotReadAsAGroupName()
 
 	/**
 	 * The requester cancels and reassigns; the assignee does not.
@@ -222,11 +260,11 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$service = new TaskAuthorizationService(groupManager: $this->emptyGroupBackend());
 		$task = $this->assignedTask();
 
-		$service->assertMay(verb: 'cancel', task: $task, uid: 'rita');
-		$service->assertMay(verb: 'reassign', task: $task, uid: 'rita');
+		$service->assertMay(act: new TaskAct(verb: 'cancel', actor: 'rita'), task: $task);
+		$service->assertMay(act: new TaskAct(verb: 'reassign', actor: 'rita'), task: $task);
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'cancel', task: $task, uid: 'alice');
+		$service->assertMay(act: new TaskAct(verb: 'cancel', actor: 'alice'), task: $task);
 	}//end testRequesterOwnsCancelAndReassign()
 
 	/**
@@ -241,11 +279,11 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$task = $this->assignedTask();
 		$task->setCandidateUsers(['pat']);
 
-		$service->assertMay(verb: 'offer', task: $task, uid: 'rita');
+		$service->assertMay(act: new TaskAct(verb: 'offer', actor: 'rita'), task: $task);
 
 		foreach (['alice', 'pat', 'mallory'] as $notTheRequester) {
 			try {
-				$service->assertMay(verb: 'offer', task: $task, uid: $notTheRequester);
+				$service->assertMay(act: new TaskAct(verb: 'offer', actor: $notTheRequester), task: $task);
 				$this->fail(sprintf("'%s' may offer but is not the requester.", $notTheRequester));
 			} catch (TaskAccessDeniedException $denied) {
 				$this->assertStringContainsString('offer', $denied->getMessage());
@@ -277,7 +315,7 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$this->assertFalse($service->isAdministrator(uid: null));
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'claim', task: $task, uid: 'greta');
+		$service->assertMay(act: new TaskAct(verb: 'claim', actor: 'greta'), task: $task);
 	}//end testAThrowingBackendDenies()
 
 	/**
@@ -308,8 +346,8 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$manager->method('isAdmin')->willReturn(true);
 		$service = new TaskAuthorizationService(groupManager: $manager);
 
-		$service->assertMay(verb: 'complete', task: $this->assignedTask(), uid: 'root');
-		$service->assertMay(verb: 'cancel', task: $this->assignedTask(), uid: 'root');
+		$service->assertMay(act: new TaskAct(verb: 'complete', actor: 'root'), task: $this->assignedTask());
+		$service->assertMay(act: new TaskAct(verb: 'cancel', actor: 'root'), task: $this->assignedTask());
 		$this->assertTrue(true);
 	}//end testAnAdministratorPasses()
 
@@ -329,6 +367,6 @@ class TaskAuthorizationServiceTest extends TestCase {
 		$this->assertFalse($service->mayRead(task: $task, uid: null));
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'complete', task: $task, uid: 'wanda');
+		$service->assertMay(act: new TaskAct(verb: 'complete', actor: 'wanda'), task: $task);
 	}//end testWatchersReadButNeverAct()
 }//end class

@@ -33,14 +33,26 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -59,6 +71,10 @@ use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
+use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
+use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
+use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
 
 /**
  * Records every send handed to the nc-notification channel unit.
@@ -98,6 +114,21 @@ class RecordingNcSender extends NcNotificationSender {
 		array $actions,
 		ObjectEntity $object,
 	): void {
+		// Ride-alongs are not part of the delivery comparison.
+	}
+
+	public function notify(InAppNotice $notice): string {
+		$this->sends[] = [
+			'channel' => 'nc-notification',
+			'uid' => $notice->uid,
+			'subject' => $notice->content->subject,
+			'message' => $notice->content->message,
+		];
+
+		return self::OUTCOME_DISPATCHED;
+	}
+
+	public function enqueuePush(PushRideAlong $push): void {
 		// Ride-alongs are not part of the delivery comparison.
 	}
 }//end class
@@ -169,22 +200,41 @@ class FlowMessagingEquivalenceTest extends TestCase {
 	 */
 	private function makeDispatcher(): AnnotationNotificationDispatcher {
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $this->logger,
-			groupManager: $this->groupManager,
-			userManager: $this->userManager,
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			ncSender: $this->recorder,
-			recipientResolver: new NotificationRecipientResolver(
+			channels: new ChannelSet(
+				ncSender: $this->recorder,
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->logger
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->logger
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
 				userManager: $this->userManager,
 				groupManager: $this->groupManager,
 				logger: $this->logger
+			)
 			),
-			templating: new NotificationTemplating(logger: $this->logger)
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(logger: $this->logger)
+			)
 		);
 	}//end makeDispatcher()
 
@@ -200,37 +250,50 @@ class FlowMessagingEquivalenceTest extends TestCase {
 		$config->method('getUserValue')->willReturnArgument(3);
 
 		return new FlowMessagingService(
-			channelPolicy: new NotificationChannelPolicy(appConfig: $this->appConfig, logger: $this->logger),
-			recipientResolver: new NotificationRecipientResolver(
-				userManager: $this->userManager,
-				groupManager: $this->groupManager,
-				logger: $this->logger
+			channels: new FlowMessagingChannels(
+				channelPolicy: new NotificationChannelPolicy(appConfig: $this->appConfig, logger: $this->logger),
+				ncSender: $this->recorder,
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->logger
+				)
 			),
-			templating: new NotificationTemplating(logger: $this->logger),
-			ncSender: $this->recorder,
-			emailSender: new EmailSender(
-				userManager: $this->userManager,
-				mailer: $this->createMock(IMailer::class),
-				logger: $this->logger
+			recipients: new FlowMessagingRecipients(
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $this->logger
+				),
+				preferences: new NotificationPreferenceService(
+					config: $config,
+					schemaMapper: $this->createMock(SchemaMapper::class),
+					logger: $this->logger
+				),
+				rateLimiter: new RateLimiter(
+					cacheFactory: $cacheFactory,
+					appConfig: $this->appConfig,
+					logger: $this->logger
+				),
+				userManager: $this->userManager
 			),
-			talkSender: new TalkSender(
-				httpClient: $this->createMock(IClientService::class),
-				logger: $this->logger
-			),
-			rateLimiter: new RateLimiter(
-				cacheFactory: $cacheFactory,
+			platform: new FlowMessagingPlatform(
+				templating: new NotificationTemplating(logger: $this->logger),
 				appConfig: $this->appConfig,
-				logger: $this->logger
+				logger: $this->logger,
+				eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 			),
-			preferences: new NotificationPreferenceService(
-				config: $config,
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				logger: $this->logger
-			),
-			userManager: $this->userManager,
-			appConfig: $this->appConfig,
-			logger: $this->logger,
-			eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
+			overrides: new FlowMessagingOverrides(
+				optOut: new OptOutAuthority(
+					eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class),
+					appConfig: $this->appConfig,
+					logger: $this->logger
+				)
+			)
 		);
 	}//end makeMessaging()
 
@@ -270,16 +333,11 @@ class FlowMessagingEquivalenceTest extends TestCase {
 
 		// The FLOW path: a send-notification node's config with the same
 		// recipients and templates, against the same object as an item.
-		$this->makeMessaging()->sendNotification(
-			config: [
+		$this->makeMessaging()->notify(request: new MessageSend(config: [
 				'recipients' => ['bob', 'carol'],
 				'title' => 'Case {{ title }} moved',
 				'message' => 'Case {{ title }} is now {{ status }}.',
-			],
-			items: [FlowItems::item(json: $data)],
-			context: ['runAs' => 'alice'],
-			stepName: 'openregister.send-notification'
-		);
+			], items: [FlowItems::item(json: $data)], context: ['runAs' => 'alice'], stepName: 'openregister.send-notification'));
 		$flow = $this->recorder->sends;
 
 		// Identical in channel, body and recipients — and both lists exist at

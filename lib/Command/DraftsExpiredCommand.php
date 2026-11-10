@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -94,7 +94,7 @@ class DraftsExpiredCommand extends Command {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-an-administrator-must-be-able-to-see-what-the-draft-cleanup-would-remove
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$counts = $this->container->get(DraftExpiry::class)->preview(now: new DateTimeImmutable());
+		$counts = $this->container->get(DraftExpiryInterface::class)->preview(now: new DateTimeImmutable());
 
 		if ($input->getOption('json') === true) {
 			$rows = [];
@@ -123,8 +123,8 @@ class DraftsExpiredCommand extends Command {
 		$output->writeln(
 			sprintf(
 				'<comment>The next run of the draft cleanup removes %d drafts, at most %d per run.</comment>',
-				min($counts['expired'], DraftExpiry::MAX_REMOVALS),
-				DraftExpiry::MAX_REMOVALS
+				min($counts['expired'], DraftExpiryInterface::MAX_REMOVALS),
+				DraftExpiryInterface::MAX_REMOVALS
 			)
 		);
 		$output->writeln('To keep the drafts of a schema, set "draftLifetimeDays": false in its configuration. A number sets another lifetime in days.');

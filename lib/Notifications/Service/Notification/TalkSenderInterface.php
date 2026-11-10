@@ -37,9 +37,8 @@ interface TalkSenderInterface {
 	 * already be a participant of the conversation; "not a participant" is a
 	 * failure with that reason, never an auto-join.
 	 *
-	 * @param string $token The Talk conversation token.
-	 * @param string $message The message text.
-	 * @param string $actorUid The acting user's uid.
+	 * @param TalkMessage $talkMessage The message and its conversation.
+	 * @param string      $actorUid    The acting user's uid.
 	 *
 	 * @return string OUTCOME_DISPATCHED or OUTCOME_KILL_SWITCH.
 	 *
@@ -49,5 +48,5 @@ interface TalkSenderInterface {
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
-	public function postAsUser(string $token, string $message, string $actorUid): string;
+	public function postAsUser(TalkMessage $talkMessage, string $actorUid): string;
 }//end interface

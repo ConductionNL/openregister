@@ -17,10 +17,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\History;
 
 use DateTime;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\StateHistory;
 use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -45,6 +48,17 @@ class StateHistoryProjectorTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
+
+	/**
+	 * The committed move of uuid-1 in register zaken to bezwaar.
+	 *
+	 * @return ObjectTransitionedEvent The transition.
+	 */
+	private function move(): ObjectTransitionedEvent {
+		$object = new ObjectEntity();
+		$object->setUuid('uuid-1');
+		return new ObjectTransitionedEvent($object, 'appeal', 'open', 'bezwaar', null, 'zaken', 'zaak');
+	}//end move()
 
 	/**
 	 * A real Schema: Entity getters are magic and a mock cannot answer
@@ -75,7 +89,7 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->mapper->expects($this->once())
 			->method('closeOpenInterval')
-			->with('uuid-1', 'status', $at)
+			->with($this->equalTo(new TrackedProperty('uuid-1', 'status')), $at)
 			->willReturn(1);
 
 		$written = null;
@@ -90,10 +104,8 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->assertTrue(
 			$this->projector->record(
-				objectUuid: 'uuid-1',
+				move: $this->move(),
 				schema: $schema,
-				register: 'zaken',
-				to: 'bezwaar',
 				stampedAt: $at
 			)
 		);
@@ -102,6 +114,7 @@ class StateHistoryProjectorTest extends TestCase {
 		$this->assertSame('status', $written->getProperty());
 		$this->assertSame('bezwaar', $written->getValue());
 		$this->assertSame('uuid-1', $written->getObjectUuid());
+		$this->assertSame('zaken', $written->getRegister());
 		$this->assertNull($written->getLeftAt(), 'the new interval is the one the object is in now');
 	}//end testATransitionClosesTheOldIntervalAndOpensANewOne()
 
@@ -118,10 +131,8 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->assertFalse(
 			$this->projector->record(
-				objectUuid: 'uuid-1',
+				move: $this->move(),
 				schema: $this->schema(['x-openregister-something-else' => ['field' => 'status']]),
-				register: 'zaken',
-				to: 'bezwaar',
 				stampedAt: new DateTime()
 			)
 		);
@@ -137,10 +148,8 @@ class StateHistoryProjectorTest extends TestCase {
 
 		$this->assertFalse(
 			$this->projector->record(
-				objectUuid: 'uuid-1',
+				move: $this->move(),
 				schema: null,
-				register: 'zaken',
-				to: 'bezwaar',
 				stampedAt: new DateTime()
 			)
 		);

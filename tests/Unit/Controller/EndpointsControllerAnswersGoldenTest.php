@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EndpointsControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -136,7 +137,7 @@ class EndpointsControllerAnswersGoldenTest extends TestCase {
 			return $uid === 'alice';
 		});
 
-		$controller = new EndpointsController(
+		$controller = EndpointsControllerFactory::create(
 			'openregister',
 			$request,
 			$mapper,

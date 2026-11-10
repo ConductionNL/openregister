@@ -23,41 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Configuration;
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched when a configuration is created.
  */
-class ConfigurationCreatedEvent extends Event {
-
-	/**
-	 * The newly created configuration.
-	 *
-	 * @var Configuration The configuration that was created.
-	 */
-	private Configuration $configuration;
-
-	/**
-	 * Constructor for ConfigurationCreatedEvent.
-	 *
-	 * @param Configuration $configuration The configuration that was created.
-	 *
-	 * @return void
-	 */
-	public function __construct(Configuration $configuration) {
-		parent::__construct();
-		$this->configuration = $configuration;
-	}//end __construct()
-
-	/**
-	 * Get the created configuration.
-	 *
-	 * @return Configuration The configuration that was created.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getConfiguration(): Configuration {
-		return $this->configuration;
-	}//end getConfiguration()
+class ConfigurationCreatedEvent extends AbstractConfigurationEvent {
 }//end class

@@ -41,8 +41,7 @@ namespace OCA\OpenRegister\Service\Relation;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
-use OCA\OpenRegister\Db\ObjectRelationMapper;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -51,25 +50,29 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class ObjectRelationService {
+class ObjectRelationService implements ObjectRelationServiceInterface {
+	/**
+	 * Shapes the fields of the rows this service writes and reads.
+	 *
+	 * @var RelationRowFields
+	 */
+	private readonly RelationRowFields $fields;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectRelationMapper $mapper The relation row mapper.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
-	 * @param RelationTypeResolver $relationTypes Resolves what a relation is called.
+	 * @param ObjectRelationStores $stores The relation row mapper, the schema mapper and the vocabulary.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IUserSession|null $userSession Who is writing the row.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectRelationMapper $mapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RelationTypeResolver $relationTypes,
+		private readonly ObjectRelationStores $stores,
 		private readonly LoggerInterface $logger,
 		private readonly ?IUserSession $userSession = null,
 	) {
+		$this->fields = new RelationRowFields();
 	}//end __construct()
 
 	/**
@@ -84,8 +87,7 @@ class ObjectRelationService {
 	 *
 	 * @param ObjectEntity $source The object the new one came out of.
 	 * @param ObjectEntity $created The new object.
-	 * @param string|null $entry The entry of the source it came out of.
-	 * @param string|null $relationType The vocabulary key naming the link.
+	 * @param ProvenanceLink|null $link The entry of the source it came out of and the vocabulary key naming the link.
 	 *
 	 * @return ObjectRelation The provenance row.
 	 *
@@ -94,23 +96,12 @@ class ObjectRelationService {
 	public function recordSplit(
 		ObjectEntity $source,
 		ObjectEntity $created,
-		?string $entry = null,
-		?string $relationType = null,
+		?ProvenanceLink $link = null,
 	): ObjectRelation {
-		return $this->mapper->createFromArray(
-			[
-				'sourceUuid' => (string)$created->getUuid(),
-				'sourceRegister' => $this->asInt(value: $created->getRegister()),
-				'sourceSchema' => $this->asInt(value: $created->getSchema()),
-				'targetUuid' => (string)$source->getUuid(),
-				'targetRegister' => $this->asInt(value: $source->getRegister()),
-				'targetSchema' => $this->asInt(value: $source->getSchema()),
-				'kind' => ObjectRelation::KIND_OBJECT,
-				'origin' => ObjectRelation::ORIGIN_SPLIT,
-				'relationType' => $relationType,
-				'sourceEntry' => $entry,
-				'createdBy' => $this->actor(),
-			]
+		$link ??= new ProvenanceLink();
+		return $this->stores->mapper->createFromArray(
+			$this->fields->splitLink(from: $created, to: $source)
+			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'createdBy' => $this->actor()]
 		);
 	}//end recordSplit()
 
@@ -139,46 +130,51 @@ class ObjectRelationService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function applyInheritance(ObjectEntity $parent, array $childData, array $inherits): array {
-		$parentData = $parent->getObject();
+		return $this->inherit(inheritance: new ParentInheritance(parent: $parent, childData: $childData, inherits: $inherits));
+	}//end applyInheritance()
+
+	/**
+	 * What a child takes from its parent at creation, as {@see applyInheritance()} describes.
+	 *
+	 * @param ParentInheritance $inheritance The parent, the child's data so far and the roles inherited.
+	 *
+	 * @return array{data: array<string, mixed>, inherited: array<string, mixed>}
+	 *         The child's data with the inherited values applied, and the record.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function inherit(ParentInheritance $inheritance): array {
+		$parentData = $inheritance->parent->getObject();
+		$childData = $inheritance->childData;
 		$record = [];
 
-		foreach ($inherits as $role => $property) {
-			if (array_key_exists($property, $parentData) === false) {
-				continue;
-			}
-
-			$value = $parentData[$property];
-			if ($value === null || $value === '') {
-				continue;
-			}
-
+		foreach ($inheritance->inherits as $role => $property) {
 			// A value the child already carries is the child's own. Inheritance
 			// fills a gap; it does not overrule what somebody typed.
-			if (array_key_exists($property, $childData) === true
-				&& $childData[$property] !== null
-				&& $childData[$property] !== ''
+			if ($this->fields->hasValue(data: $parentData, property: $property) === false
+				|| $this->fields->hasValue(data: $childData, property: $property) === true
 			) {
 				continue;
 			}
 
-			$childData[$property] = $value;
-			$record[$role] = ['property' => $property, 'value' => $value];
+			$childData[$property] = $parentData[$property];
+			$record[$role] = ['property' => $property, 'value' => $parentData[$property]];
 		}
 
 		return ['data' => $childData, 'inherited' => $record];
-	}//end applyInheritance()
+	}//end inherit()
 
 	/**
-	 * Record a child created under a parent, with what it inherited.
+	 * Record a child created under a parent, with what it inherited (positional form of recordDerived()).
 	 *
 	 * @param ObjectEntity $parent The parent object.
 	 * @param ObjectEntity $child The created child.
-	 * @param string|null $relationType The vocabulary key naming the link.
+	 * @param ProvenanceLink|null $link The vocabulary key naming the link, and the
+	 *                                  entry of the parent it came out of, when it
+	 *                                  came out of one. A derivation and a split are
+	 *                                  the same act seen twice: a sub-case started
+	 *                                  from a timeline entry is both.
 	 * @param array<string, mixed> $inherited What the child took, as recorded.
-	 * @param string|null $entry The entry of the parent it came out of, when it
-	 *                           came out of one. A derivation and a split are
-	 *                           the same act seen twice: a sub-case started
-	 *                           from a timeline entry is both.
 	 *
 	 * @return ObjectRelation The row.
 	 *
@@ -187,32 +183,35 @@ class ObjectRelationService {
 	public function recordDerivation(
 		ObjectEntity $parent,
 		ObjectEntity $child,
-		?string $relationType = null,
+		?ProvenanceLink $link = null,
 		array $inherited = [],
-		?string $entry = null,
 	): ObjectRelation {
-		$record = null;
-		if ($inherited !== []) {
-			$record = $inherited;
-		}
-
-		return $this->mapper->createFromArray(
-			[
-				'sourceUuid' => (string)$child->getUuid(),
-				'sourceRegister' => $this->asInt(value: $child->getRegister()),
-				'sourceSchema' => $this->asInt(value: $child->getSchema()),
-				'targetUuid' => (string)$parent->getUuid(),
-				'targetRegister' => $this->asInt(value: $parent->getRegister()),
-				'targetSchema' => $this->asInt(value: $parent->getSchema()),
-				'kind' => ObjectRelation::KIND_OBJECT,
-				'origin' => ObjectRelation::ORIGIN_DERIVE,
-				'relationType' => $relationType,
-				'sourceEntry' => $entry,
-				'inherited' => $record,
-				'createdBy' => $this->actor(),
-			]
-		);
+		return $this->recordDerived(derivation: new Derivation(parent: $parent, child: $child, link: ($link ?? new ProvenanceLink()), inherited: $inherited));
 	}//end recordDerivation()
+
+	/**
+	 * Record a child created under a parent, with what it inherited.
+	 *
+	 * A derivation and a split are the same act seen twice: a sub-case started
+	 * from a timeline entry is both.
+	 *
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function recordDerived(Derivation $derivation): ObjectRelation {
+		return $this->stores->mapper->createFromArray(
+			$this->fields->derivedLink(from: $derivation->child, to: $derivation->parent)
+			+ [
+				'relationType' => $derivation->link->relationType,
+				'sourceEntry' => $derivation->link->entry,
+				'inherited' => $this->fields->recordOf(inherited: $derivation->inherited),
+			]
+			+ ['createdBy' => $this->actor()]
+		);
+	}//end recordDerived()
 
 	/**
 	 * Add an address outside the product as a relation on an object.
@@ -222,13 +221,8 @@ class ObjectRelationService {
 	 * three, and it costs no new concept: a relation target that happens not
 	 * to be an object.
 	 *
-	 * @param string $sourceUuid The object the link hangs off.
-	 * @param string $url The address.
-	 * @param string|null $title What to call it.
-	 * @param string|null $relationType The vocabulary key, when the schema names one.
-	 * @param string|null $label What the link reads as, when no schema can answer.
-	 * @param int|null $register The source object's register.
-	 * @param int|null $schema The source object's schema.
+	 * @param RelationEndpoint $source The object the link hangs off, in its register and schema.
+	 * @param ExternalLink $link The address, what to call it, and its type or label.
 	 *
 	 * @return ObjectRelation The row.
 	 *
@@ -236,42 +230,30 @@ class ObjectRelationService {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function addExternalLink(
-		string $sourceUuid,
-		string $url,
-		?string $title = null,
-		?string $relationType = null,
-		?string $label = null,
-		?int $register = null,
-		?int $schema = null,
-	): ObjectRelation {
-		$url = trim($url);
-		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
-			throw new InvalidArgumentException('An external relation needs a resolvable web address.');
-		}
-
-		// A title nobody gave falls back to the address, so the row is never
-		// nameless in a list.
-		$named = $url;
-		if ($title !== null && trim($title) !== '') {
-			$named = trim($title);
-		}
-
-		return $this->mapper->createFromArray(
-			[
-				'sourceUuid' => $sourceUuid,
-				'sourceRegister' => $register,
-				'sourceSchema' => $schema,
-				'targetUrl' => $url,
-				'targetTitle' => $named,
-				'kind' => ObjectRelation::KIND_EXTERNAL,
-				'origin' => ObjectRelation::ORIGIN_MANUAL,
-				'relationType' => $relationType,
-				'label' => $label,
-				'createdBy' => $this->actor(),
-			]
+	public function addExternalLink(RelationEndpoint $source, ExternalLink $link): ObjectRelation {
+		return $this->stores->mapper->createFromArray(
+			['sourceUuid' => $source->uuid, 'sourceRegister' => $source->register, 'sourceSchema' => $source->schema]
+			+ $this->fields->externalTarget(url: $link->url, title: $link->title)
+			+ $this->externalDetail(link: $link)
 		);
 	}//end addExternalLink()
+
+	/**
+	 * The kind, origin, type, label and author of a manually added external link.
+	 *
+	 * @param ExternalLink $link The link, with its relation type and label.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private function externalDetail(ExternalLink $link): array {
+		return [
+			'kind' => ObjectRelation::KIND_EXTERNAL,
+			'origin' => ObjectRelation::ORIGIN_MANUAL,
+			'relationType' => $link->relationType,
+			'label' => $link->label,
+			'createdBy' => $this->actor(),
+		];
+	}//end externalDetail()
 
 	/**
 	 * Record a reference somebody wrote in prose, on both sides.
@@ -284,71 +266,85 @@ class ObjectRelationService {
 	 * Idempotent per anchor and target: saving the same note twice does not
 	 * write the mention twice.
 	 *
-	 * @param string $sourceUuid The object the text belongs to.
-	 * @param string $targetUuid The object the text names.
-	 * @param string $anchor What identifies the text, so it can be withdrawn.
-	 * @param string|null $relationType The vocabulary key, when there is one.
-	 * @param array<string, int|null> $scope Source and target register/schema ids.
+	 * @param ProseMention $mention The object the text belongs to and the one it names, each in its
+	 *                              register and schema; the anchor that identifies the text so it can
+	 *                              be withdrawn; and the vocabulary key, when there is one.
 	 *
 	 * @return array<int, ObjectRelation> The rows written, one per direction.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordProseReference(
-		string $sourceUuid,
-		string $targetUuid,
-		string $anchor,
-		?string $relationType = null,
-		array $scope = [],
-	): array {
-		if ($sourceUuid === '' || $targetUuid === '' || $sourceUuid === $targetUuid) {
+	public function recordProseReference(ProseMention $mention): array {
+		if ($this->isNewProseReference(mention: $mention) === false) {
 			return [];
 		}
 
-		foreach ($this->mapper->findByAnchor(sourceUuid: $sourceUuid, anchor: $anchor) as $existing) {
-			if ($existing->getTargetUuid() === $targetUuid) {
-				return [];
+		// The second row is the far side. A mention is a link somebody reading
+		// the OTHER object should see, which is the whole reason the corpus
+		// counts it as a relation rather than as formatting.
+		return [
+			$this->proseRow(mention: $mention),
+			$this->proseRow(mention: $mention->reversed()),
+		];
+	}//end recordProseReference()
+
+	/**
+	 * Whether a mention links two different objects and is not already recorded under its anchor.
+	 *
+	 * @param ProseMention $mention The object whose text carries the mention, the object it mentions and the anchor.
+	 *
+	 * @return bool True when the mention should be written.
+	 */
+	private function isNewProseReference(ProseMention $mention): bool {
+		$sourceUuid = $mention->source->uuid;
+		$targetUuid = $mention->target->uuid;
+		if ($sourceUuid === '' || $targetUuid === '' || $sourceUuid === $targetUuid) {
+			return false;
+		}
+
+		return $this->isRecorded(mention: $mention) === false;
+	}//end isNewProseReference()
+
+	/**
+	 * Whether a mention of the target is already recorded under the anchor.
+	 *
+	 * @param ProseMention $mention The object whose text carries the mention, the object it mentions and the anchor.
+	 *
+	 * @return bool True when it is.
+	 */
+	private function isRecorded(ProseMention $mention): bool {
+		foreach ($this->stores->mapper->findByAnchor(sourceUuid: $mention->source->uuid, anchor: $mention->anchor) as $existing) {
+			if ($existing->getTargetUuid() === $mention->target->uuid) {
+				return true;
 			}
 		}
 
-		$rows = [];
-		$rows[] = $this->mapper->createFromArray(
+		return false;
+	}//end isRecorded()
+
+	/**
+	 * Write one side of a prose reference.
+	 *
+	 * @param ProseMention $mention The mention, seen from the row's source.
+	 *
+	 * @return ObjectRelation The row.
+	 */
+	private function proseRow(ProseMention $mention): ObjectRelation {
+		$from = $mention->source;
+		$to   = $mention->target;
+		return $this->stores->mapper->createFromArray(
 			[
-				'sourceUuid' => $sourceUuid,
-				'sourceRegister' => ($scope['sourceRegister'] ?? null),
-				'sourceSchema' => ($scope['sourceSchema'] ?? null),
-				'targetUuid' => $targetUuid,
-				'targetRegister' => ($scope['targetRegister'] ?? null),
-				'targetSchema' => ($scope['targetSchema'] ?? null),
+				'sourceUuid' => $from->uuid,
+				'sourceRegister' => $from->register,
+				'sourceSchema' => $from->schema,
+				'targetUuid' => $to->uuid,
+				'targetRegister' => $to->register,
+				'targetSchema' => $to->schema,
 				'kind' => ObjectRelation::KIND_OBJECT,
 				'origin' => ObjectRelation::ORIGIN_PROSE,
-				'relationType' => $relationType,
-				'anchor' => $anchor,
-				'createdBy' => $this->actor(),
-			]
+			] + ['relationType' => $mention->relationType, 'anchor' => $mention->anchor, 'createdBy' => $this->actor()]
 		);
-
-		// The row on the far side. A mention is a link somebody reading the
-		// OTHER object should see, which is the whole reason the corpus counts
-		// it as a relation rather than as formatting.
-		$rows[] = $this->mapper->createFromArray(
-			[
-				'sourceUuid' => $targetUuid,
-				'sourceRegister' => ($scope['targetRegister'] ?? null),
-				'sourceSchema' => ($scope['targetSchema'] ?? null),
-				'targetUuid' => $sourceUuid,
-				'targetRegister' => ($scope['sourceRegister'] ?? null),
-				'targetSchema' => ($scope['sourceSchema'] ?? null),
-				'kind' => ObjectRelation::KIND_OBJECT,
-				'origin' => ObjectRelation::ORIGIN_PROSE,
-				'relationType' => $relationType,
-				'anchor' => $anchor,
-				'createdBy' => $this->actor(),
-			]
-		);
-
-		return $rows;
-	}//end recordProseReference()
+	}//end proseRow()
 
 	/**
 	 * Withdraw every row one piece of text wrote, on both sides.
@@ -362,14 +358,14 @@ class ObjectRelationService {
 	 */
 	public function withdrawProseReferences(string $sourceUuid, string $anchor): int {
 		$removed = 0;
-		foreach ($this->mapper->findByAnchor(sourceUuid: $sourceUuid, anchor: $anchor) as $row) {
+		foreach ($this->stores->mapper->findByAnchor(sourceUuid: $sourceUuid, anchor: $anchor) as $row) {
 			$target = (string)$row->getTargetUuid();
 			if ($target !== '') {
-				$removed += $this->mapper->deleteByAnchor(sourceUuid: $target, anchor: $anchor);
+				$removed += $this->stores->mapper->deleteByAnchor(sourceUuid: $target, anchor: $anchor);
 			}
 		}
 
-		return ($removed + $this->mapper->deleteByAnchor(sourceUuid: $sourceUuid, anchor: $anchor));
+		return ($removed + $this->stores->mapper->deleteByAnchor(sourceUuid: $sourceUuid, anchor: $anchor));
 	}//end withdrawProseReferences()
 
 	/**
@@ -383,12 +379,12 @@ class ObjectRelationService {
 	 */
 	public function remove(string $uuid): bool {
 		try {
-			$row = $this->mapper->findByUuid(uuid: $uuid);
+			$row = $this->stores->mapper->findByUuid(uuid: $uuid);
 		} catch (\Exception $e) {
 			return false;
 		}
 
-		$this->mapper->delete($row);
+		$this->stores->mapper->delete($row);
 
 		return true;
 	}//end remove()
@@ -408,22 +404,30 @@ class ObjectRelationService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function declarationFor(?int $schemaId, string $property, string $language = 'nl'): ?array {
+		// No schema reads as no declaration: the resolver answers null for it.
+		return $this->stores->relationTypes->descriptorFor(schema: $this->schemaOrNull(schemaId: $schemaId), property: $property, language: $language);
+	}//end declarationFor()
+
+	/**
+	 * The schema behind an id, or null when there is none or it cannot be found.
+	 *
+	 * Metadata only, so the read is not scoped to the caller.
+	 *
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOrNull(?int $schemaId): ?Schema {
 		if ($schemaId === null) {
 			return null;
 		}
 
 		try {
-			$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+			return $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
-
-		return $this->relationTypes->descriptorFor(
-			schema: $schema,
-			property: $property,
-			language: $language
-		);
-	}//end declarationFor()
+	}//end schemaOrNull()
 
 	/**
 	 * Every stored relation row touching an object, with its labels resolved.
@@ -443,20 +447,12 @@ class ObjectRelationService {
 	public function relationsFor(string $objectUuid, string $language = 'nl'): array {
 		$rows = [];
 
-		foreach ($this->mapper->findBySource(sourceUuid: $objectUuid) as $row) {
-			$rows[] = $this->render(
-				row: $row,
-				direction: RelationTypeResolver::DIRECTION_OUTGOING,
-				language: $language
-			);
+		foreach ($this->stores->mapper->findBySource(sourceUuid: $objectUuid) as $row) {
+			$rows[] = $this->render(row: $row, direction: RelationTypeResolver::DIRECTION_OUTGOING, language: $language);
 		}
 
-		foreach ($this->mapper->findByTarget(targetUuid: $objectUuid) as $row) {
-			$rows[] = $this->render(
-				row: $row,
-				direction: RelationTypeResolver::DIRECTION_INCOMING,
-				language: $language
-			);
+		foreach ($this->stores->mapper->findByTarget(targetUuid: $objectUuid) as $row) {
+			$rows[] = $this->render(row: $row, direction: RelationTypeResolver::DIRECTION_INCOMING, language: $language);
 		}
 
 		return $rows;
@@ -479,19 +475,27 @@ class ObjectRelationService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function render(ObjectRelation $row, string $direction, string $language = 'nl'): array {
-		$rendered = $row->jsonSerialize();
-		$descriptor = $this->descriptorOf(row: $row, language: $language);
+		$relation = $this->stores->relationTypes->row(descriptor: $this->descriptorOf(row: $row, language: $language), direction: $direction, path: null);
 
-		$rendered['relation'] = $this->relationTypes->row(
-			descriptor: $descriptor,
-			direction: $direction,
-			path: null
-		);
-		$rendered['relation']['origin'] = $row->getOrigin();
-		$rendered['relation']['kind'] = $row->getKind();
+		return $this->withRelation(row: $row, relation: $relation);
+	}//end render()
+
+	/**
+	 * The row as JSON with its relation reading, origin and kind under `relation`.
+	 *
+	 * @param ObjectRelation       $row      The relation row.
+	 * @param array<string, mixed> $relation The reading of the relation in one direction.
+	 *
+	 * @return array<string, mixed> The rendered row.
+	 */
+	private function withRelation(ObjectRelation $row, array $relation): array {
+		$rendered = $row->jsonSerialize();
+		$relation['origin'] = $row->getOrigin();
+		$relation['kind']   = $row->getKind();
+		$rendered['relation'] = $relation;
 
 		return $rendered;
-	}//end render()
+	}//end withRelation()
 
 	/**
 	 * Resolve a row's labels: from the schema when it names a type, from the
@@ -510,25 +514,56 @@ class ObjectRelationService {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function descriptorOf(ObjectRelation $row, string $language): array {
-		$type = $row->getRelationType();
-		$schemaId = $row->getSourceSchema();
+		return ($this->vocabularyDescriptor(row: $row, language: $language) ?? $this->storedDescriptor(row: $row));
+	}//end descriptorOf()
 
-		if ($type !== null && $schemaId !== null) {
-			try {
-				$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
-				foreach ($this->relationTypes->descriptors(schema: $schema, language: $language) as $descriptor) {
-					if (($descriptor['type'] ?? null) === $type) {
-						return $descriptor;
-					}
-				}
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					message: '[ObjectRelationService] Could not resolve a relation type against its schema',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $type]
-				);
-			}
+	/**
+	 * The descriptor the row's relation type has in its source schema's vocabulary, when it resolves.
+	 *
+	 * @param ObjectRelation $row      The stored row.
+	 * @param string         $language The BCP-47 tag.
+	 *
+	 * @return array<string, mixed>|null The descriptor.
+	 */
+	private function vocabularyDescriptor(ObjectRelation $row, string $language): array|null {
+		if ($row->getRelationType() === null || $row->getSourceSchema() === null) {
+			return null;
 		}
 
+		return $this->typeInSchema(row: $row, language: $language);
+	}//end vocabularyDescriptor()
+
+	/**
+	 * The descriptor of a row's relation type in its source schema's vocabulary; null when it or the schema does not resolve.
+	 *
+	 * @param ObjectRelation $row      The stored row, naming a relation type and a source schema.
+	 * @param string         $language The BCP-47 tag.
+	 *
+	 * @return array<string, mixed>|null The descriptor.
+	 */
+	private function typeInSchema(ObjectRelation $row, string $language): array|null {
+		$schemaId = (int)$row->getSourceSchema();
+		$type     = (string)$row->getRelationType();
+		try {
+			$schema = $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+			return $this->fields->descriptorOfType(descriptors: $this->stores->relationTypes->descriptors(schema: $schema, language: $language), type: $type);
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[ObjectRelationService] Could not resolve a relation type against its schema',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $type]
+			);
+			return null;
+		}
+	}//end typeInSchema()
+
+	/**
+	 * The descriptor a stored row carries itself, for a type no vocabulary resolves.
+	 *
+	 * @param ObjectRelation $row The stored row.
+	 *
+	 * @return array<string, mixed> The descriptor.
+	 */
+	private function storedDescriptor(ObjectRelation $row): array {
 		$label = $row->getLabel();
 		if ($label === null || trim($label) === '') {
 			$label = $this->defaultLabelFor(origin: (string)$row->getOrigin());
@@ -536,13 +571,13 @@ class ObjectRelationService {
 
 		return [
 			'property' => null,
-			'type' => $type,
+			'type' => $row->getRelationType(),
 			'label' => $label,
 			'inverseLabel' => ($row->getInverseLabel() ?? RelationTypeResolver::FALLBACK_INVERSE_LABEL),
 			'symmetric' => (bool)$row->getSymmetric(),
 			'inherits' => [],
 		];
-	}//end descriptorOf()
+	}//end storedDescriptor()
 
 	/**
 	 * What a row reads as when nothing named it.
@@ -573,20 +608,4 @@ class ObjectRelationService {
 		return $this->userSession?->getUser()?->getUID();
 	}//end actor()
 
-	/**
-	 * Read a register or schema reference as an int, when it is one.
-	 *
-	 * @param mixed $value The reference.
-	 *
-	 * @return int|null The id.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function asInt(mixed $value): ?int {
-		if (is_numeric($value) === false) {
-			return null;
-		}
-
-		return (int)$value;
-	}//end asInt()
 }//end class

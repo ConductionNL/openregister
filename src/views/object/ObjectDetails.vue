@@ -175,20 +175,12 @@
 						-->
 						<AppTab :title="t('openregister', 'Uses')">
 							<div v-if="objectStore.uses?.results?.length">
-								<NcListItem
+								<ObjectRelationItem
 									v-for="(relation, key) in objectStore.uses
 										.results"
 									:key="`uses-${relationKey(relation, key)}`"
 									:name="relationTitle(relation)"
-									:bold="false"
-									:forceDisplayActions="true">
-									<template #icon>
-										<CubeOutline disableMenu :size="44" />
-									</template>
-									<template #subname>
-										{{ relationLabel(relation) }}
-									</template>
-								</NcListItem>
+									:subname="relationLabel(relation)" />
 							</div>
 							<div v-else class="tabPanel">
 								{{ t('openregister', 'No relations found') }}
@@ -196,20 +188,12 @@
 						</AppTab>
 						<AppTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.used?.results?.length">
-								<NcListItem
+								<ObjectRelationItem
 									v-for="(relation, key) in objectStore.used
 										.results"
 									:key="`used-${relationKey(relation, key)}`"
 									:name="relationTitle(relation)"
-									:bold="false"
-									:forceDisplayActions="true">
-									<template #icon>
-										<CubeOutline disableMenu :size="44" />
-									</template>
-									<template #subname>
-										{{ relationLabel(relation) }}
-									</template>
-								</NcListItem>
+									:subname="relationLabel(relation)" />
 								<CnPagination
 									v-if="
 										!relationsLoading
@@ -544,7 +528,6 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 import { computed } from 'vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
@@ -565,6 +548,8 @@ import ReferencedByTab from '../../components/object-relations/ReferencedByTab.v
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import ObjectRelationItem from './ObjectRelationItem.vue'
+import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
 
 export default {
@@ -584,7 +569,6 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		TimelineQuestionOutline,
-		CubeOutline,
 		Eye,
 		LockOutline,
 		LockOpenOutline,
@@ -602,6 +586,7 @@ export default {
 		CnObjectAccessTab,
 		CnObjectMetadataWidget,
 		ObjectAccessLinks,
+		ObjectRelationItem,
 	},
 
 	/**
@@ -1214,64 +1199,9 @@ export default {
 			this.getRelations()
 		},
 
-		/**
-		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
-		 *
-		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
-		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
-		 */
-		openFolder(url) {
-			// Parse the encoded URL by replacing escaped characters
-			const decodedUrl = url.replace(/\\\//g, '/')
-
-			// Ensure URL starts with forward slash
-			const normalizedUrl = decodedUrl.startsWith('/')
-				? decodedUrl
-				: '/' + decodedUrl
-
-			// Construct the proper Nextcloud Files app URL with the normalized path
-			// Use window.location.origin to get the current domain instead of hardcoding
-			const nextcloudUrl = `${window.location.origin}/index.php/apps/files/files?dir=${encodeURIComponent(normalizedUrl)}`
-
-			// Open URL in new tab
-			window.open(nextcloudUrl, '_blank')
-		},
-
-		/**
-		 * Opens a file in the Nextcloud Files app
-		 *
-		 * @param {object} file - The file object containing id, path, and other metadata
-		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
-		 */
-		openFile(file) {
-			// Extract the directory path without the filename
-			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
-
-			// Remove the '/admin/files/' prefix if it exists
-			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
-
-			// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
-			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
-
-			// Open URL in new tab
-			window.open(filesAppUrl, '_blank')
-		},
-
-		/**
-		 * Formats a file size in bytes to a human readable string
-		 *
-		 * @param {number} bytes - The file size in bytes
-		 * @spec exclude UI plumbing — pure presentation helper
-		 * @return {string} Formatted file size (e.g. "1.5 MB")
-		 */
-		formatFileSize(bytes) {
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-			if (bytes === 0) return 'n/a'
-			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-			if (i === 0) return bytes + ' ' + sizes[i]
-			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-		},
+		openFolder: nextcloudFiles.openFolder,
+		openFile: nextcloudFiles.openFile,
+		formatFileSize: nextcloudFiles.formatFileSize,
 	},
 }
 </script>

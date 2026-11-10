@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -191,12 +191,12 @@ class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		if ($this->unresolvable === true) {
-			$permissionHandler = $this->createMock(PermissionHandler::class);
+			$permissionHandler = $this->createMock(PermissionHandlerInterface::class);
 			$permissionHandler->method('resolveAuthorization')->willThrowException(
 				new AuthorizationUnresolvableException('register cascade unreadable')
 			);
 			$container->method('get')->willReturnCallback(
-				static fn (string $id) => ($id === PermissionHandler::class ? $permissionHandler : throw new \RuntimeException('no ' . $id))
+				static fn (string $id) => ($id === PermissionHandlerInterface::class ? $permissionHandler : throw new \RuntimeException('no ' . $id))
 			);
 		}
 

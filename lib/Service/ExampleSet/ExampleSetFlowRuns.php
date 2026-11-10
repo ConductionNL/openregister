@@ -41,7 +41,6 @@ use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use Psr\Container\ContainerInterface;
-use Throwable;
 
 /**
  * Checks and writes the runs of a set's flows, and fills a waiting run's slot.
@@ -106,8 +105,9 @@ class ExampleSetFlowRuns {
 			return 'runs is a list';
 		}
 
+		$check = new ExampleSetFlowRunCheck();
 		foreach ($runs as $run) {
-			$refusal = $this->runRefusal(run: (array) $run, nodes: $nodes);
+			$refusal = $check->refusal(run: (array) $run, nodes: $nodes);
 			if ($refusal !== '') {
 				return $refusal;
 			}
@@ -126,29 +126,55 @@ class ExampleSetFlowRuns {
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
 	public function unnamedRefusals(array $fragment): array {
-		$named = [];
-		foreach ((array) ($fragment['tasks'] ?? []) as $task) {
-			$named[] = trim((string) ($task['data']['runUuid'] ?? ''));
-		}
-
+		$named    = array_map(static fn (mixed $task): string => trim((string) ($task['data']['runUuid'] ?? '')), (array) ($fragment['tasks'] ?? []));
 		$refusals = [];
 		foreach ((array) ($fragment['flows'] ?? []) as $flow) {
-			foreach ((array) ($flow['data']['runs'] ?? []) as $run) {
-				$run = (array) $run;
-				if (($run['status'] ?? null) !== FlowRun::STATUS_SUSPENDED || is_string($run['key'] ?? null) === false) {
-					continue;
-				}
-
-				$reference = '{{flow:'.$flow['key'].'.runs.'.$run['key'].'}}';
-				if (in_array($reference, $named, true) === false) {
-					$refusals[] = $fragment['file'].': flow "'.$flow['key'].'": waiting run "'.$run['key']
-						.'": no task of its fragment names it ('.$reference.' as runUuid)';
-				}
+			foreach ($this->unnamedIn(flow: $flow, named: $named) as $refusal) {
+				$refusals[] = $fragment['file'].': '.$refusal;
 			}
 		}
 
 		return $refusals;
 	}//end unnamedRefusals()
+
+	/**
+	 * The waiting runs of one flow that none of the named runs is, each as a refusal without the fragment's file.
+	 *
+	 * @param mixed              $flow  The declared flow.
+	 * @param array<int, string> $named The runs the fragment's tasks name, as `{{flow:key.runs.key}}`.
+	 *
+	 * @return array<int, string>
+	 */
+	private function unnamedIn(mixed $flow, array $named): array {
+		$refusals = [];
+		foreach ($this->waitingKeys(runs: (array) ($flow['data']['runs'] ?? [])) as $key) {
+			$reference = '{{flow:'.$flow['key'].'.runs.'.$key.'}}';
+			if (in_array($reference, $named, true) === false) {
+				$refusals[] = 'flow "'.$flow['key'].'": waiting run "'.$key.'": no task of its fragment names it ('.$reference.' as runUuid)';
+			}
+		}
+
+		return $refusals;
+	}//end unnamedIn()
+
+	/**
+	 * The keys of the waiting runs among declared runs; a waiting run without a key has none to name.
+	 *
+	 * @param array<int|string, mixed> $runs The declared runs.
+	 *
+	 * @return array<int, string>
+	 */
+	private function waitingKeys(array $runs): array {
+		$keys = [];
+		foreach ($runs as $run) {
+			$run = (array) $run;
+			if (($run['status'] ?? null) === FlowRun::STATUS_SUSPENDED && is_string($run['key'] ?? null) === true) {
+				$keys[] = $run['key'];
+			}
+		}
+
+		return $keys;
+	}//end waitingKeys()
 
 	/**
 	 * Why a task cannot wait in the run it names, or '': a run without its step, a run no flow of the set
@@ -172,29 +198,52 @@ class ExampleSetFlowRuns {
 			return '';
 		}
 
+		return $this->stepRefusal(step: ['run' => $run, 'node' => $node], waitsOn: $this->stepOf(run: $run, context: $context));
+	}//end taskRefusal()
+
+	/**
+	 * The step a waiting run waits on, from the first flow of the set that declares the run; null when none does.
+	 *
+	 * @param string               $run     The run's uuid.
+	 * @param array<string, mixed> $context The fill context, with the fragment's flows.
+	 *
+	 * @return mixed
+	 */
+	private function stepOf(string $run, array $context): mixed {
 		foreach ((array) ($context['flows'] ?? []) as $flow) {
 			$waitsOn = ($flow['waitsOn'][$run] ?? null);
-			if ($waitsOn === null) {
-				continue;
+			if ($waitsOn !== null) {
+				return $waitsOn;
 			}
-
-			if ($waitsOn !== $node) {
-				return 'nodeId "'.$node.'" is not the step run "'.$run.'" waits on ("'.$waitsOn.'")';
-			}
-
-			return '';
 		}
 
-		return 'runUuid "'.$run.'" is not a waiting run a flow of the set declares';
-	}//end taskRefusal()
+		return null;
+	}//end stepOf()
+
+	/**
+	 * Why a task cannot wait on a step of a run, or ''.
+	 *
+	 * @param array{run: string, node: string} $step    The run and the step the task names.
+	 * @param mixed                            $waitsOn The step the run waits on, or null for a run no flow declares.
+	 *
+	 * @return string
+	 */
+	private function stepRefusal(array $step, mixed $waitsOn): string {
+		if ($waitsOn === null) {
+			return 'runUuid "'.$step['run'].'" is not a waiting run a flow of the set declares';
+		}
+
+		if ($waitsOn !== $step['node']) {
+			return 'nodeId "'.$step['node'].'" is not the step run "'.$step['run'].'" waits on ("'.$waitsOn.'")';
+		}
+
+		return '';
+	}//end stepRefusal()
 
 	/**
 	 * Store the declared runs of a stored flow, in the flow's organisation.
 	 *
-	 * @param Flow                             $flow    The stored flow.
-	 * @param int|null                         $version The published version, or null for a draft.
-	 * @param array<int, array<string, mixed>> $runs    The filled runs.
-	 * @param callable(): string               $newUuid Makes a fresh uuid.
+	 * @param ExampleSetRunsWrite $write The stored flow, its version, the runs and the uuid source.
 	 *
 	 * @return array{runs?: array<string, string>, waitsOn?: array<string, string>} `runs` (run key to uuid) and
 	 *                                                                             `waitsOn` (waiting run uuid to step),
@@ -202,148 +251,105 @@ class ExampleSetFlowRuns {
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
-	public function write(Flow $flow, ?int $version, array $runs, callable $newUuid): array {
+	public function write(ExampleSetRunsWrite $write): array {
 		$entry = [];
-		foreach ($runs as $run) {
-			$uuid    = (string) $newUuid();
-			$waiting = (($run['status'] ?? null) === FlowRun::STATUS_SUSPENDED);
-			$entity  = $this->entity(flow: $flow, version: $version, run: $run, uuid: $uuid);
-			if ($waiting === true) {
-				$this->park(run: $entity, node: (string) $run['node']);
-				$entry['waitsOn'][$uuid] = (string) $run['node'];
-			}
-
-			$this->container->get(FlowRunMapperInterface::class)->insert($entity);
-			if (is_string($run['key'] ?? null) === true) {
-				$entry['runs'][$run['key']] = $uuid;
-			}
+		foreach ($write->runs as $run) {
+			$entity = $this->entity(write: $write, run: $run);
+			$entry  = array_replace_recursive($entry, $this->insert(run: $run, entity: $entity));
 		}
 
 		return $entry;
 	}//end write()
 
 	/**
+	 * Store one run, parked first when it waits on a step.
+	 *
+	 * @param array<string, mixed> $run    The filled run.
+	 * @param FlowRun              $entity The run as it is stored.
+	 *
+	 * @return array{runs?: array<string, string>, waitsOn?: array<string, string>} What write() records of the run.
+	 */
+	private function insert(array $run, FlowRun $entity): array {
+		$entry = [];
+		if (($run['status'] ?? null) === FlowRun::STATUS_SUSPENDED) {
+			$this->park(run: $entity, node: (string) $run['node']);
+			$entry['waitsOn'][$entity->getUuid()] = (string) $run['node'];
+		}
+
+		$this->container->get(FlowRunMapperInterface::class)->insert($entity);
+		if (is_string($run['key'] ?? null) === true) {
+			$entry['runs'][$run['key']] = $entity->getUuid();
+		}
+
+		return $entry;
+	}//end insert()
+
+	/**
 	 * Put a task in the slot of the step its run waits on, and set the heartbeat. A task that names no run
 	 * changes nothing.
 	 *
-	 * @param string $runUuid  The waiting run, or ''.
-	 * @param string $nodeId   The step it waits on.
-	 * @param string $taskUuid The task it waits for.
+	 * @param ExampleSetRunSlot $slot The waiting run, its step and the task that fills it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
-	public function fill(string $runUuid, string $nodeId, string $taskUuid): void {
-		if (trim($runUuid) === '') {
+	public function fill(ExampleSetRunSlot $slot): void {
+		if (trim($slot->runUuid) === '') {
 			return;
 		}
 
-		$mapper  = $this->container->get(FlowRunMapperInterface::class);
-		$run     = $mapper->findByUuid(uuid: $runUuid);
-		$context = (array) $run->getContext();
-		$slots   = (array) ($context[FlowResumeState::CONTEXT_KEY] ?? []);
-
-		$slots[$nodeId] = [
-			FlowTaskBridge::SLOT_TASK_UUID => $taskUuid,
-			FlowTaskBridge::SLOT_ASKED_AT  => (new DateTime())->format('c'),
-		] + (array) ($slots[$nodeId] ?? []);
-		$context[FlowResumeState::CONTEXT_KEY] = $slots;
-
-		$run->setContext($context);
+		$mapper = $this->container->get(FlowRunMapperInterface::class);
+		$run    = $mapper->findByUuid(uuid: $slot->runUuid);
+		$run->setContext($this->withTask(context: (array) $run->getContext(), slot: ['node' => $slot->nodeId, 'task' => $slot->taskUuid]));
 		$run->setResumeAt((new DateTime())->modify('+'.self::HEARTBEAT_MINUTES.' minutes'));
 		$run->setUpdated(new DateTime());
 		$mapper->update($run);
 	}//end fill()
 
 	/**
-	 * Why one declared run cannot be written, or ''.
+	 * A run's context with a task in the slot of a step, asked now; what else the slot holds is kept.
 	 *
-	 * @param array<string, mixed> $run   The declared run.
-	 * @param mixed                $nodes The flow's declared steps.
+	 * @param array<string, mixed>              $context The run's context.
+	 * @param array{node: string, task: string} $slot    The step and the task it waits for.
 	 *
-	 * @return string
+	 * @return array<string, mixed>
 	 */
-	private function runRefusal(array $run, mixed $nodes): string {
-		$unknown = array_diff(array_keys($run), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a run field a set may write';
-		}
+	private function withTask(array $context, array $slot): array {
+		$slots = (array) ($context[FlowResumeState::CONTEXT_KEY] ?? []);
 
-		$status = ($run['status'] ?? null);
-		if ($status === FlowRun::STATUS_SUSPENDED) {
-			$waits = $this->waitRefusal(run: $run, nodes: $nodes);
-			if ($waits !== '') {
-				return $waits;
-			}
-		} else if (in_array($status, FlowRun::TERMINAL, true) === false) {
-			return 'a run is finished (status is one of '.implode(', ', FlowRun::TERMINAL).') or waits on a step (suspended)';
-		}
+		$slots[$slot['node']] = [
+			FlowTaskBridge::SLOT_TASK_UUID => $slot['task'],
+			FlowTaskBridge::SLOT_ASKED_AT  => (new DateTime())->format('c'),
+		] + (array) ($slots[$slot['node']] ?? []);
+		$context[FlowResumeState::CONTEXT_KEY] = $slots;
 
-		if (is_string($run['subject'] ?? null) === false || trim($run['subject']) === '') {
-			return 'a run needs the object it ran on (subject)';
-		}
-
-		foreach (['created', 'updated'] as $field) {
-			try {
-				new DateTime((string) ($run[$field] ?? 'now'));
-			} catch (Throwable) {
-				return 'run '.$field.' "'.(string) $run[$field].'" is not a date';
-			}
-		}
-
-		return '';
-	}//end runRefusal()
-
-	/**
-	 * Why a waiting run cannot be written, or '': it needs a key and a user-task step of its flow.
-	 *
-	 * @param array<string, mixed> $run   The declared run.
-	 * @param mixed                $nodes The flow's declared steps.
-	 *
-	 * @return string
-	 */
-	private function waitRefusal(array $run, mixed $nodes): string {
-		if (is_string($run['key'] ?? null) === false || trim($run['key']) === '') {
-			return 'a waiting run needs a key, so a task can name it';
-		}
-
-		$node = (string) ($run['node'] ?? '');
-		foreach ((array) $nodes as $step) {
-			$step = (array) $step;
-			if (($step['id'] ?? null) === $node && ($step['type'] ?? null) === self::STEP_TYPE) {
-				return '';
-			}
-		}
-
-		return 'waiting run "'.$run['key'].'" waits on an '.self::STEP_TYPE.' step of its flow (node), not "'.$node.'"';
-	}//end waitRefusal()
+		return $context;
+	}//end withTask()
 
 	/**
 	 * One run of the flow on its subject, as declared.
 	 *
-	 * @param Flow                 $flow    The stored flow.
-	 * @param int|null             $version The published version, or null for a draft.
-	 * @param array<string, mixed> $run     The filled run fields.
-	 * @param string               $uuid    The run's uuid.
+	 * @param ExampleSetRunsWrite $write The stored flow, its version and the uuid source.
+	 * @param array<string, mixed> $run The declared run.
 	 *
 	 * @return FlowRun
 	 */
-	private function entity(Flow $flow, ?int $version, array $run, string $uuid): FlowRun {
+	private function entity(ExampleSetRunsWrite $write, array $run): FlowRun {
 		$created = new DateTime((string) ($run['created'] ?? 'now'));
 
 		$entity = new FlowRun();
-		$entity->setUuid($uuid);
-		$entity->setFlowId((string) $flow->getUuid());
-		$entity->setFlowVersion($version);
+		$entity->setUuid((string) ($write->newUuid)());
+		$entity->setFlowId((string) $write->flow->getUuid());
+		$entity->setFlowVersion($write->version);
 		$entity->setStatus((string) $run['status']);
 		$entity->setSubjectUuid((string) $run['subject']);
 		$entity->setSubjectRegister(($run['subjectRegister'] ?? null));
 		$entity->setSubjectSchema(($run['subjectSchema'] ?? null));
-		$entity->setTrigger((string) ($run['trigger'] ?? $flow->getTrigger() ?? 'manual'));
+		$entity->setTrigger((string) ($run['trigger'] ?? $write->flow->getTrigger() ?? 'manual'));
 		$entity->setTriggeredBy(($run['triggeredBy'] ?? null));
 		$entity->setError(($run['error'] ?? null));
-		$entity->setOrganisation($flow->getOrganisation());
+		$entity->setOrganisation($write->flow->getOrganisation());
 		$entity->setCreated($created);
 		$entity->setUpdated(new DateTime((string) ($run['updated'] ?? $created->format('c'))));
 

@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
-class ConsistencyCheckService {
+class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 
 	/**
 	 * How many offending rows one probe reports.

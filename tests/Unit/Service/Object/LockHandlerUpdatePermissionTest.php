@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\LockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -32,7 +34,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -107,15 +111,19 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			magicMapper: $this->magic,
-			auditTrailMapper: $this->createMock(originalClassName: AuditTrailMapper::class),
+			stores: new LockStores(
+				magicMapper: $this->magic,
+				auditTrailMapper: $this->createMock(originalClassName: AuditTrailMapper::class),
+				advisory: $this->createMock(originalClassName: AdvisoryLockStore::class),
+				runLocks: null
+			),
 			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
-			groupManager: $this->createMock(originalClassName: IGroupManager::class),
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			advisory: $this->createMock(originalClassName: AdvisoryLockStore::class),
-			runLocks: null,
-			permissionHandler: $this->permissions
+			authorization: new LockAuthorization(
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class),
+				schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+				permissionHandler: $this->permissions
+			)
 		);
 	}//end handler()
 
@@ -139,7 +147,9 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 		$this->magic->expects($this->never())->method('lockObjectEntity');
 
 		$this->expectException(exception: NotAuthorizedException::class);
-		$this->handler()->lock(identifier: self::OBJ);
+		$this->handler()->lock(
+			request: new LockRequest(identifier: self::OBJ, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 	}//end testAReaderWithoutUpdatePermissionCannotLock()
 
 	/**
@@ -153,7 +163,9 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->method('lockObjectEntity')
 			->willReturn($this->object);
 
-		$result = $this->handler()->lock(identifier: self::OBJ);
+		$result = $this->handler()->lock(
+			request: new LockRequest(identifier: self::OBJ, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 
 		$this->assertSame(expected: self::OBJ, actual: $result['uuid']);
 	}//end testAWriterTakesTheLock()
@@ -178,6 +190,8 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 		$this->magic->expects($this->never())->method('lockObjectEntity');
 
 		$this->expectException(exception: NotAuthorizedException::class);
-		$this->handler()->lock(identifier: self::OBJ, runUuid: 'run-1');
+		$this->handler()->lock(
+			request: new LockRequest(identifier: self::OBJ, process: null, duration: null, runStep: new LockRunStep(runUuid: 'run-1', nodeId: null))
+		);
 	}//end testARunWithoutUpdatePermissionCannotLock()
 }//end class

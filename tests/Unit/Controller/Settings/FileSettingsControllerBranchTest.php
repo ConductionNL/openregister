@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
+use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
@@ -47,11 +50,12 @@ class FileSettingsControllerBranchTest extends TestCase {
 		// and therefore must run against the real controller, not the legacy
 		// double.
 		$this->controller = new FileSettingsController(
-			'openregister',
 			$this->request,
-			$this->container,
-			$this->settingsService,
-			$this->logger
+			new FileSettingsControllerServices(
+				$this->container,
+				$this->settingsService,
+				$this->logger
+			)
 		);
 	}
 
@@ -171,7 +175,7 @@ class FileSettingsControllerBranchTest extends TestCase {
 		$mockService->method('testConnection')->willReturn($probe);
 
 		$this->container->method('get')
-			->with(AnonymisationBackendService::class)
+			->with(AnonymisationBackendServiceInterface::class)
 			->willReturn($mockService);
 
 		$response = $this->controller->testOpenAnonymiserConnection('');
@@ -226,7 +230,7 @@ class FileSettingsControllerBranchTest extends TestCase {
 		$this->container->method('get')->willReturnMap(
 			[
 				[FileMapperInterface::class, $fileMapper],
-				[ChunkMapper::class, $chunkMapper],
+				[ChunkIndexOverviewInterface::class, $chunkMapper],
 				[TextExtractionService::class, $textExtraction],
 			]
 		);

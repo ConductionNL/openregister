@@ -34,41 +34,30 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * The "Send a notification" step.
  */
-class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
+class SendNotificationNode extends MessagingNodeBase implements
+	IFlowNode,
+	SendNotificationNodeInterface,
+	IFlowNodeConfigKeys,
+	IFlowNodeConfigForm,
+	IFlowNodeTaxonomy,
+	IFlowNodePreview
+{
 
 	/**
 	 * The step type this node answers to.
 	 */
 	public const TYPE = 'openregister.send-notification';
-
-	/**
-	 * Constructor.
-	 *
-	 * @param FlowMessagingService $messaging The bridge onto the notification subsystem.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly FlowMessagingService $messaging,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
 
 	/**
 	 * The step type.
@@ -107,36 +96,15 @@ class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 	}//end getIcon()
 
 	/**
-	 * Messaging people is not privileged beyond the run's own identity, so
-	 * both scopes get it; every guardrail applies either way.
+	 * The channel this step previews on (flow dry-run).
 	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
-	 * The messages this step would send, composed and not sent (flow dry-run).
-	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return array `summary` and `messages` (`[{channel, to, subject, body}]`).
+	 * @return string The channel.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function preview(array $items, array $config, array $context): array {
-		$messages = $this->messaging->previewMessages(channel: 'notification', config: $config, items: $items, context: $context);
-
-		return [
-			'summary' => sprintf('%s would send %d message(s)', $this->getDisplayName(), count($messages)),
-			'messages' => $messages,
-		];
-	}//end preview()
+	protected function channel(): string {
+		return 'notification';
+	}//end channel()
 
 	/**
 	 * The config vocabulary of a send-notification step.
@@ -165,18 +133,7 @@ class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 			throw new UnexpectedValueException($this->l10n->t('A notification needs a message.'));
 		}
 
-		$recipients = ($config['recipients'] ?? []);
-		if (is_string($recipients) === true) {
-			$recipients = [$recipients];
-		}
-
-		$recipients = array_filter(
-			(array)$recipients,
-			static fn (mixed $entry): bool => is_string($entry) === true && trim($entry) !== ''
-		);
-		if ($recipients === []) {
-			throw new UnexpectedValueException($this->l10n->t('A notification needs at least one recipient.'));
-		}
+		$this->assertRecipients(config: $config, refusal: $this->l10n->t('A notification needs at least one recipient.'));
 	}//end validateConfig()
 
 	/**
@@ -188,76 +145,32 @@ class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 	 */
 	public function configForm(): array {
 		return [
-			[
-				'key' => 'recipients',
-				'label' => $this->l10n->t('Who to tell'),
-				'type' => 'text',
-				'help' => $this->l10n->t('User or group ids, or a field on the item such as {{ assignee }}. Groups are expanded.'),
-				'required' => true,
-			],
-			[
-				'key' => 'title',
-				'label' => $this->l10n->t('Title'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'),
-			],
-			[
-				'key' => 'message',
-				'label' => $this->l10n->t('Message'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What the notification says. Placeholders read fields from the item.'),
-				'required' => true,
-			],
+			$this->requiredField(key: 'recipients', label: $this->l10n->t('Who to tell'), type: 'text', help: $this->l10n->t(
+				'User or group ids, or a field on the item such as {{ assignee }}. Groups are expanded.'
+			)),
+			$this->formField(key: 'title', label: $this->l10n->t('Title'), type: 'text', help: $this->l10n->t(
+				'Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'
+			)),
+			$this->requiredField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
+				'What the notification says. Placeholders read fields from the item.'
+			)),
 		];
 	}//end configForm()
 
 	/**
-	 * Send, then pass the items through unchanged.
+	 * Send through the notification subsystem; the base passes the items through unchanged.
 	 *
 	 * Sending is a side effect, not a transformation. Failures throw and are
 	 * routed through the step's `onError` policy; every non-delivery lands in
 	 * the run log with its reason.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param MessageSend $step The step configuration, the items, run-level metadata and this node's type.
 	 *
-	 * @return array The items, unchanged.
+	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$this->messaging->sendNotification(
-			config: $config,
-			items: $items,
-			context: $context,
-			stepName: self::TYPE
-		);
-
-		return $items;
-	}//end execute()
-
-	/**
-	 * What kind of step this is. Sends a message out.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SEND_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_MESSAGING;
-
-	}//end getCategory()
+	protected function send(MessageSend $step): void {
+		$this->messaging->notify(request: $step);
+	}//end send()
 }//end class

@@ -286,6 +286,7 @@ import Minus from 'vue-material-design-icons/Minus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TagEdit from 'vue-material-design-icons/TagEdit.vue'
 import UploadNotice from './UploadNotice.vue'
+import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 
 const dropzone = ref(null)
@@ -521,28 +522,7 @@ export default {
 			this.labelOptionsEdit.options = Array.from(new Set(tags))
 		},
 
-		/**
-		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
-		 *
-		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
-		 * @spec exclude Opens the Files app at the object's folder in a new tab; UI navigation helper.
-		 */
-		openFolder(url) {
-			// Parse the encoded URL by replacing escaped characters
-			const decodedUrl = url.replace(/\\\//g, '/')
-
-			// Ensure URL starts with forward slash
-			const normalizedUrl = decodedUrl.startsWith('/')
-				? decodedUrl
-				: '/' + decodedUrl
-
-			// Construct the proper Nextcloud Files app URL with the normalized path
-			// Use window.location.origin to get the current domain instead of hardcoding
-			const nextcloudUrl = `${window.location.origin}/index.php/apps/files/files?dir=${encodeURIComponent(normalizedUrl)}`
-
-			// Open URL in new tab
-			window.open(nextcloudUrl, '_blank')
-		},
+		openFolder: nextcloudFiles.openFolder,
 
 		/**
 		 * @param {File} file

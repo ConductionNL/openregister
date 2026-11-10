@@ -120,10 +120,7 @@ import {
 													'non-editable-row':
 														!isPropertyEditable(
 															key,
-															formData[key]
-																!== undefined
-																? formData[key]
-																: value,
+															propertyValue(key, value),
 														),
 													...getPropertyValidationClass(
 														key,
@@ -184,23 +181,13 @@ import {
 															v-else-if="
 																!isPropertyEditable(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:title="
 																getEditabilityWarning(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															class="validation-icon lock-icon"
@@ -226,10 +213,7 @@ import {
 															selectedProperty === key
 															&& isPropertyEditable(
 																key,
-																formData[key]
-																	!== undefined
-																	? formData[key]
-																	: value,
+																propertyValue(key, value),
 															)
 														"
 														class="value-input-container"
@@ -243,10 +227,7 @@ import {
 																=== 'NcCheckboxRadioSwitch'
 															"
 															:modelValue="
-																formData[key]
-																!== undefined
-																	? formData[key]
-																	: value
+																propertyValue(key, value)
 															"
 															type="switch"
 															@update:modelValue="
@@ -272,12 +253,7 @@ import {
 															"
 															:modelValue="
 																stringToDate(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																	currentSchema
 																		.properties[
 																		key
@@ -311,12 +287,7 @@ import {
 															:modelValue="
 																enumOptionFor(
 																	key,
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:options="
@@ -368,12 +339,7 @@ import {
 															"
 															:value="
 																translationValueFor(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value,
+																	propertyValue(key, value),
 																)
 															"
 															:languages="
@@ -397,13 +363,9 @@ import {
 															ref="propertyValueInput"
 															:modelValue="
 																String(
-																	formData[key]
-																		!== undefined
-																		? formData[
-																				key
-																			]
-																		: value
-																				|| '',
+																	formData[key] !== undefined
+																		? formData[key]
+																		: value || '',
 																)
 															"
 															:type="
@@ -442,108 +404,31 @@ import {
 															" />
 													</div>
 													<div v-else>
-														<template
+														<pre
 															v-if="
-																formData[key]
-																!== undefined
-															">
-															<!-- Show edited value -->
-															<pre
-																v-if="
-																	typeof formData[
-																		key
-																	] === 'object'
-																	&& formData[key]
-																		!== null
-																"
-																title="JSON object (edited)"
-																class="json-value"
-																>{{
-																	formatValue(
-																		formData[
-																			key
-																		],
-																	)
-																}}</pre>
-															<span
-																v-else-if="
-																	isValidDate(
-																		formData[
-																			key
-																		],
-																	)
-																"
-																:title="`Date: ${new Date(formData[key]).toISOString()} (edited)`"
-																>{{
-																	new Date(
-																		formData[
-																			key
-																		],
-																	).toLocaleString()
-																}}</span
-															>
-															<span
-																v-else
-																:title="
-																	currentSchema
-																		?.properties?.[
-																		key
-																	]?.description
-																	|| `Property: ${key} (edited)`
-																"
-																>{{
-																	getDisplayValue(
-																		key,
-																		value,
-																	)
-																}}</span
-															>
-														</template>
-														<template v-else>
-															<!-- Show original value -->
-															<pre
-																v-if="
-																	typeof value
-																		=== 'object'
-																	&& value !== null
-																"
-																title="JSON object"
-																class="json-value"
-																>{{
-																	formatValue(
-																		value,
-																	)
-																}}</pre>
-															<span
-																v-else-if="
-																	isValidDate(
-																		value,
-																	)
-																"
-																:title="`Date: ${new Date(value).toISOString()}`"
-																>{{
-																	new Date(
-																		value,
-																	).toLocaleString()
-																}}</span
-															>
-															<span
-																v-else
-																:title="
-																	currentSchema
-																		?.properties?.[
-																		key
-																	]?.description
-																	|| `Property: ${key}`
-																"
-																>{{
-																	getDisplayValue(
-																		key,
-																		value,
-																	)
-																}}</span
-															>
-														</template>
+																typeof propertyValue(key, value) === 'object'
+																&& propertyValue(key, value) !== null
+															"
+															:title="`JSON object${editedSuffix(key)}`"
+															class="json-value"
+															>{{ formatValue(propertyValue(key, value)) }}</pre>
+														<span
+															v-else-if="isValidDate(propertyValue(key, value))"
+															:title="`Date: ${new Date(propertyValue(key, value)).toISOString()}${editedSuffix(key)}`"
+															>{{
+																new Date(
+																	propertyValue(key, value),
+																).toLocaleString()
+															}}</span
+														>
+														<span
+															v-else
+															:title="
+																currentSchema?.properties?.[key]?.description
+																|| `Property: ${key}${editedSuffix(key)}`
+															"
+															>{{ getDisplayValue(key, value) }}</span
+														>
 													</div>
 												</td>
 											</tr>
@@ -676,163 +561,26 @@ import {
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Uses')">
-								<div
-									v-if="objectStore.uses.results.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="use in objectStore.uses
-													.results"
-												:key="use['@self'].id"
-												class="table-row">
-												<td>{{ use['@self'].id }}</td>
-												<td>{{ use['@self'].uri }}</td>
-												<td>{{ use['@self'].schema }}</td>
-												<td>{{ use['@self'].register }}</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	use,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No uses found for this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.uses.results"
+									emptyText="No uses found for this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Used by')">
-								<div
-									v-if="objectStore.used.results.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="usedBy in objectStore.used
-													.results"
-												:key="usedBy['@self'].id"
-												class="table-row">
-												<td>{{ usedBy['@self'].id }}</td>
-												<td>{{ usedBy['@self'].uri }}</td>
-												<td>{{ usedBy['@self'].schema }}</td>
-												<td>
-													{{ usedBy['@self'].register }}
-												</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	usedBy,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No objects are using this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.used.results"
+									emptyText="No objects are using this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Contracts')">
-								<div
-									v-if="objectStore.contracts.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="contract in objectStore.contracts"
-												:key="contract['@self'].id"
-												class="table-row">
-												<td>{{ contract['@self'].id }}</td>
-												<td>{{ contract['@self'].uri }}</td>
-												<td>
-													{{ contract['@self'].schema }}
-												</td>
-												<td>
-													{{ contract['@self'].register }}
-												</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	contract,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No contracts found for this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.contracts"
+									emptyText="No contracts found for this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
@@ -1176,46 +924,18 @@ import {
 									@pageChanged="onFilesPageChanged"
 									@pageSizeChanged="onFilesPageSizeChanged" />
 							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Emails">
-								<EmailsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Events">
-								<EventsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Contacts">
-								<ContactsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Deck">
-								<DeckTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
-							<AppTab
-								v-if="!isNewObject && relationContext"
-								title="Relations">
-								<RelationsTab
-									:register="relationContext.register"
-									:schema="relationContext.schema"
-									:objectId="relationContext.id" />
-							</AppTab>
+							<template v-if="!isNewObject && relationContext">
+								<AppTab
+									v-for="tab in relationTabs"
+									:key="tab.title"
+									:title="tab.title">
+									<component
+										:is="tab.component"
+										:register="relationContext.register"
+										:schema="relationContext.schema"
+										:objectId="relationContext.id" />
+								</AppTab>
+							</template>
 						</AppTabs>
 					</div>
 				</div>
@@ -1294,7 +1014,6 @@ import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
@@ -1308,6 +1027,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
+import RelatedObjectsTable from '../../components/object-relations/RelatedObjectsTable.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
@@ -1583,6 +1303,18 @@ function isInlineControl(target) {
 
 const INLINE_TYPES = ['string', 'number', 'integer', 'boolean']
 
+/**
+ * The object-relation tabs, in order: each shows its component for the open
+ * object's register, schema and id.
+ */
+const RELATION_TABS = [
+	{ title: 'Emails', component: 'EmailsTab' },
+	{ title: 'Events', component: 'EventsTab' },
+	{ title: 'Contacts', component: 'ContactsTab' },
+	{ title: 'Deck', component: 'DeckTab' },
+	{ title: 'Relations', component: 'RelationsTab' },
+]
+
 export default {
 	name: 'ViewObject',
 	components: {
@@ -1605,7 +1337,6 @@ export default {
 		Cancel,
 		FileOutline,
 		OpenInNew,
-		Eye,
 		Delete,
 		Upload,
 		LockOutline,
@@ -1625,6 +1356,7 @@ export default {
 		EventsTab,
 		ContactsTab,
 		DeckTab,
+		RelatedObjectsTable,
 		RelationsTab,
 	},
 
@@ -1680,6 +1412,14 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @return {Array<{title: string, component: string}>} The relation tabs
+		 * @spec exclude static tab list
+		 */
+		relationTabs() {
+			return RELATION_TABS
+		},
+
 		// Check if we need to show register/schema selection
 		/**
 		 * @spec exclude computed gate for register/schema selection step
@@ -2051,12 +1791,49 @@ export default {
 
 	methods: {
 		/**
-		 * Returns { type, objectId } needed for all file store operations.
-		 * Handles both string IDs and embedded register/schema objects.
+		 * Open a related object (a use, a user or a contract) in this modal.
 		 *
-		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @param {object} object The related object
+		 * @return {void}
+		 * @spec exclude navigation from a related-object row, UI plumbing
 		 */
-		_getFileParams() {
+		viewRelatedObject(object) {
+			objectStore.setObjectItem(object)
+			navigationStore.setModal('viewObject')
+		},
+
+		/**
+		 * The value a property row shows: the edited one when the form holds
+		 * one, else the stored one.
+		 *
+		 * @param {string} key The property
+		 * @param {unknown} value Its stored value
+		 * @return {unknown} The value to show
+		 * @spec exclude property-table display helper
+		 */
+		propertyValue(key, value) {
+			return this.formData[key] !== undefined ? this.formData[key] : value
+		},
+
+		/**
+		 * The tooltip suffix that marks a property row as edited.
+		 *
+		 * @param {string} key The property
+		 * @return {string} ' (edited)' for an edited property, else ''
+		 * @spec exclude property-table display helper
+		 */
+		editedSuffix(key) {
+			return this.formData[key] !== undefined ? ' (edited)' : ''
+		},
+
+		/**
+		 * The register and schema ids of the open object, whether its `@self`
+		 * holds them as ids or as embedded objects.
+		 *
+		 * @return {{registerId: (string|number), schemaId: (string|number)}} The ids
+		 * @spec exclude id extraction shared by the file operations
+		 */
+		_getRegisterSchemaIds() {
 			const rawRegister = objectStore.objectItem['@self']?.register
 			const rawSchema = objectStore.objectItem['@self']?.schema
 			const registerId =
@@ -2067,6 +1844,17 @@ export default {
 				typeof rawSchema === 'object' && rawSchema !== null
 					? rawSchema.id
 					: rawSchema
+			return { registerId, schemaId }
+		},
+
+		/**
+		 * Returns { type, objectId } needed for all file store operations.
+		 * Handles both string IDs and embedded register/schema objects.
+		 *
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
+		_getFileParams() {
+			const { registerId, schemaId } = this._getRegisterSchemaIds()
 			const objectId =
 				objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
 			const type = `${registerId}-${schemaId}`
@@ -2715,16 +2503,7 @@ export default {
 		 */
 		async saveFileLabels(file) {
 			const { type, objectId } = this._getFileParams()
-			const rawRegister = objectStore.objectItem['@self']?.register
-			const rawSchema = objectStore.objectItem['@self']?.schema
-			const registerId =
-				typeof rawRegister === 'object' && rawRegister !== null
-					? rawRegister.id
-					: rawRegister
-			const schemaId =
-				typeof rawSchema === 'object' && rawSchema !== null
-					? rawSchema.id
-					: rawSchema
+			const { registerId, schemaId } = this._getRegisterSchemaIds()
 
 			// Snapshot the current value so we can revert on failure.
 			const previousLabels = Array.isArray(file.labels) ? [...file.labels] : []
@@ -3343,100 +3122,10 @@ export default {
 	font-size: 14px;
 }
 
-/* Property table row border colors matching validation states */
-.viewTableRow.property-invalid {
-	background-color: var(--color-error-light);
-	border-left: 4px solid var(--color-error);
-}
-
-.viewTableRow.property-warning {
-	background-color: var(--color-warning-light);
-	border-left: 4px solid var(--color-warning);
-}
-
-.viewTableRow.property-new {
-	background-color: var(--color-primary-element-light);
-	border-left: 4px solid var(--color-primary-element);
-}
-
+/* Property table row border colors matching validation states; the other
+   row and icon rules live in the SCSS block below. */
 .viewTableRow.property-valid {
 	border-left: 4px solid var(--color-success);
-}
-
-/* Icon colors for file status */
-.warningIcon {
-	color: var(--color-warning);
-}
-
-.publishedIcon {
-	color: var(--color-success);
-}
-
-/* Validation icons */
-.validation-icon {
-	flex-shrink: 0;
-}
-
-.error-icon {
-	color: var(--color-error);
-}
-
-.warning-icon {
-	color: var(--color-warning);
-}
-
-.lock-icon {
-	color: var(--color-text-lighter);
-}
-
-.new-icon {
-	color: var(--color-primary-element);
-}
-
-.prop-cell-content {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-/* Other necessary styles */
-.viewTableRow {
-	cursor: pointer;
-	transition: background-color 0.2s ease;
-}
-
-.viewTableRow:hover {
-	background-color: var(--color-background-hover);
-}
-
-.viewTableRow.selected-row {
-	background-color: var(--color-primary-light);
-}
-
-.viewTableRow.edited-row {
-	background-color: var(--color-success-light);
-	border-left: 3px solid var(--color-success);
-}
-
-.viewTableRow.edited-row.selected-row {
-	background-color: var(--color-primary-light);
-	border-left: 3px solid var(--color-success);
-}
-
-.viewTableRow.non-editable-row {
-	background-color: var(--color-background-dark);
-	cursor: not-allowed;
-	opacity: 0.7;
-}
-
-.viewTableRow.non-editable-row:hover {
-	background-color: var(--color-background-dark);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.viewTableRow {
-		transition: none;
-	}
 }
 </style>
 

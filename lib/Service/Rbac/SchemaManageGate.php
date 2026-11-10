@@ -31,11 +31,11 @@ use Throwable;
 
 /**
  * Default-SECURE: a schema with no `manage` rule is managed by administrators only. Deliberately NOT
- * `PermissionHandler::hasPermission()`, which is default-OPEN for object data.
+ * `PermissionHandlerInterface::hasPermission()`, which is default-OPEN for object data.
  *
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
  */
-class SchemaManageGate {
+class SchemaManageGate implements SchemaManageGateInterface {
 
 	/**
 	 * Constructor.

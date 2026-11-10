@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Sync;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-class SourceFetcherRegistry {
+class SourceFetcherRegistry implements SourceFetcherLookupInterface {
 
 	/**
 	 * Registered fetchers.

@@ -37,7 +37,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention; mirroring XwikiProviderTest in this repo.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -79,12 +81,7 @@ class OpenCorporatesProviderTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->provider = new OpenCorporatesProvider(
-			router: $this->router,
-			appManager: $this->appManager,
-			l10n: $l10n,
-			logger: $logger,
-		);
+		$this->provider = new OpenCorporatesProvider(routing: new ConnectorRouting(router: $this->router, appManager: $this->appManager, l10n: $l10n), logger: $logger);
 	}//end setUp()
 
 	public function testMetadataMatchesLeafSpec(): void {
@@ -162,7 +159,7 @@ class OpenCorporatesProviderTest extends TestCase {
 			)
 			->willReturn(['results' => ['companies' => []]]);
 
-		$result = $this->provider->searchCompanies('Bakery', 'nl', 999, 1);
+		$result = $this->provider->searchCompanies((new CompanySearch('Bakery', 999, 1))->narrowedBy(['jurisdiction' => 'nl']));
 		$this->assertSame(100, $result['limit']);
 		$this->assertSame(0, $result['total']);
 	}//end testSearchPassesJurisdictionAndClampsLimit()
@@ -175,7 +172,7 @@ class OpenCorporatesProviderTest extends TestCase {
 			)
 		);
 
-		$result = $this->provider->searchCompanies('Acme', null, 30, 1);
+		$result = $this->provider->searchCompanies(new CompanySearch('Acme', 30, 1));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('openconnector-source-missing', $result['cause']);
 		$this->assertSame([], $result['results']);

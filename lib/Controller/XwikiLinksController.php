@@ -39,11 +39,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\XwikiLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\XwikiLinkService;
+use OCA\OpenRegister\Service\XwikiLinkServiceInterface;
+use OCA\OpenRegister\Service\XwikiPageDraft;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -58,20 +65,32 @@ class XwikiLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var XwikiLinkServiceInterface
+	 */
+	private readonly XwikiLinkServiceInterface $xwikiLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param XwikiLinkService $xwikiLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param IRequest                     $request  HTTP request.
+	 * @param XwikiLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly XwikiLinkService $xwikiLinkService,
-		private readonly ObjectOperationsInterface $objectService,
+		XwikiLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->xwikiLinkService = $services->xwikiLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -89,10 +108,9 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->xwikiLinkService->getLinkedPages($object->getUuid()))
-		);
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->xwikiLinkService->getLinkedPages($object->getUuid()));
+
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end index()
 
 	/**
@@ -112,22 +130,9 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$pageReference = (string)$this->request->getParam('pageReference', '');
-				if (trim($pageReference) === '') {
-					return new JSONResponse(['error' => 'pageReference is required'], 400);
-				}
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['pageReference'], link: $this->linkPage(...));
 
-				$link = $this->xwikiLinkService->linkPage(
-					$this->linkTargetOf(object: $object),
-					$pageReference
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()
 
 	/**
@@ -147,28 +152,9 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$space = (string)$this->request->getParam('space', '');
-				if (trim($space) === '') {
-					return new JSONResponse(['error' => 'space is required'], 400);
-				}
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['space', 'title'], link: $this->createPage(...));
 
-				$title = (string)$this->request->getParam('title', '');
-				if (trim($title) === '') {
-					return new JSONResponse(['error' => 'title is required'], 400);
-				}
-
-				$link = $this->xwikiLinkService->createAndLinkPage(
-					$this->linkTargetOf(object: $object),
-					$space,
-					$title
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end createAndLink()
 
 	/**
@@ -191,15 +177,9 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $pageRef): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($pageRef): JSONResponse {
-				$pageReference = rawurldecode($pageRef);
-				$this->xwikiLinkService->unlinkPage($object->getUuid(), $pageReference);
+		$action = LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->xwikiLinkService->unlinkPage($uuid, rawurldecode($pageRef)));
 
-				return new JSONResponse(['success' => true]);
-			}
-		);
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end destroy()
 
 	/**
@@ -217,26 +197,11 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function available(): JSONResponse {
-		$search = $this->request->getParam('search');
-		if ($search !== null) {
-			$search = (string)$search;
-		}
-
-		$result = $this->xwikiLinkService->getAvailablePages($search);
+		$result = $this->xwikiLinkService->getAvailablePages(LinkedSourceActions::search(request: $this->request));
 
 		// Unconfigured-source / upstream-down → 503 with details.cause so
 		// the picker renders its Configure-XWiki CTA (4-state UX).
-		if (($result['unavailable'] ?? false) === true) {
-			return new JSONResponse(
-				[
-					'error' => 'xWiki source is not available',
-					'details' => ['cause' => $result['cause']],
-				],
-				503
-			);
-		}
-
-		return new JSONResponse(['results' => $result['results'], 'total' => $result['total']]);
+		return $this->unavailableOr(result: $result, keys: ['results', 'total']);
 	}//end available()
 
 	/**
@@ -267,41 +232,97 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function search(): JSONResponse {
-		$query = $this->request->getParam('q');
-		if ($query === null) {
-			$query = $this->request->getParam('search');
-		}
-
-		if ($query !== null) {
-			$query = (string)$query;
-		}
-
-		$limit = (int)$this->request->getParam('limit', 25);
+		$query  = $this->searchQuery();
+		$limit  = (int)$this->request->getParam('limit', 25);
 		$offset = (int)$this->request->getParam('offset', 0);
 
-		$result = $this->xwikiLinkService->searchPages($query, $limit, $offset);
+		$result = $this->xwikiLinkService->searchPages(new ListQuery(limit: $limit, offset: $offset, search: $query));
 
 		// Unconfigured-source / upstream-down → 503 with details.cause so the
 		// consumer renders its Configure-XWiki / unavailable state (4-state UX).
-		if (($result['unavailable'] ?? false) === true) {
-			return new JSONResponse(
-				[
-					'error' => 'xWiki source is not available',
-					'details' => ['cause' => $result['cause']],
-				],
-				503
-			);
+		return $this->unavailableOr(result: $result, keys: ['results', 'total', 'limit', 'offset']);
+	}//end search()
+
+	/**
+	 * Link an existing remote page to the object.
+	 *
+	 * @param ObjectEntity $object        The object.
+	 * @param string       $pageReference Full URL or `Space.Page`.
+	 *
+	 * @return XwikiLink The link.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function linkPage(ObjectEntity $object, string $pageReference): XwikiLink {
+		return $this->xwikiLinkService->linkPage($this->linkTargetOf(object: $object), $pageReference);
+	}//end linkPage()
+
+	/**
+	 * Create a remote page and link it to the object.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $space  The xWiki space.
+	 * @param string       $title  The page title.
+	 *
+	 * @return XwikiLink The link.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function createPage(ObjectEntity $object, string $space, string $title): XwikiLink {
+		return $this->xwikiLinkService->createAndLinkPage($this->linkTargetOf(object: $object), new XwikiPageDraft(space: $space, title: $title));
+	}//end createPage()
+
+	/**
+	 * The free-text query of a search: `q`, else `search`, as a string.
+	 *
+	 * @return string|null The query, or null when neither is given.
+	 *
+	 * @spec openspec/specs/integration-xwiki/spec.md
+	 */
+	private function searchQuery(): ?string {
+		$query = LinkedSourceActions::optionalString(request: $this->request, param: 'q');
+		if ($query === null) {
+			$query = LinkedSourceActions::optionalString(request: $this->request, param: 'search');
 		}
 
-		return new JSONResponse(
-			[
-				'results' => $result['results'],
-				'total' => $result['total'],
-				'limit' => $result['limit'],
-				'offset' => $result['offset'],
-			]
-		);
-	}//end search()
+		return $query;
+	}//end searchQuery()
+
+	/**
+	 * The 503 answer when the service reports the source unavailable, else the listed keys of its result.
+	 *
+	 * @param array    $result The service result.
+	 * @param string[] $keys   The result keys answered, in order.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/specs/integration-xwiki/spec.md
+	 */
+	private function unavailableOr(array $result, array $keys): JSONResponse {
+		if (($result['unavailable'] ?? false) === true) {
+			return $this->sourceUnavailable(cause: $result['cause']);
+		}
+
+		$body = [];
+		foreach ($keys as $key) {
+			$body[$key] = $result[$key];
+		}
+
+		return new JSONResponse($body);
+	}//end unavailableOr()
+
+	/**
+	 * The 503 answer for an unavailable xWiki source, with the cause the 4-state banner shows.
+	 *
+	 * @param mixed $cause The cause.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/specs/integration-xwiki/spec.md
+	 */
+	private function sourceUnavailable(mixed $cause): JSONResponse {
+		return LinkedSourceResponses::sourceUnavailable(error: 'xWiki source is not available', cause: $cause);
+	}//end sourceUnavailable()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -319,24 +340,11 @@ class XwikiLinksController extends Controller {
 	 *   the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
 		$message = $exception->getMessage();
-
-		if ($code === 503 && str_starts_with($message, 'xwiki:') === true) {
-			$cause = substr($message, strlen('xwiki:'));
-			return new JSONResponse(
-				[
-					'error' => 'xWiki source is not available',
-					'details' => ['cause' => $cause],
-				],
-				503
-			);
+		if ($exception->getCode() === 503 && str_starts_with($message, 'xwiki:') === true) {
+			return $this->sourceUnavailable(cause: substr($message, strlen('xwiki:')));
 		}
 
-		if (in_array($code, [400, 401, 404, 409, 503], true) === true) {
-			return new JSONResponse(['error' => $message], $code);
-		}
-
-		return new JSONResponse(['error' => $message], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 401, 404, 409, 503]);
 	}//end mapException()
 }//end class

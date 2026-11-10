@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
+
+use OCA\OpenRegister\Controller\FlowTestRunController;
+
+/**
+ * Builds FlowTestRunController from its services as separate arguments, wrapped into its constructor bundle.
+ */
+final class FlowTestRunControllerFactory {
+	/**
+	 * The constructor arguments of FlowTestRunController.
+	 *
+	 * @param IRequest $request Constructor argument.
+	 * @param FlowRunServiceInterface $runner Constructor argument.
+	 * @param FlowLocatorInterface $resolvers Constructor argument.
+	 * @param IUserSession $userSession Constructor argument.
+	 * @param FlowRunnableGuard $guard Constructor argument.
+	 *
+	 * @return array<int, mixed>
+	 */
+	public static function args(
+		\OCP\IRequest $request,
+		\OCA\OpenRegister\Service\Flow\FlowRunServiceInterface $runner,
+		\OCA\OpenRegister\Service\Flow\FlowLocatorInterface $resolvers,
+		\OCP\IUserSession $userSession,
+		\OCA\OpenRegister\Service\Flow\FlowRunnableGuard $guard,
+	): array {
+		return [
+			$request,
+			new \OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices(
+				runner: $runner,
+				resolvers: $resolvers,
+				userSession: $userSession,
+				guard: $guard,
+			),
+		];
+	}//end args()
+
+	/**
+	 * Build FlowTestRunController; takes the same arguments as args().
+	 *
+	 * @param mixed ...$args Arguments for args(), positional or named.
+	 *
+	 * @return FlowTestRunController
+	 */
+	public static function create(mixed ...$args): FlowTestRunController {
+		return new FlowTestRunController(...self::args(...$args));
+	}//end create()
+}//end class

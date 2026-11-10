@@ -37,6 +37,13 @@ final class NotificationContentValidator {
 	private const VALID_ACTION_TARGET_KINDS = ['object-detail', 'route', 'url', 'task-verb'];
 
 	/**
+	 * The error code of a `url` target that is not linkable.
+	 *
+	 * @var string
+	 */
+	public const BAD_HREF = 'notification-action-bad-href';
+
+	/**
 	 * The lifecycle verbs a `task-verb` action target may name. A target
 	 * names a VERB, never an author-composed URL, so a rule cannot aim a
 	 * notification button anywhere it likes (flow-task-inbox-projections,
@@ -65,6 +72,8 @@ final class NotificationContentValidator {
 	 *    → otherwise notification-action-bad-target.
 	 *  - a `task-verb` target MUST name a known lifecycle verb in `verb`
 	 *    → otherwise notification-action-bad-target, naming the value.
+	 *  - a `url` target MUST carry an absolute http, https or mailto `href`
+	 *    → otherwise notification-action-bad-href, which refuses the schema save.
 	 *
 	 * @param mixed  $actions Raw value of the `actions` key.
 	 * @param string $name    Notification name (for diagnostics).
@@ -191,8 +200,40 @@ final class NotificationContentValidator {
 			return $this->validateTaskVerbTarget(target: $target, where: $where);
 		}
 
+		if ($targetKind === 'url') {
+			return $this->urlTargetErrors(href: (string)($target['href'] ?? ''), where: $where);
+		}
+
 		return [];
 	}//end actionTargetErrors()
+
+	/**
+	 * Errors for a `url` target: it MUST be a link the dispatcher will deliver.
+	 *
+	 * @param string $href  The declared URL.
+	 * @param string $where Diagnostic prefix naming the rule and the action index.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function urlTargetErrors(string $href, string $where): array {
+		if ((new LinkableUrl())->accepts(href: $href) === true) {
+			return [];
+		}
+
+		return [
+			[
+				'code' => self::BAD_HREF,
+				'message' => sprintf(
+					'%s target.href "%s" is not an absolute URL with a scheme in [%s].',
+					$where,
+					$href,
+					implode(', ', LinkableUrl::SCHEMES)
+				),
+			],
+		];
+	}//end urlTargetErrors()
 
 	/**
 	 * Validate a `task-verb` action target: it MUST name a lifecycle verb from

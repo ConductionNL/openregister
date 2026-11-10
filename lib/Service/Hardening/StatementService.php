@@ -40,8 +40,6 @@ namespace OCA\OpenRegister\Service\Hardening;
 
 use DateTime;
 use InvalidArgumentException;
-use OCP\IAppConfig;
-use OCP\IConfig;
 use Throwable;
 
 /**
@@ -50,7 +48,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class StatementService {
+class StatementService implements StatementServiceInterface {
 
 	/**
 	 * Where the published statement is stored, as JSON.
@@ -69,15 +67,14 @@ class StatementService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig           $appConfig Stores the published statement.
-	 * @param IConfig              $config    Stores one user's acceptance.
-	 * @param HardeningAuditWriter $audit     Records the publication and the acceptance.
+	 * @param PlatformConfiguration $platform The app configuration stores the published statement, the
+	 *                                        system configuration one user's acceptance.
+	 * @param HardeningAuditWriter  $audit    Records the publication and the acceptance.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly IConfig $config,
+		private readonly PlatformConfiguration $platform,
 		private readonly HardeningAuditWriter $audit,
 	) {
 
@@ -92,7 +89,7 @@ class StatementService {
 	 */
 	public function published(): ?array {
 		try {
-			$raw = $this->appConfig->getValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
+			$raw = $this->platform->appConfig->getValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
 		} catch (Throwable) {
 			return null;
 		}
@@ -125,10 +122,7 @@ class StatementService {
 	/**
 	 * Publish a statement, or a new version of one.
 	 *
-	 * @param string $version The version, as the administrator writes it.
-	 * @param string $body    The text a user reads.
-	 * @param string $title   The heading above it.
-	 * @param string $userId  Who published it.
+	 * @param StatementPublication $publication The version, the text, the heading and who published it; trimmed before use.
 	 *
 	 * @return array{version: string, title: string, body: string, publishedAt: string, publishedBy: string} The statement now in force.
 	 *
@@ -136,39 +130,56 @@ class StatementService {
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-published-statement-is-accepted-before-use-per-version-req-ihc-001
 	 */
-	public function publish(string $version, string $body, string $title = '', string $userId = ''): array {
-		$version = trim($version);
-		$body = trim($body);
+	public function publish(StatementPublication $publication): array {
+		return $this->publishStatement(publication: $publication->trimmed());
+	}//end publish()
 
-		if ($version === '') {
-			throw new InvalidArgumentException('A statement carries a version, so an acceptance can name one.');
-		}
-
-		if ($body === '') {
-			throw new InvalidArgumentException('A statement carries the text a user is asked to accept.');
-		}
+	/**
+	 * Store a publication as the statement in force, and audit the version it replaces.
+	 *
+	 * @param StatementPublication $publication The trimmed publication.
+	 *
+	 * @return array{version: string, title: string, body: string, publishedAt: string, publishedBy: string} The statement now in force.
+	 *
+	 * @throws InvalidArgumentException When the version or the text is missing.
+	 */
+	private function publishStatement(StatementPublication $publication): array {
+		self::assertPublishable(publication: $publication);
 
 		$before = ($this->published()['version'] ?? '');
 
 		$statement = [
-			'version' => $version,
-			'title' => trim($title),
-			'body' => $body,
+			'version' => $publication->version,
+			'title' => $publication->title,
+			'body' => $publication->body,
 			'publishedAt' => (new DateTime())->format('c'),
-			'publishedBy' => $userId,
+			'publishedBy' => $publication->publishedBy,
 		];
 
-		$this->appConfig->setValueString(
-			HardeningPolicy::APP_ID,
-			self::STATEMENT_KEY,
-			(string)json_encode($statement)
-		);
-
-		$this->audit->record(fact: 'statement.published', before: $before, after: $version, accepted: true);
+		$this->platform->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, (string)json_encode($statement));
+		$this->audit->accepted(change: new HardeningFact(fact: 'statement.published', before: $before, after: $publication->version));
 
 		return $statement;
+	}//end publishStatement()
 
-	}//end publish()
+	/**
+	 * Refuse a publication without a version or a text.
+	 *
+	 * @param StatementPublication $publication The trimmed publication.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the version or the text is missing.
+	 */
+	private static function assertPublishable(StatementPublication $publication): void {
+		if ($publication->version === '') {
+			throw new InvalidArgumentException('A statement carries a version, so an acceptance can name one.');
+		}
+
+		if ($publication->body === '') {
+			throw new InvalidArgumentException('A statement carries the text a user is asked to accept.');
+		}
+	}//end assertPublishable()
 
 	/**
 	 * Withdraw the statement, so nothing is asked.
@@ -179,8 +190,8 @@ class StatementService {
 	 */
 	public function withdraw(): void {
 		$before = ($this->published()['version'] ?? '');
-		$this->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
-		$this->audit->record(fact: 'statement.withdrawn', before: $before, after: '', accepted: true);
+		$this->platform->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
+		$this->audit->accepted(change: new HardeningFact(fact: 'statement.withdrawn', before: $before, after: ''));
 
 	}//end withdraw()
 
@@ -199,7 +210,7 @@ class StatementService {
 		}
 
 		try {
-			$raw = $this->config->getUserValue($userId, HardeningPolicy::APP_ID, self::ACCEPTANCE_KEY, '');
+			$raw = $this->platform->config->getUserValue($userId, HardeningPolicy::APP_ID, self::ACCEPTANCE_KEY, '');
 		} catch (Throwable) {
 			return null;
 		}
@@ -275,12 +286,9 @@ class StatementService {
 		}
 
 		if (trim($version) !== $statement['version']) {
-			$this->audit->record(
-				fact: 'statement.accepted',
-				before: trim($version),
-				after: $statement['version'],
-				accepted: false,
-				refusal: 'The version accepted is not the version in force.',
+			$this->audit->refused(
+				change: new HardeningFact(fact: 'statement.accepted', before: trim($version), after: $statement['version']),
+				refusal: 'The version accepted is not the version in force.'
 			);
 
 			throw new InvalidArgumentException(
@@ -293,22 +301,23 @@ class StatementService {
 			'acceptedAt' => (new DateTime())->format('c'),
 		];
 
-		$this->config->setUserValue(
+		$this->platform->config->setUserValue(
 			$userId,
 			HardeningPolicy::APP_ID,
 			self::ACCEPTANCE_KEY,
 			(string)json_encode($acceptance)
 		);
 
-		$this->audit->record(
-			fact: 'statement.accepted',
-			before: '',
-			after: [
-				'user' => $userId,
-				'version' => $acceptance['version'],
-				'acceptedAt' => $acceptance['acceptedAt'],
-			],
-			accepted: true,
+		$this->audit->accepted(
+			change: new HardeningFact(
+				fact: 'statement.accepted',
+				before: '',
+				after: [
+					'user' => $userId,
+					'version' => $acceptance['version'],
+					'acceptedAt' => $acceptance['acceptedAt'],
+				]
+			)
 		);
 
 		return $acceptance;

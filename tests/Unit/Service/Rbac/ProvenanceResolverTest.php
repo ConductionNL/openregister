@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -62,12 +63,44 @@ class ProvenanceResolverTest extends TestCase {
 	}//end principals()
 
 	/**
+	 * The provenance of one action, read through forActions().
+	 *
+	 * @param string             $action              The verb.
+	 * @param array<int, string> $principals          The caller's principal names.
+	 * @param array|null         $objectAuthorization The object's own block.
+	 * @param array|null         $schemaAuthorization The schema's block.
+	 * @param array|null         $registerAuth        The register's block.
+	 * @param mixed              $roleDefinitions     The register's role definitions.
+	 * @param array|null         $denial              The denial, or null.
+	 * @param bool               $denyEnforced        Whether a denial changes the answer yet.
+	 *
+	 * @return array<string, mixed> The provenance record.
+	 */
+	private function forAction(
+		string $action,
+		array $principals,
+		?array $objectAuthorization = null,
+		?array $schemaAuthorization = null,
+		?array $registerAuth = null,
+		mixed $roleDefinitions = null,
+		?array $denial = null,
+		bool $denyEnforced = true,
+	): array {
+		return $this->resolver->forPrincipals($principals)->forActions([$action], new ProvenanceOptions([
+				'object' => $objectAuthorization,
+				'schema' => $schemaAuthorization,
+				'register' => $registerAuth,
+				'roleDefinitions' => $roleDefinitions,
+			], [$action => $denial], $denyEnforced))[$action];
+	}//end forAction()
+
+	/**
 	 * A grant written on the schema names the schema.
 	 *
 	 * @return void
 	 */
 	public function testASchemaGrantNamesTheSchema(): void {
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'read',
 			principals: $this->principals('ana', ['behandelaars']),
 			schemaAuthorization: ['read' => ['behandelaars']]
@@ -95,7 +128,7 @@ class ProvenanceResolverTest extends TestCase {
 
 		$this->assertSame(
 			ProvenanceResolver::SOURCE_OBJECT,
-			$this->resolver->forAction(
+			$this->forAction(
 				action: 'read',
 				principals: $principals,
 				objectAuthorization: $object,
@@ -106,7 +139,7 @@ class ProvenanceResolverTest extends TestCase {
 
 		$this->assertSame(
 			ProvenanceResolver::SOURCE_SCHEMA,
-			$this->resolver->forAction(
+			$this->forAction(
 				action: 'read',
 				principals: $principals,
 				schemaAuthorization: $schema,
@@ -116,7 +149,7 @@ class ProvenanceResolverTest extends TestCase {
 
 		$this->assertSame(
 			ProvenanceResolver::SOURCE_REGISTER,
-			$this->resolver->forAction(
+			$this->forAction(
 				action: 'read',
 				principals: $principals,
 				registerAuth: $register
@@ -133,7 +166,7 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testARoleGrantNamesTheRole(): void {
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'update',
 			principals: $this->principals('ana', ['behandelaars']),
 			schemaAuthorization: ['roles' => ['behandelaar' => ['behandelaars']]],
@@ -152,7 +185,7 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testARoleWithoutTheVerbGrantsNothing(): void {
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'delete',
 			principals: $this->principals('ana', ['behandelaars']),
 			schemaAuthorization: ['roles' => ['behandelaar' => ['behandelaars']]],
@@ -176,7 +209,7 @@ class ProvenanceResolverTest extends TestCase {
 	public function testAnAbsenceNamesTheDenyThatRemovedIt(): void {
 		$denial = ['rule' => 'waarnemers', 'principal' => 'waarnemers', 'action' => 'update', 'conditional' => false];
 
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'update',
 			principals: $this->principals('ana', ['behandelaars', 'waarnemers']),
 			schemaAuthorization: ['update' => ['behandelaars']],
@@ -208,7 +241,7 @@ class ProvenanceResolverTest extends TestCase {
 	public function testAStagedDenyIsReportedBesideTheGrantItHasNotTakenYet(): void {
 		$denial = ['rule' => 'waarnemers', 'principal' => 'waarnemers', 'action' => 'update', 'conditional' => false];
 
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'update',
 			principals: $this->principals('ana', ['behandelaars', 'waarnemers']),
 			schemaAuthorization: ['update' => ['behandelaars']],
@@ -232,7 +265,7 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnconfiguredCascadeReadsAsDefaultOpen(): void {
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'read',
 			principals: $this->principals('ana', ['behandelaars'])
 		);
@@ -248,7 +281,7 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConfiguredCascadeThatNamesNobodyReadsAsNone(): void {
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'read',
 			principals: $this->principals('ana', ['behandelaars']),
 			schemaAuthorization: ['read' => ['anderen']]
@@ -264,7 +297,7 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAUserLevelGrantNamesTheUser(): void {
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'read',
 			principals: $this->principals('ana', []),
 			schemaAuthorization: ['read' => [['user' => 'ana']]]
@@ -280,17 +313,11 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWholeVocabularyIsReportedAtOnce(): void {
-		$provenance = $this->resolver->forActions(
-			actions: ['read', 'update', 'delete'],
-			principals: $this->principals('ana', ['behandelaars']),
-			blocks: [
+		$provenance = $this->resolver->forPrincipals($this->principals('ana', ['behandelaars']))->forActions(actions: ['read', 'update', 'delete'], options: new ProvenanceOptions(blocks: [
 				'schema' => ['read' => ['behandelaars'], 'update' => ['behandelaars']],
-			],
-			denials: [
+			], denials: [
 				'update' => ['rule' => 'behandelaars', 'principal' => 'behandelaars', 'action' => 'update', 'conditional' => false],
-			],
-			enforced: true
-		);
+			], enforced: true));
 
 		$this->assertSame(['read', 'update', 'delete'], array_keys($provenance));
 		$this->assertTrue($provenance['read']['granted']);
@@ -309,7 +336,7 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFlatRoleMapIsReadToo(): void {
-		$record = $this->resolver->forAction(
+		$record = $this->forAction(
 			action: 'update',
 			principals: $this->principals('ana', ['senioren']),
 			schemaAuthorization: ['roles' => ['senior' => ['senioren']]],

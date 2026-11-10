@@ -39,7 +39,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -50,6 +52,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceHelpers;
+use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -193,13 +197,13 @@ class EntityOrganisationAssignmentTest extends TestCase {
 		);
 
 		$this->registerService = new RegisterService(
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			db: $this->createMock(IDBConnection::class),
-			fileService: $this->fileService,
+			storage: new RegisterServiceStorage(db: $this->createMock(IDBConnection::class), catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			helpers: new RegisterServiceHelpers(
+				$this->fileService,
+				new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
+			),
 			organisationService: $this->organisationService,
-			logger: $this->logger,
-			registerSerializer: new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
+			logger: $this->logger
 		);
 	}
 
@@ -551,11 +555,10 @@ class EntityOrganisationAssignmentTest extends TestCase {
 		// Mock: Entity filtering by organisation.
 		$this->objectMapper
 			->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(function ($filters) use ($userOrgs) {
+				$this->callback(function (MagicListRequest $request) use ($userOrgs) {
+					$filters = $request->query->filters;
 					return isset($filters['organisation'])
 						   && is_array($filters['organisation'])
 						   && !empty(array_intersect($filters['organisation'], array_keys($userOrgs)));
@@ -564,10 +567,8 @@ class EntityOrganisationAssignmentTest extends TestCase {
 			->willReturn([]);
 
 		// Act: Perform bulk operation with organisation filtering.
-		$results = $this->objectMapper->findAll(
-			null, // limit
-			null, // offset
-			['organisation' => array_keys($userOrgs)] // organisation filter
+		$results = $this->objectMapper->findAllListed(
+			new MagicListRequest(table: null, query: ListQuery::unbounded(['organisation' => array_keys($userOrgs)]))
 		);
 
 		// Assert: Results respect organisation boundaries.

@@ -11,11 +11,13 @@ use Exception;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Golden test for ContextRetrievalHandler::retrieveContext().
@@ -69,6 +71,17 @@ class ContextRetrievalGoldenTest extends TestCase {
 			'view lookup fails' => [['agent' => ['mode' => 'semantic', 'views' => ['v1']], 'semantic' => $mixed, 'inViewThrows' => true]],
 			'semantic throws' => [['agent' => ['mode' => 'semantic'], 'semanticThrows' => true]],
 			'keyword throws' => [['keywordThrows' => true]],
+			'scalar and odd metadata' => [[
+				'agent' => ['mode' => 'semantic', 'num' => 10],
+				'semantic' => [
+					['entity_type' => 'object', 'entity_id' => 'scalarmeta1', 'metadata' => '"just a string"'],
+					['entity_type' => 'file', 'entity_id' => 'filemeta22', 'metadata' => '{"file_name": "", "name": "n.txt"}'],
+					['entity_type' => 'object', 'entity_id' => 7, 'metadata' => '{"title": "T7", "uri": "/7"}', 'score' => 0.4],
+					['entity_type' => 'note', 'entity_id' => 'notenote99', 'name' => 'A note', 'chunk_text' => 'chunk', 'text' => 'ignored'],
+				],
+			]],
+			'keyword hits with gaps' => [['agent' => ['mode' => 'keyword', 'num' => 4], 'keyword' => [3 => ['id' => 'k3'], 9 => ['uuid' => 'k9', '_score' => 0.1, 'title' => 't9']]]],
+			'semantic objects and files counted apart' => [['rag' => ['numSourcesFiles' => 1, 'numSourcesObjects' => 2], 'agent' => ['mode' => 'semantic'], 'semantic' => $mixed]],
 			'source name fallbacks' => [[
 				'agent' => ['mode' => 'semantic', 'num' => 10],
 				'semantic' => [
@@ -100,7 +113,10 @@ class ContextRetrievalGoldenTest extends TestCase {
 			}
 		}
 
-		$result = $this->handler($case)->retrieveContext('find the thing', $agent, $case['selected'] ?? [], $case['rag'] ?? []);
+		$request = new ChatMessageRequest(0, 'user', 'find the thing');
+		$request->selectedViews = $case['selected'] ?? [];
+		$request->ragSettings = $case['rag'] ?? [];
+		$result = $this->handler($case)->retrieveContext($request, $agent);
 		$actual = json_decode(json_encode(['result' => $result, 'calls' => $this->calls]), true);
 
 		$golden = [];
@@ -165,8 +181,8 @@ class ContextRetrievalGoldenTest extends TestCase {
 			}
 		);
 		$vectors->method('hybridSearch')->willReturnCallback(
-			function (string $query, array $keywordResults, int $limit) use ($case): array {
-				$this->calls[] = ['hybrid', $query, $keywordResults, $limit];
+			function (HybridSearchRequest $request) use ($case): array {
+				$this->calls[] = ['hybrid', $request->query, $request->keywordResults, $request->limit];
 				return ($case['hybrid'] ?? []);
 			}
 		);

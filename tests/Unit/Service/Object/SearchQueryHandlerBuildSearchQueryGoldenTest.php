@@ -19,7 +19,6 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -39,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses   \OCA\OpenRegister\Service\Object\DottedParamTree
  * @uses   \OCA\OpenRegister\Service\Object\SearchQueryParts
+ * @uses \OCA\OpenRegister\Service\Object\SearchScopeFilters
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
@@ -67,6 +68,8 @@ class SearchQueryHandlerBuildSearchQueryGoldenTest extends TestCase {
 			'bracket filter'                 => $this->scenario(params: ['filter' => ['status' => 'open', 'kind' => 'b']], schema: 7),
 			'bracket filter, schema has one' => $this->scenario(params: ['filter' => ['status' => 'open']], schema: 9),
 			'bracket filter in schema list'  => $this->scenario(params: ['filter' => ['status' => 'open']], schema: [7, 9]),
+			'a null in a schema list'        => $this->scenario(params: ['filter' => ['status' => 'open']], schema: [7, null, 9]),
+			'metadata beside special params' => $this->scenario(params: ['owner' => null, '_order' => 'x', 'organisation' => 'o', '_x' => 1, 'plain' => 2], register: 1),
 			'bracket filter, no schema'      => $this->scenario(params: ['filter' => ['status' => 'open']]),
 			'scalar filter param'            => $this->scenario(params: ['filter' => 'open'], schema: 7),
 			'system params dropped'          => $this->scenario(params: ['_route' => 'r', 'id' => 3, 'rbac' => 'false', 'multi' => 'false', 'deleted' => 'x', 'kept' => 1], schema: 7),
@@ -167,7 +170,6 @@ class SearchQueryHandlerBuildSearchQueryGoldenTest extends TestCase {
 			$schemaMapper,
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			$this->createMock(SearchTrailService::class),
 			$session,
 			$expander

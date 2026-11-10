@@ -20,6 +20,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationErrorMessages;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -68,12 +71,9 @@ class ValidateObjectTest extends TestCase {
 			->willReturn('http://localhost:8080');
 
 		$this->handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 	}
 
@@ -539,6 +539,7 @@ class ValidateObjectTest extends TestCase {
 		$message = $this->handler->generateErrorMessage($result);
 
 		$this->assertIsString($message);
+		$this->assertSame('Validation passed', $message);
 	}
 
 	public function testGenerateErrorMessageWithInvalidResult(): void {
@@ -579,6 +580,10 @@ class ValidateObjectTest extends TestCase {
 		$response = $this->handler->handleValidationException($exception);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(400, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('error', $data['status']);
+		$this->assertSame('Validation failed', $data['errors'][0]['message']);
 	}
 
 	public function testHandleCustomValidationExceptionReturnsJsonResponse(): void {
@@ -587,6 +592,8 @@ class ValidateObjectTest extends TestCase {
 		$response = $this->handler->handleValidationException($exception);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['Required'], $response->getData()['errors']);
 	}
 
 	// =========================================================================
@@ -1145,31 +1152,31 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeNull(): void {
-		$this->assertSame('null', $this->invokePrivate('getValueType', [null]));
+		$this->assertSame('null', (new ValidationErrorMessages())->valueType(null));
 	}
 
 	public function testGetValueTypeBoolean(): void {
-		$this->assertSame('boolean', $this->invokePrivate('getValueType', [true]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(true));
 	}
 
 	public function testGetValueTypeInteger(): void {
-		$this->assertSame('integer', $this->invokePrivate('getValueType', [42]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(42));
 	}
 
 	public function testGetValueTypeNumber(): void {
-		$this->assertSame('number', $this->invokePrivate('getValueType', [3.14]));
+		$this->assertSame('number', (new ValidationErrorMessages())->valueType(3.14));
 	}
 
 	public function testGetValueTypeString(): void {
-		$this->assertSame('string', $this->invokePrivate('getValueType', ['hello']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType('hello'));
 	}
 
 	public function testGetValueTypeArray(): void {
-		$this->assertSame('array', $this->invokePrivate('getValueType', [['a', 'b']]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType(['a', 'b']));
 	}
 
 	public function testGetValueTypeObject(): void {
-		$this->assertSame('object', $this->invokePrivate('getValueType', [new stdClass()]));
+		$this->assertSame('object', (new ValidationErrorMessages())->valueType(new stdClass()));
 	}
 
 	// =========================================================================
@@ -1406,6 +1413,9 @@ class ValidateObjectTest extends TestCase {
 
 		// Should be transformed to oneOf [string UUID, object with id].
 		$this->assertNotNull($result->oneOf);
+		$this->assertCount(2, $result->oneOf);
+		$this->assertSame('string', $result->oneOf[0]->type);
+		$this->assertSame('object', $result->oneOf[1]->type);
 	}
 
 	public function testTransformArrayItemsObjectWithNestedObjectHandling(): void {
@@ -1443,8 +1453,9 @@ class ValidateObjectTest extends TestCase {
 		$schema->setProperties(['name' => ['type' => 'string']]);
 
 		// Should not throw.
+		$this->objectMapper->expects($this->never())->method('countAll');
+
 		$this->invokePrivate('validateUniqueFields', [['name' => 'Test'], $schema]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateUniqueFieldsEmptyConfig(): void {
@@ -1457,8 +1468,9 @@ class ValidateObjectTest extends TestCase {
 			$schema->setConfiguration(['unique' => []]);
 		}
 
+		$this->objectMapper->expects($this->never())->method('countAll');
+
 		$this->invokePrivate('validateUniqueFields', [['name' => 'Test'], $schema]);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateUniqueFieldsWithDuplicateStringConfigThrows(): void {
@@ -1489,10 +1501,12 @@ class ValidateObjectTest extends TestCase {
 		}
 
 		// Count returns 0.
-		$this->objectMapper->method('countAll')->willReturn(0);
+		$this->objectMapper->expects($this->once())
+			->method('countAll')
+			->with(['name' => 'Unique'], $schema)
+			->willReturn(0);
 
 		$this->invokePrivate('validateUniqueFields', [['name' => 'Unique'], $schema]);
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -1858,6 +1872,8 @@ class ValidateObjectTest extends TestCase {
 
 		// Object format objectConfiguration with related-object => UUID strings.
 		$this->assertNotNull($result->oneOf);
+		$this->assertCount(2, $result->oneOf);
+		$this->assertSame('string', $result->oneOf[0]->type);
 	}
 
 	// -------------------------------------------------------------------------
@@ -2138,14 +2154,15 @@ class ValidateObjectTest extends TestCase {
 			$schema->setConfiguration(['unique' => ['firstName', 'lastName']]);
 		}
 
-		$this->objectMapper->method('countAll')->willReturn(0);
+		$this->objectMapper->expects($this->once())
+			->method('countAll')
+			->with(['firstName' => 'Unique', 'lastName' => 'Person'], $schema)
+			->willReturn(0);
 
 		$this->invokePrivate('validateUniqueFields', [
 			['firstName' => 'Unique', 'lastName' => 'Person'],
 			$schema,
 		]);
-
-		$this->assertTrue(true);
 	}
 
 	// -------------------------------------------------------------------------
@@ -2300,19 +2317,19 @@ class ValidateObjectTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function testGetValueTypeForFalse(): void {
-		$this->assertSame('boolean', $this->invokePrivate('getValueType', [false]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(false));
 	}
 
 	public function testGetValueTypeForZero(): void {
-		$this->assertSame('integer', $this->invokePrivate('getValueType', [0]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(0));
 	}
 
 	public function testGetValueTypeForEmptyString(): void {
-		$this->assertSame('string', $this->invokePrivate('getValueType', ['']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType(''));
 	}
 
 	public function testGetValueTypeForEmptyArray(): void {
-		$this->assertSame('array', $this->invokePrivate('getValueType', [[]]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType([]));
 	}
 
 	// -------------------------------------------------------------------------
@@ -2331,6 +2348,8 @@ class ValidateObjectTest extends TestCase {
 		$response = $this->handler->handleValidationException($exception);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame('Type validation failed', $response->getData()['errors'][0]['message']);
 	}
 
 	public function testHandleCustomValidationExceptionMultipleErrors(): void {
@@ -2345,6 +2364,8 @@ class ValidateObjectTest extends TestCase {
 		$response = $this->handler->handleValidationException($exception);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['Name is required', 'Invalid email format'], $response->getData()['errors']);
 	}
 
 	// -------------------------------------------------------------------------
@@ -2512,12 +2533,9 @@ class ValidateObjectTest extends TestCase {
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost');
 
 		$handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 
 		$refSchema = $this->createSchema([]);
@@ -2544,12 +2562,9 @@ class ValidateObjectTest extends TestCase {
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost');
 
 		$handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 
 		$uri = Uri::create('http://localhost/index.php/apps/openregister/api/files/schema/42');
@@ -2796,14 +2811,15 @@ class ValidateObjectTest extends TestCase {
 		}
 
 		// Count returns 0 — no duplicate.
-		$this->objectMapper->method('countAll')->willReturn(0);
+		$this->objectMapper->expects($this->once())
+			->method('countAll')
+			->with(['firstName' => 'John', 'lastName' => 'Doe'], $schema)
+			->willReturn(0);
 
 		$this->invokePrivate('validateUniqueFields', [
 			['firstName' => 'John', 'lastName' => 'Doe'],
 			$schema,
 		]);
-
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -2852,7 +2868,7 @@ class ValidateObjectTest extends TestCase {
 	public function testGetValueTypeForResource(): void {
 		// Create a temporary resource to test the 'unknown' return path.
 		$resource = fopen('php://memory', 'r');
-		$result = $this->invokePrivate('getValueType', [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 		fclose($resource);
 
 		$this->assertSame('unknown', $result);
@@ -2999,12 +3015,9 @@ class ValidateObjectTest extends TestCase {
 
 		// Recreate handler with updated urlGenerator.
 		$this->handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 
 		$uri = Uri::create('http://localhost/index.php/apps/openregister/api/schemas/1');
@@ -3013,6 +3026,8 @@ class ValidateObjectTest extends TestCase {
 		$this->assertIsString($result);
 		$decoded = json_decode($result);
 		$this->assertNotNull($decoded, 'resolveSchema should return valid JSON for local schema URL');
+		$this->assertSame('Test Schema', $decoded->title);
+		$this->assertSame('string', $decoded->properties->name->type);
 	}
 
 	// =========================================================================
@@ -3020,14 +3035,23 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testResolveSchemaHandlesFileApiUrl(): void {
-		$uri = Uri::create('http://localhost:8080/index.php/apps/openregister/api/files/schema.json');
+		$this->urlGenerator = $this->createMock(IURLGenerator::class);
+		$this->urlGenerator->method('getBaseUrl')
+			->willReturn('http://localhost');
+		$this->handler = new ValidateObject(
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
+		);
 
-		// File API resolution typically returns the file content.
-		// When the URL doesn't match local schema pattern, it falls through.
-		$result = $this->handler->resolveSchema($uri);
+		$uri = Uri::create('http://localhost/index.php/apps/openregister/api/files/schema.json');
 
-		// Should return a string (possibly empty or error JSON).
-		$this->assertIsString($result);
+		$decoded = json_decode($this->handler->resolveSchema($uri), true);
+
+		// A local file API URL resolves to the built-in file schema.
+		$this->assertSame('object', $decoded['type']);
+		$this->assertSame(['id', 'name', 'path', 'mimetype', 'size'], array_keys($decoded['properties']));
+		$this->assertSame(['type' => 'integer'], $decoded['properties']['size']);
 	}
 
 	// =========================================================================
@@ -3038,7 +3062,10 @@ class ValidateObjectTest extends TestCase {
 		$schema = $this->createSchema([]);
 		$schema->setConfiguration(['unique' => 'email']);
 
-		$this->objectMapper->method('countAll')->willReturn(0);
+		$this->objectMapper->expects($this->once())
+			->method('countAll')
+			->with(['email' => 'test@example.com'], $schema)
+			->willReturn(0);
 
 		// Should not throw when count is 0.
 		$ref = new ReflectionClass(ValidateObject::class);
@@ -3049,8 +3076,6 @@ class ValidateObjectTest extends TestCase {
 			['email' => 'test@example.com'],
 			$schema,
 		]);
-
-		$this->assertTrue(true); // no exception
 	}
 
 	// =========================================================================
@@ -3106,13 +3131,9 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeReturnsUnknownForOpenResource(): void {
-		$ref = new ReflectionClass(ValidateObject::class);
-		$method = $ref->getMethod('getValueType');
-		$method->setAccessible(true);
-
-		// getValueType has no is_resource() check, so resources fall through to 'unknown'.
+		// Resources fall through to 'unknown'.
 		$resource = fopen('php://memory', 'r');
-		$result = $method->invokeArgs($this->handler, [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 		fclose($resource);
 
 		$this->assertSame('unknown', $result);
@@ -3123,15 +3144,11 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeReturnsUnknownForClosedResource(): void {
-		$ref = new ReflectionClass(ValidateObject::class);
-		$method = $ref->getMethod('getValueType');
-		$method->setAccessible(true);
-
 		$resource = fopen('php://memory', 'r');
 		fclose($resource);
 
 		// Closed resources have type 'resource (closed)' in PHP 8+
-		$result = $method->invokeArgs($this->handler, [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 
 		// Should return 'unknown' for closed resources.
 		$this->assertSame('unknown', $result);
@@ -3165,5 +3182,7 @@ class ValidateObjectTest extends TestCase {
 		$result = $this->handler->resolveSchema($uri);
 
 		$this->assertIsString($result);
+		// External schemas are off by default, so nothing is fetched.
+		$this->assertSame('', $result);
 	}
 }

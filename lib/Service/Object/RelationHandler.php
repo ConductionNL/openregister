@@ -19,15 +19,13 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
-use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Log\LoggerInterface;
 
@@ -76,23 +74,19 @@ class RelationHandler {
 	/**
 	 * Constructor for RelationHandler.
 	 *
-	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
-	 * @param MagicRbacHandler $rbacHandler Handler for RBAC operations.
+	 * @param RelationHandlerStores $stores Objects, schemas, registers and relation names.
+	 * @param RelatedRowRbacInterface $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
-	 * @param RelationTypeResolver|null $relationTypes Resolves what a relation is called from each side.
+	 * @param PurposeGuard|null $purposeGuard The doelbinding guard the referrer tables are read under.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicRbacHandler $rbacHandler,
+		private readonly RelationHandlerStores $stores,
+		private readonly RelatedRowRbacInterface $rbacHandler,
 		private readonly LoggerInterface $logger,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly ?RelationTypeResolver $relationTypes = null,
+		private readonly ?PurposeGuard $purposeGuard = null,
 	) {
 	}//end __construct()
 
@@ -104,7 +98,10 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function tables(): RelationTables {
-		$this->tables ??= new RelationTables(registers: $this->registerMapper, schemas: $this->schemaMapper, logger: $this->logger);
+		$this->tables ??= new RelationTables(
+			catalog: new SchemaCatalog(registers: $this->stores->registers, schemas: $this->stores->schemas, tables: $this->stores->objects),
+			logger: $this->logger
+		);
 		return $this->tables;
 	}//end tables()
 
@@ -220,9 +217,11 @@ class RelationHandler {
 	}//end indexedByUuidAndId()
 
 	/**
-	 * Load a chunk of relationships optimized.
+	 * Load a chunk of relationships: the related objects the caller may read.
 	 *
-	 * @param array $relationshipIds Array of relationship IDs to load.
+	 * Located across all magic tables, then read under RBAC and the organisation boundary.
+	 *
+	 * @param array $relationshipIds Array of relationship UUIDs to load.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -241,8 +240,7 @@ class RelationHandler {
 		}
 
 		try {
-			// Use the mapper's optimized bulk fetch.
-			return $this->objectEntityMapper->findAll(ids: $relationshipIds, includeDeleted: false);
+			return $this->readableRelated(uuids: $relationshipIds, lookup: new RelationLookup(objectId: ''));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to load relationship chunk',
@@ -269,7 +267,7 @@ class RelationHandler {
 	 */
 	public function getContracts(string $objectId, array $filters = []): array {
 		try {
-			$contracts = ($this->objectEntityMapper->find(identifier: $objectId)->getObject()['contracts'] ?? []);
+			$contracts = ($this->stores->objects->find(identifier: $objectId)->getObject()['contracts'] ?? []);
 			return $this->contractsPage(contracts: $contracts, filters: $filters);
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -363,7 +361,7 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function pinnedObject(RelationLookup $lookup, PinnedTable $pinned): ObjectEntity {
-		return $this->objectEntityMapper->find(
+		return $this->stores->objects->find(
 			identifier: $lookup->objectId,
 			register: $pinned->register,
 			schema: $pinned->schema
@@ -390,7 +388,7 @@ class RelationHandler {
 		// The per-table reads apply RBAC at query level, but the fallback rows
 		// were located without it, so every result is filtered here.
 		if ($lookup->appliesRbac() === true) {
-			$related = (new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper))->admitted(objects: $related);
+			$related = (new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->stores->schemas))->admitted(objects: $related);
 		}
 
 		$this->logger->debug(
@@ -455,7 +453,7 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function locateRelated(array $uuids, Closure $admitsFallback): array {
-		$located = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: array_values($uuids));
+		$located = $this->stores->objects->findMultipleAcrossAllMagicTables(uuids: array_values($uuids));
 		$found = new RelatedObjectSet(wanted: $uuids);
 		foreach ($this->tables()->groups(objects: $located) as $table) {
 			foreach ($this->relatedRows(table: $table) as $object) {
@@ -482,7 +480,7 @@ class RelationHandler {
 		}
 
 		try {
-			return $this->objectEntityMapper->findAllInRegisterSchemaTable(
+			return $this->stores->objects->findAllInRegisterSchemaTable(
 				register: $pair['register'],
 				schema: $pair['schema'],
 				filters: ['_ids' => $table['uuids'], '_limit' => 200]
@@ -565,7 +563,7 @@ class RelationHandler {
 	 */
 	private function readsIn(RelationLookup $read, array $pair): bool {
 		try {
-			$this->objectEntityMapper->find(
+			$this->stores->objects->find(
 				identifier: $read->objectId,
 				register: $pair['register'],
 				schema: $pair['schema'],
@@ -595,16 +593,16 @@ class RelationHandler {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function withRelation(array $row, RelationLink $link): array {
-		if ($this->relationTypes === null) {
+		if ($this->stores->relationTypes === null) {
 			return $row;
 		}
 
 		$descriptor = null;
 		if ($link->path !== null) {
-			$descriptor = $this->relationTypes->descriptorFor(schema: $link->schema, property: $link->path);
+			$descriptor = $this->stores->relationTypes->descriptorFor(schema: $link->schema, property: $link->path);
 		}
 
-		$row['relation'] = $this->relationTypes->row(
+		$row['relation'] = $this->stores->relationTypes->row(
 			descriptor: $descriptor,
 			direction: $link->direction,
 			path: $link->path
@@ -650,7 +648,7 @@ class RelationHandler {
 		$object = $this->pinnedObject(lookup: $lookup, pinned: $this->tables()->pinnedForUsedBy(lookup: $lookup));
 		$page = new ReferrerPage(targetUuid: $object->getUuid(), query: $lookup->query);
 
-		$located = $this->objectEntityMapper->findByRelationAcrossAllMagicTables(uuid: (string)$page->targetUuid);
+		$located = $this->stores->objects->findByRelationAcrossAllMagicTables(uuid: (string)$page->targetUuid);
 		foreach ($this->tables()->groups(objects: $located) as $table) {
 			if ($page->isFull() === true) {
 				break;
@@ -731,7 +729,7 @@ class RelationHandler {
 	 */
 	private function readReferrers(array $table, ReferrerPage $page): void {
 		$pair = $this->tables()->pair(registerId: $table['registerId'], schemaId: $table['schemaId']);
-		if ($pair === null) {
+		if ($pair === null || $this->purposeAdmits(pair: $pair) === false) {
 			return;
 		}
 
@@ -748,6 +746,26 @@ class RelationHandler {
 	}//end readReferrers()
 
 	/**
+	 * Whether the doelbinding guard admits a read of the table.
+	 *
+	 * The same rule the cross-table `_relations_contains` search applies: a
+	 * table that asks for a purpose the request does not carry is left out.
+	 *
+	 * @param array{register: Register, schema: Schema} $pair The table's register and schema.
+	 *
+	 * @return bool True when no guard is wired or the guard admits the read.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function purposeAdmits(array $pair): bool {
+		if ($this->purposeGuard === null) {
+			return true;
+		}
+
+		return $this->purposeGuard->allows(register: $pair['register'], schema: $pair['schema']);
+	}//end purposeAdmits()
+
+	/**
 	 * The next slice of one table's objects whose relations name the page's target, newest first.
 	 *
 	 * @param array{register: Register, schema: Schema} $pair The table's register and schema.
@@ -758,7 +776,7 @@ class RelationHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function referrerSearch(array $pair, ReferrerPage $page): array {
-		return $this->objectEntityMapper->findAllInRegisterSchemaTable(
+		return $this->stores->objects->findAllInRegisterSchemaTable(
 			register: $pair['register'],
 			schema: $pair['schema'],
 			limit: $page->remaining(),

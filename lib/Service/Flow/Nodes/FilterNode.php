@@ -30,33 +30,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Drops items that do not match.
  */
-class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
-
+class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * The step type.
 	 *
@@ -92,17 +77,6 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/filter.svg');
 	}//end getIcon()
-
-	/**
-	 * Filtering grants no privilege, so both scopes get it.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a filter step.
@@ -145,24 +119,7 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 		// guard and then kept all eleven items. The run was green end to end and
 		// the sweep flagged every object instead of the nine it meant to.
 		if (is_array($condition) === false) {
-			if (is_string($condition) === true && str_contains($condition, '{{') === true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
-						[
-							'example' => '{"==": [{"var": "json.status"}, "synced"]}',
-							'given' => $condition,
-						]
-					)
-				);
-			}
-
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
-					['given' => var_export($condition, true)]
-				)
-			);
+			$this->refuseConstant(condition: $condition);
 		}
 
 		if (FlowExpression::isValid(logic: $condition) === false) {
@@ -170,6 +127,37 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 		}
 
 	}//end validateConfig()
+
+	/**
+	 * Refuse a condition that is not an expression: a template string gets
+	 * the template hint, anything else is named as a fixed value.
+	 *
+	 * @param mixed $condition The configured condition, not an array.
+	 *
+	 * @return never
+	 *
+	 * @throws UnexpectedValueException Always.
+	 */
+	private function refuseConstant(mixed $condition): never {
+		if (is_string($condition) === true && str_contains($condition, '{{') === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
+					[
+						'example' => '{"==": [{"var": "json.status"}, "synced"]}',
+						'given' => $condition,
+					]
+				)
+			);
+		}
+
+		throw new UnexpectedValueException(
+			$this->l10n->t(
+				'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
+				['given' => var_export($condition, true)]
+			)
+		);
+	}//end refuseConstant()
 
 	/**
 	 * Keep the matching items.
@@ -185,19 +173,66 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 	 * @return array The items that matched.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$condition = ($config['condition'] ?? null);
-		$count = count($items);
+		$documents = $this->documentsFor(items: $items, context: $context);
+		$verdicts = $this->verdicts(condition: ($config['condition'] ?? null), documents: $documents);
 
+		return $this->kept(items: $items, verdicts: $verdicts);
+	}//end execute()
+
+	/**
+	 * The expression document of each item, keyed by its input index.
+	 *
+	 * @param array $items   The input items.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array<int|string, array> One data document per item.
+	 */
+	private function documentsFor(array $items, array $context): array {
+		$count = count($items);
+		$documents = [];
+		foreach ($items as $index => $item) {
+			$documents[$index] = FlowExpression::documentFor(
+				item: $item,
+				options: new FlowExpressionDataOptions(
+					itemIndex: $index,
+					itemCount: $count,
+					context: $context
+				)
+			);
+		}
+
+		return $documents;
+	}//end documentsFor()
+
+	/**
+	 * Whether the condition holds for each document, keyed as the documents are.
+	 *
+	 * @param mixed $condition The JSONLogic condition.
+	 * @param array $documents The data documents, keyed by input index.
+	 *
+	 * @return array<int|string, bool> The verdict per input index.
+	 */
+	private function verdicts(mixed $condition, array $documents): array {
+		$verdicts = [];
+		foreach ($documents as $index => $data) {
+			$verdicts[$index] = FlowExpression::isTrue(logic: $condition, data: $data);
+		}
+
+		return $verdicts;
+	}//end verdicts()
+
+	/**
+	 * The items whose verdict holds, re-paired to their original input index.
+	 *
+	 * @param array $items    The input items.
+	 * @param array $verdicts The verdict per input index.
+	 *
+	 * @return array The items that matched.
+	 */
+	private function kept(array $items, array $verdicts): array {
 		$kept = [];
 		foreach ($items as $index => $item) {
-			$data = FlowExpression::dataFor(
-				item: $item,
-				itemIndex: $index,
-				itemCount: $count,
-				context: $context
-			);
-
-			if (FlowExpression::isTrue(logic: $condition, data: $data) === false) {
+			if ($verdicts[$index] === false) {
 				continue;
 			}
 
@@ -209,7 +244,7 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 		}
 
 		return $kept;
-	}//end execute()
+	}//end kept()
 
 	/**
 	 * What kind of step this is. Reshapes the item stream by dropping items.
@@ -222,16 +257,4 @@ class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, I
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

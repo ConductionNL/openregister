@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Notifications\Controller\EmailsController;
+use OCA\OpenRegister\Notifications\Controller\Support\EmailsControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\EmailsDomain;
+use OCA\OpenRegister\Notifications\Controller\Support\EmailsObjectAccess;
+use OCA\OpenRegister\Notifications\Controller\Support\EmailsPlatform;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -18,6 +22,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Unit tests for EmailsController.
@@ -52,14 +57,12 @@ class EmailsControllerTest extends TestCase {
 		);
 
 		$this->controller = new EmailsController(
-			'openregister',
 			$this->request,
-			$this->emailService,
-			$this->objectService,
-			$this->userSession,
-			$this->logger,
-			$this->emailLinkService,
-			$permissions
+			new EmailsControllerServices(
+				new EmailsDomain($this->emailService, $this->emailLinkService),
+				new EmailsObjectAccess($this->objectService, $permissions),
+				new EmailsPlatform($this->userSession, $this->logger)
+			)
 		);
 	}
 
@@ -83,7 +86,7 @@ class EmailsControllerTest extends TestCase {
 
 		$expected = ['results' => [['linkId' => 1]], 'total' => 1];
 		$this->emailService->method('getEmailsForObject')
-			->with('abc-123', null, null)
+			->with('abc-123', new ListQuery(limit: ListQuery::UNBOUNDED))
 			->willReturn($expected);
 
 		$response = $this->controller->index('reg', 'sch', 'abc-123');
@@ -283,15 +286,13 @@ class EmailsControllerTest extends TestCase {
 			[['inReplyTo', '', '<a@x>'], ['references', '', ['<b@x>']]]
 		);
 		$controller = new EmailsController(
-			'openregister',
 			$this->request,
-			$this->emailService,
-			$this->objectService,
-			$this->userSession,
-			$this->logger,
-			$this->emailLinkService,
-			$this->createMock(PermissionHandler::class),
-			$threads
+			new EmailsControllerServices(
+				new EmailsDomain($this->emailService, $this->emailLinkService),
+				new EmailsObjectAccess($this->objectService, $this->createMock(PermissionHandler::class)),
+				new EmailsPlatform($this->userSession, $this->logger),
+				$threads
+			)
 		);
 
 		$response = $controller->resolve();

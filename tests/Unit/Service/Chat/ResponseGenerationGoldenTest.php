@@ -18,6 +18,8 @@ use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 
 /**
  * Golden test for ResponseGenerationHandler::generateResponse().
@@ -148,14 +150,13 @@ class ResponseGenerationGoldenTest extends TestCase {
 
 		$handler = $this->handler(case: $case, functionInfos: $functionInfos);
 		try {
+			$request = new ChatMessageRequest(0, 'user', 'What is in register A?');
+			$request->selectedTools = ['tool-a'];
+			$request->channel = $channel;
+			$request->cnAiContext = ($case['cnAiContext'] ?? []);
 			$actual = ['response' => $handler->generateResponse(
-				'What is in register A?',
-				['text' => ($case['context'] ?? ''), 'sources' => []],
-				$history,
-				$agent,
-				['tool-a'],
-				$channel,
-				($case['cnAiContext'] ?? [])
+				$request,
+				new ReplyGrounding(['text' => ($case['context'] ?? ''), 'sources' => []], $history, $agent)
 			)];
 			$usage = $handler->lastUsage;
 			unset($usage['llmSeconds']);
@@ -203,7 +204,7 @@ class ResponseGenerationGoldenTest extends TestCase {
 		$functionInfos = [];
 		$case = ['llm' => ['chatProvider' => 'fireworks', 'fireworksConfig' => ['apiKey' => 'fw', 'chatModel' => 'fw-model', 'baseUrl' => '{base}']]];
 		$response = $this->handler(case: $case, functionInfos: $functionInfos)
-			->generateResponse('Hello', ['text' => '', 'sources' => []], [], null);
+			->generateResponse(new ChatMessageRequest(0, 'user', 'Hello'), new ReplyGrounding(['text' => '', 'sources' => []], [], null));
 
 		$requests = array_values(array_filter(explode("\n", (string)file_get_contents(self::$requestLog))));
 		$this->assertCount(1, $requests);

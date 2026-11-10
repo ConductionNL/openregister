@@ -40,7 +40,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
  */
-class KillSwitchCheck implements IFlowOversightCheck {
+class KillSwitchCheck implements IFlowOversightCheck, KillSwitchCheckInterface {
 	/**
 	 * App-config key holding the kill switch.
 	 *

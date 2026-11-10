@@ -19,9 +19,10 @@
 namespace OCA\OpenRegister\Service;
 
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
-use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\Audit\TokenContext;
+use OCA\OpenRegister\Service\Audit\NamedIdentifier;
 use OCA\OpenRegister\Service\Audit\TokenIdentity;
 use OCA\OpenRegister\Service\Consumer\ConsumerMapperSource;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
@@ -84,21 +85,40 @@ class AuthorizationService {
 	private ?ResolvedConsumer $resolvedConsumer = null;
 
 	/**
+	 * Nextcloud user manager.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Nextcloud user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group lookups for an endpoint's users/groups allow-list.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager $userManager Nextcloud user manager
-	 * @param IUserSession $userSession Nextcloud user session
-	 * @param ConsumerMapper $consumerMapper Consumer database mapper
+	 * @param UserDirectory $directory Nextcloud user session, user manager and group lookups for an
+	 *                                 endpoint's users/groups allow-list
+	 * @param ConsumerMapperInterface $consumerMapper Consumer database mapper
 	 * @param \OCA\OpenRegister\Service\Rbac\TokenGrantSource|null $tokenGrantSource What the calling token may do
 	 * @param TokenContext|null $tokenContext Carries the calling token to the audit writer
 	 * @param ICacheFactory|null $cacheFactory Distributed cache for jti replay refusal
-	 * @param IGroupManager|null $groupManager Group lookups for an endpoint's users/groups allow-list
 	 * @param IRequest|null $request The current request (the OAuth Bearer guard)
 	 */
 	public function __construct(
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
-		private readonly ConsumerMapper $consumerMapper,
+		UserDirectory $directory,
+		private readonly ConsumerMapperInterface $consumerMapper,
 		// BOTH SIDES OF THIS MERGE ADDED A NULLABLE-LAST PARAMETER and neither
 		// replaces the other: `tokenGrantSource` answers what a token may DO,
 		// `tokenContext` carries who presented it to the audit writer. Keeping
@@ -107,10 +127,11 @@ class AuthorizationService {
 		private readonly ?\OCA\OpenRegister\Service\Rbac\TokenGrantSource $tokenGrantSource = null,
 		private readonly ?TokenContext $tokenContext = null,
 		private readonly ?ICacheFactory $cacheFactory = null,
-		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IRequest $request = null,
 	) {
-
+		$this->userManager = $directory->users;
+		$this->userSession = $directory->session;
+		$this->groupManager = $directory->groups;
 	}//end __construct()
 
 	/**
@@ -190,28 +211,24 @@ class AuthorizationService {
 	 * authorisation path, and a container without the context registered must
 	 * still be able to authorise a call.
 	 *
-	 * @param ResolvedConsumer $consumer The issuer whose credential was accepted.
-	 * @param string $mechanism How it authenticated.
-	 * @param string|null $reference The credential's own identifier, never its value.
+	 * @param ResolvedConsumer                                 $consumer   The issuer whose credential was accepted.
+	 * @param array{mechanism: string, reference: string|null} $credential How it authenticated, and the credential's own identifier (never its value).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function claimConsumerToken(ResolvedConsumer $consumer, string $mechanism, ?string $reference): void {
+	private function claimConsumerToken(ResolvedConsumer $consumer, array $credential): void {
 		if ($this->tokenContext === null) {
 			return;
 		}
 
 		$this->tokenContext->claim(
 			new TokenIdentity(
-				mechanism: $mechanism,
-				reference: $reference,
-				name: $consumer->name,
-				ownerUid: $consumer->userId,
-				ownerName: null,
-				consumerUuid: $consumer->uuid,
-				consumerName: $consumer->name,
+				mechanism: $credential['mechanism'],
+				token: new NamedIdentifier(id: $credential['reference'], name: $consumer->name),
+				owner: new NamedIdentifier(id: $consumer->userId),
+				consumer: new NamedIdentifier(id: $consumer->uuid, name: $consumer->name),
 			)
 		);
 	}//end claimConsumerToken()
@@ -285,7 +302,7 @@ class AuthorizationService {
 		// The algorithm comes from the issuer's stored configuration, never
 		// from the token header (algorithm confusion); RS/PS are verified
 		// against the RSA public key and never fall through to HMAC.
-		$validator->verifyPinned(token: $token, header: $header, configuration: $authConf);
+		$validator->verifyPinned(jwt: new Consumer\DecodedJwt(token: $token, header: $header), configuration: $authConf);
 		$validator->validateClaims(payload: $payload);
 
 		// 🔴 THIS LINE IS THE ROW. Making the Consumer act AS its Nextcloud
@@ -311,7 +328,7 @@ class AuthorizationService {
 			$jti = $payload['jti'];
 		}
 
-		$this->claimConsumerToken(consumer: $issuer, mechanism: 'jwt', reference: ($jti ?? $issuer->uuid));
+		$this->claimConsumerToken(consumer: $issuer, credential: ['mechanism' => 'jwt', 'reference' => ($jti ?? $issuer->uuid)]);
 
 	}//end authorizeJwt()
 
@@ -332,6 +349,23 @@ class AuthorizationService {
 	 */
 	public function authorizeBasic(string $header, array $users = [], array $groups = []): void {
 		$this->resolvedConsumer = null;
+		$user = $this->basicUser(header: $header);
+
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		$this->actAs(user: $user);
+
+	}//end authorizeBasic()
+
+	/**
+	 * The user whose password a Basic header carries.
+	 *
+	 * @param string $header The authorization header value.
+	 *
+	 * @return IUser The user the password belongs to.
+	 *
+	 * @throws AuthenticationException If the header is malformed or the password is wrong.
+	 */
+	private function basicUser(string $header): IUser {
 		$header = substr(string: $header, offset: strlen(string: 'Basic '));
 
 		// Guard against malformed base64 (base64_decode returns false on
@@ -350,10 +384,8 @@ class AuthorizationService {
 			throw new AuthenticationException(message: 'Invalid username or password', details: []);
 		}
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
-		$this->actAs(user: $user);
-
-	}//end authorizeBasic()
+		return $user;
+	}//end basicUser()
 
 	/**
 	 * Authorize user based on OAuth2 Bearer token.
@@ -376,6 +408,24 @@ class AuthorizationService {
 	 */
 	public function authorizeOAuth(string $header, array $users = [], array $groups = []): void {
 		$this->resolvedConsumer = null;
+		$this->assertBearerHeader(header: $header);
+		$this->assertRequestCarriedBearer();
+		$user = $this->oauthSessionUser();
+
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+
+	}//end authorizeOAuth()
+
+	/**
+	 * Refuse a header that is not a non-empty Bearer value.
+	 *
+	 * @param string $header The authorization header value.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException If the method is not Bearer or the token is empty.
+	 */
+	private function assertBearerHeader(string $header): void {
 		if (str_starts_with(haystack: $header, needle: 'Bearer') === false) {
 			throw new AuthenticationException(
 				message: 'Invalid method',
@@ -386,7 +436,16 @@ class AuthorizationService {
 		if (ltrim(substr($header, strlen('Bearer'))) === '') {
 			throw new AuthenticationException(message: 'Invalid token', details: ['reason' => 'Bearer token value is empty.']);
 		}
+	}//end assertBearerHeader()
 
+	/**
+	 * Refuse a request that did not itself carry a Bearer Authorization header.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException If the request is missing or carried no Bearer header.
+	 */
+	private function assertRequestCarriedBearer(): void {
 		// Fail closed without the request: the header is the only proof that
 		// Nextcloud authenticated a token rather than a session cookie.
 		$requestHeader = (string)$this->request?->getHeader('Authorization');
@@ -396,7 +455,16 @@ class AuthorizationService {
 				details: ['reason' => 'OAuth endpoints require Bearer token authentication, not session cookie auth.']
 			);
 		}
+	}//end assertRequestCarriedBearer()
 
+	/**
+	 * The signed-in user Nextcloud resolved the Bearer token to.
+	 *
+	 * @return IUser The user.
+	 *
+	 * @throws AuthenticationException If nobody is signed in.
+	 */
+	private function oauthSessionUser(): IUser {
 		$user = $this->userSession->getUser();
 		if ($this->userSession->isLoggedIn() === false || $user === null) {
 			throw new AuthenticationException(
@@ -405,9 +473,8 @@ class AuthorizationService {
 			);
 		}
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
-
-	}//end authorizeOAuth()
+		return $user;
+	}//end oauthSessionUser()
 
 	/**
 	 * Authorize the Nextcloud user of the current browser session.
@@ -503,10 +570,49 @@ class AuthorizationService {
 	 */
 	public function authorizeApiKey(string $header, array $keys, ?ConsumerSource $consumers=null): void {
 		$this->resolvedConsumer = null;
-		if ($header === '') {
+		if ($header !== '' && $this->actAsEndpointKeyUser(header: $header, keys: $keys) === true) {
+			return;
+		}
+
+		$this->actAsKeyConsumer(consumer: $this->keyConsumer(header: $header, consumers: $consumers));
+	}//end authorizeApiKey()
+
+	/**
+	 * The consumer that holds an API key, refusing an empty or unknown key.
+	 *
+	 * An empty key is refused before any lookup, as it was before the endpoint keys are tried.
+	 *
+	 * @param string              $header    The API key from the request header
+	 * @param ConsumerSource|null $consumers Where consumer keys are looked up (default: OpenRegister's consumers).
+	 *
+	 * @return ResolvedConsumer The consumer holding the key.
+	 *
+	 * @throws AuthenticationException If the API key is empty or no consumer holds it.
+	 */
+	private function keyConsumer(string $header, ?ConsumerSource $consumers): ResolvedConsumer {
+		$consumer = null;
+		if ($header !== '') {
+			$consumer = $this->sourceFor(consumers: $consumers)->findByApiKey(apiKey: $header);
+		}
+
+		if ($consumer === null) {
 			throw new AuthenticationException(message: 'Invalid API key', details: []);
 		}
 
+		return $consumer;
+	}//end keyConsumer()
+
+	/**
+	 * Act as the user of the endpoint key that matches the header, when one does.
+	 *
+	 * @param string $header The API key from the request header.
+	 * @param array  $keys   Map of valid API keys to user IDs.
+	 *
+	 * @return bool True when an endpoint key matched and its user is now acting.
+	 *
+	 * @throws AuthenticationException If the matching key's user does not exist.
+	 */
+	private function actAsEndpointKeyUser(string $header, array $keys): bool {
 		foreach ($keys as $key => $userId) {
 			if (hash_equals((string)$key, $header) === true) {
 				$user = $this->userManager->get((string)$userId);
@@ -515,15 +621,21 @@ class AuthorizationService {
 				}
 
 				$this->actAs(user: $user);
-				return;
+				return true;
 			}
 		}
 
-		$consumer = $this->sourceFor(consumers: $consumers)->findByApiKey(apiKey: $header);
-		if ($consumer === null) {
-			throw new AuthenticationException(message: 'Invalid API key', details: []);
-		}
+		return false;
+	}//end actAsEndpointKeyUser()
 
+	/**
+	 * Bind the key consumer's grant, then act as its user and claim the token.
+	 *
+	 * @param ResolvedConsumer $consumer The consumer whose API key matched.
+	 *
+	 * @return void
+	 */
+	private function actAsKeyConsumer(ResolvedConsumer $consumer): void {
 		$this->bindConsumerGrant(consumer: $consumer, fallbackId: $consumer->name);
 
 		$this->resolvedConsumer = $consumer;
@@ -531,7 +643,6 @@ class AuthorizationService {
 			$this->actAs(user: $this->userManager->get((string)$consumer->userId));
 		}
 
-		$this->claimConsumerToken(consumer: $consumer, mechanism: 'apiKey', reference: $consumer->uuid);
-
-	}//end authorizeApiKey()
+		$this->claimConsumerToken(consumer: $consumer, credential: ['mechanism' => 'apiKey', 'reference' => $consumer->uuid]);
+	}//end actAsKeyConsumer()
 }//end class

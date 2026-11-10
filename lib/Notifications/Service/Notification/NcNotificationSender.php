@@ -113,68 +113,144 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 		array $actions = [],
 		bool $webPushActive = false,
 	): string {
-		if ($this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'nc-notification') === false) {
+		$rule    = new NoticeRule(name: $name, originApp: $originApp, actions: $actions, webPushActive: $webPushActive);
+		$content = new NoticeContent(subjectKey: $subjectKey, subject: $subject, message: $message, context: $context);
+
+		return $this->notify(notice: new InAppNotice(uid: $uid, object: $object, rule: $rule, content: $content));
+	}//end send()
+
+	/**
+	 * Persist + dispatch a single in-app Nextcloud notification row; see {@see self::send()}.
+	 *
+	 * @param InAppNotice $notice The recipient, the object, the rule and what it says.
+	 *
+	 * @return string One of the OUTCOME_* constants.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function notify(InAppNotice $notice): string {
+		return $this->dispatch(
+			uid: $notice->uid,
+			notice: [
+				'object' => $notice->object,
+				'subjectKey' => $notice->content->subjectKey,
+				'name' => $notice->rule->name,
+				'subject' => $notice->content->subject,
+				'message' => $notice->content->message,
+				'context' => $notice->content->context,
+				'originApp' => $notice->rule->originApp,
+				'actions' => $notice->rule->actions,
+				'webPushActive' => $notice->rule->webPushActive,
+			]
+		);
+	}//end notify()
+
+	/**
+	 * Persist + dispatch one notification unless the channel is switched off.
+	 *
+	 * @param string               $uid    Recipient user UID.
+	 * @param array<string, mixed> $notice The fields of {@see send()} other than the uid, keyed by parameter name.
+	 *
+	 * @return string One of the OUTCOME_* constants.
+	 */
+	private function dispatch(string $uid, array $notice): string {
+		if ($this->channelDisabled() === true) {
 			return self::OUTCOME_KILL_SWITCH;
 		}
 
-		$objectUuid = (string)($object->getUuid() ?? '');
-		$tagSuffix = $name;
+		$objectUuid = (string)($notice['object']->getUuid() ?? '');
+		$notice['objectUuid'] = $objectUuid;
+		$notice['ref'] = $notice['name'];
 		if ($objectUuid !== '') {
-			$tagSuffix = $objectUuid;
+			$notice['ref'] = $objectUuid;
 		}
 
-		$linkParams = [
-			'objectTitle' => (string)($object->getName() ?? $objectUuid),
+		$notice['linkParams'] = $this->linkParams(notice: $notice);
+
+		return $this->persist(uid: $uid, notice: $notice);
+	}//end dispatch()
+
+	/**
+	 * The routing and rendering parameters the notifier reads from the subject.
+	 *
+	 * @param array<string, mixed> $notice The notice, with its `objectUuid` and its `ref` (the uuid, else the rule name).
+	 *
+	 * @return array<string, mixed> The link parameters.
+	 */
+	private function linkParams(array $notice): array {
+		$object = $notice['object'];
+
+		return [
+			'objectTitle' => (string)($object->getName() ?? $notice['objectUuid']),
 			'registerId' => $object->getRegister(),
 			'schemaId' => $object->getSchema(),
-			'objectUuid' => $objectUuid,
+			'objectUuid' => $notice['objectUuid'],
 			// The resolved origin app drives the notifier icon (originApp hex
 			// composite) and the deeplink base for declared actions.
-			'originApp' => $originApp,
+			'originApp' => $notice['originApp'],
 			// Declared, server-resolved action buttons. The notifier renders
 			// these via addAction(); an empty array keeps the implicit "View".
-			'_actions' => $actions,
+			'_actions' => $notice['actions'],
 			// Pre-interpolated notification BODY (distinct from the title).
 			// The notifier sets it via setParsedMessage() when non-empty;
 			// an empty string leaves the body unset (back-compat).
-			'_message' => $message,
+			'_message' => $notice['message'],
 			// Stable notification tag used by the Service Worker / foreground
 			// client to COLLAPSE the web-push and the stock popup so the
 			// recipient never sees a duplicate. Keyed by (rule, object).
-			'_tag' => sprintf('openregister-%s-%s', $name, $tagSuffix),
+			'_tag' => sprintf('openregister-%s-%s', $notice['name'], $notice['ref']),
 			// Foreground-suppression flag: when web-push is active for this
 			// rule, an open tab that holds an active push subscription
 			// declines to render the plain duplicate popup for this tag
 			// (see js/openregister-push-sw.js + src/webpush/register.js).
-			'_suppressForegroundPopup' => $webPushActive,
+			'_suppressForegroundPopup' => $notice['webPushActive'],
 		];
+	}//end linkParams()
 
-		$objectRef = $name;
-		if ($objectUuid !== '') {
-			$objectRef = $objectUuid;
-		}
-
+	/**
+	 * Create and notify the notification row, reporting a failure instead of throwing it.
+	 *
+	 * @param string               $uid    Recipient user UID.
+	 * @param array<string, mixed> $notice The notice, with its `ref` and `linkParams`.
+	 *
+	 * @return string OUTCOME_DISPATCHED or OUTCOME_FAILED.
+	 */
+	private function persist(string $uid, array $notice): string {
 		try {
 			$notification = $this->notificationManager->createNotification();
 			$notification
 				->setApp('openregister')
 				->setUser($uid)
 				->setDateTime(new DateTime())
-				->setObject('object', $objectRef)
+				->setObject('object', $notice['ref'])
 				->setSubject(
-					$subjectKey,
-					array_merge($context, $linkParams, ['_text' => $subject, 'notificationType' => $name])
+					$notice['subjectKey'],
+					array_merge(
+						$notice['context'],
+						$notice['linkParams'],
+						['_text' => $notice['subject'], 'notificationType' => $notice['name']]
+					)
 				);
 			$this->notificationManager->notify($notification);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				sprintf('Notification "%s" to "%s" failed: %s', $name, $uid, $e->getMessage())
+				sprintf('Notification "%s" to "%s" failed: %s', $notice['name'], $uid, $e->getMessage())
 			);
 			return self::OUTCOME_FAILED;
 		}
 
 		return self::OUTCOME_DISPATCHED;
-	}//end send()
+	}//end persist()
+
+	/**
+	 * Whether the nc-notification channel's kill switch is set.
+	 *
+	 * @return bool True when the channel is switched off.
+	 */
+	private function channelDisabled(): bool {
+		return $this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'nc-notification') === false;
+	}//end channelDisabled()
 
 	/**
 	 * Enqueue the web-push ride-along for a set of recipients.
@@ -206,42 +282,85 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 		array $actions,
 		ObjectEntity $object,
 	): void {
+		$rule = new NoticeRule(name: $ruleId, originApp: $originApp, actions: $actions);
+		$text = new NoticeContent(subjectKey: '', subject: $subject, message: $message);
+
+		$this->enqueuePush(push: new PushRideAlong(recipients: $recipients, object: $object, rule: $rule, content: $text));
+	}//end enqueueWebPush()
+
+	/**
+	 * Enqueue the web-push ride-along for a set of recipients; see {@see self::enqueueWebPush()}.
+	 *
+	 * @param PushRideAlong $push The recipients, the object, the rule and the push's subject and body.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function enqueuePush(PushRideAlong $push): void {
+		$this->enqueueFor(
+			recipients: $push->recipients,
+			push: [
+				'ruleId' => $push->rule->name,
+				'originApp' => $push->rule->originApp,
+				'title' => $push->content->subject,
+				'body' => $push->content->message,
+				'actions' => $push->rule->actions,
+				'object' => $push->object,
+			]
+		);
+	}//end enqueuePush()
+
+	/**
+	 * Enqueue one web-push job per enqueueable recipient, unless push cannot or may not ride along.
+	 *
+	 * @param array<int, mixed>    $recipients Recipient uids.
+	 * @param array<string, mixed> $push       The rule id, origin app, title, body, actions and object.
+	 *
+	 * @return void
+	 */
+	private function enqueueFor(array $recipients, array $push): void {
 		if ($this->jobList === null) {
 			$this->logger->debug('[NcNotificationSender] web-push declared but IJobList unavailable.');
 			return;
 		}
 
-		if ($this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'nc-notification') === false) {
+		if ($this->channelDisabled() === true) {
 			return;
 		}
 
-		$objectUuid = (string)($object->getUuid() ?? '');
-		$tagSuffix = $ruleId;
+		$objectUuid = (string)($push['object']->getUuid() ?? '');
+		$tagSuffix = $push['ruleId'];
 		if ($objectUuid !== '') {
 			$tagSuffix = $objectUuid;
 		}
 
-		$tag = sprintf('openregister-%s-%s', $ruleId, $tagSuffix);
+		$payload = [
+			'ruleId' => $push['ruleId'],
+			'originApp' => $push['originApp'],
+			'title' => $push['title'],
+			'body' => $push['body'],
+			'tag' => sprintf('openregister-%s-%s', $push['ruleId'], $tagSuffix),
+			'actions' => $push['actions'],
+		];
 
 		foreach ($recipients as $uid) {
-			if (is_string($uid) === false || $uid === '' || $this->recipientExists(uid: $uid) === false) {
-				continue;
+			if ($this->enqueueable(uid: $uid) === true) {
+				$this->jobList->add(WebPushDispatchJob::class, ['uid' => $uid] + $payload);
 			}
+		}
+	}//end enqueueFor()
 
-			$this->jobList->add(
-				WebPushDispatchJob::class,
-				[
-					'uid' => $uid,
-					'ruleId' => $ruleId,
-					'originApp' => $originApp,
-					'title' => $subject,
-					'body' => $message,
-					'tag' => $tag,
-					'actions' => $actions,
-				]
-			);
-		}//end foreach
-	}//end enqueueWebPush()
+	/**
+	 * Whether a recipient is a non-empty string naming a real user.
+	 *
+	 * @param mixed $uid Candidate uid.
+	 *
+	 * @return bool True when the uid may be enqueued.
+	 */
+	private function enqueueable(mixed $uid): bool {
+		return is_string($uid) === true && $uid !== '' && $this->recipientExists(uid: $uid) === true;
+	}//end enqueueable()
 
 	/**
 	 * Whether a uid names a real user; true when no user manager was injected

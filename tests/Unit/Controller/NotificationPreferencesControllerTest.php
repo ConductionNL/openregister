@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Notifications\Controller\NotificationPreferencesController;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCP\IRequest;
 use OCP\IUser;
@@ -28,10 +29,8 @@ class NotificationPreferencesControllerTest extends TestCase {
 		$this->preferenceService = $this->createMock(NotificationPreferenceService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->controller = new NotificationPreferencesController(
-			'openregister',
 			$this->request,
-			$this->preferenceService,
-			$this->userSession
+			new NotificationPreferencesControllerServices($this->preferenceService, $this->userSession)
 		);
 	}
 

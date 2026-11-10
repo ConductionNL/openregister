@@ -30,10 +30,9 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
-use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailCriteria;
+use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -41,10 +40,12 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * This service provides business logic for search trail logging, analytics,
  * management operations, and supports self-clearing (automatic cleanup) of old search trails.
+ * Query processing, name enrichment and the analytics calculations live in small
+ * SearchTrail* collaborators.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex search trail analytics and logging logic
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  */
-class SearchTrailService {
+class SearchTrailService implements SearchTrailServiceInterface {
 
 	/**
 	 * Whether self-clearing (automatic cleanup) is enabled.
@@ -62,14 +63,48 @@ class SearchTrailService {
 	private int $retentionDays = 365;
 
 	/**
+	 * Turns request parameters into mapper arguments.
+	 *
+	 * @var SearchTrailQueryConfig
+	 */
+	private readonly SearchTrailQueryConfig $queryConfig;
+
+	/**
+	 * Adds register and schema names to trails.
+	 *
+	 * @var SearchTrailNameEnricher
+	 */
+	private readonly SearchTrailNameEnricher $nameEnricher;
+
+	/**
+	 * Calculates the derived statistics.
+	 *
+	 * @var SearchTrailStatistics
+	 */
+	private readonly SearchTrailStatistics $statistics;
+
+	/**
+	 * Calculates the activity insights.
+	 *
+	 * @var SearchTrailActivityInsights
+	 */
+	private readonly SearchTrailActivityInsights $activityInsights;
+
+	/**
+	 * Parses user agent strings.
+	 *
+	 * @var SearchTrailUserAgentParser
+	 */
+	private readonly SearchTrailUserAgentParser $userAgentParser;
+
+	/**
 	 * Constructor for SearchTrailService
 	 *
 	 * Initializes service with required mappers and optional configuration.
 	 * Sets retention period and self-clearing flag if provided.
 	 *
-	 * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
-	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations
+	 * @param SearchTrailMapperInterface $searchTrailMapper Mapper for search trail database operations
+	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
 	 * @param int|null $retentionDays Optional retention period in days (default: 365)
 	 * @param bool|null $selfClearing Optional flag to enable/disable self-clearing
 	 *                                (default: false, use cron jobs instead)
@@ -77,78 +112,70 @@ class SearchTrailService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SearchTrailMapper $searchTrailMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SearchTrailMapperInterface $searchTrailMapper,
+		RegisterSchemaMappers $mappers,
 		?int $retentionDays = null,
 		?bool $selfClearing = null,
 	) {
-		// Set retention period if provided, otherwise use default (365 days).
-		if ($retentionDays !== null) {
-			$this->retentionDays = $retentionDays;
-		}
-
-		// Set self-clearing flag if provided, otherwise use default (false).
-		if ($selfClearing !== null) {
-			$this->selfClearingEnabled = $selfClearing;
-		}
+		$this->retentionDays = $retentionDays ?? $this->retentionDays;
+		$this->selfClearingEnabled = $selfClearing ?? $this->selfClearingEnabled;
+		$this->queryConfig = new SearchTrailQueryConfig();
+		$this->nameEnricher = new SearchTrailNameEnricher(registerMapper: $mappers->registerMapper, schemaMapper: $mappers->schemaMapper);
+		$this->statistics = new SearchTrailStatistics();
+		$this->activityInsights = new SearchTrailActivityInsights();
+		$this->userAgentParser = new SearchTrailUserAgentParser();
 	}//end __construct()
 
 	/**
-	 * Create a search trail log entry
+	 * Record one executed search as a search trail.
 	 *
-	 * Processes search query parameters and creates a comprehensive search trail entry
-	 * for analytics and monitoring purposes. System parameters (starting with _) are
-	 * automatically excluded from tracking by the mapper.
+	 * @param array             $query    The search query parameters.
+	 * @param SearchMeasurement $measured The result counts, response time and execution type.
 	 *
-	 * If self-clearing is enabled, automatically triggers cleanup of old search trails
-	 * after creating the new entry.
+	 * @return SearchTrail The created search trail entity.
 	 *
-	 * @param array<string, mixed> $query The search query parameters (system params excluded)
-	 * @param int $resultCount The number of results returned in this page
-	 * @param int $totalResults The total number of matching results
-	 * @param float $responseTime The response time in milliseconds (default: 0.0)
-	 * @param string $executionType The execution type: 'sync' or 'async' (default: 'sync')
-	 *
-	 * @return SearchTrail The created search trail entity
-	 *
-	 * @throws Exception If search trail creation fails (database error, validation error, etc.)
-	 *
-	 * @psalm-suppress PossiblyUnusedReturnValue
+	 * @throws Exception If search trail creation fails.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 	 */
-	public function createSearchTrail(
-		array $query,
-		int $resultCount,
-		int $totalResults,
-		float $responseTime = 0.0,
-		string $executionType = 'sync',
-	): SearchTrail {
+	public function createSearchTrail(array $query, SearchMeasurement $measured): SearchTrail {
 		try {
-			// Step 1: Create search trail entry using mapper.
 			// Mapper handles filtering of system parameters (starting with _).
-			$trail = $this->searchTrailMapper->createSearchTrail(
-				searchQuery: $query,
-				resultCount: $resultCount,
-				totalResults: $totalResults,
-				responseTime: $responseTime,
-				executionType: $executionType
-			);
-
-			// Step 2: Self-clearing: automatically clean up old search trails if enabled.
-			// This prevents database growth but may impact performance on high-traffic systems.
-			if ($this->selfClearingEnabled === true) {
-				$this->clearExpiredSearchTrails();
-			}
-
-			// Step 3: Return created search trail entity.
-			return $trail;
+			$outcome = $this->outcome(resultCount: $measured->resultCount, totalResults: $measured->totalResults);
+			$trail   = $this->searchTrailMapper->createSearchTrail($query, $outcome, $measured->responseTime, $measured->executionType);
+			return $this->selfCleared(trail: $trail);
 		} catch (Exception $e) {
 			// Wrap exception with more context for debugging.
 			throw new Exception('Search trail creation failed: ' . $e->getMessage(), 0, $e);
-		}//end try
+		}
 	}//end createSearchTrail()
+
+	/**
+	 * The unsaved trail carrying what a search returned.
+	 *
+	 * @param int $resultCount  The number of results returned
+	 * @param int $totalResults The total number of matching results
+	 *
+	 * @return SearchTrail
+	 */
+	private function outcome(int $resultCount, int $totalResults): SearchTrail {
+		$outcome = new SearchTrail();
+		$outcome->setResultCount($resultCount);
+		$outcome->setTotalResults($totalResults);
+		return $outcome;
+	}//end outcome()
+
+	/**
+	 * Run the self-clearing a new trail triggers, and hand the trail back.
+	 *
+	 * @param SearchTrail $trail The trail just created.
+	 *
+	 * @return SearchTrail The same trail.
+	 */
+	private function selfCleared(SearchTrail $trail): SearchTrail {
+		$this->selfClearIfEnabled();
+		return $trail;
+	}//end selfCleared()
 
 	/**
 	 * Clean up expired search trails
@@ -173,31 +200,13 @@ class SearchTrailService {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 	 */
 	public function clearExpiredSearchTrails(): array {
-		try {
-			$deletedCount = $this->searchTrailMapper->clearLogs();
-
-			// ClearLogs returns boolean, not count.
-			$deletedValue = 0;
-			$message = 'Self-clearing: no expired entries to delete';
-			if ($deletedCount === true) {
-				$deletedValue = 1;
-				$message = 'Self-clearing: deleted expired search trail entries';
-			}
-
-			return [
-				'success' => true,
-				'deleted' => $deletedValue,
-				'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
-				'message' => $message,
-			];
-		} catch (Exception $e) {
-			return [
-				'success' => false,
-				'deleted' => 0,
-				'error' => $e->getMessage(),
-				'message' => 'Self-clearing operation failed',
-			];
-		}//end try
+		return $this->clearExpiredLogs(
+			messages: [
+				'deleted' => 'Self-clearing: deleted expired search trail entries',
+				'none' => 'Self-clearing: no expired entries to delete',
+				'failed' => 'Self-clearing operation failed',
+			]
+		);
 	}//end clearExpiredSearchTrails()
 
 	/**
@@ -220,35 +229,17 @@ class SearchTrailService {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 	 */
 	public function getSearchTrails(array $config = []): array {
-		$processedConfig = $this->processConfig(config: $config);
-
-		$trails = $this->searchTrailMapper->findAll(
-			limit: $processedConfig['limit'],
-			offset: $processedConfig['offset'],
-			filters: $processedConfig['filters'],
-			sort: $processedConfig['sort'],
-			search: $processedConfig['search'],
-			from: $processedConfig['from'],
-			to: $processedConfig['to']
-		);
-
-		// Enrich trails with register and schema names.
-		$enrichedTrails = $this->enrichTrailsWithNames(trails: $trails);
-
-		$total = $this->searchTrailMapper->count(
-			filters: $processedConfig['filters'],
-			search: $processedConfig['search'],
-			from: $processedConfig['from'],
-			to: $processedConfig['to']
-		);
+		$query = $this->queryConfig->process(config: $config);
+		$enrichedTrails = $this->nameEnricher->enrich(trails: $this->findTrails(query: $query));
+		$total = $this->countTrails(query: $query);
 
 		return [
 			'results' => $enrichedTrails,
 			'total' => $total,
-			'page' => $processedConfig['page'],
-			'pages' => $this->calculatePages(total: $total, limit: $processedConfig['limit']),
-			'limit' => $processedConfig['limit'],
-			'offset' => $processedConfig['offset'],
+			'page' => $query['page'],
+			'pages' => $this->calculatePages(total: $total, limit: $query['limit']),
+			'limit' => $query['limit'],
+			'offset' => $query['offset'],
 		];
 	}//end getSearchTrails()
 
@@ -267,7 +258,7 @@ class SearchTrailService {
 		$trail = $this->searchTrailMapper->find($id);
 
 		// Enrich single trail with register and schema names.
-		$enrichedTrails = $this->enrichTrailsWithNames(trails: [$trail]);
+		$enrichedTrails = $this->nameEnricher->enrich(trails: [$trail]);
 
 		return $enrichedTrails[0];
 	}//end getSearchTrail()
@@ -280,149 +271,53 @@ class SearchTrailService {
 	 *
 	 * @return array Search statistics data
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple statistics calculations and aggregations
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional statistics computations
-	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function getSearchStatistics(?DateTime $from = null, ?DateTime $to = null): array {
-		$baseStats = $this->searchTrailMapper->getSearchStatistics(from: $from, to: $to);
+		$mapper = $this->searchTrailMapper;
+		$stats = $this->statistics->withOutcomeRates(stats: $mapper->getSearchStatistics(from: $from, to: $to));
+		$stats['unique_search_terms'] = $mapper->getUniqueSearchTermsCount(from: $from, to: $to);
+		$stats['unique_users'] = $mapper->getUniqueUsersCount(from: $from, to: $to);
+		$stats['avg_searches_per_session'] = $mapper->getAverageSearchesPerSession(from: $from, to: $to);
+		$stats['avg_object_views_per_session'] = $mapper->getAverageObjectViewsPerSession(from: $from, to: $to);
 
-		// Add additional calculated metrics.
-		$baseStats['searches_with_results'] = $baseStats['non_empty_searches'];
-		$baseStats['searches_without_results'] = $baseStats['total_searches'] - $baseStats['non_empty_searches'];
-		$baseStats['success_rate'] = 0;
-		if ($baseStats['total_searches'] > 0) {
-			$baseStats['success_rate'] = round(($baseStats['non_empty_searches'] / $baseStats['total_searches']) * 100, 2);
-		}
-
-		// Get unique search terms count.
-		$uniqueTermsCount = $this->searchTrailMapper->getUniqueSearchTermsCount(from: $from, to: $to);
-		$baseStats['unique_search_terms'] = $uniqueTermsCount;
-
-		// Get unique users count.
-		$uniqueUsersCount = $this->searchTrailMapper->getUniqueUsersCount(from: $from, to: $to);
-		$baseStats['unique_users'] = $uniqueUsersCount;
-
-		// Get session-based statistics.
-		$baseStats['avg_searches_per_session'] = $this->searchTrailMapper->getAverageSearchesPerSession(
-			from: $from,
-			to: $to
-		);
-		$baseStats['avg_object_views_per_session'] = $this->searchTrailMapper->getAverageObjectViewsPerSession(
-			from: $from,
-			to: $to
-		);
-
-		// Get unique organizations count (placeholder for now).
-		$baseStats['unique_organizations'] = 0;
-
-		// Add query complexity analysis (placeholder implementation).
-		$baseStats['query_complexity'] = [
-			'simple' => 0,
-			'medium' => 0,
-			'complex' => 0,
-		];
-		if ($baseStats['total_searches'] > 0) {
-			$baseStats['query_complexity'] = [
-				'simple' => round($baseStats['total_searches'] * 0.6),
-				'medium' => round($baseStats['total_searches'] * 0.3),
-				'complex' => round($baseStats['total_searches'] * 0.1),
-			];
-		}
-
-		// Add period information.
-		$days = null;
-		if ($from !== null && $to !== null) {
-			$days = $from->diff($to)->days + 1;
-		}
-
-		$baseStats['period'] = [
-			'from' => $from?->format('Y-m-d H:i:s'),
-			'to' => $to?->format('Y-m-d H:i:s'),
-			'days' => $days,
-		];
-
-		// Add daily averages if we have a time period.
-		if ($baseStats['period']['days'] !== null && $baseStats['period']['days'] > 0) {
-			$baseStats['daily_averages'] = [
-				'searches_per_day' => round($baseStats['total_searches'] / $baseStats['period']['days'], 2),
-				'results_per_day' => round($baseStats['total_results'] / $baseStats['period']['days'], 2),
-			];
-		}
-
-		return $baseStats;
+		return $this->statistics->withPeriodMetrics(stats: $stats, period: new SearchPeriod(from: $from, to: $to));
 	}//end getSearchStatistics()
 
 	/**
-	 * Get popular search terms with enhanced analytics
+	 * Popular search terms within a date range.
 	 *
-	 * @param int $limit Maximum number of terms to return
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param int          $limit Maximum number of terms to return
 	 *
 	 * @return array Popular search terms data
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function getPopularSearchTerms(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		$terms = $this->searchTrailMapper->getPopularSearchTerms(limit: $limit, from: $from, to: $to);
+	public function getPopularSearchTerms(SearchPeriod $period=new SearchPeriod(), int $limit=10): array {
+		$terms = $this->searchTrailMapper->getPopularSearchTerms(limit: $limit, from: $period->from, to: $period->to);
 
-		// Add enhanced analytics.
-		$totalSearches = array_sum(array_column($terms, 'count'));
-		$enhancedTerms = array_map(
-			function ($term) use ($totalSearches) {
-				$term['percentage'] = 0;
-				if ($totalSearches > 0) {
-					$term['percentage'] = round(($term['count'] / $totalSearches) * 100, 2);
-				}
-
-				$term['effectiveness'] = 'low';
-				if ($term['avg_results'] > 0) {
-					$term['effectiveness'] = 'high';
-				}
-
-				return $term;
-			},
-			$terms
-		);
-
-		return [
-			'terms' => $enhancedTerms,
-			'total_unique_terms' => count($enhancedTerms),
-			'total_searches' => $totalSearches,
-			'period' => [
-				'from' => $from?->format('Y-m-d H:i:s'),
-				'to' => $to?->format('Y-m-d H:i:s'),
-			],
-		];
+		return $this->statistics->termsReport(terms: $terms, period: $period);
 	}//end getPopularSearchTerms()
 
 	/**
-	 * Get search activity patterns by time period
+	 * Search activity over time within a date range.
 	 *
-	 * @param string $interval Time interval ('hour', 'day', 'week', 'month')
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param string       $interval Time interval ('hour', 'day', 'week', 'month')
 	 *
 	 * @return array Search activity data with insights
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function getSearchActivity(string $interval = 'day', ?DateTime $from = null, ?DateTime $to = null): array {
-		$activity = $this->searchTrailMapper->getSearchActivityByTime(interval: $interval, from: $from, to: $to);
-
-		// Calculate trends and insights.
-		$insights = $this->calculateActivityInsights(activity: $activity, _interval: $interval);
+	public function getSearchActivity(SearchPeriod $period=new SearchPeriod(), string $interval='day'): array {
+		$activity = $this->searchTrailMapper->getSearchActivityByTime(interval: $interval, from: $period->from, to: $period->to);
 
 		return [
 			'activity' => $activity,
-			'insights' => $insights,
+			'insights' => $this->activityInsights->insights(activity: $activity),
 			'interval' => $interval,
-			'period' => [
-				'from' => $from?->format('Y-m-d H:i:s'),
-				'to' => $to?->format('Y-m-d H:i:s'),
-			],
+			'period' => $this->statistics->period(from: $period->from, to: $period->to),
 		];
 	}//end getSearchActivity()
 
@@ -439,78 +334,31 @@ class SearchTrailService {
 	public function getRegisterSchemaStatistics(?DateTime $from = null, ?DateTime $to = null): array {
 		$stats = $this->searchTrailMapper->getSearchStatisticsByRegisterSchema(from: $from, to: $to);
 
-		$totalSearches = array_sum(array_column($stats, 'count'));
-		$enhancedStats = array_map(
-			function ($stat) use ($totalSearches) {
-				$stat['percentage'] = 0;
-				if ($totalSearches > 0) {
-					$stat['percentage'] = round(($stat['count'] / $totalSearches) * 100, 2);
-				}
-
-				$stat['performance_rating'] = $this->calculatePerformanceRating(stat: $stat);
-
-				return $stat;
-			},
-			$stats
-		);
-
-		// Sort by usage percentage.
-		usort(
-			$enhancedStats,
-			function ($a, $b) {
-				return $b['percentage'] <=> $a['percentage'];
-			}
-		);
-
-		return [
-			'statistics' => $enhancedStats,
-			'total_combinations' => count($enhancedStats),
-			'total_searches' => $totalSearches,
-			'period' => [
-				'from' => $from?->format('Y-m-d H:i:s'),
-				'to' => $to?->format('Y-m-d H:i:s'),
-			],
-		];
+		return $this->statistics->combinationsReport(stats: $stats, period: new SearchPeriod(from: $from, to: $to));
 	}//end getRegisterSchemaStatistics()
 
 	/**
-	 * Get user agent statistics with browser insights
+	 * User agent statistics within a date range.
 	 *
-	 * @param int $limit Maximum number of user agents to return
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param int          $limit Maximum number of user agents to return
 	 *
 	 * @return array User agent statistics data
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function getUserAgentStatistics(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		$stats = $this->searchTrailMapper->getUserAgentStatistics(limit: $limit, from: $from, to: $to);
+	public function getUserAgentStatistics(SearchPeriod $period=new SearchPeriod(), int $limit=10): array {
+		$stats = $this->searchTrailMapper->getUserAgentStatistics(limit: $limit, from: $period->from, to: $period->to);
+		$enhancedStats = $this->userAgentParser->withBrowserInfo(stats: $stats);
 
-		$enhancedStats = array_map(
-			function ($stat) {
-				$stat['browser_info'] = $this->parseUserAgent(userAgent: $stat['user_agent']);
-				return $stat;
-			},
-			$stats
-		);
-
-		// Aggregate by browser type.
-		$browserStats = $this->aggregateByBrowser(userAgentStats: $enhancedStats);
-
-		return [
-			'user_agents' => $enhancedStats,
-			'browser_distribution' => $browserStats,
-			'total_user_agents' => count($enhancedStats),
-			'period' => [
-				'from' => $from?->format('Y-m-d H:i:s'),
-				'to' => $to?->format('Y-m-d H:i:s'),
-			],
-		];
+		return $this->statistics->userAgentReport(userAgentStats: $enhancedStats, period: $period);
 	}//end getUserAgentStatistics()
 
 	/**
 	 * Clean up old search trail logs
+	 *
+	 * Note: clearLogs() only removes expired entries, ignoring the $before parameter.
+	 * This maintains consistency with the audit trail cleanup approach.
 	 *
 	 * @param DateTime|null $_before Delete entries older than this date (unused, kept for API compatibility)
 	 *
@@ -525,426 +373,102 @@ class SearchTrailService {
 	 *     cleanup_date?: string
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_before kept for API compatibility
-	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 	 */
 	public function cleanupSearchTrails(?DateTime $_before = null): array {
-		try {
-			// Note: clearLogs() only removes expired entries, ignoring the $before parameter
-			// This maintains consistency with the audit trail cleanup approach.
-			$deletedCount = $this->searchTrailMapper->clearLogs();
-
-			// ClearLogs returns boolean, not count.
-			$deletedValue = 0;
-			$message = 'No expired entries to delete';
-			if ($deletedCount === true) {
-				$deletedValue = 1;
-				$message = 'Successfully deleted expired search trail entries';
-			}
-
-			return [
-				'success' => true,
-				'deleted' => $deletedValue,
-				'cleanup_date' => (new DateTime())->format('Y-m-d H:i:s'),
-				'message' => $message,
-			];
-		} catch (Exception $e) {
-			return [
-				'success' => false,
-				'deleted' => 0,
-				'error' => $e->getMessage(),
-				'message' => 'Cleanup operation failed',
-			];
-		}//end try
+		return $this->clearExpiredLogs(
+			messages: [
+				'deleted' => 'Successfully deleted expired search trail entries',
+				'none' => 'No expired entries to delete',
+				'failed' => 'Cleanup operation failed',
+			]
+		);
 	}//end cleanupSearchTrails()
 
 	/**
-	 * Process configuration parameters for search trail operations
+	 * Self-clearing: clean up old search trails when enabled.
 	 *
-	 * @param array $config Raw configuration parameters
+	 * This prevents database growth but may impact performance on high-traffic systems.
 	 *
-	 * @return array Processed configuration
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple configuration parameter processing
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional configuration paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive configuration processing
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+	 * @return void
 	 */
-	private function processConfig(array $config): array {
-		// Set defaults.
-		$processed = [
-			'limit' => 20,
-			'offset' => null,
-			'page' => null,
-			'filters' => [],
-			'sort' => ['created' => 'DESC'],
-			'search' => null,
-			'from' => null,
-			'to' => null,
-		];
-
-		// Process pagination parameters.
-		if (($config['limit'] ?? null) !== null) {
-			$processed['limit'] = max(1, (int)$config['limit']);
-		} elseif (($config['_limit'] ?? null) !== null) {
-			$processed['limit'] = max(1, (int)$config['_limit']);
+	private function selfClearIfEnabled(): void {
+		if ($this->selfClearingEnabled === true) {
+			$this->clearExpiredSearchTrails();
 		}
-
-		if (($config['offset'] ?? null) !== null) {
-			$processed['offset'] = (int)$config['offset'];
-		} elseif (($config['_offset'] ?? null) !== null) {
-			$processed['offset'] = (int)$config['_offset'];
-		}
-
-		if (($config['page'] ?? null) !== null) {
-			$processed['page'] = max(1, (int)$config['page']);
-		} elseif (($config['_page'] ?? null) !== null) {
-			$processed['page'] = max(1, (int)$config['_page']);
-		}
-
-		// Calculate offset from page if provided.
-		if ($processed['page'] !== null && $processed['offset'] === null) {
-			$processed['offset'] = ($processed['page'] - 1) * $processed['limit'];
-		}
-
-		// Calculate page from offset if not provided.
-		if ($processed['page'] === null && $processed['offset'] !== null) {
-			$processed['page'] = floor($processed['offset'] / $processed['limit']) + 1;
-		}
-
-		// Default page.
-		$processed['page'] = $processed['page'] ?? 1;
-		$processed['offset'] = $processed['offset'] ?? 0;
-
-		// Process search parameter.
-		$processed['search'] = $config['search'] ?? $config['_search'] ?? null;
-
-		// Process sort parameters.
-		if (($config['sort'] ?? null) !== null || (($config['_sort'] ?? null) !== null) === true) {
-			$sortField = $config['sort'] ?? $config['_sort'] ?? 'created';
-			$sortOrder = $config['order'] ?? $config['_order'] ?? 'DESC';
-			$processed['sort'] = [$sortField => $sortOrder];
-		}
-
-		// Process date filters.
-		if (($config['from'] ?? null) !== null) {
-			try {
-				$processed['from'] = new DateTime($config['from']);
-			} catch (Exception $e) {
-				// Invalid date format, ignore.
-			}
-		}
-
-		if (($config['to'] ?? null) !== null) {
-			try {
-				$processed['to'] = new DateTime($config['to']);
-			} catch (Exception $e) {
-				// Invalid date format, ignore.
-			}
-		}
-
-		// Process filters (exclude system parameters and pagination).
-		$excludeKeys = [
-			'limit',
-			'_limit',
-			'offset',
-			'_offset',
-			'page',
-			'_page',
-			'search',
-			'_search',
-			'sort',
-			'_sort',
-			'order',
-			'_order',
-			'from',
-			'to',
-			'_route',
-			'id',
-		];
-
-		foreach ($config as $key => $value) {
-			// No string-or-integer guard: an array key is always one of those,
-			// so it could never reject a key.
-			if (in_array($key, $excludeKeys, true) === false && str_starts_with((string)$key, '_') === false) {
-				$processed['filters'][$key] = $value;
-			}
-		}
-
-		return $processed;
-	}//end processConfig()
+	}//end selfClearIfEnabled()
 
 	/**
-	 * Calculate activity insights from search activity data
+	 * Remove the expired search trails and report the outcome.
 	 *
-	 * @param array $activity Search activity data
-	 * @param string $_interval Time interval used (unused, kept for API compatibility)
+	 * The mapper's clearLogs() returns whether anything was deleted, not a count.
 	 *
-	 * @return array Activity insights
+	 * @param array{deleted: TMessage, none: TMessage, failed: TMessage} $messages Outcome messages
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_interval kept for API compatibility
+	 * @return (bool|int|string)[] Cleanup results
+	 *
+	 * @template TMessage of string
+	 *
+	 * @psalm-return array{success: bool, deleted: 0|1, error?: string, message: TMessage, cleanup_date?: string}
 	 */
-	private function calculateActivityInsights(array $activity, string $_interval): array {
-		if ($activity === []) {
-			return [
-				'peak_period' => null,
-				'low_period' => null,
-				'trend' => 'no_data',
-				'average_searches_per_period' => 0,
-			];
+	private function clearExpiredLogs(array $messages): array {
+		try {
+			$deleted = 0;
+			$message = $messages['none'];
+			if ($this->searchTrailMapper->clearLogs() === true) {
+				$deleted = 1;
+				$message = $messages['deleted'];
+			}
+
+			$cleanupDate = (new DateTime())->format('Y-m-d H:i:s');
+			return ['success' => true, 'deleted' => $deleted, 'cleanup_date' => $cleanupDate, 'message' => $message];
+		} catch (Exception $e) {
+			return ['success' => false, 'deleted' => 0, 'error' => $e->getMessage(), 'message' => $messages['failed']];
 		}
-
-		$counts = array_column($activity, 'count');
-		$maxCount = max($counts);
-		$minCount = min($counts);
-		$avgCount = array_sum($counts) / count($counts);
-
-		$peakIndex = array_search($maxCount, $counts);
-		$lowIndex = array_search($minCount, $counts);
-
-		// Calculate trend (simple linear regression).
-		$trend = $this->calculateTrend(counts: $counts);
-
-		return [
-			'peak_period' => $activity[$peakIndex]['period'] ?? null,
-			'peak_count' => $maxCount,
-			'low_period' => $activity[$lowIndex]['period'] ?? null,
-			'low_count' => $minCount,
-			'trend' => $trend,
-			'average_searches_per_period' => round($avgCount, 2),
-			'total_periods' => count($activity),
-		];
-	}//end calculateActivityInsights()
+	}//end clearExpiredLogs()
 
 	/**
-	 * Calculate trend direction from count data
+	 * Fetch one page of trails for processed query parameters.
 	 *
-	 * @param array $counts Array of count values
+	 * @param array $query Processed configuration
 	 *
-	 * @return string Trend direction ('increasing', 'decreasing', 'stable')
-	 *
-	 * @psalm-return 'decreasing'|'increasing'|'stable'
+	 * @return SearchTrail[]
 	 */
-	private function calculateTrend(array $counts): string {
-		if (count($counts) < 2) {
-			return 'stable';
-		}
-
-		$n = count($counts);
-		$sumX = array_sum(range(0, $n - 1));
-		$sumY = array_sum($counts);
-		$sumXY = 0;
-		$sumX2 = 0;
-
-		for ($i = 0; $i < $n; $i++) {
-			$sumXY += $i * $counts[$i];
-			$sumX2 += $i * $i;
-		}
-
-		$slope = ($n * $sumXY - $sumX * $sumY) / ($n * $sumX2 - $sumX * $sumX);
-
-		if ($slope > 0.1) {
-			return 'increasing';
-		}
-
-		if ($slope < -0.1) {
-			return 'decreasing';
-		}
-
-		return 'stable';
-	}//end calculateTrend()
+	private function findTrails(array $query): array {
+		return $this->searchTrailMapper->findAll(
+			criteria: $this->criteria(query: $query),
+			limit: $query['limit'],
+			offset: $query['offset'],
+			sort: $query['sort']
+		);
+	}//end findTrails()
 
 	/**
-	 * Calculate performance rating for register/schema statistics
+	 * The filters, search term and created window of processed query parameters.
 	 *
-	 * @param array $stat Statistics data
+	 * @param array $query Processed configuration
 	 *
-	 * @return string Performance rating ('excellent', 'good', 'average', 'poor')
+	 * @return SearchTrailCriteria
 	 */
-	private function calculatePerformanceRating(array $stat): string {
-		$avgResults = $stat['avg_results'];
-		$avgResponseTime = $stat['avg_response_time'];
-
-		// Rate based on results and response time.
-		if ($avgResults >= 10 && $avgResponseTime <= 100) {
-			return 'excellent';
-		}
-
-		if ($avgResults >= 5 && $avgResponseTime <= 200) {
-			return 'good';
-		}
-
-		if ($avgResults >= 1 && $avgResponseTime <= 500) {
-			return 'average';
-		}
-
-		return 'poor';
-	}//end calculatePerformanceRating()
+	private function criteria(array $query): SearchTrailCriteria {
+		return new SearchTrailCriteria(
+			filters: $query['filters'],
+			search: $query['search'],
+			from: $query['from'],
+			to: $query['to']
+		);
+	}//end criteria()
 
 	/**
-	 * Parse user agent string to extract browser information
+	 * Count all trails matching processed query parameters.
 	 *
-	 * @param string $userAgent User agent string
+	 * @param array $query Processed configuration
 	 *
-	 * @return string[]
-	 *
-	 * @psalm-return array{browser: string, version: string, full_string: string}
+	 * @return int
 	 */
-	private function parseUserAgent(string $userAgent): array {
-		// Simple user agent parsing (could be enhanced with a proper library).
-		$browsers = [
-			'Chrome' => '/Chrome\/([0-9.]+)/',
-			'Firefox' => '/Firefox\/([0-9.]+)/',
-			'Safari' => '/Safari\/([0-9.]+)/',
-			'Edge' => '/Edge\/([0-9.]+)/',
-			'Opera' => '/Opera\/([0-9.]+)/',
-		];
-
-		foreach ($browsers as $browser => $pattern) {
-			if (preg_match($pattern, $userAgent, $matches) === 1) {
-				return [
-					'browser' => $browser,
-					// Every pattern above has exactly one capturing group and we
-					// only get here when preg_match returned 1, so group 1 is set.
-					'version' => $matches[1],
-					'full_string' => $userAgent,
-				];
-			}
-		}
-
-		return [
-			'browser' => 'unknown',
-			'version' => 'unknown',
-			'full_string' => $userAgent,
-		];
-	}//end parseUserAgent()
-
-	/**
-	 * Aggregate user agent statistics by browser type
-	 *
-	 * @param array $userAgentStats User agent statistics
-	 *
-	 * @return ((int|string)|float|mixed)[][] Browser distribution statistics
-	 *
-	 * @psalm-return list<array{browser: array-key, count: 0|mixed, percentage: 0|float}>
-	 */
-	private function aggregateByBrowser(array $userAgentStats): array {
-		$browserCounts = [];
-
-		foreach ($userAgentStats as $stat) {
-			$browser = $stat['browser_info']['browser'];
-			if (isset($browserCounts[$browser]) === false) {
-				$browserCounts[$browser] = 0;
-			}
-
-			$browserCounts[$browser] += $stat['count'];
-		}
-
-		arsort($browserCounts);
-
-		$total = array_sum($browserCounts);
-		$distribution = [];
-
-		foreach ($browserCounts as $browser => $count) {
-			$percentage = 0;
-			if ($total > 0) {
-				$percentage = round(($count / $total) * 100, 2);
-			}
-
-			$distribution[] = [
-				'browser' => $browser,
-				'count' => $count,
-				'percentage' => $percentage,
-			];
-		}
-
-		return $distribution;
-	}//end aggregateByBrowser()
-
-	/**
-	 * Enrich search trails with register and schema names
-	 *
-	 * This method takes an array of SearchTrail entities and enriches them with
-	 * register and schema names by looking up the IDs in the respective tables.
-	 * Names are cached to avoid duplicate database calls.
-	 *
-	 * @param array $trails Array of SearchTrail entities
-	 *
-	 * @return array Array of enriched SearchTrail entities
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity lookups with exception handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional entity lookups and exception handling
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
-	 */
-	private function enrichTrailsWithNames(array $trails): array {
-		if ($trails === []) {
-			return $trails;
-		}
-
-		// Collect unique register and schema IDs.
-		$registerIds = [];
-		$schemaIds = [];
-
-		foreach ($trails as $trail) {
-			if ($trail->getRegister() !== null) {
-				$registerIds[] = $trail->getRegister();
-			}
-
-			if ($trail->getSchema() !== null) {
-				$schemaIds[] = $trail->getSchema();
-			}
-		}
-
-		// Remove duplicates.
-		$registerIds = array_unique($registerIds);
-		$schemaIds = array_unique($schemaIds);
-
-		// Fetch register names.
-		$registerNames = [];
-		foreach ($registerIds as $registerId) {
-			try {
-				$register = $this->registerMapper->find($registerId);
-				$registerNames[$registerId] = $register->getTitle();
-			} catch (DoesNotExistException $e) {
-				// Register not found, use fallback.
-				$registerNames[$registerId] = "Register $registerId";
-			} catch (Exception $e) {
-				// Other error, use fallback.
-				$registerNames[$registerId] = "Register $registerId";
-			}
-		}
-
-		// Fetch schema names.
-		$schemaNames = [];
-		foreach ($schemaIds as $schemaId) {
-			try {
-				$schema = $this->schemaMapper->find($schemaId);
-				$schemaNames[$schemaId] = $schema->getTitle();
-			} catch (DoesNotExistException $e) {
-				// Schema not found, use fallback.
-				$schemaNames[$schemaId] = "Schema $schemaId";
-			} catch (Exception $e) {
-				// Other error, use fallback.
-				$schemaNames[$schemaId] = "Schema $schemaId";
-			}
-		}
-
-		// Enrich the trails with names.
-		foreach ($trails as $trail) {
-			if ($trail->getRegister() !== null && (($registerNames[$trail->getRegister()] ?? null) !== null) === true) {
-				$trail->setRegisterName($registerNames[$trail->getRegister()]);
-			}
-
-			if ($trail->getSchema() !== null && (($schemaNames[$trail->getSchema()] ?? null) !== null) === true) {
-				$trail->setSchemaName($schemaNames[$trail->getSchema()]);
-			}
-		}
-
-		return $trails;
-	}//end enrichTrailsWithNames()
+	private function countTrails(array $query): int {
+		return $this->searchTrailMapper->count(criteria: $this->criteria(query: $query));
+	}//end countTrails()
 
 	/**
 	 * Calculate total number of pages

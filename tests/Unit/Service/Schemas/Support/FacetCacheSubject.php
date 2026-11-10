@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schemas\Support;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SchemaCacheClearers;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -65,7 +66,7 @@ class FacetCacheSubject {
 	 * @return array<string, mixed> The response.
 	 */
 	public function adminClear(): array {
-		$settings = new CacheSettingsHandler($this->factory, $this->mock(SchemaCacheHandler::class), $this->clearer);
+		$settings = new CacheSettingsHandler($this->factory, new SchemaCacheClearers($this->mock(SchemaCacheHandler::class), $this->clearer));
 		return $settings->clearCache(type: 'facet');
 	}//end adminClear()
 

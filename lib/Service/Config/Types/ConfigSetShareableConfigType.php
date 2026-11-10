@@ -37,30 +37,44 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Config\Types;
 
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\Config\ConfigurationRecords;
+use OCA\OpenRegister\Service\ConfigurationTransferInterface;
 use Throwable;
 use UnexpectedValueException;
 
 /**
  * Serialises and installs a whole configuration set through the engine.
  */
-class ConfigSetShareableConfigType implements IShareableConfigType {
+class ConfigSetShareableConfigType implements IShareableConfigType, ConfigSetShareableConfigTypeInterface {
+	/**
+	 * Loads the configuration set to share.
+	 *
+	 * @var ConfigurationMapperInterface
+	 */
+	private readonly ConfigurationMapperInterface $configurationMapper;
+
+	/**
+	 * Exports and imports the set.
+	 *
+	 * @var ConfigurationTransferInterface
+	 */
+	private readonly ConfigurationTransferInterface $configService;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationMapper $configurationMapper Loads the configuration set to share.
-	 * @param ConfigurationServiceInterface $configService Exports and imports the set.
-	 * @param BundleCrossingGuard $crossingGuard Judges the bundle's schemas for the caller.
+	 * @param ConfigurationRecords $records       The configuration mapper and the service that exports and imports a set.
+	 * @param BundleCrossingGuard  $crossingGuard Judges the bundle's schemas for the caller.
 	 */
 	public function __construct(
-		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationServiceInterface $configService,
+		ConfigurationRecords $records,
 		private readonly BundleCrossingGuard $crossingGuard,
 	) {
-
+		$this->configurationMapper = $records->configurationMapper;
+		$this->configService       = $records->configurationService;
 	}//end __construct()
 
 	/**

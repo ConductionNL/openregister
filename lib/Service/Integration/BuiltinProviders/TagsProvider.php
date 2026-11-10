@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
+use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 
@@ -134,6 +135,17 @@ class TagsProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-15
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->tagRowsOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The system tags assigned to an object, as leaf rows.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function tagRowsOf(string $objectId): array {
 		try {
 			$tagIds = $this->objectMapper->getTagIdsForObjects([$objectId], 'openregister');
 			$ids = $tagIds[$objectId] ?? [];
@@ -142,24 +154,29 @@ class TagsProvider extends AbstractIntegrationProvider {
 				return [];
 			}
 
-			$tags = $this->tagManager->getTagsByIds($ids);
-			$rows = [];
-			foreach ($tags as $tag) {
-				$rows[] = [
-					'id' => (string)$tag->getId(),
-					'name' => $tag->getName(),
-					'visibility' => $tag->isUserVisible(),
-					'assignable' => $tag->isUserAssignable(),
-				];
-			}
-
-			return $rows;
+			return array_values(array_map(self::tagRow(...), $this->tagManager->getTagsByIds($ids)));
 		} catch (\Throwable $e) {
 			// The object may simply have no tags or the mapping might
 			// not yet exist. Surface an empty list rather than 500.
 			return [];
 		}//end try
-	}//end list()
+	}//end tagRowsOf()
+
+	/**
+	 * One system tag as a leaf row.
+	 *
+	 * @param ISystemTag $tag The tag.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function tagRow(ISystemTag $tag): array {
+		return [
+			'id' => (string)$tag->getId(),
+			'name' => $tag->getName(),
+			'visibility' => $tag->isUserVisible(),
+			'assignable' => $tag->isUserAssignable(),
+		];
+	}//end tagRow()
 
 	/**
 	 * Mutation methods routed through the existing TagsController for

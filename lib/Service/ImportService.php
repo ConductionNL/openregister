@@ -34,15 +34,30 @@ use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
-use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Import\DryRunBatch;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
+use OCA\OpenRegister\Service\Import\ImportMapping;
+use OCA\OpenRegister\Service\Import\ImportOptions;
+use OCA\OpenRegister\Service\Import\ImportRequest;
+use OCA\OpenRegister\Service\Import\ImportScope;
+use OCA\OpenRegister\Service\Import\ImportServiceCodecs;
+use OCA\OpenRegister\Service\Import\ImportServiceRuntime;
+use OCA\OpenRegister\Service\Import\ImportServiceStores;
+use OCA\OpenRegister\Service\Import\ImportTarget;
 use OCA\OpenRegister\Service\Import\ImportValueCaster;
+use OCA\OpenRegister\Service\Import\JsonImportRows;
+use OCA\OpenRegister\Service\Import\MappedSheet;
+use OCA\OpenRegister\Service\Import\MappingErrorRow;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
@@ -88,20 +103,6 @@ use Symfony\Component\Uid\Uuid;
 class ImportService implements ObjectImporterInterface {
 
 	/**
-	 * Schema mapper instance
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Object service instance
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
 	 * Default chunk size for processing
 	 *
 	 * @var int
@@ -137,69 +138,36 @@ class ImportService implements ObjectImporterInterface {
 	private array $schemaPropertiesCache = [];
 
 	/**
-	 * Logger interface for logging operations
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Group manager for checking admin group membership
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Translation CSV codec for column projection on import/export.
-	 *
-	 * @var \OCA\OpenRegister\Service\Translation\TranslationCsvCodec
-	 */
-	private readonly \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec;
-
-	/**
 	 * Casts cell values by schema type.
 	 *
-	 * @var ImportValueCaster
+	 * @var ImportValueCaster|null
 	 */
-	private readonly ImportValueCaster $valueCaster;
+	private ?ImportValueCaster $valueCaster = null;
 
 	/**
 	 * Constructor for the ImportService
 	 *
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param ObjectOperationsInterface $objectService The object service
-	 * @param LoggerInterface $logger The logger interface
-	 * @param IGroupManager $groupManager The group manager
-	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
-	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
-	 * @param MappingEngine $mappingEngine Migration-pack mapping engine
-	 * @param ValidateObjectInterface $validateObjectHandler Schema validator, used for genuinely
-	 *                                              side-effect-free dry-run imports
-	 * @param ContainerInterface $container DI container for lazy IQueue resolution
+	 * @param ImportServiceStores  $stores       The schema lookup, object writer, audit trail and validator.
+	 * @param ImportServiceCodecs  $codecs       The translation codec and the mapping engine.
+	 * @param ImportServiceRuntime $runtime      The container, the push batch and the logger.
+	 * @param IGroupManager        $groupManager The group manager (the admin check).
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		ObjectOperationsInterface $objectService,
-		LoggerInterface $logger,
-		IGroupManager $groupManager,
-		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly MappingEngine $mappingEngine,
-		private readonly ValidateObjectInterface $validateObjectHandler,
-		private readonly ContainerInterface $container,
+		private readonly ImportServiceStores $stores,
+		private readonly ImportServiceCodecs $codecs,
+		private readonly ImportServiceRuntime $runtime,
+		private readonly IGroupManager $groupManager,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->objectService = $objectService;
-		$this->logger = $logger;
-		$this->groupManager = $groupManager;
-		$this->translationCsvCodec = $translationCsvCodec;
-
-		$this->valueCaster = new ImportValueCaster();
-
-		// Initialize cache arrays to prevent issues.
-		$this->schemaPropertiesCache = [];
 	}//end __construct()
+
+	/**
+	 * The value caster, built on first use.
+	 *
+	 * @return ImportValueCaster The caster
+	 */
+	private function valueCaster(): ImportValueCaster {
+		return $this->valueCaster ??= new ImportValueCaster();
+	}//end valueCaster()
 
 	/**
 	 * Soft-delete every object whose `create` audit row carries the
@@ -229,7 +197,7 @@ class ImportService implements ObjectImporterInterface {
 	 *       per-object outcomes)
 	 */
 	public function softDeleteByImportJobId(string $importJobId): array {
-		$auditRows = $this->auditTrailMapper->findByImportJobId(importJobId: $importJobId, action: 'create');
+		$auditRows = $this->stores->auditTrailMapper->findByImportJobId(importJobId: $importJobId, action: 'create');
 		$report = [
 			'importJobId' => $importJobId,
 			'candidates' => count($auditRows),
@@ -244,14 +212,14 @@ class ImportService implements ObjectImporterInterface {
 			}
 
 			try {
-				$this->objectService->deleteObject(uuid: $objectUuid);
+				$this->stores->objectService->deleteObject(uuid: $objectUuid);
 				$report['softDeleted'][] = $objectUuid;
 			} catch (\Throwable $e) {
 				$report['errors'][] = [
 					'uuid' => $objectUuid,
 					'error' => $e->getMessage(),
 				];
-				$this->logger->warning(
+				$this->runtime->logger->warning(
 					message: '[ImportService] Failed to soft-delete object during import rollback',
 					context: [
 						'importJobId' => $importJobId,
@@ -376,26 +344,62 @@ class ImportService implements ObjectImporterInterface {
 		?IUser $currentUser = null,
 		bool $enrich = true,
 	): array {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser);
+		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
+		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options);
+		return $this->importSpreadsheet(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end importFromExcel()
+
+	/**
+	 * Import a spreadsheet as requested; see {@see importFromExcel()}.
+	 *
+	 * @param ImportRequest $request       The file, scope and save options.
+	 * @param bool          $_rbac         Whether to enforce RBAC checks.
+	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
+	 *
+	 * @return array The summaries by sheet title, plus `importJobId`.
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function importSpreadsheet(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+		$import = $this->importSettings(request: $request) + ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+
+		return $this->asImportJob(run: fn (): array => $this->importExcelFile(filePath: $request->filePath, import: $import));
+	}//end importSpreadsheet()
+
+	/**
+	 * The stored register and schema, and the save and mapping settings of one import.
+	 *
+	 * Clears the caches, so every import starts from fresh schema data.
+	 *
+	 * @param ImportRequest $request The import request.
+	 *
+	 * @return array<string, mixed> The import settings, without the guard flags.
+	 *
+	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 */
+	private function importSettings(ImportRequest $request): array {
+		$register = StoredEntity::register(register: $request->scope->register);
+		$schema   = StoredEntity::schema(schema: $request->scope->schema);
 
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 
-		$import = [
+		return [
 			'register' => $register,
 			'schema' => $schema,
-			'validation' => $validation,
-			'events' => $events,
-			'_rbac' => $_rbac,
-			'_multitenancy' => $_multitenancy,
-			'publish' => $publish,
-			'currentUser' => $currentUser,
-			'enrich' => $enrich,
+			'validation' => $request->options->validation,
+			'events' => $request->options->events,
+			'publish' => $request->options->publish,
+			'currentUser' => $request->scope->currentUser,
+			'enrich' => $request->options->enrich,
+			'pack' => $request->mapping->pack,
+			'dryRun' => $request->mapping->dryRun,
+			'registerSlug' => $request->scope->registerSlug,
 		];
-
-		return $this->asImportJob(run: fn (): array => $this->importExcelFile(filePath: $filePath, import: $import));
-	}//end importFromExcel()
+	}//end importSettings()
 
 	/**
 	 * Import a spreadsheet, one schema per sheet when only a register is given.
@@ -442,14 +446,14 @@ class ImportService implements ObjectImporterInterface {
 		$importJobId = Uuid::v4()->toRfc4122();
 
 		try {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
+			$this->stores->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
 			$result = $run();
 			$result['importJobId'] = $importJobId;
 
 			return $result;
 		} finally {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
+			$this->stores->auditTrailMapper->setRequestImportJobId(importJobId: null);
 		}
 	}//end asImportJob()
 
@@ -508,33 +512,36 @@ class ImportService implements ObjectImporterInterface {
 		?array $pack = null,
 		bool $dryRun = false,
 	): array {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser);
+		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
+		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options, mapping: new ImportMapping(pack: $pack, dryRun: $dryRun));
+		return $this->importCsv(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end importFromCsv()
 
-		// Clear caches at the start of each import to prevent stale data issues.
-		$this->clearCaches();
+	/**
+	 * Import a CSV file as requested; see {@see importFromCsv()}.
+	 *
+	 * @param ImportRequest $request       The file, scope, save options and mapping.
+	 * @param bool          $_rbac         Whether to enforce RBAC checks.
+	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
+	 *
+	 * @return array The summary by sheet title, plus `importJobId`.
+	 *
+	 * @throws \InvalidArgumentException When no schema is given, or the register or schema is not a stored row.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function importCsv(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+		$import = $this->importSettings(request: $request) + ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
 
 		// CSV can only handle a single schema.
-		if ($schema === null) {
+		if ($import['schema'] === null) {
 			throw new InvalidArgumentException('CSV import requires a specific schema');
 		}
 
-		$import = [
-			'schema' => $schema,
-			'validation' => $validation,
-			'events' => $events,
-			'_rbac' => $_rbac,
-			'_multitenancy' => $_multitenancy,
-			'publish' => $publish,
-			'currentUser' => $currentUser,
-			'enrich' => $enrich,
-			'pack' => $pack,
-			'dryRun' => $dryRun,
-			'register' => $register,
-		];
-
-		return $this->asImportJob(run: fn (): array => $this->importCsvFile(filePath: $filePath, import: $import));
-	}//end importFromCsv()
+		return $this->asImportJob(run: fn (): array => $this->importCsvFile(filePath: $request->filePath, import: $import));
+	}//end importCsv()
 
 	/**
 	 * Import a CSV file into one schema.
@@ -553,7 +560,7 @@ class ImportService implements ObjectImporterInterface {
 		$reader->setEnclosure('"');
 		$sheet = $reader->load($filePath)->getActiveSheet();
 
-		$sheetSummary = $this->processCsvSheet(sheet: $sheet, register: $import['register'], import: $import);
+		$sheetSummary = $this->processCsvSheet(sheet: $sheet, import: $import);
 		$sheetSummary['schema'] = self::schemaSummary(schema: $import['schema']);
 
 		return [$sheet->getTitle() => $sheetSummary];
@@ -634,50 +641,83 @@ class ImportService implements ObjectImporterInterface {
 		bool $dryRun = false,
 		?string $registerSlug = null,
 	): array {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser, registerSlug: $registerSlug);
+		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
+		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options, mapping: new ImportMapping(pack: $pack, dryRun: $dryRun));
+		return $this->importJson(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end importFromJson()
 
-		// Clear caches at the start of each import to prevent stale data issues.
-		$this->clearCaches();
-		$startTime = microtime(true);
+	/**
+	 * Import a JSON document as requested; see {@see importFromJson()}.
+	 *
+	 * @param ImportRequest $request       The file, scope, save options and mapping.
+	 * @param bool          $_rbac         Whether to apply RBAC permissions.
+	 * @param bool          $_multitenancy Whether to apply multi-tenancy filtering.
+	 *
+	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
+	 *
+	 * @throws InvalidArgumentException  When no schema is given (and none is resolvable from a bundle) or the
+	 *                                   payload is not an array of objects
+	 * @throws RegisterNotFoundException When no register is given and the payload is not a creatable register-bundle
+	 *
+	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-auto-create-a-missing-register-from-a-bundle-req-imp-ac-01
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function importJson(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+		$job = $this->importSettings(request: $request) + ['startTime' => microtime(true), '_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+		$this->warnIfPublishing(publish: $job['publish']);
 
+		$decoded = $this->decodeJsonImportFile(filePath: $request->filePath);
+		$job     = $this->withJsonImportTarget(decoded: $decoded, job: $job);
+
+		return $this->runJsonImportJob(objects: $this->jsonImportObjects(decoded: $decoded), job: $job);
+	}//end importJson()
+
+	/**
+	 * The JSON import job with its register and schema settled.
+	 *
+	 * A null register could not be resolved by slug: a register bundle
+	 * auto-creates it with its schemas (REQ-IMP-AC-01/03), anything else
+	 * fails clearly, naming the missing slug (REQ-IMP-AC-02).
+	 *
+	 * @param array<mixed>         $decoded The decoded document.
+	 * @param array<string, mixed> $job     The import job.
+	 *
+	 * @return array<string, mixed> The job, with a register and a schema.
+	 *
+	 * @throws InvalidArgumentException  When no schema is given and none is resolvable from a bundle
+	 * @throws RegisterNotFoundException When no register is given and the payload is not a creatable register-bundle
+	 */
+	private function withJsonImportTarget(array $decoded, array $job): array {
+		if ($job['register'] === null) {
+			[$job['register'], $job['schema']] = $this->registerFromBundle(
+				decoded: $decoded,
+				target: ['schema' => $job['schema'], 'registerSlug' => $job['registerSlug']]
+			);
+		}
+
+		if ($job['schema'] === null) {
+			throw new InvalidArgumentException('JSON import requires a specific schema');
+		}
+
+		return $job;
+	}//end withJsonImportTarget()
+
+	/**
+	 * Log that the deprecated publish flag was set; it changes nothing.
+	 *
+	 * @param bool $publish The deprecated publish flag.
+	 *
+	 * @return void
+	 */
+	private function warnIfPublishing(bool $publish): void {
 		if ($publish === true) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
-
-		$decoded = $this->decodeJsonImportFile(filePath: $filePath);
-
-		// A null register could not be resolved by slug: a register bundle
-		// auto-creates it with its schemas (REQ-IMP-AC-01/03), anything else
-		// fails clearly, naming the missing slug (REQ-IMP-AC-02).
-		if ($register === null) {
-			[$register, $schema] = $this->registerFromBundle(
-				decoded: $decoded,
-				target: ['schema' => $schema, 'registerSlug' => $registerSlug]
-			);
-		}
-
-		if ($schema === null) {
-			throw new InvalidArgumentException('JSON import requires a specific schema');
-		}
-
-		return $this->runJsonImportJob(
-			objects: $this->jsonImportObjects(decoded: $decoded),
-			job: [
-				'register' => $register,
-				'schema' => $schema,
-				'_rbac' => $_rbac,
-				'_multitenancy' => $_multitenancy,
-				'currentUser' => $currentUser,
-				'pack' => $pack,
-				'dryRun' => $dryRun,
-				'startTime' => $startTime,
-			]
-		);
-	}//end importFromJson()
+	}//end warnIfPublishing()
 
 	/**
 	 * Run a JSON import as one import job, tagging its audit rows with the job id.
@@ -701,32 +741,36 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function importJsonObjects(array $objects, array $job): array {
 		$schema = $job['schema'];
-
-		// Phase 1: resolve every row to an (uuid, body) pair.
-		$resolution = $this->resolveJsonImportRows(
-			objects: $objects,
-			run: ['pack' => $job['pack'], 'propertyKeys' => array_flip(array_keys($schema->getProperties()))]
+		$rows = new JsonImportRows(
+			mappingEngine: $this->codecs->mappingEngine,
+			pack: $job['pack'],
+			propertyKeys: array_flip(array_keys($schema->getProperties()))
 		);
 
-		// Phase 2: a dry run validates every resolved row and saves nothing.
-		$summary = $resolution['summary'];
-		if ($job['dryRun'] === true) {
-			$summary = $this->buildDryRunSummary(
-				summary: $summary,
-				objects: array_column($resolution['rows'], 'body'),
-				schema: $schema,
-				startTime: $job['startTime']
-			);
-		}
-
-		if ($job['dryRun'] === false) {
-			$summary = $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $summary] + $job);
-		}
-
+		$summary = $this->applyJsonImportRows(resolution: $rows->resolve(objects: $objects), job: $job);
 		$summary['schema'] = self::schemaSummary(schema: $schema);
 
 		return $summary;
 	}//end importJsonObjects()
+
+	/**
+	 * Save resolved rows; a dry run validates them and saves nothing.
+	 *
+	 * @param array{rows: list<array<string, mixed>>, summary: array<string, mixed>} $resolution The resolved rows.
+	 * @param array<string, mixed>                                                   $job        The import job.
+	 *
+	 * @return array<string, mixed> The summary.
+	 */
+	private function applyJsonImportRows(array $resolution, array $job): array {
+		if ($job['dryRun'] === true) {
+			return $this->buildDryRunSummary(
+				summary: $resolution['summary'],
+				batch: new DryRunBatch(objects: array_column($resolution['rows'], 'body'), schema: $job['schema'], startTime: $job['startTime'])
+			);
+		}
+
+		return $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $resolution['summary']] + $job);
+	}//end applyJsonImportRows()
 
 	/**
 	 * Read and decode a JSON import file.
@@ -765,12 +809,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @throws RegisterNotFoundException When the document is not a register bundle
 	 */
 	private function registerFromBundle(array $decoded, array $target): array {
-		$isBundle = array_is_list($decoded) === false
-			&& isset($decoded['components']['registers']) === true
-			&& is_array($decoded['components']['registers']) === true
-			&& count($decoded['components']['registers']) > 0;
-
-		if ($isBundle === false) {
+		if ($this->isRegisterBundle(decoded: $decoded) === false) {
 			throw new RegisterNotFoundException(
 				registerSlugOrId: $target['registerSlug'] ?? 'unknown',
 				code: 404,
@@ -781,6 +820,21 @@ class ImportService implements ObjectImporterInterface {
 
 		return $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $target['schema']);
 	}//end registerFromBundle()
+
+	/**
+	 * Whether a decoded JSON document is a register bundle: an object (not a
+	 * list) carrying a non-empty `components.registers` array.
+	 *
+	 * @param array<mixed> $decoded The decoded document
+	 *
+	 * @return bool True when the document is a register bundle
+	 */
+	private function isRegisterBundle(array $decoded): bool {
+		$registers = ($decoded['components']['registers'] ?? null);
+		return array_is_list($decoded) === false
+			&& is_array($registers) === true
+			&& count($registers) > 0;
+	}//end isRegisterBundle()
 
 	/**
 	 * The object list of a JSON import document.
@@ -805,174 +859,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end jsonImportObjects()
 
 	/**
-	 * Resolve every JSON import row to an upsert uuid and a body, and start the summary.
-	 *
-	 * With a pack each object is mapped through it; a row with mapping errors is
-	 * reported and excluded, never partially mapped or saved. Without a pack the
-	 * body is the object reduced to the schema's own properties.
-	 *
-	 * @param array<mixed>         $objects The objects to import
-	 * @param array<string, mixed> $run     The pack (or null) and the schema property keys as a set
-	 *
-	 * @return array{rows: list<array<string, mixed>>, summary: array<string, mixed>} The rows and the summary so far
-	 */
-	private function resolveJsonImportRows(array $objects, array $run): array {
-		$summary = [
-			'found' => count($objects),
-			'created' => [],
-			'updated' => [],
-			'unchanged' => [],
-			'errors' => [],
-			// Non-fatal findings, such as a dropped undeclared property.
-			'warnings' => [],
-		];
-
-		$rows = [];
-		foreach ($objects as $rowIndex => $raw) {
-			if (is_array($raw) === false) {
-				continue;
-			}
-
-			// Keys are list indexes for a JSON array export; the cast guards an object-with-string-keys envelope.
-			$run['rowNumber'] = ((int)$rowIndex + 1);
-			$resolved = $this->resolveJsonImportRow(raw: $raw, run: $run);
-			array_push($summary['errors'], ...$resolved['errors']);
-			if ($resolved['warning'] !== null) {
-				$summary['warnings'][] = $resolved['warning'];
-			}
-
-			if ($resolved['row'] !== null) {
-				$rows[] = $resolved['row'];
-			}
-		}//end foreach
-
-		return ['rows' => $rows, 'summary' => $summary];
-	}//end resolveJsonImportRows()
-
-	/**
-	 * Resolve one JSON import row.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The pack, the schema property keys and the row number
-	 *
-	 * @return array{row: array<string, mixed>|null, errors: list<array<string, mixed>>, warning: string|null}
-	 *     The resolved row (null when skipped or refused), its errors and its warning
-	 */
-	private function resolveJsonImportRow(array $raw, array $run): array {
-		$pack = $run['pack'];
-		if ($pack === null) {
-			return $this->resolvePlainJsonImportRow(raw: $raw, run: $run);
-		}
-
-		$outcome = ['row' => null, 'errors' => [], 'warning' => null];
-		if ($this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $run['rowNumber']) === true) {
-			return $outcome;
-		}
-
-		$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $run['rowNumber']);
-		if (empty($mapped['errors']) === false) {
-			$outcome['errors'] = array_values(
-				array_map(fn (array $error): array => $this->formatMappingError(error: $error), $mapped['errors'])
-			);
-			return $outcome;
-		}
-
-		$body = $mapped['data'];
-		$uuid = $body['id'] ?? null;
-		unset($body['id']);
-		if ($uuid !== null) {
-			$uuid = (string)$uuid;
-		}
-
-		$outcome['row'] = ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)];
-		return $outcome;
-	}//end resolveJsonImportRow()
-
-	/**
-	 * Resolve one JSON import row without a pack.
-	 *
-	 * The upsert key is `@self.id`, then a top-level `id` or `uuid`. The body is
-	 * the object reduced to the schema's properties, with empty strings as null.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The schema property keys and the row number
-	 *
-	 * @return array{row: array<string, mixed>, errors: list<never>, warning: string|null}
-	 *     The resolved row and the dropped-property warning, if any
-	 */
-	private function resolvePlainJsonImportRow(array $raw, array $run): array {
-		$uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
-		if ($uuid !== null) {
-			$uuid = (string)$uuid;
-		}
-
-		$body = array_intersect_key($raw, $run['propertyKeys']);
-		foreach ($body as $key => $value) {
-			if ($value === '') {
-				$body[$key] = null;
-			}
-		}
-
-		return [
-			'row' => ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)],
-			'errors' => [],
-			'warning' => $this->droppedPropertiesWarning(raw: $raw, run: $run),
-		];
-	}//end resolvePlainJsonImportRow()
-
-	/**
-	 * The warning for properties a row carries that the schema does not declare.
-	 *
-	 * An import drops undeclared keys before the save, so the warning at the
-	 * database write never sees them. `@`/`_` keys, `id` and `uuid` are envelope
-	 * and metadata, never user data, so they are not reported.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The schema property keys and the row number
-	 *
-	 * @return string|null The warning, or null when nothing was dropped
-	 */
-	private function droppedPropertiesWarning(array $raw, array $run): ?string {
-		$dropped = [];
-		foreach (array_keys($raw) as $rawKey) {
-			$rawName = (string)$rawKey;
-			if (array_key_exists($rawName, $run['propertyKeys']) === false && $this->isUserDataKey(key: $rawName) === true) {
-				$dropped[] = $rawName;
-			}
-		}
-
-		if ($dropped === []) {
-			return null;
-		}
-
-		$plural = 'ies';
-		if (count($dropped) === 1) {
-			$plural = 'y';
-		}
-
-		return sprintf(
-			'Row %d: dropped %d propert%s the schema does not declare: %s.',
-			$run['rowNumber'],
-			count($dropped),
-			$plural,
-			implode(', ', $dropped)
-		);
-	}//end droppedPropertiesWarning()
-
-	/**
-	 * Whether an object key holds user data rather than envelope or metadata.
-	 *
-	 * `@`/`_` keys, `id` and `uuid` are envelope and metadata.
-	 *
-	 * @param string $key The object key
-	 *
-	 * @return bool True for a user data key
-	 */
-	private function isUserDataKey(string $key): bool {
-		return $key !== '' && $key !== 'id' && $key !== 'uuid' && $key[0] !== '@' && $key[0] !== '_';
-	}//end isUserDataKey()
-
-	/**
 	 * Save every resolved JSON import row and record the outcome in the summary.
 	 *
 	 * Rows go through the single-object saveObject() path the REST create/update
@@ -988,33 +874,39 @@ class ImportService implements ObjectImporterInterface {
 		$summary = $target['summary'];
 		foreach ($rows as $row) {
 			try {
-				$saved = $this->objectService->saveObject(
-					object: $row['body'],
-					register: $target['register'],
-					schema: $target['schema'],
-					uuid: $row['uuid'],
-					_rbac: $target['_rbac'],
-					_multitenancy: $target['_multitenancy'],
-					currentUser: $target['currentUser']
-				);
-
 				$outcome = 'created';
 				if ($row['uuid'] !== null) {
 					$outcome = 'updated';
 				}
 
-				$summary[$outcome][] = $saved->getUuid();
+				$summary[$outcome][] = $this->saveJsonImportRow(row: $row, target: $target)->getUuid();
 			} catch (\Throwable $e) {
-				$summary['errors'][] = [
-					'object' => $row['name'],
-					'error' => $e->getMessage(),
-					'type' => get_class($e),
-				];
-			}//end try
-		}//end foreach
+				$summary['errors'][] = ['object' => $row['name'], 'error' => $e->getMessage(), 'type' => get_class($e)];
+			}
+		}
 
 		return $summary;
 	}//end saveJsonImportRows()
+
+	/**
+	 * Save one resolved row.
+	 *
+	 * @param array<string, mixed> $row    The row.
+	 * @param array<string, mixed> $target The register, schema and access flags of the import.
+	 *
+	 * @return ObjectEntity The saved object.
+	 */
+	private function saveJsonImportRow(array $row, array $target): ObjectEntity {
+		return $this->stores->objectService->saveObject(
+			object: $row['body'],
+			register: $target['register'],
+			schema: $target['schema'],
+			uuid: $row['uuid'],
+			_rbac: $target['_rbac'],
+			_multitenancy: $target['_multitenancy'],
+			currentUser: $target['currentUser']
+		);
+	}//end saveJsonImportRow()
 
 	/**
 	 * Resolve or auto-create a register (and its schemas) from a register-bundle
@@ -1048,7 +940,7 @@ class ImportService implements ObjectImporterInterface {
 	private function autoCreateRegisterFromBundle(array $bundle, ?Schema $schemaHint): array {
 		// Lazily resolved via the container to avoid a circular dependency,
 		// mirroring ConfigurationService::getImportHandler().
-		$importHandler = $this->container->get(ConfigurationImportHandler::class);
+		$importHandler = $this->runtime->container->get(ConfigurationImportHandler::class);
 		assert($importHandler instanceof ConfigurationImportHandler);
 
 		$registersData = $bundle['components']['registers'];
@@ -1060,36 +952,62 @@ class ImportService implements ObjectImporterInterface {
 		$registerKey = array_key_first($registersData);
 		$registerData = $registersData[$registerKey];
 
-		$slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
+		$slugsAndIdsMap = $this->stores->schemaMapper->getSlugToIdMap();
 
+		$createdSchemas = $this->importBundleSchemas(
+			importHandler: $importHandler,
+			schemas: ['data' => $schemasData, 'slugsAndIds' => $slugsAndIdsMap]
+		);
+
+		$register = $importHandler->importRegister(data: $registerData);
+
+		return [$register, ($schemaHint ?? self::onlyBundleSchema(createdSchemas: $createdSchemas))];
+	}//end autoCreateRegisterFromBundle()
+
+	/**
+	 * Create the schemas of a register bundle; an untitled schema takes its key as title.
+	 *
+	 * @param ConfigurationImportHandler $importHandler The configuration import handler.
+	 * @param array                      $schemas       `data`: the bundle's schemas, `slugsAndIds`: the known slugs.
+	 *
+	 * @return array<string, Schema> The created schemas, by slug.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importBundleSchemas(ConfigurationImportHandler $importHandler, array $schemas): array {
 		$createdSchemas = [];
-		foreach ($schemasData as $schemaKey => $schemaData) {
+		foreach ($schemas['data'] as $schemaKey => $schemaData) {
 			if (isset($schemaData['title']) === false && is_string($schemaKey) === true) {
 				$schemaData['title'] = $schemaKey;
 			}
 
-			$createdSchema = $importHandler->importSchema(
-				data: $schemaData,
-				slugsAndIdsMap: $slugsAndIdsMap
-			);
+			$createdSchema = $importHandler->importSchema(data: $schemaData, slugsAndIdsMap: $schemas['slugsAndIds']);
 			$createdSchemas[$createdSchema->getSlug()] = $createdSchema;
-		}//end foreach
-
-		$register = $importHandler->importRegister(data: $registerData);
-
-		$schema = $schemaHint;
-		if ($schema === null && count($createdSchemas) === 1) {
-			$schema = array_values($createdSchemas)[0];
 		}
 
-		if ($schema === null && count($createdSchemas) !== 1) {
-			$msg = 'Register bundle import requires exactly one schema when no schema is ';
-			$msg .= 'explicitly specified; found ' . count($createdSchemas) . ' in the bundle.';
-			throw new InvalidArgumentException($msg);
+		return $createdSchemas;
+	}//end importBundleSchemas()
+
+	/**
+	 * The one schema of a bundle, for an import that names none.
+	 *
+	 * @param array<string, Schema> $createdSchemas The bundle's schemas.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws InvalidArgumentException When the bundle has not exactly one schema.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function onlyBundleSchema(array $createdSchemas): Schema {
+		if (count($createdSchemas) === 1) {
+			return array_values($createdSchemas)[0];
 		}
 
-		return [$register, $schema];
-	}//end autoCreateRegisterFromBundle()
+		$msg = 'Register bundle import requires exactly one schema when no schema is ';
+		$msg .= 'explicitly specified; found ' . count($createdSchemas) . ' in the bundle.';
+		throw new InvalidArgumentException($msg);
+	}//end onlyBundleSchema()
 
 	/**
 	 * Process spreadsheet with multiple schemas using batch saving for better performance
@@ -1217,20 +1135,18 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
-	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
 	private function flushNotifyPushBatch(): void {
-		if (NotifyPushListener::hasBatchedCollections() === false) {
+		if ($this->runtime->pushBatch->hasBatchedCollections() === false) {
 			return;
 		}
 
 		try {
-			$queue = $this->container->get('OCA\NotifyPush\Queue\IQueue');
+			$queue = $this->runtime->container->get('OCA\NotifyPush\Queue\IQueue');
 		} catch (\Throwable $e) {
 			// Notify_push unavailable — soft-fail with a single DEBUG log.
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				message: '[ImportService] notify_push IQueue not available; skipping batch flush',
 				context: [
 					'file' => __FILE__,
@@ -1241,7 +1157,7 @@ class ImportService implements ObjectImporterInterface {
 			return;
 		}
 
-		NotifyPushListener::flushBatch(queue: $queue);
+		$this->runtime->pushBatch->flushBatch(queue: $queue);
 
 	}//end flushNotifyPushBatch()
 
@@ -1256,23 +1172,20 @@ class ImportService implements ObjectImporterInterface {
 	 * event-driven accumulation when events ARE enabled. Soft-fails on any
 	 * slug-resolution error (a missed hint must never break the import).
 	 *
-	 * @param Register $register The register the import saved into.
-	 * @param Schema $schema The schema the import saved into.
+	 * @param RegisterSchema $table The register and schema the import saved into.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
-	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
-	private function queueNotifyPushCollectionHint(Register $register, Schema $schema): void {
+	private function queueNotifyPushCollectionHint(RegisterSchema $table): void {
 		try {
-			$registerSlug = (string)($register->getSlug() ?? '');
-			$schemaSlug = (string)($schema->getSlug() ?? '');
-			NotifyPushListener::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+			$registerSlug = (string)($table->register->getSlug() ?? '');
+			$schemaSlug = (string)($table->schema->getSlug() ?? '');
+			$this->runtime->pushBatch->addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
 		} catch (\Throwable $e) {
 			// Slug not resolvable — skip the hint, never break the import.
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				message: '[ImportService] Could not queue notify_push collection hint',
 				context: [
 					'file' => __FILE__,
@@ -1306,15 +1219,18 @@ class ImportService implements ObjectImporterInterface {
 			'errors' => [],
 		];
 
-		$columnMapping = $this->buildColumnMapping(sheet: $sheet);
-		$sheetError = $this->spreadsheetSheetError(sheet: $sheet, columnMapping: $columnMapping);
+		$mapped = new MappedSheet(sheet: $sheet, columnMapping: $this->buildColumnMapping(sheet: $sheet));
+		$sheetError = $this->spreadsheetSheetError(sheet: $sheet, columnMapping: $mapped->columnMapping);
 		if ($sheetError !== null) {
 			$summary['errors'][] = ['sheet' => $sheet->getTitle(), 'row' => 1, 'object' => [], 'error' => $sheetError];
 			return $summary;
 		}
 
 		// Row errors are not suppressed: they bubble up.
-		$allObjects = $this->spreadsheetRowObjects(sheet: $sheet, import: $import + ['columnMapping' => $columnMapping]);
+		$allObjects = $this->spreadsheetRowObjects(
+			sheet: $mapped,
+			target: new ImportTarget(register: $import['register'], schema: $import['schema'], currentUser: $import['currentUser'])
+		);
 		$summary['found'] = count($allObjects);
 
 		if (empty($allObjects) === false && $import['register'] !== null && $import['schema'] !== null) {
@@ -1350,26 +1266,21 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Parse every non-empty data row of a sheet into an object.
 	 *
-	 * @param Worksheet $sheet  The sheet
-	 * @param array     $import The register, schema, currentUser and the sheet's columnMapping
+	 * @param MappedSheet  $sheet  The sheet and its column mapping
+	 * @param ImportTarget $target The register, schema and importing user
 	 *
 	 * @return list<array> The parsed objects
 	 */
-	private function spreadsheetRowObjects(Worksheet $sheet, array $import): array {
+	private function spreadsheetRowObjects(MappedSheet $sheet, ImportTarget $target): array {
 		$objects = [];
-		$highestRow = $sheet->getHighestRow();
+		$highestRow = $sheet->sheet->getHighestRow();
 		for ($row = 2; $row <= $highestRow; $row++) {
-			$rowData = $this->extractRowData(sheet: $sheet, columnMapping: $import['columnMapping'], row: $row);
+			$rowData = $this->extractRowData(sheet: $sheet, row: $row);
 			if (empty($rowData) === true) {
 				continue;
 			}
 
-			$object = $this->transformExcelRowToObject(
-				rowData: $rowData,
-				register: $import['register'],
-				schema: $import['schema'],
-				currentUser: $import['currentUser']
-			);
+			$object = $this->transformExcelRowToObject(rowData: $rowData, target: $target);
 			if ($object !== null) {
 				$objects[] = $object;
 			}
@@ -1381,20 +1292,24 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Process CSV sheet and import all objects in batches
 	 *
-	 * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet    The worksheet to process
-	 * @param Register                                      $register The register to associate with imported objects
-	 * @param array                                         $import   The schema, save flags (validation,
-	 *                                                              events, _rbac, _multitenancy, enrich), the
-	 *                                                              deprecated no-op publish, currentUser, the
-	 *                                                              optional migration pack and dryRun
+	 * @param Worksheet $sheet  The worksheet to process
+	 * @param array     $import The register, schema, save flags (validation,
+	 *                          events, _rbac, _multitenancy, enrich), the
+	 *                          deprecated no-op publish, currentUser, the
+	 *                          optional migration pack and dryRun
 	 *
 	 * @return array CSV sheet processing results
+	 *
+	 * @throws InvalidArgumentException When no register is given
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
-	private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, array $import): array {
-		$import['register'] = $register;
+	private function processCsvSheet(Worksheet $sheet, array $import): array {
+		if (($import['register'] instanceof Register) === false) {
+			throw new InvalidArgumentException('CSV import requires a register');
+		}
+
 		$summary = [
 			'found' => 0,
 			'created' => [],
@@ -1404,19 +1319,18 @@ class ImportService implements ObjectImporterInterface {
 		];
 		$startTime = microtime(true);
 
-		$columnMapping = $this->buildColumnMapping(sheet: $sheet);
-		if (empty($columnMapping) === true) {
+		$mapped = new MappedSheet(sheet: $sheet, columnMapping: $this->buildColumnMapping(sheet: $sheet));
+		if (empty($mapped->columnMapping) === true) {
 			$summary['errors'][] = ['row' => 1, 'object' => [], 'error' => 'No valid headers found in CSV file'];
 			return $summary;
 		}
 
-		$highestRow = $sheet->getHighestRow();
-		if ($highestRow <= 1) {
+		if ($sheet->getHighestRow() <= 1) {
 			$summary['errors'][] = ['row' => 1, 'object' => [], 'error' => 'No data rows found in CSV file'];
 			return $summary;
 		}
 
-		$parsed = $this->parseCsvRows(sheet: $sheet, parse: $import + ['columnMapping' => $columnMapping, 'highestRow' => $highestRow]);
+		$parsed = $this->parseCsvRows(sheet: $mapped, parse: $import);
 		$summary['errors'] = $parsed['errors'];
 		$summary['found'] = count($parsed['objects']);
 
@@ -1425,7 +1339,10 @@ class ImportService implements ObjectImporterInterface {
 		// ValidateObject::validateObject() only issues read-only lookups, and no
 		// save is called on this path.
 		if ($import['dryRun'] === true) {
-			return $this->buildDryRunSummary(summary: $summary, objects: $parsed['objects'], schema: $import['schema'], startTime: $startTime);
+			return $this->buildDryRunSummary(
+				summary: $summary,
+				batch: new DryRunBatch(objects: $parsed['objects'], schema: $import['schema'], startTime: $startTime)
+			);
 		}
 
 		if (empty($parsed['objects']) === false) {
@@ -1443,49 +1360,74 @@ class ImportService implements ObjectImporterInterface {
 	 * (missing required source, or an unresolved lookup/reference) is reported and
 	 * excluded, never partially mapped.
 	 *
-	 * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet The worksheet to parse
-	 * @param array                                         $parse The import options with the column mapping and highest row
+	 * @param MappedSheet $sheet The worksheet to parse, with its column mapping
+	 * @param array       $parse The import options
 	 *
 	 * @return array{objects: list<array>, errors: list<array>} The objects and the mapping errors
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
-	private function parseCsvRows(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $parse): array {
+	private function parseCsvRows(MappedSheet $sheet, array $parse): array {
 		$parsed = ['objects' => [], 'errors' => []];
-		$pack = $parse['pack'];
-		for ($row = 2; $row <= $parse['highestRow']; $row++) {
-			if ($pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $row) === true) {
+		$table = new RegisterSchema(register: $parse['register'], schema: $parse['schema']);
+		$highestRow = $sheet->sheet->getHighestRow();
+		for ($row = 2; $row <= $highestRow; $row++) {
+			if ($this->isMappedOut(pack: $parse['pack'], row: $row) === true) {
 				continue;
 			}
 
-			$rowData = $this->extractRowData(sheet: $sheet, columnMapping: $parse['columnMapping'], row: $row);
-			if (empty($rowData) === true) {
-				continue;
+			$rowData = $this->extractRowData(sheet: $sheet, row: $row);
+			if (empty($rowData) === false) {
+				$this->parseCsvRow(parsed: $parsed, line: ['parse' => $parse, 'table' => $table, 'row' => $row, 'data' => $rowData]);
 			}
-
-			if ($pack !== null) {
-				$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $rowData, rowNumber: $row);
-				if (empty($mapped['errors']) === false) {
-					foreach ($mapped['errors'] as $mappingError) {
-						$parsed['errors'][] = $this->formatMappingError(error: $mappingError);
-					}
-
-					continue;
-				}
-
-				$rowData = $mapped['data'];
-			}
-
-			$parsed['objects'][] = $this->transformCsvRowToObject(
-				rowData: $rowData,
-				register: $parse['register'],
-				schema: $parse['schema'],
-				currentUser: $parse['currentUser']
-			);
-		}//end for
+		}
 
 		return $parsed;
 	}//end parseCsvRows()
+
+	/**
+	 * Whether a mapping pack skips a row.
+	 *
+	 * @param array|null $pack The mapping pack, if any.
+	 * @param int        $row  The row number.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function isMappedOut(?array $pack, int $row): bool {
+		return $pack !== null && $this->codecs->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $row) === true;
+	}//end isMappedOut()
+
+	/**
+	 * Add one row to the parse result: its mapping errors, or its object.
+	 *
+	 * @param array $parsed The parse result, changed in place.
+	 * @param array $line   `parse`: the parse settings, `table`: the register and schema, `row`: the row number, `data`: the row data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function parseCsvRow(array &$parsed, array $line): void {
+		$rowData = $line['data'];
+		$parse = $line['parse'];
+		if ($parse['pack'] !== null) {
+			$mapped = $this->codecs->mappingEngine->mapRow(pack: $parse['pack'], sourceRow: $rowData, rowNumber: $line['row']);
+			if (empty($mapped['errors']) === false) {
+				foreach ($mapped['errors'] as $mappingError) {
+					$parsed['errors'][] = (new MappingErrorRow())->format(error: $mappingError);
+				}
+
+				return;
+			}
+
+			$rowData = $mapped['data'];
+		}
+
+		$target = new RowImportTarget(table: $line['table'], importer: $parse['currentUser']);
+		$parsed['objects'][] = $this->transformCsvRow(rowData: $rowData, target: $target);
+	}//end parseCsvRow()
 
 	/**
 	 * Save the parsed CSV objects in one bulk save and fill the summary from its result.
@@ -1502,7 +1444,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function saveCsvObjects(array $objects, array $import): array {
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[ImportService] CSV import processing objects',
 			context: [
 				'file' => __FILE__,
@@ -1526,12 +1468,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @return array The summary with created, updated, unchanged and validation errors
 	 */
 	private function saveImportedObjects(array $objects, array $import): array {
-		if ($import['publish'] === true) {
-			$this->logger->warning(
-				message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
+		$this->warnIfPublishing(publish: $import['publish']);
 
 		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
 		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
@@ -1577,15 +1514,13 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return array The saveObjects() result: saved, updated, unchanged and invalid
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener::setBatchMode is an NC idiom static call
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function bulkSaveWithNotifyPush(array $objects, array $import): array {
-		NotifyPushListener::setBatchMode(true);
+		$this->runtime->pushBatch->setBatchMode(true);
 		$saveResult = null;
 		try {
-			$saveResult = $this->objectService->saveObjects(
+			$saveResult = $this->stores->objectService->saveObjects(
 				objects: $objects,
 				register: $import['register'],
 				schema: $import['schema'],
@@ -1601,12 +1536,12 @@ class ImportService implements ObjectImporterInterface {
 				|| empty($saveResult['saved'] ?? []) === false
 				|| empty($saveResult['updated'] ?? []) === false;
 			if ($collectionChanged === true) {
-				$this->queueNotifyPushCollectionHint(register: $import['register'], schema: $import['schema']);
+				$this->queueNotifyPushCollectionHint(table: new RegisterSchema(register: $import['register'], schema: $import['schema']));
 			}
 
 			// Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
 			$this->flushNotifyPushBatch();
-			NotifyPushListener::setBatchMode(false);
+			$this->runtime->pushBatch->setBatchMode(false);
 		}//end try
 
 		return $saveResult;
@@ -1625,20 +1560,52 @@ class ImportService implements ObjectImporterInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function withSaveOutcome(array $summary, array $saveResult): array {
-		$idOf = fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null;
-		$summary['created'] = array_map($idOf, $saveResult['saved'] ?? []);
-		$summary['updated'] = array_map($idOf, $saveResult['updated'] ?? []);
-		$summary['unchanged'] = array_map($idOf, $saveResult['unchanged'] ?? []);
+		$summary['created'] = $this->savedObjectIds(objects: ($saveResult['saved'] ?? []));
+		$summary['updated'] = $this->savedObjectIds(objects: ($saveResult['updated'] ?? []));
+		$summary['unchanged'] = $this->savedObjectIds(objects: ($saveResult['unchanged'] ?? []));
 
-		$unchangedCount = count($summary['unchanged']);
-		$totalProcessed = count($summary['created']) + count($summary['updated']) + $unchangedCount;
-		if ($totalProcessed > 0 && $unchangedCount > 0) {
-			$efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
-			$summary['deduplication_efficiency'] = $efficiency . '% operations avoided';
+		$efficiency = $this->deduplicationEfficiency(summary: $summary);
+		if ($efficiency !== null) {
+			$summary['deduplication_efficiency'] = $efficiency;
 		}
 
 		return $summary;
 	}//end withSaveOutcome()
+
+	/**
+	 * The ids of saved objects: @self.id, else uuid, else id, else null.
+	 *
+	 * @param array $objects The ObjectEntity->jsonSerialize() arrays of a bulk save result
+	 *
+	 * @return array The ids, keyed like the objects
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function savedObjectIds(array $objects): array {
+		return array_map(
+			static fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+			$objects
+		);
+	}//end savedObjectIds()
+
+	/**
+	 * The share of processed objects a bulk save left unchanged, when any were.
+	 *
+	 * @param array $summary The import summary with the created, updated and unchanged ids
+	 *
+	 * @return string|null The efficiency, e.g. "33.3% operations avoided", or null when nothing was unchanged
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deduplicationEfficiency(array $summary): ?string {
+		$unchangedCount = count($summary['unchanged']);
+		if ($unchangedCount === 0) {
+			return null;
+		}
+
+		$totalProcessed = count($summary['created']) + count($summary['updated']) + $unchangedCount;
+		return round(($unchangedCount / $totalProcessed) * 100, 1) . '% operations avoided';
+	}//end deduplicationEfficiency()
 
 	/**
 	 * Timing and speed metrics for an import, like SaveObjects reports.
@@ -1669,34 +1636,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end importPerformance()
 
 	/**
-	 * Format one MappingEngine row error into the shape `serializeErrorsToCsv()`
-	 * and the controller's `summary['errors']` contract already expect
-	 * (`row`/`field`/`error`/`type`), so migration-pack mapping failures show
-	 * up in the same per-row error report as any other import error —
-	 * clearly labeled with the source column and transform that failed.
-	 *
-	 * @param array{row: int, source: string, target: ?string, transform: ?string, message: string} $error One MappingEngine error entry.
-	 *
-	 * @return array{row: int, field: string, error: string, type: string, original_value: string}
-	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
-	 */
-	private function formatMappingError(array $error): array {
-		$label = 'source column "' . $error['source'] . '"';
-		if ($error['transform'] !== null) {
-			$label .= ' (transform: ' . $error['transform'] . ')';
-		}
-
-		return [
-			'row' => $error['row'],
-			'field' => $error['target'] ?? $error['source'],
-			'error' => '[migration-pack] ' . $error['message'] . ' — ' . $label,
-			'type' => 'MigrationPackMappingError',
-			'original_value' => $error['source'],
-		];
-	}//end formatMappingError()
-
-	/**
 	 * Build a dry-run summary: every mapped row is validated against the
 	 * target schema via `ValidateObject::validateObject()` (read-only —
 	 * schema resolution + uniqueness SELECTs, no writes) and NOTHING is
@@ -1705,22 +1644,20 @@ class ImportService implements ObjectImporterInterface {
 	 * migration quoting needs.
 	 *
 	 * @param array<string, mixed> $summary The summary accumulated so far (found/errors/etc).
-	 * @param array<int, array> $objects The mapped+type-coerced objects that would be saved.
-	 * @param Schema $schema The target schema to validate against.
-	 * @param float $startTime `microtime(true)` at the start of processing, for performance metrics.
+	 * @param DryRunBatch          $batch   The objects that would be saved, their schema and the start time.
 	 *
 	 * @return array<string, mixed> The dry-run summary.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#dry-run
 	 */
-	private function buildDryRunSummary(array $summary, array $objects, Schema $schema, float $startTime): array {
+	private function buildDryRunSummary(array $summary, DryRunBatch $batch): array {
 		$summary['dryRun'] = true;
 		$summary['rows'] = [];
 		$summary['validRows'] = 0;
 		$summary['invalidRows'] = 0;
 
-		foreach ($objects as $index => $object) {
-			$result = $this->validateObjectHandler->validateObject(object: $object, schema: $schema);
+		foreach ($batch->objects as $index => $object) {
+			$result = $this->stores->validator->validateObject(object: $object, schema: $batch->schema);
 			$isValid = $result->isValid();
 
 			if ($isValid === true) {
@@ -1731,7 +1668,7 @@ class ImportService implements ObjectImporterInterface {
 
 			$rowErrors = [];
 			if ($isValid === false) {
-				$rowErrors = [$this->validateObjectHandler->generateErrorMessage(result: $result)];
+				$rowErrors = [$this->stores->validator->generateErrorMessage(result: $result)];
 			}
 
 			$summary['rows'][] = [
@@ -1742,11 +1679,11 @@ class ImportService implements ObjectImporterInterface {
 			];
 		}//end foreach
 
-		$totalTime = microtime(true) - $startTime;
+		$totalTime = microtime(true) - $batch->startTime;
 		$summary['performance'] = [
 			'totalTime' => round($totalTime, 3),
 			'totalTimeMs' => round($totalTime * 1000, 2),
-			'totalProcessed' => count($objects),
+			'totalProcessed' => count($batch->objects),
 			'totalFound' => $summary['found'],
 		];
 
@@ -1754,53 +1691,45 @@ class ImportService implements ObjectImporterInterface {
 	}//end buildDryRunSummary()
 
 	/**
-	 * Transform CSV row data to object format for batch saving
-	 *
-	 * @param array $rowData Row data from CSV
-	 * @param Register $register The register
-	 * @param Schema $schema The schema
-	 * @param IUser|null $currentUser The current user performing the import
-	 *
-	 * @return ((int|mixed|string)[]|mixed)[]
-	 *
-	 * @psalm-return array{'@self': array<string, int|mixed|string>,...}
+	 * Transform a CSV row to object format for batch saving, for one register and schema.
 	 *
 	 * Public because the previewed import maps its rows through this exact
 	 * method. A preview produced by a second transform would be a preview of
 	 * something other than what the write does, which is the failure D-1
 	 * exists to prevent.
 	 *
+	 * @param array           $rowData Row data from CSV
+	 * @param RowImportTarget $target  The register and schema, and the importing user
+	 *
+	 * @return array<string, mixed> The object, with its `@self` section
+	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function transformCsvRowToObject(
-		array $rowData,
-		Register $register,
-		Schema $schema,
-		?IUser $currentUser = null,
-	): array {
-		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
+	public function transformCsvRow(array $rowData, RowImportTarget $target): array {
+		$isAdmin = $this->isRowImporterAdmin(user: $target->importer);
+		$table = $target->table;
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`
 		// shape the rest of the save pipeline expects. The codec is
 		// tolerant of empty cells and unrelated underscore-suffixed
 		// columns; the rest of this method sees the un-flattened shape.
-		$rowData = $this->translationCsvCodec->unflattenFromCsv($rowData, $schema);
+		$rowData = $this->codecs->translationCsvCodec->unflattenFromCsv($rowData, $table->schema);
 
 		[$selfColumns, $columns] = $this->splitRowColumns(rowData: $rowData, isAdmin: $isAdmin);
-		$selfData = array_replace(['register' => $register->getId(), 'schema' => $schema->getId()], $selfColumns);
+		$selfData = array_replace(['register' => $table->register->getId(), 'schema' => $table->schema->getId()], $selfColumns);
 		if (empty($rowData['id']) === false) {
 			$selfData['id'] = $rowData['id'];
 		}
 
-		$objectData = $this->typedColumns(columns: $columns, schema: $schema);
+		$objectData = $this->typedColumns(columns: $columns, schema: $table->schema);
 		$objectData['@self'] = $selfData;
 
 		// Validate that we're not accidentally creating invalid properties.
-		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$schema->getId());
+		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$table->schema->getId());
 
 		return $objectData;
-	}//end transformCsvRowToObject()
+	}//end transformCsvRow()
 
 	/**
 	 * Split the filled cells of a row into `@self` values and object properties.
@@ -1818,17 +1747,31 @@ class ImportService implements ObjectImporterInterface {
 		foreach (array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '') as $key => $value) {
 			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
 			if ($selfPropertyName !== null) {
-				$selfColumns[$selfPropertyName] = $this->valueCaster->castSelfProperty(propertyName: $selfPropertyName, value: $value);
+				$selfColumns[$selfPropertyName] = $this->valueCaster()->castSelfProperty(propertyName: $selfPropertyName, value: $value);
 			}
 
-			$firstChar = ((string)$key)[0] ?? '';
-			if ($firstChar !== '_' && $firstChar !== '@') {
+			if (self::isDataColumn(key: $key) === true) {
 				$columns[$key] = $value;
 			}
 		}
 
 		return [$selfColumns, $columns];
 	}//end splitRowColumns()
+
+	/**
+	 * Whether a column holds object data: its name does not start with `_` or `@`.
+	 *
+	 * @param int|string $key The column name.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function isDataColumn(int|string $key): bool {
+		$firstChar = ((string)$key)[0] ?? '';
+
+		return $firstChar !== '_' && $firstChar !== '@';
+	}//end isDataColumn()
 
 	/**
 	 * The columns with the values of schema properties converted to their type.
@@ -1842,7 +1785,7 @@ class ImportService implements ObjectImporterInterface {
 		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
 		foreach ($columns as $key => $value) {
 			if (($schemaProperties[$key] ?? null) !== null) {
-				$columns[$key] = $this->valueCaster->cast(value: $value, propertyDef: $schemaProperties[$key]);
+				$columns[$key] = $this->valueCaster()->cast(value: $value, propertyDef: $schemaProperties[$key]);
 			}
 		}
 
@@ -1890,7 +1833,7 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function isRowImporterAdmin(?IUser $user): bool {
 		$isAdmin = $this->isUserAdmin(user: $user);
-		$this->logger->debug(
+		$this->runtime->logger->debug(
 			message: '[ImportService] Processing CSV row',
 			context: [
 				'file' => __FILE__,
@@ -1906,23 +1849,36 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Transform Excel row data to object format for batch saving
 	 *
-	 * @param array $rowData Row data from Excel
-	 * @param Register|null $register Optional register
-	 * @param Schema|null $schema Optional schema
-	 * @param IUser|null $currentUser The current user performing the import
+	 * @param array        $rowData Row data from Excel
+	 * @param ImportTarget $target  The optional register and schema, and the importing user
 	 *
 	 * @return array<string, mixed>|null Object data or null if transformation fails
 	 *
 	 */
-	private function transformExcelRowToObject(
-		array $rowData,
-		?Register $register,
-		?Schema $schema,
-		?IUser $currentUser = null,
-	): ?array {
-		[$selfData, $objectData] = $this->splitRowColumns(rowData: $rowData, isAdmin: $this->isUserAdmin(user: $currentUser));
+	private function transformExcelRowToObject(array $rowData, ImportTarget $target): ?array {
+		[$selfData, $objectData] = $this->splitRowColumns(rowData: $rowData, isAdmin: $this->isUserAdmin(user: $target->currentUser));
 
-		// Build @self section with metadata if available.
+		return $this->castRowObject(
+			objectData: self::withSelfSection(
+				objectData: $objectData,
+				selfData: self::withRowIdentity(selfData: $selfData, row: [$target->register, $target->schema, $rowData])
+			),
+			schema: $target->schema
+		);
+	}//end transformExcelRowToObject()
+
+	/**
+	 * Row metadata with the register, the schema and, for updates, the row's id.
+	 *
+	 * @param array $selfData The row's @self columns.
+	 * @param array $row      The register, the schema and the row data.
+	 *
+	 * @return array The @self section.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function withRowIdentity(array $selfData, array $row): array {
+		[$register, $schema, $rowData] = $row;
 		if ($register !== null) {
 			$selfData['register'] = $register->getId();
 		}
@@ -1936,16 +1892,44 @@ class ImportService implements ObjectImporterInterface {
 			$selfData['id'] = $rowData['id'];
 		}
 
+		return $selfData;
+	}//end withRowIdentity()
+
+	/**
+	 * An object with its @self section, when that has anything in it.
+	 *
+	 * @param array $objectData The object.
+	 * @param array $selfData   The @self section.
+	 *
+	 * @return array The object.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function withSelfSection(array $objectData, array $selfData): array {
 		if (empty($selfData) === false) {
 			$objectData['@self'] = $selfData;
 		}
 
+		return $objectData;
+	}//end withSelfSection()
+
+	/**
+	 * An object with its values cast to the schema's types, when there is a schema.
+	 *
+	 * @param array       $objectData The object.
+	 * @param Schema|null $schema     The schema.
+	 *
+	 * @return array The object.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function castRowObject(array $objectData, ?Schema $schema): array {
 		if ($schema === null) {
 			return $objectData;
 		}
 
-		return $this->valueCaster->castObject(objectData: $objectData, properties: $schema->getProperties());
-	}//end transformExcelRowToObject()
+		return $this->valueCaster()->castObject(objectData: $objectData, properties: $schema->getProperties());
+	}//end castRowObject()
 
 	/**
 	 * Build column mapping from spreadsheet headers
@@ -1984,26 +1968,21 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Extract data from a single row
 	 *
-	 * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet The worksheet
-	 * @param array<string, string> $columnMapping Column mapping
-	 * @param int $row Row number
+	 * @param MappedSheet $sheet The worksheet and its column mapping
+	 * @param int         $row   Row number
 	 *
 	 * @return string[]
 	 *
 	 * @psalm-return array<string, string>
 	 */
-	private function extractRowData(
-		\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
-		array $columnMapping,
-		int $row,
-	): array {
+	private function extractRowData(MappedSheet $sheet, int $row): array {
 		$rowData = [];
 		// Name -> value.
 		$hasData = false;
 
 		// Loop through each column in the mapping.
-		foreach ($columnMapping as $columnLetter => $columnName) {
-			$cellValue = $sheet->getCell($columnLetter . $row)->getValue();
+		foreach ($sheet->columnMapping as $columnLetter => $columnName) {
+			$cellValue = $sheet->sheet->getCell($columnLetter . $row)->getValue();
 
 			// Convert cell value to string and trim whitespace.
 			$cleanCellValue = '';
@@ -2033,7 +2012,7 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function getSchemaBySlug(string $slug): Schema {
 		// NO ERROR SUPPRESSION: Let schema lookup errors bubble up immediately!
-		$schema = $this->schemaMapper->find($slug);
+		$schema = $this->stores->schemaMapper->find($slug);
 		return $schema;
 	}//end getSchemaBySlug()
 

@@ -34,18 +34,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use Exception;
+use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\EmailLinkService;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\EmailLinkServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\MailboxPage;
 
 /**
  * Tier-2 Email links controller.
@@ -58,22 +62,40 @@ class EmailLinksController extends Controller {
 	use ChecksObjectUpdateRight;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var EmailLinkServiceInterface
+	 */
+	private readonly EmailLinkServiceInterface $emailLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Answers the object update right
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissions;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param EmailLinkService $emailLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
-	 * @param PermissionHandler $permissions Answers the object update right
+	 * @param EmailLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly EmailLinkService $emailLinkService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly PermissionHandler $permissions,
+		EmailLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->emailLinkService = $services->emailLinkService;
+		$this->objectService = $services->objectService;
+		$this->permissions = $services->permissions;
 	}//end __construct()
 
 	/**
@@ -94,8 +116,19 @@ class EmailLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List linked Mail messages for an object — paginated: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object): JSONResponse {
 				$cursorStr = $this->requestedCursor();
 				$limit     = (int)$this->request->getParam('limit', 50);
@@ -109,7 +142,7 @@ class EmailLinksController extends Controller {
 				return new JSONResponse($result);
 			}
 		);
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Link a Mail message to an object.
@@ -128,12 +161,23 @@ class EmailLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * Link a Mail message to an object: the body of link() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkFor(ObjectRef $ref): JSONResponse {
 		if ($this->emailLinkService->isMailAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Mail');
 		}
 
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object): JSONResponse {
 				if ($this->mayUpdate(object: $object) === false) {
 					return $this->updateRefused();
@@ -159,7 +203,7 @@ class EmailLinksController extends Controller {
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
 		);
-	}//end link()
+	}//end linkFor()
 
 	/**
 	 * Unlink a Mail message from an object.
@@ -177,8 +221,20 @@ class EmailLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $linkId): JSONResponse {
+		return $this->destroyFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), linkId: $linkId);
+	}//end destroy()
+
+	/**
+	 * Unlink a Mail message from an object: the body of destroy() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $linkId Link primary key (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyFor(ObjectRef $ref, string $linkId): JSONResponse {
 		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: $this->routeOf(ref: $ref),
 			action: function (ObjectEntity $object) use ($linkId): JSONResponse {
 				if ($this->mayUpdate(object: $object) === false) {
 					return $this->updateRefused();
@@ -189,7 +245,7 @@ class EmailLinksController extends Controller {
 				return new JSONResponse(['success' => true]);
 			}
 		);
-	}//end destroy()
+	}//end destroyFor()
 
 	/**
 	 * The answer to a caller who may read the object but not change it.
@@ -274,12 +330,8 @@ class EmailLinksController extends Controller {
 			$cursorStr = $this->requestedCursor();
 			$limit     = (int)$this->request->getParam('limit', 50);
 
-			$result = $this->emailLinkService->getMessagesForMailbox(
-				(int)$accountId,
-				$mailbox,
-				$cursorStr,
-				$limit
-			);
+			$page   = (new MailboxPage(accountId: (int)$accountId, mailbox: $mailbox))->startingAfter(afterCursor: $cursorStr, limit: $limit);
+			$result = $this->emailLinkService->getMessagesForMailbox(page: $page);
 
 			return new JSONResponse($result);
 		} catch (Exception $e) {
@@ -329,4 +381,15 @@ class EmailLinksController extends Controller {
 
 		return new JSONResponse(['error' => $exception->getMessage()], 400);
 	}//end mapException()
+
+	/**
+	 * The link route of the object a route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return ObjectLinkRoute The route the link traits resolve.
+	 */
+	private function routeOf(ObjectRef $ref): ObjectLinkRoute {
+		return new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end routeOf()
 }//end class

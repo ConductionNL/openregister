@@ -37,8 +37,10 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskConfig;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskServices;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCP\IL10N;
@@ -48,6 +50,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
 
 /**
  * Behavioural tests for {@see PortalTaskNode} and {@see PortalTaskConfig}.
@@ -119,7 +122,7 @@ class PortalTaskNodeTest extends TestCase {
 			}
 		);
 
-		$this->node = new PortalTaskNode($this->bridge, $this->parties, $this->delivery, $l10n, $this->createMock(IURLGenerator::class));
+		$this->node = new PortalTaskNode(new PortalTaskServices($this->bridge, $this->parties, $this->delivery), new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 	}//end setUp()
 
 	/**
@@ -280,7 +283,8 @@ class PortalTaskNodeTest extends TestCase {
 
 		$this->bridge->expects($this->once())
 			->method('record')
-			->with('t-1', 'match', 'caseworker', $this->stringContains("role 'initiator' on case 'case-7' to 'party:bsn-1'"));
+			->with($this->callback(static fn (TaskAuditEntry $entry): bool => [$entry->uuid, $entry->action, $entry->actor] === ['t-1', 'match', 'caseworker']
+				&& str_contains($entry->reason, "role 'initiator' on case 'case-7' to 'party:bsn-1'")));
 
 		$this->delivery->expects($this->once())
 			->method('request')

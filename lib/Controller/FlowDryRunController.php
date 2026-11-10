@@ -27,8 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Flow\FlowAccess;
-use OCA\OpenRegister\Service\Flow\FlowDryRunService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
+use OCA\OpenRegister\Service\Flow\FlowDryRunServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -45,18 +46,16 @@ class FlowDryRunController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string            $appName The app name.
 	 * @param IRequest          $request The request.
-	 * @param FlowAccess        $access  Who the caller is and which flow rights they hold.
-	 * @param FlowDryRunService $service Walks the flow against the object.
+	 * @param FlowAccessInterface $access  Who the caller is and which flow rights they hold.
+	 * @param FlowDryRunServiceInterface $service Walks the flow against the object.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly FlowAccess $access,
-		private readonly FlowDryRunService $service,
+		private readonly FlowAccessInterface $access,
+		private readonly FlowDryRunServiceInterface $service,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
@@ -154,7 +155,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 			);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($resolvable);
+		$objectMapper->method('findStoredAcrossAllMagicTables')->willReturn($resolvable);
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturnCallback(
@@ -211,7 +212,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 		$this->buildService([$goes, $stays]);
 
 		$this->deleteHandler->method('deleteObject')->willReturnCallback(
-			static fn (mixed ...$args): bool => ($args[2] ?? null) === 'uuid-goes'
+			static fn (DeletionRequest $request): bool => $request->uuid === 'uuid-goes'
 		);
 
 		$result = $this->service->deleteObjects(['uuid-goes', 'uuid-stays']);
@@ -287,7 +288,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 		// The archival row must never reach the destructive call at all.
 		$this->deleteHandler->expects($this->once())
 			->method('deleteObject')
-			->with($this->anything(), $this->anything(), 'uuid-plain')
+			->with($this->callback(static fn (DeletionRequest $request): bool => $request->uuid === 'uuid-plain'))
 			->willReturn(true);
 
 		$result = $this->service->deleteObjects(['uuid-archival', 'uuid-plain']);
@@ -314,7 +315,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 
 		$this->deleteHandler->expects($this->once())
 			->method('deleteObject')
-			->with($this->anything(), $this->anything(), 'uuid-plain')
+			->with($this->callback(static fn (DeletionRequest $request): bool => $request->uuid === 'uuid-plain'))
 			->willReturn(true);
 
 		$result = $this->service->deleteObjects(['uuid-logged', 'uuid-plain']);
@@ -368,7 +369,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 
 		$this->deleteHandler->expects($this->once())
 			->method('deleteObject')
-			->with($this->anything(), $this->anything(), 'uuid-plain')
+			->with($this->callback(static fn (DeletionRequest $request): bool => $request->uuid === 'uuid-plain'))
 			->willReturn(true);
 
 		$result = $this->service->deleteObjects(['uuid-transferred', 'uuid-plain']);
@@ -509,7 +510,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 		$permanentFlags = [];
 		$this->deleteHandler->method('deleteObject')->willReturnCallback(
 			static function (mixed ...$args) use (&$permanentFlags): bool {
-				$permanentFlags[] = ($args[8] ?? null);
+				$permanentFlags[] = $args[0]->options->permanent;
 
 				return true;
 			}
@@ -549,7 +550,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 		$permanentFlags = [];
 		$this->deleteHandler->method('deleteObject')->willReturnCallback(
 			static function (mixed ...$args) use (&$permanentFlags): bool {
-				$permanentFlags[] = ($args[8] ?? null);
+				$permanentFlags[] = $args[0]->options->permanent;
 
 				return true;
 			}

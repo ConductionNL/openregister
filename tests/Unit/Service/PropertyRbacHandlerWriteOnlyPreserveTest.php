@@ -50,13 +50,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 		$this->conditionMatcher = $this->createMock(ConditionMatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->handler = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->conditionMatcher,
-			$this->logger,
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$this->handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->conditionMatcher, self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $this->logger);
 	}
 
 	/**
@@ -338,13 +332,7 @@ class PropertyRbacHandlerWriteOnlyPreserveTest extends TestCase {
 
 	public function testPreserveNeverLogsTheSecretValue(): void {
 		$logger = $this->createMock(LoggerInterface::class);
-		$handler = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->conditionMatcher,
-			$logger,
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->conditionMatcher, self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $logger);
 
 		$logger->expects($this->any())
 			->method('debug')

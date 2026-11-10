@@ -35,7 +35,7 @@ use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectTypes;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaCaller;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntryFields;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCP\IUserSession;
 
 /**
@@ -69,12 +69,12 @@ class SchemaGenerator {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param IUserSession $userSession The session that says who is asking
-	 * @param PropertyRbacHandler $propertyRbac Decides which properties that caller may read
+	 * @param PropertyRbacHandlerInterface $propertyRbac Decides which properties that caller may read
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
-		private readonly PropertyRbacHandler $propertyRbac,
+		private readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
 	}//end __construct()
 
@@ -155,7 +155,7 @@ class SchemaGenerator {
 	 * resolve time on each query. Filtering schemas by the caller's organisation here
 	 * produces a different GraphQL schema per org, which silently hides every cross-org
 	 * schema from the type system even though those schemas are readable via REST under
-	 * the same session. Same rationale as PermissionHandler::resolveSchemaSlug (#1454).
+	 * the same session. Same rationale as PermissionHandlerInterface::resolveSchemaSlug (#1454).
 	 *
 	 * @return array<int, RegisterSchema> The schemas
 	 *

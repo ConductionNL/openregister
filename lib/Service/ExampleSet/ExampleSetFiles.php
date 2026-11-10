@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -86,31 +87,51 @@ class ExampleSetFiles {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
 	public function attach(string $dir, array $object, string $objectId): array {
+		return $this->attachAll(run: new FileAttachRun(dir: $dir, objectId: $objectId), files: (array) ($object['files'] ?? []));
+	}//end attach()
+
+	/**
+	 * Attach each declared file of an object to the written object.
+	 *
+	 * @param FileAttachRun     $run   The fragment's folder and the written object's id.
+	 * @param array<int, mixed> $files The object's declared files.
+	 *
+	 * @return array{files: array<int, array{id: string, name: string, shared: bool}>, errors: array<int, string>}
+	 */
+	private function attachAll(FileAttachRun $run, array $files): array {
 		$result = ['files' => [], 'errors' => []];
-		foreach ((array) ($object['files'] ?? []) as $file) {
-			$path  = $this->pathOf(dir: $dir, path: (string) $file['path']);
-			$share = (($file['share'] ?? false) === true);
-			if ($path === null) {
-				$result['errors'][] = 'file "'.$file['path'].'" is not there';
+		foreach ($files as $file) {
+			$attached = $this->attachOne(run: $run, file: $file);
+			if (isset($attached['error']) === true) {
+				$result['errors'][] = $attached['error'];
 				continue;
 			}
 
-			try {
-				$added = $this->fileService()->addFile(
-					objectEntity: $objectId,
-					fileName: basename($path),
-					content: (string) file_get_contents($path),
-					share: $share
-				);
-			} catch (Throwable $e) {
-				$result['errors'][] = 'file "'.$file['path'].'": '.$e->getMessage();
-				continue;
-			}
-
-			$result['files'][] = ['id' => (string) $added->getId(), 'name' => basename($path), 'shared' => $share];
-		}//end foreach
+			$result['files'][] = $attached;
+		}
 
 		return $result;
+	}//end attachAll()
+
+	/**
+	 * Attach one declared file to the object: the file as the record keeps it, or why it was not attached.
+	 *
+	 * @param FileAttachRun        $run  The fragment's folder and the object's id.
+	 * @param array<string, mixed> $file The declared file: `path`, and `share`.
+	 *
+	 * @return array{id: string, name: string, shared: bool}|array{error: string}
+	 */
+	private function attachOne(FileAttachRun $run, array $file): array {
+		$path = $this->pathOf(dir: $run->dir, path: (string) $file['path']);
+		if ($path === null) {
+			return ['error' => 'file "'.$file['path'].'" is not there'];
+		}
+
+		try {
+			return $this->add(run: $run, file: new LocalFile(path: $path, share: (($file['share'] ?? false) === true)));
+		} catch (Throwable $e) {
+			return ['error' => 'file "'.$file['path'].'": '.$e->getMessage()];
+		}
 	}//end attach()
 
 	/**
@@ -185,17 +206,25 @@ class ExampleSetFiles {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function delete(string $fileId, string $name, string $objectId): string {
-		try {
-			$file = $this->fileService()->getFileById(fileId: (int) $fileId);
-			if ($file === null) {
-				if (in_array($name, $this->names(objectId: $objectId), true) === true) {
-					return 'OpenRegister cannot find file id '.$fileId.' although the object still has '.$name;
-				}
+		return $this->deleteAttached(file: new AttachedFile(id: $fileId, name: $name), objectId: $objectId);
+	}//end delete()
 
-				return '';
+	/**
+	 * Delete one file the set attached, found by its id; '' when it is gone, otherwise why not.
+	 *
+	 * @param AttachedFile $file     The file id and name, as the install record holds them.
+	 * @param string       $objectId The id of the object the file was attached to.
+	 *
+	 * @return string '' when the file is gone; otherwise the reason it stays.
+	 */
+	private function deleteAttached(AttachedFile $file, string $objectId): string {
+		try {
+			$found = $this->fileService()->getFileById(fileId: (int) $file->id);
+			if ($found === null) {
+				return $this->missingRefusal(file: $file, objectId: $objectId);
 			}
 
-			if ($this->fileService()->deleteFile(file: $file) === false) {
+			if ($this->fileService()->deleteFile(file: $found) === false) {
 				return 'OpenRegister did not delete it (see the Nextcloud log)';
 			}
 		} catch (Throwable $e) {
@@ -203,7 +232,43 @@ class ExampleSetFiles {
 		}
 
 		return '';
-	}//end delete()
+	}//end deleteAttached()
+
+	/**
+	 * Why a file OpenRegister cannot find counts as not deleted: the object still has a file of that name; '' when
+	 * it is gone.
+	 *
+	 * @param AttachedFile $file     The file id and name the record holds.
+	 * @param string       $objectId The object's id.
+	 *
+	 * @return string
+	 */
+	private function missingRefusal(AttachedFile $file, string $objectId): string {
+		if (in_array($file->name, $this->names(objectId: $objectId), true) === true) {
+			return 'OpenRegister cannot find file id '.$file->id.' although the object still has '.$file->name;
+		}
+
+		return '';
+	}//end missingRefusal()
+
+	/**
+	 * Attach one file to the object.
+	 *
+	 * @param FileAttachRun $run  The object's id.
+	 * @param LocalFile     $file The file's real path and whether it is shared publicly.
+	 *
+	 * @return array{id: string, name: string, shared: bool} The file as the record keeps it.
+	 */
+	private function add(FileAttachRun $run, LocalFile $file): array {
+		$added = $this->fileService()->addFile(
+			objectEntity: $run->objectId,
+			fileName: basename($file->path),
+			content: (string) file_get_contents($file->path),
+			share: $file->share
+		);
+
+		return ['id' => (string) $added->getId(), 'name' => basename($file->path), 'shared' => $file->share];
+	}//end add()
 
 	/**
 	 * The real path of a file inside the fragment's folder, or null.
@@ -216,19 +281,34 @@ class ExampleSetFiles {
 	private function pathOf(string $dir, string $path): ?string {
 		$root = realpath($dir);
 		$real = realpath($dir.'/'.$path);
-		if ($root === false || $real === false || str_starts_with($real, $root.'/') === false || is_file($real) === false || is_readable($real) === false) {
+		if ($root === false || $real === false || str_starts_with($real, $root.'/') === false) {
 			return null;
 		}
 
-		return $real;
+		return $this->readableFile(path: $real);
 	}//end pathOf()
+
+	/**
+	 * The path when it names a file that can be read, else null.
+	 *
+	 * @param string $path The real path.
+	 *
+	 * @return string|null
+	 */
+	private function readableFile(string $path): ?string {
+		if (is_file($path) === false || is_readable($path) === false) {
+			return null;
+		}
+
+		return $path;
+	}//end readableFile()
 
 	/**
 	 * OpenRegister's FileService.
 	 *
-	 * @return FileService
+	 * @return ObjectFilesInterface
 	 */
-	private function fileService(): FileService {
+	private function fileService(): ObjectFilesInterface {
 		return $this->container->get(FileService::class);
 	}//end fileService()
 }//end class

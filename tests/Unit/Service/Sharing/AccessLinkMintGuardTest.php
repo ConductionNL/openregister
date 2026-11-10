@@ -34,11 +34,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -70,10 +72,7 @@ class AccessLinkMintGuardTest extends TestCase {
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->guard = new AccessLinkMintGuard(
 			objects: $this->objects,
-			subjects: new AccessLinkSubject(),
-			views: $this->views,
-			registers: $this->registers,
-			schemas: $this->schemas,
+			viewReaders: new AccessLinkViewReaders(views: $this->views, catalog: new SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(MagicMapperInterface::class))),
 		);
 	}
 

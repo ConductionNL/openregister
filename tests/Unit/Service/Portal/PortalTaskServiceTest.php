@@ -24,14 +24,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
+use OCA\OpenRegister\Service\Portal\PortalTaskSources;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -104,12 +107,9 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks = $this->createMock(TaskService::class);
 		$this->mapper = $this->createMock(TaskMapper::class);
 		$this->files = $this->createMock(FileService::class);
-		$inbox = new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger());
+		$inbox = new TaskInboxService(tasks: $this->mapper, logger: new NullLogger());
 		$this->service = new PortalTaskService(
-			tasks: $this->tasks,
-			mapper: $this->mapper,
-			inbox: $inbox,
-			temporal: new TaskTemporalProjection(),
+			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
 			logger: new NullLogger()
 		);
@@ -150,7 +150,7 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks->method('openFor')->willReturnCallback(
 			function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
 				$this->trace[] = 'authorize:' . $actor;
-				$authorization->assertMay(verb: $verb, task: $task, uid: $actor);
+				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
 
 				return $task;
 			}
@@ -212,9 +212,7 @@ class PortalTaskServiceTest extends TestCase {
 		$completed = $this->service->complete(
 			subject: new PortalSubject(subjectRef: 'bsn-1'),
 			uuid: 't-1',
-			answers: ['remarks' => 'ok'],
-			comment: null,
-			files: [['name' => 'payslip.pdf', 'type' => 'application/pdf', 'size' => 1200, 'content' => 'PDFBYTES']]
+			completion: new PortalCompletion(answers: ['remarks' => 'ok'], files: [['name' => 'payslip.pdf', 'type' => 'application/pdf', 'size' => 1200, 'content' => 'PDFBYTES']])
 		);
 
 		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
@@ -237,7 +235,7 @@ class PortalTaskServiceTest extends TestCase {
 			$this->service->complete(
 				subject: new PortalSubject(subjectRef: 'bsn-2'),
 				uuid: 't-1',
-				files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]
+				completion: new PortalCompletion(files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']])
 			);
 			$this->fail('Another subject completed the task.');
 		} catch (TaskAccessDeniedException $denied) {
@@ -287,7 +285,7 @@ class PortalTaskServiceTest extends TestCase {
 		$authorization = new TaskAuthorizationService(groupManager: $groups);
 		$this->tasks->method('openFor')->willReturnCallback(
 			static function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$authorization->assertMay(verb: $verb, task: $task, uid: $actor);
+				$authorization->assertMay(act: new TaskAct(verb: $verb, actor: $actor), task: $task);
 
 				return $task;
 			}
@@ -324,15 +322,12 @@ class PortalTaskServiceTest extends TestCase {
 			$tasks = $this->createMock(TaskService::class);
 			$tasks->method('openFor')->willReturn($task);
 			$service = new PortalTaskService(
-				tasks: $tasks,
-				mapper: $this->mapper,
-				inbox: new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger()),
-				temporal: new TaskTemporalProjection(),
+				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, logger: new NullLogger()), temporal: new TaskTemporalProjection()),
 				files: $this->files,
 				logger: new NullLogger()
 			);
 			try {
-				$service->complete(subject: $subject, uuid: 't-1', files: $files);
+				$service->complete(subject: $subject, uuid: 't-1', completion: new PortalCompletion(files: $files));
 				$this->fail("Expected a refusal naming $constraint");
 			} catch (TaskValidationException $refused) {
 				$this->assertStringContainsString($constraint, $refused->getMessage());
@@ -402,20 +397,16 @@ class PortalTaskServiceTest extends TestCase {
 		$case->setSchema('9');
 		$case->setObject(['name' => 'passport renewal', 'initiator' => 'bsn-1']);
 
-		$objects = $this->createMock(\OCA\OpenRegister\Db\AbstractObjectMapper::class);
+		$objects = $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$objects->method('findMultiple')->willReturn([$case]);
 
 		$inbox = new TaskInboxService(
 			tasks: $this->mapper,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: $objects
 		);
 		$service = new PortalTaskService(
-			tasks: $this->tasks,
-			mapper: $this->mapper,
-			inbox: $inbox,
-			temporal: new TaskTemporalProjection(),
+			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
 			logger: new NullLogger()
 		);
@@ -470,7 +461,7 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
 
 		try {
-			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]);
+			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', completion: new PortalCompletion(files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]));
 			$this->fail('The seam completed a task its app completes.');
 		} catch (TaskCompleteViaAppException $elsewhere) {
 			$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $elsewhere->completeVia());

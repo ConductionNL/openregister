@@ -38,12 +38,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\SaveObjectInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,7 +62,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Importing register objects needs the
  *              register, the schema, the settings that name both, and the save path.
  */
-class SelectielijstImportService {
+class SelectielijstImportService implements SelectielijstImportServiceInterface {
 
 	/**
 	 * The property each imported row carries its version under.
@@ -93,21 +91,19 @@ class SelectielijstImportService {
 	private const MAX_ROWS = 5000;
 
 	/**
+	 * The refusal for a row without a category; takes the row number and the category key.
+	 */
+	private const NO_CATEGORY = 'Row %d of the selectielijst has no "%s". A row nothing can match is a rule nobody '
+		. 'notices is broken, so the import refuses it.';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectRetentionHandler $settingsHandler Names the selectielijst register and schema.
-	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
-	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
-	 * @param MagicMapperInterface            $objectMapper    Reads the rows already stored.
-	 * @param SaveObjectInterface             $saveObject      Writes an imported row.
-	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
+	 * @param SelectielijstStorage $storage Names the selectielijst register and schema, reads its rows and writes a row.
+	 * @param LoggerInterface      $logger  Reports a row that could not be stored.
 	 */
 	public function __construct(
-		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SaveObjectInterface $saveObject,
+		private readonly SelectielijstStorage $storage,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -126,52 +122,65 @@ class SelectielijstImportService {
 	 *
 	 * @throws InvalidArgumentException When the format is unknown, unparseable, empty or too large.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One refusal per way a file can be wrong,
-	 *              and each says which way it was.
-	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function parse(string $contents, string $filename): array {
 		$extension = strtolower((string)pathinfo($filename, PATHINFO_EXTENSION));
 
-		$rows = $this->rowsFromFile(contents: $contents, extension: $extension);
-
 		$parsed = [];
-		foreach ($rows as $index => $row) {
-			if (is_array($row) === false) {
-				throw new InvalidArgumentException(
-					sprintf('Row %d of the selectielijst is not a set of fields', ((int)$index + 1))
-				);
-			}
-
-			$category = trim((string)($row[self::CATEGORY_KEY] ?? ''));
-			if ($category === '') {
-				throw new InvalidArgumentException(
-					sprintf(
-						'Row %d of the selectielijst has no "%s". A row nothing can match is a rule nobody '
-						. 'notices is broken, so the import refuses it.',
-						((int)$index + 1),
-						self::CATEGORY_KEY
-					)
-				);
-			}
-
-			$row[self::CATEGORY_KEY] = $category;
-			$parsed[] = $row;
-		}//end foreach
-
-		if ($parsed === []) {
-			throw new InvalidArgumentException('The selectielijst file holds no rows');
+		foreach ($this->rowsFromFile(contents: $contents, extension: $extension) as $index => $row) {
+			$parsed[] = $this->parsedRow(row: $row, number: ((int)$index + 1));
 		}
 
-		if (count($parsed) > self::MAX_ROWS) {
-			throw new InvalidArgumentException(
-				sprintf('The selectielijst file holds %d rows; the import accepts at most %d', count($parsed), self::MAX_ROWS)
-			);
-		}
+		$this->guardRowCount(count: count($parsed));
 
 		return $parsed;
 	}//end parse()
+
+	/**
+	 * One raw row as an imported row, its category trimmed.
+	 *
+	 * @param mixed $row    The raw row.
+	 * @param int   $number Its 1-based position in the file.
+	 *
+	 * @return array<string, mixed> The row.
+	 *
+	 * @throws InvalidArgumentException When the row is not a set of fields or has no category.
+	 */
+	private function parsedRow(mixed $row, int $number): array {
+		if (is_array($row) === false) {
+			throw new InvalidArgumentException(sprintf('Row %d of the selectielijst is not a set of fields', $number));
+		}
+
+		$category = trim((string)($row[self::CATEGORY_KEY] ?? ''));
+		if ($category === '') {
+			throw new InvalidArgumentException(sprintf(self::NO_CATEGORY, $number, self::CATEGORY_KEY));
+		}
+
+		$row[self::CATEGORY_KEY] = $category;
+		return $row;
+	}//end parsedRow()
+
+	/**
+	 * Refuse a file with no rows, or with more than one import may carry.
+	 *
+	 * @param int $count How many rows the file holds.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the count is zero or over the cap.
+	 */
+	private function guardRowCount(int $count): void {
+		if ($count === 0) {
+			throw new InvalidArgumentException('The selectielijst file holds no rows');
+		}
+
+		if ($count > self::MAX_ROWS) {
+			throw new InvalidArgumentException(
+				sprintf('The selectielijst file holds %d rows; the import accepts at most %d', $count, self::MAX_ROWS)
+			);
+		}
+	}//end guardRowCount()
 
 	/**
 	 * Read the file into raw rows, by the format its name declares.
@@ -194,6 +203,19 @@ class SelectielijstImportService {
 			);
 		}
 
+		return $this->parseJson(contents: $contents);
+	}//end rowsFromFile()
+
+	/**
+	 * Read a JSON file into raw rows.
+	 *
+	 * @param string $contents The file contents.
+	 *
+	 * @return array<int|string, mixed> The raw rows.
+	 *
+	 * @throws InvalidArgumentException When the contents are not a JSON array or object.
+	 */
+	private function parseJson(string $contents): array {
 		$rows = json_decode($contents, true);
 		if (is_array($rows) === false) {
 			throw new InvalidArgumentException(
@@ -202,7 +224,7 @@ class SelectielijstImportService {
 		}
 
 		return $rows;
-	}//end rowsFromFile()
+	}//end parseJson()
 
 	/**
 	 * Read a CSV with a header row into a list of field maps.
@@ -218,38 +240,63 @@ class SelectielijstImportService {
 	 * @throws InvalidArgumentException When the file has no header or a row does not match it.
 	 */
 	private function parseCsv(string $contents): array {
+		$lines = $this->csvLines(contents: $contents);
+		$header = array_map(static fn ($column): string => trim((string)$column), str_getcsv((string)array_shift($lines)));
+
+		$rows = [];
+		foreach ($lines as $index => $line) {
+			if (trim((string)$line) !== '') {
+				$rows[] = $this->csvRow(line: new CsvLine(text: (string)$line, number: ((int)$index + 1)), header: $header);
+			}
+		}
+
+		return $rows;
+	}//end parseCsv()
+
+	/**
+	 * The lines of a CSV file, the header first.
+	 *
+	 * @param string $contents The file contents.
+	 *
+	 * @return array<int, string> The lines.
+	 *
+	 * @throws InvalidArgumentException When the file has no header row.
+	 */
+	private function csvLines(string $contents): array {
 		$lines = preg_split('/\r\n|\r|\n/', trim($contents));
 		if ($lines === false || $lines === [] || trim((string)$lines[0]) === '') {
 			throw new InvalidArgumentException('The selectielijst CSV has no header row');
 		}
 
-		$header = str_getcsv((string)array_shift($lines));
-		$header = array_map(static fn ($column): string => trim((string)$column), $header);
+		return $lines;
+	}//end csvLines()
 
-		$rows = [];
-		foreach ($lines as $index => $line) {
-			if (trim((string)$line) === '') {
-				continue;
-			}
+	/**
+	 * One CSV line as a field map under the header.
+	 *
+	 * @param CsvLine  $line   The line and its 1-based number, for the refusal.
+	 * @param string[] $header The header columns.
+	 *
+	 * @return array<string, string> The row.
+	 *
+	 * @throws InvalidArgumentException When the column count differs from the header's.
+	 */
+	private function csvRow(CsvLine $line, array $header): array {
+		$values = str_getcsv($line->text);
+		if (count($values) !== count($header)) {
+			throw new InvalidArgumentException(
+				sprintf(
+					'Row %d of the selectielijst CSV has %d columns and the header has %d. A shifted column '
+					. 'turns a bewaartermijn into a category, so the import refuses rather than pads.',
+					$line->number,
+					count($values),
+					count($header)
+				)
+			);
+		}
 
-			$values = str_getcsv((string)$line);
-			if (count($values) !== count($header)) {
-				throw new InvalidArgumentException(
-					sprintf(
-						'Row %d of the selectielijst CSV has %d columns and the header has %d. A shifted column '
-						. 'turns a bewaartermijn into a category, so the import refuses rather than pads.',
-						((int)$index + 1),
-						count($values),
-						count($header)
-					)
-				);
-			}
-
-			$rows[] = array_combine($header, array_map(static fn ($v): string => trim((string)$v), $values));
-		}//end foreach
-
-		return $rows;
-	}//end parseCsv()
+		return array_combine($header, array_map(static fn ($v): string => trim((string)$v), $values));
+	}//end csvRow()
 
 	/**
 	 * Store a parsed selectielijst as a named version.
@@ -266,6 +313,43 @@ class SelectielijstImportService {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function import(array $rows, string $version, ?string $source = null): array {
+		return $this->importVersion(rows: $rows, version: new ListVersion(version: $this->namedVersion(version: $version), source: $source));
+	}//end import()
+
+	/**
+	 * Store the rows of one named version, refusing a version already here.
+	 *
+	 * @param array<int, array<string, mixed>> $rows    Parsed rows.
+	 * @param ListVersion                      $version The version, already named, and the list's source.
+	 *
+	 * @return array{version: string, imported: int, failed: int} What was written.
+	 *
+	 * @throws InvalidArgumentException When nothing is configured to import into, or the version exists.
+	 */
+	private function importVersion(array $rows, ListVersion $version): array {
+		$table = $this->target();
+		$this->guardNewVersion(version: $version->version);
+
+		$imported = 0;
+		foreach ($rows as $row) {
+			if ($this->storeRow(table: $table, row: $this->withVersionAndSource(row: $row, version: $version)) === true) {
+				$imported++;
+			}
+		}
+
+		return ['version' => $version->version, 'imported' => $imported, 'failed' => (count($rows) - $imported)];
+	}//end importVersion()
+
+	/**
+	 * The version an import is stored under, trimmed.
+	 *
+	 * @param string $version The version as given.
+	 *
+	 * @return string The trimmed version.
+	 *
+	 * @throws InvalidArgumentException When it is blank.
+	 */
+	private function namedVersion(string $version): string {
 		$version = trim($version);
 		if ($version === '') {
 			throw new InvalidArgumentException(
@@ -273,9 +357,20 @@ class SelectielijstImportService {
 			);
 		}
 
-		[$register, $schema] = $this->target();
+		return $version;
+	}//end namedVersion()
 
-		if ($this->versions() !== [] && array_key_exists($version, $this->versions()) === true) {
+	/**
+	 * Refuse a version that is already imported.
+	 *
+	 * @param string $version The version, trimmed.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When rows of that version are already stored.
+	 */
+	private function guardNewVersion(string $version): void {
+		if (array_key_exists($version, $this->versions()) === true) {
 			throw new InvalidArgumentException(
 				sprintf(
 					'Version "%s" is already imported. Import it under a different name, or compare it with '
@@ -284,32 +379,48 @@ class SelectielijstImportService {
 				)
 			);
 		}
+	}//end guardNewVersion()
 
-		$imported = 0;
-		$failed = 0;
-		foreach ($rows as $row) {
-			$row[self::VERSION_KEY] = $version;
-			if ($source !== null) {
-				$row['bron'] = ($row['bron'] ?? $source);
-			}
+	/**
+	 * Mark a row with its version, and with the file it came from unless it names its own source.
+	 *
+	 * @param array<string, mixed> $row     The parsed row.
+	 * @param ListVersion          $version The version to stamp, and the source a row without its own bron is credited to.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function withVersionAndSource(array $row, ListVersion $version): array {
+		$row[self::VERSION_KEY] = $version->version;
+		if ($version->source !== null) {
+			$row['bron'] = ($row['bron'] ?? $version->source);
+		}
 
-			try {
-				// The ENTITIES, not their ids. saveObject() accepts either, and a
-				// register or schema whose id is not yet materialised would be
-				// passed as null, which its signature refuses.
-				$this->saveObject->saveObject($register, $schema, $row);
-				$imported++;
-			} catch (Throwable $e) {
-				$failed++;
-				$this->logger->warning(
-					'[SelectielijstImportService] Could not store row '
-					. (string)$row[self::CATEGORY_KEY] . ' of version ' . $version . ': ' . $e->getMessage()
-				);
-			}
-		}//end foreach
+		return $row;
+	}//end withVersionAndSource()
 
-		return ['version' => $version, 'imported' => $imported, 'failed' => $failed];
-	}//end import()
+	/**
+	 * Store one row; a row that cannot be stored is logged and counted as failed.
+	 *
+	 * @param RegisterSchema       $table The selectielijst register and schema.
+	 * @param array<string, mixed> $row   The row, stamped with its version.
+	 *
+	 * @return bool True when the row was stored.
+	 */
+	private function storeRow(RegisterSchema $table, array $row): bool {
+		try {
+			// The ENTITIES, not their ids. saveObject() accepts either, and a
+			// register or schema whose id is not yet materialised would be
+			// passed as null, which its signature refuses.
+			$this->storage->writer->saveObject($table->register, $table->schema, $row);
+			return true;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[SelectielijstImportService] Could not store row '
+				. (string)$row[self::CATEGORY_KEY] . ' of version ' . (string)$row[self::VERSION_KEY] . ': ' . $e->getMessage()
+			);
+			return false;
+		}
+	}//end storeRow()
 
 	/**
 	 * Every selectielijst version stored here, with how many rows each holds.
@@ -351,50 +462,80 @@ class SelectielijstImportService {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function diff(string $from, string $to): array {
-		$left = $this->rowsOf(version: $from);
-		$right = $this->rowsOf(version: $to);
+		$left = $this->storedRowsOf(version: $from);
+		$right = $this->storedRowsOf(version: $to);
 
-		if ($left === []) {
-			throw new InvalidArgumentException(sprintf('No selectielijst rows are stored under version "%s"', $from));
+		return [
+			'from' => $from,
+			'to' => $to,
+			'added' => array_values(array_diff(array_keys($right), array_keys($left))),
+			'removed' => array_values(array_diff(array_keys($left), array_keys($right))),
+			'changed' => $this->changedCategories(left: $left, right: $right),
+		];
+	}//end diff()
+
+	/**
+	 * The rows of a version that must hold some.
+	 *
+	 * @param string $version The version.
+	 *
+	 * @return array<string, array<string, mixed>> Category mapped to the row.
+	 *
+	 * @throws InvalidArgumentException When the version holds no rows.
+	 */
+	private function storedRowsOf(string $version): array {
+		$rows = $this->rowsOf(version: $version);
+		if ($rows === []) {
+			throw new InvalidArgumentException(sprintf('No selectielijst rows are stored under version "%s"', $version));
 		}
 
-		if ($right === []) {
-			throw new InvalidArgumentException(sprintf('No selectielijst rows are stored under version "%s"', $to));
-		}
+		return $rows;
+	}//end storedRowsOf()
 
-		$added = array_values(array_diff(array_keys($right), array_keys($left)));
-		$removed = array_values(array_diff(array_keys($left), array_keys($right)));
-
+	/**
+	 * Every category in both versions whose compared fields differ.
+	 *
+	 * @param array<string, array<string, mixed>> $left  The version in use.
+	 * @param array<string, array<string, mixed>> $right The version being considered.
+	 *
+	 * @return array<int, array<string, mixed>> The category and the fields that change.
+	 */
+	private function changedCategories(array $left, array $right): array {
 		$changed = [];
 		foreach ($right as $category => $row) {
 			if (array_key_exists($category, $left) === false) {
 				continue;
 			}
 
-			$fields = [];
-			foreach (self::COMPARED_FIELDS as $field) {
-				$before = ($left[$category][$field] ?? null);
-				$after = ($row[$field] ?? null);
-				if ($before === $after) {
-					continue;
-				}
-
-				$fields[$field] = ['from' => $before, 'to' => $after];
-			}
-
+			$fields = $this->changedFields(before: $left[$category], after: $row);
 			if ($fields !== []) {
 				$changed[] = ['category' => (string)$category, 'fields' => $fields];
 			}
-		}//end foreach
+		}
 
-		return [
-			'from' => $from,
-			'to' => $to,
-			'added' => $added,
-			'removed' => $removed,
-			'changed' => $changed,
-		];
-	}//end diff()
+		return $changed;
+	}//end changedCategories()
+
+	/**
+	 * The compared fields that differ between two rows of one category.
+	 *
+	 * @param array<string, mixed> $before The row in the version in use.
+	 * @param array<string, mixed> $after  The row in the version being considered.
+	 *
+	 * @return array<string, array{from: mixed, to: mixed}> The changes.
+	 */
+	private function changedFields(array $before, array $after): array {
+		$fields = [];
+		foreach (self::COMPARED_FIELDS as $field) {
+			$old = ($before[$field] ?? null);
+			$new = ($after[$field] ?? null);
+			if ($old !== $new) {
+				$fields[$field] = ['from' => $old, 'to' => $new];
+			}
+		}
+
+		return $fields;
+	}//end changedFields()
 
 	/**
 	 * The rows of one version, keyed by category.
@@ -433,25 +574,8 @@ class SelectielijstImportService {
 	 * @return array<int, array<string, mixed>> The rows.
 	 */
 	private function allRows(): array {
-		try {
-			[$register, $schema] = $this->target();
-		} catch (InvalidArgumentException $e) {
-			return [];
-		}
-
-		try {
-			$objects = $this->objectMapper->findAll(
-				limit: self::MAX_ROWS,
-				register: $register,
-				schema: $schema
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('[SelectielijstImportService] Could not read the selectielijst: ' . $e->getMessage());
-			return [];
-		}
-
 		$rows = [];
-		foreach ($objects as $object) {
+		foreach ($this->storedObjects() as $object) {
 			if (($object instanceof ObjectEntity) === false) {
 				continue;
 			}
@@ -464,6 +588,26 @@ class SelectielijstImportService {
 
 		return $rows;
 	}//end allRows()
+
+	/**
+	 * Whatever the store holds in the selectielijst register; nothing when it is unconfigured or unreadable.
+	 *
+	 * @return array<int, mixed> The stored objects.
+	 */
+	private function storedObjects(): array {
+		try {
+			$table = $this->target();
+		} catch (InvalidArgumentException $e) {
+			return [];
+		}
+
+		try {
+			return $this->storage->catalog->tables()->findAllListed(request: new MagicListRequest(table: $table, query: new ListQuery(limit: self::MAX_ROWS)));
+		} catch (Throwable $e) {
+			$this->logger->warning('[SelectielijstImportService] Could not read the selectielijst: ' . $e->getMessage());
+			return [];
+		}
+	}//end storedObjects()
 
 	/**
 	 * The version a row belongs to, or `unversioned`.
@@ -485,12 +629,12 @@ class SelectielijstImportService {
 	/**
 	 * The register and schema selectielijst rows live in.
 	 *
-	 * @return array{0: \OCA\OpenRegister\Db\Register, 1: \OCA\OpenRegister\Db\Schema} The pair.
+	 * @return RegisterSchema The selectielijst register and schema.
 	 *
 	 * @throws InvalidArgumentException When the archival settings name neither.
 	 */
-	private function target(): array {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+	private function target(): RegisterSchema {
+		$settings = $this->storage->settings->getArchivalSettingsOnly();
 		$registerId = ($settings['selectielijstRegister'] ?? null);
 		$schemaId = ($settings['selectielijstSchema'] ?? null);
 
@@ -501,9 +645,9 @@ class SelectielijstImportService {
 			);
 		}
 
-		return [
-			$this->registerMapper->find((int)$registerId),
-			$this->schemaMapper->find((int)$schemaId),
-		];
+		return new RegisterSchema(
+			register: $this->storage->catalog->registers()->find((int)$registerId),
+			schema: $this->storage->catalog->schemas()->find((int)$schemaId)
+		);
 	}//end target()
 }//end class

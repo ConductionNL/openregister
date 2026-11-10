@@ -54,7 +54,7 @@ use OCP\IAppConfig;
  * predict the behaviour of. Refusing to store one is better than storing one
  * that means something different every five minutes.
  */
-class AuditAggregationService {
+class AuditAggregationService implements AuditAggregationServiceInterface {
 
 	/**
 	 * The app-config key holding the window, in seconds.
@@ -62,16 +62,6 @@ class AuditAggregationService {
 	 * @var string
 	 */
 	public const CONFIG_KEY = 'audit_aggregation_window_seconds';
-
-	/**
-	 * The longest window an administrator may set, in seconds.
-	 *
-	 * Equal to `AuditSealJob::INTERVAL_SECONDS`. See the class docblock for
-	 * why that is the ceiling rather than a round number.
-	 *
-	 * @var integer
-	 */
-	public const MAXIMUM_WINDOW_SECONDS = 300;
 
 	/**
 	 * Constructor.
@@ -128,21 +118,21 @@ class AuditAggregationService {
 	}//end clamp()
 
 	/**
-	 * Whether two entries are close enough in time to be one.
+	 * Whether two entries are close enough in time to be one, under the administered window.
 	 *
 	 * Takes both instants rather than reading the clock, so the behaviour is
 	 * testable without waiting five minutes for the answer.
 	 *
 	 * @param DateTimeInterface|null $previous When the entry already written was written.
 	 * @param DateTimeInterface $now When the edit being recorded happened.
-	 * @param integer $window The administered window, in seconds.
 	 *
 	 * @return boolean Whether the two merge.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function isWithinWindow(?DateTimeInterface $previous, DateTimeInterface $now, int $window): bool {
-		if ($window <= 0 || $previous === null) {
+	public function isWithinWindow(?DateTimeInterface $previous, DateTimeInterface $now): bool {
+		$window = $this->windowSeconds();
+		if ($window === 0 || $previous === null) {
 			return false;
 		}
 

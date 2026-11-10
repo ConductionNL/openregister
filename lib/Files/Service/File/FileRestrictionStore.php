@@ -103,26 +103,48 @@ class FileRestrictionStore {
 	/**
 	 * Store the restriction of one file, replacing the one it had.
 	 *
-	 * @param int               $fileId The Nextcloud file id.
-	 * @param list<string>      $users  The users.
-	 * @param list<string>      $groups The groups.
-	 * @param string            $reason Why.
-	 * @param string            $setBy  Who set it.
-	 * @param DateTimeImmutable $setAt  When.
+	 * @param int               $fileId      The Nextcloud file id.
+	 * @param FileRestriction   $restriction Who may read it, why, and who said so.
+	 * @param DateTimeImmutable $setAt       When.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
-	public function save(int $fileId, array $users, array $groups, string $reason, string $setBy, DateTimeImmutable $setAt): void {
-		$values = [
-			'user_ids' => json_encode(array_values($users)),
-			'group_ids' => json_encode(array_values($groups)),
-			'reason' => $reason,
-			'set_by' => $setBy,
+	public function save(int $fileId, FileRestriction $restriction, DateTimeImmutable $setAt): void {
+		$values = $this->columnsOf(restriction: $restriction, setAt: $setAt);
+		if ($this->updateRow(fileId: $fileId, values: $values) === false) {
+			$this->insertRow(fileId: $fileId, values: $values);
+		}
+	}//end save()
+
+	/**
+	 * The stored columns of a restriction, the file id aside.
+	 *
+	 * @param FileRestriction   $restriction Who may read it, why, and who said so.
+	 * @param DateTimeImmutable $setAt       When.
+	 *
+	 * @return array<string, string|false>
+	 */
+	private function columnsOf(FileRestriction $restriction, DateTimeImmutable $setAt): array {
+		return [
+			'user_ids' => json_encode(array_values($restriction->users)),
+			'group_ids' => json_encode(array_values($restriction->groups)),
+			'reason' => $restriction->reason,
+			'set_by' => $restriction->setBy,
 			'set_at' => $setAt->format('Y-m-d H:i:s'),
 		];
+	}//end columnsOf()
 
+	/**
+	 * Overwrite the file's row, when it has one.
+	 *
+	 * @param int                         $fileId The Nextcloud file id.
+	 * @param array<string, string|false> $values The columns.
+	 *
+	 * @return bool Whether a row was updated.
+	 */
+	private function updateRow(int $fileId, array $values): bool {
 		$update = $this->db->getQueryBuilder();
 		$update->update(Version1Date20261024200000::TABLE);
 		foreach ($values as $column => $value) {
@@ -130,10 +152,18 @@ class FileRestrictionStore {
 		}
 
 		$update->where($update->expr()->eq('file_id', $update->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
-		if ($update->executeStatement() > 0) {
-			return;
-		}
+		return $update->executeStatement() > 0;
+	}//end updateRow()
 
+	/**
+	 * Add the file's row.
+	 *
+	 * @param int                         $fileId The Nextcloud file id.
+	 * @param array<string, string|false> $values The columns.
+	 *
+	 * @return void
+	 */
+	private function insertRow(int $fileId, array $values): void {
 		$insert = $this->db->getQueryBuilder();
 		$insert->insert(Version1Date20261024200000::TABLE)
 			->setValue('file_id', $insert->createNamedParameter($fileId, IQueryBuilder::PARAM_INT));
@@ -142,7 +172,7 @@ class FileRestrictionStore {
 		}
 
 		$insert->executeStatement();
-	}//end save()
+	}//end insertRow()
 
 	/**
 	 * Remove the restriction of one file.

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Unit tests for FileSearchController.
@@ -38,12 +40,13 @@ class FileSearchControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new FileSearchController(
-			'openregister',
-			$this->request,
-			$this->vectorService,
-			$this->chunkMapper,
-			$this->logger,
-			$this->passThroughScope()
+			request: $this->request,
+			services: new FileSearchControllerServices(
+				vectorService: $this->vectorService,
+				chunkMapper: $this->chunkMapper,
+				readScope: $this->passThroughScope(),
+				logger: $this->logger
+			)
 		);
 	}
 
@@ -250,10 +253,12 @@ class FileSearchControllerTest extends TestCase {
 		$this->vectorService->expects($this->once())
 			->method('hybridSearch')
 			->with(
-				'quarterly report',
-				$keywordResults,
-				10,
-				['keyword' => 0.5, 'vector' => 0.5]
+				new HybridSearchRequest(
+					query: 'quarterly report',
+					keywordResults: $keywordResults,
+					limit: 10,
+					weights: ['keyword' => 0.5, 'vector' => 0.5]
+				)
 			)
 			->willReturn($this->makeHybridServiceResponse(1));
 

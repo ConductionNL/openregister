@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-1
  */
-class QualityScorer {
+class QualityScorer implements QualityScorerInterface {
 	/**
 	 * Default weight applied when a rule omits an explicit weight.
 	 *
@@ -87,25 +87,31 @@ class QualityScorer {
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-1
 	 */
 	public function score(array $object, array $rules, DateTimeImmutable $now): float {
+		return $this->scoreAll(run: new QualityScoreRun(object: $object, now: $now), rules: $rules);
+	}//end score()
+
+	/**
+	 * Score one object against its rules: the weighted mean of the usable
+	 * rules' sub-scores, 1.0 when no rule is usable.
+	 *
+	 * @param QualityScoreRun   $run   The object and the moment freshness is measured from.
+	 * @param array<int, mixed> $rules The rules; a non-array or typeless rule is skipped.
+	 *
+	 * @return float The score in [0.0, 1.0], rounded to 4 decimals.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-1
+	 */
+	private function scoreAll(QualityScoreRun $run, array $rules): float {
 		$weightedSum = 0.0;
 		$totalWeight = 0.0;
 
 		foreach ($rules as $rule) {
-			if (is_array($rule) === false) {
-				continue;
-			}
-
-			$type = (string)($rule['type'] ?? '');
-			if ($type === '') {
-				continue;
-			}
-
-			$weight = $this->ruleWeight(rule: $rule);
+			$weight = $this->usableWeight(rule: $rule);
 			if ($weight <= 0.0) {
 				continue;
 			}
 
-			$sub = $this->scoreRule(object: $object, rule: $rule, type: $type, now: $now);
+			$sub = $this->scoreRule(run: $run, rule: $rule);
 
 			$weightedSum += ($sub * $weight);
 			$totalWeight += $weight;
@@ -119,7 +125,29 @@ class QualityScorer {
 
 		// Clamp defensively; sub-scores are already bounded but float math drifts.
 		return max(0.0, min(1.0, round($score, 4)));
-	}//end score()
+	}//end scoreAll()
+
+	/**
+	 * The weight a rule counts with, or 0.0 when the rule cannot be scored.
+	 *
+	 * A rule that is not an object or names no type is skipped, exactly as a
+	 * rule with a zero or negative weight is.
+	 *
+	 * @param mixed $rule Rule definition.
+	 *
+	 * @return float Weight (>= 0); 0.0 means skip the rule.
+	 */
+	private function usableWeight($rule): float {
+		if (is_array($rule) === false) {
+			return 0.0;
+		}
+
+		if ((string)($rule['type'] ?? '') === '') {
+			return 0.0;
+		}
+
+		return $this->ruleWeight(rule: $rule);
+	}//end usableWeight()
 
 	/**
 	 * Map a numeric score to a status label using optional thresholds.
@@ -149,18 +177,16 @@ class QualityScorer {
 	/**
 	 * Dispatch a single rule to its scoring routine.
 	 *
-	 * @param array<string, mixed> $object Object payload.
-	 * @param array<string, mixed> $rule Rule definition.
-	 * @param string $type Rule type token.
-	 * @param DateTimeImmutable $now Reference instant.
+	 * @param QualityScoreRun      $run  The object and the reference instant.
+	 * @param array<string, mixed> $rule Rule definition; its `type` picks the routine.
 	 *
 	 * @return float Sub-score in [0, 1].
 	 */
-	private function scoreRule(array $object, array $rule, string $type, DateTimeImmutable $now): float {
-		return match ($type) {
-			'required' => $this->scoreRequired(object: $object, rule: $rule),
-			'format' => $this->scoreFormat(object: $object, rule: $rule),
-			'freshness' => $this->scoreFreshness(object: $object, rule: $rule, now: $now),
+	private function scoreRule(QualityScoreRun $run, array $rule): float {
+		return match ((string)$rule['type']) {
+			'required' => $this->scoreRequired(object: $run->object, rule: $rule),
+			'format' => $this->scoreFormat(object: $run->object, rule: $rule),
+			'freshness' => $this->scoreFreshness(run: $run, rule: $rule),
 			default => 0.0,
 		};
 	}//end scoreRule()
@@ -192,42 +218,78 @@ class QualityScorer {
 	 * @param array<string, mixed> $rule Rule definition.
 	 *
 	 * @return float 1.0 on match, else 0.0.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branch count tracks the rule's optional
-	 *   inputs (presence, named format, custom pattern, regex outcome); each is a distinct,
-	 *   independently-testable guard and folding them would obscure the format-resolution flow.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — sequential optional guards.
-	 * @SuppressWarnings(PHPMD.ErrorControlOperator) The @ on preg_match() suppresses a warning
-	 *   for a user-supplied pattern that fails to compile; the false return is handled as a
-	 *   non-match, so the operator is the guard, not a swallowed error.
 	 */
 	private function scoreFormat(array $object, array $rule): float {
-		$value = $this->fieldValue(object: $object, field: (string)($rule['field'] ?? ''));
-		if ($this->isPresent(value: $value) === false || is_scalar($value) === false) {
+		$subject = $this->scalarSubject(object: $object, rule: $rule);
+		if ($subject === null) {
 			return 0.0;
 		}
 
-		$subject = (string)$value;
-
-		$pattern = null;
-		$named = (string)($rule['format'] ?? '');
-		if ($named !== '' && isset(self::NAMED_FORMATS[$named]) === true) {
-			$pattern = self::NAMED_FORMATS[$named];
-		}
-
-		$custom = ($rule['pattern'] ?? null);
-		if (is_string($custom) === true && $custom !== '') {
-			$pattern = '/' . str_replace('/', '\\/', $custom) . '/';
-		}
-
+		$pattern = $this->formatPattern(rule: $rule);
 		if ($pattern === null) {
 			return 0.0;
 		}
 
+		return $this->matchScore(pattern: $pattern, subject: $subject);
+	}//end scoreFormat()
+
+	/**
+	 * The rule's field value as a string, or null when absent or not scalar.
+	 *
+	 * @param array<string, mixed> $object Object payload.
+	 * @param array<string, mixed> $rule Rule definition.
+	 *
+	 * @return string|null
+	 */
+	private function scalarSubject(array $object, array $rule): ?string {
+		$value = $this->fieldValue(object: $object, field: (string)($rule['field'] ?? ''));
+		if ($this->isPresent(value: $value) === false || is_scalar($value) === false) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end scalarSubject()
+
+	/**
+	 * The PCRE pattern a format rule checks against.
+	 *
+	 * A custom `pattern` wins over a named `format`; an unknown name with no
+	 * pattern yields null, and the rule cannot be evaluated.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 *
+	 * @return string|null
+	 */
+	private function formatPattern(array $rule): ?string {
+		$named = (string)($rule['format'] ?? '');
+
+		$custom = ($rule['pattern'] ?? null);
+		if (is_string($custom) === true && $custom !== '') {
+			return '/' . str_replace('/', '\\/', $custom) . '/';
+		}
+
+		return (self::NAMED_FORMATS[$named] ?? null);
+	}//end formatPattern()
+
+	/**
+	 * Match a subject against a pattern; a pattern that fails to compile is a non-match.
+	 *
+	 * The compile warning of a user-supplied pattern is swallowed for the
+	 * duration of the call only.
+	 *
+	 * @param string $pattern PCRE pattern.
+	 * @param string $subject Value to test.
+	 *
+	 * @return float 1.0 on match, else 0.0.
+	 */
+	private function matchScore(string $pattern, string $subject): float {
+		set_error_handler(callback: static fn (): bool => true);
 		try {
-			$matched = @preg_match($pattern, $subject);
+			$matched = preg_match($pattern, $subject);
 		} catch (Throwable $e) {
 			return 0.0;
+		} finally {
+			restore_error_handler();
 		}
 
 		if ($matched === 1) {
@@ -235,31 +297,30 @@ class QualityScorer {
 		}
 
 		return 0.0;
-	}//end scoreFormat()
+	}//end matchScore()
 
 	/**
 	 * Score a freshness rule via exponential decay against now.
 	 *
-	 * @param array<string, mixed> $object Object payload.
+	 * @param QualityScoreRun      $run  The object and the reference instant.
 	 * @param array<string, mixed> $rule Rule definition.
-	 * @param DateTimeImmutable $now Reference instant.
 	 *
 	 * @return float exp(-ageDays / halfLifeDays) clamped to [0, 1]; 0.0 when
 	 *               the date is absent or unparseable.
 	 */
-	private function scoreFreshness(array $object, array $rule, DateTimeImmutable $now): float {
-		$value = $this->fieldValue(object: $object, field: (string)($rule['field'] ?? ''));
-		if ($this->isPresent(value: $value) === false || is_scalar($value) === false) {
+	private function scoreFreshness(QualityScoreRun $run, array $rule): float {
+		$value = $this->scalarSubject(object: $run->object, rule: $rule);
+		if ($value === null) {
 			return 0.0;
 		}
 
 		try {
-			$when = new DateTimeImmutable((string)$value);
+			$when = new DateTimeImmutable($value);
 		} catch (Throwable $e) {
 			return 0.0;
 		}
 
-		$ageSeconds = ($now->getTimestamp() - $when->getTimestamp());
+		$ageSeconds = ($run->now->getTimestamp() - $when->getTimestamp());
 		if ($ageSeconds <= 0) {
 			return 1.0;
 		}

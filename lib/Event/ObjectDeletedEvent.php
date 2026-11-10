@@ -23,41 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched when an object is deleted
  */
-class ObjectDeletedEvent extends Event {
-
-	/**
-	 * The deleted object entity
-	 *
-	 * @var ObjectEntity The object entity that was deleted
-	 */
-	private ObjectEntity $object;
-
-	/**
-	 * Constructor for ObjectDeletedEvent
-	 *
-	 * @param ObjectEntity $object The object entity that was deleted
-	 *
-	 * @return void
-	 */
-	public function __construct(ObjectEntity $object) {
-		parent::__construct();
-		$this->object = $object;
-	}//end __construct()
-
-	/**
-	 * Get the deleted object entity
-	 *
-	 * @return ObjectEntity The object entity that was deleted
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getObject(): ObjectEntity {
-		return $this->object;
-	}//end getObject()
+class ObjectDeletedEvent extends AbstractObjectEntityEvent {
 }//end class

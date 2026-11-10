@@ -17,6 +17,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ManifestController;
 use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ManifestControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -77,8 +78,7 @@ class ManifestControllerTest extends TestCase {
 		$this->request = $this->createMock(originalClassName: IRequest::class);
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
-		$this->controller = new ManifestController(
-			'openregister',
+		$this->controller = ManifestControllerFactory::create(
 			$this->request,
 			$this->manifestService,
 			$this->appManager,
@@ -149,11 +149,11 @@ class ManifestControllerTest extends TestCase {
 		$data = $result->getData();
 		$this->assertSame(expected: 'alice', actual: $data['runtime']['user']['id']);
 
-		// Conditional-request contract: the ETag is the md5 of the payload
+		// Conditional-request contract: the ETag is the xxh128 of the payload
 		// (NotModifiedMiddleware serves 304 on If-None-Match), and the default
 		// `no-store` is replaced with `private, no-cache` so the browser may
 		// store-and-revalidate.
-		$this->assertSame(expected: md5(json_encode($enriched)), actual: $result->getETag());
+		$this->assertSame(expected: hash(algo: 'xxh128', data: json_encode($enriched)), actual: $result->getETag());
 		$headers = $result->getHeaders();
 		$this->assertSame(expected: 'private, no-cache', actual: $headers['Cache-Control']);
 

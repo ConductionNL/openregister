@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Schema;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hinge
  */
-class ListPresentationResolver {
+class ListPresentationResolver implements ListPresentationResolverInterface {
 
 	/**
 	 * The columns every OpenRegister list already shows.
@@ -110,14 +110,7 @@ class ListPresentationResolver {
 			$definition = [];
 		}
 
-		$label = ($column['label'] ?? null);
-		if (is_string($label) === false || $label === '') {
-			$label = ($definition['title'] ?? null);
-		}
-
-		if (is_string($label) === false || $label === '') {
-			$label = $property;
-		}
+		$label = $this->columnLabel(column: $column, definition: $definition);
 
 		$type = ($definition['type'] ?? 'string');
 		if (is_string($type) === false) {
@@ -131,4 +124,25 @@ class ListPresentationResolver {
 			'source' => 'property',
 		];
 	}//end describeColumn()
+
+	/**
+	 * The header of a declared column: its own label, the property's title, or the property name.
+	 *
+	 * @param array $column     The declared column, with its property path.
+	 * @param array $definition The property's schema definition.
+	 *
+	 * @return string The label, never empty.
+	 */
+	private function columnLabel(array $column, array $definition): string {
+		$label = ($column['label'] ?? null);
+		if (is_string($label) === false || $label === '') {
+			$label = ($definition['title'] ?? null);
+		}
+
+		if (is_string($label) === false || $label === '') {
+			$label = $column['property'];
+		}
+
+		return $label;
+	}//end columnLabel()
 }//end class

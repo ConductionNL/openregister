@@ -108,23 +108,12 @@ class MdtoBestandGenerator {
 		[$dom, $bestand] = $this->writer->createDocument(kind: 'bestand');
 
 		$identification = $this->identification(file: $file);
-		$this->writer->identificatie(
-			parent: $bestand,
-			name: 'identificatie',
-			kenmerk: $identification['kenmerk'],
-			bron: $identification['bron']
-		);
+		$this->writer->identificatie(parent: $bestand, name: 'identificatie', kenmerk: $identification['kenmerk'], bron: $identification['bron']);
 		$this->writer->text(parent: $bestand, name: 'naam', content: (string)$file['name']);
 		$this->writer->text(parent: $bestand, name: 'omvang', content: (string)(int)$file['size']);
 		$this->addFormat(parent: $bestand, mediaType: (string)$file['format']);
 		$this->addChecksum(parent: $bestand, file: $file);
-		$this->writer->verwijzing(
-			parent: $bestand,
-			name: 'isRepresentatieVan',
-			verwijzingNaam: $represents['naam'],
-			kenmerk: $represents['kenmerk'],
-			bron: $represents['bron']
-		);
+		$this->addRepresents(parent: $bestand, represents: $represents);
 
 		return $this->writer->serialise(dom: $dom);
 	}//end generate()
@@ -167,30 +156,56 @@ class MdtoBestandGenerator {
 	 */
 	public function missingInputs(array $files): array {
 		$missing = [];
-
 		foreach ($files as $index => $file) {
-			$prefix = 'file[' . $index . '].';
-			foreach (['name', 'format'] as $key) {
-				if (($file[$key] ?? '') === '') {
-					$missing[] = $prefix . $key;
-				}
-			}
-
-			if (preg_match('/^\d+$/', (string)($file['size'] ?? '')) !== 1) {
-				$missing[] = $prefix . 'size (a non-negative integer)';
-			}
-
-			if (preg_match('/^[0-9a-fA-F]{64}$/', (string)($file['checksum'] ?? '')) !== 1) {
-				$missing[] = $prefix . 'checksum (a SHA-256)';
-			}
-
-			if (self::isXsdDateTime(value: ($file['checksumDate'] ?? null)) === false) {
-				$missing[] = $prefix . 'checksumDate (an xsd:dateTime)';
-			}
+			$missing = array_merge($missing, self::missingFileInputs(prefix: 'file[' . $index . '].', file: $file));
 		}
 
 		return $missing;
 	}//end missingInputs()
+
+	/**
+	 * The missing or malformed inputs of one file.
+	 *
+	 * @param string $prefix The file's report prefix (`file[n].`).
+	 * @param mixed  $file   The file.
+	 *
+	 * @return list<string> One entry per missing or malformed input.
+	 */
+	private static function missingFileInputs(string $prefix, mixed $file): array {
+		$checks = [
+			'name' => ($file['name'] ?? '') !== '',
+			'format' => ($file['format'] ?? '') !== '',
+			'size (a non-negative integer)' => preg_match('/^\d+$/', (string)($file['size'] ?? '')) === 1,
+			'checksum (a SHA-256)' => preg_match('/^[0-9a-fA-F]{64}$/', (string)($file['checksum'] ?? '')) === 1,
+			'checksumDate (an xsd:dateTime)' => self::isXsdDateTime(value: ($file['checksumDate'] ?? null)),
+		];
+		$missing = [];
+		foreach (array_keys(array_filter($checks, static fn (bool $ok): bool => $ok === false)) as $input) {
+			$missing[] = $prefix . $input;
+		}
+
+		return $missing;
+	}//end missingFileInputs()
+
+	/**
+	 * Add `isRepresentatieVan`, the informatieobject this file represents.
+	 *
+	 * @param DOMElement                                         $parent     The bestand element.
+	 * @param array{naam: string, kenmerk: string, bron: string} $represents The informatieobject.
+	 *
+	 * @return void
+	 */
+	private function addRepresents(DOMElement $parent, array $represents): void {
+		$this->writer->verwijzing(
+			parent: $parent,
+			name: 'isRepresentatieVan',
+			verwijzing: new MdtoVerwijzing(
+				naam: $represents['naam'],
+				kenmerk: $represents['kenmerk'],
+				bron: $represents['bron']
+			)
+		);
+	}//end addRepresents()
 
 	/**
 	 * Add `bestandsformaat` for a media type.
@@ -211,13 +226,7 @@ class MdtoBestandGenerator {
 			$label = substr($type, ($slash + 1));
 		}
 
-		$this->writer->begrip(
-			parent: $parent,
-			name: 'bestandsformaat',
-			label: $label,
-			code: $type,
-			list: self::MEDIA_TYPE_LIST
-		);
+		$this->writer->begrip(parent: $parent, name: 'bestandsformaat', begrip: new MdtoBegrip(label: $label, list: self::MEDIA_TYPE_LIST, code: $type));
 	}//end addFormat()
 
 	/**
@@ -236,9 +245,7 @@ class MdtoBestandGenerator {
 		$this->writer->begrip(
 			parent: $checksum,
 			name: 'checksumAlgoritme',
-			label: self::CHECKSUM_ALGORITHM,
-			code: null,
-			list: self::CHECKSUM_ALGORITHM_LIST
+			begrip: new MdtoBegrip(label: self::CHECKSUM_ALGORITHM, list: self::CHECKSUM_ALGORITHM_LIST)
 		);
 		$this->writer->text(parent: $checksum, name: 'checksumWaarde', content: strtolower((string)$file['checksum']));
 		$this->writer->text(parent: $checksum, name: 'checksumDatum', content: (string)$file['checksumDate']);

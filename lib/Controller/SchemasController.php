@@ -26,13 +26,14 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -44,32 +45,35 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Form\FormDependentsCheck;
-use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
+use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
-use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
-use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
+use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -115,6 +119,23 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/openapi-generation/spec.md
  */
 class SchemasController extends Controller {
+
+	/**
+	 * The exceptions that answer 422 with the errors of the declaration.
+	 *
+	 * @var array<int, class-string>
+	 */
+	private const DECLARATION_REFUSALS = [
+		UniqueHintException::class,
+		PropertyVocabularyException::class,
+		ReversibilityDeclarationException::class,
+		ReviewDeclarationException::class,
+		RelationDeclarationException::class,
+		CalculationDeclarationException::class,
+		ConsentDeclarationException::class,
+		DependentValueDeclarationException::class,
+		NotificationDeclarationException::class,
+	];
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
 	/**
@@ -156,9 +177,9 @@ class SchemasController extends Controller {
 	 * mappers — exercising the REAL resolution path instead of a mock of the very
 	 * thing under test.
 	 *
-	 * @var RegisterScopedSchemaResolver
+	 * @var RegisterScopedSchemaResolverInterface
 	 */
-	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+	private readonly RegisterScopedSchemaResolverInterface $scopedSchemaResolver;
 
 	/**
 	 * The call site for the reference-filter operand check.
@@ -203,16 +224,16 @@ class SchemasController extends Controller {
 	/**
 	 * The schema cache service.
 	 *
-	 * @var SchemaCacheHandler
+	 * @var SchemaCacheHandlerInterface
 	 */
-	private readonly SchemaCacheHandler $schemaCacheService;
+	private readonly SchemaCacheHandlerInterface $schemaCacheService;
 
 	/**
 	 * The facet cache svc.
 	 *
-	 * @var FacetResultCacheClearer
+	 * @var FacetResultCacheClearerInterface
 	 */
-	private readonly FacetResultCacheClearer $facetResults;
+	private readonly FacetResultCacheClearerInterface $facetResults;
 
 	/**
 	 * The logger.
@@ -238,23 +259,23 @@ class SchemasController extends Controller {
 	/**
 	 * The schema import service.
 	 *
-	 * @var ?SchemaImportService
+	 * @var ?SchemaImportServiceInterface
 	 */
-	private readonly ?SchemaImportService $schemaImportService;
+	private readonly ?SchemaImportServiceInterface $schemaImportService;
 
 	/**
 	 * The semantic type resolver.
 	 *
-	 * @var ?SemanticTypeResolver
+	 * @var ?SemanticTypeResolverInterface
 	 */
-	private readonly ?SemanticTypeResolver $semanticTypeResolver;
+	private readonly ?SemanticTypeResolverInterface $semanticTypeResolver;
 
 	/**
 	 * The semantic roles.
 	 *
-	 * @var ?SemanticRoleHandler
+	 * @var ?SemanticRoleHandlerInterface
 	 */
-	private readonly ?SemanticRoleHandler $semanticRoles;
+	private readonly ?SemanticRoleHandlerInterface $semanticRoles;
 
 	/**
 	 * The controller's injected services.
@@ -295,7 +316,7 @@ class SchemasController extends Controller {
 		$this->schemaImportService = $services->semantics->schemaImportService;
 		$this->semanticTypeResolver = $services->semantics->semanticTypeResolver;
 		$this->semanticRoles = $services->semantics->semanticRoles;
-		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+		$this->scopedSchemaResolver = RegisterScopedSchemaResolvers::over(
 			registerMapper: $this->registerMapper,
 			schemaMapper: $this->schemaMapper
 		);
@@ -671,7 +692,7 @@ class SchemasController extends Controller {
 				// Get register counts for all schemas in one call.
 				$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
 				$schemaArr['stats'] = [
-					'objects' => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+					'objects' => $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaArr['id'])),
 					'logs' => $this->auditLogStats(schemaId: (int)$schemaArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 					// Add the number of registers referencing this schema.
@@ -1101,19 +1122,13 @@ class SchemasController extends Controller {
 	 * @return JSONResponse|null The refusal with its errors, or null for any other exception
 	 */
 	private function declarationRefusal(Exception $e): ?JSONResponse {
-		if ($e instanceof UniqueHintException
-			|| $e instanceof PropertyVocabularyException
-			|| $e instanceof ReversibilityDeclarationException
-			|| $e instanceof ReviewDeclarationException
-			|| $e instanceof RelationDeclarationException
-			|| $e instanceof CalculationDeclarationException
-			|| $e instanceof ConsentDeclarationException
-			|| $e instanceof DependentValueDeclarationException
-		) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
+		foreach (self::DECLARATION_REFUSALS as $refusal) {
+			if ($e instanceof $refusal) {
+				return new JSONResponse(
+					data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+					statusCode: 422
+				);
+			}
 		}
 
 		return null;
@@ -1254,11 +1269,11 @@ class SchemasController extends Controller {
 	 * goes ahead without judging the published forms, and that must leave a trace
 	 * (an owning app's `refuse` setting is skipped with it).
 	 *
-	 * @return FormDependentsCheck|null The check, or null when it cannot be built.
+	 * @return FormDependentsCheckInterface|null The check, or null when it cannot be built.
 	 */
-	private function formDependentsCheck(): ?FormDependentsCheck {
+	private function formDependentsCheck(): ?FormDependentsCheckInterface {
 		try {
-			$check = $this->container->get(FormDependentsCheck::class);
+			$check = $this->container->get(FormDependentsCheckInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
@@ -1268,7 +1283,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		if ($check instanceof FormDependentsCheck) {
+		if ($check instanceof FormDependentsCheckInterface) {
 			return $check;
 		}
 
@@ -1395,10 +1410,9 @@ class SchemasController extends Controller {
 		);
 
 		try {
-			$this->schemaVersioningService->enforceGate(
-				changeSet: $changeSet,
-				acknowledged: $update['acknowledged'],
-				schemaId: $update['id']
+			$this->schemaVersioningService->gateChange(
+				schemaId: $update['id'],
+				record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $update['acknowledged'])
 			);
 		} catch (BreakingSchemaChangeException $e) {
 			return new JSONResponse(data: $e->toResponse(), statusCode: 409);
@@ -1426,7 +1440,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		$externalRefusal = (new ExternalGrantGuard())->refusalFor($data['authorization']);
+		$externalRefusal = RbacChecks::externalGrants()->refusalFor($data['authorization']);
 		if ($externalRefusal === null) {
 			return null;
 		}
@@ -1490,11 +1504,9 @@ class SchemasController extends Controller {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
 
 		if ($update['changeSet'] !== null) {
-			$this->schemaVersioningService->recordChangelog(
+			$this->schemaVersioningService->recordChange(
 				schemaId: $updatedSchema->getId(),
-				version: $updatedSchema->getVersion(),
-				changeSet: $update['changeSet'],
-				acknowledged: $update['acknowledged']
+				record: new SchemaChangeRecord(changeSet: $update['changeSet'], acknowledged: $update['acknowledged'], version: $updatedSchema->getVersion())
 			);
 		}
 
@@ -1538,6 +1550,13 @@ class SchemasController extends Controller {
 			);
 		} catch (\Throwable $e) {
 			// Audit logging should not break the update operation.
+			$this->logger->warning(
+				message: '[SchemasController] Schema authorization change not written to the audit trail',
+				context: [
+					'schemaId' => $schema->getId(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end auditSchemaAuthorizationChange()
 
@@ -1771,7 +1790,7 @@ class SchemasController extends Controller {
 			// only returns a real count when BOTH register AND schema are present
 			// in the @self filter, and silently returns 0 on single-axis queries,
 			// which would let DELETE silently succeed on schemas with objects.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaToDelete->getId()));
 			$objectCount = (int)($objectStats['total'] ?? 0);
 
 			if ($deleteObjects === true) {
@@ -1779,9 +1798,7 @@ class SchemasController extends Controller {
 			}
 
 			return $this->deleteSchemaKeepingObjects(
-				schema: $schemaToDelete,
-				objectCount: $objectCount,
-				force: $force
+				removal: new SchemaRemoval(schema: $schemaToDelete, objectCount: $objectCount, force: $force)
 			);
 		} catch (ArchivalImmutableException $e) {
 			// The cascade refused: this schema holds legally retained records. An HTTP
@@ -1806,20 +1823,19 @@ class SchemasController extends Controller {
 	 * it deletes the schema and orphans the objects, which is unchanged legacy behaviour
 	 * retained for API back-compat and never surfaced in the UI.
 	 *
-	 * @param Schema $schema The schema to delete (already authorized).
-	 * @param int $objectCount The number of live objects referencing the schema.
-	 * @param bool $force Whether ?force=true was passed.
+	 * @param SchemaRemoval $removal The schema to delete (already authorized), the number of live
+	 *                               objects referencing it, and whether ?force=true was passed.
 	 *
 	 * @throws Exception If the delete fails.
 	 *
 	 * @return JSONResponse Empty body on success, or the structured 409 refusal.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag is the API-level disposition, mirrored from the endpoint.
-	 *
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
-	private function deleteSchemaKeepingObjects(Schema $schema, int $objectCount, bool $force): JSONResponse {
-		if ($objectCount > 0 && $force === false) {
+	private function deleteSchemaKeepingObjects(SchemaRemoval $removal): JSONResponse {
+		$schema      = $removal->schema;
+		$objectCount = $removal->objectCount;
+		if ($objectCount > 0 && $removal->force === false) {
 			// Refuse: structured 409 with the orphan count for the caller.
 			return new JSONResponse(
 				data: [
@@ -1848,7 +1864,7 @@ class SchemasController extends Controller {
 		// Only a deliberate ?force=true may bypass the mapper-level guard and orphan
 		// the objects. The magic table is deliberately LEFT IN PLACE on that path —
 		// its rows are the orphans, and dropping it would destroy them unaudited.
-		$this->schemaMapper->delete(entity: $schema, force: $force);
+		$this->schemaMapper->delete(entity: $schema, force: $removal->force);
 
 		if ($objectCount === 0) {
 			// Nothing referenced this schema, so reclaim its (empty) magic table
@@ -1943,12 +1959,12 @@ class SchemasController extends Controller {
 	 *
 	 * @throws \RuntimeException If the service cannot be resolved.
 	 *
-	 * @return SchemaDeletionService The service.
+	 * @return SchemaTeardownInterface The service.
 	 */
-	private function getSchemaDeletionService(): SchemaDeletionService {
-		$service = $this->container->get(SchemaDeletionService::class);
+	private function getSchemaDeletionService(): SchemaTeardownInterface {
+		$service = $this->container->get(SchemaTeardownInterface::class);
 
-		if (($service instanceof SchemaDeletionService) === false) {
+		if (($service instanceof SchemaTeardownInterface) === false) {
 			throw new RuntimeException('SchemaDeletionService could not be resolved');
 		}
 
@@ -2078,7 +2094,7 @@ class SchemasController extends Controller {
 	 * @return array<string, mixed> The body with a JSON text block decoded; any other text stays for the write to judge.
 	 */
 	private function withAuthorizationAsStored(array $document): array {
-		$stored = (new CrossOrganisationMarkerChange())->asStored(authorization: ($document['authorization'] ?? null));
+		$stored = RbacRuleChecks::crossOrganisationMarkerChange()->asStored(authorization: ($document['authorization'] ?? null));
 		if (is_array($stored) === true) {
 			$document['authorization'] = $stored;
 		}
@@ -2102,7 +2118,7 @@ class SchemasController extends Controller {
 	 */
 	private function crossOrganisationRefusal(mixed $old, array $document): ?JSONResponse {
 		if (array_key_exists('authorization', $document) === false
-			|| (new CrossOrganisationMarkerChange())->widens(old: $old, new: $document['authorization']) === false
+			|| RbacRuleChecks::crossOrganisationMarkerChange()->widens(old: $old, new: $document['authorization']) === false
 			|| $this->isCurrentUserAdmin() === true
 		) {
 			return null;
@@ -2127,7 +2143,7 @@ class SchemasController extends Controller {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function orphanCleanupRefusal(Schema $schema, array $document): ?JSONResponse {
-		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
 			return null;
 		}
 
@@ -2286,12 +2302,7 @@ class SchemasController extends Controller {
 				}
 
 				// Use the same reference logic as getRelated, but reversed.
-				if ($this->schemaMapper->hasReferenceToSchema(
-					properties: $properties,
-					targetSchemaId: (string)$schema->getId(),
-					targetSchemaUuid: $schema->getUuid() ?? '',
-					targetSchemaSlug: $schema->getSlug() ?? ''
-				) === true
+				if ($this->schemaMapper->hasReferenceToSchema(properties: $properties, target: $schema) === true
 				) {
 					$outgoingSchemas[$schema->getId()] = $schema;
 				}
@@ -2352,7 +2363,7 @@ class SchemasController extends Controller {
 			// Default every key: mapper variants (and mocked test doubles) may
 			// return partial maps, which otherwise emits "Undefined array key"
 			// PHP warnings for empty schemas.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $id));
 			$objectStats = array_merge(
 				['total' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'size' => 0],
 				$objectStats
@@ -2718,10 +2729,8 @@ class SchemasController extends Controller {
 			if ($dialect === 'ggm' && isset($document['objecttypen']) === true) {
 				// Treat the uploaded body as a normalised GGM intermediate.
 				$imported = $this->schemaImportService->importGgmUpload(
-					normalised: $document,
-					reference: $reference,
-					options: ImportOptions::fromArray($this->request->getParams()),
-					sourceLabel: 'upload'
+					upload: new GgmUpload(normalised: $document, reference: $reference, sourceLabel: 'upload'),
+					options: ImportOptions::fromArray($this->request->getParams())
 				);
 			} else {
 				$imported = $this->schemaImportService->import(
@@ -2803,7 +2812,7 @@ class SchemasController extends Controller {
 	 * Default-SECURE: a schema with no `manage` authorization rule can only be
 	 * managed by administrators. When manage rules are present, membership of
 	 * one of the listed groups grants permission (admins always pass). This is
-	 * deliberately NOT PermissionHandler::hasPermission(), which is default-OPEN
+	 * deliberately NOT PermissionHandlerInterface::hasPermission(), which is default-OPEN
 	 * for object data RBAC and therefore unsuitable for gating schema-definition
 	 * writes. Reading schema metadata is unaffected and stays open.
 	 *
@@ -2813,7 +2822,7 @@ class SchemasController extends Controller {
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$rights = new DefinitionWriteRights(
+			$rights = RbacRuleChecks::definitionWriteRights(
 				userSession: $this->container->get(\OCP\IUserSession::class),
 				groupManager: $this->container->get(\OCP\IGroupManager::class)
 			);
@@ -2834,7 +2843,7 @@ class SchemasController extends Controller {
 	 * keep them.
 	 *
 	 * @param int|string                $id       The schema id, uuid or slug.
-	 * @param ListPresentationResolver $resolver The resolver.
+	 * @param ListPresentationResolverInterface $resolver The resolver.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -2850,7 +2859,7 @@ class SchemasController extends Controller {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function listPresentation(int|string $id, ListPresentationResolver $resolver): JSONResponse {
+	public function listPresentation(int|string $id, ListPresentationResolverInterface $resolver): JSONResponse {
 		try {
 			// Metadata read: a schema's own declaration is catalogue data, scoped
 			// the same way the sibling `related` endpoint scopes it.

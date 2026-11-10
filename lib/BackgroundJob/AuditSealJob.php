@@ -33,8 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\AuditHashService;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\AuditSealInterface;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -70,18 +69,24 @@ class AuditSealJob extends TimedJob {
 	private const PASSES_PER_RUN = 10;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for TimedJob.
-	 * @param AuditHashService $hashes Seals the rows.
-	 * @param LoggerInterface $logger Reports progress and a growing backlog.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
+	 * @param AuditSealInterface $hashes Seals the rows.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly AuditHashService $hashes,
-		private readonly LoggerInterface $logger,
+		JobRuntime $runtime,
+		private readonly AuditSealInterface $hashes,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
 	}//end __construct()

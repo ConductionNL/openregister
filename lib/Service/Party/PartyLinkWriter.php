@@ -30,8 +30,9 @@ namespace OCA\OpenRegister\Service\Party;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -48,13 +49,13 @@ class PartyLinkWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows.
-	 * @param PartyService $parties The party records.
+	 * @param ContactLinkMapperInterface $links The link rows.
+	 * @param TrustedPartyReaderInterface $parties The party records.
 	 * @param IUserSession $session The signed-in user, recorded as the linker.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
-		private readonly PartyService $parties,
+		private readonly ContactLinkMapperInterface $links,
+		private readonly TrustedPartyReaderInterface $parties,
 		private readonly IUserSession $session,
 	) {
 	}//end __construct()
@@ -62,12 +63,7 @@ class PartyLinkWriter {
 	/**
 	 * Write a party link, or refresh the one the party already holds in that role.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The object's schema id.
-	 * @param string $partyUuid The party object's uuid.
-	 * @param string|null $role The role.
-	 * @param string|null $linkedBy Who links it when nobody is signed in, such as an example set's app; the signed-in user wins.
+	 * @param PartyLinkRequest $request The object, party, role and named linker; the signed-in user wins over the named linker.
 	 *
 	 * A trusted import (nobody signed in, a linker named) finds the party
 	 * without RBAC, as PartyRoleService accepted it; a signed-in caller finds
@@ -80,9 +76,45 @@ class PartyLinkWriter {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
 	 */
-	public function write(string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role, ?string $linkedBy = null): ContactLink {
+	public function write(PartyLinkRequest $request): ContactLink {
+		$partyUuid = $request->partyUuid;
 		$signedIn = $this->session->getUser();
-		$party    = match ($signedIn === null && $linkedBy !== null) {
+		$party    = $this->readParty(partyUuid: $partyUuid, trusted: ($signedIn === null && $request->namesLinker() === true));
+		$definition = $this->definitionOf(party: $party, partyUuid: $partyUuid);
+
+		$linker     = $this->linkerOf(signedIn: $signedIn, linkedBy: $request->linkedBy);
+
+		$target     = $request->target;
+		$contactUid = ContactLink::partyUid(partyUuid: $partyUuid);
+		$existing   = $this->links->findByObjectContactAndRole(objectUuid: $target->objectUuid, contactUid: $contactUid, role: $request->role);
+		$link       = ($existing ?? $this->newLink(objectUuid: $target->objectUuid, contactUid: $contactUid));
+
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId);
+		$link->setPartyUuid($partyUuid);
+		$link->setPartyKind($definition->kind());
+		$link->setDisplayName($this->displayNameOf(party: $party, definition: $definition));
+		$link->setEmail($this->primaryEmailOf(party: $party, definition: $definition));
+		$link->setRole($request->role);
+		$link->setLinkedBy($linker);
+		$link->setLinkedAt(new DateTime());
+
+		return $this->store(link: $link, isNew: ($existing === null));
+	}//end write()
+
+	/**
+	 * The party to link: a trusted import reads it without RBAC, anyone else
+	 * with their own rights.
+	 *
+	 * @param string $partyUuid The party object's uuid.
+	 * @param bool $trusted Whether nobody is signed in and a linker is named.
+	 *
+	 * @return ObjectEntity The party.
+	 *
+	 * @throws Exception 404 when no party has that uuid.
+	 */
+	private function readParty(string $partyUuid, bool $trusted): ObjectEntity {
+		$party = match ($trusted) {
 			true  => $this->parties->findUnscoped(uuid: $partyUuid),
 			false => $this->parties->find(partyUuid: $partyUuid),
 		};
@@ -90,41 +122,79 @@ class PartyLinkWriter {
 			throw new Exception('Party not found', 404);
 		}
 
+		return $party;
+	}//end readParty()
+
+	/**
+	 * The party declaration of the party's schema.
+	 *
+	 * @param ObjectEntity $party The party.
+	 * @param string $partyUuid The party object's uuid, for the refusal.
+	 *
+	 * @return PartyDefinition The declaration.
+	 *
+	 * @throws Exception 400 when the object is not a party.
+	 */
+	private function definitionOf(ObjectEntity $party, string $partyUuid): PartyDefinition {
 		$definition = $this->parties->definitionFor(party: $party);
 		if ($definition === null) {
 			throw new Exception('Object "' . $partyUuid . '" is not a party: its schema declares no party model', 400);
 		}
 
+		return $definition;
+	}//end definitionOf()
+
+	/**
+	 * Who links: the signed-in user, else the named linker.
+	 *
+	 * @param IUser|null $signedIn The signed-in user.
+	 * @param string|null $linkedBy The named linker.
+	 *
+	 * @return string The linker's uid.
+	 *
+	 * @throws Exception 401 when nobody is signed in and no linker is named.
+	 */
+	private function linkerOf(?IUser $signedIn, ?string $linkedBy): string {
 		$linker = ($signedIn?->getUID() ?? $linkedBy);
 		if ($linker === null || $linker === '') {
 			throw new Exception('No user logged in', 401);
 		}
 
-		$contactUid = ContactLink::partyUid(partyUuid: $partyUuid);
-		$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
-		$isNew = ($link === null);
-		if ($link === null) {
-			$link = new ContactLink();
-			$link->setObjectUuid($objectUuid);
-			$link->setContactUid($contactUid);
-			$link->setPrimaryParty(false);
-		}
+		return $linker;
+	}//end linkerOf()
 
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
-		$link->setPartyUuid($partyUuid);
-		$link->setPartyKind($definition->kind());
-		$link->setDisplayName($this->displayNameOf(party: $party, definition: $definition));
-		$link->setEmail($this->primaryEmailOf(party: $party, definition: $definition));
-		$link->setRole($role);
-		$link->setLinkedBy($linker);
-		$link->setLinkedAt(new DateTime());
+	/**
+	 * Insert a new row, or update the one the party already held.
+	 *
+	 * @param ContactLink $link The row.
+	 * @param bool $isNew Whether the row is new.
+	 *
+	 * @return ContactLink The link as stored.
+	 */
+	private function store(ContactLink $link, bool $isNew): ContactLink {
 		if ($isNew === true) {
 			return $this->links->insert($link);
 		}
 
 		return $this->links->update($link);
-	}//end write()
+	}//end store()
+
+	/**
+	 * A fresh, non-primary link row for the object and party.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $contactUid The party's contact uid.
+	 *
+	 * @return ContactLink The unsaved row.
+	 */
+	private function newLink(string $objectUuid, string $contactUid): ContactLink {
+		$link = new ContactLink();
+		$link->setObjectUuid($objectUuid);
+		$link->setContactUid($contactUid);
+		$link->setPrimaryParty(false);
+
+		return $link;
+	}//end newLink()
 
 	/**
 	 * The name to show for a party: the declared name property, else the
@@ -162,7 +232,7 @@ class PartyLinkWriter {
 	 * @return string|null The address.
 	 */
 	private function primaryEmailOf(ObjectEntity $party, PartyDefinition $definition): ?string {
-		$preferred = $this->parties->addressesOfKind(party: $party, kind: 'correspondence', definition: $definition);
+		$preferred = $this->parties->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'correspondence', definition: $definition));
 		if ($preferred === []) {
 			$preferred = $this->parties->addresses(party: $party, definition: $definition);
 		}

@@ -30,11 +30,13 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\AnalyticsReportDraft;
 use Exception;
 use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapper;
 use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -86,9 +88,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 
 		$this->service = new AnalyticsLinkService(
 			$this->mapper,
-			$this->appManager,
-			$this->userSession,
-			$this->logger,
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
 			$this->createMock(ContainerInterface::class)
 		);
 	}//end setUp()
@@ -151,7 +151,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkReport($this->target(), 'Sales');
+		$this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('Sales'));
 	}//end testCreateAndLinkReportThrowsWhenNoUser()
 
 	public function testCreateAndLinkReportThrowsOnEmptyName(): void {
@@ -160,7 +160,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkReport($this->target(), '   ');
+		$this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('   '));
 	}//end testCreateAndLinkReportThrowsOnEmptyName()
 
 	public function testCreateAndLinkReportThrowsWhenAnalyticsUnavailable(): void {
@@ -170,7 +170,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkReport($this->target(), 'Sales');
+		$this->service->createAndLinkReport($this->target(), new AnalyticsReportDraft('Sales'));
 	}//end testCreateAndLinkReportThrowsWhenAnalyticsUnavailable()
 
 	public function testUnlinkReportThrowsWhenNoUser(): void {
@@ -246,7 +246,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->appManager->method('isEnabledForUser')->with('analytics')->willReturn(true);
 		$this->mapper->method('insert')->willReturnArgument(0);
 
-		return new AnalyticsLinkService($this->mapper, $this->appManager, $this->userSession, $this->logger, $container);
+		return new AnalyticsLinkService($this->mapper, new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger), $container);
 	}//end serviceWithReports()
 
 	public function testLinkReportStampsTheObjectAndCachesTheReport(): void {
@@ -301,7 +301,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 			}
 		};
 
-		$link = $this->serviceWithReports($reports)->createAndLinkReport($this->target(), '  Fresh  ', 5);
+		$link = $this->serviceWithReports($reports)->createAndLinkReport($this->target(), new AnalyticsReportDraft('  Fresh  ', 5));
 
 		$this->assertSame('Fresh', $reports->created[0]);
 		$this->assertSame(5, $reports->created[3]);
@@ -327,7 +327,7 @@ class AnalyticsLinkServiceTest extends TestCase {
 			}
 		};
 
-		$link = $this->serviceWithReports($reports)->createAndLinkReport($this->target(), 'Draft');
+		$link = $this->serviceWithReports($reports)->createAndLinkReport($this->target(), new AnalyticsReportDraft('Draft'));
 
 		$this->assertSame(7, $link->getReportId());
 		$this->assertSame('Draft', $link->getReportTitle());
@@ -346,6 +346,6 @@ class AnalyticsLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(500);
 
-		$this->serviceWithReports($reports)->createAndLinkReport($this->target(), 'Draft');
+		$this->serviceWithReports($reports)->createAndLinkReport($this->target(), new AnalyticsReportDraft('Draft'));
 	}//end testCreateAndLinkReportThrowsWhenTheCreateReturnsNoId()
 }//end class

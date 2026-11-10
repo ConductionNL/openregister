@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
@@ -47,10 +49,8 @@ use Psr\Log\LoggerInterface;
  *
  * Registrations are in-memory only (static array) and populated fresh
  * on each request via app boot cycles.
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class DeepLinkRegistryService {
+class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 
 	/**
 	 * In-memory registry keyed by "registerSlug::schemaSlug".
@@ -88,20 +88,6 @@ class DeepLinkRegistryService {
 	private static bool $appsAsked = false;
 
 	/**
-	 * Container for lazy resolution of mappers (avoids circular DI).
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * Logger for debugging registry operations.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for DeepLinkRegistryService.
 	 *
 	 * Uses ContainerInterface instead of direct mapper injection to avoid
@@ -113,75 +99,98 @@ class DeepLinkRegistryService {
 	 * @return void
 	 */
 	public function __construct(
-		ContainerInterface $container,
-		LoggerInterface $logger,
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->container = $container;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
-	 * Register a deep link pattern for a (register, schema) combination.
+	 * Add a deep link registration for its (register, schema) combination.
 	 *
-	 * @param string $appId The consuming app ID (e.g., "procest")
-	 * @param string $registerSlug The register slug
-	 * @param string $schemaSlug The schema slug
-	 * @param string $urlTemplate URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-	 * @param string $icon Optional icon identifier (defaults to "icon-{appId}")
-	 * @param string|null $displayName Optional human-readable label for the app's
-	 *                                 unified-search results (defaults to null → app id)
+	 * The first registration for a combination wins; a later one is ignored.
+	 * A registration without an icon gets `icon-{appId}`.
+	 *
+	 * @param DeepLinkRegistration $registration The app, slugs, URL template, icon and label.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
-	 * @spec openspec/specs/deep-link-registry/spec.md
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
-	public function register(
-		string $appId,
-		string $registerSlug,
-		string $schemaSlug,
-		string $urlTemplate,
-		string $icon = '',
-		?string $displayName = null,
-	): void {
-		$key = $registerSlug . '::' . $schemaSlug;
+	public function add(DeepLinkRegistration $registration): void {
+		$this->store(registration: $this->withEffectiveIcon(registration: $registration));
+	}//end add()
+
+	/**
+	 * The registration, with `icon-{appId}` as its icon when it names none.
+	 *
+	 * @param DeepLinkRegistration $registration The registration as the app gave it.
+	 *
+	 * @return DeepLinkRegistration The registration to store.
+	 */
+	private function withEffectiveIcon(DeepLinkRegistration $registration): DeepLinkRegistration {
+		if ($registration->icon !== '') {
+			return $registration;
+		}
+
+		return new DeepLinkRegistration(
+			appId: $registration->appId,
+			registerSlug: $registration->registerSlug,
+			schemaSlug: $registration->schemaSlug,
+			urlTemplate: $registration->urlTemplate,
+			icon: $this->effectiveIcon(appId: $registration->appId, icon: ''),
+			displayName: $registration->displayName
+		);
+	}//end withEffectiveIcon()
+
+	/**
+	 * Keep a registration unless its (register, schema) pair is claimed already: first registration wins.
+	 *
+	 * @param DeepLinkRegistration $registration The registration, with its effective icon.
+	 *
+	 * @return void
+	 */
+	private function store(DeepLinkRegistration $registration): void {
+		$key = $registration->registerSlug . '::' . $registration->schemaSlug;
 
 		if (isset(self::$registrations[$key]) === true) {
 			$this->logger->debug(
 				'[DeepLinkRegistry] Ignoring duplicate registration for {key} from {appId} (already claimed by {existing})',
 				[
 					'key' => $key,
-					'appId' => $appId,
+					'appId' => $registration->appId,
 					'existing' => self::$registrations[$key]->appId,
 				]
 			);
 			return;
 		}
 
-		$effectiveIcon = 'icon-' . $appId;
-		if ($icon !== '') {
-			$effectiveIcon = $icon;
-		}
-
-		self::$registrations[$key] = new DeepLinkRegistration(
-			appId: $appId,
-			registerSlug: $registerSlug,
-			schemaSlug: $schemaSlug,
-			urlTemplate: $urlTemplate,
-			icon: $effectiveIcon,
-			displayName: $displayName,
-		);
+		self::$registrations[$key] = $registration;
 
 		$this->logger->debug(
 			'[DeepLinkRegistry] Registered deep link for {key} → {appId} ({template})',
 			[
 				'key' => $key,
-				'appId' => $appId,
-				'template' => $urlTemplate,
+				'appId' => $registration->appId,
+				'template' => $registration->urlTemplate,
 			]
 		);
-	}//end register()
+	}//end store()
+
+	/**
+	 * The icon of a registration: the given one, or "icon-{appId}" when none is given.
+	 *
+	 * @param string $appId The consuming app ID.
+	 * @param string $icon  The icon given, or ''.
+	 *
+	 * @return string
+	 */
+	private function effectiveIcon(string $appId, string $icon): string {
+		if ($icon !== '') {
+			return $icon;
+		}
+
+		return 'icon-' . $appId;
+	}//end effectiveIcon()
 
 	/**
 	 * Resolve a deep link registration by register and schema integer IDs.
@@ -205,6 +214,23 @@ class DeepLinkRegistryService {
 			return null;
 		}
 
+		$key = $this->registrationKey(registerId: $registerId, schemaId: $schemaId);
+		if ($key === null) {
+			return null;
+		}
+
+		return self::$registrations[$key] ?? null;
+	}//end resolve()
+
+	/**
+	 * The `{registerSlug}::{schemaSlug}` key of a register/schema id pair, or null when a slug is unknown.
+	 *
+	 * @param int $registerId The register database ID.
+	 * @param int $schemaId   The schema database ID.
+	 *
+	 * @return string|null
+	 */
+	private function registrationKey(int $registerId, int $schemaId): ?string {
 		$this->ensureIdMaps();
 
 		$registerSlug = self::$registerIdMap[$registerId] ?? null;
@@ -214,9 +240,8 @@ class DeepLinkRegistryService {
 			return null;
 		}
 
-		$key = $registerSlug . '::' . $schemaSlug;
-		return self::$registrations[$key] ?? null;
-	}//end resolve()
+		return $registerSlug . '::' . $schemaSlug;
+	}//end registrationKey()
 
 	/**
 	 * Resolve a URL for a search result, falling back to null if no registration exists.
@@ -232,21 +257,9 @@ class DeepLinkRegistryService {
 	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
-	public function resolveUrl(
-		int $registerId,
-		int $schemaId,
-		array $objectData,
-		array $contactContext = [],
-	): ?string {
+	public function resolveUrl(int $registerId, int $schemaId, array $objectData, array $contactContext = []): ?string {
 		$registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
-		if ($registration === null) {
-			return null;
-		}
-
-		return $registration->resolveUrl(
-			objectData: $objectData,
-			contactContext: $contactContext
-		);
+		return $registration?->resolveUrl(objectData: $objectData, contactContext: $contactContext);
 	}//end resolveUrl()
 
 	/**
@@ -314,13 +327,9 @@ class DeepLinkRegistryService {
 		self::$appsAsked = true;
 
 		try {
+			$dispatcher ??= $this->containerDispatcher();
 			if ($dispatcher === null) {
-				$candidate = $this->container->get(IEventDispatcher::class);
-				if ($candidate instanceof IEventDispatcher === false) {
-					return;
-				}
-
-				$dispatcher = $candidate;
+				return;
 			}
 
 			$dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $this));
@@ -331,6 +340,20 @@ class DeepLinkRegistryService {
 			);
 		}
 	}//end requestRegistrations()
+
+	/**
+	 * The event dispatcher from the app container, or null when it serves something else.
+	 *
+	 * @return IEventDispatcher|null
+	 */
+	private function containerDispatcher(): ?IEventDispatcher {
+		$candidate = $this->container->get(IEventDispatcher::class);
+		if ($candidate instanceof IEventDispatcher === false) {
+			return null;
+		}
+
+		return $candidate;
+	}//end containerDispatcher()
 
 	/**
 	 * Lazily build the ID↔slug maps from database.
@@ -347,46 +370,69 @@ class DeepLinkRegistryService {
 		self::$registerIdMap = [];
 		self::$schemaIdMap = [];
 
+		$this->fillSlugMap(map: self::$registerIdMap, plural: 'registers');
+		$this->fillSlugMap(map: self::$schemaIdMap, plural: 'schemas');
+	}//end ensureIdMaps()
+
+	/**
+	 * Fill an ID→slug map with every register or schema that has a slug, read without RBAC or multitenancy.
+	 *
+	 * A failed read is logged as a warning; the rows read before it stay in the map.
+	 *
+	 * @param array<int, string> $map    The map, filled in place.
+	 * @param string             $plural 'registers' or 'schemas'.
+	 *
+	 * @return void
+	 */
+	private function fillSlugMap(array &$map, string $plural): void {
 		try {
-			$registerMapper = $this->container->get(RegisterMapperInterface::class);
-			$registers = $registerMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-			foreach ($registers as $register) {
-				$slug = $register->getSlug();
-				$id = $register->getId();
-				if ($slug !== null && $slug !== '') {
-					self::$registerIdMap[$id] = $slug;
-				}
+			foreach ($this->rowsOf(plural: $plural) as $entity) {
+				$this->addSlug(map: $map, entity: $entity);
 			}
 		} catch (\Exception $e) {
 			$this->logger->warning(
-				'[DeepLinkRegistry] Failed to load registers for slug resolution: {error}',
+				'[DeepLinkRegistry] Failed to load ' . $plural . ' for slug resolution: {error}',
 				['error' => $e->getMessage()]
+			);
+		}
+	}//end fillSlugMap()
+
+	/**
+	 * Every register, or every schema, without RBAC or multitenancy.
+	 *
+	 * @param string $plural 'registers' or 'schemas'.
+	 *
+	 * @return array<int, Register|Schema>
+	 */
+	private function rowsOf(string $plural): array {
+		if ($plural === 'registers') {
+			return $this->container->get(RegisterMapperInterface::class)->findAll(
+				_rbac: false,
+				_multitenancy: false
 			);
 		}
 
-		try {
-			$schemaMapper = $this->container->get(SchemaMapperInterface::class);
-			$schemas = $schemaMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-			foreach ($schemas as $schema) {
-				$slug = $schema->getSlug();
-				$id = $schema->getId();
-				if ($slug !== null && $slug !== '') {
-					self::$schemaIdMap[$id] = $slug;
-				}
-			}
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				'[DeepLinkRegistry] Failed to load schemas for slug resolution: {error}',
-				['error' => $e->getMessage()]
-			);
+		return $this->container->get(SchemaMapperInterface::class)->findAll(
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end rowsOf()
+
+	/**
+	 * Add a register or schema to an ID→slug map when it has a non-empty slug.
+	 *
+	 * @param array<int, string> $map    The map, extended in place.
+	 * @param Register|Schema    $entity The row.
+	 *
+	 * @return void
+	 */
+	private function addSlug(array &$map, Register|Schema $entity): void {
+		$slug = $entity->getSlug();
+		$id = $entity->getId();
+		if ($slug !== null && $slug !== '') {
+			$map[$id] = $slug;
 		}
-	}//end ensureIdMaps()
+	}//end addSlug()
 
 	/**
 	 * Check whether any registrations exist.

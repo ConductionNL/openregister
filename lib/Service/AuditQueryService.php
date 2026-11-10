@@ -34,9 +34,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -53,7 +52,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-1.1
  */
-class AuditQueryService {
+class AuditQueryService implements AuditQueryServiceInterface {
 
 	/**
 	 * Maximum allowed page size.
@@ -73,15 +72,12 @@ class AuditQueryService {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService Cross-schema object search (audit entries ARE objects).
-	 * @param RegisterMapperInterface $registerMapper Register lookup + register/schema relationship helpers.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
+	 * @param SchemaCatalogInterface    $catalog       Register and schema lookup + register/schema relationship helpers.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -100,37 +96,41 @@ class AuditQueryService {
 	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-1.2
 	 */
 	public function query(array $filters, int $limit, int $offset): array {
-		$limit = $this->clampLimit(limit: $limit);
-		$offset = max(0, $offset);
+		return $this->pageOf(
+			filters: $filters,
+			window: ['limit' => $this->clampLimit(limit: $limit), 'offset' => max(0, $offset)]
+		);
 
+	}//end query()
+
+	/**
+	 * One page of the audit entries the filters select.
+	 *
+	 * @param array<string, mixed>             $filters Raw filters, see {@see self::query()}.
+	 * @param array{limit: int, offset: int} $window  The clamped page window.
+	 *
+	 * @return array{entries: array<int, array<string, mixed>>, total: int, limit: int, offset: int}
+	 */
+	private function pageOf(array $filters, array $window): array {
 		$pairs = $this->resolveRegisterSchemaPairs(filters: $filters);
 
 		if (empty($pairs) === true) {
 			// Graceful handling of an unconfigured audit schema: no matching
 			// register/schema pair, no error, just an empty page.
-			return [
-				'entries' => [],
-				'total' => 0,
-				'limit' => $limit,
-				'offset' => $offset,
-			];
+			return ['entries' => [], 'total' => 0] + $window;
 		}
 
 		$rows = $this->collectEntries(pairs: $pairs, filters: $filters);
 		$rows = $this->applyTimestampFilter(rows: $rows, filters: $filters);
 		$rows = $this->sortRows(rows: $rows, filters: $filters);
 
-		$total = count($rows);
-		$page = array_slice($rows, $offset, $limit);
+		$page = array_slice($rows, $window['offset'], $window['limit']);
 
 		return [
 			'entries' => array_map(fn (array $row): array => $this->mapEntry(row: $row), $page),
-			'total' => $total,
-			'limit' => $limit,
-			'offset' => $offset,
-		];
-
-	}//end query()
+			'total' => count($rows),
+		] + $window;
+	}//end pageOf()
 
 	/**
 	 * Clamp a requested page size into [1, MAX_LIMIT].
@@ -173,29 +173,51 @@ class AuditQueryService {
 		$schemaSlug = $filters['schemaId'] ?? null;
 
 		// Explicit schema requested: trust it, regardless of naming.
-		if ($schemaSlug !== null && $schemaSlug !== '') {
+		if ($this->isGiven(value: $schemaSlug) === true) {
 			return $this->pairsForExplicitSchema(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
 		}
 
 		// No explicit schema: fall back to the "looks like audit" convention
 		// so the endpoint does not default to exposing every business object.
-		if ($registerSlug !== null && $registerSlug !== '') {
-			try {
-				$register = $this->registerMapper->find(id: $registerSlug);
-			} catch (DoesNotExistException $e) {
-				return [];
-			}
-
-			return $this->auditSchemaPairsForRegister(register: $register);
+		if ($this->isGiven(value: $registerSlug) === true) {
+			return $this->auditSchemaPairsForRegisterSlug(registerSlug: $registerSlug);
 		}
 
 		$pairs = [];
-		foreach ($this->registerMapper->findAll() as $register) {
+		foreach ($this->catalog->registers()->findAll() as $register) {
 			$pairs = array_merge($pairs, $this->auditSchemaPairsForRegister(register: $register));
 		}
 
 		return $pairs;
 	}//end resolveRegisterSchemaPairs()
+
+	/**
+	 * Whether a filter value was supplied: neither null nor the empty string.
+	 *
+	 * @param mixed $value The filter value.
+	 *
+	 * @return bool True when given.
+	 */
+	private function isGiven(mixed $value): bool {
+		return $value !== null && $value !== '';
+	}//end isGiven()
+
+	/**
+	 * The audit-looking schemas of one register, none when it does not exist.
+	 *
+	 * @param mixed $registerSlug Register slug/id filter (non-empty).
+	 *
+	 * @return array<int, array{0: Register, 1: Schema}>
+	 */
+	private function auditSchemaPairsForRegisterSlug($registerSlug): array {
+		try {
+			$register = $this->catalog->registers()->find(id: $registerSlug);
+		} catch (DoesNotExistException $e) {
+			return [];
+		}
+
+		return $this->auditSchemaPairsForRegister(register: $register);
+	}//end auditSchemaPairsForRegisterSlug()
 
 	/**
 	 * Resolve pairs when an explicit schemaId filter was supplied.
@@ -207,32 +229,55 @@ class AuditQueryService {
 	 */
 	private function pairsForExplicitSchema($registerSlug, $schemaSlug): array {
 		try {
-			$schema = $this->schemaMapper->find(id: $schemaSlug);
+			$schema = $this->catalog->schemas()->find(id: $schemaSlug);
 		} catch (DoesNotExistException $e) {
 			return [];
 		}
 
-		if ($registerSlug !== null && $registerSlug !== '') {
-			try {
-				$register = $this->registerMapper->find(id: $registerSlug);
-			} catch (DoesNotExistException $e) {
-				return [];
-			}
-
-			return [[$register, $schema]];
+		if ($this->isGiven(value: $registerSlug) === true) {
+			return $this->pairOnRegister(registerSlug: $registerSlug, schema: $schema);
 		}
 
+		return $this->pairsOnRegistersWith(schema: $schema);
+	}//end pairsForExplicitSchema()
+
+	/**
+	 * The one pair of a schema on a named register, none when it does not exist.
+	 *
+	 * @param mixed  $registerSlug Register slug/id filter (non-empty).
+	 * @param Schema $schema       The schema.
+	 *
+	 * @return array<int, array{0: Register, 1: Schema}>
+	 */
+	private function pairOnRegister($registerSlug, Schema $schema): array {
+		try {
+			$register = $this->catalog->registers()->find(id: $registerSlug);
+		} catch (DoesNotExistException $e) {
+			return [];
+		}
+
+		return [[$register, $schema]];
+	}//end pairOnRegister()
+
+	/**
+	 * The schema on every register that references it; a missing register is skipped.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, array{0: Register, 1: Schema}>
+	 */
+	private function pairsOnRegistersWith(Schema $schema): array {
 		$pairs = [];
-		foreach ($this->registerMapper->getAllRegisterIdsWithSchema(schemaId: $schema->getId()) as $registerId) {
+		foreach ($this->catalog->registers()->getAllRegisterIdsWithSchema(schemaId: $schema->getId()) as $registerId) {
 			try {
-				$pairs[] = [$this->registerMapper->find(id: $registerId), $schema];
+				$pairs[] = [$this->catalog->registers()->find(id: $registerId), $schema];
 			} catch (DoesNotExistException $e) {
 				continue;
 			}
 		}
 
 		return $pairs;
-	}//end pairsForExplicitSchema()
+	}//end pairsOnRegistersWith()
 
 	/**
 	 * All schemas on a register whose slug/title looks like an audit schema.
@@ -243,7 +288,7 @@ class AuditQueryService {
 	 */
 	private function auditSchemaPairsForRegister(Register $register): array {
 		$pairs = [];
-		foreach ($this->registerMapper->getSchemasByRegisterId(registerId: $register->getId()) as $schema) {
+		foreach ($this->catalog->registers()->getSchemasByRegisterId(registerId: $register->getId()) as $schema) {
 			if ($this->looksLikeAuditSchema(schema: $schema) === true) {
 				$pairs[] = [$register, $schema];
 			}
@@ -281,32 +326,48 @@ class AuditQueryService {
 		}
 
 		$rows = [];
-		foreach ($pairs as [$register, $schema]) {
-			try {
-				$result = $this->objectService->searchObjectsBySlug(
-					registerSlug: (string)$register->getSlug(),
-					schemaSlug: (string)$schema->getSlug(),
-					filters: $objectFilters
-				);
-			} catch (DoesNotExistException $e) {
-				continue;
-			}
-
-			if (is_int($result) === true) {
-				continue;
-			}
-
-			foreach ($result as $entity) {
-				$rows[] = [
-					'entity' => $entity,
-					'registerSlug' => (string)$register->getSlug(),
-					'schemaSlug' => (string)$schema->getSlug(),
-				];
-			}
-		}//end foreach
+		foreach ($pairs as $pair) {
+			array_push($rows, ...$this->entriesOfPair(pair: $pair, objectFilters: $objectFilters));
+		}
 
 		return $rows;
 	}//end collectEntries()
+
+	/**
+	 * The audit entries of one (register, schema) pair; none when it is gone or answers a count.
+	 *
+	 * @param array{0: Register, 1: Schema} $pair          The pair to search.
+	 * @param array<string, mixed>          $objectFilters The object field filters.
+	 *
+	 * @return array<int, array{entity: \OCA\OpenRegister\Db\ObjectEntity, registerSlug: string, schemaSlug: string}>
+	 */
+	private function entriesOfPair(array $pair, array $objectFilters): array {
+		[$register, $schema] = $pair;
+		try {
+			$result = $this->objectService->searchObjectsBySlug(
+				registerSlug: (string)$register->getSlug(),
+				schemaSlug: (string)$schema->getSlug(),
+				filters: $objectFilters
+			);
+		} catch (DoesNotExistException $e) {
+			return [];
+		}
+
+		if (is_int($result) === true) {
+			return [];
+		}
+
+		$rows = [];
+		foreach ($result as $entity) {
+			$rows[] = [
+				'entity' => $entity,
+				'registerSlug' => (string)$register->getSlug(),
+				'schemaSlug' => (string)$schema->getSlug(),
+			];
+		}
+
+		return $rows;
+	}//end entriesOfPair()
 
 	/**
 	 * Filter rows by the (optional) timestampStart / timestampEnd ISO-8601 bounds.
@@ -317,36 +378,43 @@ class AuditQueryService {
 	 * @return array<int, array<string, mixed>> Filtered rows.
 	 */
 	private function applyTimestampFilter(array $rows, array $filters): array {
-		$start = $this->parseTimestamp(value: $filters['timestampStart'] ?? null);
-		$end = $this->parseTimestamp(value: $filters['timestampEnd'] ?? null);
+		$bounds = [
+			'start' => $this->parseTimestamp(value: $filters['timestampStart'] ?? null),
+			'end' => $this->parseTimestamp(value: $filters['timestampEnd'] ?? null),
+		];
 
-		if ($start === null && $end === null) {
+		if ($bounds['start'] === null && $bounds['end'] === null) {
 			return $rows;
 		}
 
 		return array_values(
 			array_filter(
 				$rows,
-				function (array $row) use ($start, $end): bool {
-					$created = $row['entity']->getCreated();
-					if ($created === null) {
-						return false;
-					}
-
-					if ($start !== null && $created < $start) {
-						return false;
-					}
-
-					if ($end !== null && $created > $end) {
-						return false;
-					}
-
-					return true;
-				}
+				fn (array $row): bool => $this->isWithinBounds(row: $row, bounds: $bounds)
 			)
 		);
 
 	}//end applyTimestampFilter()
+
+	/**
+	 * Whether a row was created within the bounds; a row without a creation instant never is.
+	 *
+	 * @param array<string, mixed>                       $row    One collected row.
+	 * @param array{start: DateTime|null, end: DateTime|null} $bounds The inclusive bounds; null is open.
+	 *
+	 * @return bool True when inside both bounds.
+	 */
+	private function isWithinBounds(array $row, array $bounds): bool {
+		$created = $row['entity']->getCreated();
+		if ($created === null) {
+			return false;
+		}
+
+		$afterStart = $bounds['start'] === null || ($created < $bounds['start']) === false;
+		$beforeEnd = $bounds['end'] === null || ($created > $bounds['end']) === false;
+
+		return $afterStart === true && $beforeEnd === true;
+	}//end isWithinBounds()
 
 	/**
 	 * Parse a filter value into a DateTime, tolerating invalid/absent input.

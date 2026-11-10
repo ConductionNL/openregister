@@ -35,64 +35,89 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
+use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
+use OCA\OpenRegister\Controller\Support\GdprRequestParams;
+use OCA\OpenRegister\Controller\Support\ProcessingActivityAuditCounts;
+use OCA\OpenRegister\Controller\Support\ProcessingActivityHydrator;
+use OCA\OpenRegister\Controller\Support\ProcessingActivityVisibility;
+use OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IDBConnection;
-use OCP\IGroupManager;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 /**
  * REST endpoints for managing AVG / GDPR Art 30 processing activities.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class VerwerkingsactiviteitenController extends Controller {
 	/**
-	 * The user session.
+	 * The caller and the admin check.
 	 *
-	 * @var IUserSession
+	 * @var GdprRegisterAccess
 	 */
-	private readonly IUserSession $userSession;
+	private readonly GdprRegisterAccess $access;
 
 	/**
-	 * The group manager.
+	 * The refusal envelopes.
 	 *
-	 * @var IGroupManager
+	 * @var GdprRegisterReplies
 	 */
-	private readonly IGroupManager $groupManager;
+	private readonly GdprRegisterReplies $replies;
+
+	/**
+	 * The optional query parameters and the payload.
+	 *
+	 * @var GdprRequestParams
+	 */
+	private readonly GdprRequestParams $params;
+
+	/**
+	 * Tenant scoping of the catalog.
+	 *
+	 * @var ProcessingActivityVisibility
+	 */
+	private readonly ProcessingActivityVisibility $visibility;
+
+	/**
+	 * The audit-trail counts per activity.
+	 *
+	 * @var ProcessingActivityAuditCounts
+	 */
+	private readonly ProcessingActivityAuditCounts $auditCounts;
+
+	/**
+	 * The catalog mapper, session, database and org scoping.
+	 *
+	 * @var VerwerkingsactiviteitenControllerServices
+	 */
+	private readonly VerwerkingsactiviteitenControllerServices $services;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier.
-	 * @param IRequest $request Active request.
-	 * @param VerwerkingsactiviteitMapper $vrwMapper Mapper for the catalog.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param IDBConnection $db DB for the verantwoording aggregation.
-	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
+	 * @param IRequest                                  $request  Active request.
+	 * @param VerwerkingsactiviteitenControllerServices $services The catalog mapper, session, database and org scoping.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
-		ControllerSession $session,
-		private readonly IDBConnection $db,
-		private readonly OrganisationServiceInterface $organisationService,
+		VerwerkingsactiviteitenControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->services = $services;
+		$this->visibility = new ProcessingActivityVisibility(organisationService: $services->organisationService);
+		$this->auditCounts = new ProcessingActivityAuditCounts(db: $services->db);
+		$this->access = new GdprRegisterAccess(session: $services->session);
+		$this->params = new GdprRequestParams(request: $request);
+		$this->replies = new GdprRegisterReplies();
 	}//end __construct()
 
 	/**
@@ -110,42 +135,28 @@ class VerwerkingsactiviteitenController extends Controller {
 	public function index(): JSONResponse {
 		// The processing register is tenant-scoped: a non-admin sees the
 		// activities of their active organisation, an admin the full catalog.
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->unauthorized();
+		if ($this->access->user() === null) {
+			return $this->replies->unauthorized();
 		}
 
-		$isAdmin = $this->isAdmin();
-		$accessibleOrgs = [];
-		if ($isAdmin === false) {
-			$accessibleOrgs = $this->activeOrganisationUuids();
-			if ($accessibleOrgs === []) {
-				return new JSONResponse(data: ['count' => 0, 'results' => []]);
-			}
+		$scope = $this->callerScope();
+		if ($scope === null) {
+			return new JSONResponse(data: ['count' => 0, 'results' => []]);
 		}
 
-		$rows = $this->vrwMapper->findAll(
-			organisationId: $this->optionalStringParam(key: 'organisation'),
-			status: $this->optionalStringParam(key: 'status')
+		$rows = $this->services->vrwMapper->findAll(
+			organisationId: $this->params->nonEmpty(key: 'organisation'),
+			status: $this->params->nonEmpty(key: 'status')
 		);
 
 		// Enforce tenant scoping in-controller: the mapper filter accepts
 		// a single org while a user may belong to several, and a
 		// caller-supplied `organisation` must never widen visibility.
-		$visible = $this->filterVisibleActivities(activities: $rows, accessibleOrgs: $accessibleOrgs, isAdmin: $isAdmin);
+		$visible = $this->visibility->filter(activities: $rows, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
 
-		$results = [];
-		foreach ($visible as $activity) {
-			$results[] = $activity->jsonSerialize();
-		}
+		$results = array_map(static fn (Verwerkingsactiviteit $activity): array => $activity->jsonSerialize(), $visible);
 
-		return new JSONResponse(
-			data: [
-				'count' => count($results),
-				'results' => $results,
-			]
-		);
-
+		return new JSONResponse(data: ['count' => count($visible), 'results' => $results]);
 	}//end index()
 
 	/**
@@ -164,35 +175,20 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function show(string $id): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->unauthorized();
+		if ($this->access->user() === null) {
+			return $this->replies->unauthorized();
 		}
 
 		$entity = $this->resolveOne(identifier: $id);
-		$isAdmin = $this->isAdmin();
-
-		$accessibleOrgs = [];
-		if ($isAdmin === false) {
-			$accessibleOrgs = $this->activeOrganisationUuids();
-		}
+		$isAdmin = $this->access->isAdmin();
+		$accessibleOrgs = $this->visibility->accessibleOrgs(isAdmin: $isAdmin);
 
 		// SECURITY (#1825): hide cross-tenant activities from non-admins.
 		// Return 404 rather than 403 so existence isn't leaked.
-		$visible = false;
-		if ($entity !== null) {
-			$visible = $this->maySeeActivity(
-				activity: $entity,
-				accessibleOrgs: $accessibleOrgs,
-				isAdmin: $isAdmin
-			);
-		}
-
-		if ($visible === false) {
-			return new JSONResponse(
-				data: ['error' => 'Verwerkingsactiviteit not found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		if ($entity === null
+			|| $this->visibility->maySee(activity: $entity, accessibleOrgs: $accessibleOrgs, isAdmin: $isAdmin) === false
+		) {
+			return $this->notFound(identifier: $id);
 		}
 
 		return new JSONResponse(data: $entity->jsonSerialize());
@@ -210,27 +206,16 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function create(): JSONResponse {
-		if ($this->isAdmin() === false) {
+		if ($this->access->isAdmin() === false) {
 			return $this->forbidden();
 		}
 
-		$payload = (array)($this->request->getParams() ?? []);
+		$payload = $this->params->payload();
 
-		try {
-			$entity = $this->hydrateFromPayload(entity: new Verwerkingsactiviteit(), payload: $payload);
-			$entity = $this->vrwMapper->insert($entity);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		return new JSONResponse(
-			data: $entity->jsonSerialize(),
-			statusCode: Http::STATUS_CREATED
+		return $this->persist(
+			write: fn () => $this->services->vrwMapper->insert($this->hydrated(entity: new Verwerkingsactiviteit(), payload: $payload)),
+			status: Http::STATUS_CREATED
 		);
-
 	}//end create()
 
 	/**
@@ -247,31 +232,17 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function update(string $id): JSONResponse {
-		if ($this->isAdmin() === false) {
-			return $this->forbidden();
+		$entity = $this->administered(identifier: $id);
+		if ($entity instanceof JSONResponse) {
+			return $entity;
 		}
 
-		$entity = $this->resolveOne(identifier: $id);
-		if ($entity === null) {
-			return new JSONResponse(
-				data: ['error' => 'Verwerkingsactiviteit not found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
-		}
+		$payload = $this->params->payload();
 
-		$payload = (array)($this->request->getParams() ?? []);
-
-		try {
-			$entity = $this->hydrateFromPayload(entity: $entity, payload: $payload);
-			$entity = $this->vrwMapper->update($entity);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		return new JSONResponse(data: $entity->jsonSerialize());
+		return $this->persist(
+			write: fn () => $this->services->vrwMapper->update($this->hydrated(entity: $entity, payload: $payload)),
+			status: Http::STATUS_OK
+		);
 	}//end update()
 
 	/**
@@ -291,20 +262,13 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function destroy(string $id): JSONResponse {
-		if ($this->isAdmin() === false) {
-			return $this->forbidden();
-		}
-
-		$entity = $this->resolveOne(identifier: $id);
-		if ($entity === null) {
-			return new JSONResponse(
-				data: ['error' => 'Verwerkingsactiviteit not found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$entity = $this->administered(identifier: $id);
+		if ($entity instanceof JSONResponse) {
+			return $entity;
 		}
 
 		$entity->setStatus('archived');
-		$this->vrwMapper->update($entity);
+		$this->services->vrwMapper->update($entity);
 
 		return new JSONResponse(data: [], statusCode: Http::STATUS_NO_CONTENT);
 	}//end destroy()
@@ -346,27 +310,54 @@ class VerwerkingsactiviteitenController extends Controller {
 		// reliable organisation, so the report is scoped through the
 		// activities: a non-admin gets those of their active organisation,
 		// and rows are counted for those activities only.
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->unauthorized();
+		if ($this->access->user() === null) {
+			return $this->replies->unauthorized();
 		}
 
-		$isAdmin = $this->isAdmin();
-		$accessibleOrgs = [];
-		if ($isAdmin === false) {
-			$accessibleOrgs = $this->activeOrganisationUuids();
-			if ($accessibleOrgs === []) {
-				return new JSONResponse(data: ['count' => 0, 'activities' => []]);
-			}
+		$scope = $this->callerScope();
+		if ($scope === null) {
+			return new JSONResponse(data: ['count' => 0, 'activities' => []]);
 		}
 
-		$activities = $this->filterVisibleActivities(
-			activities: $this->vrwMapper->findAll(),
-			accessibleOrgs: $accessibleOrgs,
-			isAdmin: $isAdmin
-		);
+		$all = $this->services->vrwMapper->findAll();
+		$activities = $this->visibility->filter(activities: $all, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
 
-		$auditCounts = $this->aggregateAuditCounts(
+		$payload = $this->withAuditCounts(activities: $activities);
+
+		return new JSONResponse(data: ['count' => count($payload), 'activities' => $payload]);
+	}//end accountability()
+
+	/**
+	 * The caller's tenant scope, or null when a non-admin has no organisation.
+	 *
+	 * A null scope is deny-all: the caller is given an empty list and the
+	 * catalog is not read.
+	 *
+	 * @return array{admin: bool, orgs: array<int, string>}|null The scope.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function callerScope(): ?array {
+		$isAdmin = $this->access->isAdmin();
+		$accessibleOrgs = $this->visibility->accessibleOrgs(isAdmin: $isAdmin);
+		if ($isAdmin === false && $accessibleOrgs === []) {
+			return null;
+		}
+
+		return ['admin' => $isAdmin, 'orgs' => $accessibleOrgs];
+	}//end callerScope()
+
+	/**
+	 * The activities as published, each with its audit-trail counts.
+	 *
+	 * @param array<int, Verwerkingsactiviteit> $activities The visible activities.
+	 *
+	 * @return array<int, array<string, mixed>> The report rows.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function withAuditCounts(array $activities): array {
+		$auditCounts = $this->auditCounts->byActivity(
 			uuids: array_map(static fn (Verwerkingsactiviteit $a) => (string)$a->getUuid(), $activities)
 		);
 
@@ -380,69 +371,58 @@ class VerwerkingsactiviteitenController extends Controller {
 			$payload[] = $row;
 		}
 
-		return new JSONResponse(
-			data: [
-				'count' => count($payload),
-				'activities' => $payload,
-			]
-		);
-
-	}//end accountability()
+		return $payload;
+	}//end withAuditCounts()
 
 	/**
-	 * Hydrate (or update) a Verwerkingsactiviteit from a request payload.
+	 * The activity an administrator asked to change, or the refusal.
 	 *
-	 * @param Verwerkingsactiviteit $entity Fresh or existing entity.
-	 * @param array $payload Request body / query params.
+	 * The admin check runs before the activity is looked up.
+	 *
+	 * @param string $identifier Identifier (id|uuid|code).
+	 *
+	 * @return Verwerkingsactiviteit|JSONResponse The activity, or HTTP 403 / 404.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function administered(string $identifier): Verwerkingsactiviteit|JSONResponse {
+		if ($this->access->isAdmin() === false) {
+			return $this->forbidden();
+		}
+
+		return $this->resolveOne(identifier: $identifier) ?? $this->notFound(identifier: $identifier);
+	}//end administered()
+
+	/**
+	 * Hydrate and write an activity, or answer 422 on an invalid argument.
+	 *
+	 * @param Closure $write  Hydrates, inserts or updates, and returns the activity.
+	 * @param int     $status The status of the success response.
+	 *
+	 * @return JSONResponse The persisted activity, or HTTP 422.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function persist(Closure $write, int $status): JSONResponse {
+		$entity = $this->replies->attempt(write: $write, catch: InvalidArgumentException::class);
+		if ($entity instanceof JSONResponse) {
+			return $entity;
+		}
+
+		return new JSONResponse(data: $entity->jsonSerialize(), statusCode: $status);
+	}//end persist()
+
+	/**
+	 * Hydrate (or update) an activity from a request payload.
+	 *
+	 * @param Verwerkingsactiviteit $entity  Fresh or existing entity.
+	 * @param array                 $payload Request body / query params.
 	 *
 	 * @return Verwerkingsactiviteit Hydrated entity (NOT yet persisted).
 	 */
-	private function hydrateFromPayload(Verwerkingsactiviteit $entity, array $payload): Verwerkingsactiviteit {
-		$stringFields = [
-			'code' => 'setCode',
-			'name' => 'setName',
-			'description' => 'setDescription',
-			'purpose' => 'setPurpose',
-			'legalBasis' => 'setLegalBasis',
-			'retentionPeriod' => 'setRetentionPeriod',
-			'technicalMeasures' => 'setTechnicalMeasures',
-			'organisationalMeasures' => 'setOrganisationalMeasures',
-			'organisationId' => 'setOrganisationId',
-			'status' => 'setStatus',
-		];
-		foreach ($stringFields as $field => $setter) {
-			if (array_key_exists($field, $payload) === true) {
-				$value = null;
-				if ($payload[$field] !== null) {
-					$value = (string)$payload[$field];
-				}
-
-				$entity->{$setter}($value);
-			}
-		}
-
-		$arrayFields = [
-			'dataSubjectCategories' => 'setDataSubjectCategories',
-			'personalDataCategories' => 'setPersonalDataCategories',
-			'recipients' => 'setRecipients',
-			'internationalTransfers' => 'setInternationalTransfers',
-			'controller' => 'setController',
-			'dpoContactDetails' => 'setDpoContactDetails',
-		];
-		foreach ($arrayFields as $field => $setter) {
-			if (array_key_exists($field, $payload) === true) {
-				$value = $payload[$field];
-				$hydrated = null;
-				if (is_array($value) === true) {
-					$hydrated = $value;
-				}
-
-				$entity->{$setter}($hydrated);
-			}
-		}
-
-		return $entity;
-	}//end hydrateFromPayload()
+	private function hydrated(Verwerkingsactiviteit $entity, array $payload): Verwerkingsactiviteit {
+		return (new ProcessingActivityHydrator())->hydrate(entity: $entity, payload: $payload);
+	}//end hydrated()
 
 	/**
 	 * Resolve a path identifier (id, uuid, or code) to an entity.
@@ -458,165 +438,25 @@ class VerwerkingsactiviteitenController extends Controller {
 
 		if (ctype_digit($identifier) === true) {
 			try {
-				return $this->vrwMapper->find(id: (int)$identifier);
+				return $this->services->vrwMapper->find(id: (int)$identifier);
 			} catch (DoesNotExistException $e) {
 				return null;
 			}
 		}
 
-		return $this->vrwMapper->resolveReference(reference: $identifier);
+		return $this->services->vrwMapper->resolveReference(reference: $identifier);
 	}//end resolveOne()
 
 	/**
-	 * Aggregate `oc_openregister_audit_trails` rows by
-	 * `processing_activity_id` + `action`, scoped to the given uuids.
+	 * The 404 envelope for an activity the caller may not see or that does not exist.
 	 *
-	 * @param array<int, string> $uuids Activity uuids to aggregate against.
+	 * @param string $identifier The identifier as given.
 	 *
-	 * @return array<string, array{totalEvents: int, byAction: array<string, int>}>
+	 * @return JSONResponse HTTP 404.
 	 */
-	private function aggregateAuditCounts(array $uuids): array {
-		$uuids = array_values(array_filter($uuids, static fn ($v) => is_string($v) === true && $v !== ''));
-		if ($uuids === []) {
-			return [];
-		}
-
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('processing_activity_id', 'action')
-				->selectAlias($qb->func()->count('*'), 'cnt')
-				->from('openregister_audit_trails')
-				->where(
-					$qb->expr()->in(
-						'processing_activity_id',
-						$qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)
-					)
-				)
-				->groupBy('processing_activity_id', 'action');
-
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
-		} catch (\Exception $e) {
-			return [];
-		}
-
-		$aggregate = [];
-		foreach ($rows as $row) {
-			$uuid = (string)($row['processing_activity_id'] ?? '');
-			$action = (string)($row['action'] ?? '');
-			$count = (int)($row['cnt'] ?? 0);
-			$aggregate[$uuid] ??= ['totalEvents' => 0, 'byAction' => []];
-			$aggregate[$uuid]['byAction'][$action] = $count;
-			$aggregate[$uuid]['totalEvents'] += $count;
-		}
-
-		return $aggregate;
-	}//end aggregateAuditCounts()
-
-	/**
-	 * Whether the active user is in the `admin` group.
-	 *
-	 * @return bool True when the active user is in the admin group.
-	 */
-	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return in_array(
-			needle: 'admin',
-			haystack: $this->groupManager->getUserGroupIds($user),
-			strict: true
-		);
-
-	}//end isAdmin()
-
-	/**
-	 * The active organisation of the current user, as a list of at most one uuid.
-	 *
-	 * The active organisation is one the user belongs to. An empty list means
-	 * deny-all.
-	 *
-	 * @return array<int, string> The active organisation's uuid, or none.
-	 */
-	private function activeOrganisationUuids(): array {
-		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
-		if ($uuid === '') {
-			return [];
-		}
-
-		return [$uuid];
-	}//end activeOrganisationUuids()
-
-	/**
-	 * Whether the active user may see an activity given its org binding.
-	 *
-	 * Admins see everything. Non-admins see activities bound to one of
-	 * their organisations. Activities with no `organisationId` are
-	 * treated as belonging to no tenant and are hidden from non-admins
-	 * (fail-closed) — they remain visible to admins for maintenance.
-	 *
-	 * @param Verwerkingsactiviteit $activity Candidate activity.
-	 * @param array<int, string> $accessibleOrgs Accessible org UUIDs.
-	 * @param bool $isAdmin Whether caller is admin.
-	 *
-	 * @return bool True when the caller may see the activity.
-	 */
-	private function maySeeActivity(Verwerkingsactiviteit $activity, array $accessibleOrgs, bool $isAdmin): bool {
-		if ($isAdmin === true) {
-			return true;
-		}
-
-		$org = (string)$activity->getOrganisationId();
-		if ($org === '') {
-			return false;
-		}
-
-		return in_array($org, $accessibleOrgs, true);
-	}//end maySeeActivity()
-
-	/**
-	 * Reduce a list of activities to the ones the caller may see.
-	 *
-	 * @param array<int, Verwerkingsactiviteit> $activities Candidates.
-	 * @param array<int, string> $accessibleOrgs Accessible org UUIDs.
-	 * @param bool $isAdmin Whether caller is admin.
-	 *
-	 * @return array<int, Verwerkingsactiviteit> Visible activities.
-	 */
-	private function filterVisibleActivities(array $activities, array $accessibleOrgs, bool $isAdmin): array {
-		$visible = [];
-		foreach ($activities as $activity) {
-			$allowed = $this->maySeeActivity(
-				activity: $activity,
-				accessibleOrgs: $accessibleOrgs,
-				isAdmin: $isAdmin
-			);
-			if ($allowed === true) {
-				$visible[] = $activity;
-			}
-		}
-
-		return $visible;
-	}//end filterVisibleActivities()
-
-	/**
-	 * Read a request parameter as a non-empty string, or null.
-	 *
-	 * @param string $key Request parameter name.
-	 *
-	 * @return string|null Trimmed string value, or null when absent/empty.
-	 */
-	private function optionalStringParam(string $key): ?string {
-		$value = $this->request->getParam(key: $key);
-		if ($value === null || $value === '') {
-			return null;
-		}
-
-		return (string)$value;
-	}//end optionalStringParam()
+	private function notFound(string $identifier): JSONResponse {
+		return $this->replies->notFound(error: 'Verwerkingsactiviteit not found', identifier: $identifier);
+	}//end notFound()
 
 	/**
 	 * 403 envelope used by all admin-gated endpoints.
@@ -624,23 +464,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @return JSONResponse Pre-baked 403 with explanatory message.
 	 */
 	private function forbidden(): JSONResponse {
-		return new JSONResponse(
-			data: ['error' => 'Admin privileges required to manage verwerkingsactiviteiten'],
-			statusCode: Http::STATUS_FORBIDDEN
-		);
-
+		return $this->replies->forbidden(message: 'Admin privileges required to manage verwerkingsactiviteiten');
 	}//end forbidden()
-
-	/**
-	 * 401 envelope used when no user is authenticated.
-	 *
-	 * @return JSONResponse Pre-baked 401.
-	 */
-	private function unauthorized(): JSONResponse {
-		return new JSONResponse(
-			data: ['error' => 'Authentication required'],
-			statusCode: Http::STATUS_UNAUTHORIZED
-		);
-
-	}//end unauthorized()
 }//end class

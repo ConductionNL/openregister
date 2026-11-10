@@ -21,6 +21,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\ObjectMigration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -37,15 +39,21 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -842,7 +850,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->objectEntityMapper
 			->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with(['uuid-a', 'uuid-b'], true)
 			->willReturn([$entityA, $entityB]);
 
@@ -866,16 +874,8 @@ class ObjectServiceTest extends TestCase {
 			->expects($this->exactly(2))
 			->method('deleteObject')
 			->willReturnCallback(
-				function (
-					$register,
-					$schema,
-					$uuid,
-					$originalObjectId = null,
-					$_rbac = true,
-					$_multitenancy = true,
-					$scoped = false,
-					$preResolved = null,
-				) use (&$captured) {
+				function (DeletionRequest $request) use (&$captured) {
+					[$register, $schema, $uuid, $preResolved] = [$request->register, $request->schema, $request->uuid, $request->options->preResolved];
 					$captured[] = [
 						'register' => $register,
 						'schema' => $schema,
@@ -902,12 +902,46 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
+	 * The handler soft-deletes by writing the whole row back, so it gets the stored
+	 * row: the cross-table read that fills only name and data must not reach it.
+	 */
+	public function testDeleteObjectsHandsTheHandlerTheStoredRow(): void {
+		$slim = new ObjectEntity();
+		$slim->setUuid('uuid-a');
+		$slim->setRegister('1');
+		$slim->setSchema('2');
+
+		$stored = clone $slim;
+		$stored->setOwner('alice');
+		$stored->setOrganisation('org-1');
+		$stored->setVersion('0.0.3');
+
+		$this->objectEntityMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$slim]);
+		$this->objectEntityMapper->method('findStoredAcrossAllMagicTables')->willReturn([$stored]);
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		$handed = [];
+		$this->deleteHandler->method('deleteObject')->willReturnCallback(
+			function (DeletionRequest $request) use (&$handed) {
+				$handed[] = $request->options->preResolved;
+				return true;
+			}
+		);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$this->service->deleteObjects(uuids: ['uuid-a'], _rbac: false, _multitenancy: false);
+
+		$this->assertSame([$stored], $handed);
+	}
+
+	/**
 	 * Uuids the batch lookup cannot resolve fall back to the legacy per-uuid
 	 * scope find and a handler call without pre-resolved entity.
 	 */
 	public function testDeleteObjectsFallsBackToPerUuidLookupWhenBatchMisses(): void {
 		$this->objectEntityMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([]);
 
 		$legacyEntity = new ObjectEntity();
@@ -926,16 +960,8 @@ class ObjectServiceTest extends TestCase {
 			->expects($this->once())
 			->method('deleteObject')
 			->willReturnCallback(
-				function (
-					$register,
-					$schema,
-					$uuid,
-					$originalObjectId = null,
-					$_rbac = true,
-					$_multitenancy = true,
-					$scoped = false,
-					$preResolved = null,
-				) use (&$captured) {
+				function (DeletionRequest $request) use (&$captured) {
+					[$register, $schema, $uuid, $preResolved] = [$request->register, $request->schema, $request->uuid, $request->options->preResolved];
 					$captured[] = ['register' => $register, 'preResolved' => $preResolved];
 					return true;
 				}
@@ -969,7 +995,7 @@ class ObjectServiceTest extends TestCase {
 		$entityB->setSchema('2');
 
 		$this->objectEntityMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([$entityA, $entityB]);
 
 		$this->registerMapper->method('find')->willReturn($this->register);
@@ -982,8 +1008,8 @@ class ObjectServiceTest extends TestCase {
 		$this->deleteHandler
 			->method('deleteObject')
 			->willReturnCallback(
-				function ($register, $schema, $uuid) use ($analysis): bool {
-					if ($uuid === 'uuid-blocked') {
+				function (DeletionRequest $request) use ($analysis): bool {
+					if ($request->uuid === 'uuid-blocked') {
 						throw new \OCA\OpenRegister\Exception\ReferentialIntegrityException(analysis: $analysis);
 					}
 
@@ -1014,9 +1040,8 @@ class ObjectServiceTest extends TestCase {
 			->expects($this->once())
 			->method('lock')
 			->with(
-				identifier: 'obj-uuid',
-				process: 'import',
-				duration: 3600
+				new LockRequest(identifier: 'obj-uuid', process: 'import', duration: 3600, runStep: new LockRunStep(runUuid: null, nodeId: null)),
+				advisory: false
 			)
 			->willReturn($lockInfo);
 
@@ -1036,7 +1061,7 @@ class ObjectServiceTest extends TestCase {
 		$this->lockHandler
 			->expects($this->once())
 			->method('unlock')
-			->with(identifier: 'obj-uuid')
+			->with(new UnlockRequest(identifier: 'obj-uuid', advisory: false, runUuid: null, break: false))
 			->willReturn(true);
 
 		$result = $this->service->unlockObject(identifier: 'obj-uuid');
@@ -1338,14 +1363,7 @@ class ObjectServiceTest extends TestCase {
 		$this->queryHandler
 			->expects($this->once())
 			->method('searchObjects')
-			->with(
-				query: $query,
-				_rbac: true,
-				_multitenancy: true,
-				ids: null,
-				uses: null,
-				views: null
-			)
+			->with($query, true, true, $this->equalTo(new SearchOptions()))
 			->willReturn([]);
 
 		$result = $this->service->searchObjects(query: $query);
@@ -1421,7 +1439,7 @@ class ObjectServiceTest extends TestCase {
 		$this->objectEntityMapper->expects($this->never())->method('countSearchObjects');
 		$this->queryHandler->expects($this->once())
 			->method('countSearchObjects')
-			->with(['@self' => ['schema' => 'a-slug']], false, false, ['a'], 'u-1')
+			->with(['@self' => ['schema' => 'a-slug']], false, false, $this->equalTo(new ObjectSelection(ids: ['a'], uses: 'u-1')))
 			->willReturn(15);
 
 		$result = $this->service->countSearchObjects(
@@ -1666,6 +1684,38 @@ class ObjectServiceTest extends TestCase {
 			->willReturn($entity);
 
 		$result = $this->service->findSilent(id: 'test-uuid');
+
+		$this->assertSame($entity, $result);
+	}
+
+	/**
+	 * Test findSilent forwards the id, extend, files and both guard flags unchanged.
+	 */
+	public function testFindSilentForwardsItsArgumentsToTheHandler(): void {
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+
+		$this->getHandler
+			->expects($this->once())
+			->method('findSilent')
+			->with(
+				'test-uuid',
+				$this->anything(),
+				$this->anything(),
+				['owner'],
+				true,
+				false,
+				false
+			)
+			->willReturn($entity);
+
+		$result = $this->service->findSilent(
+			id: 'test-uuid',
+			_extend: ['owner'],
+			files: true,
+			_rbac: false,
+			_multitenancy: false
+		);
 
 		$this->assertSame($entity, $result);
 	}
@@ -2007,7 +2057,14 @@ class ObjectServiceTest extends TestCase {
 		$this->stubMigrationSides(readable: ['uuid-1', 'uuid-2'], updatable: ['uuid-1']);
 		$this->getProperty('migrationHandler')->expects($this->once())
 			->method('migrateObjects')
-			->with('1', '2', '3', '4', ['uuid-1'], ['a' => 'b'])
+			->with(
+				new ObjectMigration(
+					source: new RegisterSchemaRef(register: '1', schema: '2'),
+					target: new RegisterSchemaRef(register: '3', schema: '4'),
+					objectIds: ['uuid-1'],
+					mapping: ['a' => 'b']
+				)
+			)
 			->willReturn(
 				[
 					'success' => true,

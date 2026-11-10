@@ -53,17 +53,15 @@ final class ObjectActionElevationScope {
 	/**
 	 * Run an action body with its elevation open.
 	 *
-	 * @param string                                                                      $action    The action key.
-	 * @param string|null                                                                 $person    The person running it.
-	 * @param list<array{register: string, schema: string, verbs: list<string>}> $entries   Register and schema resolved to ids.
-	 * @param callable                                                                    $operation The body.
+	 * @param ActionElevation $elevation The action, the person running it and its entries.
+	 * @param callable        $operation The body.
 	 *
 	 * @return mixed Whatever the body returned.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
-	public static function run(string $action, ?string $person, array $entries, callable $operation): mixed {
-		self::$frames[] = ['action' => $action, 'person' => $person, 'entries' => $entries, 'used' => []];
+	public static function run(ActionElevation $elevation, callable $operation): mixed {
+		self::$frames[] = ['action' => $elevation->action, 'person' => $elevation->person, 'entries' => $elevation->entries, 'used' => []];
 
 		try {
 			return $operation();
@@ -73,31 +71,29 @@ final class ObjectActionElevationScope {
 	}//end run()
 
 	/**
-	 * Whether a write the person's rights refused may go ahead as the system.
+	 * Whether a write the person's rights refused may go ahead as the system; marks the entry used.
 	 *
-	 * @param string|int|null $schemaId   The schema written to.
-	 * @param string|int|null $registerId The register written to, when the write names one.
-	 * @param string          $verb       `create`, `update` or `delete`.
+	 * @param ElevatedWrite $write The schema, register and verb of the write.
 	 *
 	 * @return bool True when the open elevation lists it.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
-	public static function allows(string|int|null $schemaId, string|int|null $registerId, string $verb): bool {
+	public static function permits(ElevatedWrite $write): bool {
 		$frame = array_key_last(self::$frames);
-		if ($frame === null || $schemaId === null || in_array($verb, ObjectActionElevation::VERBS, true) === false) {
+		if ($frame === null || $write->schemaId === null || in_array($write->verb, ObjectActionElevation::VERBS, true) === false) {
 			return false;
 		}
 
 		foreach (self::$frames[$frame]['entries'] as $entry) {
-			if (self::matches(entry: $entry, schemaId: (string)$schemaId, registerId: $registerId, verb: $verb) === true) {
-				self::$frames[$frame]['used'][$schemaId . ':' . $verb] = true;
+			if (self::matches(entry: $entry, write: $write) === true) {
+				self::$frames[$frame]['used'][$write->schemaId . ':' . $write->verb] = true;
 				return true;
 			}
 		}
 
 		return false;
-	}//end allows()
+	}//end permits()
 
 	/**
 	 * The attribution an audit row of an elevated write carries, or null.
@@ -128,18 +124,16 @@ final class ObjectActionElevationScope {
 	 * A write that names no register (a create before it is placed) is matched
 	 * on schema and verb; one that names a register must name the listed one.
 	 *
-	 * @param array{register: string, schema: string, verbs: list<string>} $entry      The entry.
-	 * @param string                                                            $schemaId   The schema.
-	 * @param string|int|null                                                   $registerId The register.
-	 * @param string                                                            $verb       The verb.
+	 * @param array{register: string, schema: string, verbs: list<string>} $entry The entry.
+	 * @param ElevatedWrite                                                     $write The write, its schema known.
 	 *
 	 * @return bool True when it does.
 	 */
-	private static function matches(array $entry, string $schemaId, string|int|null $registerId, string $verb): bool {
-		if ($entry['schema'] !== $schemaId || in_array($verb, $entry['verbs'], true) === false) {
+	private static function matches(array $entry, ElevatedWrite $write): bool {
+		if ($entry['schema'] !== (string)$write->schemaId || in_array($write->verb, $entry['verbs'], true) === false) {
 			return false;
 		}
 
-		return ($registerId !== null && $entry['register'] === (string)$registerId);
+		return ($write->registerId !== null && $entry['register'] === (string)$write->registerId);
 	}//end matches()
 }//end class

@@ -33,40 +33,30 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * The "Send an email" step.
  */
-class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
+class SendEmailNode extends MessagingNodeBase implements
+	IFlowNode,
+	SendEmailNodeInterface,
+	IFlowNodeConfigKeys,
+	IFlowNodeConfigForm,
+	IFlowNodeTaxonomy,
+	IFlowNodePreview
+{
 
 	/**
 	 * The step type this node answers to.
 	 */
 	public const TYPE = 'openregister.send-email';
-
-	/**
-	 * Constructor.
-	 *
-	 * @param FlowMessagingService $messaging The bridge onto the notification subsystem.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly FlowMessagingService $messaging,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
 
 	/**
 	 * The step type.
@@ -105,36 +95,15 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	}//end getIcon()
 
 	/**
-	 * Messaging people is not privileged beyond the run's own identity, so
-	 * both scopes get it; every guardrail applies either way.
+	 * The channel this step previews on (flow dry-run).
 	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
-	 * The messages this step would send, composed and not sent (flow dry-run).
-	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return array `summary` and `messages` (`[{channel, to, subject, body}]`).
+	 * @return string The channel.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function preview(array $items, array $config, array $context): array {
-		$messages = $this->messaging->previewMessages(channel: 'email', config: $config, items: $items, context: $context);
-
-		return [
-			'summary' => sprintf('%s would send %d message(s)', $this->getDisplayName(), count($messages)),
-			'messages' => $messages,
-		];
-	}//end preview()
+	protected function channel(): string {
+		return 'email';
+	}//end channel()
 
 	/**
 	 * The config vocabulary of a send-email step.
@@ -171,18 +140,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 			throw new UnexpectedValueException($this->l10n->t('An email needs a body.'));
 		}
 
-		$recipients = ($config['recipients'] ?? []);
-		if (is_string($recipients) === true) {
-			$recipients = [$recipients];
-		}
-
-		$recipients = array_filter(
-			(array)$recipients,
-			static fn (mixed $entry): bool => is_string($entry) === true && trim($entry) !== ''
-		);
-		if ($recipients === []) {
-			throw new UnexpectedValueException($this->l10n->t('An email needs at least one recipient.'));
-		}
+		$this->assertRecipients(config: $config, refusal: $this->l10n->t('An email needs at least one recipient.'));
 
 		$mode = trim((string)($config['externalRecipients'] ?? ''));
 		if ($mode !== '' && in_array(strtolower($mode), FlowMessagingService::EXTERNAL_RECIPIENT_MODES, true) === false) {
@@ -232,49 +190,42 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	public function configForm(): array {
 		return [
-			[
-				'key' => 'recipients',
-				'label' => $this->l10n->t('Who to mail'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'User or group ids, email addresses, or a field such as {{ assignee }}. Groups are expanded; addresses need external recipients.'
-				),
-				'required' => true,
-			],
-			[
-				'key' => 'externalRecipients',
-				'label' => $this->l10n->t('External recipients'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Set to none to refuse email addresses, object to mail only addresses on the item, or any to mail every valid address.'
-				),
-			],
-			[
-				// A select over the fleet categories, listed in the form
-				// itself: the shared flow form renders `options` as a picker.
-				'key' => 'messageCategory',
-				'label' => $this->l10n->t('Message category'),
-				'type' => 'select',
-				'options' => $this->messageCategoryOptions(),
-				'help' => $this->l10n->t(
-					'Decisions, statutory notices, account and security mail always arrive. Other mail stops after an opt-out. Empty means service.'
-				),
-			],
-			[
-				'key' => 'subject',
-				'label' => $this->l10n->t('Subject'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'),
-			],
-			[
-				'key' => 'body',
-				'label' => $this->l10n->t('Body'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What the email says. Placeholders read fields from the item.'),
-				'required' => true,
-			],
+			$this->requiredField(key: 'recipients', label: $this->l10n->t('Who to mail'), type: 'text', help: $this->l10n->t(
+				'User or group ids, email addresses, or a field such as {{ assignee }}. Groups are expanded; addresses need external recipients.'
+			)),
+			$this->formField(key: 'externalRecipients', label: $this->l10n->t('External recipients'), type: 'text', help: $this->l10n->t(
+				'Set to none to refuse email addresses, object to mail only addresses on the item, or any to mail every valid address.'
+			)),
+			$this->messageCategoryField(),
+			$this->formField(key: 'subject', label: $this->l10n->t('Subject'), type: 'text', help: $this->l10n->t(
+				'Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'
+			)),
+			$this->requiredField(key: 'body', label: $this->l10n->t('Body'), type: 'textarea', help: $this->l10n->t(
+				'What the email says. Placeholders read fields from the item.'
+			)),
 		];
 	}//end configForm()
+
+	/**
+	 * The message-category field: a select over the fleet categories, listed
+	 * in the form itself, because the shared flow form renders `options` as a
+	 * picker.
+	 *
+	 * @return array<string, mixed> The field description.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function messageCategoryField(): array {
+		return [
+			'key' => 'messageCategory',
+			'label' => $this->l10n->t('Message category'),
+			'type' => 'select',
+			'options' => $this->messageCategoryOptions(),
+			'help' => $this->l10n->t(
+				'Decisions, statutory notices, account and security mail always arrive. Other mail stops after an opt-out. Empty means service.'
+			),
+		];
+	}//end messageCategoryField()
 
 	/**
 	 * The message categories as picker options, the default first.
@@ -287,24 +238,10 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	private function messageCategoryOptions(): array {
-		$labels = [
-			'service'     => $this->l10n->t('Service message (default)'),
-			'case-update' => $this->l10n->t('Case update'),
-			'reminder'    => $this->l10n->t('Reminder'),
-			'marketing'   => $this->l10n->t('Marketing, such as a newsletter'),
-			'besluit'     => $this->l10n->t('Decision (besluit), always sent'),
-			'statutory'   => $this->l10n->t('Statutory notice, always sent'),
-			'account'     => $this->l10n->t('Account message, always sent'),
-			'security'    => $this->l10n->t('Security message, always sent'),
-		];
-
+		$labels = $this->messageCategoryLabels();
 		$ordered = array_values(
 			array_unique(
-				array_merge(
-					[OptOutAuthorityInterface::DEFAULT_CATEGORY],
-					array_keys($labels),
-					OptOutAuthorityInterface::CATEGORIES
-				)
+				array_merge([OptOutAuthorityInterface::DEFAULT_CATEGORY], array_keys($labels), OptOutAuthorityInterface::CATEGORIES)
 			)
 		);
 		$ordered = array_values(array_intersect($ordered, OptOutAuthorityInterface::CATEGORIES));
@@ -316,52 +253,39 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	}//end messageCategoryOptions()
 
 	/**
-	 * Send, then pass the items through unchanged.
+	 * The translated label of every message category this form knows by name.
+	 *
+	 * @return array<string, string> Category => label.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	private function messageCategoryLabels(): array {
+		return [
+			'service'     => $this->l10n->t('Service message (default)'),
+			'case-update' => $this->l10n->t('Case update'),
+			'reminder'    => $this->l10n->t('Reminder'),
+			'marketing'   => $this->l10n->t('Marketing, such as a newsletter'),
+			'besluit'     => $this->l10n->t('Decision (besluit), always sent'),
+			'statutory'   => $this->l10n->t('Statutory notice, always sent'),
+			'account'     => $this->l10n->t('Account message, always sent'),
+			'security'    => $this->l10n->t('Security message, always sent'),
+		];
+	}//end messageCategoryLabels()
+
+	/**
+	 * Send on this node's channel; the base passes the items through unchanged.
 	 *
 	 * Sending is a side effect, not a transformation. Failures throw and are
 	 * routed through the step's `onError` policy; every non-delivery lands in
 	 * the run log with its reason.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param MessageSend $step The step configuration, the items, run-level metadata and this node's type.
 	 *
-	 * @return array The items, unchanged.
+	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$this->messaging->sendEmail(
-			config: $config,
-			items: $items,
-			context: $context,
-			stepName: self::TYPE
-		);
-
-		return $items;
-	}//end execute()
-
-	/**
-	 * What kind of step this is. Sends a message out.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SEND_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_MESSAGING;
-
-	}//end getCategory()
+	protected function send(MessageSend $step): void {
+		$this->messaging->email(request: $step);
+	}//end send()
 }//end class

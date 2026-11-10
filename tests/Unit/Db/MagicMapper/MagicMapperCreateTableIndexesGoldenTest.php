@@ -97,7 +97,7 @@ class MagicMapperCreateTableIndexesGoldenTest extends TestCase {
 			$schema->method('getProperties')->willReturn($properties);
 			$method = new ReflectionMethod(MagicMapper::class, 'createTableIndexes');
 			$method->setAccessible(true);
-			$method->invokeArgs($mapper, ['openregister_table_1_2', $this->createMock(Register::class), $schema]);
+			$method->invokeArgs($mapper, ['openregister_table_1_2', $schema]);
 			$actual[$name] = $this->events;
 		}
 

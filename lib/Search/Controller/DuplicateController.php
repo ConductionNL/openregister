@@ -31,12 +31,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
+use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
+use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -46,24 +51,46 @@ use Throwable;
 
 class DuplicateController extends Controller {
 	/**
+	 * Duplicate-candidate detection service.
+	 *
+	 * @var DuplicateDetectionServiceInterface
+	 */
+	private readonly DuplicateDetectionServiceInterface $duplicates;
+
+	/**
+	 * Pairs a person has already ruled out.
+	 *
+	 * @var DismissedPairStore
+	 */
+	private readonly DismissedPairStore $dismissals;
+
+	/**
+	 * Object read path, to fingerprint a pair being dismissed.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Session, group manager and logger.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
-	 * @param IRequest $request The current request.
-	 * @param DuplicateDetectionServiceInterface $duplicates Duplicate-candidate detection service.
-	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
-	 * @param ObjectOperationsInterface $objectService Object read path, to fingerprint a pair being dismissed.
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param IRequest                    $request  The current request.
+	 * @param DuplicateControllerServices $services The duplicate-detection API services.
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		private readonly DuplicateDetectionServiceInterface $duplicates,
-		private readonly DismissedPairStore $dismissals,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ControllerSession $session,
-	) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, DuplicateControllerServices $services) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->duplicates    = $services->duplicates;
+		$this->dismissals    = $services->dismissals;
+		$this->objectService = $services->objectService;
+		$this->session       = $services->session;
 	}//end __construct()
 
 	/**
@@ -99,10 +126,7 @@ class DuplicateController extends Controller {
 
 		try {
 			$pairs = $this->duplicates->findDuplicates(
-				register: $register,
-				schema: $schema,
-				matchRules: null,
-				threshold: $threshold
+				request: new DedupRun(register: $register, schema: $schema, matchRules: null, threshold: $threshold)
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
@@ -156,7 +180,6 @@ class DuplicateController extends Controller {
 				register: $register,
 				schema: $schema,
 				candidate: $candidate,
-				matchRules: null,
 				threshold: $threshold
 			);
 		} catch (NotAuthorizedException $e) {
@@ -170,9 +193,7 @@ class DuplicateController extends Controller {
 				'matches' => $matches,
 				'total' => count($matches),
 				'threshold' => $this->duplicates->effectiveThreshold(
-					register: $register,
-					schema: $schema,
-					threshold: $threshold
+					request: new DedupRun(register: $register, schema: $schema, threshold: $threshold)
 				),
 			]
 		);
@@ -279,12 +300,8 @@ class DuplicateController extends Controller {
 			);
 		}
 
-		$fingerprint = $this->fingerprintOf(
-			register: $register,
-			schema: $schema,
-			objectA: $objectA,
-			objectB: $objectB
-		);
+		$pair = new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema);
+		$fingerprint = $this->fingerprintOf(pair: $pair);
 		if ($fingerprint === null) {
 			return new JSONResponse(
 				['error' => 'One of the objects could not be read.'],
@@ -293,13 +310,12 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->dismiss(
-			first: $objectA,
-			second: $objectB,
-			registerSlug: $register,
-			schemaSlug: $schema,
-			fingerprint: $fingerprint,
-			reason: $reason,
-			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
+			pair: $pair,
+			dismissal: new PairDismissal(
+				fingerprint: $fingerprint,
+				reason: $reason,
+				dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
+			)
 		);
 
 		return new JSONResponse($row);
@@ -337,10 +353,7 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->undismiss(
-			first: $objectA,
-			second: $objectB,
-			registerSlug: $register,
-			schemaSlug: $schema,
+			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
 			reversedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
 
@@ -395,10 +408,7 @@ class DuplicateController extends Controller {
 	 * The fingerprint of the pair being dismissed, computed by the SAME
 	 * function the scorer will later compare against.
 	 *
-	 * @param string $register Register reference.
-	 * @param string $schema Schema reference.
-	 * @param string $objectA One uuid.
-	 * @param string $objectB The other uuid.
+	 * @param ReviewedPair $pair The two uuids and the register and schema references.
 	 *
 	 * @return string|null The fingerprint, or null when either object cannot be read.
 	 *
@@ -406,10 +416,10 @@ class DuplicateController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function fingerprintOf(string $register, string $schema, string $objectA, string $objectB): ?string {
+	private function fingerprintOf(ReviewedPair $pair): ?string {
 		try {
-			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectA));
-			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectB));
+			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->first));
+			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->second));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -419,9 +429,8 @@ class DuplicateController extends Controller {
 		}
 
 		return $this->duplicates->pairFingerprint(
-			dataA: ($a->getObject() ?? []),
-			dataB: ($b->getObject() ?? []),
-			rules: $this->duplicates->effectiveRules(register: $register, schema: $schema)
+			payloads: [($a->getObject() ?? []), ($b->getObject() ?? [])],
+			rules: $this->duplicates->effectiveRules(register: $pair->registerSlug, schema: $pair->schemaSlug)
 		);
 	}//end fingerprintOf()
 }//end class

@@ -36,7 +36,7 @@ use OCP\IUser;
 /**
  * Per-org role gating for publish and install.
  */
-class FederatedConfigAccess {
+class FederatedConfigAccess implements FederatedConfigAccessInterface {
 
 	/**
 	 * The app its config lives under.

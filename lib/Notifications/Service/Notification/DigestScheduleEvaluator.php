@@ -70,20 +70,31 @@ class DigestScheduleEvaluator {
 			return false;
 		}
 
-		$at = ($digest['at'] ?? null);
-		if (is_string($at) === false || preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $at) !== 1) {
-			return false;
-		}
-
-		if ($schedule === 'weekly') {
-			$weekday = ($digest['weekday'] ?? null);
-			if (is_int($weekday) === false || $weekday < 0 || $weekday > 6) {
-				return false;
-			}
-		}
-
-		return true;
+		return $this->isTimeOfDay(at: ($digest['at'] ?? null)) === true
+			&& ($schedule !== 'weekly' || $this->isWeekday(weekday: ($digest['weekday'] ?? null)) === true);
 	}//end isValidDigestSpec()
+
+	/**
+	 * Whether a value is an "HH:MM" 24h time string.
+	 *
+	 * @param mixed $at Candidate `digest.at`.
+	 *
+	 * @return bool
+	 */
+	private function isTimeOfDay(mixed $at): bool {
+		return is_string($at) === true && preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $at) === 1;
+	}//end isTimeOfDay()
+
+	/**
+	 * Whether a value is a weekday number, 0 to 6.
+	 *
+	 * @param mixed $weekday Candidate `digest.weekday`.
+	 *
+	 * @return bool
+	 */
+	private function isWeekday(mixed $weekday): bool {
+		return is_int($weekday) === true && $weekday >= 0 && $weekday <= 6;
+	}//end isWeekday()
 
 	/**
 	 * The most recent scheduled occurrence at-or-before `$now`.
@@ -94,24 +105,12 @@ class DigestScheduleEvaluator {
 	 * @return DateTimeImmutable
 	 */
 	public function lastOccurrence(array $digest, DateTimeImmutable $now): DateTimeImmutable {
-		$timezoneSpec = null;
-		if (is_string($digest['timezone'] ?? null) === true) {
-			$timezoneSpec = $digest['timezone'];
-		}
-
-		$tz = $this->windowService->resolveTimezone(tzName: $timezoneSpec);
-		$schedule = (string)($digest['schedule'] ?? 'daily');
-		$at = (string)($digest['at'] ?? '00:00');
-		$weekday = $digest['weekday'] ?? null;
-
-		[$hour, $minute] = array_map('intval', explode(':', $at));
-
-		$localNow = $now->setTimezone($tz);
-		$candidate = $localNow->setTime($hour, $minute, 0);
+		$localNow = $now->setTimezone($this->windowService->resolveTimezone(tzName: $this->timezoneName(digest: $digest)));
+		[$hour, $minute] = array_map('intval', explode(':', (string)($digest['at'] ?? '00:00')));
+		$candidate       = $localNow->setTime($hour, $minute, 0);
 
 		for ($i = 0; $i < 8; $i++) {
-			$matchesDay = ($schedule !== 'weekly') || ((int)$candidate->format('w') === (int)$weekday);
-			if ($matchesDay === true && $candidate <= $localNow) {
+			if ($this->isScheduledDay(digest: $digest, day: $candidate) === true && $candidate <= $localNow) {
 				return $candidate;
 			}
 
@@ -124,25 +123,53 @@ class DigestScheduleEvaluator {
 	}//end lastOccurrence()
 
 	/**
-	 * Whether a row enqueued at `$enqueuedAt` is due to flush at `$now`
-	 * under the given `digest` schedule: the schedule's most recent
-	 * occurrence at-or-before `$now` happened AFTER the row was enqueued.
+	 * The block's declared timezone name, null when absent or not a string.
 	 *
 	 * @param array<string, mixed> $digest Validated `digest` block.
-	 * @param DateTimeImmutable $enqueuedAt When the row was queued.
-	 * @param DateTimeImmutable $now The instant to evaluate from.
+	 *
+	 * @return string|null
+	 */
+	private function timezoneName(array $digest): ?string {
+		if (is_string($digest['timezone'] ?? null) === true) {
+			return $digest['timezone'];
+		}
+
+		return null;
+	}//end timezoneName()
+
+	/**
+	 * Whether the schedule fires on a day: every day, or the weekly weekday.
+	 *
+	 * @param array<string, mixed> $digest Validated `digest` block.
+	 * @param DateTimeImmutable    $day    A candidate occurrence.
 	 *
 	 * @return bool
 	 */
-	public function isDue(array $digest, DateTimeImmutable $enqueuedAt, DateTimeImmutable $now): bool {
+	private function isScheduledDay(array $digest, DateTimeImmutable $day): bool {
+		return (string)($digest['schedule'] ?? 'daily') !== 'weekly' || (int)$day->format('w') === (int)($digest['weekday'] ?? null);
+	}//end isScheduledDay()
+
+	/**
+	 * Whether a row that waited `$wait` is due to flush under the given
+	 * `digest` schedule: the schedule's most recent occurrence at-or-before
+	 * the wait's `now` happened AFTER the row was enqueued.
+	 *
+	 * @param array<string, mixed> $digest Validated `digest` block.
+	 * @param QueueWait            $wait   When the row was queued and the instant to evaluate from.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function isDue(array $digest, QueueWait $wait): bool {
 		if ($this->isValidDigestSpec(digest: $digest) === false) {
 			// Malformed schedule — fail open (treat as due) so a bad
 			// annotation cannot indefinitely trap events in the queue.
 			return true;
 		}
 
-		$last = $this->lastOccurrence(digest: $digest, now: $now);
+		$last = $this->lastOccurrence(digest: $digest, now: $wait->now);
 
-		return $last > $enqueuedAt;
+		return $last > $wait->enqueuedAt;
 	}//end isDue()
 }//end class

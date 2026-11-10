@@ -58,14 +58,12 @@ class FlowTriggerExecutionModeTest extends TestCase {
 		$this->runs = $this->createMock(FlowRunService::class);
 
 		$this->service = new FlowTriggerService(
-			$this->resolvers,
-			$this->runs,
-			$this->createMock(LoggerInterface::class)
+			new \OCA\OpenRegister\Service\Flow\FlowExecution($this->resolvers, $this->runs, $this->createMock(LoggerInterface::class))
 		);
 
-		$this->resolvers->method('flowsForTrigger')->willReturn(['flow-1']);
+		$this->resolvers->method('flowsForEvent')->willReturn(['flow-1']);
 		$this->runs->method('queue')->willReturn(new FlowRun());
-		$this->resolvers->method('resolveSubject')->willReturn(new stdClass());
+		$this->resolvers->method('resolveObject')->willReturn(new stdClass());
 
 	}//end setUp()
 

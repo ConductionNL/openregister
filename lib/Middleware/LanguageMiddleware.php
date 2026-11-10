@@ -38,8 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -73,14 +73,14 @@ class LanguageMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param LanguageService $languageService The request-scoped language service.
-	 * @param TranslationMapper $translationMapper Mapper for source-language lookups (response side).
+	 * @param LanguageServiceInterface $languageService The request-scoped language service.
+	 * @param TranslationMapperInterface $translationMapper Mapper for source-language lookups (response side).
 	 * @param LoggerInterface $logger Logger for invalid-tag warnings.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly LanguageService $languageService,
-		private readonly TranslationMapper $translationMapper,
+		private readonly LanguageServiceInterface $languageService,
+		private readonly TranslationMapperInterface $translationMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -99,51 +99,83 @@ class LanguageMiddleware extends Middleware {
 	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
 	 */
 	public function beforeController($controller, $methodName): void {
-		// 1. Query-parameter overrides take precedence over Accept-Language.
+		// Query-parameter overrides take precedence over Accept-Language.
 		$resolvedFromQuery = $this->resolveFromQueryParams();
 		if ($resolvedFromQuery !== null) {
-			$this->languageService->setPreferredLanguage($resolvedFromQuery);
-			$this->languageService->setRequestedLanguageSource('query');
+			$this->setPreferredLanguage(language: $resolvedFromQuery, source: 'query');
 		}
 
-		// 2. Accept-Language header is the next priority.
-		$acceptLanguage = $this->request->getHeader('Accept-Language');
-		if ($acceptLanguage !== '') {
-			$acceptedLanguages = LanguageService::parseAcceptLanguageHeader($acceptLanguage);
-			$this->languageService->setAcceptedLanguages($acceptedLanguages);
-
-			if (empty($acceptedLanguages) === false && $resolvedFromQuery === null) {
-				$preferred = strtolower(explode('-', $acceptedLanguages[0])[0]);
-				$this->languageService->setPreferredLanguage($preferred);
-				$this->languageService->setRequestedLanguageSource('header');
-			}
-		}
-
-		// 3. _translations=all (existing).
-		$translations = $this->request->getParam('_translations');
-		if ($translations === 'all') {
+		$this->applyAcceptLanguage(queryResolved: $resolvedFromQuery !== null);
+		if ($this->request->getParam('_translations') === 'all') {
 			$this->languageService->setReturnAllTranslations(true);
 		}
 
-		// 4. Write-side X-Translation-Target-Language on mutating verbs.
-		$method = strtoupper((string)$this->request->getMethod());
-		if (in_array($method, ['POST', 'PUT', 'PATCH'], true) === true) {
-			$targetHeader = $this->request->getHeader('X-Translation-Target-Language');
-			if ($targetHeader !== '') {
-				$targetTrim = trim($targetHeader);
-				if (preg_match(self::BCP47_PATTERN, $targetTrim) === 1) {
-					$this->languageService->setTargetLanguage($targetTrim);
-				} else {
-					$this->logger->warning(
-						sprintf(
-							'[LanguageMiddleware] Invalid X-Translation-Target-Language "%s" — ignoring.',
-							$targetTrim
-						)
-					);
-				}
-			}
-		}
+		$this->applyTargetLanguage();
 	}//end beforeController()
+
+	/**
+	 * Record the preferred language and where it came from.
+	 *
+	 * @param string $language The language code.
+	 * @param string $source   Where it came from: `query` or `header`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+	 */
+	private function setPreferredLanguage(string $language, string $source): void {
+		$this->languageService->setPreferredLanguage($language);
+		$this->languageService->setRequestedLanguageSource($source);
+	}//end setPreferredLanguage()
+
+	/**
+	 * Read the Accept-Language header into the accepted languages, and into the
+	 * preferred language when no query parameter already chose one.
+	 *
+	 * @param bool $queryResolved Whether a query parameter already set the preferred language.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+	 */
+	private function applyAcceptLanguage(bool $queryResolved): void {
+		$acceptLanguage = $this->request->getHeader('Accept-Language');
+		if ($acceptLanguage === '') {
+			return;
+		}
+
+		$acceptedLanguages = $this->languageService::parseAcceptLanguageHeader($acceptLanguage);
+		$this->languageService->setAcceptedLanguages($acceptedLanguages);
+
+		if (empty($acceptedLanguages) === false && $queryResolved === false) {
+			$preferred = strtolower(explode('-', $acceptedLanguages[0])[0]);
+			$this->setPreferredLanguage(language: $preferred, source: 'header');
+		}
+	}//end applyAcceptLanguage()
+
+	/**
+	 * Set the write-side target language from X-Translation-Target-Language on a
+	 * POST, PUT or PATCH; an invalid value is logged and ignored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+	 */
+	private function applyTargetLanguage(): void {
+		$method       = strtoupper((string)$this->request->getMethod());
+		$targetHeader = $this->request->getHeader('X-Translation-Target-Language');
+		if (in_array($method, ['POST', 'PUT', 'PATCH'], true) === false || $targetHeader === '') {
+			return;
+		}
+
+		$targetTrim = trim($targetHeader);
+		if (preg_match(self::BCP47_PATTERN, $targetTrim) === 1) {
+			$this->languageService->setTargetLanguage($targetTrim);
+			return;
+		}
+
+		$this->logger->warning(sprintf('[LanguageMiddleware] Invalid X-Translation-Target-Language "%s" — ignoring.', $targetTrim));
+	}//end applyTargetLanguage()
 
 	/**
 	 * Emit language response headers.
@@ -157,6 +189,17 @@ class LanguageMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
+		return $this->withLanguageHeaders(response: $response);
+	}//end afterController()
+
+	/**
+	 * The answer with its Content-Language, fallback and source-language headers.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return Response The same answer.
+	 */
+	private function withLanguageHeaders(Response $response): Response {
 		$language = $this->languageService->getPreferredLanguage();
 		$response->addHeader('Content-Language', $language);
 
@@ -164,10 +207,24 @@ class LanguageMiddleware extends Middleware {
 			$response->addHeader('X-Content-Language-Fallback', 'true');
 		}
 
-		// I18n-source-of-truth: surface the dominant source language for
-		// the response payload. We can only derive this when the request
-		// targets a single object (the path carries a uuid). Listing /
-		// multi-object endpoints skip the header.
+		$this->addSourceLanguage(response: $response);
+
+		return $response;
+	}//end withLanguageHeaders()
+
+	/**
+	 * Add the X-Source-Language header when the request targets one object.
+	 *
+	 * I18n-source-of-truth: surface the dominant source language for the
+	 * response payload. We can only derive this when the request targets a
+	 * single object (the path carries a uuid). Listing / multi-object
+	 * endpoints skip the header. A failing lookup is logged and skipped.
+	 *
+	 * @param Response $response The response object.
+	 *
+	 * @return void
+	 */
+	private function addSourceLanguage(Response $response): void {
 		try {
 			$sourceLanguage = $this->resolveSourceLanguageForResponse();
 			if ($sourceLanguage !== null) {
@@ -178,9 +235,7 @@ class LanguageMiddleware extends Middleware {
 				'[LanguageMiddleware] X-Source-Language derivation failed: ' . $e->getMessage()
 			);
 		}
-
-		return $response;
-	}//end afterController()
+	}//end addSourceLanguage()
 
 	/**
 	 * Resolve a language from `?_lang=` or `?language=`, in that order.
@@ -194,32 +249,39 @@ class LanguageMiddleware extends Middleware {
 	 */
 	private function resolveFromQueryParams(): ?string {
 		foreach (['_lang', 'language'] as $name) {
-			$value = $this->request->getParam($name);
-			if ($value === null || $value === '') {
-				continue;
+			$tag = $this->validQueryTag(name: $name);
+			if ($tag !== null) {
+				return $tag;
 			}
-
-			if (is_string($value) === false) {
-				continue;
-			}
-
-			$trimmed = trim($value);
-			if (preg_match(self::BCP47_PATTERN, $trimmed) !== 1) {
-				$this->logger->warning(
-					sprintf(
-						"[LanguageMiddleware] Invalid ?%s value '%s' — falling through",
-						$name,
-						$trimmed
-					)
-				);
-				continue;
-			}
-
-			return $trimmed;
-		}//end foreach
+		}
 
 		return null;
 	}//end resolveFromQueryParams()
+
+	/**
+	 * The trimmed value of one language query parameter, when it is a valid tag.
+	 *
+	 * An invalid tag logs a warning and yields null, so the lookup falls
+	 * through to the next priority level.
+	 *
+	 * @param string $name The query parameter.
+	 *
+	 * @return string|null The tag, or null when absent, not a string or malformed.
+	 */
+	private function validQueryTag(string $name): ?string {
+		$value = $this->request->getParam($name);
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		$trimmed = trim($value);
+		if (preg_match(self::BCP47_PATTERN, $trimmed) === 1) {
+			return $trimmed;
+		}
+
+		$this->logger->warning(sprintf("[LanguageMiddleware] Invalid ?%s value '%s' — falling through", $name, $trimmed));
+		return null;
+	}//end validQueryTag()
 
 	/**
 	 * Attempt to resolve the canonical source-language for the response.
@@ -236,19 +298,27 @@ class LanguageMiddleware extends Middleware {
 		// `uuid` so the header is derived on the primary object endpoints —
 		// previously only `uuid` was read, so X-Source-Language was never
 		// emitted on the main object route (i18n-source-of-truth).
-		$uuid = $this->request->getParam('id');
-		if (is_string($uuid) === false || $uuid === '') {
-			$uuid = $this->request->getParam('uuid');
-		}
-
-		if (is_string($uuid) === false || $uuid === '') {
-			return null;
-		}
-
-		if (preg_match('/^[a-fA-F0-9\-]{8,}$/', $uuid) !== 1) {
+		$uuid = $this->requestedObjectId();
+		if ($uuid === null || preg_match('/^[a-fA-F0-9\-]{8,}$/', $uuid) !== 1) {
 			return null;
 		}
 
 		return $this->translationMapper->getDominantSourceLanguage($uuid);
 	}//end resolveSourceLanguageForResponse()
+
+	/**
+	 * The object identifier the request path names: `id` first, then `uuid`.
+	 *
+	 * @return string|null The identifier, or null when neither is a non-empty string.
+	 */
+	private function requestedObjectId(): ?string {
+		foreach (['id', 'uuid'] as $name) {
+			$value = $this->request->getParam($name);
+			if (is_string($value) === true && $value !== '') {
+				return $value;
+			}
+		}
+
+		return null;
+	}//end requestedObjectId()
 }//end class

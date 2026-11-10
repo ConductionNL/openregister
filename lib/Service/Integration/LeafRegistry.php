@@ -52,7 +52,7 @@ use Throwable;
  * renderMode, data-provider-requires-provider) rejects and skips a bad leaf
  * without breaking the catalogue.
  */
-class LeafRegistry {
+class LeafRegistry implements LeafRegistryInterface {
 
 	/**
 	 * Whether the catalogue has been collected this request.
@@ -82,9 +82,6 @@ class LeafRegistry {
 	 * @param IntegrationRegistry $integrationRegistry Shared provider registry (data leaves land here).
 	 * @param IAppManager $appManager App manager (usability check).
 	 * @param LoggerInterface $logger Logger for collision, validation, collection warnings.
-	 * @param LeafBundle|null $leafBundleService Answers whether an app's leaf can render. Nullable and last so
-	 *                                           no construction site shifts; absent, one is built from the app
-	 *                                           manager this class already holds.
 	 *
 	 * @return void
 	 */
@@ -93,12 +90,12 @@ class LeafRegistry {
 		private IntegrationRegistry $integrationRegistry,
 		private IAppManager $appManager,
 		private LoggerInterface $logger,
-		// LAST AND NULLABLE so every existing construction keeps working; the
-		// container always supplies it. Built from the app manager this class
-		// already holds when it is absent, so the answer is never a second one.
-		private ?LeafBundle $leafBundleService = null,
 	) {
-		$this->leafBundle = ($leafBundleService ?? new LeafBundle($appManager));
+		// LeafBundle is stateless and only reads the app manager, so the one
+		// built here from the app manager this class already holds is the one
+		// answer to whether a leaf can render; no construction site passed
+		// another.
+		$this->leafBundle = new LeafBundle($appManager);
 	}//end __construct()
 
 	/**
@@ -136,15 +133,46 @@ class LeafRegistry {
 	 * @spec openspec/changes/a-leaf-that-cannot-render-refuses-to-register/specs/leaf-provider-registration/spec.md
 	 */
 	private function renderSurfaceCanRender(LeafDescriptor $descriptor): bool {
-		if ($descriptor->hasKind(LeafDescriptor::KIND_RENDER_SURFACE) === false) {
+		$providingApp = self::renderSurfaceApp(descriptor: $descriptor);
+		if ($providingApp === null) {
 			return true;
+		}
+
+		if ($this->bundleNeedsNoJudgement(providingApp: $providingApp) === true) {
+			return true;
+		}
+
+		return $this->judgeMissingBundle(descriptor: $descriptor, providingApp: $providingApp);
+	}//end renderSurfaceCanRender()
+
+	/**
+	 * The app that provides a render surface's bundle, or null when there is nothing to judge.
+	 *
+	 * @param LeafDescriptor $descriptor The leaf.
+	 *
+	 * @return string|null The providing app, or null for a non-render leaf or one without an app.
+	 */
+	private static function renderSurfaceApp(LeafDescriptor $descriptor): ?string {
+		if ($descriptor->hasKind(LeafDescriptor::KIND_RENDER_SURFACE) === false) {
+			return null;
 		}
 
 		$providingApp = $descriptor->getRequiredApp();
 		if ($providingApp === null || $providingApp === '') {
-			return true;
+			return null;
 		}
 
+		return $providingApp;
+	}//end renderSurfaceApp()
+
+	/**
+	 * Whether the providing app's bundle needs no judgement: no app path, a disabled app, or a present bundle.
+	 *
+	 * @param string $providingApp The providing app.
+	 *
+	 * @return bool
+	 */
+	private function bundleNeedsNoJudgement(string $providingApp): bool {
 		if ($this->leafBundle->pathFor(appId: $providingApp) === null) {
 			return true;
 		}
@@ -156,18 +184,37 @@ class LeafRegistry {
 		// fixes itself without a rebuild, which is why that one is refused and
 		// this one is left to the existing mechanism. Overriding it here would
 		// be a second answer to "can this leaf be used".
+		if ($this->isDisabledOrUnknown(providingApp: $providingApp) === true) {
+			return true;
+		}
+
+		return $this->leafBundle->existsFor(appId: $providingApp) === true;
+	}//end bundleNeedsNoJudgement()
+
+	/**
+	 * Whether the providing app is disabled for the user, or its state cannot be read.
+	 *
+	 * @param string $providingApp The providing app.
+	 *
+	 * @return bool
+	 */
+	private function isDisabledOrUnknown(string $providingApp): bool {
 		try {
-			if ($this->appManager->isEnabledForUser($providingApp) === false) {
-				return true;
-			}
+			return $this->appManager->isEnabledForUser($providingApp) === false;
 		} catch (Throwable) {
 			return true;
 		}
+	}//end isDisabledOrUnknown()
 
-		if ($this->leafBundle->existsFor(appId: $providingApp) === true) {
-			return true;
-		}
-
+	/**
+	 * Judge a render surface whose app ships no shared bundle: refuse a claim, report silence.
+	 *
+	 * @param LeafDescriptor $descriptor   The leaf.
+	 * @param string         $providingApp The providing app.
+	 *
+	 * @return bool False when the leaf claims the shared entry; true otherwise.
+	 */
+	private function judgeMissingBundle(LeafDescriptor $descriptor, string $providingApp): bool {
 		// 🔴 NOW THE REFUSAL IS SOUND, BECAUSE IT ONLY JUDGES A CLAIM.
 		//
 		// openregister#3954 skipped on filesystem evidence alone and was wrong
@@ -212,7 +259,7 @@ class LeafRegistry {
 		);
 
 		return true;
-	}//end renderSurfaceCanRender()
+	}//end judgeMissingBundle()
 
 	/**
 	 * Dispatch the collect-event once and collect the announced leaves.
@@ -296,6 +343,19 @@ class LeafRegistry {
 			return;
 		}
 
+		$this->registerLeaf(descriptor: $descriptor, provider: $provider);
+	}//end collectLeaf()
+
+	/**
+	 * Register an accepted leaf, first registration wins, and hand its provider to the integration registry.
+	 *
+	 * @param LeafDescriptor           $descriptor The accepted leaf.
+	 * @param IntegrationProvider|null $provider   Its data provider, when it has one.
+	 *
+	 * @return void
+	 */
+	private function registerLeaf(LeafDescriptor $descriptor, ?IntegrationProvider $provider): void {
+		$id = $descriptor->getId();
 		if (isset($this->descriptors[$id]) === true) {
 			$this->logger->warning(
 				sprintf('[LeafRegistry] duplicate leaf id "%s" — keeping first registration', $id)
@@ -312,7 +372,7 @@ class LeafRegistry {
 			$this->integrationRegistry->addProvider(provider: $provider);
 		}
 
-	}//end collectLeaf()
+	}//end registerLeaf()
 
 	/**
 	 * Why a contributed leaf is skipped, or null when it is kept.
@@ -329,18 +389,43 @@ class LeafRegistry {
 	 * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
 	 */
 	private function refusalForLeaf(LeafDescriptor $descriptor, ?IntegrationProvider $provider): ?string {
+		return self::identityRefusal(descriptor: $descriptor)
+			?? self::vocabularyRefusal(descriptor: $descriptor)
+			?? self::providerRefusal(descriptor: $descriptor, provider: $provider);
+	}//end refusalForLeaf()
+
+	/**
+	 * The refusal for a leaf whose id is not kebab-case or that declares no kinds.
+	 *
+	 * @param LeafDescriptor $descriptor The announced leaf.
+	 *
+	 * @return string|null The refusal message, or null.
+	 */
+	private static function identityRefusal(LeafDescriptor $descriptor): ?string {
 		$id = $descriptor->getId();
 
 		if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $id) === 0) {
 			return sprintf('[LeafRegistry] leaf id "%s" is not kebab-case — skipping', $id);
 		}
 
-		$kinds = $descriptor->getKinds();
-		if ($kinds === []) {
+		if ($descriptor->getKinds() === []) {
 			return sprintf('[LeafRegistry] leaf "%s" declares no kinds — skipping', $id);
 		}
 
-		$unknown = array_diff($kinds, LeafDescriptor::VALID_KINDS);
+		return null;
+	}//end identityRefusal()
+
+	/**
+	 * The refusal for a leaf that declares an unknown kind or render mode.
+	 *
+	 * @param LeafDescriptor $descriptor The announced leaf.
+	 *
+	 * @return string|null The refusal message, or null.
+	 */
+	private static function vocabularyRefusal(LeafDescriptor $descriptor): ?string {
+		$id = $descriptor->getId();
+
+		$unknown = array_diff($descriptor->getKinds(), LeafDescriptor::VALID_KINDS);
 		if ($unknown !== []) {
 			return sprintf(
 				'[LeafRegistry] leaf "%s" declares unknown kind(s) "%s" — skipping',
@@ -358,15 +443,27 @@ class LeafRegistry {
 			);
 		}
 
+		return null;
+	}//end vocabularyRefusal()
+
+	/**
+	 * The refusal for a data-provider leaf that supplied no provider.
+	 *
+	 * @param LeafDescriptor           $descriptor The announced leaf.
+	 * @param IntegrationProvider|null $provider   The supplied provider.
+	 *
+	 * @return string|null The refusal message, or null.
+	 */
+	private static function providerRefusal(LeafDescriptor $descriptor, ?IntegrationProvider $provider): ?string {
 		if ($descriptor->hasKind(LeafDescriptor::KIND_DATA_PROVIDER) === true && $provider === null) {
 			return sprintf(
 				'[LeafRegistry] leaf "%s" declares the data-provider kind but supplied no provider — skipping',
-				$id
+				$descriptor->getId()
 			);
 		}
 
 		return null;
-	}//end refusalForLeaf()
+	}//end providerRefusal()
 
 	/**
 	 * Every collected leaf descriptor.

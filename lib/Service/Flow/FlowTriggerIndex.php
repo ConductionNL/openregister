@@ -43,7 +43,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -52,24 +53,22 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
  */
-class FlowTriggerIndex {
+class FlowTriggerIndex implements FlowTriggerIndexInterface {
+
+
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerMapper $mapper The indexed trigger set.
-	 * @param FlowTriggerDerivation $derivation Nodes to triggers.
-	 * @param FlowTriggerSlugs $slugs Normalises a derived triple to the slugs matching runs on.
+	 * @param FlowTriggerMapperInterface $mapper The indexed trigger set.
+	 * @param FlowTriggerSources $sources The derivation, the slug normaliser and the published graph.
 	 * @param LoggerInterface $logger Diagnostics.
-	 * @param FlowPublishedGraph|null $published Resolves the published graph.
 	 */
 	public function __construct(
-		private readonly FlowTriggerMapper $mapper,
-		private readonly FlowTriggerDerivation $derivation,
-		private readonly FlowTriggerSlugs $slugs,
+		private readonly FlowTriggerMapperInterface $mapper,
+		private readonly FlowTriggerSources $sources,
 		private readonly LoggerInterface $logger,
-		private readonly ?FlowPublishedGraph $published = null,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -100,15 +99,13 @@ class FlowTriggerIndex {
 			// rather than at each caller is what stops the two from drifting:
 			// the flow save path, the publish transaction and the upgrade
 			// back-fill all reach the index through this one method.
-			$triggers = $this->derivation->objectTriggersOf(flow: $this->publishedFace(flow: $flow));
+			$triggers = $this->sources->derivation->objectTriggersOf(flow: $this->publishedFace(flow: $flow));
 
 			// A flow that derives NO object triggers must not be left with
 			// stale rows from a previous save — deleting the flow's last
 			// trigger node has to actually unsubscribe it.
 			return $this->mapper->replaceFor(
-				flowUuid: $uuid,
-				triggers: $this->canonical(triggers: $triggers),
-				enabled: ($flow->getEnabled() === true)
+				set: new FlowTriggerSet(flowUuid: $uuid, triggers: $this->canonical(triggers: $triggers), enabled: ($flow->getEnabled() === true))
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -144,8 +141,8 @@ class FlowTriggerIndex {
 		foreach ($triggers as $trigger) {
 			$row = [
 				'event' => (string)$trigger['event'],
-				'register' => $this->slugs->registerSlug(identifier: (string)$trigger['register']),
-				'schema' => $this->slugs->schemaSlug(identifier: (string)$trigger['schema']),
+				'register' => $this->sources->slugs->registerSlug(identifier: (string)$trigger['register']),
+				'schema' => $this->sources->slugs->schemaSlug(identifier: (string)$trigger['schema']),
 			];
 
 			$rows[$row['event'] . '|' . $row['register'] . '|' . $row['schema']] = $row;
@@ -180,11 +177,11 @@ class FlowTriggerIndex {
 		$carrier->setNodes([]);
 		$carrier->setEdges([]);
 
-		if ($this->published === null) {
+		if ($this->sources->published === null) {
 			return $carrier;
 		}
 
-		$graph = $this->published->graphOf(flowId: (string)$flow->getUuid());
+		$graph = $this->sources->published->graphOf(flowId: (string)$flow->getUuid());
 		if ($graph === null) {
 			return $carrier;
 		}
@@ -249,7 +246,7 @@ class FlowTriggerIndex {
 			// No rows. Only a flow whose COLUMNS still name a trigger is a
 			// problem: one with no trigger at all is simply unfinished, and
 			// reporting it would bury the flows that matter.
-			$columns = $this->derivation->columnTriggerOf(flow: $flow);
+			$columns = $this->sources->derivation->columnTriggerOf(flow: $flow);
 			if ($columns === null) {
 				continue;
 			}

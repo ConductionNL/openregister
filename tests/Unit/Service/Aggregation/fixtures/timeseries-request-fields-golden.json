@@ -1,0 +1,165 @@
+{
+    "fields duplicates collapse": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "fields": [
+                    "day",
+                    "status",
+                    "_created"
+                ]
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "fields first member bad type": {
+        "error": "`fields` members MUST be non-empty strings"
+    },
+    "fields undeclared before bad type": {
+        "error": "`fields` member \"colour\" is not a declared property of the schema"
+    },
+    "fields empty string member": {
+        "error": "`fields` members MUST be non-empty strings"
+    },
+    "fields null member": {
+        "error": "`fields` members MUST be non-empty strings"
+    },
+    "fields assoc": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "fields": [
+                    "day",
+                    "amount"
+                ]
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "fields numeric string property": {
+        "error": "`fields` member \"12\" is not a declared property of the schema"
+    },
+    "fields null": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "field undeclared with fields": {
+        "error": "`field` \"colour\" is not a declared property of the schema"
+    },
+    "metricField integer declared": {
+        "error": "`metricField` \"12\" is not a declared property of the schema"
+    },
+    "metricField integer undeclared": {
+        "error": "`metricField` \"99\" is not a declared property of the schema"
+    },
+    "metricField zero string": {
+        "error": "`metricField` \"0\" is not a declared property of the schema"
+    },
+    "metricField false": {
+        "error": "`metricField` \"\" is not a declared property of the schema"
+    },
+    "metric numeric": {
+        "error": "aggregation metric MUST be one of: count, sum, avg, min, max (got: 5)"
+    },
+    "metrics not array": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "metrics entry missing metric": {
+        "error": "Aggregation \"ad-hoc\" metrics[0] metric \"\" is not in [count, sum, avg, min, max, count_distinct, expression]."
+    },
+    "metrics entry numeric metric": {
+        "error": "Aggregation \"ad-hoc\" metrics[0] metric \"7\" is not in [count, sum, avg, min, max, count_distinct, expression]."
+    },
+    "metrics second entry scalar": {
+        "error": "`metrics` entries MUST be objects"
+    },
+    "metrics keep extra keys": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": [
+                {
+                    "metric": "max",
+                    "field": "amount",
+                    "alias": "top"
+                },
+                {
+                    "metric": "count"
+                }
+            ],
+            "cumulative": false
+        }
+    },
+    "metrics assoc": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": [
+                {
+                    "metric": "count"
+                },
+                {
+                    "metric": "sum",
+                    "field": "amount"
+                }
+            ],
+            "cumulative": false
+        }
+    },
+    "metrics with fields": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "fields": [
+                    "day"
+                ]
+            },
+            "dateBucket": null,
+            "metrics": [
+                {
+                    "metric": "count"
+                }
+            ],
+            "cumulative": false
+        }
+    }
+}

@@ -26,7 +26,6 @@ use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +74,6 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 			$schemaMapper,
 			$this->createMock(originalClassName: SettingsService::class),
 			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->createMock(originalClassName: IRequest::class),
 			$this->createMock(originalClassName: SearchTrailService::class),
 			$session
 		);
@@ -130,6 +128,24 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 		$this->assertArrayNotHasKey(key: '_unreadFor', array: $query);
 
 	}//end testAnonymousCallerGetsAnImpossibleIdSet()
+
+	/**
+	 * The reader is always the session, whatever the request names.
+	 *
+	 * @return void
+	 */
+	public function testARequestCannotNameAnotherReader(): void {
+		$handler = $this->makeHandler();
+
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $handler->buildSearchQuery(['_unreadFor' => 'mallory'], 1, 777));
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $handler->buildSearchQuery(['_unread' => 'false', '_unreadFor' => 'mallory'], 1, 777));
+
+		$query = $handler->buildSearchQuery(['_unread' => 'true', '_unreadFor' => 'mallory'], 1, 777);
+		$this->assertSame(expected: 'alice', actual: ($query['_unreadFor'] ?? null));
+
+		$anonymous = $this->makeHandler(uid: null)->buildSearchQuery(['_unread' => 'true', '_unreadFor' => 'mallory'], 1, 777);
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $anonymous);
+	}//end testARequestCannotNameAnotherReader()
 
 	/**
 	 * `_unread=false` asks for no restriction, and gets none.

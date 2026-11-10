@@ -1,0 +1,120 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CalendarProviderTab renders saving 1`] = `
+"<div class="calendarProviderTab">
+  <h3>Calendar Provider Configuration</h3>
+  <p class="description">Configure this schema to surface objects as events in the Nextcloud Calendar app.</p><!-- Enable toggle -->
+  <div class="fieldRow">
+    <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+      <slot-default>Enable calendar provider</slot-default>
+    </x-nccheckboxradioswitch>
+  </div><!-- Display name -->
+  <div class="fieldRow"><label for="cal-displayName">Display Name</label>
+    <x-nctextfield id="cal-displayName" modelvalue="Meetings" placeholder="Meetings" labeloutside="true" data-on="onUpdate:modelValue"></x-nctextfield>
+  </div><!-- Color picker -->
+  <div class="fieldRow"><label for="cal-color">Color</label>
+    <x-nccolorpicker modelvalue="#0082C9" data-on="onUpdate:modelValue">
+      <slot-default>
+        <x-ncbutton>
+          <slot-icon>
+            <x-circleicon size="20" fillcolor="#0082C9"></x-circleicon>
+          </slot-icon>
+          <slot-default> #0082C9</slot-default>
+        </x-ncbutton>
+      </slot-default>
+    </x-nccolorpicker>
+  </div><!-- DTSTART field -->
+  <div class="fieldRow"><label for="cal-dtstart">Start Date Field *</label>
+    <x-ncselect id="cal-dtstart" modelvalue="start" inputlabel="Local Config Dtstart" options="start" placeholder="Select a date property" data-on="onUpdate:modelValue"></x-ncselect>
+  </div><!-- DTEND field -->
+  <div class="fieldRow"><label for="cal-dtend">End Date Field</label>
+    <x-ncselect id="cal-dtend" inputlabel="Local Config Dtend" options="start" placeholder="Optional end date property" data-on="onUpdate:modelValue"></x-ncselect>
+  </div><!-- Title template -->
+  <div class="fieldRow"><label for="cal-title">Title Template *</label>
+    <x-nctextfield id="cal-title" modelvalue="{title}" placeholder="{property} - {other}" data-on="onUpdate:modelValue"></x-nctextfield><small class="hint">Available placeholders: <span class="placeholder">{start}</span><span class="placeholder">{place}</span></small>
+  </div><!-- Description template -->
+  <div class="fieldRow"><label for="cal-desc">Description Template</label><textarea id="cal-desc" class="ncTextarea" rows="3" placeholder="Optional event description template"></textarea></div><!-- Location field -->
+  <div class="fieldRow"><label for="cal-location">Location Field</label>
+    <x-ncselect id="cal-location" inputlabel="Local Config Location Field" options="start,place" placeholder="Optional location property" data-on="onUpdate:modelValue"></x-ncselect>
+  </div><!-- All day toggle -->
+  <div class="fieldRow">
+    <x-nccheckboxradioswitch indeterminate="true" type="switch" data-on="onUpdate:modelValue">
+      <slot-default>All-day events</slot-default>
+    </x-nccheckboxradioswitch><small class="hint">Leave off for auto-detection from property format.</small>
+  </div><!-- Save button -->
+  <div class="fieldRow actions">
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </div>
+</div>"
+`;
+
+exports[`CalendarProviderTab renders switched off 1`] = `
+"<div class="calendarProviderTab">
+  <h3>Calendar Provider Configuration</h3>
+  <p class="description">Configure this schema to surface objects as events in the Nextcloud Calendar app.</p><!-- Enable toggle -->
+  <div class="fieldRow">
+    <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+      <slot-default>Enable calendar provider</slot-default>
+    </x-nccheckboxradioswitch>
+  </div>
+  <!--v-if-->
+</div>"
+`;
+
+exports[`CalendarProviderTab renders switched on 1`] = `
+"<div class="calendarProviderTab">
+  <h3>Calendar Provider Configuration</h3>
+  <p class="description">Configure this schema to surface objects as events in the Nextcloud Calendar app.</p><!-- Enable toggle -->
+  <div class="fieldRow">
+    <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+      <slot-default>Enable calendar provider</slot-default>
+    </x-nccheckboxradioswitch>
+  </div><!-- Display name -->
+  <div class="fieldRow"><label for="cal-displayName">Display Name</label>
+    <x-nctextfield id="cal-displayName" modelvalue="Meetings" placeholder="Meetings" labeloutside="true" data-on="onUpdate:modelValue"></x-nctextfield>
+  </div><!-- Color picker -->
+  <div class="fieldRow"><label for="cal-color">Color</label>
+    <x-nccolorpicker modelvalue="#0082C9" data-on="onUpdate:modelValue">
+      <slot-default>
+        <x-ncbutton>
+          <slot-icon>
+            <x-circleicon size="20" fillcolor="#0082C9"></x-circleicon>
+          </slot-icon>
+          <slot-default> #0082C9</slot-default>
+        </x-ncbutton>
+      </slot-default>
+    </x-nccolorpicker>
+  </div><!-- DTSTART field -->
+  <div class="fieldRow"><label for="cal-dtstart">Start Date Field *</label>
+    <x-ncselect id="cal-dtstart" modelvalue="start" inputlabel="Local Config Dtstart" options="start" placeholder="Select a date property" data-on="onUpdate:modelValue"></x-ncselect>
+  </div><!-- DTEND field -->
+  <div class="fieldRow"><label for="cal-dtend">End Date Field</label>
+    <x-ncselect id="cal-dtend" inputlabel="Local Config Dtend" options="start" placeholder="Optional end date property" data-on="onUpdate:modelValue"></x-ncselect>
+  </div><!-- Title template -->
+  <div class="fieldRow"><label for="cal-title">Title Template *</label>
+    <x-nctextfield id="cal-title" modelvalue="{title}" placeholder="{property} - {other}" data-on="onUpdate:modelValue"></x-nctextfield><small class="hint">Available placeholders: <span class="placeholder">{start}</span><span class="placeholder">{place}</span></small>
+  </div><!-- Description template -->
+  <div class="fieldRow"><label for="cal-desc">Description Template</label><textarea id="cal-desc" class="ncTextarea" rows="3" placeholder="Optional event description template"></textarea></div><!-- Location field -->
+  <div class="fieldRow"><label for="cal-location">Location Field</label>
+    <x-ncselect id="cal-location" inputlabel="Local Config Location Field" options="start,place" placeholder="Optional location property" data-on="onUpdate:modelValue"></x-ncselect>
+  </div><!-- All day toggle -->
+  <div class="fieldRow">
+    <x-nccheckboxradioswitch indeterminate="true" type="switch" data-on="onUpdate:modelValue">
+      <slot-default>All-day events</slot-default>
+    </x-nccheckboxradioswitch><small class="hint">Leave off for auto-detection from property format.</small>
+  </div><!-- Save button -->
+  <div class="fieldRow actions">
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </div>
+</div>"
+`;

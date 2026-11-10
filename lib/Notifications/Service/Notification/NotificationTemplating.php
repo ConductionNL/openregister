@@ -38,6 +38,11 @@ use Psr\Log\LoggerInterface;
 class NotificationTemplating implements NotificationTemplatingInterface {
 
 	/**
+	 * A `{{ key }}` placeholder; group 1 is the key.
+	 */
+	private const PLACEHOLDER = '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/';
+
+	/**
 	 * Per-instance cache of resolved relation display names, keyed by UUID.
 	 * Avoids repeat ObjectService lookups when the same relation is
 	 * interpolated across a recipient fan-out.
@@ -103,42 +108,80 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	public function interpolate(string $template, array $data, array $context, array $languages = []): string {
+		return $this->render(template: $template, values: new PlaceholderValues(data: $data, context: $context, languages: $languages));
+	}//end interpolate()
+
+	/**
+	 * Fill every placeholder of a template from the values; an unanswered one stays as written.
+	 *
+	 * @param string            $template The template carrying `{{ key }}` placeholders.
+	 * @param PlaceholderValues $values   The data, the context and the language chain.
+	 *
+	 * @return string The interpolated string.
+	 */
+	private function render(string $template, PlaceholderValues $values): string {
 		return preg_replace_callback(
-			'/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
-			function (array $matches) use ($data, $context, $languages): string {
-				$key = $matches[1];
-				if (array_key_exists($key, $data) === true) {
-					$value = $this->translatedValue(value: $data[$key], languages: $languages);
-					if (is_scalar($value) === false) {
-						return $matches[0];
-					}
-
-					// Relation fields hold a UUID reference; show the related
-					// object's display name instead of the raw UUID so
-					// "{{client}}" reads "Acme Gemeente BV", not a UUID string.
-					$raw = (string)$value;
-					$display = $this->resolveRelationDisplayName(value: $raw);
-
-					return htmlspecialchars(($display ?? $raw), ENT_QUOTES, 'UTF-8');
-				}
-
-				if (array_key_exists($key, $context) === true) {
-					$value = $this->translatedValue(value: $context[$key], languages: $languages);
-					if (is_scalar($value) === false) {
-						return $matches[0];
-					}
-
-					return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
-				}
-
-				// Left as it was found. See the docblock: a hole is harder to
-				// notice than a leak, and this evaluator now agrees with the
-				// registry's.
-				return $matches[0];
-			},
+			self::PLACEHOLDER,
+			fn (array $matches): string => $this->fillPlaceholder(matches: $matches, values: $values),
 			$template
 		) ?? $template;
-	}//end interpolate()
+	}//end render()
+
+	/**
+	 * The text one placeholder renders as: the data value, else the context value.
+	 *
+	 * A key context lacks reads as null, so it is left as it was found: a hole
+	 * is harder to notice than a leak (see the interpolate() docblock).
+	 *
+	 * @param array<int, string> $matches The placeholder as written and its key.
+	 * @param PlaceholderValues  $values  The data, the context and the language chain.
+	 *
+	 * @return string The rendered text.
+	 */
+	private function fillPlaceholder(array $matches, PlaceholderValues $values): string {
+		$key = $matches[1];
+		if (array_key_exists($key, $values->data) === true) {
+			return $this->renderDataValue(value: $this->translatedValue(value: $values->data[$key], languages: $values->languages), placeholder: $matches[0]);
+		}
+
+		$value = $this->translatedValue(value: ($values->context[$key] ?? null), languages: $values->languages);
+		return $this->renderScalar(value: $value, placeholder: $matches[0]);
+	}//end fillPlaceholder()
+
+	/**
+	 * Render a data value: a relation UUID shows the related object's display
+	 * name, so "{{client}}" reads "Acme Gemeente BV", not a UUID string.
+	 *
+	 * @param mixed  $value       The translated data value.
+	 * @param string $placeholder The placeholder as written, kept for a non-scalar.
+	 *
+	 * @return string
+	 */
+	private function renderDataValue(mixed $value, string $placeholder): string {
+		if (is_scalar($value) === false) {
+			return $placeholder;
+		}
+
+		$raw = (string)$value;
+
+		return $this->renderScalar(value: ($this->resolveRelationDisplayName(value: $raw) ?? $raw), placeholder: $placeholder);
+	}//end renderDataValue()
+
+	/**
+	 * Render a scalar HTML-escaped, or keep the placeholder for anything else.
+	 *
+	 * @param mixed  $value       The translated value.
+	 * @param string $placeholder The placeholder as written.
+	 *
+	 * @return string
+	 */
+	private function renderScalar(mixed $value, string $placeholder): string {
+		if (is_scalar($value) === false) {
+			return $placeholder;
+		}
+
+		return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+	}//end renderScalar()
 
 	/**
 	 * The placeholders this template names that neither data nor context fills.
@@ -151,38 +194,43 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * deliberate: this is one class of defect across two apps and a reader who
 	 * has met it once should recognise it here.
 	 *
-	 * @param string               $template The template carrying `{{ key }}` placeholders.
-	 * @param array<string, mixed> $data     The primary data.
-	 * @param array<string, mixed> $context  Secondary lookup values.
+	 * @param string            $template The template carrying `{{ key }}` placeholders.
+	 * @param PlaceholderValues $values   The primary data and the secondary lookup values.
 	 *
 	 * @return array<int, string> The unanswerable names, in the order they appear, without repeats.
 	 *
 	 * @spec openspec/changes/notification-placeholders-refuse/specs/notificatie-engine/spec.md
 	 */
-	public function unanswered(string $template, array $data, array $context): array {
-		if (preg_match_all('/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/', $template, $matches) === false) {
+	public function unanswered(string $template, PlaceholderValues $values): array {
+		if (preg_match_all(self::PLACEHOLDER, $template, $matches) === false) {
 			return [];
 		}
 
-		$unanswered = [];
-		foreach ($matches[1] as $key) {
-			// A non-scalar counts as unanswered, because that is exactly what
-			// interpolate() cannot render either. Asking a different question
-			// here than the renderer asks is how a guard comes to disagree with
-			// the thing it guards.
-			if (array_key_exists($key, $data) === true && is_scalar($this->translatedValue(value: $data[$key], languages: [])) === true) {
-				continue;
-			}
-
-			if (array_key_exists($key, $context) === true && is_scalar($this->translatedValue(value: $context[$key], languages: [])) === true) {
-				continue;
-			}
-
-			$unanswered[] = $key;
-		}
+		$unanswered = array_filter(
+			$matches[1],
+			fn (string $key): bool => $this->answers(source: $values->data, key: $key) === false
+				&& $this->answers(source: $values->context, key: $key) === false
+		);
 
 		return array_values(array_unique($unanswered));
 	}//end unanswered()
+
+	/**
+	 * Whether a source answers a key with something interpolate() can render.
+	 *
+	 * A non-scalar counts as unanswered, because that is exactly what
+	 * interpolate() cannot render either. Asking a different question here
+	 * than the renderer asks is how a guard comes to disagree with the thing
+	 * it guards.
+	 *
+	 * @param array<string, mixed> $source Data or context.
+	 * @param string               $key    The placeholder key.
+	 *
+	 * @return bool
+	 */
+	private function answers(array $source, string $key): bool {
+		return array_key_exists($key, $source) === true && is_scalar($this->translatedValue(value: $source[$key], languages: [])) === true;
+	}//end answers()
 
 	/**
 	 * The value a language map shows, or the value itself when it is not one.
@@ -205,14 +253,7 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 			return $value;
 		}
 
-		foreach ($this->languageCandidates(languages: $languages) as $candidate) {
-			$text = ($value[$candidate] ?? null);
-			if ($text !== null && (string)$text !== '') {
-				return (string)$text;
-			}
-		}
-
-		foreach ($value as $text) {
+		foreach ($this->textsInOrder(map: $value, languages: $languages) as $text) {
 			if ($text !== null && (string)$text !== '') {
 				return (string)$text;
 			}
@@ -220,6 +261,23 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 
 		return $value;
 	}//end translatedValue()
+
+	/**
+	 * A language map's values in lookup order: the chain's languages, then the map's own order.
+	 *
+	 * @param array<string, mixed>    $map       The language map.
+	 * @param array<int, string|null> $languages Language chain, first wins.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function textsInOrder(array $map, array $languages): array {
+		$preferred = array_map(
+			static fn (string $candidate): mixed => ($map[$candidate] ?? null),
+			$this->languageCandidates(languages: $languages)
+		);
+
+		return array_merge($preferred, array_values($map));
+	}//end textsInOrder()
 
 	/**
 	 * Whether a value is a language map: language-code keys, scalar values.
@@ -231,22 +289,31 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	private function isLanguageMap(mixed $value): bool {
-		if (is_array($value) === false || $value === [] || array_is_list($value) === true) {
+		// An empty array is a list, so this also refuses [].
+		if (is_array($value) === false || array_is_list($value) === true) {
 			return false;
 		}
 
 		foreach ($value as $code => $text) {
-			if (preg_match('/^[a-z]{2,3}([-_][A-Za-z0-9]{2,8})?$/', (string)$code) !== 1) {
-				return false;
-			}
-
-			if ($text !== null && is_scalar($text) === false) {
+			if ($this->isLanguageEntry(code: (string)$code, text: $text) === false) {
 				return false;
 			}
 		}
 
 		return true;
 	}//end isLanguageMap()
+
+	/**
+	 * Whether one map entry has a language-code key and a scalar or null value.
+	 *
+	 * @param string $code The key.
+	 * @param mixed  $text The value.
+	 *
+	 * @return bool
+	 */
+	private function isLanguageEntry(string $code, mixed $text): bool {
+		return preg_match('/^[a-z]{2,3}([-_][A-Za-z0-9]{2,8})?$/', $code) === 1 && ($text === null || is_scalar($text) === true);
+	}//end isLanguageEntry()
 
 	/**
 	 * The codes to try, in order: each language, then its base language.

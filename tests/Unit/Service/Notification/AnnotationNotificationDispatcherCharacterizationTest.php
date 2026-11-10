@@ -22,6 +22,7 @@ namespace Unit\Service\Notification;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLog;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
@@ -32,6 +33,15 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
@@ -42,6 +52,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientRes
 use OCA\OpenRegister\Notifications\Service\Notification\OutboundTransportInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
@@ -410,7 +421,7 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$services = [
 			IConfig::class                   => $config,
 			PartyNotificationService::class  => $party,
-			ReferencedAddressNotifier::class => $addresses,
+			ReferencedAddressNotifierInterface::class => $addresses,
 			'TransportOk'                    => $transport(null, false),
 			'TransportFails'                 => $transport('remote said no', false),
 			'TransportThrows'                => $transport(null, true),
@@ -495,8 +506,22 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$history = $this->createMock(NotificationHistoryMapper::class);
 		$history->method('record')->willReturnCallback(
-			function (...$args): NotificationHistory {
-				$this->record(what: 'history.record', args: $args);
+			function (HistoryEntry $entry): NotificationHistory {
+				$this->record(what: 'history.record', args: [
+					$entry->delivery->ruleId,
+					$entry->delivery->channel,
+					$entry->delivery->recipient,
+					$entry->delivery->status,
+					$entry->target->schemaId,
+					$entry->target->registerId,
+					$entry->target->objectUuid,
+					$entry->notice->subject,
+					$entry->notice->errorMessage,
+					$entry->notice->locale,
+					null,
+					null,
+					$entry->target->eventId,
+				]);
 				return new NotificationHistory();
 			}
 		);
@@ -629,32 +654,39 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		);
 
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $logger,
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $activity,
-			httpClient: $httpClient,
-			serverContainer: $container,
-			rateLimiter: $rateLimiter,
-			config: $config,
-			historyMapper: $history,
-			coalescer: $coalescer,
-			subscriptionMapper: $subscriptions,
-			dispatchLogMapper: $dispatchLog,
-			preferenceService: $preferences,
-			jobList: $this->createMock(\OCP\BackgroundJob\IJobList::class),
-			deliveryWindowService: $window,
-			queuedNotificationMapper: $queued,
-			digestScheduleEvaluator: $digest,
-			timeFactory: $time,
-			ncSender: $ncSender,
-			emailSender: $emailSender,
-			talkSender: $talkSender,
-			recipientResolver: $resolver,
-			reachRecorder: $reach
+			channels: new ChannelSet(
+				ncSender: $ncSender,
+				emailSender: $emailSender,
+				talkSender: $talkSender,
+				activityManager: $activity
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(rateLimiter: $rateLimiter, coalescer: $coalescer),
+				deliveryHold: new DeliveryHold(windowService: $window, digestEvaluator: $digest, queue: $queued, timeFactory: $time),
+				preferenceService: $preferences,
+				subscriptionMapper: $subscriptions
+			),
+			integrations: new AppIntegrations(
+				httpClient: $httpClient,
+				serverContainer: $container,
+				jobList: $this->createMock(\OCP\BackgroundJob\IJobList::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $logger,
+				historyMapper: $history,
+				dispatchLogMapper: $dispatchLog,
+				reachRecorder: $reach
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: $resolver,
+				config: $config
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $logger
+				)
+			)
 		);
 	}//end dispatcher()
 }//end class

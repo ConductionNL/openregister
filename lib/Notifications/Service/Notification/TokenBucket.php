@@ -57,21 +57,46 @@ final class TokenBucket {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function tokensFrom(mixed $state): float {
-		$tokens = (float)$this->size;
-		$lastRefill = $this->now;
+		$stored = $this->storedState(state: $state);
+		return $this->refilled(tokens: $stored[0], lastRefill: $stored[1]);
+	}//end tokensFrom()
+
+	/**
+	 * The stored (tokens, lastRefill), or a full bucket refilled now when the
+	 * state is missing or unreadable.
+	 *
+	 * @param mixed $state The cached JSON state, or null.
+	 *
+	 * @return array{0: float, 1: int}
+	 */
+	private function storedState(mixed $state): array {
+		$decoded = null;
 		if (is_string($state) === true) {
 			$decoded = json_decode($state, true);
-			if (is_array($decoded) === true && isset($decoded['tokens'], $decoded['lastRefill']) === true) {
-				$tokens = (float)$decoded['tokens'];
-				$lastRefill = (int)$decoded['lastRefill'];
-			}
 		}
 
+		if (is_array($decoded) === true && isset($decoded['tokens'], $decoded['lastRefill']) === true) {
+			return [(float)$decoded['tokens'], (int)$decoded['lastRefill']];
+		}
+
+		return [(float)$this->size, $this->now];
+	}//end storedState()
+
+	/**
+	 * The tokens after earning one every `refillSeconds` since the last refill,
+	 * capped at the bucket size.
+	 *
+	 * @param float $tokens     Tokens at the last refill.
+	 * @param int   $lastRefill Unix timestamp of the last refill.
+	 *
+	 * @return float
+	 */
+	private function refilled(float $tokens, int $lastRefill): float {
 		if ($this->refillSeconds > 0 && $this->now > $lastRefill) {
 			$earned = (($this->now - $lastRefill) / $this->refillSeconds);
-			$tokens = min((float)$this->size, ($tokens + $earned));
+			return min((float)$this->size, ($tokens + $earned));
 		}
 
 		return $tokens;
-	}//end tokensFrom()
+	}//end refilled()
 }//end class

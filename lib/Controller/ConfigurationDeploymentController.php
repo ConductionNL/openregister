@@ -31,17 +31,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ConfigDeploymentControllerServices;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayerInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewServiceInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftTarget;
 
 /**
  * Draft, preview, deploy, explain and roll back configuration.
@@ -58,23 +61,23 @@ class ConfigurationDeploymentController extends Controller {
 	/**
 	 * The pending values.
 	 *
-	 * @var ConfigurationDraftService
+	 * @var ConfigurationDraftsInterface
 	 */
-	private readonly ConfigurationDraftService $drafts;
+	private readonly ConfigurationDraftsInterface $drafts;
 
 	/**
 	 * The diff.
 	 *
-	 * @var DeploymentPreviewService
+	 * @var DeploymentPreviewServiceInterface
 	 */
-	private readonly DeploymentPreviewService $previews;
+	private readonly DeploymentPreviewServiceInterface $previews;
 
 	/**
 	 * The apply and the rollback.
 	 *
-	 * @var DeploymentService
+	 * @var DeploymentServiceInterface
 	 */
-	private readonly DeploymentService $deployments;
+	private readonly DeploymentServiceInterface $deployments;
 
 	/**
 	 * The effective-configuration read.
@@ -89,13 +92,13 @@ class ConfigurationDeploymentController extends Controller {
 	 * @param string                    $appName    The app name.
 	 * @param IRequest                  $request    The request.
 	 * @param ConfigDeploymentControllerServices $services The configuration deployment controller services.
-	 * @param ConfigurationKeyRegistry  $registry   The draftable vocabulary.
+	 * @param ConfigurationKeyRegistryInterface $registry   The draftable vocabulary.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		ConfigDeploymentControllerServices $services,
-		private readonly ConfigurationKeyRegistry $registry,
+		private readonly ConfigurationKeyRegistryInterface $registry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->drafts = $services->drafts;
@@ -211,30 +214,20 @@ class ConfigurationDeploymentController extends Controller {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftValue(string $id): JSONResponse {
-		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayer::INSTANCE);
+		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayerInterface::INSTANCE);
 		$layerRef = $this->optional(key: 'layerRef');
 		$configKey = (string)($this->request->getParam(key: 'key') ?? '');
+		$target = new ConfigurationDraftTarget(setUuid: $id, address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
 
 		try {
 			if (((bool)($this->request->getParam(key: 'removes') ?? false)) === true) {
 				return new JSONResponse(
-					data: $this->drafts->draftRemoval(
-						setUuid: $id,
-						layer: $layer,
-						layerRef: $layerRef,
-						configKey: $configKey
-					)->jsonSerialize(),
+					data: $this->drafts->draftRemoval(target: $target)->jsonSerialize(),
 					statusCode: Http::STATUS_CREATED
 				);
 			}
 
-			$draft = $this->drafts->draftValue(
-				setUuid: $id,
-				layer: $layer,
-				layerRef: $layerRef,
-				configKey: $configKey,
-				value: $this->request->getParam(key: 'value')
-			);
+			$draft = $this->drafts->draftValue(target: $target, value: $this->request->getParam(key: 'value'));
 		} catch (DeploymentRefusedException $exception) {
 			return new JSONResponse(
 				data: $exception->toResponseBody(),
@@ -443,9 +436,11 @@ class ConfigurationDeploymentController extends Controller {
 		return new JSONResponse(
 			data: $this->explainer->explain(
 				configKey: $configKey,
-				register: $this->optional(key: 'register'),
-				bundle: $this->optional(key: 'bundle'),
-				subject: $this->optional(key: 'subject')
+				scope: new ConfigurationScope(
+					register: $this->optional(key: 'register'),
+					bundle: $this->optional(key: 'bundle'),
+					subject: $this->optional(key: 'subject')
+				)
 			)
 		);
 

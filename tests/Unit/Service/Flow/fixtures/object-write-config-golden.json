@@ -1,0 +1,108 @@
+{
+    "operations": {
+        "total": 151200,
+        "digest": "79cfe73e43e62b618ed0a3ef067736d14d10d87ce34e170d7260003c987bcd91",
+        "outcomes": {
+            "UnexpectedValueException: \"bulk\" must be true or false, as a boolean.": 1112,
+            "UnexpectedValueException: \"bulk\" supports create and upsert only; a \"delete\" step writes one object at a time, keeping its per-item guards.": 16,
+            "UnexpectedValueException: \"bulk\" supports create and upsert only; a \"update\" step writes one object at a time, keeping its per-item guards.": 216,
+            "UnexpectedValueException: \"fields\" and \"payloadFrom\" are alternatives: \"fields\" lists the properties to write, \"payloadFrom\" writes the object at a path whole. Configure one, not both.": 900,
+            "UnexpectedValueException: \"fields\" has no meaning for a delete step.": 5760,
+            "UnexpectedValueException: \"match\" must be a list of property and value pairs.": 8640,
+            "UnexpectedValueException: \"onConflict\": \"fail\" is not available in bulk; the bulk path cannot arbitrate per-row claims. Use the single-object path for writes that are claims.": 162,
+            "UnexpectedValueException: \"payloadFrom\" has no meaning for a delete step.": 1440,
+            "UnexpectedValueException: \"permanent\" has no meaning for a \"create\" step; it only qualifies a delete.": 9720,
+            "UnexpectedValueException: \"permanent\" has no meaning for a \"update\" step; it only qualifies a delete.": 6480,
+            "UnexpectedValueException: \"permanent\" has no meaning for a \"upsert\" step; it only qualifies a delete.": 6480,
+            "UnexpectedValueException: \"permanent\" must be true or false, as a boolean.": 80,
+            "UnexpectedValueException: \"replace\" has no meaning for a create step.": 2160,
+            "UnexpectedValueException: \"replace\" has no meaning for a delete step.": 960,
+            "UnexpectedValueException: A bulk upsert must carry \"replace\": true \u2014 the bulk path replaces whole objects and cannot patch.": 72,
+            "UnexpectedValueException: A bulk upsert must match on exactly one property, \"uuid\" (or \"@self.uuid\"); a composite match needs the single-object path.": 18,
+            "UnexpectedValueException: A delete step must carry \"confirmDelete\": true, as a boolean.": 320,
+            "UnexpectedValueException: An object-write step needs an operation: create, update, upsert or delete.": 43200,
+            "UnexpectedValueException: An object-write step with operation \"create\" needs either at least one field to write, or a \"payloadFrom\" path naming the object to write whole.": 360,
+            "UnexpectedValueException: An object-write step with operation \"delete\" needs at least one match property and value.": 4320,
+            "UnexpectedValueException: An object-write step with operation \"update\" needs at least one match property and value.": 4320,
+            "UnexpectedValueException: An object-write step with operation \"update\" needs either at least one field to write, or a \"payloadFrom\" path naming the object to write whole.": 720,
+            "UnexpectedValueException: An object-write step with operation \"upsert\" needs at least one match property and value.": 4320,
+            "UnexpectedValueException: An object-write step with operation \"upsert\" needs either at least one field to write, or a \"payloadFrom\" path naming the object to write whole.": 720,
+            "UnexpectedValueException: Every match entry must name a property and a value. Write [{\"property\": \"status\", \"value\": \"flagged\"}] or {\"status\": \"flagged\"}.": 8640,
+            "UnexpectedValueException: Every match entry must name a property.": 8640,
+            "UnexpectedValueException: The match on \"a\" has no value.": 8640,
+            "UnexpectedValueException: Unknown operation \"bogus\"; choose create, update, upsert or delete.": 21600,
+            "accepted": 1184
+        }
+    },
+    "targets": {
+        "total": 13500,
+        "digest": "374d391ff62d7fc34a162ddd6090df8fc181a499a3c62ff86ab7b43adf4844ff",
+        "outcomes": {
+            "UnexpectedValueException: \"maxWrites\" must be a whole number of one or more.": 1296,
+            "UnexpectedValueException: \"onConflict\" must be one of: overwrite, fail.": 144,
+            "UnexpectedValueException: \"onMissing\" must be one of: omit, fail.": 432,
+            "UnexpectedValueException: \"onNoMatch\" must be one of: error, skip.": 216,
+            "UnexpectedValueException: An object-write step needs a register.": 8100,
+            "UnexpectedValueException: An object-write step needs a schema.": 3240,
+            "accepted": 72
+        }
+    },
+    "form": {
+        "total": 1,
+        "digest": "a9ad7eb6e7d6d64947808856203c29887dde8371079c54f9d54cd93b7988c5c8",
+        "outcomes": []
+    },
+    "templates": {
+        "total": 58,
+        "digest": "3f1d0793882c9446e1bf61e9062bc896c276c7d14da0a15fccd4534c7af2058d",
+        "outcomes": {
+            "RuntimeException: The value for field \"k\" could not be resolved from the item.": 7,
+            "{\"saved\":[{\"k\":\" \",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\" \",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 4,
+            "{\"saved\":[{\"k\":\"bfalse\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"bfalse\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"btrue\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"btrue\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"deep\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"deep\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"deep3\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"deep3\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"j[1,2]\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"j[1,2]\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"plain\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"plain\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"x deep y\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"x deep y\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"x\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"x\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"{deep}\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"{deep}\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":\"{{}}\",\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":\"{{}}\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":1,\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":1,\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":1.5,\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":1.5,\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":3,\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":3,\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":5,\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":5,\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":[1],\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":[1],\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":false,\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":false,\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":null,\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":null,\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":true,\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":true,\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":{\"b\":\"deep\"},\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":{\"b\":\"deep\"},\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"keep\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"keep\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 7
+        }
+    },
+    "paths": {
+        "total": 34,
+        "digest": "73e2c6055a9e46983bf2d8f7754010d9154fbbe4b9b028a79abec6af18caed4a",
+        "outcomes": {
+            "RuntimeException: \"payloadFrom\" path \".\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"a.\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"a.b\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"arr.0\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"e\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"f\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"i\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"n\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"no\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"s\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"skip\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"skipUpper\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "RuntimeException: \"payloadFrom\" path \"t\" did not resolve to an object on this item, so there is nothing to write. Writing an empty object instead would create a blank record.": 1,
+            "UnexpectedValueException: An object-write step with operation \"create\" needs either at least one field to write, or a \"payloadFrom\" path naming the object to write whole.": 1,
+            "{\"saved\":[[1,2]],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"0\":1,\"1\":2,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 1,
+            "{\"saved\":[],\"out\":[{\"json\":{\"a\":{\"b\":\"deep\"},\"arr\":[1,2],\"n\":null,\"e\":[],\"f\":false,\"t\":true,\"i\":3,\"d\":1.5,\"s\":\"\",\"skip\":\" SKIP \",\"skipUpper\":\"Skip\",\"no\":\"false\",\"\":\"blank\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 3,
+            "{\"saved\":[{\"b\":\"deep\"}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"b\":\"deep\",\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 2,
+            "{\"saved\":[{\"k\":1}],\"out\":[{\"json\":{\"id\":\"fixed-uuid\",\"k\":1,\"uuid\":\"fixed-uuid\",\"register\":\"1\",\"schema\":\"2\"},\"binary\":[],\"pairedItem\":{\"item\":0}}]}": 14
+        }
+    }
+}

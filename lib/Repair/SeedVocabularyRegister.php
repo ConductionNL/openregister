@@ -35,14 +35,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
-use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -78,7 +75,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const CONFIG_APP_ID = DescriptorConfigIds::VOCABULARY;
+	private const CONFIG_APP_ID = DescriptorConfigIdsInterface::VOCABULARY;
 
 	/**
 	 * App-relative paths of the bundled TOOI SKOS/JSON-LD seed fixtures.
@@ -93,18 +90,14 @@ class SeedVocabularyRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer (register/schema).
+	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
 	 * @param VocabularyImporterInterface $importService The SKOS/JSON-LD import service (concept data).
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly RegisterDescriptorImport $descriptors,
 		private readonly VocabularyImporterInterface $importService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
@@ -144,7 +137,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 */
 	private function importRegisterDescriptor(IOutput $output): void {
 		try {
-			$path = $this->appManager->getAppPath('openregister') . self::REGISTER_PATH;
+			$path = $this->descriptors->appManager->getAppPath('openregister') . self::REGISTER_PATH;
 			if (is_file($path) === false) {
 				$output->warning('Vocabulary register descriptor not found: ' . $path);
 				return;
@@ -156,7 +149,7 @@ class SeedVocabularyRegister implements IRepairStep {
 				return;
 			}
 
-			$this->configurationService->importFromApp(
+			$this->descriptors->configurationService->importFromApp(
 				appId: self::CONFIG_APP_ID,
 				data: $data,
 				version: self::REGISTER_VERSION,
@@ -165,7 +158,7 @@ class SeedVocabularyRegister implements IRepairStep {
 
 			$output->info('Vocabulary register imported (conceptScheme, concept)');
 		} catch (Throwable $e) {
-			$this->logger->warning('[SeedVocabularyRegister] register import failed: ' . $e->getMessage());
+			$this->descriptors->logger->warning('[SeedVocabularyRegister] register import failed: ' . $e->getMessage());
 			$output->warning('Vocabulary register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end importRegisterDescriptor()
@@ -183,7 +176,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 * @return void
 	 */
 	private function seedTooiFixtures(IOutput $output): void {
-		$appPath = $this->appManager->getAppPath('openregister');
+		$appPath = $this->descriptors->appManager->getAppPath('openregister');
 
 		foreach (self::FIXTURE_PATHS as $relativePath) {
 			$path = $appPath . $relativePath;
@@ -215,7 +208,7 @@ class SeedVocabularyRegister implements IRepairStep {
 					)
 				);
 			} catch (Throwable $e) {
-				$this->logger->warning('[SeedVocabularyRegister] fixture seed failed for ' . $path . ': ' . $e->getMessage());
+				$this->descriptors->logger->warning('[SeedVocabularyRegister] fixture seed failed for ' . $path . ': ' . $e->getMessage());
 				$output->warning('TOOI vocabulary fixture seed skipped (' . $relativePath . '): ' . $e->getMessage());
 			}//end try
 		}//end foreach

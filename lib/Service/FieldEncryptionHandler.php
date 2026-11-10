@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class FieldEncryptionHandler {
+class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 	/**
 	 * Prefix that marks a stored value as an OpenRegister encryption envelope.
 	 *
@@ -157,39 +157,64 @@ class FieldEncryptionHandler {
 		}
 
 		foreach ($schema->getEncryptedProperties() as $property) {
-			if (array_key_exists($property, $data) === false) {
-				continue;
-			}
-
-			$value = $data[$property];
-
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			if (is_string($value) === false) {
-				$this->logger->warning(
-					message: '[FieldEncryptionHandler] Skipped non-string value for encrypted property',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'property' => $property,
-						'type' => gettype($value),
-					]
-				);
-				continue;
-			}
-
-			if ($this->isEnvelope(value: $value) === true) {
-				// Already encrypted — idempotent no-op.
-				continue;
-			}
-
-			$data[$property] = $this->encryptValue(plaintext: $value);
-		}//end foreach
+			$data = $this->encryptPresent(data: $data, property: $property);
+		}
 
 		return $data;
 	}//end encryptProperties()
+
+	/**
+	 * Encrypt one flagged property, when it is present and needs it.
+	 *
+	 * @param array  $data     The object data.
+	 * @param string $property The flagged property.
+	 *
+	 * @return array The data, with that property encrypted where it needed to be.
+	 */
+	private function encryptPresent(array $data, string $property): array {
+		if (array_key_exists($property, $data) === false) {
+			return $data;
+		}
+
+		if ($this->needsEncryption(value: $data[$property], property: $property) === false) {
+			return $data;
+		}
+
+		$data[$property] = $this->encryptValue(plaintext: $data[$property]);
+		return $data;
+	}//end encryptPresent()
+
+	/**
+	 * Whether a flagged value is a non-empty plaintext string; a non-string is logged.
+	 *
+	 * Null and '' have nothing to protect; an envelope is already encrypted
+	 * (idempotent no-op).
+	 *
+	 * @param mixed  $value    The stored value.
+	 * @param string $property The property, for the log line.
+	 *
+	 * @return bool
+	 */
+	private function needsEncryption(mixed $value, string $property): bool {
+		if ($value === null || $value === '') {
+			return false;
+		}
+
+		if (is_string($value) === false) {
+			$this->logger->warning(
+				message: '[FieldEncryptionHandler] Skipped non-string value for encrypted property',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'property' => $property,
+					'type' => gettype($value),
+				]
+			);
+			return false;
+		}
+
+		return $this->isEnvelope(value: $value) === false;
+	}//end needsEncryption()
 
 	/**
 	 * Decrypt every schema-flagged property present in the given data.
@@ -210,63 +235,88 @@ class FieldEncryptionHandler {
 	 * that must fail loud instead (the migration command, single-object
 	 * integrity checks).
 	 *
-	 * @param array $data The rendered object data.
-	 * @param Schema $schema The object's schema.
-	 * @param bool $throwOnFailure When true, rethrow decryption failures instead
-	 *                             of substituting an error marker.
+	 * @param array                $data  The object data, possibly holding ciphertext.
+	 * @param FieldDecryptionScope $scope The object's schema and whether a failure is rethrown.
 	 *
 	 * @return array The data with flagged properties decrypted where possible.
 	 *
-	 * @throws FieldDecryptionException When `$throwOnFailure` is true and decryption fails.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag selects fail-loud vs
-	 *                                              fail-marked disposition, matching the
-	 *                                              established _rbac/_multitenancy flag idiom.
+	 * @throws FieldDecryptionException When the scope rethrows and decryption fails.
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
 	 */
-	public function decryptProperties(array $data, Schema $schema, bool $throwOnFailure = false): array {
-		if ($schema->hasEncryptedProperties() === false) {
+	public function decryptInScope(array $data, FieldDecryptionScope $scope): array {
+		if ($scope->schema->hasEncryptedProperties() === false) {
 			return $data;
 		}
 
-		foreach ($schema->getEncryptedProperties() as $property) {
-			if (array_key_exists($property, $data) === false) {
-				continue;
-			}
-
-			$value = $data[$property];
-
-			if (is_string($value) === false || $this->isEnvelope(value: $value) === false) {
-				// Not encrypted yet (mixed rollout state) or not a string — pass through.
-				continue;
-			}
-
-			try {
-				$data[$property] = $this->decryptValue(envelope: $value);
-			} catch (FieldDecryptionException $e) {
-				$this->logger->error(
-					message: '[FieldEncryptionHandler] Decryption failed for property',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'property' => $property,
-						'schema' => $schema->getId(),
-						'error' => $e->getMessage(),
-					]
-				);
-
-				if ($throwOnFailure === true) {
-					throw $e;
-				}
-
-				$data[$property] = [
-					'@openregister_decryption_error' => true,
-					'message' => 'This field could not be decrypted (key unavailable or rotated).',
-				];
-			}//end try
-		}//end foreach
+		foreach ($scope->schema->getEncryptedProperties() as $property) {
+			$data = $this->decryptPresent(data: $data, scope: $scope->forProperty(property: $property));
+		}
 
 		return $data;
-	}//end decryptProperties()
+	}//end decryptInScope()
+
+	/**
+	 * Decrypt the scope's property, when it is present and an envelope.
+	 *
+	 * A value not (yet) encrypted, or not a string, passes through: the mixed
+	 * plaintext/ciphertext rollout state.
+	 *
+	 * @param array                $data  The rendered object data.
+	 * @param FieldDecryptionScope $scope The pass, at the property.
+	 *
+	 * @return array The data, with that property decrypted or marked.
+	 *
+	 * @throws FieldDecryptionException When the scope rethrows and decryption fails.
+	 */
+	private function decryptPresent(array $data, FieldDecryptionScope $scope): array {
+		$property = $scope->property();
+		if (array_key_exists($property, $data) === false) {
+			return $data;
+		}
+
+		$value = $data[$property];
+		if (is_string($value) === false || $this->isEnvelope(value: $value) === false) {
+			return $data;
+		}
+
+		$data[$property] = $this->decryptedOrMarker(envelope: $value, scope: $scope);
+		return $data;
+	}//end decryptPresent()
+
+	/**
+	 * The plaintext of an envelope, or — logged at ERROR — the error marker or a rethrow.
+	 *
+	 * @param string               $envelope The envelope value.
+	 * @param FieldDecryptionScope $scope    The pass, at the property.
+	 *
+	 * @return string|array The plaintext, or the structured error marker.
+	 *
+	 * @throws FieldDecryptionException When the scope rethrows and decryption fails.
+	 */
+	private function decryptedOrMarker(string $envelope, FieldDecryptionScope $scope): string|array {
+		try {
+			return $this->decryptValue(envelope: $envelope);
+		} catch (FieldDecryptionException $e) {
+			$this->logger->error(
+				message: '[FieldEncryptionHandler] Decryption failed for property',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'property' => $scope->property(),
+					'schema' => $scope->schema->getId(),
+					'error' => $e->getMessage(),
+				]
+			);
+
+			if ($scope->throwOnFailure === true) {
+				throw $e;
+			}
+
+			return [
+				'@openregister_decryption_error' => true,
+				'message' => 'This field could not be decrypted (key unavailable or rotated).',
+			];
+		}//end try
+	}//end decryptedOrMarker()
 }//end class

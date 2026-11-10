@@ -48,6 +48,8 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -208,7 +210,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 		$runner = $this->runner(userId: 'learner-a', groups: ['students'], grants: [], schema: $schema);
 
-		$result = $runner->run(registerRef: 'learniq', schemaRef: 'engagement-score', name: 'byLevel', bypassRbac: true);
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'learniq', schema: 'engagement-score', name: 'byLevel'), options: new NamedAggregationOptions(bypassRbac: true));
 
 		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
 	}//end testBypassRbacSkipsTheRowPredicate()
@@ -413,7 +415,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($organisationlessAdmitted);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
-			static fn (Schema $s, string $action = 'read'): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: $action)
+			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: 'read')
 		);
 		$magicMapper->method('callerQualifiesForAction')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): bool => $rbac->callerQualifiesForAction(schema: $s, action: $action)
@@ -456,9 +458,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$translationHandler = $this->createMock(TranslationHandler::class);
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			placeholders: new PlaceholderResolver($userSession),
 			db: $db,
 			cache: $cache,

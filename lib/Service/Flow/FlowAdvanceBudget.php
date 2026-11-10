@@ -123,12 +123,9 @@ final class FlowAdvanceBudget {
 			return new self(transitions: null);
 		}
 
-		if (is_bool($value) === false && is_numeric($value) === true) {
-			$asFloat = (float)$value;
-			$asInt = (int)$value;
-			if ($asFloat === (float)$asInt && $asInt >= 0) {
-				return new self(transitions: $asInt);
-			}
+		$transitions = self::wholeTransitions(value: $value);
+		if ($transitions !== null) {
+			return new self(transitions: $transitions);
 		}
 
 		throw new UnexpectedValueException(
@@ -138,6 +135,29 @@ final class FlowAdvanceBudget {
 			)
 		);
 	}//end fromValue()
+
+	/**
+	 * The value as a non-negative whole number of transitions, or null.
+	 *
+	 * Booleans are not numbers here, however PHP would cast them.
+	 *
+	 * @param mixed $value The stored or configured value.
+	 *
+	 * @return int|null The transitions, or null when the value is not one.
+	 */
+	private static function wholeTransitions(mixed $value): int|null {
+		if (is_bool($value) === true || is_numeric($value) === false) {
+			return null;
+		}
+
+		$asFloat = (float)$value;
+		$asInt = (int)$value;
+		if ($asFloat === (float)$asInt && $asInt >= 0) {
+			return $asInt;
+		}
+
+		return null;
+	}//end wholeTransitions()
 
 	/**
 	 * Whether the completing request should advance the run at all.

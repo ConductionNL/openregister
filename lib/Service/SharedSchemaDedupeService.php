@@ -28,14 +28,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator;
-use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
-use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
-use OCP\IDBConnection;
+use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
+use OCA\OpenRegister\Service\SharedSchema\SchemaIdSwap;
+use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
+use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
+use OCA\OpenRegister\Service\SharedSchema\SplitTableColumns;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -60,30 +59,20 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
  */
-class SharedSchemaDedupeService {
+class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection                $db             Database connection, for the split transaction.
-	 * @param RegisterMapperInterface               $registerMapper Register lookups and persistence.
-	 * @param SchemaMapperInterface                 $schemaMapper   Schema lookups and the clone fallback.
-	 * @param ImportHandler                $importHandler  The configuration-driven schema create path.
-	 * @param RegisterConfigurationLocator $locator        Reads a register's own app configuration.
-	 * @param SchemaAttribution            $attribution    The pure detection and ownership rules.
-	 * @param SchemaTableMigrator          $migrator       Moves the object rows across the split.
-	 * @param LoggerInterface              $logger         Audit trail for every mutation.
+	 * @param SharedSchemaStore     $store     The database connection, the register and schema mappers and the table migrator
+	 * @param SharedSchemaOwnership $ownership The import handler, the configuration locator and the attribution rules
+	 * @param LoggerInterface       $logger    Audit trail for every mutation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ImportHandler $importHandler,
-		private readonly RegisterConfigurationLocator $locator,
-		private readonly SchemaAttribution $attribution,
-		private readonly SchemaTableMigrator $migrator,
+		private readonly SharedSchemaStore $store,
+		private readonly SharedSchemaOwnership $ownership,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -100,7 +89,7 @@ class SharedSchemaDedupeService {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function parseKeep(array $raw): array {
-		return $this->attribution->parseKeep(raw: $raw);
+		return $this->ownership->attribution->parseKeep(raw: $raw);
 	}//end parseKeep()
 
 	/**
@@ -117,25 +106,16 @@ class SharedSchemaDedupeService {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function inspect(?int $registerId, array $keep): array {
-		$registers = $this->loadRegisters();
-		$stored    = [];
-		foreach ($registers as $id => $register) {
-			$stored[$id] = $register->getSchemas();
-		}
+		$run    = new SharedSchemaPlanRun(registers: $this->loadRegisters(), keep: $keep);
+		$stored = array_map(fn (Register $register) => $register->getSchemas(), $run->registers);
 
 		$plan = [];
-		foreach ($this->attribution->indexShared(registerSchemas: $stored) as $schemaId => $registerIds) {
-			if ($registerId !== null && in_array($registerId, $registerIds, true) === false) {
+		foreach ($this->ownership->attribution->indexShared(registerSchemas: $stored) as $schemaId => $registerIds) {
+			if ($this->involves(registerId: $registerId, registerIds: $registerIds) === false) {
 				continue;
 			}
 
-			$entry = $this->planSchema(
-				schemaId: $schemaId,
-				registerIds: $registerIds,
-				registers: $registers,
-				keep: $keep
-			);
-
+			$entry = $this->planSchema(run: $run, use: new SharedSchemaUse(schemaId: $schemaId, registerIds: $registerIds));
 			if ($entry !== null) {
 				$plan[] = $entry;
 			}
@@ -145,102 +125,150 @@ class SharedSchemaDedupeService {
 	}//end inspect()
 
 	/**
+	 * Whether a shared schema is in scope: no register filter, or the filtered register references it.
+	 *
+	 * @param int|null $registerId  The register filter, or null for all.
+	 * @param int[]    $registerIds The registers referencing the schema.
+	 *
+	 * @return bool
+	 */
+	private function involves(?int $registerId, array $registerIds): bool {
+		return $registerId === null || in_array($registerId, $registerIds, true) === true;
+	}//end involves()
+
+	/**
 	 * Execute one planned split.
 	 *
 	 * Creation of the schema, the relink and the row move are one unit: a
 	 * half-applied split leaves a register pointing at an entity whose table holds
 	 * no rows, which is worse than the shared state it started from.
 	 *
+	 * Unmapped columns are moved without them; {@see self::applySplitStrictly()} refuses instead.
+	 *
 	 * @param array<string, mixed> $entry  One {@see self::inspect()} plan entry.
 	 * @param int                  $target The non-canonical register id to split off.
-	 * @param bool                 $strict Whether unmapped columns must refuse the move.
 	 *
 	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
 	 *
-	 * @throws RuntimeException When the plan is unattributed, or strict mode refuses.
+	 * @throws RuntimeException When the split is refused or fails; nothing is committed.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function applySplit(array $entry, int $target, bool $strict): array {
-		$split = ($entry['splits'][$target] ?? null);
-		if (is_array($split) === false) {
-			throw new RuntimeException(sprintf('Register %d is not part of this plan.', $target));
+	public function applySplit(array $entry, int $target): array {
+		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: false);
+	}//end applySplit()
+
+	/**
+	 * Execute one planned split, refused when any source column has no destination.
+	 *
+	 * @param array<string, mixed> $entry  One {@see self::inspect()} plan entry.
+	 * @param int                  $target The non-canonical register id to split off.
+	 *
+	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
+	 *
+	 * @throws RuntimeException When the split is refused or fails; nothing is committed.
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
+	 */
+	public function applySplitStrictly(array $entry, int $target): array {
+		return $this->applyRun(run: new SchemaSplitRun(entry: $entry, target: $target), strict: true);
+	}//end applySplitStrictly()
+
+	/**
+	 * Check one split run, then execute it in a single transaction.
+	 *
+	 * @param SchemaSplitRun $run    The plan entry and the register to split off.
+	 * @param bool           $strict Whether unmapped columns must refuse the move.
+	 *
+	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
+	 *
+	 * @throws RuntimeException When the split is refused or fails; nothing is committed.
+	 */
+	private function applyRun(SchemaSplitRun $run, bool $strict): array {
+		$split = $this->attributedSplit(run: $run);
+		if ($strict === true) {
+			$this->assertNothingUnmapped(unmapped: ($split['unmapped'] ?? []));
 		}
 
-		if (($entry['owner'] ?? null) === null) {
-			throw new RuntimeException(
-				sprintf('Schema %d is unattributed; pass --keep to name the owner.', (int)$entry['schemaId'])
-			);
-		}
-
-		$unmapped = ($split['unmapped'] ?? []);
-		if ($strict === true && $unmapped !== []) {
-			throw new RuntimeException(
-				sprintf(
-					'Strict mode: %d source column(s) have no destination (%s).',
-					count($unmapped),
-					implode(', ', $unmapped)
-				)
-			);
-		}
-
-		$this->db->beginTransaction();
+		$this->store->db->beginTransaction();
 		try {
-			$outcome = $this->splitLocked(entry: $entry, target: $target, split: $split);
-			$this->db->commit();
+			$outcome = $this->splitLocked(run: $run, split: $split);
+			$this->store->db->commit();
 		} catch (Throwable $e) {
-			$this->db->rollBack();
+			$this->store->db->rollBack();
 			throw $e;
 		}
 
 		return $outcome;
-	}//end applySplit()
+	}//end applyRun()
 
 	/**
-	 * Perform one split inside an open transaction.
+	 * The split planned for the target register, refused when it is not in the plan or the owner is unknown.
 	 *
-	 * @param array<string, mixed> $entry  The plan entry.
-	 * @param int                  $target The register being split off.
-	 * @param array<string, mixed> $split  The per-register part of the plan.
+	 * @param SchemaSplitRun $run The plan entry and the register to split off.
+	 *
+	 * @return array<string, mixed> The planned split.
+	 *
+	 * @throws RuntimeException When the target is not in the plan or the plan has no owner.
+	 */
+	private function attributedSplit(SchemaSplitRun $run): array {
+		$split = ($run->entry['splits'][$run->target] ?? null);
+		if (is_array($split) === false) {
+			throw new RuntimeException(sprintf('Register %d is not part of this plan.', $run->target));
+		}
+
+		if (($run->entry['owner'] ?? null) === null) {
+			throw new RuntimeException(
+				sprintf('Schema %d is unattributed; pass --keep to name the owner.', $run->oldId())
+			);
+		}
+
+		return $split;
+	}//end attributedSplit()
+
+	/**
+	 * Strict mode: refuse a move that would leave source columns without a destination.
+	 *
+	 * @param string[] $unmapped The source columns with no destination.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When any column is unmapped.
+	 */
+	private function assertNothingUnmapped(array $unmapped): void {
+		if ($unmapped === []) {
+			return;
+		}
+
+		throw new RuntimeException(
+			sprintf(
+				'Strict mode: %d source column(s) have no destination (%s).',
+				count($unmapped),
+				implode(', ', $unmapped)
+			)
+		);
+	}//end assertNothingUnmapped()
+
+	/**
+	 * Create the replacement schema, relink the register and move its rows.
+	 *
+	 * @param SchemaSplitRun       $run   The plan entry and the register to split off.
+	 * @param array<string, mixed> $split The planned split for that register.
 	 *
 	 * @return array{newSchemaId: int, rows: int, unmapped: string[], backup: string|null} The outcome.
 	 */
-	private function splitLocked(array $entry, int $target, array $split): array {
-		$register = $this->registerMapper->find(id: $target, _rbac: false, _multitenancy: false);
-		$oldId    = (int)$entry['schemaId'];
+	private function splitLocked(SchemaSplitRun $run, array $split): array {
+		$run->register = $this->store->registerMapper->find(id: $run->target, _rbac: false, _multitenancy: false);
 
-		$schema = $this->createReplacementSchema(
-			register: $register,
-			definition: ($split['definition'] ?? null),
-			oldId: $oldId
-		);
+		$schema     = $this->createReplacementSchema(run: $run, definition: ($split['definition'] ?? null));
+		$run->newId = (int)$schema->getId();
+		$this->relink(run: $run);
 
-		$newId = (int)$schema->getId();
-
-		$register->setSchemas(
-			schemas: $this->attribution->replaceSchemaId(
-				schemas: $register->getSchemas(),
-				oldId: $oldId,
-				newId: $newId
-			)
-		);
-		$this->registerMapper->update($register);
-
-		$moved = $this->migrator->migrate(register: $register, schema: $schema, oldId: $oldId);
-
-		$this->logger->warning(
-			message: sprintf(
-				'[SharedSchemaDedupe] Register %d split off shared schema %d onto %d (%d row(s) moved).',
-				$target,
-				$oldId,
-				$newId,
-				$moved['rows']
-			),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $target, 'schema' => $oldId]
-		);
+		$moved = $this->store->migrator->migrate(table: new RegisterSchema(register: $run->register, schema: $schema), oldId: $run->oldId());
+		$this->logSplit(run: $run, rows: $moved['rows']);
 
 		return [
-			'newSchemaId' => $newId,
+			'newSchemaId' => $run->newId,
 			'rows'        => $moved['rows'],
 			'unmapped'    => $moved['unmapped'],
 			'backup'      => $moved['backup'],
@@ -248,45 +276,92 @@ class SharedSchemaDedupeService {
 	}//end splitLocked()
 
 	/**
-	 * Create the register's own schema entity.
+	 * Point the register at the replacement schema instead of the shared one.
 	 *
-	 * Path A — the register's app configuration still declares the schema — goes
-	 * through {@see ImportHandler::importSchema()} with an EMPTY register scope, so
-	 * the per-register slug-uniqueness fix forces a brand new row rather than
-	 * resolving back onto the shared one. Running the repair through the same
-	 * create path the import uses is what makes the split durable: the next app
-	 * import finds the register's own entity and updates that instead of forking
-	 * the shared one again.
+	 * @param SchemaSplitRun $run The split run, with its register and new schema id set.
 	 *
-	 * Path B — no configuration on disk — clones the current entity content, which
-	 * preserves the rows' shape exactly and so needs no column mapping.
-	 *
-	 * @param Register          $register   The register being split off.
-	 * @param array<string, mixed> $definition Its configured definition, or null when it has none.
-	 * @param int               $oldId      The shared schema id being left behind.
-	 *
-	 * @return Schema The newly created schema.
-	 *
-	 * @throws RuntimeException When neither path yields a persisted schema.
+	 * @return void
 	 */
-	private function createReplacementSchema(Register $register, ?array $definition, int $oldId): Schema {
-		if ($definition !== null) {
-			$schema = $this->importHandler->importSchema(
-				data: $definition,
-				slugsAndIdsMap: $this->schemaMapper->getSlugToIdMap(),
-				owner: $register->getOwner(),
-				appId: $register->getApplication(),
-				version: (string)($definition['version'] ?? '0.0.1'),
-				force: true,
-				registerSchemaIds: []
-			);
+	private function relink(SchemaSplitRun $run): void {
+		$run->register->setSchemas(
+			schemas: $this->ownership->attribution->replaceSchemaId(
+				schemas: $run->register->getSchemas(),
+				swap: new SchemaIdSwap(oldId: $run->oldId(), newId: $run->newId)
+			)
+		);
+		$this->store->registerMapper->update($run->register);
+	}//end relink()
 
+	/**
+	 * Record the split in the log.
+	 *
+	 * @param SchemaSplitRun $run  The finished split run.
+	 * @param int            $rows The number of rows moved.
+	 *
+	 * @return void
+	 */
+	private function logSplit(SchemaSplitRun $run, int $rows): void {
+		$this->logger->warning(
+			message: sprintf(
+				'[SharedSchemaDedupe] Register %d split off shared schema %d onto %d (%d row(s) moved).',
+				$run->target,
+				$run->oldId(),
+				$run->newId,
+				$rows
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $run->target, 'schema' => $run->oldId()]
+		);
+	}//end logSplit()
+
+	/**
+	 * The register's own schema entity: imported from its configuration, or cloned from the shared one.
+	 *
+	 * @param SchemaSplitRun            $run        The split run, with its register set.
+	 * @param array<string, mixed>|null $definition The register's configured definition, if any.
+	 *
+	 * @return Schema The persisted replacement schema.
+	 */
+	private function createReplacementSchema(SchemaSplitRun $run, ?array $definition): Schema {
+		if ($definition !== null) {
+			$schema = $this->importConfigured(register: $run->register, definition: $definition);
 			if ($schema->getId() !== null) {
 				return $schema;
 			}
 		}
 
-		$source = $this->schemaMapper->find(id: $oldId, _rbac: false, _multitenancy: false);
+		return $this->cloneShared(register: $run->register, oldId: $run->oldId());
+	}//end createReplacementSchema()
+
+	/**
+	 * Path A: create the schema from the register's configured definition.
+	 *
+	 * @param Register             $register   The register being split off.
+	 * @param array<string, mixed> $definition Its configured definition.
+	 *
+	 * @return Schema The imported schema (unsaved when it has no id).
+	 */
+	private function importConfigured(Register $register, array $definition): Schema {
+		return $this->ownership->importHandler->importSchema(
+			data: $definition,
+			slugsAndIdsMap: $this->store->schemaMapper->getSlugToIdMap(),
+			owner: $register->getOwner(),
+			appId: $register->getApplication(),
+			version: (string)($definition['version'] ?? '0.0.1'),
+			force: true,
+			registerSchemaIds: []
+		);
+	}//end importConfigured()
+
+	/**
+	 * Path B: clone the shared entity's content into a new schema for the register's application.
+	 *
+	 * @param Register $register The register being split off.
+	 * @param int      $oldId    The shared schema id being left behind.
+	 *
+	 * @return Schema The newly created schema.
+	 */
+	private function cloneShared(Register $register, int $oldId): Schema {
+		$source = $this->store->schemaMapper->find(id: $oldId, _rbac: false, _multitenancy: false);
 		$clone  = $source->jsonSerialize();
 		unset($clone['id'], $clone['uuid'], $clone['uri'], $clone['created'], $clone['updated']);
 		$clone['application'] = $register->getApplication();
@@ -294,129 +369,168 @@ class SharedSchemaDedupeService {
 		// No `getId() === null` check: createFromArray() returns a persisted
 		// Schema whose id the mapper has already assigned, and it throws rather
 		// than handing back an unsaved one.
-		$schema = $this->schemaMapper->createFromArray(object: $clone);
-
-		return $schema;
-	}//end createReplacementSchema()
+		return $this->store->schemaMapper->createFromArray(object: $clone);
+	}//end cloneShared()
 
 	/**
-	 * Build the plan entry for one shared schema.
+	 * Plan one shared schema: its owner verdict and the split for every other register.
 	 *
-	 * @param int                  $schemaId    The shared schema id.
-	 * @param int[]                $registerIds The referencing registers.
-	 * @param array<int, Register> $registers   All loaded registers, by id.
-	 * @param array<string, mixed> $keep        The parsed overrides.
+	 * @param SharedSchemaPlanRun $run The registers and owner overrides of this inspection.
+	 * @param SharedSchemaUse     $use The schema and the registers sharing it.
 	 *
-	 * @return array<string, mixed>|null The plan entry, or null when the schema no longer exists.
+	 * @return array<string, mixed>|null The plan entry, or null when the schema id dangles.
 	 */
-	private function planSchema(int $schemaId, array $registerIds, array $registers, array $keep): ?array {
+	private function planSchema(SharedSchemaPlanRun $run, SharedSchemaUse $use): ?array {
+		$entity = $this->findSchema(schemaId: $use->schemaId);
+		if ($entity === null) {
+			return null;
+		}
+
+		$slug       = strtolower((string)$entity->getSlug());
+		$configured = $this->configuredSchemas(run: $run, use: $use);
+		$candidates = array_map(static fn (array $schemas) => ($schemas[$slug] ?? null), $configured);
+		$scope      = [
+			'schemaId'    => $use->schemaId,
+			'registerIds' => $use->registerIds,
+			'registers'   => $run->registers,
+			'keep'        => $run->keep,
+			'candidates'  => $candidates,
+			'content'     => $entity->jsonSerialize(),
+		];
+		return $this->planEntry(entity: $entity, scope: $scope);
+	}//end planSchema()
+
+	/**
+	 * Load a schema by id, or null when it no longer exists.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema, or null for a dangling id.
+	 */
+	private function findSchema(int $schemaId): ?Schema {
 		try {
-			$entity = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			return $this->store->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			// A dangling id is `relink-schemas` territory, not a sharing problem.
 			unset($e);
 			return null;
 		}
+	}//end findSchema()
 
-		$content    = $entity->jsonSerialize();
-		$candidates = $this->configuredDefinitions(
-			registerIds: $registerIds,
-			registers: $registers,
-			slug: strtolower((string)$entity->getSlug())
-		);
-
-		$verdict = $this->attribution->classify(candidates: $candidates, entity: $content);
-		$owner   = $this->attribution->resolveOwner(
+	/**
+	 * Build one plan entry from the schema and its planning scope.
+	 *
+	 * @param Schema               $entity The shared schema entity.
+	 * @param array<string, mixed> $scope  The schema id, registers, overrides, candidates and content.
+	 *
+	 * @return array<string, mixed> The plan entry.
+	 */
+	private function planEntry(Schema $entity, array $scope): array {
+		$schemaId = $scope['schemaId'];
+		$rules    = $this->ownership->attribution;
+		$verdict  = $rules->classify(candidates: $scope['candidates'], entity: $scope['content']);
+		$owner    = $rules->resolveOwner(
 			verdict: $verdict,
-			schemaId: $schemaId,
-			registerIds: $registerIds,
-			keep: $keep
+			candidates: new OwnerCandidates(schemaId: $schemaId, registerIds: $scope['registerIds'], keep: $scope['keep'])
 		);
+
+		$shared = ['schemaId' => $schemaId, 'owner' => $owner['owner'], 'candidates' => $scope['candidates'], 'content' => $scope['content']];
 
 		return [
 			'schemaId'    => $schemaId,
 			'schemaSlug'  => (string)$entity->getSlug(),
-			'registerIds' => $registerIds,
+			'registerIds' => $scope['registerIds'],
 			'status'      => $verdict['status'],
 			'matches'     => $verdict['matches'],
 			'owner'       => $owner['owner'],
 			'ownerSource' => $owner['source'],
-			'splits'      => $this->planSplits(
-				schemaId: $schemaId,
-				owner: $owner['owner'],
-				registers: $registers,
-				candidates: $candidates,
-				content: $content
-			),
+			'splits'      => $this->planSplits(shared: $shared, registers: $scope['registers']),
 		];
-	}//end planSchema()
+	}//end planEntry()
 
 	/**
-	 * Read each referencing register's configured definition for one schema slug.
+	 * Each sharing register's configured schemas, keyed by slug; empty for a register that is gone.
 	 *
-	 * @param int[]                $registerIds The referencing registers.
-	 * @param array<int, Register> $registers   All loaded registers, by id.
-	 * @param string               $slug        The lowercased schema slug.
+	 * @param SharedSchemaPlanRun $run The registers of this inspection.
+	 * @param SharedSchemaUse     $use The registers sharing the schema.
 	 *
-	 * @return array<int, mixed> registerId => definition, or null when it declares none.
+	 * @return array<int, array<string, mixed>> Configured schemas per register id.
 	 */
-	private function configuredDefinitions(array $registerIds, array $registers, string $slug): array {
-		$candidates = [];
-		foreach ($registerIds as $registerId) {
-			$register   = ($registers[$registerId] ?? null);
-			$configured = null;
+	private function configuredSchemas(SharedSchemaPlanRun $run, SharedSchemaUse $use): array {
+		$configured = [];
+		foreach ($use->registerIds as $registerId) {
+			$register = ($run->registers[$registerId] ?? null);
+			$configured[$registerId] = [];
 			if ($register !== null) {
-				$configured = ($this->locator->schemasFor(register: $register)[$slug] ?? null);
+				$configured[$registerId] = $this->ownership->locator->schemasFor(register: $register);
 			}
-
-			$candidates[$registerId] = $configured;
 		}
 
-		return $candidates;
-	}//end configuredDefinitions()
+		return $configured;
+	}//end configuredSchemas()
 
 	/**
-	 * Build the per-register split parts of a plan entry.
+	 * Plan the split for every register other than the owner.
 	 *
-	 * @param int                  $schemaId   The shared schema id.
-	 * @param int|null             $owner      The resolved owner, when attributed.
-	 * @param array<int, Register> $registers  All loaded registers, by id.
-	 * @param array<int, mixed>    $candidates Each register's configured definition.
-	 * @param array<string, mixed> $content    The current entity content.
+	 * @param array<string, mixed> $shared    The schema id, owner, candidates and content.
+	 * @param array<int, Register> $registers Every register, keyed by id.
 	 *
-	 * @return array<int, array<string, mixed>> registerId => the split that would be performed.
+	 * @return array<int, array<string, mixed>> The planned splits per register id.
 	 */
-	private function planSplits(int $schemaId, ?int $owner, array $registers, array $candidates, array $content): array {
+	private function planSplits(array $shared, array $registers): array {
 		$splits = [];
-		foreach ($candidates as $registerId => $definition) {
+		foreach (array_keys($shared['candidates']) as $registerId) {
 			$register = ($registers[$registerId] ?? null);
-			if ($registerId === $owner || $register === null) {
+			if ($registerId === $shared['owner'] || $register === null) {
 				continue;
 			}
 
-			$bare = $this->migrator->tableNameFor(registerId: (int)$registerId, schemaId: $schemaId);
-			$path = 'configuration';
-			if ($definition === null) {
-				$path = 'clone';
-			}
-
-			$splits[$registerId] = [
-				'registerSlug' => (string)$register->getSlug(),
-				'application'  => $register->getApplication(),
-				'path'         => $path,
-				'definition'   => $definition,
-				'table'        => $bare,
-				'rows'         => $this->migrator->countRows(table: $bare),
-				'unmapped'     => $this->migrator->planUnmapped(
-					table: $bare,
-					definition: $definition,
-					content: $content
-				),
-			];
-		}//end foreach
+			$splits[$registerId] = $this->planSplit(register: $register, shared: $shared);
+		}
 
 		return $splits;
 	}//end planSplits()
+
+	/**
+	 * Plan the split of one register: which path, which table and what it moves.
+	 *
+	 * @param Register             $register The register to split off.
+	 * @param array<string, mixed> $shared   The schema id, owner, candidates and content.
+	 *
+	 * @return array<string, mixed> The planned split.
+	 */
+	private function planSplit(Register $register, array $shared): array {
+		$registerId = (int)$register->getId();
+		$definition = $shared['candidates'][$registerId];
+		$bare       = $this->store->migrator->tableNameFor(registerId: $registerId, schemaId: $shared['schemaId']);
+
+		return [
+			'registerSlug' => (string)$register->getSlug(),
+			'application'  => $register->getApplication(),
+			'path'         => $this->splitPath(definition: $definition),
+			'definition'   => $definition,
+			'table'        => $bare,
+			'rows'         => $this->store->migrator->countRows(table: $bare),
+			'unmapped'     => $this->store->migrator->planUnmapped(
+				split: new SplitTableColumns(table: $bare, definition: $definition, content: $shared['content'])
+			),
+		];
+	}//end planSplit()
+
+	/**
+	 * The create path a split takes: from the configuration, or a clone when there is none.
+	 *
+	 * @param mixed $definition The register's configured definition, or null.
+	 *
+	 * @return string `configuration` or `clone`.
+	 */
+	private function splitPath(mixed $definition): string {
+		if ($definition === null) {
+			return 'clone';
+		}
+
+		return 'configuration';
+	}//end splitPath()
 
 	/**
 	 * Load every register keyed by id.
@@ -426,7 +540,7 @@ class SharedSchemaDedupeService {
 	private function loadRegisters(): array {
 		$registers = [];
 		// No instanceof filter: findAll() is declared to return Register[].
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->store->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
 			$registers[(int)$register->getId()] = $register;
 		}
 

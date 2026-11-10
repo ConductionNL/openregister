@@ -36,12 +36,18 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Unit tests for ReferentialIntegrityService
@@ -113,14 +119,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			objectEntityMapper: $this->objectMapper,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger,
-			db: $this->createMock(IDBConnection::class),
-			cacheFactory: $this->createNullCacheFactory(),
-			archivalGuard: $this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->logger
 		);
 
 		$this->reflection = new \ReflectionClass($this->service);
@@ -1063,9 +1065,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [$cascadeTarget],
-			nullifyTargets: [$nullifyTarget],
-			defaultTargets: [$defaultTarget]
+			effects: new DeletionEffects(cascadeTargets: [$cascadeTarget], nullifyTargets: [$nullifyTarget], defaultTargets: [$defaultTarget])
 		);
 
 		// Create real entities for findAcrossAllSources results.
@@ -1262,6 +1262,9 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		// Should complete without infinite recursion.
 		$analysis = $this->service->canDelete($objects[1]);
 		$this->assertInstanceOf(DeletionAnalysis::class, $analysis);
+		// The walk stops at the depth limit: uuid-12 lies beyond it.
+		$this->assertCount(10, $analysis->cascadeTargets);
+		$this->assertNotContains('uuid-12', array_column($analysis->cascadeTargets, 'objectUuid'));
 	}//end testCanDeleteDepthLimitingPreventsDeepRecursion()
 
 	/**
@@ -1279,9 +1282,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [$cascadeTarget],
-			nullifyTargets: [],
-			defaultTargets: []
+			effects: new DeletionEffects(cascadeTargets: [$cascadeTarget], nullifyTargets: [], defaultTargets: [])
 		);
 
 		$mockRegister = new Register();
@@ -1325,9 +1326,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [],
-			nullifyTargets: [],
-			defaultTargets: [$defaultTarget]
+			effects: new DeletionEffects(cascadeTargets: [], nullifyTargets: [], defaultTargets: [$defaultTarget])
 		);
 
 		$obj = $this->createTestObject('default-uuid', '2', ['assignee' => 'root-uuid']);
@@ -1405,6 +1404,6 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end makeArchivalGuard()
 }//end class

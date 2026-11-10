@@ -30,7 +30,9 @@ namespace Unit\Service\Timeline;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Db\TimelineSearch;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntrySearch;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -132,7 +134,7 @@ class TimelineEntrySearchServiceTest extends TestCase {
 	}
 
 	public function testAWooRequestFindsEveryMentionOfASubject(): void {
-		$this->entries->method('search')->willReturn(
+		$this->entries->method('searchEntries')->willReturn(
 			[
 				$this->entry('e1', 'case-1'),
 				$this->entry('e2', 'case-2'),
@@ -141,7 +143,7 @@ class TimelineEntrySearchServiceTest extends TestCase {
 		);
 		$this->readable(['case-1', 'case-2', 'case-3']);
 
-		$hits = $this->service->search('Jansen');
+		$hits = $this->service->findHits(new EntrySearch('Jansen'));
 
 		$this->assertCount(3, $hits);
 		$this->assertSame(
@@ -151,22 +153,22 @@ class TimelineEntrySearchServiceTest extends TestCase {
 	}
 
 	public function testAHitNamesBothTheObjectAndTheEntry(): void {
-		$this->entries->method('search')->willReturn([$this->entry('e1', 'case-1')]);
+		$this->entries->method('searchEntries')->willReturn([$this->entry('e1', 'case-1')]);
 		$this->readable(['case-1']);
 
-		$rows = $this->service->searchAsArrays('Jansen');
+		$rows = $this->service->findHitsAsArrays(new EntrySearch('Jansen'));
 
 		$this->assertSame('e1', $rows[0]['id']);
 		$this->assertSame('case-1', $rows[0]['object']['uuid']);
 	}
 
 	public function testAnEntryOnAnUnreadableObjectIsAbsent(): void {
-		$this->entries->method('search')->willReturn(
+		$this->entries->method('searchEntries')->willReturn(
 			[$this->entry('e1', 'case-1'), $this->entry('e2', 'forbidden')]
 		);
 		$this->readable(['case-1']);
 
-		$hits = $this->service->search('Jansen');
+		$hits = $this->service->findHits(new EntrySearch('Jansen'));
 
 		$this->assertCount(1, $hits);
 		$this->assertSame('e1', $hits[0]['entry']->getUuid());
@@ -177,43 +179,37 @@ class TimelineEntrySearchServiceTest extends TestCase {
 		// filter has to reach the statement. A service that fetched everything
 		// and then dropped the internal rows would return the same list here
 		// and still ship the wrong count and a short page.
-		$this->entries->expects($this->once())->method('search')
+		$this->entries->expects($this->once())->method('searchEntries')
 			->with(
-				$this->anything(),
-				null,
-				'public',
-				$this->anything(),
-				$this->anything()
+				$this->callback(
+					static fn (TimelineSearch $search): bool => $search->scope->objectUuids === null && $search->visibility === 'public'
+				)
 			)
 			->willReturn([]);
 
-		$this->service->search('Jansen', 'public');
+		$this->service->findHits(new EntrySearch('Jansen', 'public'));
 	}
 
 	public function testAnUnfilteredSearchPassesNoVisibilityCondition(): void {
-		$this->entries->expects($this->once())->method('search')
-			->with($this->anything(), null, null, $this->anything(), $this->anything())
+		$this->entries->expects($this->once())->method('searchEntries')
+			->with($this->callback(static fn (TimelineSearch $search): bool => $search->scope->objectUuids === null && $search->visibility === null))
 			->willReturn([]);
 
-		$this->service->search('Jansen');
+		$this->service->findHits(new EntrySearch('Jansen'));
 	}
 
 	public function testTheStatementOverFetchesSoTheAccessCheckCanDropRows(): void {
-		$this->entries->expects($this->once())->method('search')
+		$this->entries->expects($this->once())->method('searchEntries')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				(10 * TimelineEntrySearchService::OVERFETCH)
+				$this->callback(static fn (TimelineSearch $search): bool => $search->scope->limit === (10 * TimelineEntrySearchService::OVERFETCH))
 			)
 			->willReturn([]);
 
-		$this->service->search('Jansen', null, null, 10);
+		$this->service->findHits(new EntrySearch('Jansen', null, null, 10));
 	}
 
 	public function testAnObjectIsResolvedOncePerRequestHoweverManyEntriesMatched(): void {
-		$this->entries->method('search')->willReturn(
+		$this->entries->method('searchEntries')->willReturn(
 			[
 				$this->entry('e1', 'case-1'),
 				$this->entry('e2', 'case-1'),
@@ -222,22 +218,22 @@ class TimelineEntrySearchServiceTest extends TestCase {
 		);
 		$this->objects->expects($this->once())->method('find')->willReturn($this->object('case-1'));
 
-		$this->assertCount(3, $this->service->search('Jansen'));
+		$this->assertCount(3, $this->service->findHits(new EntrySearch('Jansen')));
 	}
 
 	public function testARefusalIsRememberedAsFirmlyAsAnAdmission(): void {
-		$this->entries->method('search')->willReturn(
+		$this->entries->method('searchEntries')->willReturn(
 			[$this->entry('e1', 'forbidden'), $this->entry('e2', 'forbidden')]
 		);
 		// One refused read, not two: without memoing the refusal, a search
 		// matching forty entries on one forbidden case runs forty refused reads.
 		$this->objects->expects($this->once())->method('find')->willReturn(null);
 
-		$this->assertSame([], $this->service->search('Jansen'));
+		$this->assertSame([], $this->service->findHits(new EntrySearch('Jansen')));
 	}
 
 	public function testThePageStopsAtTheLimitEvenWhenMoreResolved(): void {
-		$this->entries->method('search')->willReturn(
+		$this->entries->method('searchEntries')->willReturn(
 			[
 				$this->entry('e1', 'case-1'),
 				$this->entry('e2', 'case-2'),
@@ -246,19 +242,19 @@ class TimelineEntrySearchServiceTest extends TestCase {
 		);
 		$this->readable(['case-1', 'case-2', 'case-3']);
 
-		$this->assertCount(2, $this->service->search('Jansen', null, null, 2));
+		$this->assertCount(2, $this->service->findHits(new EntrySearch('Jansen', null, null, 2)));
 	}
 
 	public function testAnEmptyTermSearchesNothing(): void {
-		$this->entries->expects($this->never())->method('search');
+		$this->entries->expects($this->never())->method('searchEntries');
 
-		$this->assertSame([], $this->service->search('   '));
+		$this->assertSame([], $this->service->findHits(new EntrySearch('   ')));
 	}
 
 	public function testAReadThatThrowsIsARefusalRatherThanAFailedSearch(): void {
-		$this->entries->method('search')->willReturn([$this->entry('e1', 'case-1')]);
+		$this->entries->method('searchEntries')->willReturn([$this->entry('e1', 'case-1')]);
 		$this->objects->method('find')->willThrowException(new \RuntimeException('forbidden'));
 
-		$this->assertSame([], $this->service->search('Jansen'));
+		$this->assertSame([], $this->service->findHits(new EntrySearch('Jansen')));
 	}
 }

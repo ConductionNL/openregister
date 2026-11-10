@@ -47,7 +47,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
  */
-class RecordTemplateMapper extends QBMapper {
+class RecordTemplateMapper extends QBMapper implements RecordTemplateMapperInterface {
 
 	/**
 	 * The table.
@@ -94,16 +94,18 @@ class RecordTemplateMapper extends QBMapper {
 	 * reading of `sharedWith` is safer than four JSON dialects agreeing on an
 	 * authorization question.
 	 *
-	 * @param string      $userId   The caller.
-	 * @param string|null $register Only templates for this register id.
-	 * @param string|null $schema   Only templates for this schema id.
+	 * @param string         $userId The caller.
+	 * @param ListQuery|null $query  The `register` and `schema` filters: only templates for this register id
+	 *                               and this schema id; null, or an absent or empty filter, narrows nothing.
 	 *
 	 * @return RecordTemplate[] The candidates, newest first.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function findCandidates(string $userId, ?string $register=null, ?string $schema=null): array {
-		$qb = $this->db->getQueryBuilder();
+	public function findCandidates(string $userId, ?ListQuery $query=null): array {
+		$register = ($query?->filters['register'] ?? null);
+		$schema   = ($query?->filters['schema'] ?? null);
+		$qb       = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where(

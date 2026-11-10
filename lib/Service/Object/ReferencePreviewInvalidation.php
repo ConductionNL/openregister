@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
 use OCP\Collaboration\Reference\IReferenceManager;
@@ -75,9 +76,7 @@ final class ReferencePreviewInvalidation {
 	private function invalidateCanonicalUrls(SavedObjectScope $saved): void {
 		$invalidated = [];
 		$urls        = $this->formatter->buildCanonicalUrls(
-			registerId: (int) $saved->registerId,
-			schemaId: (int) $saved->schemaId,
-			uuid: (string) $saved->object->getUuid()
+			ref: new ObjectRef(register: (int) $saved->registerId, schema: (int) $saved->schemaId, id: (string) $saved->object->getUuid())
 		);
 		foreach ($urls as $url) {
 			$prefix = $this->formatter->resolveCachePrefix(referenceText: $url);
