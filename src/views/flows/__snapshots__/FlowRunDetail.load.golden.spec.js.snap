@@ -1,5 +1,51 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`FlowRunDetail.failure a dead-lettered run 1`] = `
+{
+  "error": "",
+  "title": "This run failed",
+}
+`;
+
+exports[`FlowRunDetail.failure a failed run without a failed step 1`] = `
+{
+  "error": "",
+  "title": "This run failed",
+}
+`;
+
+exports[`FlowRunDetail.failure a failed step in the flow 1`] = `
+{
+  "error": "Boom",
+  "title": "Stopped at step {position}, {step} {"position":2,"step":"Step B"}",
+}
+`;
+
+exports[`FlowRunDetail.failure a failed step the flow no longer has 1`] = `
+{
+  "error": "Boom",
+  "title": "Stopped at {step} {"step":"n2"}",
+}
+`;
+
+exports[`FlowRunDetail.failure a failed step without its own error 1`] = `
+{
+  "error": "Run error",
+  "title": "Stopped at step {position}, {step} {"position":2,"step":"Step B"}",
+}
+`;
+
+exports[`FlowRunDetail.failure a finished run 1`] = `null`;
+
+exports[`FlowRunDetail.failure a finished run with an error 1`] = `
+{
+  "error": "Late",
+  "title": "This run failed",
+}
+`;
+
+exports[`FlowRunDetail.failure no run 1`] = `null`;
+
 exports[`FlowRunDetail.load goes on with an empty run answer 1`] = `
 {
   "actionError": "",

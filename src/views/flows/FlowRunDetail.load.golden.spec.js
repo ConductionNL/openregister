@@ -13,8 +13,8 @@ jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { get: jest.fn
 jest.mock('@nextcloud/router', () => ({ __esModule: true, generateUrl: (path) => `/gen${path}` }))
 jest.mock('@nextcloud/l10n', () => ({
 	__esModule: true,
-	t: (app, text) => text,
-	translate: (app, text) => text,
+	t: (app, text, vars) => (vars ? `${text} ${JSON.stringify(vars)}` : text),
+	translate: (app, text, vars) => (vars ? `${text} ${JSON.stringify(vars)}` : text),
 	n: (app, one, many) => many,
 	translatePlural: (app, one, many) => many,
 	getCanonicalLocale: () => 'en-GB',
@@ -147,5 +147,25 @@ describe('FlowRunDetail.load', () => {
 			['run', null],
 			['loading', false],
 		])
+	})
+})
+
+describe('FlowRunDetail.failure', () => {
+	const ordered = [{ id: 'n1', type: 'a' }, { id: 'n2', type: 'b' }]
+	const failure = (run, nodes = ordered) =>
+		FlowRunDetail.computed.failure.call({ run, ordered: nodes, names: { b: 'Step B' } })
+	const failedLog = [{ status: 'done', transition: 'n1' }, { status: 'failed', transition: 'n2', error: 'Boom' }]
+
+	it.each([
+		['no run', null, ordered],
+		['a failed step in the flow', { status: 'failed', log: failedLog }, ordered],
+		['a failed step the flow no longer has', { status: 'failed', log: failedLog }, []],
+		['a failed step without its own error', { status: 'failed', error: 'Run error', log: [{ status: 'failed', transition: 'n2' }] }, ordered],
+		['a failed run without a failed step', { status: 'failed', log: [] }, ordered],
+		['a dead-lettered run', { status: 'dead_letter' }, ordered],
+		['a finished run with an error', { status: 'completed', error: 'Late' }, ordered],
+		['a finished run', { status: 'completed' }, ordered],
+	])('%s', (label, run, nodes) => {
+		expect(failure(run, nodes)).toMatchSnapshot()
 	})
 })
