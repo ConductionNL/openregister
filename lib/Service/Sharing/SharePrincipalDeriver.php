@@ -138,22 +138,50 @@ class SharePrincipalDeriver implements SharePrincipalDeriverInterface {
 			return null;
 		}
 
-		$type = ($entry['type'] ?? null);
-		if ($type !== self::TYPE_USER && $type !== self::TYPE_GROUP) {
-			return null;
-		}
-
-		$id = ($entry['id'] ?? null);
-		if (is_string($id) === false || trim($id) === '') {
+		$type = self::knownType(entry: $entry);
+		$id = self::nonBlankId(entry: $entry);
+		if ($type === null || $id === null) {
 			return null;
 		}
 
 		return [
 			'type' => $type,
-			'id' => trim($id),
+			'id' => $id,
 			'permission' => self::permissionOf(entry: $entry),
 		];
 	}//end validEntry()
+
+	/**
+	 * The entry's type when it is a user or a group, else null.
+	 *
+	 * @param array<string, mixed> $entry One share entry.
+	 *
+	 * @return string|null The type.
+	 */
+	private static function knownType(array $entry): ?string {
+		$type = ($entry['type'] ?? null);
+		if ($type !== self::TYPE_USER && $type !== self::TYPE_GROUP) {
+			return null;
+		}
+
+		return $type;
+	}//end knownType()
+
+	/**
+	 * The entry's id, trimmed, or null when it is missing, blank or not a string.
+	 *
+	 * @param array<string, mixed> $entry One share entry.
+	 *
+	 * @return string|null The id.
+	 */
+	private static function nonBlankId(array $entry): ?string {
+		$id = ($entry['id'] ?? null);
+		if (is_string($id) === false || trim($id) === '') {
+			return null;
+		}
+
+		return trim($id);
+	}//end nonBlankId()
 
 	/**
 	 * The entry's permission, or null when it names none as a string.
