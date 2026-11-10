@@ -34,8 +34,7 @@ namespace OCA\OpenRegister\Service\Deletion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -60,16 +59,14 @@ class DestroyRightService {
 	 * Wire the RBAC collaborators.
 	 *
 	 * @param PermissionHandlerInterface $permissionHandler Canonical RBAC verdict.
-	 * @param IUserSession      $userSession       The calling principal.
-	 * @param IGroupManager     $groupManager      Administrator bypass.
-	 * @param LoggerInterface   $logger            PSR logger.
+	 * @param CallerContext              $caller            The calling principal and the administrator bypass.
+	 * @param LoggerInterface            $logger            PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly PermissionHandlerInterface $permissionHandler,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -85,7 +82,7 @@ class DestroyRightService {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalFor(ObjectEntity $object, ?Schema $schema): ?DestructionRefusedException {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return new DestructionRefusedException(
 				rule: 'not-authenticated',
@@ -94,7 +91,7 @@ class DestroyRightService {
 			);
 		}
 
-		if ($this->groupManager->isAdmin($user->getUID()) === true) {
+		if ($this->caller->groupManager->isAdmin($user->getUID()) === true) {
 			return null;
 		}
 
@@ -180,7 +177,7 @@ class DestroyRightService {
 	 * @return bool True when the caller may destroy.
 	 */
 	private function holdsRight(Schema $schema, ObjectEntity $object): bool {
-		$userId = $this->userSession->getUser()?->getUID();
+		$userId = $this->caller->userSession->getUser()?->getUID();
 		if ($userId === null) {
 			return false;
 		}
