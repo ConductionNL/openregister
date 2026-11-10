@@ -28,6 +28,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\IAccountProperty;
@@ -220,19 +223,25 @@ class UserServiceProfileGoldenTest extends TestCase {
 			}
 		);
 		return new UserService(
-			$this->createMock(IUserManager::class),
-			$this->createMock(IUserSession::class),
-			$this->config,
-			$this->groupManager,
-			$this->accountManager,
-			$logger,
-			$this->organisationService,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IAvatarManager::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(ISecureRandom::class),
-			$this->db,
-			$this->l10nFactory
+			directory: new UserDirectory(
+				userManager: $this->createMock(IUserManager::class),
+				groupManager: $this->groupManager,
+				accountManager: $this->accountManager,
+				avatarManager: $this->createMock(IAvatarManager::class)
+			),
+			platform: new UserPlatform(
+				userSession: $this->createMock(IUserSession::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				l10nFactory: $this->l10nFactory,
+				logger: $logger
+			),
+			storage: new UserStorage(
+				config: $this->config,
+				db: $this->db,
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				secureRandom: $this->createMock(ISecureRandom::class)
+			),
+			organisationService: $this->organisationService
 		);
 	}//end service()
 

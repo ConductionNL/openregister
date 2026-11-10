@@ -7,6 +7,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccountManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatar;
@@ -63,19 +66,25 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->secureRandom = $this->createMock(ISecureRandom::class);
 
 		$this->service = new UserService(
-			$this->userManager,
-			$this->userSession,
-			$this->config,
-			$this->groupManager,
-			$this->accountManager,
-			$this->logger,
-			$this->organisationService,
-			$this->eventDispatcher,
-			$this->avatarManager,
-			$this->auditTrailMapper,
-			$this->secureRandom,
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			directory: new UserDirectory(
+				userManager: $this->userManager,
+				groupManager: $this->groupManager,
+				accountManager: $this->accountManager,
+				avatarManager: $this->avatarManager
+			),
+			platform: new UserPlatform(
+				userSession: $this->userSession,
+				eventDispatcher: $this->eventDispatcher,
+				l10nFactory: $this->createMock(IFactory::class),
+				logger: $this->logger
+			),
+			storage: new UserStorage(
+				config: $this->config,
+				db: $this->createMock(IDBConnection::class),
+				auditTrailMapper: $this->auditTrailMapper,
+				secureRandom: $this->secureRandom
+			),
+			organisationService: $this->organisationService
 		);
 	}
 
