@@ -405,7 +405,7 @@ class ConfigurationControllerTest extends TestCase {
 
 	public function testDiscoverGitlabSuccess(): void {
 		$this->request->method('getParams')->willReturn(['source' => 'gitlab']);
-		$this->gitlabHandler->method('searchConfigurations')
+		$this->gitlabHandler->method('searchPage')
 			->willReturn(['results' => [], 'total_count' => 0]);
 
 		$result = $this->controller->discover();
@@ -865,7 +865,7 @@ class ConfigurationControllerTest extends TestCase {
 			'ref' => 'main',
 		]);
 		$this->gitlabHandler->method('getProjectByPath')->willReturn(['id' => 42]);
-		$this->gitlabHandler->method('getFileContent')->willReturn($configData);
+		$this->gitlabHandler->method('fileContent')->willReturn($configData);
 		$this->gitlabHandler->method('getApiBase')->willReturn('https://gitlab.com/api/v4');
 		$this->configurationMapper->method('findByApp')->willReturn([]);
 
