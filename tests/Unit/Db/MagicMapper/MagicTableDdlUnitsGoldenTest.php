@@ -83,11 +83,11 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 
 	public function testNumberColumnWideningEdges(): void {
 		$column = new MagicNumberColumn();
-		$this->assertSame(['precision' => 12, 'scale' => 4], $column->widening(['type' => 'DECIMAL', 'precision' => 10, 'scale' => 2], 10, 4));
-		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => '20', 'scale' => '6'], 20, 6));
-		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => 20], 20, 6));
-		$this->assertNull($column->widening([], 20, 6));
-		$this->assertSame(['precision' => 65, 'scale' => 30], $column->widening(['type' => 'numeric', 'precision' => 60, 'scale' => 10], 60, 40));
+		$this->assertSame(['precision' => 12, 'scale' => 4], $column->widening(['type' => 'DECIMAL', 'precision' => 10, 'scale' => 2], ['precision' => 10, 'scale' => 4]));
+		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => '20', 'scale' => '6'], ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => 20], ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->widening([], ['precision' => 20, 'scale' => 6]));
+		$this->assertSame(['precision' => 65, 'scale' => 30], $column->widening(['type' => 'numeric', 'precision' => 60, 'scale' => 10], ['precision' => 60, 'scale' => 40]));
 	}//end testNumberColumnWideningEdges()
 
 	public function testCreatedStatistics(): void {

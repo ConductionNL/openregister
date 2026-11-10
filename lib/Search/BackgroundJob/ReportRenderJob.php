@@ -36,8 +36,6 @@ use DateTime;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\BackgroundJob\Support\DashboardRenderRun;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderDelivery;
 use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderPlatform;
@@ -45,10 +43,7 @@ use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderSources;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
-use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Daily scheduled-report renderer.
@@ -127,53 +122,11 @@ class ReportRenderJob extends TimedJob {
 	private const DASHBOARD_SCAN_LIMIT = 200;
 
 	/**
-	 * Register lookup.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema lookup for the register's schemas.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
 	 * Object loader.
 	 *
 	 * @var MagicTableRowReaderInterface
 	 */
 	private readonly MagicTableRowReaderInterface $objectMapper;
-
-	/**
-	 * Render composer.
-	 *
-	 * @var ReportRenderService
-	 */
-	private readonly ReportRenderService $renderService;
-
-	/**
-	 * Files root.
-	 *
-	 * @var IRootFolder
-	 */
-	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * App-config reader.
-	 *
-	 * @var IAppConfig
-	 */
-	private readonly IAppConfig $appConfig;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
 
 	/**
 	 * Constructor.
@@ -187,18 +140,12 @@ class ReportRenderJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		ReportRenderSources $sources,
-		ReportRenderDelivery $delivery,
-		ReportRenderPlatform $platform,
+		private readonly ReportRenderSources $sources,
+		private readonly ReportRenderDelivery $delivery,
+		private readonly ReportRenderPlatform $platform,
 	) {
 		parent::__construct(time: $time);
-		$this->registerMapper = $sources->registerMapper;
-		$this->schemaMapper = $sources->schemaMapper;
 		$this->objectMapper = $sources->objectMapper;
-		$this->renderService = $delivery->renderService;
-		$this->rootFolder = $delivery->rootFolder;
-		$this->appConfig = $platform->appConfig;
-		$this->logger = $platform->logger;
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 	}//end __construct()
 
@@ -215,7 +162,7 @@ class ReportRenderJob extends TimedJob {
 	 */
 	protected function run($argument): void {
 		$enabled = filter_var(
-			$this->appConfig->getValueString(
+			$this->platform->appConfig->getValueString(
 				app: self::APP_ID,
 				key: self::CONFIG_KEY_ENABLED,
 				default: 'true'
@@ -223,7 +170,7 @@ class ReportRenderJob extends TimedJob {
 			FILTER_VALIDATE_BOOLEAN
 		);
 		if ($enabled === false) {
-			$this->logger->info(
+			$this->platform->logger->info(
 				message: '[ReportRenderJob] Scheduled renders disabled (kill switch on), skipping',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -233,7 +180,7 @@ class ReportRenderJob extends TimedJob {
 		try {
 			$register = $this->loadReportsRegister();
 		} catch (\Throwable $e) {
-			$this->logger->info(
+			$this->platform->logger->info(
 				message: '[ReportRenderJob] No `reports` register found — bundle not imported, skipping',
 				context: ['error' => $e->getMessage()]
 			);
@@ -256,7 +203,7 @@ class ReportRenderJob extends TimedJob {
 				$this->renderAndDeliver(run: $dashboardRun);
 				$rendered++;
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->platform->logger->warning(
 					message: '[ReportRenderJob] Render failed for dashboard',
 					context: [
 						'dashboard' => ($payload['titel'] ?? $dashboard->getUuid()),
@@ -266,7 +213,7 @@ class ReportRenderJob extends TimedJob {
 			}
 		}//end foreach
 
-		$this->logger->info(
+		$this->platform->logger->info(
 			message: '[ReportRenderJob] Scheduled-render pass complete',
 			context: [
 				'file' => __FILE__,
@@ -333,7 +280,7 @@ class ReportRenderJob extends TimedJob {
 			$format = 'xlsx';
 		}
 
-		$rendered = $this->renderService->render(
+		$rendered = $this->delivery->renderService->render(
 			dashboard: $run->dashboard,
 			format: $format
 		);
@@ -369,7 +316,7 @@ class ReportRenderJob extends TimedJob {
 		// skip delivery and surface the misconfiguration in logs.
 		$owner = $dashboard->getOwner();
 		if ($owner === null || $owner === '') {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[ReportRenderJob] Dashboard owner missing — skipping Files delivery',
 				context: ['dashboardUuid' => $dashboard->getUuid()]
 			);
@@ -377,9 +324,9 @@ class ReportRenderJob extends TimedJob {
 		}
 
 		try {
-			$userFolder = $this->rootFolder->getUserFolder(userId: $owner);
+			$userFolder = $this->delivery->rootFolder->getUserFolder(userId: $owner);
 		} catch (NotFoundException $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[ReportRenderJob] User folder unavailable, skipping delivery',
 				context: ['owner' => $owner, 'error' => $e->getMessage()]
 			);
@@ -399,7 +346,7 @@ class ReportRenderJob extends TimedJob {
 		// absolute filesystem path.
 		$folderPath = ltrim($folderPath, '/');
 		if ($folderPath === '' || str_contains($folderPath, '..') === true) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[ReportRenderJob] Rejected delivery folder containing path traversal',
 				context: ['folder' => $folderPath, 'owner' => $owner]
 			);
@@ -428,7 +375,7 @@ class ReportRenderJob extends TimedJob {
 	 * @return Register
 	 */
 	private function loadReportsRegister(): Register {
-		return $this->registerMapper->find(
+		return $this->sources->registerMapper->find(
 			self::REPORTS_REGISTER_SLUG,
 			_rbac: false,
 			_multitenancy: false
@@ -472,14 +419,14 @@ class ReportRenderJob extends TimedJob {
 	 * @psalm-return list<ObjectEntity>
 	 */
 	private function loadDashboards(Register $register): array {
-		$schemas = $this->schemaMapper->findMultiple(
+		$schemas = $this->sources->schemaMapper->findMultiple(
 			ids: $register->getSchemas(),
 			_rbac: false,
 			_multitenancy: false
 		);
 
 		if (empty($schemas) === true) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[ReportRenderJob] Reports register has no resolvable schemas',
 				context: [
 					'file' => __FILE__,
@@ -506,7 +453,7 @@ class ReportRenderJob extends TimedJob {
 					]
 				);
 			} catch (\Throwable $e) {
-				$this->logger->warning(
+				$this->platform->logger->warning(
 					message: '[ReportRenderJob] Failed to enumerate dashboards for schema',
 					context: [
 						'registerId' => $register->getId(),
