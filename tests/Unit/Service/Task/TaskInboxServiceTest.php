@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxAudience;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\InboxListing;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -199,7 +200,7 @@ class TaskInboxServiceTest extends TestCase {
 			],
 		];
 
-		$row = $this->inbox->row(task: $task, subjects: $subjects, now: new DateTime('2026-08-31T12:00:00+00:00'));
+		$row = $this->inbox->row(task: $task, listing: new InboxListing(subjects: $subjects, now: new DateTime('2026-08-31T12:00:00+00:00'), openBlockers: []));
 
 		$this->assertSame('Claim: Bouwtekening Dorpsstraat 12', $row['displayTitle']);
 		$this->assertNull($row['title'], 'The stored title must STAY null.');
@@ -465,7 +466,7 @@ class TaskInboxServiceTest extends TestCase {
 		$task = new Task();
 		$task->setTitle('Keur de offerte goed');
 
-		$row = $this->inbox->row(task: $task, subjects: [], now: new DateTime());
+		$row = $this->inbox->row(task: $task, listing: new InboxListing(subjects: [], now: new DateTime(), openBlockers: []));
 
 		$this->assertSame('Keur de offerte goed', $row['displayTitle']);
 	}//end testAStoredTitleWins()
@@ -479,7 +480,7 @@ class TaskInboxServiceTest extends TestCase {
 		$task = new Task();
 		$task->setDueAt(new DateTime('2026-08-01T00:00:00+00:00'));
 
-		$row = $this->inbox->row(task: $task, subjects: [], now: new DateTime('2026-08-31T00:00:00+00:00'));
+		$row = $this->inbox->row(task: $task, listing: new InboxListing(subjects: [], now: new DateTime('2026-08-31T00:00:00+00:00'), openBlockers: []));
 
 		$this->assertTrue($row['overdue']);
 		$this->assertSame(30, $row['daysOverdue']);
