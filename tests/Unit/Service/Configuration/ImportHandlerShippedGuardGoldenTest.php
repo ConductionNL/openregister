@@ -17,7 +17,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgrade;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgradeOptions;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -121,15 +124,16 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 	 */
 	private function guard(array $answer): ShippedConfigurationGuard {
 		$guard = $this->createMock(ShippedConfigurationGuard::class);
-		$guard->method('guardSchemaUpdate')->willReturnCallback(
-			function (mixed ...$args) use ($answer): array {
-				$this->asked[] = $args;
+		$guard->method('guardUpgrade')->willReturnCallback(
+			function (SchemaUpgrade $upgrade, SchemaUpgradeOptions $options) use ($answer): array {
+				$incoming      = $upgrade->incoming;
+				$this->asked[] = [$upgrade->slug, $upgrade->live, $incoming->definition, $incoming->app, $incoming->appVersion, $options->decisions, $options->record];
 				return $answer;
 			}
 		);
-		$guard->method('recordShipped')->willReturnCallback(
-			function (mixed ...$args): bool {
-				$this->recorded[] = [$args, count($this->written)];
+		$guard->method('recordShippedSchema')->willReturnCallback(
+			function (string $slug, ShippedDefinition $shipped): bool {
+				$this->recorded[] = [[$slug, $shipped->definition, $shipped->app, $shipped->appVersion], count($this->written)];
 				return true;
 			}
 		);
