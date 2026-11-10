@@ -36,41 +36,6 @@ use Psr\Log\LoggerInterface;
 class FileRestrictionService {
 
 	/**
-	 * The rows.
-	 *
-	 * @var FileRestrictionStore
-	 */
-	private readonly FileRestrictionStore $store;
-
-	/**
-	 * Forgets its memo after a write.
-	 *
-	 * @var FileRestrictionGuard
-	 */
-	private readonly FileRestrictionGuard $guard;
-
-	/**
-	 * Who sets it.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Where every change is noted.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Removes the file's public link shares.
-	 *
-	 * @var FileMapperInterface
-	 */
-	private readonly FileMapperInterface $fileMapper;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FileRestrictionRecords $records     The rows and the guard that forgets its memo after a write.
@@ -79,25 +44,20 @@ class FileRestrictionService {
 	 * @param FileMapperInterface    $fileMapper  Removes the file's public link shares.
 	 */
 	public function __construct(
-		FileRestrictionRecords $records,
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		FileMapperInterface $fileMapper,
+		private readonly FileRestrictionRecords $records,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
+		private readonly FileMapperInterface $fileMapper,
 	) {
-		$this->store = $records->store;
-		$this->guard = $records->guard;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
-		$this->fileMapper = $fileMapper;
 	}//end __construct()
 
 	/**
 	 * Restrict one file to named users and groups, replacing a restriction it had.
 	 *
-	 * @param int          $fileId The Nextcloud file id.
-	 * @param list<string> $users  The users who may read it.
-	 * @param list<string> $groups The groups whose members may read it.
-	 * @param string       $reason Why.
+	 * The principals are trimmed and deduplicated and the reason trimmed; every
+	 * refusal happens before anything is stored.
+	 *
+	 * @param FileRestrictionRequest $request The file, the users and groups who may read it, and why.
 	 *
 	 * @return array<string, mixed> The stored restriction.
 	 *
@@ -105,10 +65,11 @@ class FileRestrictionService {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
-	public function restrict(int $fileId, array $users, array $groups, string $reason): array {
-		$users = $this->cleanList(values: $users);
-		$groups = $this->cleanList(values: $groups);
-		$reason = trim($reason);
+	public function restrict(FileRestrictionRequest $request): array {
+		$fileId = $request->fileId;
+		$users = $this->cleanList(values: $request->users);
+		$groups = $this->cleanList(values: $request->groups);
+		$reason = trim($request->reason);
 
 		if ($fileId <= 0) {
 			throw new InvalidArgumentException('A restriction needs a file');
@@ -123,12 +84,12 @@ class FileRestrictionService {
 		}
 
 		$setBy = (string)($this->userSession->getUser()?->getUID() ?? '');
-		$this->store->save(
+		$this->records->store->save(
 			fileId: $fileId,
 			restriction: new FileRestriction(users: $users, groups: $groups, reason: $reason, setBy: $setBy),
 			setAt: new DateTimeImmutable()
 		);
-		$this->guard->forget();
+		$this->records->guard->forget();
 
 		// A public link (`/s/<token>`) is served by Nextcloud itself and never asks the guard, so it goes.
 		$revoked = $this->fileMapper->depublishFile(fileId: $fileId);
@@ -144,7 +105,7 @@ class FileRestrictionService {
 			]
 		);
 
-		return ($this->store->find(fileId: $fileId) ?? []);
+		return ($this->records->store->find(fileId: $fileId) ?? []);
 	}//end restrict()
 
 	/**
@@ -157,13 +118,13 @@ class FileRestrictionService {
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function lift(int $fileId): ?array {
-		$previous = $this->store->find(fileId: $fileId);
+		$previous = $this->records->store->find(fileId: $fileId);
 		if ($previous === null) {
 			return null;
 		}
 
-		$this->store->delete(fileId: $fileId);
-		$this->guard->forget();
+		$this->records->store->delete(fileId: $fileId);
+		$this->records->guard->forget();
 
 		$this->logger->info(
 			message: '[FileRestrictionService] Lifted the restriction of a file',
@@ -188,7 +149,7 @@ class FileRestrictionService {
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
 	public function restrictionOf(int $fileId): ?array {
-		return $this->store->find(fileId: $fileId);
+		return $this->records->store->find(fileId: $fileId);
 	}//end restrictionOf()
 
 	/**

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -68,8 +69,7 @@ final class DenyEntryMatcherMutationTest extends TestCase {
 
 		$matches = (new DenyEntryMatcher())->matchingDenials(
 			[$hard, $scoped, $miss, $emptyMatch, $scalarMatch],
-			'delete',
-			self::PRINCIPALS
+			new DenyQuestion(action: 'delete', principals: self::PRINCIPALS)
 		);
 
 		$this->assertSame(
@@ -90,7 +90,7 @@ final class DenyEntryMatcherMutationTest extends TestCase {
 	public function testNoPrincipalNamedMeansNoDenials(): void {
 		$this->assertSame(
 			[],
-			(new DenyEntryMatcher())->matchingDenials([['group' => 'redactie'], 'mcp'], 'read', self::PRINCIPALS)
+			(new DenyEntryMatcher())->matchingDenials([['group' => 'redactie'], 'mcp'], new DenyQuestion(action: 'read', principals: self::PRINCIPALS))
 		);
 	}//end testNoPrincipalNamedMeansNoDenials()
 }//end class

@@ -55,6 +55,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * The connection double replaces `*PREFIX*` with `nc_`, as Nextcloud's does.
@@ -135,7 +137,7 @@ class ConfiguredTablePrefixTest extends TestCase {
 		$registers->method('findAll')->willReturn([$first]);
 
 		$service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $registers, cacheFactory: $this->createMock(ICacheFactory::class)),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createMock(ICacheFactory::class)),
 			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $this->connection(rows: self::catalogue())),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: (new ReflectionClass(ArchivalRetentionGuard::class))->newInstanceWithoutConstructor()),
 			logger: $this->createMock(LoggerInterface::class)
@@ -213,9 +215,10 @@ class ConfiguredTablePrefixTest extends TestCase {
 			)
 		);
 
-		$results = [];
+		$run = new \OCA\OpenRegister\Service\Object\MagicNameLoadRun(uuidList: ['u1']);
 		$method = new ReflectionMethod($handler, 'batchLoadNamesFromRegisters');
-		$method->invokeArgs($handler, [['u1'], &$results]);
+		$method->invoke($handler, $run);
+		$results = $run->results;
 
 		$this->assertSame('Found', $results['u1']['name']);
 	}

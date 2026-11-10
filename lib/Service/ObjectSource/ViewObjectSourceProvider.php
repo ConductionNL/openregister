@@ -26,10 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -56,43 +53,25 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	private const RESERVED = ['limit', 'offset', 'page', 'sort', 'filters', 'extend', 'fields', 'register', 'schema'];
 
 	/**
-	 * Reads the backing view.
+	 * Searches and counts the source table's rows.
 	 *
-	 * @var ViewMapperInterface
+	 * @var MagicTableRowReaderInterface
 	 */
-	private readonly ViewMapperInterface $viewMapper;
-
-	/**
-	 * Resolves the source register.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Resolves the source schema.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
+	private readonly MagicTableRowReaderInterface $rows;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ViewSourceMappers            $mappers     The view, register and schema mappers.
-	 * @param MagicTableRowReaderInterface $magicMapper Searches the source table.
-	 * @param LoggerInterface              $logger      Logs a view that cannot back a type.
+	 * @param ViewSourceMappers $mappers The view mapper and the schema catalog of the source tables.
+	 * @param LoggerInterface   $logger  Logs a view that cannot back a type.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ViewSourceMappers $mappers,
-		private readonly MagicTableRowReaderInterface $magicMapper,
+		private readonly ViewSourceMappers $mappers,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->viewMapper     = $mappers->viewMapper;
-		$this->registerMapper = $mappers->registerMapper;
-		$this->schemaMapper   = $mappers->schemaMapper;
+		$this->rows = $mappers->catalog->tables();
 	}//end __construct()
 
 	/**
@@ -133,9 +112,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		$rows = $this->findAll(register: $register, schema: $schema, query: ['_ids' => [$id], 'limit' => 1], config: $config);
-
-		return ($rows[0] ?? null);
+		return ($this->findAll(register: $register, schema: $schema, query: ['_ids' => [$id], 'limit' => 1], config: $config)[0] ?? null);
 	}//end find()
 
 	/**
@@ -153,29 +130,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$source = $this->resolve(schema: $schema, config: $config, query: $query);
-		if ($source === null) {
-			return [];
-		}
-
-		$search = $source['query'];
-		if (isset($query['limit']) === true) {
-			$search['_limit'] = (int) $query['limit'];
-		}
-
-		if (isset($query['offset']) === true) {
-			$search['_offset'] = (int) $query['offset'];
-		}
-
-		if (isset($query['sort']) === true) {
-			$search['_order'] = $query['sort'];
-		}
-
-		return $this->magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $search,
-			register: $source['register'],
-			schema: $source['schema']
-		);
+		return $this->readRows(request: new ViewRowsRequest(schema: $schema, query: $query, config: $config));
 	}//end findAll()
 
 	/**
@@ -193,42 +148,95 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		$source = $this->resolve(schema: $schema, config: $config, query: $query);
+		return $this->countRows(request: new ViewRowsRequest(schema: $schema, query: $query, config: $config));
+	}//end count()
+
+	/**
+	 * The rows a request finds in the view's source table, with the caller's paging and sort.
+	 *
+	 * @param ViewRowsRequest $request The schema, caller query and view binding.
+	 *
+	 * @return ObjectEntity[]
+	 */
+	private function readRows(ViewRowsRequest $request): array {
+		$source = $this->resolve(request: $request);
+		if ($source === null) {
+			return [];
+		}
+
+		return $this->rows->searchObjectsInRegisterSchemaTable(
+			query: self::withPaging(search: $source['query'], query: $request->query),
+			register: $source['register'],
+			schema: $source['schema']
+		);
+	}//end readRows()
+
+	/**
+	 * Add the caller's limit, offset and sort to a source-table search.
+	 *
+	 * @param array<string, mixed> $search The combined filter.
+	 * @param array                $query  The caller's query.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withPaging(array $search, array $query): array {
+		if (isset($query['limit']) === true) {
+			$search['_limit'] = (int) $query['limit'];
+		}
+
+		if (isset($query['offset']) === true) {
+			$search['_offset'] = (int) $query['offset'];
+		}
+
+		if (isset($query['sort']) === true) {
+			$search['_order'] = $query['sort'];
+		}
+
+		return $search;
+	}//end withPaging()
+
+	/**
+	 * How many rows a request finds in the view's source table.
+	 *
+	 * @param ViewRowsRequest $request The schema, caller query and view binding.
+	 *
+	 * @return int
+	 */
+	private function countRows(ViewRowsRequest $request): int {
+		$source = $this->resolve(request: $request);
 		if ($source === null) {
 			return 0;
 		}
 
-		return $this->magicMapper->countObjectsInRegisterSchemaTable(
+		return $this->rows->countObjectsInRegisterSchemaTable(
 			query: $source['query'],
 			register: $source['register'],
 			schema: $source['schema']
 		);
-	}//end count()
+	}//end countRows()
 
 	/**
 	 * The source table and the combined filter, or null when nothing can match.
 	 *
-	 * @param Schema $schema The view-backed schema.
-	 * @param array  $config The object-source config (`view`).
-	 * @param array  $query  The caller's query.
+	 * @param ViewRowsRequest $request The schema, caller query and view binding.
 	 *
 	 * @return array{register: Register, schema: Schema, query: array<string, mixed>}|null
 	 */
-	private function resolve(Schema $schema, array $config, array $query): ?array {
+	private function resolve(ViewRowsRequest $request): ?array {
 		try {
 			// The schema's author chose the view; readers of the type need not
 			// hold a share on it. Their access to the source ROWS is checked by
 			// the search below (_rbac on).
-			[$viewQuery, $sourceRegister, $sourceSchema] = $this->readView(config: $config);
+			[$viewQuery, $sourceRegister, $sourceSchema] = $this->readView(config: $request->config);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[ViewObjectSource] a view-backed schema cannot read its view: ' . $e->getMessage(),
-				['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema->getSlug(), 'view' => ($config['view'] ?? null)]
+				['file' => __FILE__, 'line' => __LINE__, 'schema' => $request->schema->getSlug(), 'view' => ($request->config['view'] ?? null)]
 			);
 			return null;
 		}
 
-		$filter = $this->combine(viewQuery: $viewQuery, query: $query);
+		$filter = $this->combine(viewQuery: $viewQuery, query: $request->query);
 		if ($filter === null) {
 			return null;
 		}
@@ -246,7 +254,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * @throws Throwable When the view cannot be read or does not name exactly one register and one schema.
 	 */
 	private function readView(array $config): array {
-		$view = $this->viewMapper->find($config['view'] ?? '', _rbac: false, _multitenancy: false);
+		$view = $this->mappers->viewMapper->find($config['view'] ?? '', _rbac: false, _multitenancy: false);
 		$viewQuery = ($view->getQuery() ?? []);
 		$registers = array_values((array) ($viewQuery['registers'] ?? []));
 		$schemas = array_values((array) ($viewQuery['schemas'] ?? []));
@@ -254,8 +262,8 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 			throw new InvalidArgumentException('the view must name exactly one register and one schema');
 		}
 
-		$sourceRegister = $this->registerMapper->find($registers[0]);
-		$sourceSchema = $this->schemaMapper->find($schemas[0]);
+		$sourceRegister = $this->mappers->catalog->registers()->find($registers[0]);
+		$sourceSchema = $this->mappers->catalog->schemas()->find($schemas[0]);
 
 		return [$viewQuery, $sourceRegister, $sourceSchema];
 	}//end readView()
@@ -279,7 +287,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		return self::withSearch(filter: $filter, viewQuery: $viewQuery, query: $query);
+		return self::withSearch(filter: $filter, search: self::searchText(viewQuery: $viewQuery, query: $query));
 	}//end combine()
 
 	/**
@@ -333,7 +341,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 				continue;
 			}
 
-			$filter = self::withFacet(filter: $filter, field: (string) $field, values: $values);
+			$filter = self::withFacet(filter: $filter, facet: new ViewFacet(field: (string) $field, values: $values));
 			if ($filter === null) {
 				return null;
 			}
@@ -346,12 +354,13 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * Add one non-empty facet: `@self.` facets nest; a field both name keeps only the values both allow.
 	 *
 	 * @param array<string, mixed> $filter The filter so far.
-	 * @param string               $field  The facet field.
-	 * @param array<int, mixed>    $values The facet's values.
+	 * @param ViewFacet            $facet  The facet field and its values.
 	 *
 	 * @return array<string, mixed>|null Null when no value is allowed by both.
 	 */
-	private static function withFacet(array $filter, string $field, array $values): ?array {
+	private static function withFacet(array $filter, ViewFacet $facet): ?array {
+		$field  = $facet->field;
+		$values = $facet->values;
 		if (str_starts_with($field, '@self.') === true) {
 			$filter['@self'][substr($field, 6)] = $values;
 			return $filter;
@@ -369,21 +378,31 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	}//end withFacet()
 
 	/**
-	 * Add the caller's `_search` and the view's search terms as one `_search`, when not empty.
+	 * The caller's `_search` and the view's search terms as one search text.
 	 *
-	 * @param array<string, mixed> $filter    The filter so far.
-	 * @param array                $viewQuery The view's stored query.
-	 * @param array                $query     The caller's query.
+	 * @param array $viewQuery The view's stored query.
+	 * @param array $query     The caller's query.
 	 *
-	 * @return array<string, mixed>
+	 * @return string The trimmed search text, possibly empty.
 	 */
-	private static function withSearch(array $filter, array $viewQuery, array $query): array {
+	private static function searchText(array $viewQuery, array $query): string {
 		$terms = ($viewQuery['searchTerms'] ?? []);
 		if (is_array($terms) === true) {
 			$terms = implode(' ', $terms);
 		}
 
-		$search = trim((string) ($query['_search'] ?? '') . ' ' . (string) $terms);
+		return trim((string) ($query['_search'] ?? '') . ' ' . (string) $terms);
+	}//end searchText()
+
+	/**
+	 * Add the search text as `_search`, when not empty.
+	 *
+	 * @param array<string, mixed> $filter The filter so far.
+	 * @param string               $search The combined search text.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withSearch(array $filter, string $search): array {
 		if ($search !== '') {
 			$filter['_search'] = $search;
 		}

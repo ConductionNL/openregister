@@ -82,7 +82,6 @@ class PropertyVocabularyControllerTest extends TestCase {
 		$this->vocabulary = new PropertyVocabulary();
 
 		$this->controller = PropertyVocabularyControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->vocabulary,
 			new ExtendingFormDeclaration($this->vocabulary),

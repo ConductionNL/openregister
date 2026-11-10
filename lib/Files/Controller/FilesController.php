@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
 use OCA\OpenRegister\Files\Controller\Support\FileActionTarget;
@@ -211,19 +212,17 @@ class FilesController extends Controller {
 	 * Initializes controller with required dependencies for file operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param FilesControllerServices $services The files controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FilesControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->rootFolder = $services->store->rootFolder;
 		$this->userManager = $services->platform->userManager;
 		$this->eventDispatcher = $services->platform->eventDispatcher;

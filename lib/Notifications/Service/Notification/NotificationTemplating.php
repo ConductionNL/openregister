@@ -108,13 +108,24 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	public function interpolate(string $template, array $data, array $context, array $languages = []): string {
-		$values = new PlaceholderValues(data: $data, context: $context, languages: $languages);
+		return $this->render(template: $template, values: new PlaceholderValues(data: $data, context: $context, languages: $languages));
+	}//end interpolate()
+
+	/**
+	 * Fill every placeholder of a template from the values; an unanswered one stays as written.
+	 *
+	 * @param string            $template The template carrying `{{ key }}` placeholders.
+	 * @param PlaceholderValues $values   The data, the context and the language chain.
+	 *
+	 * @return string The interpolated string.
+	 */
+	private function render(string $template, PlaceholderValues $values): string {
 		return preg_replace_callback(
 			self::PLACEHOLDER,
 			fn (array $matches): string => $this->fillPlaceholder(matches: $matches, values: $values),
 			$template
 		) ?? $template;
-	}//end interpolate()
+	}//end render()
 
 	/**
 	 * The text one placeholder renders as: the data value, else the context value.

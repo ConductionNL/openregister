@@ -108,52 +108,84 @@ class ObjectShareReader {
 			true => $this->existingFolder(object: $object),
 			false => $this->resolveFolder(object: $object),
 		};
-
 		if ($folder === null) {
 			return [];
 		}
 
-		if ($complete === true) {
-			$sharers[] = $this->folderOwner(folder: $folder);
+		return $this->sharesIn(scan: new FolderShareScan(folder: $folder, complete: $complete), sharers: $sharers);
+	}//end sharesOn()
+
+	/**
+	 * The shares the sharers (and, for a complete reading, the folder owner) created on the folder.
+	 *
+	 * @param FolderShareScan $scan    The folder and the reading.
+	 * @param string[]        $sharers The uids whose shares to read.
+	 *
+	 * @return array<string, array{type: string, share: IShare}> The shares with their type label.
+	 *
+	 * @throws RuntimeException When the reading is complete and the owner or a share type cannot be read.
+	 */
+	private function sharesIn(FolderShareScan $scan, array $sharers): array {
+		if ($scan->complete === true) {
+			$sharers[] = $this->folderOwner(folder: $scan->folder);
 		}
 
 		$sharers = array_values(array_unique(array_filter($sharers, static fn ($uid) => is_string($uid) === true && $uid !== '')));
 
 		$found = [];
 		foreach ($sharers as $sharer) {
-			foreach (self::LISTABLE_TYPES as $label => $shareType) {
-				foreach ($this->sharesBy(sharer: $sharer, shareType: $shareType, folder: $folder, complete: $complete) as $share) {
-					$found[$share->getFullId()] = ['type' => $label, 'share' => $share];
-				}
+			foreach ($this->sharesBy(scan: $scan, sharer: $sharer) as $fullId => $row) {
+				$found[$fullId] = $row;
 			}
 		}
 
 		return $found;
-	}//end sharesOn()
+	}//end sharesIn()
 
 	/**
-	 * The shares one sharer created on the folder, for one type.
+	 * The shares one sharer created on the folder, for every listable type.
 	 *
-	 * @param string          $sharer    The uid.
-	 * @param IShare::TYPE_*  $shareType The core share type.
-	 * @param Folder          $folder    The object's folder.
-	 * @param bool            $complete  Include re-shares and fail loudly.
+	 * @param FolderShareScan $scan   The folder and the reading.
+	 * @param string          $sharer The uid.
 	 *
-	 * @return IShare[] The shares.
+	 * @return array<string, array{type: string, share: IShare}> The shares with their type label.
 	 *
-	 * @throws RuntimeException When `$complete` is set and core cannot read them.
+	 * @throws RuntimeException When the reading is complete and core cannot read them.
 	 */
-	private function sharesBy(string $sharer, int $shareType, Folder $folder, bool $complete): array {
-		try {
-			return $this->shareManager->getSharesBy($sharer, $shareType, $folder, $complete, -1);
-		} catch (Throwable $e) {
-			if ($complete === true) {
-				throw new RuntimeException('The shares on an object folder could not be read', 0, $e);
+	private function sharesBy(FolderShareScan $scan, string $sharer): array {
+		$found = [];
+		foreach (self::LISTABLE_TYPES as $label => $shareType) {
+			try {
+				$shares = $this->shareManager->getSharesBy($sharer, $shareType, $scan->folder, $scan->complete, -1);
+			} catch (Throwable $e) {
+				$shares = $this->unreadable(scan: $scan, error: $e);
 			}
 
-			return [];
+			foreach ($shares as $share) {
+				$found[$share->getFullId()] = ['type' => $label, 'share' => $share];
+			}
 		}
+
+		return $found;
 	}//end sharesBy()
+
+	/**
+	 * What a failed read yields: nothing for a lenient reading, an exception for a complete one.
+	 *
+	 * @param FolderShareScan $scan  The reading.
+	 * @param Throwable       $error What core threw.
+	 *
+	 * @return IShare[] No shares.
+	 *
+	 * @throws RuntimeException When the reading is complete.
+	 */
+	private function unreadable(FolderShareScan $scan, Throwable $error): array {
+		if ($scan->complete === true) {
+			throw new RuntimeException('The shares on an object folder could not be read', 0, $error);
+		}
+
+		return [];
+	}//end unreadable()
 
 	/**
 	 * The uid that owns the folder.

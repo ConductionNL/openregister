@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DsarControllerServices;
 use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
 use OCA\OpenRegister\Service\DsarServiceInterface;
@@ -81,16 +82,14 @@ class DsarController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier.
 	 * @param IRequest $request Active request.
 	 * @param DsarControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		DsarControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->dsarService = $services->dsarService;
 		$this->complianceService = $services->complianceService;
 		$this->userSession = $services->userSession;

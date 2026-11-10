@@ -54,27 +54,6 @@ class MessageHistoryHandler {
 	private const RECENT_MESSAGES_COUNT = 10;
 
 	/**
-	 * Message mapper
-	 *
-	 * @var MessageMapperInterface
-	 */
-	private MessageMapperInterface $messageMapper;
-
-	/**
-	 * Conversation mapper
-	 *
-	 * @var ConversationMapper
-	 */
-	private ConversationMapper $conversationMapper;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * @param MessageMapperInterface $messageMapper Message mapper.
@@ -86,13 +65,10 @@ class MessageHistoryHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		MessageMapperInterface $messageMapper,
-		ConversationMapper $conversationMapper,
-		LoggerInterface $logger,
+		private readonly MessageMapperInterface $messageMapper,
+		private readonly ConversationMapper $conversationMapper,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->messageMapper = $messageMapper;
-		$this->conversationMapper = $conversationMapper;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -254,19 +230,18 @@ class MessageHistoryHandler {
 	 *
 	 * Persists the reply with its optional RAG sources metadata.
 	 *
-	 * @param int        $conversationId Conversation ID.
-	 * @param string     $content        Reply content.
-	 * @param array|null $sources        Optional RAG sources.
+	 * @param int       $conversationId Conversation ID.
+	 * @param ChatReply $reply          Reply content and its optional RAG sources.
 	 *
 	 * @return Message Stored message entity
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function storeAssistantMessage(int $conversationId, string $content, ?array $sources): Message {
-		$message = $this->draftMessage(role: Message::ROLE_ASSISTANT, content: $content);
+	public function storeAssistantMessage(int $conversationId, ChatReply $reply): Message {
+		$message = $this->draftMessage(role: Message::ROLE_ASSISTANT, content: $reply->content);
 		$message->setConversationId($conversationId);
 
-		return $this->persistMessage(message: $message, sources: $sources);
+		return $this->persistMessage(message: $message, sources: $reply->sources);
 	}//end storeAssistantMessage()
 
 	/**

@@ -87,4 +87,39 @@ class ClassAliasMapEagerOrderTest extends TestCase {
 		$this->assertTrue(class_exists(self::OLD_CLASS, false));
 		$this->assertInstanceOf(ClassAliasMapEagerOrderContract::class, new (self::OLD_CLASS)());
 	}//end testAnEagerClassThatImplementsALazyOldNameLoads()
+
+	/**
+	 * A moved class aliased eagerly loads although it implements an old name that is aliased eagerly further down.
+	 *
+	 * @return void
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState(false)]
+	public function testAnEagerClassThatImplementsALaterEagerOldNameLoads(): void {
+		spl_autoload_unregister([ClassAliasMap::class, 'autoload']);
+		(new ReflectionProperty(ClassAliasMap::class, 'autoloaderRegistered'))->setValue(null, false);
+		(new ReflectionProperty(ClassAliasMap::class, 'lazy'))->setValue(null, []);
+
+		$declare = static function (string $class): void {
+			if ($class === self::NEW_CLASS) {
+				eval('namespace OCA\\OpenRegister\\Tests\\Unit\\AppInfo\\Moved; final class E1Implementation implements \\' . self::OLD_INTERFACE . ' {}');
+			}
+		};
+		spl_autoload_register($declare);
+
+		try {
+			(new ClassAliasMap(
+				entries: [
+					self::OLD_CLASS     => ['class' => self::NEW_CLASS, 'eager' => true],
+					self::OLD_INTERFACE => ['class' => ClassAliasMapEagerOrderContract::class, 'eager' => true],
+				]
+			))->aliasClasses();
+		} finally {
+			spl_autoload_unregister($declare);
+		}
+
+		$this->assertTrue(interface_exists(self::OLD_INTERFACE, false));
+		$this->assertInstanceOf(ClassAliasMapEagerOrderContract::class, new (self::OLD_CLASS)());
+		$this->assertNotContains([ClassAliasMap::class, 'autoload'], spl_autoload_functions());
+	}//end testAnEagerClassThatImplementsALaterEagerOldNameLoads()
 }//end class
