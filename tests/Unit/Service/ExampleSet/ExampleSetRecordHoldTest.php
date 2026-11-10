@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFollowedEntry;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\RecordLedger;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -45,12 +46,14 @@ class ExampleSetRecordHoldTest extends TestCase {
 		});
 		$record = ['changes' => ['demo/c' => ['set' => [['path' => 'a', 'new' => 1]]]]];
 		$report = ['changes' => ['demo/c' => 'kept']];
-		$report = (new ExampleSetRecord($config))->hold(
-			set: 'demo',
+		$records = new ExampleSetRecord($config);
+		$held    = $records->hold(
 			followed: new ExampleSetFollowedEntry(part: 'changes', name: 'demo/c', made: $made),
-			report: $report,
-			record: $record
+			ledger: new RecordLedger(report: $report, record: $record)
 		);
+		if ($held === true) {
+			$records->write(set: 'demo', record: $record);
+		}
 
 		return [$report, $record, $writes];
 	}//end held()

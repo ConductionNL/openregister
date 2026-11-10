@@ -480,9 +480,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$held = new ExampleSetKeptObject(object: $object, row: $held->row, context: $run->objectContext());
 		$run->objects[$object['key']] = $this->refreshedOrRewritten(run: $run, held: $held);
 
-		$set  = $run->set();
-		$save = fn (array $kept) => $this->objects->record->write(set: $set, record: $kept);
-		$this->writers->rewriter->follow(record: $run->record, name: $name, written: $run->written, save: $save);
+		if (isset($run->written[$name]) === true) {
+			$rewritten = new RewrittenObject(name: $name, data: $run->written[$name]);
+			if ($this->writers->rewriter->follow(record: $run->record, object: $rewritten) === true) {
+				$this->objects->record->write(set: $run->set(), record: $run->record);
+			}
+		}
 	}//end keepObject()
 
 	/**
@@ -499,10 +502,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		}
 
 		return $this->writers->rewriter->rewrite(
-			run: ['store' => $this->objects->store, 'fragment' => $run->fragment, 'object' => $held->object, 'row' => $held->row],
-			resolved: $this->resolve(object: $held->object, scope: new ExampleSetResolveScope(context: $held->context)),
-			report: $run->report,
-			written: $run->written
+			rewrite: new KeptObjectRewrite(
+				kept: ['store' => $this->objects->store, 'fragment' => $run->fragment, 'object' => $held->object, 'row' => $held->row],
+				resolved: $this->resolve(object: $held->object, scope: new ExampleSetResolveScope(context: $held->context))
+			),
+			tally: new RewriteTally(report: $run->report, written: $run->written)
 		);
 	}//end refreshedOrRewritten()
 
@@ -803,7 +807,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return void
 	 */
 	private function hold(ExampleSetInstallRun $run, ExampleSetFollowedEntry $followed): void {
-		$run->report = $this->objects->record->hold(set: $run->set(), followed: $followed, report: $run->report, record: $run->record);
+		if ($this->objects->record->hold(followed: $followed, ledger: new RecordLedger(report: $run->report, record: $run->record)) === true) {
+			$this->objects->record->write(set: $run->set(), record: $run->record);
+		}
 	}//end hold()
 
 	/**
