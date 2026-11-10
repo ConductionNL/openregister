@@ -178,12 +178,11 @@ interface MagicTableMaintenanceInterface {
 	 * Update table indexes
 	 *
 	 * @param string $tableName The table name
-	 * @param Register $register The register context
 	 * @param Schema $schema The schema for index analysis
 	 *
 	 * @return void
 	 */
-	public function updateTableIndexes(string $tableName, Register $register, Schema $schema): void;
+	public function updateTableIndexes(string $tableName, Schema $schema): void;
 
 	/**
 	 * Drop table

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -131,13 +132,12 @@ interface MagicObjectSearchInterface {
 	 * based on register+schema combination. It supports both metadata facets (@self fields)
 	 * and schema property facets.
 	 *
-	 * @param array $query Search parameters including _facets configuration.
-	 * @param Register $register The register context for table selection.
-	 * @param Schema $schema The schema for table selection.
+	 * @param RegisterSchema $table The register and schema whose table to use.
+	 * @param array          $query Search parameters including _facets configuration.
 	 *
 	 * @return array Facet results with buckets.
 	 */
-	public function getSimpleFacetsFromRegisterSchemaTable(array $query, Register $register, Schema $schema): array;
+	public function getSimpleFacetsFromRegisterSchemaTable(RegisterSchema $table, array $query): array;
 
 	/**
 	 * Get facets using UNION ALL across multiple register+schema tables.

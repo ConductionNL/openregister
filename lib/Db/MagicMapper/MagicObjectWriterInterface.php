@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\Entity;
 
@@ -149,9 +150,8 @@ interface MagicObjectWriterInterface {
 	/**
 	 * Save objects to register+schema-specific table
 	 *
-	 * @param array $objects Array of object data to save
-	 * @param Register $register The register context for table selection
-	 * @param Schema $schema The schema for table selection
+	 * @param RegisterSchema $table   The register and schema whose table to use
+	 * @param array          $objects Array of object data to save
 	 *
 	 * @throws Exception If save operation fails
 	 *
@@ -159,7 +159,7 @@ interface MagicObjectWriterInterface {
 	 *
 	 * @psalm-return list<non-empty-string>
 	 */
-	public function saveObjectsToRegisterSchemaTable(array $objects, Register $register, Schema $schema): array;
+	public function saveObjectsToRegisterSchemaTable(RegisterSchema $table, array $objects): array;
 
 	/**
 	 * Perform bulk upsert operation on register+schema table

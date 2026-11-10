@@ -1419,9 +1419,8 @@ class ObjectsController extends Controller {
 		$listing['magicMapper'] = $magicMapper;
 
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $registerEntity,
-			schema: $schemaEntity
+			table: new RegisterSchema(register: $registerEntity, schema: $schemaEntity),
+			query: $query
 		);
 		$serializedResults = $this->serializeMagicResults(results: $results, listing: $listing);
 		$page = $this->paginateMagicResults(listing: $listing);
@@ -1849,9 +1848,8 @@ class ObjectsController extends Controller {
 	 */
 	private function magicFacets(array $listing): array {
 		return $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
-			query: $listing['query'],
-			register: $listing['resolved']['registerEntity'],
-			schema: $listing['resolved']['schemaEntity']
+			table: new RegisterSchema(register: $listing['resolved']['registerEntity'], schema: $listing['resolved']['schemaEntity']),
+			query: $listing['query']
 		);
 	}//end magicFacets()
 
@@ -2697,9 +2695,8 @@ class ObjectsController extends Controller {
 			schema: $table->resolved['schema']
 		);
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $table->resolved['registerEntity'],
-			schema: $table->resolved['schemaEntity']
+			table: new RegisterSchema(register: $table->resolved['registerEntity'], schema: $table->resolved['schemaEntity']),
+			query: $query
 		);
 		$rows = $this->renderedMagicRows(results: $results, rbac: ($query['_rbac'] ?? true));
 
