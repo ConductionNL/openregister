@@ -274,16 +274,27 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
-		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
-		$updated = $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload);
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
 
+		return self::updatedOrFail(updated: $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload));
+	}//end update()
+
+	/**
+	 * The task an update answered; an update that answers nothing is an error.
+	 *
+	 * @param array<string,mixed>|null $updated What the task service answered.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws RuntimeException When the task service answered nothing.
+	 */
+	private static function updatedOrFail(?array $updated): array {
 		if ($updated === null) {
 			throw new RuntimeException('TaskService::updateTask returned null — entity may not exist.');
 		}
 
 		return $updated;
-	}//end update()
+	}//end updatedOrFail()
 
 	/**
 	 * Delete a VTODO task linked to the OR object.
@@ -298,10 +309,27 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
-		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
+		[$calendarId, $taskUri] = $this->ownedTask(objectId: $objectId, entityId: $entityId);
 		$this->taskService->deleteTask(calendarId: $calendarId, taskUri: $taskUri);
 	}//end delete()
+
+	/**
+	 * Split an entity id and check that the task belongs to the object.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 * @param string $entityId `{calendarId}/{taskUri}`.
+	 *
+	 * @return array{0: string, 1: string} The calendar id and the task uri.
+	 *
+	 * @throws NotImplementedException When the entity id is not in that shape.
+	 * @throws \Exception             When the task does not belong to the object.
+	 */
+	private function ownedTask(string $objectId, string $entityId): array {
+		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
+		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
+
+		return [$calendarId, $taskUri];
+	}//end ownedTask()
 
 	/**
 	 * Split a composite `{calendarId}/{taskUri}` entity id into its

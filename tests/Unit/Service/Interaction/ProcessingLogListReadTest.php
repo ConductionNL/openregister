@@ -42,6 +42,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Drives ObjectService::searchObjectsPaginated() through the real ReadHistoryService
@@ -104,8 +106,7 @@ class ProcessingLogListReadTest extends TestCase {
 		return new ProcessingLogService(
 			logMapper: $logMapper,
 			vrwMapper: $vrwMapper,
-			schemaMapper: $schemaMapper,
-			registerMapper: $registerMapper,
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 			userSession: $session,
 			logger: new NullLogger()
 		);

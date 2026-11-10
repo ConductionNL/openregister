@@ -233,6 +233,17 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * indexed per-object-uuid and there is no register/schema scope for NC core sharing.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->sharesOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The shares of an object's folder: the service rows, else the local walk, else none.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function sharesOf(string $objectId): array {
 		try {
 			// Tier-2: delegate the IManager folder-walk to ShareLinkService
 			// so there is exactly ONE canonical implementation (and one
@@ -253,7 +264,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 			// AD-23 graceful-degradation contract.
 			return [];
 		}//end try
-	}//end list()
+	}//end sharesOf()
 
 	/**
 	 * The ShareLinkService rows re-mapped to the widget contract, or null to fall back to the walk.
@@ -296,19 +307,18 @@ class SharesProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
-		return $this->walkFolder(folder: $folder, shareManager: $shareManager, userId: $userId);
+		return $this->walkFolder(run: new ShareWalkRun(shareManager: $shareManager, userId: $userId), folder: $folder);
 	}//end walkObjectFolder()
 
 	/**
 	 * Collect the shares of the first MAX_NODES children, each share once.
 	 *
-	 * @param Folder $folder       The object folder.
-	 * @param object $shareManager The share manager.
-	 * @param string $userId       The current user uid.
+	 * @param ShareWalkRun $run    The share manager and the current user.
+	 * @param Folder       $folder The object folder.
 	 *
 	 * @return array<int, array<string, mixed>> The rows, in walk order.
 	 */
-	private function walkFolder(Folder $folder, object $shareManager, string $userId): array {
+	private function walkFolder(ShareWalkRun $run, Folder $folder): array {
 		$rows = [];
 		$seen = [];
 		$count = 0;
@@ -318,8 +328,9 @@ class SharesProvider extends AbstractIntegrationProvider {
 			}
 
 			$count++;
+			$run->node = $node;
 
-			foreach ($this->nodeShares(shareManager: $shareManager, userId: $userId, node: $node) as $row) {
+			foreach ($this->nodeShares(run: $run) as $row) {
 				$id = $row['id'];
 				if (isset($seen[$id]) === true) {
 					continue;
@@ -336,17 +347,15 @@ class SharesProvider extends AbstractIntegrationProvider {
 	/**
 	 * The readable shares of one node across every share type, in type order.
 	 *
-	 * @param object $shareManager The share manager.
-	 * @param string $userId       The current user uid.
-	 * @param mixed  $node         The child node.
+	 * @param ShareWalkRun $run The share manager, the current user and the child node in hand.
 	 *
 	 * @return array<int, array<string, mixed>> The normalised rows (may repeat ids).
 	 */
-	private function nodeShares(object $shareManager, string $userId, mixed $node): array {
+	private function nodeShares(ShareWalkRun $run): array {
 		$rows = [];
 		foreach (self::SHARE_TYPES as $type) {
-			foreach ($this->sharesOfType(shareManager: $shareManager, userId: $userId, type: $type, node: $node) as $share) {
-				$row = $this->normaliseShare(share: $share, userId: $userId);
+			foreach ($this->sharesOfType(run: $run, type: $type) as $share) {
+				$row = $this->normaliseShare(share: $share, userId: $run->userId);
 				if ($row !== null) {
 					$rows[] = $row;
 				}
@@ -362,16 +371,14 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * A missing provider for one type keeps the other types walking rather
 	 * than blanking the whole list.
 	 *
-	 * @param object $shareManager The share manager.
-	 * @param string $userId       The current user uid.
-	 * @param int    $type         The share type.
-	 * @param mixed  $node         The child node.
+	 * @param ShareWalkRun $run  The share manager, the current user and the child node in hand.
+	 * @param int          $type The share type.
 	 *
 	 * @return mixed The shares, as the manager returns them.
 	 */
-	private function sharesOfType(object $shareManager, string $userId, int $type, mixed $node): mixed {
+	private function sharesOfType(ShareWalkRun $run, int $type): mixed {
 		try {
-			return $shareManager->getSharesBy($userId, $type, $node);
+			return $run->shareManager->getSharesBy($run->userId, $type, $run->node);
 		} catch (Throwable $e) {
 			return [];
 		}
