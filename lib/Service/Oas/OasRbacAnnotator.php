@@ -113,6 +113,20 @@ class OasRbacAnnotator {
 
 		// Step 2: the property-level authorization, which can name groups the
 		// schema-level block does not.
+		$this->collectPropertyGroups(schema: $schema, into: $perAction);
+
+		return $this->groupsByAction(perAction: $perAction);
+	}//end extractSchemaGroups()
+
+	/**
+	 * Collect the groups the schema's property-level authorization blocks name.
+	 *
+	 * @param object                            $schema The schema.
+	 * @param array<string, array<int, string>> $into   Groups per action, added to in place.
+	 *
+	 * @return void
+	 */
+	private function collectPropertyGroups(object $schema, array &$into): void {
 		foreach (($schema->getProperties() ?? []) as $propertyDefinition) {
 			if (is_array($propertyDefinition) === false) {
 				continue;
@@ -123,16 +137,25 @@ class OasRbacAnnotator {
 				continue;
 			}
 
-			$this->collectGroups(block: $auth, into: $perAction);
-		}//end foreach
+			$this->collectGroups(block: $auth, into: $into);
+		}
+	}//end collectPropertyGroups()
 
+	/**
+	 * The collected groups per action, each once, keyed as the OAS builder reads them.
+	 *
+	 * @param array<string, array<int, string>> $perAction Groups per action.
+	 *
+	 * @return array<string, array<int, string>> The create, read, update and delete groups.
+	 */
+	private function groupsByAction(array $perAction): array {
 		return [
 			'createGroups' => array_values(array_unique($perAction['create'])),
 			'readGroups' => array_values(array_unique($perAction['read'])),
 			'updateGroups' => array_values(array_unique($perAction['update'])),
 			'deleteGroups' => array_values(array_unique($perAction['delete'])),
 		];
-	}//end extractSchemaGroups()
+	}//end groupsByAction()
 
 	/**
 	 * Add one authorization block's groups to the per-action lists.
