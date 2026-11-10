@@ -9,6 +9,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -110,12 +113,13 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 		$this->calls = [];
 		$this->world = $scenario;
 
+		$query  = new ListQuery(limit: ($scenario['limit'] ?? ListQuery::UNBOUNDED), offset: ($scenario['offset'] ?? 0));
 		$result = $this->handler()->validateAndSaveObjectsBySchema(
-			registerId: 7,
-			schemaId: 9,
-			saveCallback: $this->saveCallback(kind: ($scenario['callback'] ?? 'bulk')),
-			limit: ($scenario['limit'] ?? null),
-			offset: ($scenario['offset'] ?? 0)
+			revalidation: new SchemaRevalidation(
+				table: new RegisterSchemaRef(register: 7, schema: 9),
+				query: $query,
+				saveCallback: $this->saveCallback(kind: ($scenario['callback'] ?? 'bulk'))
+			)
 		);
 
 		$calls = $this->typed(value: $this->calls);

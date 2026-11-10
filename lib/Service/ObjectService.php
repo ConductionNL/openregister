@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
@@ -7769,11 +7770,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function validateAndSaveTable(RegisterSchemaRef $table, ListQuery $query): array
     {
         return $this->validationHandler->validateAndSaveObjectsBySchema(
-            registerId: (int) $table->register,
-            schemaId: (int) $table->schema,
-            saveCallback: [$this, 'saveObject'],
-            limit: $query->limitOrNull(),
-            offset: ($query->offset ?? 0)
+            revalidation: new SchemaRevalidation(table: $table, query: $query, saveCallback: [$this, 'saveObject'])
         );
     }//end validateAndSaveTable()
 

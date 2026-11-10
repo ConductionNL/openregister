@@ -22,8 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use PHPUnit\Framework\Constraint\Callback;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -48,11 +50,24 @@ class ObjectServiceValidateAndSaveBySchemaTest extends TestCase {
 		return $service;
 	}
 
+	/**
+	 * Matches the revalidation the service hands to the handler: register 3, schema 9, its own saveObject.
+	 *
+	 * @param ObjectService $service The service whose saveObject is the callback.
+	 * @param int|null      $limit   The forwarded limit, null for all objects.
+	 * @param int           $offset  The forwarded offset.
+	 *
+	 * @return Callback
+	 */
+	private function forwarded(ObjectService $service, ?int $limit, int $offset): Callback {
+		return $this->callback(static fn (SchemaRevalidation $r): bool => [$r->table->register, $r->table->schema, $r->saveCallback, $r->query->limitOrNull(), ($r->query->offset ?? 0)] === [3, 9, [$service, 'saveObject'], $limit, $offset]);
+	}
+
 	public function testWithoutALimitEveryObjectIsProcessedFromTheStart(): void {
 		$handler = $this->createMock(ValidationHandler::class);
 		$service = $this->service($handler);
 		$handler->expects($this->once())->method('validateAndSaveObjectsBySchema')
-			->with(3, 9, [$service, 'saveObject'], null, 0)
+			->with($this->forwarded($service, null, 0))
 			->willReturn(['processed' => 0]);
 
 		$this->assertSame(['processed' => 0], $service->validateAndSaveObjectsBySchema(3, 9));
@@ -62,7 +77,7 @@ class ObjectServiceValidateAndSaveBySchemaTest extends TestCase {
 		$handler = $this->createMock(ValidationHandler::class);
 		$service = $this->service($handler);
 		$handler->expects($this->once())->method('validateAndSaveObjectsBySchema')
-			->with(3, 9, [$service, 'saveObject'], 50, 100)
+			->with($this->forwarded($service, 50, 100))
 			->willReturn(['processed' => 50]);
 
 		$this->assertSame(['processed' => 50], $service->validateAndSaveObjectsBySchema(3, 9, 50, 100));
@@ -72,7 +87,7 @@ class ObjectServiceValidateAndSaveBySchemaTest extends TestCase {
 		$handler = $this->createMock(ValidationHandler::class);
 		$service = $this->service($handler);
 		$handler->expects($this->once())->method('validateAndSaveObjectsBySchema')
-			->with(3, 9, [$service, 'saveObject'], 0, 0)
+			->with($this->forwarded($service, 0, 0))
 			->willReturn([]);
 
 		$service->validateAndSaveObjectsBySchema(3, 9, 0);
