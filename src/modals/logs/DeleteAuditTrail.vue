@@ -59,15 +59,17 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
+import { deletionAnswer } from './deletionAnswer.js'
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 
 /**
- * Ask the server to delete an audit trail entry and read its answer.
+ * Ask the server to delete an audit trail entry; a refusal is thrown as an
+ * error carrying the server's reason.
  *
  * @param {number|string} id The entry id
- * @return {Promise<object>} The answer
+ * @return {Promise<void>}
  */
 async function requestDeletion(id) {
 	const response = await fetch(
@@ -76,7 +78,7 @@ async function requestDeletion(id) {
 			method: 'DELETE',
 		},
 	)
-	return response.json()
+	await deletionAnswer(response)
 }
 
 /**
@@ -108,19 +110,24 @@ export default {
 			this.loading = true
 
 			try {
-				const result = await requestDeletion(
-					auditTrailStore.auditTrailItem.id,
-				)
-				if (!result.success) {
-					throw new Error(result.error || 'Deletion failed')
-				}
+				await requestDeletion(auditTrailStore.auditTrailItem.id)
 				await this.showDeleted()
 			} catch (error) {
-				this.success = false
-				this.error = error.message || deletionFailedText()
+				this.showDeleteFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Say why the deletion failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showDeleteFailure(error) {
+			this.success = false
+			this.error = error.message || deletionFailedText()
 		},
 
 		/**

@@ -74,6 +74,7 @@ import { NcNoteCard } from '@nextcloud/vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
+import { deletionAnswer } from './deletionAnswer.js'
 
 export default {
 	name: 'ClearAuditTrails',
@@ -229,11 +230,7 @@ export default {
 					headers: { 'Content-Type': 'application/json' },
 				},
 			)
-			const result = await response.json()
-			if (!result.success) {
-				throw new Error(result.error || 'Deletion failed')
-			}
-			return result
+			return deletionAnswer(response)
 		},
 
 		/**
