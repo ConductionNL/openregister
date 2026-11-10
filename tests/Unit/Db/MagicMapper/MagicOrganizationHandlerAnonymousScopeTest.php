@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IUserManager;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCP\IAppConfig;
@@ -62,8 +64,7 @@ class MagicOrganizationHandlerAnonymousScopeTest extends TestCase {
 		$container->method('get')->willReturn($organisationService);
 
 		$this->handler = new MagicOrganizationHandler(
-			$userSession,
-			$this->createMock(IGroupManager::class),
+			new MagicMapperIdentity($userSession, $this->createMock(IGroupManager::class), $this->createMock(IUserManager::class)),
 			$appConfig,
 			$container,
 			$this->createMock(LoggerInterface::class)

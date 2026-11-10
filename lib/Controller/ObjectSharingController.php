@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -106,18 +107,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function scope(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$block = ($object->getAuthorization() ?? []);
-		$scope = null;
-		if (is_array($block) === true) {
-			$scope = ($block['scope'] ?? null);
-		}
-
-		return new JSONResponse(['scope' => $scope]);
+		return $this->scopeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end scope()
 
 	/**
@@ -133,18 +123,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function setScope(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$scope = $this->request->getParam('scope');
-		if (is_string($scope) === false) {
-			return new JSONResponse(['message' => 'A scope is required'], Http::STATUS_BAD_REQUEST);
-		}
-
-		$store = fn (): array => ['scope' => ($this->storeScope(object: $object, scope: $scope)['scope'] ?? null)];
-		return $this->endpoint->answer(operation: $store, context: 'setScope', validates: true);
+		return $this->setScopeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end setScope()
 
 	/**
@@ -160,13 +139,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function shares(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$list = fn (): array => ['results' => $this->services->sharing->listGrants(object: $object)];
-		return $this->endpoint->answer(operation: $list, context: 'shares');
+		return $this->sharesOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end shares()
 
 	/**
@@ -182,17 +155,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function createShare(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$type = (string)($this->request->getParam('type') ?? 'user');
-		$shareWith = (string)($this->request->getParam('shareWith') ?? '');
-		$permissions = $this->requestedPermissions();
-
-		$grant = fn (): array => $this->services->sharing->grant(object: $object, type: $type, shareWith: $shareWith, permissions: $permissions);
-		return $this->endpoint->answer(operation: $grant, context: 'createShare', validates: true, status: Http::STATUS_CREATED);
+		return $this->createShareOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end createShare()
 
 	/**
@@ -208,13 +171,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function createLink(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$link = fn (): array => $this->linkTo(object: $object);
-		return $this->endpoint->answer(operation: $link, context: 'createLink', validates: true, status: Http::STATUS_CREATED);
+		return $this->createLinkOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end createLink()
 
 	/**
@@ -230,14 +187,158 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function inviteByEmail(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
+		return $this->inviteByEmailOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end inviteByEmail()
+
+	/**
+	 * Read one object's effective scope.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The scope.
+	 */
+	private function scopeOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$block = ($object->getAuthorization() ?? []);
+		$scope = null;
+		if (is_array($block) === true) {
+			$scope = ($block['scope'] ?? null);
+		}
+
+		return new JSONResponse(['scope' => $scope]);
+	}//end scopeOn()
+
+	/**
+	 * Set one object's scope.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The stored block, or an error.
+	 */
+	private function setScopeOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$scope = $this->request->getParam('scope');
+		if (is_string($scope) === false) {
+			return new JSONResponse(['message' => 'A scope is required'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$store = fn (): array => ['scope' => ($this->storeScope(object: $object, scope: $scope)['scope'] ?? null)];
+		return $this->endpoint->answer(operation: $store, context: 'setScope', validates: true);
+	}//end setScopeOn()
+
+	/**
+	 * List the grants on one object.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The grants, or an error.
+	 */
+	private function sharesOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$list = fn (): array => ['results' => $this->services->sharing->listGrants(object: $object)];
+		return $this->endpoint->answer(operation: $list, context: 'shares');
+	}//end sharesOn()
+
+	/**
+	 * Grant one principal access to one object.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The created grant, or an error.
+	 */
+	private function createShareOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$type = (string)($this->request->getParam('type') ?? 'user');
+		$shareWith = (string)($this->request->getParam('shareWith') ?? '');
+		$permissions = $this->requestedPermissions();
+
+		$grant = fn (): array => $this->services->sharing->grant(object: $object, type: $type, shareWith: $shareWith, permissions: $permissions);
+		return $this->endpoint->answer(operation: $grant, context: 'createShare', validates: true, status: Http::STATUS_CREATED);
+	}//end createShareOn()
+
+	/**
+	 * Create a tokenised link to an object.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The created link, or an error.
+	 */
+	private function createLinkOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$link = fn (): array => $this->linkTo(object: $object);
+		return $this->endpoint->answer(operation: $link, context: 'createLink', validates: true, status: Http::STATUS_CREATED);
+	}//end createLinkOn()
+
+	/**
+	 * Invite an email address to an object.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The created invitation, or an error.
+	 */
+	private function inviteByEmailOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		$invite = fn (): array => $this->invitationTo(object: $object);
 		return $this->endpoint->answer(operation: $invite, context: 'inviteByEmail', validates: true, status: Http::STATUS_CREATED);
-	}//end inviteByEmail()
+	}//end inviteByEmailOn()
+
+	/**
+	 * Revoke one grant.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 * @param string $shareId The grant to revoke.
+	 *
+	 * @return JSONResponse Empty on success, or an error.
+	 */
+	private function destroyShareOn(ObjectRef $ref, string $shareId): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$revoke = function () use ($object, $shareId): array {
+			$this->services->sharing->revoke(object: $object, shareId: $shareId);
+			return [];
+		};
+		return $this->endpoint->answer(operation: $revoke, context: 'destroyShare', validates: true, status: Http::STATUS_NO_CONTENT);
+	}//end destroyShareOn()
+
+	/**
+	 * Resolve the record a route names through the RBAC boundary.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the response to return.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
+		return $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end resolved()
 
 	/**
 	 * The requested permission bitmask, defaulting to READ.
@@ -286,16 +387,7 @@ class ObjectSharingController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroyShare(string $register, string $schema, string $id, string $shareId): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$revoke = function () use ($object, $shareId): array {
-			$this->services->sharing->revoke(object: $object, shareId: $shareId);
-			return [];
-		};
-		return $this->endpoint->answer(operation: $revoke, context: 'destroyShare', validates: true, status: Http::STATUS_NO_CONTENT);
+		return $this->destroyShareOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id), shareId: $shareId);
 	}//end destroyShare()
 
 	/**

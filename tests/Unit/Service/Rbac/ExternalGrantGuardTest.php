@@ -30,6 +30,7 @@ namespace Unit\Service\Rbac;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Rbac\ConstraintPoint;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use PHPUnit\Framework\TestCase;
@@ -169,7 +170,7 @@ final class ExternalGrantGuardTest extends TestCase {
 		$before = $object->getObject();
 
 		// The grant has ended: GrantConstraints stops it answering here.
-		$narrowed = (new GrantConstraints())->apply($lapsed, ['register' => '1', 'schema' => '2'], $now);
+		$narrowed = (new GrantConstraints())->applyAt($lapsed, new ConstraintPoint(['register' => '1', 'schema' => '2'], $now));
 		self::assertSame(['redacteuren'], $narrowed['read']);
 
 		// AND THE WORK IS EXACTLY WHERE IT WAS, still attributed. The two were

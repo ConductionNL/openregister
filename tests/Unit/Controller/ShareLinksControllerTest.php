@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ShareLinksController;
+use OCA\OpenRegister\Controller\Support\ShareLinksControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ShareLinkService;
@@ -84,10 +85,11 @@ class ShareLinksControllerTest extends TestCase {
 		$this->objectService->method('setObject')->willReturnSelf();
 
 		$this->controller = new ShareLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService
+			new ShareLinksControllerServices(
+				$this->service,
+				$this->objectService
+			)
 		);
 	}//end setUp()
 

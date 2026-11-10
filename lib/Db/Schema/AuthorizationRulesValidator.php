@@ -111,42 +111,42 @@ final class AuthorizationRulesValidator {
 		}
 
 		foreach ($authorization as $action => $rules) {
-			if ($this->controls->isControlKey(action: (string)$action, value: $rules, context: $context) === true) {
+			$entry = new AuthorizationEntry(key: $action, value: $rules, context: $context);
+			if ($this->controls->isControlKey(entry: $entry) === true) {
 				continue;
 			}
 
-			$this->validateActionRules(action: $action, rules: $rules, context: $context);
+			$this->validateActionRules(entry: $entry);
 		}
 	}//end validateAuthorizationRules()
 
 	/**
 	 * Refuse an unknown action, rules that are no list, or a malformed rule.
 	 *
-	 * @param int|string $action  The action.
-	 * @param mixed      $rules   The rules listed for it.
-	 * @param string     $context Human-readable location, used in the refusal message.
+	 * @param AuthorizationEntry $entry The action, the rules listed for it and the human-readable
+	 *                                  location used in the refusal message.
 	 *
 	 * @throws InvalidAuthorizationRuleException If the action or a rule is invalid
 	 *
 	 * @return void
 	 */
-	private function validateActionRules(int|string $action, mixed $rules, string $context): void {
-		if (in_array($action, $this->validActions) === false) {
+	private function validateActionRules(AuthorizationEntry $entry): void {
+		if (in_array($entry->key, $this->validActions) === false) {
 			$validList = implode(', ', $this->validActions);
-			$msg = "Invalid authorization action '{$action}' in {$context}. Must be one of: {$validList}";
+			$msg = "Invalid authorization action '{$entry->key}' in {$entry->context}. Must be one of: {$validList}";
 			throw new InvalidAuthorizationRuleException(message: $msg);
 		}
 
 		// Validate rules is an array.
-		if (is_array($rules) === false) {
+		if (is_array($entry->value) === false) {
 			throw new InvalidAuthorizationRuleException(
-				message: "Authorization rules for action '{$action}' in {$context} must be an array"
+				message: "Authorization rules for {$entry->where()} must be an array"
 			);
 		}
 
 		// Validate each rule is either a string (simple) or a valid conditional object.
-		foreach ($rules as $rule) {
-			$this->validateAuthorizationRule(rule: $rule, action: $action, context: $context);
+		foreach ($entry->value as $rule) {
+			$this->validateAuthorizationRule(rule: $rule, where: $entry->where());
 		}
 	}//end validateActionRules()
 
@@ -202,29 +202,28 @@ final class AuthorizationRulesValidator {
 	 * Validate a single authorization rule: a group id, or a conditional object.
 	 *
 	 * @param mixed  $rule    The rule to validate
-	 * @param string $action  The action this rule is for (for error messages)
-	 * @param string $context Context for error messages
+	 * @param string $where   The action this rule is for and its context (for error messages)
 	 *
 	 * @throws InvalidAuthorizationRuleException If the rule is invalid
 	 *
 	 * @return void
 	 */
-	private function validateAuthorizationRule(mixed $rule, string $action, string $context): void {
+	private function validateAuthorizationRule(mixed $rule, string $where): void {
 		// Simple rule: non-empty string (group name).
 		if (is_string($rule) === true) {
-			$this->validateGroupRule(rule: $rule, action: $action, context: $context);
+			$this->validateGroupRule(rule: $rule, where: $where);
 			return;
 		}
 
 		// Conditional rule: array with 'group' key.
 		if (is_array($rule) === true) {
-			$this->validateConditionalRule(rule: $rule, action: $action, context: $context);
+			$this->validateConditionalRule(rule: $rule, where: $where);
 			return;
 		}
 
 		// Invalid rule type.
 		throw new InvalidAuthorizationRuleException(
-			message: "Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
+			message: "Authorization rule for {$where} must be a string or conditional object"
 		);
 	}//end validateAuthorizationRule()
 
@@ -232,17 +231,16 @@ final class AuthorizationRulesValidator {
 	 * Refuse a simple rule that is an empty group id.
 	 *
 	 * @param string $rule    The group id.
-	 * @param string $action  The action this rule is for (for error messages)
-	 * @param string $context Context for error messages
+	 * @param string $where   The action this rule is for and its context (for error messages)
 	 *
 	 * @throws InvalidAuthorizationRuleException If the group id is empty
 	 *
 	 * @return void
 	 */
-	private function validateGroupRule(string $rule, string $action, string $context): void {
+	private function validateGroupRule(string $rule, string $where): void {
 		if (trim($rule) === '') {
 			throw new InvalidAuthorizationRuleException(
-				message: "Group ID in authorization for action '{$action}' in {$context} must be a non-empty string"
+				message: "Group ID in authorization for {$where} must be a non-empty string"
 			);
 		}
 	}//end validateGroupRule()
@@ -251,51 +249,49 @@ final class AuthorizationRulesValidator {
 	 * Validate a conditional rule: its group, its match and its cross-organisation marker.
 	 *
 	 * @param array  $rule    The rule.
-	 * @param string $action  The action this rule is for (for error messages)
-	 * @param string $context Context for error messages
+	 * @param string $where   The action this rule is for and its context (for error messages)
 	 *
 	 * @throws InvalidAuthorizationRuleException If the rule is invalid
 	 *
 	 * @return void
 	 */
-	private function validateConditionalRule(array $rule, string $action, string $context): void {
-		$this->validateRuleGroup(rule: $rule, action: $action, context: $context);
+	private function validateConditionalRule(array $rule, string $where): void {
+		$this->validateRuleGroup(rule: $rule, where: $where);
 
 		// Validate 'match' key if present.
 		if (isset($rule['match']) === true) {
 			if (is_array($rule['match']) === false) {
 				throw new InvalidAuthorizationRuleException(
-					message: "Conditional authorization 'match' for action '{$action}' in {$context} must be an array"
+					message: "Conditional authorization 'match' for {$where} must be an array"
 				);
 			}
 
-			$this->validateMatchOperators(match: $rule['match'], where: "action '{$action}' in {$context}");
+			$this->validateMatchOperators(match: $rule['match'], where: $where);
 		}
 
-		$this->validateCrossOrganisationMarker(rule: $rule, where: "for action '{$action}' in {$context}");
+		$this->validateCrossOrganisationMarker(rule: $rule, where: "for {$where}");
 	}//end validateConditionalRule()
 
 	/**
 	 * Refuse a conditional rule without a non-empty string `group`.
 	 *
 	 * @param array  $rule    The rule.
-	 * @param string $action  The action this rule is for (for error messages)
-	 * @param string $context Context for error messages
+	 * @param string $where   The action this rule is for and its context (for error messages)
 	 *
 	 * @throws InvalidAuthorizationRuleException If the group is missing or empty
 	 *
 	 * @return void
 	 */
-	private function validateRuleGroup(array $rule, string $action, string $context): void {
+	private function validateRuleGroup(array $rule, string $where): void {
 		if (isset($rule['group']) === false) {
 			throw new InvalidAuthorizationRuleException(
-				message: "Conditional authorization rule for action '{$action}' in {$context} must have a 'group' key"
+				message: "Conditional authorization rule for {$where} must have a 'group' key"
 			);
 		}
 
 		if (is_string($rule['group']) === false || trim($rule['group']) === '') {
 			throw new InvalidAuthorizationRuleException(
-				message: "Conditional authorization 'group' for action '{$action}' in {$context} must be a non-empty string"
+				message: "Conditional authorization 'group' for {$where} must be a non-empty string"
 			);
 		}
 	}//end validateRuleGroup()
@@ -353,7 +349,7 @@ final class AuthorizationRulesValidator {
 	private function validatePropertyOperators(array $operators, string $where): void {
 		foreach ($operators as $operator => $operand) {
 			if (is_string($operator) === true && str_starts_with($operator, '$') === true) {
-				$this->validateMatchOperator(operator: $operator, operand: $operand, where: $where);
+				$this->validateMatchOperator(operator: new AuthorizationEntry(key: $operator, value: $operand, context: $where));
 			}
 		}
 	}//end validatePropertyOperators()
@@ -361,24 +357,24 @@ final class AuthorizationRulesValidator {
 	/**
 	 * Refuse an operator outside Schema::MATCH_OPERATORS, and a `$in`/`$nin` operand that is no list.
 	 *
-	 * @param string $operator The operator.
-	 * @param mixed  $operand  Its operand.
-	 * @param string $where    Where it sits, for the refusal message.
+	 * @param AuthorizationEntry $operator The operator, its operand and where it sits, for the refusal message.
 	 *
 	 * @throws InvalidAuthorizationRuleException If the operator is unsupported or its operand malformed
 	 *
 	 * @return void
 	 */
-	private function validateMatchOperator(string $operator, mixed $operand, string $where): void {
-		$this->assertSupportedOperator(operator: $operator, where: $where);
+	private function validateMatchOperator(AuthorizationEntry $operator): void {
+		$name    = (string)$operator->key;
+		$operand = $operator->value;
+		$this->assertSupportedOperator(operator: $name, where: $operator->context);
 
-		if ($this->needsListOperand(operator: $operator, operand: $operand) === false) {
+		if ($this->needsListOperand(operator: $name, operand: $operand) === false) {
 			return;
 		}
 
 		if (is_array($operand) === false || array_is_list($operand) === false) {
 			throw new InvalidAuthorizationRuleException(
-				message: "Authorization match for {$where} needs a list as the '{$operator}' operand"
+				message: "Authorization match for {$operator->context} needs a list as the '{$name}' operand"
 			);
 		}
 	}//end validateMatchOperator()

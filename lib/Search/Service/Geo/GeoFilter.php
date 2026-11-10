@@ -136,18 +136,26 @@ class GeoFilter {
 			throw new InvalidArgumentException('near coordinates and radius MUST be numeric');
 		}
 
-		$r = (float)$radius;
-		if ($r <= 0.0) {
+		return self::near(circle: ['lon' => (float)$lon, 'lat' => (float)$lat, 'radius' => (float)$radius], property: $property);
+	}//end fromNearAndRadius()
+
+	/**
+	 * Build a point + radius filter from a numeric circle.
+	 *
+	 * @param array{lon: float, lat: float, radius: float} $circle   Center and radius in meters.
+	 * @param ?string                                      $property Property hint.
+	 *
+	 * @return self
+	 *
+	 * @throws InvalidArgumentException When the radius is not positive.
+	 */
+	private static function near(array $circle, ?string $property): self {
+		if ($circle['radius'] <= 0.0) {
 			throw new InvalidArgumentException('radius MUST be greater than 0 meters');
 		}
 
-		return new self(
-			self::TYPE_NEAR,
-			['lon' => (float)$lon, 'lat' => (float)$lat, 'radius' => $r],
-			$property
-		);
-
-	}//end fromNearAndRadius()
+		return new self(self::TYPE_NEAR, $circle, $property);
+	}//end near()
 
 	/**
 	 * Build a within-polygon filter from a GeoJSON geometry.

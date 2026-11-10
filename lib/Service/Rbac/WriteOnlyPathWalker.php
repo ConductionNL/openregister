@@ -78,8 +78,12 @@ final class WriteOnlyPathWalker {
 	 */
 	public function strip(string $path, array $object): array {
 		$object = $this->stripMirror(path: $path, object: $object);
+		if ($this->exists(path: $path, object: $object) === false) {
+			return $object;
+		}
 
-		return $this->stripBody(segments: explode('.', $path), node: $object, path: $path);
+		$this->logPath(message: '[PropertyRbacHandler] Stripped write-only path', path: $path);
+		return $this->stripBody(segments: explode('.', $path), node: $object);
 	}//end strip()
 
 	/**
@@ -154,17 +158,32 @@ final class WriteOnlyPathWalker {
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
 	public function restore(string $path, array $prepared, mixed $value): array {
-		$segments = explode('.', $path);
+		return $this->restoreValue(prepared: $prepared, stored: new WriteOnlyValue(path: $path, value: $value));
+	}//end restore()
+
+	/**
+	 * Write one stored write-only value back into the payload, creating absent parents.
+	 *
+	 * @param array          $prepared The payload to restore into.
+	 * @param WriteOnlyValue $stored   The declared path and the stored value.
+	 *
+	 * @return array The payload with the value restored.
+	 */
+	private function restoreValue(array $prepared, WriteOnlyValue $stored): array {
+		$segments = explode('.', $stored->path);
 		if ($this->canHold(parents: array_slice($segments, 0, -1), node: $prepared) === false) {
 			// The client sent a scalar where this path expects a sub-tree.
 			return $prepared;
 		}
 
 		// Deliberately never logs the value — only that a restore happened.
-		$this->logPath(message: '[PropertyRbacHandler] Preserved omitted write-only value on save', path: $path);
+		$this->logPath(message: '[PropertyRbacHandler] Preserved omitted write-only value on save', path: $stored->path);
 
-		return $this->setPath(segments: $segments, node: $prepared, value: $value);
-	}//end restore()
+		$slot = &$this->slotAt(node: $prepared, segments: $segments);
+		$slot = $stored->value;
+		unset($slot);
+		return $prepared;
+	}//end restoreValue()
 
 	/**
 	 * Shape 2: the flattened relations mirror. Remove an exact dot-path key and every key beneath it.
@@ -190,32 +209,22 @@ final class WriteOnlyPathWalker {
 	/**
 	 * Shape 1: the nested object body. Descend the segments and unset the final one.
 	 *
-	 * Bails out the moment the path stops resolving — a declared path that is absent
-	 * from this object is normal (the value was never set) and must not create keys
-	 * on the way down.
+	 * Only called once exists() said the whole path resolves, so it never creates
+	 * keys on the way down.
 	 *
 	 * @param array<int, string> $segments The remaining path segments, at least one.
 	 * @param array              $node     The sub-tree the first segment is read from.
-	 * @param string             $path     The whole declared path, for the log.
 	 *
 	 * @return array The sub-tree with the leaf removed.
 	 */
-	private function stripBody(array $segments, array $node, string $path): array {
+	private function stripBody(array $segments, array $node): array {
 		$head = array_shift($segments);
-		if (array_key_exists($head, $node) === false) {
-			return $node;
-		}
-
 		if ($segments === []) {
 			unset($node[$head]);
-			$this->logPath(message: '[PropertyRbacHandler] Stripped write-only path', path: $path);
 			return $node;
 		}
 
-		if (is_array($node[$head]) === true) {
-			$node[$head] = $this->stripBody(segments: $segments, node: $node[$head], path: $path);
-		}
-
+		$node[$head] = $this->stripBody(segments: $segments, node: $node[$head]);
 		return $node;
 	}//end stripBody()
 
@@ -239,25 +248,24 @@ final class WriteOnlyPathWalker {
 	}//end canHold()
 
 	/**
-	 * Descend the segments, creating an absent or null parent, and set the leaf.
+	 * Descend the segments, creating an absent or null parent, and hand back the leaf's slot.
 	 *
 	 * Only called once canHold() said every parent can hold a child.
 	 *
-	 * @param array<int, string> $segments The remaining path segments, at least one.
-	 * @param array              $node     The sub-tree the first segment is written into.
-	 * @param mixed              $value    The value for the leaf.
+	 * @param array              $node     The payload the slot is found or created in.
+	 * @param array<int, string> $segments The path segments, at least one.
 	 *
-	 * @return array The sub-tree with the leaf set.
+	 * @return mixed A reference to the leaf's slot.
 	 */
-	private function setPath(array $segments, array $node, mixed $value): array {
-		$head = array_shift($segments);
-		if ($segments !== []) {
-			$value = $this->setPath(segments: $segments, node: ($node[$head] ?? []), value: $value);
+	private function &slotAt(array &$node, array $segments): mixed {
+		$cursor = &$node;
+		foreach ($segments as $segment) {
+			$cursor[$segment] = ($cursor[$segment] ?? []);
+			$cursor = &$cursor[$segment];
 		}
 
-		$node[$head] = $value;
-		return $node;
-	}//end setPath()
+		return $cursor;
+	}//end slotAt()
 
 	/**
 	 * Debug-log one path; never the value at it.

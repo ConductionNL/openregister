@@ -129,10 +129,10 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		$subjects = $this->subjectContexts(tasks: $tasks);
 		$openBlockers = $this->openBlockers(tasks: $tasks);
 
-		$now = $this->temporal->now();
+		$listing = new InboxListing(subjects: $subjects, now: $this->temporal->now(), openBlockers: $openBlockers);
 		$results = [];
 		foreach ($tasks as $task) {
-			$results[] = $this->row(task: $task, subjects: $subjects, now: $now, openBlockers: $openBlockers);
+			$results[] = $this->rowIn(task: $task, listing: $listing);
 		}
 
 		return $page->envelope(results: $results, total: $total);
@@ -156,34 +156,71 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function row(TaskInterface $task, array $subjects, \DateTimeInterface $now, ?array $openBlockers = null): array {
+		$openBlockers ??= $this->openBlockers(tasks: [$task]);
+
+		return $this->rowIn(task: $task, listing: new InboxListing(subjects: $subjects, now: $now, openBlockers: $openBlockers));
+	}//end row()
+
+	/**
+	 * One task's row in a listing, with the derived fields.
+	 *
+	 * @param TaskInterface $task The task.
+	 * @param InboxListing $listing The subjects, moment and open blockers the
+	 *                              listing shares.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function rowIn(TaskInterface $task, InboxListing $listing): array {
 		$row = $task->jsonSerialize();
 
 		// Derived, never stored: blocked while the named blocker is open.
 		$blockedBy = (string)$task->getBlockedBy();
-		$openBlockers ??= $this->openBlockers(tasks: [$task]);
-		$row['blocked'] = ($blockedBy !== '' && in_array($blockedBy, $openBlockers, true) === true);
-
-		$subject = null;
-		$objectUuid = (string)$task->getObjectUuid();
-		if ($objectUuid !== '' && array_key_exists($objectUuid, $subjects) === true) {
-			$subject = $subjects[$objectUuid];
-		}
-
-		$row['subject'] = $subject;
-		$row['displayTitle'] = $this->displayTitle(task: $task, subject: $subject);
-		// Derived, never stored: the projection is attached to the ROW, and
-		// the row alone.
-		$projection = $this->temporal->project(task: $task, now: $now);
-		$row['overdue'] = $projection['overdue'];
-		$row['daysUntilDue'] = $projection['daysUntilDue'];
-		$row['daysOverdue'] = $projection['daysOverdue'];
-
+		$row['blocked'] = ($blockedBy !== '' && in_array($blockedBy, $listing->openBlockers, true) === true);
+		$row['subject'] = self::subjectIn(task: $task, subjects: $listing->subjects);
+		$row['displayTitle'] = $this->displayTitle(task: $task, subject: $row['subject']);
+		$row = array_merge($row, $this->dueFields(task: $task, now: $listing->now));
 		if ((string)$task->getPerformerType() === TaskInterface::PERFORMER_EXTERNAL) {
 			$row['delivery'] = $this->deliveryState(task: $task);
 		}
 
 		return $row;
-	}//end row()
+	}//end rowIn()
+
+	/**
+	 * The subject context of a task, when the listing read one.
+	 *
+	 * @param TaskInterface $task The task.
+	 * @param array<string, mixed> $subjects Subject contexts by object uuid.
+	 *
+	 * @return mixed The subject context, or null.
+	 */
+	private static function subjectIn(TaskInterface $task, array $subjects): mixed {
+		$objectUuid = (string)$task->getObjectUuid();
+		if ($objectUuid !== '' && array_key_exists($objectUuid, $subjects) === true) {
+			return $subjects[$objectUuid];
+		}
+
+		return null;
+	}//end subjectIn()
+
+	/**
+	 * The due fields of a row. Derived, never stored: the projection is
+	 * attached to the ROW, and the row alone.
+	 *
+	 * @param TaskInterface $task The task.
+	 * @param \DateTimeInterface $now The moment to derive them at.
+	 *
+	 * @return array{overdue: mixed, daysUntilDue: mixed, daysOverdue: mixed} The fields.
+	 */
+	private function dueFields(TaskInterface $task, \DateTimeInterface $now): array {
+		$projection = $this->temporal->project(task: $task, now: $now);
+
+		return [
+			'overdue' => $projection['overdue'],
+			'daysUntilDue' => $projection['daysUntilDue'],
+			'daysOverdue' => $projection['daysOverdue'],
+		];
+	}//end dueFields()
 
 	/**
 	 * The delivery state of an external task's ask, for its row.

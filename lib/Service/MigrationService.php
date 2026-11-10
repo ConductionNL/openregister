@@ -146,12 +146,7 @@ class MigrationService implements MigrationServiceInterface {
 	 *
 	 * @spec exclude Deprecated no-op stub; blob storage retired, returns a static report pointing to BlobMigrationJob.
 	 */
-	public function migrateToMagicTable(
-		Register $register,
-		Schema $schema,
-		int $batchSize = 100,
-		bool $dryRun = false,
-	): array {
+	public function migrateToMagicTable(Register $register, Schema $schema, int $batchSize = 100, bool $dryRun = false): array {
 		return $this->retiredReport(direction: 'to-magic', dryRun: $dryRun);
 	}//end migrateToMagicTable()
 
@@ -172,12 +167,7 @@ class MigrationService implements MigrationServiceInterface {
 	 *
 	 * @spec exclude Deprecated no-op stub; reverse migration to retired blob storage is no longer supported.
 	 */
-	public function migrateToBlobStorage(
-		Register $register,
-		Schema $schema,
-		int $batchSize = 100,
-		bool $dryRun = false,
-	): array {
+	public function migrateToBlobStorage(Register $register, Schema $schema, int $batchSize = 100, bool $dryRun = false): array {
 		return $this->retiredReport(direction: 'to-blob', dryRun: $dryRun);
 	}//end migrateToBlobStorage()
 

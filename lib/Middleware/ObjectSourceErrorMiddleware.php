@@ -73,8 +73,20 @@ class ObjectSourceErrorMiddleware extends Middleware {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
-		$where = $controller::class . '::' . $methodName;
+		return $this->renderOrRethrow(exception: $exception, where: $controller::class . '::' . $methodName);
+	}//end afterException()
 
+	/**
+	 * Render an external-database failure; rethrow anything else.
+	 *
+	 * @param Exception $exception The exception that was thrown.
+	 * @param string    $where     The controller and method that were executing, as `Class::method`.
+	 *
+	 * @return JSONResponse The 4xx/5xx response for external-database failures.
+	 *
+	 * @throws Exception Rethrows every exception that is not an external-database failure.
+	 */
+	private function renderOrRethrow(Exception $exception, string $where): JSONResponse {
 		// Sanitized write failures (constraint violations etc., dbal-virtual-
 		// registers-crud): render the carried 4xx/5xx status; log the wrapped
 		// driver exception server-side.
@@ -87,7 +99,7 @@ class ObjectSourceErrorMiddleware extends Middleware {
 		}
 
 		return $this->render(exception: $exception, where: $where);
-	}//end afterException()
+	}//end renderOrRethrow()
 
 	/**
 	 * Log an external-database failure and render its sanitized message with its status.

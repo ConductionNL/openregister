@@ -19,6 +19,7 @@ use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Tool\AbstractTool;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
@@ -233,11 +234,11 @@ class ToolDispatchGoldenTest extends TestCase
         }
 
         return match ($kind) {
-            'schema'      => new SchemaTool($session, $logger, $mock),
-            'register'    => new RegisterTool($session, $logger, $mock),
-            'objects'     => new ObjectsTool($session, $logger, $mock),
-            'agent'       => new AgentTool($mock, $session, $logger),
-            'application' => new ApplicationTool($mock, $session, $logger),
+            'schema'      => new SchemaTool(new ToolCallTrail($session, $logger), $mock),
+            'register'    => new RegisterTool(new ToolCallTrail($session, $logger), $mock),
+            'objects'     => new ObjectsTool(new ToolCallTrail($session, $logger), $mock),
+            'agent'       => new AgentTool(new ToolCallTrail($session, $logger), $mock),
+            'application' => new ApplicationTool(new ToolCallTrail($session, $logger), $mock),
         };
     }//end tool()
 

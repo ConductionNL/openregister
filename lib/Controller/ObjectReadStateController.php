@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -120,19 +121,7 @@ class ObjectReadStateController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$read = fn (): ?ObjectReadState => $this->readState->readStateFor(object: $object, userId: $this->request->getParam('userId'));
-		$state = $this->endpoint->run(operation: $read, context: 'show');
-		if ($state instanceof JSONResponse) {
-			return $state;
-		}
-
-		return $this->stateResponse(state: $state, object: $object);
-
+		return $this->showOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end show()
 
 	/**
@@ -154,22 +143,7 @@ class ObjectReadStateController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function markRead(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$subResource = $this->requestedSubResource();
-		$where = ['register' => $register, 'schema' => $schema, 'subResource' => $subResource];
-		$mark = fn (): array => $this->markAndClear(object: $object, where: $where);
-		$marked = $this->endpoint->run(operation: $mark, context: 'markRead');
-		if ($marked instanceof JSONResponse) {
-			return $marked;
-		}
-
-		$cleared = ['unread' => false, 'notificationsCleared' => $marked['cleared']];
-		return new JSONResponse(array_merge($marked['state']->jsonSerialize(), $cleared));
-
+		return $this->markReadOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end markRead()
 
 	/**
@@ -190,7 +164,71 @@ class ObjectReadStateController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function markUnread(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
+		return $this->markUnreadOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end markUnread()
+
+	/**
+	 * The calling user's own read state for one object.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The marker, the moment and the tab badges.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	private function showOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$read = fn (): ?ObjectReadState => $this->readState->readStateFor(object: $object, userId: $this->request->getParam('userId'));
+		$state = $this->endpoint->run(operation: $read, context: 'show');
+		if ($state instanceof JSONResponse) {
+			return $state;
+		}
+
+		return $this->stateResponse(state: $state, object: $object);
+	}//end showOn()
+
+	/**
+	 * Record that the calling user has now seen this object.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The stored read state and what it cleared.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 */
+	private function markReadOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		$subResource = $this->requestedSubResource();
+		$where = ['register' => $ref->register, 'schema' => $ref->schema, 'subResource' => $subResource];
+		$mark = fn (): array => $this->markAndClear(object: $object, where: $where);
+		$marked = $this->endpoint->run(operation: $mark, context: 'markRead');
+		if ($marked instanceof JSONResponse) {
+			return $marked;
+		}
+
+		$cleared = ['unread' => false, 'notificationsCleared' => $marked['cleared']];
+		return new JSONResponse(array_merge($marked['state']->jsonSerialize(), $cleared));
+	}//end markReadOn()
+
+	/**
+	 * Put this object back to unread for the calling user.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The new marker.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	private function markUnreadOn(ObjectRef $ref): JSONResponse {
+		$object = $this->resolved(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -200,8 +238,20 @@ class ObjectReadStateController extends Controller {
 			return ['unread' => true];
 		};
 		return $this->endpoint->answer(operation: $unmark, context: 'markUnread');
+	}//end markUnreadOn()
 
-	}//end markUnread()
+	/**
+	 * Resolve the record a route names through the RBAC boundary.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the response to return.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md
+	 */
+	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
+		return $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end resolved()
 
 	/**
 	 * The read-state answer: the marker, the moment and the tab badges.

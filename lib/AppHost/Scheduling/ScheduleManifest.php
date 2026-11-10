@@ -62,40 +62,79 @@ final class ScheduleManifest {
 	 *
 	 * @return self
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 *
 	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public static function fromManifest(string $applicationId, array $manifest, ?CronScheduleEvaluator $cron = null): self {
-		$raw = $manifest['schedules'] ?? null;
+		$parsed = self::parse(raw: $manifest['schedules'] ?? null, cron: $cron);
+		return new self(applicationId: $applicationId, schedules: $parsed['schedules'], diagnostics: $parsed['diagnostics']);
+	}//end fromManifest()
+
+	/**
+	 * Split a `schedules[]` block into accepted schedules and diagnostics.
+	 *
+	 * @param mixed                      $raw  The block; anything but an array holds no schedules.
+	 * @param CronScheduleEvaluator|null $cron Cron evaluator (rejects unparseable cron when supplied).
+	 *
+	 * @return array{schedules: list<ScheduleDescriptor>, diagnostics: list<string>}
+	 */
+	private static function parse(mixed $raw, ?CronScheduleEvaluator $cron): array {
+		$parsed = ['schedules' => [], 'diagnostics' => []];
 		if (is_array($raw) === false) {
-			return new self(applicationId: $applicationId, schedules: [], diagnostics: []);
+			return $parsed;
 		}
 
-		$schedules = [];
-		$diagnostics = [];
-
 		foreach ($raw as $index => $entry) {
-			if (is_array($entry) === false) {
-				$diagnostics[] = sprintf('Schedule #%d is not an object.', (int)$index);
+			$result = self::checkCron(result: self::descriptor(entry: $entry, index: (int)$index), cron: $cron);
+			if (is_string($result) === true) {
+				$parsed['diagnostics'][] = $result;
 				continue;
 			}
 
-			try {
-				$descriptor = ScheduleDescriptor::fromArray(raw: $entry, index: (int)$index);
-			} catch (ScheduleValidationException $e) {
-				$diagnostics[] = $e->getMessage();
-				continue;
-			}
+			$parsed['schedules'][] = $result;
+		}
 
-			if ($descriptor->isCron() === true && $cron !== null && $cron->isValid((string)$descriptor->cron) === false) {
-				$diagnostics[] = sprintf('Schedule "%s" has an unparseable cron expression.', $descriptor->id);
-				continue;
-			}
+		return $parsed;
+	}//end parse()
 
-			$schedules[] = $descriptor;
-		}//end foreach
+	/**
+	 * The descriptor of one entry, or the diagnostic that rejects it.
+	 *
+	 * @param mixed $entry The entry.
+	 * @param int   $index Its position in the block.
+	 *
+	 * @return ScheduleDescriptor|string
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 */
+	private static function descriptor(mixed $entry, int $index): ScheduleDescriptor|string {
+		if (is_array($entry) === false) {
+			return sprintf('Schedule #%d is not an object.', $index);
+		}
 
-		return new self(applicationId: $applicationId, schedules: $schedules, diagnostics: $diagnostics);
-	}//end fromManifest()
+		try {
+			return ScheduleDescriptor::fromArray(raw: $entry, index: $index);
+		} catch (ScheduleValidationException $e) {
+			return $e->getMessage();
+		}
+	}//end descriptor()
+
+	/**
+	 * Reject a cron descriptor whose expression the evaluator cannot parse.
+	 *
+	 * @param ScheduleDescriptor|string  $result A descriptor, or a diagnostic that passes through.
+	 * @param CronScheduleEvaluator|null $cron   Cron evaluator; without one nothing is rejected.
+	 *
+	 * @return ScheduleDescriptor|string
+	 */
+	private static function checkCron(ScheduleDescriptor|string $result, ?CronScheduleEvaluator $cron): ScheduleDescriptor|string {
+		if (is_string($result) === true || $cron === null || $result->isCron() === false) {
+			return $result;
+		}
+
+		if ($cron->isValid((string)$result->cron) === true) {
+			return $result;
+		}
+
+		return sprintf('Schedule "%s" has an unparseable cron expression.', $result->id);
+	}//end checkCron()
 }//end class

@@ -114,8 +114,27 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public static function fromTokenResponse(array $response, array $requestedScopes=[], ?self $previous=null, ?DateTimeImmutable $now=null): self {
+		$options = new TokenResponseOptions(requestedScopes: $requestedScopes, previous: $previous, now: $now);
+
+		return self::fromResponse(response: $response, options: $options);
+	}//end fromTokenResponse()
+
+	/**
+	 * Build a token set from a provider's token or refresh response; see {@see fromTokenResponse()}.
+	 *
+	 * @param array<string, mixed> $response The decoded token response.
+	 * @param TokenResponseOptions $options  The requested scopes, the set being replaced, and the clock.
+	 *
+	 * @return self The new token set.
+	 *
+	 * @throws InvalidArgumentException When the response carries no access token.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 */
+	public static function fromResponse(array $response, TokenResponseOptions $options): self {
 		$accessToken = self::requiredAccessToken(response: $response);
-		$now = ($now ?? new DateTimeImmutable());
+		$now = ($options->now ?? new DateTimeImmutable());
+		$previous = $options->previous;
 
 		return new self(
 			tokens: new OAuth2Tokens(
@@ -125,13 +144,13 @@ final class OAuth2TokenSet {
 				expiresAt: self::expiryOf(expiresIn: ($response['expires_in'] ?? null), now: $now)
 			),
 			issuance: new OAuth2Issuance(
-				scopes: self::grantedScopes(response: $response, requestedScopes: $requestedScopes, previous: $previous),
+				scopes: self::grantedScopes(response: $response, requestedScopes: $options->requestedScopes, previous: $previous),
 				account: self::accountOf(value: $previous?->issuance->account),
 				raw: $response,
 				obtainedAt: $now
 			)
 		);
-	}//end fromTokenResponse()
+	}//end fromResponse()
 
 	/**
 	 * Return a copy carrying the provider account identity.
@@ -145,16 +164,30 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public function withAccount(string $id, string $handle, string $displayName): self {
+		return $this->withAccountOf(account: ['id' => $id, 'handle' => $handle, 'displayName' => $displayName]);
+	}//end withAccount()
+
+	/**
+	 * Return a copy carrying the provider account identity.
+	 *
+	 * @param array{id: string, handle: string, displayName: string} $account The provider's identifier for the account,
+	 *                                                                       its handle and its display name.
+	 *
+	 * @return self A new token set; this one is unchanged.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
+	 */
+	public function withAccountOf(array $account): self {
 		return new self(
 			tokens: $this->tokens,
 			issuance: new OAuth2Issuance(
 				scopes: $this->issuance->scopes,
-				account: ['id' => $id, 'handle' => $handle, 'displayName' => $displayName],
+				account: self::accountOf(value: $account),
 				raw: $this->issuance->raw,
 				obtainedAt: $this->issuance->obtainedAt
 			)
 		);
-	}//end withAccount()
+	}//end withAccountOf()
 
 	/**
 	 * Serialise the whole set for the custody leaf.

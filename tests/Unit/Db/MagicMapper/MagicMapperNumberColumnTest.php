@@ -111,7 +111,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 		$column = $this->column('weight', ['type' => 'number']);
 		$schema = $this->schema(properties: ['weight' => ['type' => 'number']]);
 
-		$prepared = $this->call($mapper, 'prepareObjectDataForTable', [['weight' => 0.005], $this->createMock(Register::class), $schema]);
+		$prepared = $this->call($mapper, 'prepareObjectDataForTable', [['weight' => 0.005], new \OCA\OpenRegister\Db\RegisterSchema($this->createMock(Register::class), $schema)]);
 
 		$this->assertSame(0.005, $prepared['weight']);
 		// What a DECIMAL(20,6) column returns for 0.005, read back the way every magic-table read does.

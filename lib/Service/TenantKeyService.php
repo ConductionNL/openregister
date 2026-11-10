@@ -143,9 +143,8 @@ class TenantKeyService implements TenantKeyRotationInterface {
 	public function rotateTenantKey(string $tenantId): array {
 		$retiredKeyId = $this->retireActiveKey(tenantId: $tenantId);
 
-		$newKey = $this->generateKey();
 		$rotatedAt = (new DateTime())->format('c');
-		$this->insertKey(tenantId: $tenantId, rawKey: $newKey, rotatedAt: $rotatedAt);
+		$this->insertKey(tenantId: $tenantId, createdAt: $rotatedAt);
 
 		$this->logger->info('Rotated tenant HMAC key', ['tenant_id' => $tenantId, 'rotated_at' => $rotatedAt]);
 
@@ -236,9 +235,8 @@ class TenantKeyService implements TenantKeyRotationInterface {
 	 * @return string Raw plaintext key material
 	 */
 	private function bootstrapKey(string $tenantId): string {
-		$rawKey = $this->generateKey();
 		$issuedAt = (new DateTime())->format('c');
-		$this->insertKey(tenantId: $tenantId, rawKey: $rawKey, rotatedAt: $issuedAt);
+		$rawKey = $this->insertKey(tenantId: $tenantId, createdAt: $issuedAt);
 
 		$this->logger->info(
 			'Bootstrapped new tenant HMAC key',
@@ -263,17 +261,17 @@ class TenantKeyService implements TenantKeyRotationInterface {
 	}//end generateKey()
 
 	/**
-	 * Encrypt and insert a new active key row.
+	 * Generate a fresh key, encrypt it and insert it as the new active key row.
 	 *
-	 * @param string $tenantId Tenant identifier
-	 * @param string $rawKey Plaintext key (64-char hex)
-	 * @param string $rotatedAt ISO-8601 timestamp
+	 * @param string $tenantId  Tenant identifier
+	 * @param string $createdAt ISO-8601 timestamp
 	 *
-	 * @return void
+	 * @return string The plaintext key (64-char hex)
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
-	private function insertKey(string $tenantId, string $rawKey, string $rotatedAt): void {
+	private function insertKey(string $tenantId, string $createdAt): string {
+		$rawKey = $this->generateKey();
 		$encrypted = $this->crypto->encrypt($rawKey);
 
 		$qb = $this->db->getQueryBuilder();
@@ -283,10 +281,12 @@ class TenantKeyService implements TenantKeyRotationInterface {
 					'tenant_id' => $qb->createNamedParameter($tenantId, IQueryBuilder::PARAM_STR),
 					'encrypted_key' => $qb->createNamedParameter($encrypted, IQueryBuilder::PARAM_STR),
 					'status' => $qb->createNamedParameter('active', IQueryBuilder::PARAM_STR),
-					'created_at' => $qb->createNamedParameter($rotatedAt, IQueryBuilder::PARAM_STR),
+					'created_at' => $qb->createNamedParameter($createdAt, IQueryBuilder::PARAM_STR),
 				]
 			)
 			->executeStatement();
+
+		return $rawKey;
 	}//end insertKey()
 
 	/**

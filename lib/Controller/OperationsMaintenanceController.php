@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
@@ -69,18 +70,16 @@ class OperationsMaintenanceController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                 $appName     Application name.
 	 * @param IRequest               $request     HTTP request.
 	 * @param OperationsMaintenanceControllerServices $services The services, bundled.
 	 * @param IUserSession           $userSession Names the administrator acting.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		OperationsMaintenanceControllerServices $services,
 		IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->maintenance = $services->maintenance;
 		$this->bundle = $services->bundle;
 		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);

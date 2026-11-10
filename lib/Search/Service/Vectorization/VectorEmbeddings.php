@@ -228,68 +228,94 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array {
+		return $this->probe(probe: new EmbeddingProbe(provider: $provider, config: $config, testText: $testText));
+	}//end testEmbedding()
+
+	/**
+	 * Generate one embedding for a probe's text with its provider and config, and report the outcome.
+	 *
+	 * @param EmbeddingProbe $probe The provider, the config and the test text.
+	 *
+	 * @return array{success: bool, message: string, data?: array, error?: string}
+	 */
+	private function probe(EmbeddingProbe $probe): array {
 		$this->logger->info(
 			message: '[VectorEmbeddings] Testing embedding generation',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'provider' => $provider,
-				'model' => $config['model'] ?? 'unknown',
-				'testTextLength' => strlen($testText),
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'testTextLength' => strlen($probe->testText),
 			]
 		);
 
 		try {
-			$embedding = $this->generateEmbeddingWithCustomConfig(
-				text: $testText,
-				config: [
-					'provider' => $provider,
-					'model' => $config['model'] ?? null,
-					'apiKey' => $config['apiKey'] ?? null,
-					'baseUrl' => $config['baseUrl'] ?? $config['url'] ?? null,
-				]
-			);
-
-			$this->logger->info(
-				message: '[VectorEmbeddings] Embedding test successful',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $provider,
-					'model' => $config['model'] ?? 'unknown',
-					'dimensions' => count($embedding),
-				]
-			);
-
-			return [
-				'success' => true,
-				'message' => 'Embedding test successful',
-				'data' => [
-					'provider' => $provider,
-					'model' => $config['model'] ?? 'unknown',
-					'vectorLength' => count($embedding),
-					'sampleValues' => array_slice($embedding, 0, 5),
-					'testText' => $testText,
-				],
-			];
+			$embedding = $this->generateEmbeddingWithCustomConfig(text: $probe->testText, config: $probe->customConfig());
+			return $this->probeSucceeded(probe: $probe, embedding: $embedding);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorEmbeddings] Embedding test failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $provider,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $this->probeFailed(probe: $probe, error: $e);
+		}
+	}//end probe()
 
-			return [
-				'success' => false,
-				'error' => $e->getMessage(),
-				'message' => 'Failed to generate embedding: ' . $e->getMessage(),
-			];
-		}//end try
-	}//end testEmbedding()
+	/**
+	 * Log and report a probe that produced an embedding.
+	 *
+	 * @param EmbeddingProbe $probe     The probe.
+	 * @param array          $embedding The embedding it produced.
+	 *
+	 * @return array{success: true, message: string, data: array}
+	 */
+	private function probeSucceeded(EmbeddingProbe $probe, array $embedding): array {
+		$this->logger->info(
+			message: '[VectorEmbeddings] Embedding test successful',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'dimensions' => count($embedding),
+			]
+		);
+
+		return [
+			'success' => true,
+			'message' => 'Embedding test successful',
+			'data' => [
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'vectorLength' => count($embedding),
+				'sampleValues' => array_slice($embedding, 0, 5),
+				'testText' => $probe->testText,
+			],
+		];
+	}//end probeSucceeded()
+
+	/**
+	 * Log and report a probe that failed.
+	 *
+	 * @param EmbeddingProbe $probe The probe.
+	 * @param Exception      $error Why it failed.
+	 *
+	 * @return array{success: false, error: string, message: string}
+	 */
+	private function probeFailed(EmbeddingProbe $probe, Exception $error): array {
+		$this->logger->error(
+			message: '[VectorEmbeddings] Embedding test failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $probe->provider,
+				'error' => $error->getMessage(),
+			]
+		);
+
+		return [
+			'success' => false,
+			'error' => $error->getMessage(),
+			'message' => 'Failed to generate embedding: ' . $error->getMessage(),
+		];
+	}//end probeFailed()
 
 	/**
 	 * Generate embeddings for multiple texts in batch
@@ -423,13 +449,8 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		array $filters = [],
 		?string $provider = null,
 	): array {
-		// Generate query embedding.
-		$queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
-		$queryEmbedding = $queryEmbeddingData['embedding'];
-
-		return $this->handlers->search->semanticSearch(
-			query: new VectorQuery(embedding: $queryEmbedding, limit: $limit, filters: $filters)
-		);
+		$embedding = $this->generateEmbedding(text: $query, provider: $provider)['embedding'];
+		return $this->handlers->search->semanticSearch(query: new VectorQuery(embedding: $embedding, limit: $limit, filters: $filters));
 	}//end semanticSearch()
 
 	/**
@@ -455,14 +476,9 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		int $limit = 20,
 		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
 	): array {
-		// Generate query embedding with the configured provider.
-		$queryEmbeddingData = $this->generateEmbedding(text: $query);
-		$queryEmbedding = $queryEmbeddingData['embedding'];
-
-		return $this->handlers->search->hybridSearch(
-			query: new VectorQuery(embedding: $queryEmbedding, limit: $limit),
-			keyword: new KeywordFusion(results: $keywordResults, weights: $weights)
-		);
+		// The query embedding comes from the configured provider.
+		$vectorQuery = new VectorQuery(embedding: $this->generateEmbedding(text: $query)['embedding'], limit: $limit);
+		return $this->handlers->search->hybridSearch(query: $vectorQuery, keyword: new KeywordFusion(results: $keywordResults, weights: $weights));
 	}//end hybridSearch()
 
 	// =============================================================================

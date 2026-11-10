@@ -46,10 +46,13 @@ use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\TalkLink\ExternalInvitation;
 use OCA\OpenRegister\Service\TalkLink\LinkedObject;
 use OCA\OpenRegister\Service\TalkLink\RoomCreation;
+use OCA\OpenRegister\Service\TalkLink\RoomPickerQuery;
 use OCA\OpenRegister\Service\TalkLink\RoomRefreshRun;
 use OCA\OpenRegister\Service\TalkLink\TalkGateway;
 use OCA\OpenRegister\Service\TalkLink\TalkLinkFactory;
 use OCA\OpenRegister\Service\TalkLink\TalkRoomFields;
+use OCA\OpenRegister\Service\TalkLink\TalkSession;
+use OCA\OpenRegister\Service\TalkLink\TalkViewer;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -114,7 +117,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LinkServiceRuntime $runtime,
 	) {
-		$this->talk = new TalkGateway(container: $container, appManager: $runtime->appManager(), logger: $runtime->logger());
+		$this->talk = new TalkGateway(container: $container, runtime: $runtime);
 		$this->roomFields = new TalkRoomFields(l10n: $l10n);
 		$this->linkFactory = new TalkLinkFactory();
 	}//end __construct()
@@ -174,14 +177,10 @@ class TalkLinkService implements TalkLinkServiceInterface {
 		}
 
 		$room = $this->requireRoom(roomToken: $roomToken, userUid: $userUid);
-		$link = $this->linkFactory->newLink(
-			object: $object->fields(),
-			roomToken: $roomToken,
-			cache: $this->extractRoomFields(room: $room, userUid: $userUid),
-			userUid: $userUid
-		);
+		$link = $this->linkFactory->newLink(object: $object->fields(), roomToken: $roomToken);
+		$this->linkFactory->applyCache(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $userUid));
 
-		return $this->talkLinkMapper->insert($link);
+		return $this->talkLinkMapper->insert($this->linkFactory->linkedBy(link: $link, userUid: $userUid));
 	}//end linkRoomTo()
 
 	/**
@@ -227,7 +226,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 * @throws Exception When Talk is unavailable (503) or the room is not found (404).
 	 */
 	private function requireRoom(string $roomToken, string $userUid): object {
-		$room = $this->talk->findRoom(manager: $this->requireManager(), roomToken: $roomToken, userUid: $userUid);
+		$room = $this->talk->findRoom(session: new TalkSession(manager: $this->requireManager(), userUid: $userUid), roomToken: $roomToken);
 		if ($room === null) {
 			throw new Exception('Talk room not found', 404);
 		}
@@ -378,7 +377,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 			return 'talk-not-available';
 		}
 
-		$room = $this->talk->findRoom(manager: $manager, roomToken: $roomToken, userUid: $userUid);
+		$room = $this->talk->findRoom(session: new TalkSession(manager: $manager, userUid: $userUid), roomToken: $roomToken);
 		if ($room === null) {
 			return 'room-not-found';
 		}
@@ -507,7 +506,8 @@ class TalkLinkService implements TalkLinkServiceInterface {
 		}
 
 		try {
-			$room = $this->talk->findRoom(manager: $run->manager, roomToken: $link->getRoomToken(), userUid: $run->userUid);
+			$session = new TalkSession(manager: $run->manager, userUid: $run->userUid);
+			$room = $this->talk->findRoom(session: $session, roomToken: $link->getRoomToken());
 			if ($room === null) {
 				return $cachedRow;
 			}
@@ -600,9 +600,10 @@ class TalkLinkService implements TalkLinkServiceInterface {
 		$cache = $this->extractRoomFields(room: $room, userUid: $userUid);
 		$cache = $this->withRequestedFallbacks(cache: $cache, creation: $creation);
 
-		$link = $this->linkFactory->newLink(object: $creation->object->fields(), roomToken: $roomToken, cache: $cache, userUid: $userUid);
+		$link = $this->linkFactory->newLink(object: $creation->object->fields(), roomToken: $roomToken);
+		$this->linkFactory->applyCache(link: $link, cache: $cache);
 
-		return $this->talkLinkMapper->insert($link);
+		return $this->talkLinkMapper->insert($this->linkFactory->linkedBy(link: $link, userUid: $userUid));
 	}//end createRoomFor()
 
 	/**
@@ -696,9 +697,9 @@ class TalkLinkService implements TalkLinkServiceInterface {
 			return [];
 		}
 
-		$participantService = $this->talk->participantService();
+		$viewer = new TalkViewer(userUid: $userUid, participantService: $this->talk->participantService());
 
-		return $this->roomFields->pickerRows(rooms: $rooms, userUid: $userUid, search: $search, participantService: $participantService);
+		return $this->roomFields->pickerRows(rooms: $rooms, query: new RoomPickerQuery(viewer: $viewer, search: $search));
 	}//end getAvailableRoomsForUser()
 
 	/**
@@ -795,11 +796,9 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 *
 	 */
 	private function extractRoomFields(object $room, string $userUid): array {
-		return $this->roomFields->cacheFields(
-			room: $room,
-			userUid: $userUid,
-			participantService: $this->talk->participantService()
-		);
+		$viewer = new TalkViewer(userUid: $userUid, participantService: $this->talk->participantService());
+
+		return $this->roomFields->cacheFields(room: $room, viewer: $viewer);
 	}//end extractRoomFields()
 
 }//end class

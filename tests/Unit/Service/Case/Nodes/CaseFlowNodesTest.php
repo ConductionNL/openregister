@@ -157,7 +157,7 @@ class CaseFlowNodesTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
 
-		return ['steps' => new CaseStepRunner(plans: $this->plans(), scope: $scope, session: $session), 'l10n' => $l10n, 'urls' => $urls];
+		return ['steps' => new CaseStepRunner(plans: $this->plans(), scope: $scope, session: $session), 'presentation' => new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $urls)];
 	}//end collaborators()
 
 	/**

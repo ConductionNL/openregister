@@ -40,8 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Settings;
 
-use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
-use OCA\OpenRegister\Service\Audit\SecuritySettingRegistry;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -84,27 +82,6 @@ class OwnSettingsChangeRecorder {
 	];
 
 	/**
-	 * Writes the audit rows.
-	 *
-	 * @var SettingsChangeAuditor
-	 */
-	private readonly SettingsChangeAuditor $auditor;
-
-	/**
-	 * Knows which keys are secret.
-	 *
-	 * @var SecuritySettingRegistry
-	 */
-	private readonly SecuritySettingRegistry $registry;
-
-	/**
-	 * Tells the administrators, when wired.
-	 *
-	 * @var SecuritySettingAnnouncer|null
-	 */
-	private readonly ?SecuritySettingAnnouncer $announcer;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig         $appConfig  The stored settings.
@@ -113,12 +90,9 @@ class OwnSettingsChangeRecorder {
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		SettingsAuditTrail $auditTrail,
+		private readonly SettingsAuditTrail $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->auditor = $auditTrail->auditor;
-		$this->registry = $auditTrail->registry;
-		$this->announcer = $auditTrail->announcer;
 	}//end __construct()
 
 	/**
@@ -132,8 +106,8 @@ class OwnSettingsChangeRecorder {
 	 */
 	public function snapshot(array $keys): array {
 		$security = [];
-		if ($this->announcer !== null) {
-			$security = $this->announcer->snapshot();
+		if ($this->auditTrail->announcer !== null) {
+			$security = $this->auditTrail->announcer->snapshot();
 		}
 
 		return [
@@ -158,20 +132,20 @@ class OwnSettingsChangeRecorder {
 			$after = $this->read(keys: $keys);
 			$secretKeys = [];
 			foreach (array_keys(array_merge($before['settings'], $after)) as $key) {
-				if ($this->registry->isSecret(path: (string) $key) === true) {
+				if ($this->auditTrail->registry->isSecret(path: (string) $key) === true) {
 					$secretKeys[] = (string) $key;
 				}
 			}
 
-			$written = $this->auditor->recordUpdate(
+			$written = $this->auditTrail->auditor->recordUpdate(
 				app: self::APP,
 				before: $before['settings'],
 				after: $after,
 				secretKeys: $secretKeys
 			);
 
-			if ($this->announcer !== null) {
-				$this->announcer->announce(before: $before['security'], after: $this->announcer->snapshot());
+			if ($this->auditTrail->announcer !== null) {
+				$this->auditTrail->announcer->announce(before: $before['security'], after: $this->auditTrail->announcer->snapshot());
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(

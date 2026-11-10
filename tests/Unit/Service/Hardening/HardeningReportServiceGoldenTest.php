@@ -21,6 +21,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 
+use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsStore;
+use OCA\OpenRegister\Service\Hardening\HardeningPosture;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningReportService;
@@ -91,7 +96,15 @@ class HardeningReportServiceGoldenTest extends TestCase {
 		$capabilities = $this->createMock(ApiCapabilitiesService::class);
 		$capabilities->method('uploadCeilingBytes')->willReturn($upload);
 
-		$service = new HardeningReportService(new HardeningPolicy($appConfig), $platform, $capabilities);
+		$service = new HardeningReportService(
+			new HardeningPosture(
+				new HardeningPolicy($appConfig),
+				new HardeningSettingsStore($appConfig, $this->createMock(AuditTrailMapperInterface::class), $this->createMock(LoggerInterface::class)),
+				$this->createMock(HardeningAuditWriter::class),
+				$platform
+			),
+			$capabilities
+		);
 		$actual = json_decode(json_encode($service->controls()), true);
 
 		$name = $this->dataName();

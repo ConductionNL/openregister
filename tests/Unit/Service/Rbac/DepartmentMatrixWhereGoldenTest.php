@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\MatrixShape;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -107,7 +108,7 @@ class DepartmentMatrixWhereGoldenTest extends TestCase {
 		$properties = ['department' => ['type' => 'string'], 'status' => ['type' => 'string']];
 		$row        = ['group' => 'vth', 'actions' => ['read'], 'where' => $where];
 
-		$findings = (new DepartmentMatrixValidator())->findingsForRow($row, $properties, 'department');
+		$findings = (new DepartmentMatrixValidator())->findingsForRow($row, new MatrixShape($properties, 'department'));
 
 		$pairs = [];
 		foreach ($findings as $finding) {

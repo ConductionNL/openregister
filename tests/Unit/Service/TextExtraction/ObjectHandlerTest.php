@@ -61,7 +61,7 @@ class ObjectHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new ObjectHandler(
-			new TextExtractionObjects($this->objectMapper, $this->schemaMapper, $this->registerMapper),
+			new TextExtractionObjects(new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			$this->chunkMapper,
 			$this->logger
 		);

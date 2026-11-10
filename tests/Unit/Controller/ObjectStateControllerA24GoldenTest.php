@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectStateController;
+use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
@@ -77,7 +78,7 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new ObjectStateController($request, $this->handler, $session);
+		return new ObjectStateController($request, new ObjectStateControllerServices($this->handler, $session));
 	}//end controller()
 
 	/**

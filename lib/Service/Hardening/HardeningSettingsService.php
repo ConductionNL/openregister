@@ -47,16 +47,14 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param HardeningPolicy $policy Reads what is in force now.
-	 * @param HardeningFloorGuard $guard Refuses a change that would weaken a control.
-	 * @param HardeningSettingsStore $store The stored settings, their audit trail and the log.
+	 * @param HardeningFloorGuard $guard   Refuses a change that would weaken a control.
+	 * @param HardeningPosture    $posture What is in force now, the stored settings, their audit trail and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly HardeningPolicy $policy,
 		private readonly HardeningFloorGuard $guard,
-		private readonly HardeningSettingsStore $store,
+		private readonly HardeningPosture $posture,
 	) {
 
 	}//end __construct()
@@ -79,18 +77,18 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			throw new InvalidArgumentException('This instance does not administer ' . $control . '.');
 		}
 
-		$before = $this->policy->administered(control: $control);
+		$change = new HardeningChange(control: $control, before: $this->posture->policy->administered(control: $control), after: $value);
 
 		try {
 			$this->guard->assertValue(control: $control, proposed: $value);
 		} catch (HardeningFloorException $refusal) {
-			$this->record(control: $control, before: $before, after: $value, refusal: $refusal->getMessage());
+			$this->record(change: $change, refusal: $refusal->getMessage());
 			throw $refusal;
 		}
 
 		[$key] = HardeningPolicy::CONTROLS[$control];
-		$this->store->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
-		$this->record(control: $control, before: $before, after: $value);
+		$this->posture->store->appConfig->setValueInt(HardeningPolicy::APP_ID, $key, $value);
+		$this->record(change: $change);
 
 		return $value;
 
@@ -121,22 +119,17 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			}
 		}
 
-		$before = $this->policy->allowedOrigins();
+		$change = new HardeningChange(control: 'origins.allowlistEntries', before: $this->posture->policy->allowedOrigins(), after: $cleaned);
 
 		try {
 			$this->guard->assertValue(control: 'origins.allowlistEntries', proposed: count($cleaned));
 		} catch (HardeningFloorException $refusal) {
-			$this->record(
-				control: 'origins.allowlistEntries',
-				before: $before,
-				after: $cleaned,
-				refusal: $refusal->getMessage(),
-			);
+			$this->record(change: $change, refusal: $refusal->getMessage());
 			throw $refusal;
 		}
 
-		$this->store->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
-		$this->record(control: 'origins.allowlistEntries', before: $before, after: $cleaned);
+		$this->posture->store->appConfig->setValueString(HardeningPolicy::APP_ID, HardeningPolicy::ORIGINS_KEY, implode(',', $cleaned));
+		$this->record(change: $change);
 
 		return $cleaned;
 
@@ -164,28 +157,23 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 			throw new InvalidArgumentException('This instance does not report ' . $control . '.');
 		}
 
-		$before = $this->policy->floor(control: $control);
+		$change = new HardeningChange(control: ($control . '.floor'), before: $this->posture->policy->floor(control: $control), after: $floor);
 
 		try {
 			$this->guard->assertFloor(control: $control, proposed: $floor);
 		} catch (HardeningFloorException $refusal) {
-			$this->record(
-				control: ($control . '.floor'),
-				before: $before,
-				after: $floor,
-				refusal: $refusal->getMessage(),
-			);
+			$this->record(change: $change, refusal: $refusal->getMessage());
 			throw $refusal;
 		}
 
-		$declared = $this->policy->declaredFloors();
+		$declared = $this->posture->policy->declaredFloors();
 		$declared[$control] = $floor;
-		$this->store->appConfig->setValueString(
+		$this->posture->store->appConfig->setValueString(
 			HardeningPolicy::APP_ID,
 			HardeningPolicy::FLOORS_KEY,
 			(string)json_encode($declared)
 		);
-		$this->record(control: ($control . '.floor'), before: $before, after: $floor);
+		$this->record(change: $change);
 
 		return $floor;
 
@@ -242,25 +230,23 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 	 * refusal into a 500 that an administrator reads as "the control changed".
 	 * The refusal has already happened by the time this runs.
 	 *
-	 * @param string $control The control identifier.
-	 * @param int|string|array $before The value before.
-	 * @param int|string|array $after The value asked for.
-	 * @param string|null $refusal The refusal, or null when the change was made.
+	 * @param HardeningChange $change  The control and its value before and asked for.
+	 * @param string|null     $refusal The refusal, or null when the change was made.
 	 *
 	 * @return void
 	 */
-	private function record(string $control, int|string|array $before, int|string|array $after, ?string $refusal = null): void {
+	private function record(HardeningChange $change, ?string $refusal = null): void {
 		try {
-			$this->store->auditTrailMapper->createHardeningChangeEntry(
-				control: $control,
-				before: $before,
-				after: $after,
+			$this->posture->store->auditTrailMapper->createHardeningChangeEntry(
+				control: $change->control,
+				before: $change->before,
+				after: $change->after,
 				accepted: $refusal === null,
 				refusal: ($refusal ?? ''),
 			);
 		} catch (Throwable $failure) {
-			$this->store->logger->error(
-				'HardeningSettingsService: the audit entry for ' . $control . ' could not be written: ' . $failure->getMessage()
+			$this->posture->store->logger->error(
+				'HardeningSettingsService: the audit entry for ' . $change->control . ' could not be written: ' . $failure->getMessage()
 			);
 		}
 

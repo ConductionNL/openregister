@@ -26,7 +26,10 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
@@ -135,6 +138,9 @@ class GraphQLServiceGoldenTest extends TestCase {
 			fn (Error $e) => ['message' => $e->getMessage(), 'code' => ($e->getExtensions()['code'] ?? null)]
 		);
 
+		$registers = $this->createMock(RegisterMapperInterface::class);
+		$schemas   = $this->createMock(SchemaMapperInterface::class);
+
 		$this->deps = [
 			SchemaGenerator::class           => $generator,
 			QueryComplexityAnalyzer::class   => $analyzer,
@@ -144,13 +150,19 @@ class GraphQLServiceGoldenTest extends TestCase {
 			PermissionHandlerInterface::class         => $this->createMock(PermissionHandlerInterface::class),
 			PropertyRbacHandlerInterface::class => $this->createMock(PropertyRbacHandlerInterface::class),
 			AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapperInterface::class),
-			RegisterMapperInterface::class   => $this->createMock(RegisterMapperInterface::class),
-			SchemaMapperInterface::class     => $this->createMock(SchemaMapperInterface::class),
+			RegisterMapperInterface::class   => $registers,
+			SchemaMapperInterface::class     => $schemas,
+			SchemaCatalogInterface::class    => new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)),
 			IAppConfig::class                => $config,
 			IRequest::class                  => $request,
 			IUserSession::class              => $session,
 			LoggerInterface::class           => $logger,
 		];
+		$this->deps[\OCA\OpenRegister\Db\SchemaCatalogInterface::class] = new \OCA\OpenRegister\Db\SchemaCatalog(
+			registers: $this->deps[RegisterMapperInterface::class],
+			schemas: $this->deps[SchemaMapperInterface::class],
+			tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+		);
 
 		// High enough that an APCu-enabled build never reaches the limit.
 		$this->config = ['graphql_rate_limit' => '100000'];
