@@ -72,10 +72,10 @@ class ObjectActionFlowRunTest extends TestCase {
 	public function testTheSecretIsHeldWhileTheRunStartsAndReleasedAfter(): void {
 		$ref = null;
 		$this->flows->method('runForAction')->willReturnCallback(
-			function (string $uuid, array $subject, array $context, bool $sync) use (&$ref): FlowRun {
+			function (string $uuid, \OCA\OpenRegister\Service\Flow\FlowRunOptions $options) use (&$ref): FlowRun {
 				$this->assertSame('steps-flow', $uuid);
-				$this->assertSame(['action' => 'sign', 'inputs' => []], array_diff_key($context, [ObjectActionSecrets::CONTEXT_KEY => true]));
-				$ref = $context[ObjectActionSecrets::CONTEXT_KEY];
+				$this->assertSame(['action' => 'sign', 'inputs' => []], array_diff_key($options->context, [ObjectActionSecrets::CONTEXT_KEY => true]));
+				$ref = $options->context[ObjectActionSecrets::CONTEXT_KEY];
 				$this->assertSame(['pin' => '1234'], ObjectActionSecrets::read($ref));
 				$run = new FlowRun();
 				$run->setUuid('run-1');

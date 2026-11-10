@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\RecordedQueuedJob;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use RuntimeException;
 
@@ -78,7 +79,8 @@ class SearchIndexRebuildJob extends RecordedQueuedJob {
 			$registerId = (int)$argument['registerId'];
 		}
 
-		$report = $this->index->rebuild(registerId: $registerId, apply: true);
+		$pass   = new SearchIndexPass(apply: true, progress: null);
+		$report = $this->index->rebuild(registerId: $registerId, pass: $pass);
 
 		if (($report['state'] ?? null) === 'refused') {
 			throw new RuntimeException((string)($report['reason'] ?? 'The rebuild was refused.'));

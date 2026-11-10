@@ -746,22 +746,17 @@ class FlowService implements FlowServiceInterface {
 	 * (ADR-023). The run still executes as the acting user, so every write
 	 * inside it is checked against their rights.
 	 *
-	 * @param string               $uuid    The flow uuid.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
-	 * @param array<string, mixed> $context Run-level metadata.
-	 * @param boolean              $sync    Execute inline and return the finished run.
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject (`{uuid, register, schema}`), run-level metadata, whether to
+	 *                                execute inline, and the trigger (manual for an action).
 	 *
-	 * @return FlowRun The queued run, or the finished run when $sync is true.
+	 * @return FlowRun The queued run, or the finished run when the options ask for a sync run.
 	 *
 	 * @throws DoesNotExistException When no such flow exists.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As run(): $sync chooses who advances the run.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
 	 */
-	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
-		$options = new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: Flow::TRIGGER_MANUAL);
-
+	public function runForAction(string $uuid, FlowRunOptions $options): FlowRun {
 		return $this->start(flow: $this->definitions->mapper->findByUuid($uuid), options: $options);
 	}//end runForAction()
 

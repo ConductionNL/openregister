@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Notifications\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Every public method of EmailService. Callers depend on this interface, not on the class.
@@ -40,15 +41,14 @@ interface EmailServiceInterface {
 	/**
 	 * Get all email links for an object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int|null $limit Maximum results.
-	 * @param int|null $offset Results offset.
+	 * @param string    $objectUuid The object UUID.
+	 * @param ListQuery $query      The page: limit (unbounded for all) and offset.
 	 *
 	 * @return array{results: array, total: int} Email links with total count.
 	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
-	public function getEmailsForObject(string $objectUuid, ?int $limit = null, ?int $offset = null): array;
+	public function getEmailsForObject(string $objectUuid, ListQuery $query = new ListQuery(limit: ListQuery::UNBOUNDED)): array;
 
 	/**
 	 * Link an existing email to an object.

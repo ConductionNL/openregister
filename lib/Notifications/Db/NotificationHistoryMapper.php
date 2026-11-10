@@ -377,17 +377,16 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * addressed to somebody else: the `WHERE` is the authorization, not a check
 	 * the caller could be trusted to have made first.
 	 *
-	 * @param int $id The history row id.
-	 * @param string $recipient The uid the notice is addressed to.
-	 * @param DateTime|null $readAt The moment, defaulting to now.
+	 * @param RecipientNotice $notice The history row and the uid it is addressed to.
+	 * @param DateTime|null   $readAt The moment, defaulting to now.
 	 *
 	 * @return boolean True when a row was marked.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
-	public function markRead(int $id, string $recipient, ?DateTime $readAt = null): bool {
+	public function markRead(RecipientNotice $notice, ?DateTime $readAt = null): bool {
 		$qb = $this->updateSetting(column: 'read_at', value: ($readAt ?? new DateTime()));
-		$this->whereEquals(qb: $qb, columns: ['id' => $id, 'recipient' => $recipient]);
+		$this->whereEquals(qb: $qb, columns: ['id' => $notice->id, 'recipient' => $notice->recipient]);
 		$qb->andWhere($qb->expr()->isNull('read_at'));
 
 		return ($qb->executeStatement() > 0);

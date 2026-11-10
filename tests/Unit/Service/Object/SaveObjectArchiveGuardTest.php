@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -249,10 +250,9 @@ class SaveObjectArchiveGuardTest extends TestCase {
 	 */
 	public function testWriteToAFrozenObjectIsRefusedAndNamesTheState(): void {
 		$object = $this->storedObject();
-		$object->freeze(
+		$object->freezeWith(
 			userSession: $this->sessionFor(uid: 'bert'),
-			reason: 'fase afgesloten',
-			state: 'in_bezwaar'
+			terms: new FreezeTerms(reason: 'fase afgesloten', state: 'in_bezwaar')
 		);
 
 		[$schema, $register] = $this->context();

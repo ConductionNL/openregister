@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -297,7 +298,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 		$this->unifiedObjectMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
-			static function (Schema $schema, array $object, array $incomingData, bool $isCreate) use (&$seen): array {
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$seen = [$object, $incomingData, $isCreate];
 				return ['name'];
 			}
@@ -317,7 +319,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 		$this->unifiedObjectMapper->method('find')->willReturn($stored);
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
-			static function (Schema $schema, array $object, array $incomingData, bool $isCreate) use (&$seen): array {
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$seen = [$object, $isCreate];
 				return ['name'];
 			}

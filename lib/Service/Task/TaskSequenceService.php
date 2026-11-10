@@ -536,7 +536,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 */
 	private function enableNext(TaskSequence $sequence, PositionAdvance $advance): void {
 		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();
-		$this->services->tasks->enable(uuid: (string)$advance->next->getUuid(), source: $source, reason: $advance->reason());
+		$this->services->tasks->enable(uuid: (string)$advance->next->getUuid(), trigger: new TaskTrigger(source: $source, reason: $advance->reason()));
 		$sequence->setPositionCursor((int)$advance->next->getSequencePosition());
 		$this->services->sequences->update($sequence);
 	}//end enableNext()
