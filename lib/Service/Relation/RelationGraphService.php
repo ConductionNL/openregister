@@ -440,17 +440,17 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * The truncation marker rides along as a trailing row rather than a header
 	 * comment, so it survives a paste into a sheet.
 	 *
-	 * @param string $rootUuid The object to walk out from.
-	 * @param int $depth The depth asked for.
-	 * @param string $language The BCP-47 tag.
+	 * @param string                  $rootUuid The object to walk out from.
+	 * @param GraphExportOptions|null $options  The depth and the language; null is depth 1 in Dutch.
 	 *
 	 * @return array{rows: array<int, array<int, string>>, graph: array<string, mixed>}
 	 *     The export rows, header first, and the graph they came from.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function export(string $rootUuid, int $depth = 1, string $language = 'nl'): array {
-		$graph = $this->graph(rootUuid: $rootUuid, depth: $depth, language: $language);
+	public function export(string $rootUuid, ?GraphExportOptions $options = null): array {
+		$options ??= new GraphExportOptions();
+		$graph = $this->graph(rootUuid: $rootUuid, depth: $options->depth, language: $options->language);
 
 		return ['rows' => $this->rowsOf(graph: $graph), 'graph' => $graph];
 	}//end export()

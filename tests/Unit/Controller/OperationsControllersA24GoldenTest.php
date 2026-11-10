@@ -173,7 +173,8 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			$this->console,
 			$this->jobs,
 			$this->alerts,
-			$this->session($uid)
+			$this->session($uid),
+			$this->createMock(\OCP\IGroupManager::class)
 		);
 	}//end consoleController()
 
