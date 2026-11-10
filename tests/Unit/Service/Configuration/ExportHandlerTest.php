@@ -227,17 +227,16 @@ class ExportHandlerTest extends TestCase {
 	public function testExportConfigWithIncludeObjects(): void {
 		$register = $this->createRegister(1, 'My Reg', 'my-reg');
 
-		$this->registerMapper->method('getSchemasByRegisterId')->willReturn([]);
+		$this->registerMapper->method('getSchemasByRegisterId')->willReturn([$this->createSchema(5, 'S', 's')]);
 		$this->schemaMapper->method('getIdToSlugMap')->willReturn([]);
 		$this->registerMapper->method('getIdToSlugMap')->willReturn([]);
 
-		// Mock findAll to return objects
 		$mockObject = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
 		$mockObject->method('jsonSerialize')->willReturn([
 			'@self' => ['register' => 1, 'schema' => 5],
 			'name' => 'Test Object',
 		]);
-		$this->objectEntityMapper->method('findAll')
+		$this->objectEntityMapper->method('findAllInRegisterSchemaTable')
 			->willReturn([$mockObject]);
 
 		$result = $this->handler->exportConfig($register, true);

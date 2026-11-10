@@ -271,12 +271,12 @@ class ExportHandlerGoldenTest extends TestCase {
 		);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (...$args): array {
-				$this->calls[] = ['objects.findAll', $args];
-				$register = $args[2]['register'];
+		$objectMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (Register $registerEntity, Schema $schemaEntity): array {
+				$this->calls[] = ['objects.findAllInRegisterSchemaTable', $registerEntity->getId(), $schemaEntity->getId()];
+				$register = $registerEntity->getId();
 				$objects = [];
-				foreach ([[$register, 11], [$register, 12], [7, 99]] as $index => [$registerId, $schemaId]) {
+				foreach ([[$register, $schemaEntity->getId()], [7, 99]] as $index => [$registerId, $schemaId]) {
 					$object = $this->createMock(ObjectEntity::class);
 					$object->method('jsonSerialize')->willReturn(
 						['@self' => ['id' => 'o'.$index, 'register' => (string)$registerId, 'schema' => $schemaId], 'name' => 'n'.$index]
