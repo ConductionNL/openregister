@@ -72,6 +72,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
@@ -960,11 +961,7 @@ class CredentialBrokerService {
 			return false;
 		}
 
-		return $this->objectGrants->grantCarriesVerb(
-			userId: $this->userSession->getUser()?->getUID(),
-			objectUuid: $uuid,
-			verb: 'use'
-		);
+		return $this->objectGrants->grantCarriesVerb(lookup: new GrantLookup(userId: $this->userSession->getUser()?->getUID(), objectUuid: $uuid), verb: 'use');
 	}//end objectGrantAdmits()
 
 	/**
