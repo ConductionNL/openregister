@@ -135,8 +135,7 @@ final class RelatedReadFilter {
 	private function readableUnder(ObjectEntity $object, Schema $schema): bool {
 		$userId = $this->rbac->getCurrentUserId();
 		if ((new DraftCallerRule())->keptFromCaller(
-			object: $object,
-			schema: $schema,
+			subject: new DraftSubject(object: $object, schema: $schema),
 			caller: new DraftCaller(userId: $userId, isAdmin: false)
 		) === true) {
 			return false;

@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\SystemOperationContext;
 
@@ -47,9 +45,8 @@ class DraftCallerRule {
 	/**
 	 * Whether a stored draft is kept from this caller.
 	 *
-	 * @param ObjectEntity $object The stored object.
-	 * @param Schema       $schema Its schema.
-	 * @param DraftCaller  $caller Who asks, whether they administer and whether PHP runs on the command line.
+	 * @param DraftSubject $subject The stored object and its schema.
+	 * @param DraftCaller  $caller  Who asks, whether they administer and whether PHP runs on the command line.
 	 *
 	 * @return bool True when the caller may not touch it.
 	 *
@@ -57,9 +54,9 @@ class DraftCallerRule {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
-	public function keptFromCaller(ObjectEntity $object, Schema $schema, DraftCaller $caller): bool {
+	public function keptFromCaller(DraftSubject $subject, DraftCaller $caller): bool {
 		// Open to the caller: not a draft kept from them, or the caller is an admin.
-		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $caller->userId) === false || $caller->isAdmin === true) {
+		if ((new DraftStatusPolicy())->keptFrom(subject: $subject, userId: $caller->userId) === false || $caller->isAdmin === true) {
 			return false;
 		}
 

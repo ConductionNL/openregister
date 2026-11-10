@@ -141,6 +141,7 @@ use OCA\OpenRegister\Service\Object\SearchTrailRecorder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
+use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
@@ -3031,8 +3032,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $user = $this->userSession->getUser();
         $kept = (new DraftCallerRule())->keptFromCaller(
-            object: $stored,
-            schema: $this->currentSchema,
+            subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
                 isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
@@ -4511,8 +4511,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function draftKeptFromCaller(ObjectEntity $object, Schema $schema, ?IUser $user): bool
     {
         return (new DraftCallerRule())->keptFromCaller(
-            object: $object,
-            schema: $schema,
+            subject: new DraftSubject(object: $object, schema: $schema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
                 isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)

@@ -622,8 +622,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$subject = $this->callerId(userId: $ask->userId);
 
 		return (new DraftCallerRule())->keptFromCaller(
-			object: $ask->object,
-			schema: $ask->schema,
+			subject: new DraftSubject(object: $ask->object, schema: $ask->schema),
 			caller: new DraftCaller(
 				userId: $subject,
 				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
