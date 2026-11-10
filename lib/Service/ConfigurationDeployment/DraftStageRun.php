@@ -32,11 +32,11 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 final class DraftStageRun {
 
 	/**
-	 * The live value the pending value replaces.
+	 * The live value the pending value replaces; read before the pending value is staged.
 	 *
-	 * @var ConfigurationSnapshot
+	 * @var ConfigurationSnapshot|null
 	 */
-	public ConfigurationSnapshot $live;
+	public ?ConfigurationSnapshot $live = null;
 
 	/**
 	 * Constructor.
