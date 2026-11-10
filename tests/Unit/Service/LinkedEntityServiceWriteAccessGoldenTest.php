@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
@@ -118,7 +119,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 	private function expectUpdateCheck(ObjectEntity $object, bool $allow): void {
 		$expectation = $this->permissionHandler->expects($this->once())
 			->method('checkPermission')
-			->with($this->identicalTo($this->schema), 'update', null, 'alice', true, $this->identicalTo($object));
+			->with($this->identicalTo($this->schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		if ($allow === false) {
 			$expectation->willThrowException(new NotAuthorizedException('denied'));
 		}
