@@ -114,19 +114,27 @@ class NotSuppliedHandler {
 			return [];
 		}
 
-		$record = $object[Schema::NOT_SUPPLIED_KEY];
-		if (self::isPropertyMap(record: $record) === false) {
-			return [
-				[
-					'property' => Schema::NOT_SUPPLIED_KEY,
-					'code' => 'not-supplied-not-a-map',
-					'message' => Schema::NOT_SUPPLIED_KEY . ' takes a property name for each reason code.',
-				],
-			];
+		if (self::isPropertyMap(record: $object[Schema::NOT_SUPPLIED_KEY]) === false) {
+			return [self::notAMapRefusal()];
 		}
 
 		return $this->refusalsFor(object: $object, rules: self::rulesOf(schema: $schema));
 	}//end validate()
+
+	/**
+	 * The refusal of a not-supplied record that is not a property map.
+	 *
+	 * @return array{property: string, code: string, message: string} The refusal
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function notAMapRefusal(): array {
+		return [
+			'property' => Schema::NOT_SUPPLIED_KEY,
+			'code' => 'not-supplied-not-a-map',
+			'message' => Schema::NOT_SUPPLIED_KEY . ' takes a property name for each reason code.',
+		];
+	}//end notAMapRefusal()
 
 	/**
 	 * Whether a not-supplied record is a property map: an array that is empty or not a list.
@@ -218,33 +226,78 @@ class NotSuppliedHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function entryRefusal(NotSuppliedEntry $entry, array $properties): ?array {
-		$property = $entry->property;
-		if (self::isFilledString(value: $entry->reason) === false) {
-			return [
-				'property' => $property,
-				'code' => 'not-supplied-without-a-reason',
-				'message' => "'$property' is marked not supplied with no reason. Name one from the schema's list.",
-			];
-		}
-
-		if (array_key_exists($property, $properties) === false) {
-			return [
-				'property' => $property,
-				'code' => 'not-supplied-unknown-property',
-				'message' => "'$property' is marked not supplied, and this schema does not declare it.",
-			];
-		}
-
-		if ($this->carriesAValue(object: $entry->object, property: $property) === true) {
-			return [
-				'property' => $property,
-				'code' => 'not-supplied-and-answered',
-				'message' => "'$property' carries a value and is marked not supplied. It can be one or the other.",
-			];
-		}
-
-		return null;
+		return $this->missingReasonRefusal(entry: $entry)
+			?? $this->unknownPropertyRefusal(entry: $entry, properties: $properties)
+			?? $this->answeredRefusal(entry: $entry);
 	}//end entryRefusal()
+
+	/**
+	 * Refuse an entry without a reason.
+	 *
+	 * @param NotSuppliedEntry $entry The property, the reason given and the body.
+	 *
+	 * @return array{property: string, code: string, message: string}|null The refusal
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function missingReasonRefusal(NotSuppliedEntry $entry): ?array {
+		if (self::isFilledString(value: $entry->reason) === true) {
+			return null;
+		}
+
+		$property = $entry->property;
+
+		return [
+			'property' => $property,
+			'code' => 'not-supplied-without-a-reason',
+			'message' => "'$property' is marked not supplied with no reason. Name one from the schema's list.",
+		];
+	}//end missingReasonRefusal()
+
+	/**
+	 * Refuse an entry for a property the schema does not declare.
+	 *
+	 * @param NotSuppliedEntry $entry      The property, the reason given and the body.
+	 * @param array            $properties The schema's declared properties.
+	 *
+	 * @return array{property: string, code: string, message: string}|null The refusal
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function unknownPropertyRefusal(NotSuppliedEntry $entry, array $properties): ?array {
+		$property = $entry->property;
+		if (array_key_exists($property, $properties) === true) {
+			return null;
+		}
+
+		return [
+			'property' => $property,
+			'code' => 'not-supplied-unknown-property',
+			'message' => "'$property' is marked not supplied, and this schema does not declare it.",
+		];
+	}//end unknownPropertyRefusal()
+
+	/**
+	 * Refuse an entry for a property that carries a value.
+	 *
+	 * @param NotSuppliedEntry $entry The property, the reason given and the body.
+	 *
+	 * @return array{property: string, code: string, message: string}|null The refusal
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function answeredRefusal(NotSuppliedEntry $entry): ?array {
+		$property = $entry->property;
+		if ($this->carriesAValue(object: $entry->object, property: $property) === false) {
+			return null;
+		}
+
+		return [
+			'property' => $property,
+			'code' => 'not-supplied-and-answered',
+			'message' => "'$property' carries a value and is marked not supplied. It can be one or the other.",
+		];
+	}//end answeredRefusal()
 
 	/**
 	 * Refuse a reason the schema does not administer (or any reason when it administers none).
@@ -259,28 +312,59 @@ class NotSuppliedHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function reasonRefusal(NotSuppliedEntry $entry, array $reasons): ?array {
-		$property = $entry->property;
-		$reason = (string)$entry->reason;
-		if ($reasons === []) {
-			return [
-				'property' => $property,
-				'code' => 'not-supplied-no-reasons-administered',
-				'message' => "This schema administers no not-supplied reasons, so '$property' cannot be marked.",
-			];
-		}
-
-		if (array_key_exists($reason, $reasons) === false) {
-			$known = implode(', ', array_keys($reasons));
-
-			return [
-				'property' => $property,
-				'code' => 'not-supplied-unknown-reason',
-				'message' => "'$reason' is not a reason this schema administers. It accepts: $known.",
-			];
-		}
-
-		return null;
+		return $this->noReasonsRefusal(entry: $entry, reasons: $reasons)
+			?? $this->unknownReasonRefusal(entry: $entry, reasons: $reasons);
 	}//end reasonRefusal()
+
+	/**
+	 * Refuse any reason when the schema administers none.
+	 *
+	 * @param NotSuppliedEntry $entry   The property and the reason given.
+	 * @param array            $reasons The schema's administered reasons.
+	 *
+	 * @return array{property: string, code: string, message: string}|null The refusal
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function noReasonsRefusal(NotSuppliedEntry $entry, array $reasons): ?array {
+		if ($reasons !== []) {
+			return null;
+		}
+
+		$property = $entry->property;
+
+		return [
+			'property' => $property,
+			'code' => 'not-supplied-no-reasons-administered',
+			'message' => "This schema administers no not-supplied reasons, so '$property' cannot be marked.",
+		];
+	}//end noReasonsRefusal()
+
+	/**
+	 * Refuse a reason the schema does not administer.
+	 *
+	 * @param NotSuppliedEntry $entry   The property and the reason given.
+	 * @param array            $reasons The schema's administered reasons, not empty.
+	 *
+	 * @return array{property: string, code: string, message: string}|null The refusal
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function unknownReasonRefusal(NotSuppliedEntry $entry, array $reasons): ?array {
+		$reason = (string)$entry->reason;
+		if (array_key_exists($reason, $reasons) === true) {
+			return null;
+		}
+
+		$property = $entry->property;
+		$known = implode(', ', array_keys($reasons));
+
+		return [
+			'property' => $property,
+			'code' => 'not-supplied-unknown-reason',
+			'message' => "'$reason' is not a reason this schema administers. It accepts: $known.",
+		];
+	}//end unknownReasonRefusal()
 
 	/**
 	 * Whether the body answers a property at all.
@@ -348,18 +432,48 @@ class NotSuppliedHandler {
 			return $schemaObject;
 		}
 
-		$copy = new stdClass();
-		foreach (get_object_vars($schemaObject) as $key => $value) {
-			$copy->{$key} = $value;
-		}
+		$copy = self::shallowCopy(object: $schemaObject);
 
 		$required = ($copy->required ?? null);
 		if (is_array($required) === false) {
 			return $copy;
 		}
 
-		$names = array_keys($declared);
-		$copy->required = array_values(
+		$copy->required = self::requiredWithout(required: $required, names: array_keys($declared));
+
+		return $copy;
+	}//end excuse()
+
+	/**
+	 * A shallow copy of an object as a plain object.
+	 *
+	 * @param object $object The object to copy.
+	 *
+	 * @return stdClass The copy.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function shallowCopy(object $object): stdClass {
+		$copy = new stdClass();
+		foreach (get_object_vars($object) as $key => $value) {
+			$copy->{$key} = $value;
+		}
+
+		return $copy;
+	}//end shallowCopy()
+
+	/**
+	 * A `required` list without the named properties.
+	 *
+	 * @param array             $required The schema's required properties.
+	 * @param array<int, mixed> $names    The properties to excuse.
+	 *
+	 * @return array<int, mixed> The required properties left, re-indexed.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function requiredWithout(array $required, array $names): array {
+		return array_values(
 			array_filter(
 				$required,
 				static function ($entry) use ($names): bool {
@@ -367,7 +481,5 @@ class NotSuppliedHandler {
 				}
 			)
 		);
-
-		return $copy;
-	}//end excuse()
+	}//end requiredWithout()
 }//end class
