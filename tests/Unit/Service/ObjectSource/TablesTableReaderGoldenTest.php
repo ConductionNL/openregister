@@ -104,7 +104,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 			}//end log()
 		};
 
-		return new TablesTableReader($appManager, $container, $logger);
+		return new TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: $logger));
 	}//end reader()
 
 	/**

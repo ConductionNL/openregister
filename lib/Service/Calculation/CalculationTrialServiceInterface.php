@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Try a calculation on a sample or a stored object.
@@ -53,14 +51,13 @@ interface CalculationTrialServiceInterface {
 	 * tenancy on, so only an object the acting user may read arrives here.
 	 *
 	 * @param array<string, mixed> $declaration The `{type, expression}` declaration.
-	 * @param ObjectEntity $object The object, already resolved for the acting user.
-	 * @param Schema $schema The object's schema.
+	 * @param TrialObject $target The object and its schema, already resolved for the acting user.
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	public function tryObject(array $declaration, ObjectEntity $object, Schema $schema): array;
+	public function tryObject(array $declaration, TrialObject $target): array;
 
 	/**
 	 * The refusal for a named object that is absent or that the caller may not read.
@@ -69,12 +66,11 @@ interface CalculationTrialServiceInterface {
 	 * whether an object the caller may not read exists.
 	 *
 	 * @param array<string, mixed> $declaration The declaration under trial.
-	 * @param string $objectId The object id the caller named.
-	 * @param string $reason Why the lookup failed.
+	 * @param UnresolvedTrialObject $target The object id the caller named, and why the lookup failed.
 	 *
 	 * @return array{ok: bool, dependencies: array<int, string>, error: array{code: string, message: string}} The trial result.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	public function objectNotFound(array $declaration, string $objectId, string $reason): array;
+	public function objectNotFound(array $declaration, UnresolvedTrialObject $target): array;
 }//end interface
