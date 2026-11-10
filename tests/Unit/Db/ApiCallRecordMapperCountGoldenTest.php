@@ -28,11 +28,12 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
 
 /**
  * Pins the increment, the insert and the retried increment, with their parameters.
  *
- * Driven through ApiCallRecorder::record, the mapper's one caller.
+ * Driven through ApiCallRecorder::recordCall, the mapper's one caller.
  *
  * @covers \OCA\OpenRegister\Db\ApiCallRecordMapper
  */
@@ -118,11 +119,13 @@ final class ApiCallRecordMapperCountGoldenTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 		);
 
-		$recorder->record(
-			path: '/apps/openregister/api/objects/zaken/melding/3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-			method: 'get',
-			apiVersion: '1',
-			moment: new DateTime('2026-03-04 05:06:07'),
+		$recorder->recordCall(
+			call: new ApiCallObservation(
+				path: '/apps/openregister/api/objects/zaken/melding/3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+				method: 'get',
+				apiVersion: '1',
+				moment: new DateTime('2026-03-04 05:06:07'),
+			)
 		);
 	}//end record()
 
