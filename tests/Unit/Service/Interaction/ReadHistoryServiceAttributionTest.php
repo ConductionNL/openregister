@@ -84,7 +84,8 @@ class ReadHistoryServiceAttributionTest extends TestCase {
 		$this->assertSame('1', $seen[0]->getRegister());
 		$this->assertSame('2', $seen[0]->getSchema());
 		$this->assertNull($seen[0]->getOrganisation());
-		$this->assertSame(['a' => 1], $seen[0]->getObject());
+		$this->assertSame(1, $seen[0]->getObject()['a']);
+		$this->assertArrayNotHasKey('@self', $seen[0]->getObject());
 		$this->assertSame([], $warned);
 	}
 
