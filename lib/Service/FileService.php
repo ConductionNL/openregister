@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileListOptions;
 use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileLifecycleHandlers;
@@ -1441,9 +1442,8 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		int|string|null $registerId = null,
 	): File {
 		return $this->createFileHandler->addFile(
-			objectEntity: $objectEntity,
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags),
-			registerId: $registerId
+			target: new FileTarget(object: $objectEntity, registerId: $registerId),
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
 		);
 	}//end addFile()
 
@@ -2131,7 +2131,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 		// Use CreateFileHandler to create the file in target object folder.
 		$newFile = $this->createFileHandler->addFile(
-			objectEntity: $transfer->target,
+			target: new FileTarget(object: $transfer->target),
 			upload: new FileUpload(fileName: $resolvedName, content: $content, share: false)
 		);
 

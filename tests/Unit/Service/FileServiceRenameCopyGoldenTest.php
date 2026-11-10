@@ -260,7 +260,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->folders->method('getObjectFolder')->with($target)->willReturn($folder);
 		$copy = $this->createMock(File::class);
 		$this->creator->expects($this->once())->method('addFile')
-			->with($target, new FileUpload(fileName: 'report (2).pdf', content: 'bytes', share: false))
+			->with(new \OCA\OpenRegister\Service\File\FileTarget(object: $target), new FileUpload(fileName: 'report (2).pdf', content: 'bytes', share: false))
 			->willReturn($copy);
 
 		$this->assertSame($copy, $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $target));
