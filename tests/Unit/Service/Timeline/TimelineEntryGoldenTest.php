@@ -91,6 +91,22 @@ class TimelineEntryGoldenTest extends TestCase {
 		return new TimelineEntryService($records, $visibility, $session, $this->createMock(LoggerInterface::class));
 	}//end entryService()
 
+	public function testAListPassesTheVisibilityFilterAndThePageToTheRead(): void {
+		$mapper = $this->createMock(TimelineEntryMapper::class);
+		$mapper->expects($this->exactly(2))->method('findForObject')->willReturnCallback(
+			function (string $objectUuid, ?string $visibility, int $limit, int $offset): array {
+				$this->log[] = 'find '.json_encode([$objectUuid, $visibility, $limit, $offset]);
+				return [];
+			}
+		);
+
+		$service = $this->entryService(mapper: $mapper);
+		$service->listForObject($this->object(), 'public', 5, 2);
+		$service->listForObject($this->object());
+
+		$this->assertSame(['find ["object-1","public",5,2]', 'find ["object-1",null,50,0]'], $this->log);
+	}//end testAListPassesTheVisibilityFilterAndThePageToTheRead()
+
 	public function testARecordCarriesEverythingThePayloadOffers(): void {
 		$entry = $this->entryService()->record(
 			$this->object(),
