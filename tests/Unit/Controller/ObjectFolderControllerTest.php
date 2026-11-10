@@ -467,6 +467,54 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->assertSame(400, $response->getStatus());
 	}//end testANameThatIsNotOneSegmentIs400()
 
+	/**
+	 * @return array<string, array{string, string, mixed}>
+	 */
+	public static function nonStringParams(): array {
+		return [
+			'index, int path' => ['index', 'path', 5],
+			'index, bool path' => ['index', 'path', true],
+			'index, array path' => ['index', 'path', ['Bijlagen']],
+			'create, int name' => ['create', 'name', 7],
+			'create, array name' => ['create', 'name', ['Stukken']],
+			'create, bool path' => ['create', 'path', false],
+			'upload, array path' => ['upload', 'path', ['Bijlagen']],
+			'rename, int name' => ['rename', 'name', 42],
+			'rename, array name' => ['rename', 'name', ['x']],
+		];
+	}//end nonStringParams()
+
+	/**
+	 * A non-string name or path is refused with 400 before the access check, so even someone
+	 * who may not read the object gets 400, and nothing is written.
+	 *
+	 * @dataProvider nonStringParams
+	 */
+	public function testANonStringNameOrPathIs400BeforeTheAccessCheck(string $action, string $param, mixed $value): void {
+		$this->fileService->expects($this->never())->method('getObjectFolder');
+		$this->root->expects($this->never())->method('newFolder');
+
+		$params = ['name' => 'Stukken', 'path' => ''];
+		$params[$param] = $value;
+		$controller = $this->asking($params, $this->controllerAs('gewoon', []));
+
+		$response = match ($action) {
+			'index' => $controller->index(register: '20', schema: '35', id: self::OBJECT_UUID),
+			'create' => $controller->create(register: '20', schema: '35', id: self::OBJECT_UUID),
+			'upload' => $controller->upload(register: '20', schema: '35', id: self::OBJECT_UUID),
+			'rename' => $controller->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 200),
+		};
+
+		$this->assertSame(400, $response->getStatus());
+	}//end testANonStringNameOrPathIs400BeforeTheAccessCheck()
+
+	public function testANullPathListsTheObjectFolderRoot(): void {
+		$response = $this->asking(['path' => null], $this->controllerAs('bea', ['vergunningen']))
+			->index(register: '20', schema: '35', id: self::OBJECT_UUID);
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testANullPathListsTheObjectFolderRoot()
+
 	public function testAHandlerRenamesASubfolderInPlace(): void {
 		$moved = $this->folder(id: 200, path: self::ROOT_PATH . '/Stukken', name: 'Stukken');
 		$this->sub->expects($this->once())->method('move')->with(self::ROOT_PATH . '/Stukken')->willReturn($moved);
