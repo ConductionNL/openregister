@@ -162,7 +162,7 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		return new ReferentialIntegrityService(
 			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
-			controls: new IntegrityCascadeControls(auditTrailMapper: $this->mapper(), archivalGuard: new ArchivalRetentionGuard($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class))),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->mapper(), archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)))),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 
