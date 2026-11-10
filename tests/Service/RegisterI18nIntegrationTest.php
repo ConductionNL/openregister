@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Service\LanguageGapScan;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -352,9 +353,8 @@ class RegisterI18nIntegrationTest extends TestCase {
 		$this->projection->project($this->testObject);
 
 		$missing = $this->statusService->findObjectsMissingLanguage(
-			'en',
 			$this->testSchema,
-			[(string)$this->testObject->getUuid()]
+			new LanguageGapScan('en', [(string)$this->testObject->getUuid()])
 		);
 
 		$this->assertContains((string)$this->testObject->getUuid(), $missing);
