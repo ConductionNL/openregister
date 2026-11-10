@@ -34,6 +34,7 @@ namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -199,7 +200,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testTheGrantEmitsConditionsBeforeAnyDenyIsWritten(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read');
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'));
 
 		$this->assertFalse($result['bypass']);
 		$this->assertNotEmpty($result['conditions']);
@@ -222,14 +223,11 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	public function testADeniedCallerGetsNoConditionsAndTheControlStillDoes(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 
-		$denied = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
-			'read'
-		);
+		$denied = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]])))->forAction('read'));
 		$this->assertSame([], $denied['conditions']);
 		$this->assertFalse($denied['bypass']);
 
-		$control = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read');
+		$control = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'));
 		$this->assertNotEmpty($control['conditions']);
 	}//end testADeniedCallerGetsNoConditionsAndTheControlStillDoes()
 
@@ -247,7 +245,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testEveryConditionCarriesTheRowDenyTermIncludingTheOwnerOne(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read');
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'));
 
 		$this->assertNotEmpty($result['conditions']);
 		foreach ($result['conditions'] as $condition) {
@@ -268,7 +266,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testTheTermNamesTheCallersOwnPrincipals(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars', 'waarnemers']);
-		$condition = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read')['conditions'][0];
+		$condition = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'))['conditions'][0];
 
 		$this->assertStringContainsString('"behandelaars"', $condition);
 		$this->assertStringContainsString('"waarnemers"', $condition);
@@ -283,10 +281,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testTheTermIsScopedToTheActionBeingFiltered(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$condition = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['update' => ['behandelaars']]),
-			'update'
-		)['conditions'][0];
+		$condition = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['update' => ['behandelaars']])))->forAction('update'))['conditions'][0];
 
 		$this->assertStringContainsString('$.deny.update', $condition);
 		$this->assertStringNotContainsString('$.deny.read', $condition);
@@ -304,7 +299,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testASchemaWithNoBlockStillCarriesTheTerm(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql($this->schemaWith(null), 'read');
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(null)))->forAction('read'));
 
 		$this->assertNotEmpty($result['conditions']);
 		foreach ($result['conditions'] as $condition) {
@@ -319,10 +314,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testAnAdministratorStillBypasses(): void {
 		$handler = $this->handlerFor('root', ['admin']);
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['admin'], 'deny' => ['read' => ['admin']]]),
-			'read'
-		);
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['admin'], 'deny' => ['read' => ['admin']]])))->forAction('read'));
 
 		$this->assertTrue($result['bypass']);
 	}//end testAnAdministratorStillBypasses()
@@ -358,7 +350,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		);
 
 		// And the list carries a term that can exclude exactly that row.
-		$condition = $handler->buildRbacConditionsSql($schema, 'read')['conditions'][0];
+		$condition = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'))['conditions'][0];
 		$this->assertStringContainsString('$.deny.read', $condition);
 		$this->assertStringContainsString('"behandelaars"', $condition);
 	}//end testTheListAndTheObjectReadAgreeOnADeniedRow()
@@ -389,15 +381,12 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testAnUncompilableConditionalDenyDeniesTheWholeList(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(
 				[
 					'read' => ['behandelaars'],
 					'deny' => ['read' => [['group' => 'behandelaars', 'match' => []]]],
 				]
-			),
-			'read'
-		);
+			)))->forAction('read'));
 
 		$this->assertSame([], $result['conditions']);
 	}//end testAnUncompilableConditionalDenyDeniesTheWholeList()
@@ -416,10 +405,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	public function testAStagedDenyEmitsNoPredicateAndKeepsTheRowsInTheList(): void {
 		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_STAGING);
 
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
-			'read'
-		);
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]])))->forAction('read'));
 
 		// Enforcing, this exact fixture yields no conditions at all
 		// ({@see testADeniedCallerGetsNoConditionsAndTheControlStillDoes()}).
@@ -441,10 +427,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	public function testTheOffModeEmitsNoDenyPredicateEither(): void {
 		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_OFF);
 
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
-			'read'
-		);
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]])))->forAction('read'));
 
 		$this->assertNotEmpty($result['conditions']);
 		foreach ($result['conditions'] as $condition) {

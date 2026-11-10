@@ -353,7 +353,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Get all VEVENTs across the acting user's VEVENT-supporting calendars.
 	 *
-	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::getAllUserTasks()}
+	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::listUserTasks()}
 	 * for events: it enumerates every calendar the user owns (not just the pinned
 	 * one), skips non-VEVENT objects, and returns the parsed event arrays sorted by
 	 * start date (soonest first, undated last). Backs the `calendar-event-source`

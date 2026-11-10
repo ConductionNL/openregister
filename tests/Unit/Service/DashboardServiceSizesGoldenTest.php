@@ -211,7 +211,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 				return $log;
 			}
 		);
-		$mapper->method('getStatistics')->willReturn(['total' => 21, 'size' => 22]);
+		$mapper->method('statisticsTotals')->willReturn(['total' => 21, 'size' => 22]);
 		return $mapper;
 	}//end audit()
 

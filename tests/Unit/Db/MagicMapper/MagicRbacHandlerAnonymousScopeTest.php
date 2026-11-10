@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -85,7 +86,7 @@ class MagicRbacHandlerAnonymousScopeTest extends TestCase {
 		$qb = $this->queryBuilder();
 		$qb->expects($this->never())->method('andWhere');
 
-		$this->handler->applyRbacFilters(qb: $qb, schema: $this->staffOnlySchema(), action: 'read');
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->staffOnlySchema()))->forAction('read'));
 	}//end testWithoutTheScopeAnEmptyCliSessionBypassesTheFilter()
 
 
@@ -95,7 +96,7 @@ class MagicRbacHandlerAnonymousScopeTest extends TestCase {
 
 		AnonymousEvaluationContext::run(
 			function () use ($qb): void {
-				$this->handler->applyRbacFilters(qb: $qb, schema: $this->staffOnlySchema(), action: 'read');
+				$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->staffOnlySchema()))->forAction('read'));
 			}
 		);
 	}//end testInsideTheScopeTheSameSessionIsFilteredAsAnAnonymousCaller()

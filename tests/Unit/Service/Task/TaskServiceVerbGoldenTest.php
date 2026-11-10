@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Task\TaskAnswerPayload;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskIntake;
 use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
@@ -189,14 +190,10 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task = $this->task();
 		$this->stored($task);
 
-		$done = $this->service()->complete(
+		$done = $this->service()->completeWithAnswer(
 			uuid: 't-7',
-			outcome: 'approved',
-			resultText: 'ok',
-			comment: 'fine',
-			actor: 'alice',
-			responses: ['a' => 1],
-			evidence: ['e' => 2]
+			answer: new TaskAnswer(outcome: 'approved', resultText: 'ok', comment: 'fine', payload: new TaskAnswerPayload(responses: ['a' => 1], evidence: ['e' => 2])),
+			actor: 'alice'
 		);
 
 		$this->assertSame('approved', $done->getOutcome());
@@ -768,10 +765,8 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		);
 		$created = new \DateTime('2024-02-03T04:05:06+00:00');
 
-		$task = $this->service()->import(
-			data: ['title' => 'T', 'candidateUsers' => ['u1']],
-			actor: 'sys',
-			createdAt: $created
+		$task = $this->service()->importTask(
+			import: new TaskImport(data: ['title' => 'T', 'candidateUsers' => ['u1']], actor: 'sys', createdAt: $created)
 		);
 
 		$this->assertSame(41, $task->getId());

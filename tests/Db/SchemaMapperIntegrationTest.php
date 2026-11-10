@@ -791,11 +791,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 	public function testFindExtendedByWithKnownUuidAndSlug(): void {
 		$schema = $this->createTestSchema();
 
-		$result = $this->mapper->findExtendedBy(
-			$schema->getId(),
-			$schema->getUuid(),
-			$schema->getSlug()
-		);
+		$result = $this->mapper->findExtendedBy($schema);
 		$this->assertIsArray($result);
 	}
 

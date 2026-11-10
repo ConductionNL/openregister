@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
@@ -95,13 +96,13 @@ class _AppLocalNotesProvider extends AbstractIntegrationProvider {
 		return $this->enabled;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return ($this->store[$objectId] ?? []);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return ($this->store[$ref->id] ?? []);
 	}//end list()
 
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$note = ['id' => (string)(count(($this->store[$objectId] ?? [])) + 1), 'body' => ($payload['body'] ?? '')];
-		$this->store[$objectId][] = $note;
+	public function create(ObjectRef $ref, array $payload): array {
+		$note = ['id' => (string)(count(($this->store[$ref->id] ?? [])) + 1), 'body' => ($payload['body'] ?? '')];
+		$this->store[$ref->id][] = $note;
 		return $note;
 	}//end create()
 }//end class
@@ -136,7 +137,7 @@ class _ReadOnlyAppLocalProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [['id' => '1', 'body' => 'read-only item']];
 	}//end list()
 }//end class
@@ -171,7 +172,7 @@ class _BuiltinShapedProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 }//end class
@@ -696,7 +697,7 @@ class LeafRegistryTest extends TestCase {
 		$provider = new _AppLocalNotesProvider();
 		$provider->store['obj-1'] = [['id' => '1', 'body' => 'first note']];
 
-		$items = $provider->list('reg', 'schema', 'obj-1');
+		$items = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'));
 
 		$this->assertSame([['id' => '1', 'body' => 'first note']], $items);
 		// OpenRegister holds nothing: the only copy is the provider's own store.
@@ -710,7 +711,7 @@ class LeafRegistryTest extends TestCase {
 	 */
 	public function testAppLocalListEmptyWhenNoItems(): void {
 		$provider = new _AppLocalNotesProvider();
-		$this->assertSame([], $provider->list('reg', 'schema', 'obj-empty'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-empty')));
 	}//end testAppLocalListEmptyWhenNoItems()
 
 	/**
@@ -721,10 +722,10 @@ class LeafRegistryTest extends TestCase {
 	 */
 	public function testAppLocalCreatePersistsNoteInSiblingStore(): void {
 		$provider = new _AppLocalNotesProvider();
-		$created = $provider->create('reg', 'schema', 'obj-1', ['body' => 'hello']);
+		$created = $provider->create(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'), ['body' => 'hello']);
 
 		$this->assertSame('hello', $created['body']);
-		$list = $provider->list('reg', 'schema', 'obj-1');
+		$list = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'));
 		$this->assertCount(1, $list);
 		$this->assertSame('hello', $list[0]['body']);
 	}//end testAppLocalCreatePersistsNoteInSiblingStore()
@@ -738,11 +739,11 @@ class LeafRegistryTest extends TestCase {
 		$provider = new _ReadOnlyAppLocalProvider();
 
 		// The read path is usable.
-		$this->assertCount(1, $provider->list('reg', 'schema', 'obj-1'));
+		$this->assertCount(1, $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1')));
 
 		// The write path throws the exact not-implemented shape query-time uses.
 		$this->expectException(NotImplementedException::class);
-		$provider->create('reg', 'schema', 'obj-1', ['body' => 'nope']);
+		$provider->create(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'), ['body' => 'nope']);
 	}//end testReadOnlyAppLocalLeafRefusesWritesCleanly()
 
 	/**

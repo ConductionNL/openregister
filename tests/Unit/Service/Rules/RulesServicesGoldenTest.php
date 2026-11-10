@@ -75,6 +75,8 @@ use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUser;
@@ -405,7 +407,7 @@ class RulesServicesGoldenTest extends TestCase {
 		foreach ($cases as $name => [$count, $target, $ruleId, $selection, $registerId]) {
 			$this->calls = [];
 			try {
-				$outcome = $this->replay($count)->preview($target, $ruleId, $selection, 'jan', 'reden', $registerId);
+				$outcome = $this->replay($count)->previewReplay(new RuleReplayRequest($ruleId, 'jan', 'reden'), new RuleReplaySelection($target, $registerId, $selection));
 			} catch (Throwable $e) {
 				$outcome = [get_class($e), $e->getMessage()];
 			}

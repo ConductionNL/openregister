@@ -1515,7 +1515,7 @@ class MagicSearchHandler {
 	 * @return string|null SQL condition or null if no RBAC filtering needed
 	 */
 	private function buildRbacConditionSql(Schema $schema, ?string $tableName = null): ?string {
-		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read', tableName: $tableName);
+		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(call: (new RbacAccessCall(schema: $schema))->onTable(tableName: $tableName));
 
 		if ($rbacResult['bypass'] === false) {
 			// User doesn't have unconditional access.
@@ -2683,12 +2683,7 @@ class MagicSearchHandler {
 
 		// Apply RBAC filtering if enabled.
 		if ($posture->rbac === true) {
-			$this->rbacHandler->applyRbacFilters(
-				qb: $qb,
-				schema: $schema,
-				action: 'read',
-				tableName: $table->tableName
-			);
+			$this->rbacHandler->applyRbacFilters(call: (new RbacFilterCall(qb: $qb, schema: $schema))->onTable(tableName: $table->tableName));
 		}
 	}//end applyAccessControlFilters()
 

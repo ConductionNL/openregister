@@ -726,41 +726,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	}//end isMatchRule()
 
 	/**
-	 * Apply RBAC filters to a query builder based on schema authorization
-	 *
-	 * This method implements the RBAC filtering logic with support for conditional rules:
-	 * 1. If user is admin, no filtering is applied
-	 * 2. If schema has no authorization, no filtering is applied (open access)
-	 * 3. Rules can be simple (group name string) or conditional (object with group and match)
-	 * 4. Simple rules grant access if user is in that group
-	 * 5. Conditional rules grant access if user qualifies for group AND object matches conditions
-	 * 6. Object owner always has access to their own objects
-	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param Schema $schema Schema with authorization configuration
-	 * @param string $action CRUD action to check (default: 'read')
-	 * @param string|null $tableName The bare magic table being read, so a `_status` column it could not be
-	 *                               given is left out of the draft predicate. Null keeps the predicate.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	public function applyRbacFilters(
-		IQueryBuilder $qb,
-		Schema $schema,
-		string $action = 'read',
-		?string $tableName = null,
-	): void {
-		$call = new RbacFilterCall(qb: $qb, schema: $schema);
-		$call->action = $action;
-		$call->tableName = $tableName;
-
-		$this->applyRbacFilterCall(call: $call);
-	}//end applyRbacFilters()
-
-	/**
-	 * Apply the RBAC filter for one call, see {@see applyRbacFilters()}.
+	 * Apply RBAC filtering to a query builder for one call.
 	 *
 	 * Admins and trusted system callers are not filtered. A schema whose
 	 * authorization cannot be resolved reads nothing.
@@ -771,7 +737,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function applyRbacFilterCall(RbacFilterCall $call): void {
+	public function applyRbacFilters(RbacFilterCall $call): void {
 		$user = $this->identifyCaller(call: $call);
 
 		// Admin users bypass all RBAC checks, and so does the userless system.
@@ -785,7 +751,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		$this->applyAccessConditions(call: $call);
-	}//end applyRbacFilterCall()
+	}//end applyRbacFilters()
 
 	/**
 	 * Resolve the call's effective authorization onto the call.
@@ -1861,7 +1827,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string {
 		$this->assertPredicateAlias(alias: $rows->alias);
-		$result = $this->buildRbacConditionsSql(schema: $schema, action: $rows->action, columnPrefix: $rows->alias . '.', tableName: $rows->tableName);
+		$call   = (new RbacAccessCall(schema: $schema, columnPrefix: $rows->alias . '.'))->forAction(action: $rows->action);
+		$result = $this->buildRbacConditionsSql(call: $call->onTable(tableName: $rows->tableName));
 		if (($result['bypass'] ?? false) === true) {
 			return 'TRUE';
 		}
@@ -1913,9 +1880,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * returns. Delegates to {@see buildRbacConditionsSql()} like its sibling,
 	 * so there is one evaluator of the rule grammar, not two.
 	 *
-	 * @param Schema $schema The schema of the table being read.
-	 * @param string $action The action the rows are filtered for (default: 'read').
-	 * @param string|null $tableName The bare magic table being read; a `_status` column it lacks is left out of the draft predicate.
+	 * @param RbacAccessCall $call The schema of the table being read, the action the rows are filtered for and
+	 *                             the bare magic table being read (a `_status` column it lacks is left out of
+	 *                             the draft predicate).
 	 *
 	 * @return string|null Null when no row restriction applies (an admin); otherwise
 	 *                     a non-empty predicate safe to AND into a WHERE, `1 = 0`
@@ -1924,8 +1891,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function buildRbacRowPredicateSql(Schema $schema, string $action = 'read', ?string $tableName = null): ?string {
-		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action, tableName: $tableName);
+	public function buildRbacRowPredicateSql(RbacAccessCall $call): ?string {
+		$result = $this->buildRbacConditionsSql(call: $call);
 		if (($result['bypass'] ?? false) === true) {
 			return null;
 		}
@@ -1939,13 +1906,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * This is the raw SQL equivalent of applyRbacFilters() for use in UNION-based
 	 * queries where QueryBuilder cannot be used directly.
 	 *
-	 * @param Schema $schema Schema with authorization configuration.
-	 * @param string $action CRUD action to check (default: 'read').
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
-	 * @param string|null $tableName The bare magic table; a `_status` column it lacks is left out of the draft predicate.
+	 * @param RbacAccessCall $call The schema with its authorization configuration, the CRUD action, the
+	 *                             table alias to qualify each column with (empty for an unaliased UNION
+	 *                             member: unqualified, a column name still parses inside a subquery and
+	 *                             binds to the innermost FROM, which is silently wrong the moment the
+	 *                             related table does not carry it) and the bare magic table (a `_status`
+	 *                             column it lacks is left out of the draft predicate).
 	 *
 	 * @return array{bypass: bool, conditions: string[]} Result with:
 	 *                                                   - 'bypass' => true means no filtering needed (user has full access)
@@ -1953,10 +1919,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Mirrors applyRbacFilters dispatch; carries the system-owner carve-out (openregister#1617).
 	 */
-	public function buildRbacConditionsSql(Schema $schema, string $action = 'read', string $columnPrefix = '', ?string $tableName = null): array {
-		$call = new RbacAccessCall(schema: $schema, columnPrefix: $columnPrefix);
-		$call->action = $action;
-		$call->tableName = $tableName;
+	public function buildRbacConditionsSql(RbacAccessCall $call): array {
 		return $this->accessConditions(call: $call);
 	}//end buildRbacConditionsSql()
 
