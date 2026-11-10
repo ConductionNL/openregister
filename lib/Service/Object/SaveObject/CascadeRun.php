@@ -79,4 +79,20 @@ final class CascadeRun {
 	 * @var string[]
 	 */
 	public array $oldUuids = [];
+
+	/**
+	 * A run over one parent object and the data to prepare for it.
+	 *
+	 * @param ObjectEntity $parent The parent object.
+	 * @param array        $data   The parent's data.
+	 *
+	 * @return self The run.
+	 */
+	public static function forObject(ObjectEntity $parent, array $data): self {
+		$run         = new self();
+		$run->parent = $parent;
+		$run->data   = $data;
+
+		return $run;
+	}//end forObject()
 }//end class
