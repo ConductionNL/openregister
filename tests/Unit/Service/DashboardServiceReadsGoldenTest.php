@@ -36,6 +36,7 @@ use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Search\Service\DashboardSizes;
 use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -98,7 +99,7 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 				$objects->method($m)->willThrowException($boom);
 			}
 
-			foreach (['getStatistics', 'getActionChartData', 'detailedStatistics', 'actionDistribution', 'mostActiveObjects'] as $m) {
+			foreach (['statisticsTotals', 'getActionChartData', 'detailedStatistics', 'actionDistribution', 'mostActiveObjects'] as $m) {
 				$audit->method($m)->willThrowException($boom);
 			}
 		} else {
@@ -107,10 +108,10 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 				$this->logged[] = 'objects.getStatistics ' . json_encode($args);
 				return ['total' => 11, 'size' => 12, 'invalid' => 13, 'deleted' => 14, 'locked' => 15, 'published' => 16];
 			});
-			$audit->method('getStatistics')->willReturnCallback(function (...$args): array {
+			$audit->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args): array {
 				$this->logged[] = 'audit.getStatistics ' . json_encode($args);
 				return ['total' => 21, 'size' => 22];
-			});
+			}));
 			$webhooks->method('getStatistics')->willReturn(['total' => 31]);
 		}
 

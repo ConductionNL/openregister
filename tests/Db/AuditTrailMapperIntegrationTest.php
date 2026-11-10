@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -324,7 +325,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	// =========================================================================
 
 	public function testGetStatisticsReturnsExpectedKeys(): void {
-		$stats = $this->mapper->getStatistics();
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope());
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertArrayHasKey('size', $stats);
@@ -335,7 +336,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getStatistics($register->getId());
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope($register->getId()));
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
@@ -346,7 +347,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'update', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getStatistics(null, $schema->getId());
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope(null, $schema->getId()));
 		$this->assertIsArray($stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
@@ -356,9 +357,9 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getStatistics(null, null, [
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope(null, null, [
 			['register' => $register->getId(), 'schema' => $schema->getId()],
-		]);
+		]));
 		$this->assertIsArray($stats);
 	}
 
