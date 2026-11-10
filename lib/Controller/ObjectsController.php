@@ -4621,7 +4621,7 @@ class ObjectsController extends Controller {
 		// (404 when the object GET would be, the doelbinding guard, and no
 		// `session`, `request`, `ipAddress` or property the caller may not see).
 		if ($this->isCurrentUserAdmin() === false) {
-			return $this->logsForReader(register: $register, schema: $schema, id: $id);
+			return $this->logsForReader(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 		}
 
 		// Set the register and schema context first.
@@ -4720,16 +4720,14 @@ class ObjectsController extends Controller {
 	/**
 	 * One object's history for a non-admin, when they may read the object.
 	 *
-	 * @param string $register The register slug or identifier
-	 * @param string $schema The schema slug or identifier
-	 * @param string $id The object ID or UUID
+	 * @param ObjectRef $ref The register, the schema and the object ID or UUID, as the route names them.
 	 *
 	 * @return JSONResponse 200 with the redacted page, 404 when the object is not readable to this caller,
 	 *                      or the doelbinding refusal.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
-	private function logsForReader(string $register, string $schema, string $id): JSONResponse {
+	private function logsForReader(ObjectRef $ref): JSONResponse {
 		$config = $this->getConfig();
 		$search = null;
 		if ($config['_search'] !== null) {
@@ -4738,9 +4736,9 @@ class ObjectsController extends Controller {
 
 		try {
 			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
-				register: $register,
-				schema: $schema,
-				id: $id,
+				register: (string)$ref->register,
+				schema: (string)$ref->schema,
+				id: $ref->id,
 				params: [
 					'limit' => $config['limit'],
 					'offset' => $config['offset'],
@@ -4754,7 +4752,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 		} catch (MultipleObjectsReturnedException $e) {
 			// The 409 an administrator gets on this route (#4037), not a 500.
-			return $this->ambiguousIdentifierResponse(id: $id);
+			return $this->ambiguousIdentifierResponse(id: $ref->id);
 		}
 
 		if ($page === null) {
