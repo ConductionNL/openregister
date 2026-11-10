@@ -55,6 +55,9 @@ class SystemEntityNotificationListenerEventMapTest extends TestCase {
 	/**
 	 * Two entities of one kind whose content differs, or not.
 	 *
+	 * @param string $kind  The entity class.
+	 * @param bool   $moved Whether the second entity's title differs.
+	 *
 	 * @return array{0: Entity, 1: Entity}
 	 */
 	private static function pair(string $kind, bool $moved): array {
@@ -70,7 +73,12 @@ class SystemEntityNotificationListenerEventMapTest extends TestCase {
 			return $entity;
 		};
 
-		return [$make('New'), $make(($moved === true) ? 'Old' : 'New')];
+		$oldTitle = 'New';
+		if ($moved === true) {
+			$oldTitle = 'Old';
+		}
+
+		return [$make('New'), $make($oldTitle)];
 	}
 
 	public static function createdEvents(): array {
@@ -95,6 +103,8 @@ class SystemEntityNotificationListenerEventMapTest extends TestCase {
 
 	/**
 	 * Handle an event and return the dispatcher calls it made.
+	 *
+	 * @param Event $event The event to handle.
 	 *
 	 * @return array<int, array<int, mixed>>
 	 */
