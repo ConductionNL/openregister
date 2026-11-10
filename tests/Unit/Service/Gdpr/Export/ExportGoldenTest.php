@@ -427,7 +427,7 @@ final class ExportGoldenTest extends TestCase {
 	}//end subjectService()
 
 	public function testRequestQueuesAndAuditsBothNames(): void {
-		$export = $this->subjectService(null, null)->request(new SubjectExportRequest('  jan@example.org ', 'email', 'DSR-1'));
+		$export = $this->subjectService(null, null)->requestFor(new SubjectExportRequest('  jan@example.org ', 'email', 'DSR-1'));
 
 		self::assertSame('export-new', $export->getUuid());
 		self::assertSame(

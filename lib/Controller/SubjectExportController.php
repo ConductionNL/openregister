@@ -90,7 +90,7 @@ class SubjectExportController extends Controller {
 			);
 		}
 
-		$export = $this->exports->request(
+		$export = $this->exports->requestFor(
 			request: new SubjectExportRequest(
 				subject: $subject,
 				type: $this->params->castTrimmed(key: 'type'),

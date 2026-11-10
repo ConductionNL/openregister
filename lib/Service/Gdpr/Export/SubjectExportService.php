@@ -93,7 +93,7 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function request(SubjectExportRequest $request): SubjectExport {
+	public function requestFor(SubjectExportRequest $request): SubjectExport {
 		$export = $this->queue->mapper->createFromArray(
 			[
 				'subject' => trim($request->subject),
@@ -109,6 +109,21 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 		$this->audit(export: $export, event: 'requested');
 
 		return $export;
+	}//end requestFor()
+
+	/**
+	 * Ask for a subject's own export by its parts; see requestFor().
+	 *
+	 * @param string      $subject   The data subject.
+	 * @param string|null $type      Optional PII type filter.
+	 * @param string|null $requestId The data subject request this answers.
+	 *
+	 * @return SubjectExport The recorded request.
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport {
+		return $this->requestFor(request: new SubjectExportRequest(subject: $subject, type: $type, requestId: $requestId));
 	}//end request()
 
 	/**
