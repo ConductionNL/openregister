@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
@@ -418,8 +419,7 @@ class ImportPreviewController extends Controller {
 
 			$committed = $this->service->commit(
 				preview: $preview,
-				sourceHash: $sourceHash,
-				currentUser: $this->userSession->getUser()
+				commit: new ImportCommit(sourceHash: $sourceHash, currentUser: $this->userSession->getUser())
 			);
 
 			return new JSONResponse(data: $committed->jsonSerialize());
