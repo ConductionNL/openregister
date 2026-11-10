@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
@@ -175,13 +176,13 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 	public function testCreateUserBranches(): void {
 		$warnings = [];
 
-		$this->assertSame(ExampleSetAccounts::ALREADY_EXISTS, $this->accounts(made: new RuntimeException('Duplicate entry for key'), warnings: $warnings)->createUser(uid: 'a', displayName: 'A', email: '', password: 'p'));
+		$this->assertSame(ExampleSetAccounts::ALREADY_EXISTS, $this->accounts(made: new RuntimeException('Duplicate entry for key'), warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'A', email: '', password: 'p')));
 		$this->assertSame([], $warnings);
 
-		$this->assertSame('backend down', $this->accounts(made: new RuntimeException('backend down'), warnings: $warnings)->createUser(uid: 'a', displayName: 'A', email: '', password: 'p'));
+		$this->assertSame('backend down', $this->accounts(made: new RuntimeException('backend down'), warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'A', email: '', password: 'p')));
 		$this->assertSame([['OpenRegister: an example set account was not created', ['uid' => 'a', 'reason' => 'backend down']]], $warnings);
 
-		$this->assertSame('Nextcloud refused the account', $this->accounts(made: false, warnings: $warnings)->createUser(uid: 'a', displayName: 'A', email: '', password: 'p'));
+		$this->assertSame('Nextcloud refused the account', $this->accounts(made: false, warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'A', email: '', password: 'p')));
 
 		$calls = [];
 		$user  = $this->createMock(IUser::class);
@@ -192,9 +193,9 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 		$user->method('setSystemEMailAddress')->willReturnCallback(function (string $email) use (&$calls): void {
 			$calls[] = 'email '.$email;
 		});
-		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createUser(uid: 'a', displayName: 'Anna', email: '', password: 'p'));
+		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'Anna', email: '', password: 'p')));
 		$this->assertSame(['name Anna'], $calls);
-		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createUser(uid: 'a', displayName: 'Anna', email: 'a@example.org', password: 'p'));
+		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'Anna', email: 'a@example.org', password: 'p')));
 		$this->assertSame(['name Anna', 'name Anna', 'email a@example.org'], $calls);
 	}//end testCreateUserBranches()
 
