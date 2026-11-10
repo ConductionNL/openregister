@@ -67,12 +67,26 @@ class ShippedSeedContent {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function update(array $stored, array $shipped, ?string $remembered): ?array {
-		if ($remembered !== null && $remembered !== $this->hash(shipped: $shipped)) {
-			return $shipped;
+		return $this->updateFrom(stored: $stored, shipped: new ShippedSeed(content: $shipped, remembered: $remembered));
+	}//end update()
+
+	/**
+	 * The object to write over a stored seed, or null when the stored seed stays.
+	 *
+	 * @param array<string, mixed> $stored  The stored object, with `@self`.
+	 * @param ShippedSeed          $shipped The seed as listed and the hash of the content last shipped.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function updateFrom(array $stored, ShippedSeed $shipped): ?array {
+		if ($shipped->remembered !== null && $shipped->remembered !== $this->hash(shipped: $shipped->content)) {
+			return $shipped->content;
 		}
 
-		return $this->filledGaps(stored: $stored, shipped: $shipped);
-	}//end update()
+		return $this->filledGaps(stored: $stored, shipped: $shipped->content);
+	}//end updateFrom()
 
 	/**
 	 * The stored seed with the fields it lacks taken from the shipped seed, or null when it lacks none.

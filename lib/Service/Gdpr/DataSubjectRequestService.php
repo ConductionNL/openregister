@@ -57,6 +57,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectWriteLabel;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectRetentionGate;
 use Psr\Log\LoggerInterface;
 
@@ -267,7 +268,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$object->setObject(array_merge($current, $changes));
 		$this->records->writer->attribute(object: $object);
 
-		return $this->records->writer->persist(object: $object, op: 'rectify', identifier: $objectIdentifier);
+		return $this->records->writer->persistAs(object: $object, label: new SubjectWriteLabel(op: 'rectify', identifier: $objectIdentifier));
 	}//end rectify()
 
 	/**
@@ -635,7 +636,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$object->setObject($payload);
 		$this->records->writer->attribute(object: $object);
 
-		return $this->records->writer->persist(object: $object, op: $marker->op, identifier: $objectIdentifier);
+		return $this->records->writer->persistAs(object: $object, label: new SubjectWriteLabel(op: $marker->op, identifier: $objectIdentifier));
 	}//end setMarker()
 
 	/**

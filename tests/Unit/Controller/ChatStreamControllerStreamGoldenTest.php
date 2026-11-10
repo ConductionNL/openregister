@@ -233,7 +233,6 @@ class ChatStreamControllerStreamGoldenTest extends TestCase {
 		}
 
 		return new GoldenChatStreamController(...ChatStreamControllerFactory::args(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			chatService: $this->chatService(case: $case),
 			conversationMapper: $this->conversationMapper(case: $case),

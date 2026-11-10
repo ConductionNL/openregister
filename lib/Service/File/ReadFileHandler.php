@@ -24,7 +24,6 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -95,13 +94,11 @@ class ReadFileHandler {
 	 *
 	 * @param ReadFileSources               $sources              The root folder, folders, objects and file metadata a read looks in.
 	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
 	 * @param LoggerInterface               $logger               Logger for logging operations.
 	 */
 	public function __construct(
 		ReadFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->rootFolder = $sources->rootFolder;
@@ -304,8 +301,7 @@ class ReadFileHandler {
 	 * Get all files for an object.
 	 *
 	 * @param ObjectEntity|string $object The object or object ID to fetch files for.
-	 * @param bool|null $sharedFilesOnly Whether to return only shared files.
-	 * @param string|null $category Optional FileMapper category to filter on.
+	 * @param FileListOptions $options Whether to list only shared files, and the category to filter on.
 	 *
 	 * @return array Array of file nodes.
 	 *
@@ -314,22 +310,16 @@ class ReadFileHandler {
 	 * @psalm-return   list<\OCP\Files\Node>
 	 * @phpstan-return array<int, \OCP\Files\Node>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function getFiles(
-		ObjectEntity|string $object,
-		?bool $sharedFilesOnly = false,
-		?string $category = null,
-	): array {
-		$files = $this->fileService->getFilesForEntity(entity: $this->entityOf(object: $object), sharedFilesOnly: $sharedFilesOnly);
+	public function getFiles(ObjectEntity|string $object, FileListOptions $options = new FileListOptions()): array {
+		$files = $this->fileService->getFilesForEntity(entity: $this->entityOf(object: $object), sharedFilesOnly: $options->sharedFilesOnly);
 
-		if ($category === null || $this->fileMapper === null) {
+		if ($options->category === null || $this->fileMapper === null) {
 			return $files;
 		}
 
-		return $this->filterByCategory(files: $files, category: $category);
+		return $this->filterByCategory(files: $files, category: $options->category);
 	}//end getFiles()
 
 	/**

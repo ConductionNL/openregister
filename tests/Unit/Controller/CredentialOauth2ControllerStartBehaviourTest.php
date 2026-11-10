@@ -153,7 +153,7 @@ class CredentialOauth2ControllerStartBehaviourTest extends TestCase {
 			}
 		);
 		$connect->method('authorizationRequest')->willReturnCallback(
-			static fn (string $redirectUri, string $state, string $challenge): OAuth2AuthorizationRequest => new OAuth2AuthorizationRequest($redirectUri, $state, $challenge)
+			static fn (string $redirectUri, array $issued): OAuth2AuthorizationRequest => new OAuth2AuthorizationRequest($redirectUri, $issued['state'], $issued['challenge'])
 		);
 		$connect->method('authorizationUrl')->willReturnCallback(
 			static function (array $provider, array $claims, OAuth2AuthorizationRequest $request) use ($throws): string {

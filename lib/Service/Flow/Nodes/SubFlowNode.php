@@ -41,15 +41,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Service\Flow\FlowExecution;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowToken;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use RuntimeException;
 use stdClass;
 use UnexpectedValueException;
@@ -78,20 +76,29 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	private const STACK_KEY = 'flowStack';
 
 	/**
+	 * Turns a flow id into a document.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Queues and executes the sub-run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runs;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowLocator $resolvers Turns a flow id into a document.
-	 * @param FlowRunServiceInterface $runs Queues and executes the sub-run.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowExecution        $execution    Turns a flow id into a document; queues and executes the sub-run.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
-	public function __construct(
-		private readonly FlowLocator $resolvers,
-		private readonly FlowRunServiceInterface $runs,
-		IL10N $l10n,
-		IURLGenerator $urls,
-	) {
-		parent::__construct(l10n: $l10n, urls: $urls);
+	public function __construct(FlowExecution $execution, FlowNodePresentation $presentation) {
+		$this->resolvers = $execution->resolvers;
+		$this->runs      = $execution->runner;
+		parent::__construct(l10n: $presentation->l10n, urls: $presentation->urls);
 	}//end __construct()
 
 	/**
@@ -187,9 +194,30 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 * @throws RuntimeException When a waited-on sub-run does not complete.
 	 */
 	public function execute(array $items, array $config, array $context): array {
+		$target = $this->targetFor(config: $config, context: $context);
+		if ($target === null) {
+			return $items;
+		}
+
+		return $this->dispatch(run: new SubFlowRun(target: $target, config: $config, context: $context), items: $items);
+	}//end execute()
+
+	/**
+	 * The sub-flow to call: resolved, and with this flow pushed on the recursion stack.
+	 *
+	 * @param array<string, mixed> $config  The step configuration.
+	 * @param array<string, mixed> $context The run context.
+	 *
+	 * @return SubFlowTarget|null Null when the step names no flow, which passes the items through.
+	 *
+	 * @throws UnexpectedValueException When the flow is already a parent, nested too deeply, or cannot be resolved.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function targetFor(array $config, array $context): ?SubFlowTarget {
 		$flowId = $this->flowIdFrom(config: $config);
 		if ($flowId === '') {
-			return $items;
+			return null;
 		}
 
 		$stack = $this->guardRecursion(flowId: $flowId, context: $context);
@@ -201,20 +229,34 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 			);
 		}
 
-		// FAN OUT: one child RUN per item, rather than one run holding every
-		// item. Without it a crawler that loops pages gets a sub-flow per PAGE —
-		// measured on the demo: 100 records paged in, and the sync sub-flow
-		// invoked 11 times, not 100. The per-record work happened inside the
-		// child because object-write iterates items itself, which is fine until
-		// you want per-record isolation, per-record retry, or a trace that shows
-		// one run per object.
-		$target = new SubFlowTarget(flow: $flow, flowId: $flowId, stack: $stack);
-		if (($config['fanOut'] ?? false) === true) {
-			return $this->fanOut(items: $items, target: $target, config: $config, context: $context);
+		return new SubFlowTarget(flow: $flow, flowId: $flowId, stack: $stack);
+	}//end targetFor()
+
+	/**
+	 * Call the sub-flow once for all items, or once per item.
+	 *
+	 * FAN OUT: one child RUN per item, rather than one run holding every
+	 * item. Without it a crawler that loops pages gets a sub-flow per PAGE —
+	 * measured on the demo: 100 records paged in, and the sync sub-flow
+	 * invoked 11 times, not 100. The per-record work happened inside the
+	 * child because object-write iterates items itself, which is fine until
+	 * you want per-record isolation, per-record retry, or a trace that shows
+	 * one run per object.
+	 *
+	 * @param SubFlowRun $run   The step's call: target, configuration and run context.
+	 * @param array      $items The input items.
+	 *
+	 * @return array The sub-flow's output items, or the input items when not waiting.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function dispatch(SubFlowRun $run, array $items): array {
+		if ($run->fansOut() === true) {
+			return $this->fanOut(run: $run, items: $items);
 		}
 
-		return $this->invoke(items: $items, target: $target, config: $config, context: $context);
-	}//end execute()
+		return $this->invoke(run: $run, items: $items);
+	}//end dispatch()
 
 	/**
 	 * Run the sub-flow once per item, and return everything they produced.
@@ -224,19 +266,17 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 * step completed while some records were silently not processed, and the
 	 * count of child runs would be the only surviving evidence.
 	 *
-	 * @param array         $items   The input items.
-	 * @param SubFlowTarget $target  The resolved sub-flow, its id and the recursion stack.
-	 * @param array         $config  The step configuration.
-	 * @param array         $context Run-level metadata.
+	 * @param SubFlowRun $run   The step's call: target, configuration and run context.
+	 * @param array      $items The input items.
 	 *
 	 * @return array Everything the children produced, in item order.
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function fanOut(array $items, SubFlowTarget $target, array $config, array $context): array {
+	private function fanOut(SubFlowRun $run, array $items): array {
 		$out = [];
 		foreach ($items as $item) {
-			$produced = $this->invoke(items: [$item], target: $target, config: $config, context: $context);
+			$produced = $this->invoke(run: $run, items: [$item]);
 
 			foreach ($produced as $one) {
 				$out[] = $one;
@@ -249,20 +289,51 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	/**
 	 * One invocation of the sub-flow with the given items.
 	 *
-	 * @param array         $items   The items to seed the child with.
-	 * @param SubFlowTarget $target  The resolved sub-flow, its id and the recursion stack.
-	 * @param array         $config  The step configuration.
-	 * @param array         $context Run-level metadata.
+	 * @param SubFlowRun $run   The step's call: target, configuration and run context.
+	 * @param array      $items The items to seed the child with.
 	 *
 	 * @return array What the child produced, or the input when fire-and-forget.
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function invoke(array $items, SubFlowTarget $target, array $config, array $context): array {
-		$flowId = $target->flowId;
-		$subject = $this->subjectDescriptor(context: $context);
-		$childCtx = $context;
-		$childCtx[self::STACK_KEY] = $target->stack;
+	private function invoke(SubFlowRun $run, array $items): array {
+		$child = $this->queueChild(run: $run, childContext: $this->childContext(run: $run, items: $items));
+
+		// Fire-and-forget: the child is queued against the subject and the step
+		// carries on. The queued run starts from its subject, not from these
+		// items — an independent flow, kicked off, not a function whose result we read.
+		if (($run->config['wait'] ?? true) !== true) {
+			return $items;
+		}
+
+		// Wait: run the sub-flow now, seeded with these items, and return what
+		// it produced. It gets its own persisted run and trace, so a sub-flow
+		// is as inspectable as a top-level one.
+		$child = $this->runs->execute(run: $child, flow: $run->target->flow, subject: new stdClass(), seedItems: $items);
+
+		// The child ran to a stop; hand what it gathered back to the parent.
+		// The parent's own token instance is merged into, so this is what
+		// the parent's later steps read. The child wins on a conflicting key —
+		// it ran later and is the more specific writer.
+		$run->absorb(child: $child);
+
+		return $this->itemsFrom(run: $child, flowId: $run->target->flowId);
+	}//end invoke()
+
+	/**
+	 * The context a child run starts with: the recursion stack, the parent's
+	 * token as values, and — fanned out — its one record as the seed payload.
+	 *
+	 * @param SubFlowRun $run   The step's call: target, configuration and run context.
+	 * @param array      $items The items the child is invoked for.
+	 *
+	 * @return array<string, mixed> The child run's context.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function childContext(SubFlowRun $run, array $items): array {
+		$childCtx = $run->context;
+		$childCtx[self::STACK_KEY] = $run->target->stack;
 
 		// The child gets its OWN token, seeded with the parent's values rather
 		// than the parent's instance. Sharing one instance would let a
@@ -270,52 +341,36 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 		// and nothing orders those two writes. Seeding as plain values is also
 		// what the child's run persists and rehydrates, so the child sees a
 		// token identical in shape to any other run's.
-		$parentToken = ($context[FlowToken::CONTEXT_KEY] ?? null);
-		if ($parentToken instanceof FlowToken === false) {
-			$parentToken = FlowToken::fromArray($parentToken);
-		}
-
-		$childCtx[FlowToken::CONTEXT_KEY] = $parentToken->all();
+		$childCtx = $run->withChildToken(context: $childCtx);
 
 		// Fanned out and NOT waiting: the queued child starts from its subject,
 		// not from these items, so without this a per-object fan-out would queue
 		// N identical runs that never see their object. `payload` is the seeding
 		// path a subjectless run already uses, so the child reads its record as
 		// the first item exactly as a waiting child would.
-		if (($config['fanOut'] ?? false) === true && count($items) === 1) {
+		if ($run->fansOut() === true && count($items) === 1) {
 			$childCtx['payload'] = (array)($items[0][FlowItems::JSON] ?? []);
 		}
 
-		// Fire-and-forget: queue against the subject and carry on. The queued
-		// run starts from its subject, not from these items — an independent
-		// flow, kicked off, not a function whose result we read.
-		if (($config['wait'] ?? true) !== true) {
-			$this->runs->queue(
-				flowId: $flowId,
-				subject: $subject,
-				trigger: 'sub-flow',
-				context: $childCtx,
-				// The child inherits the parent's ACTING identity, not its
-			// provenance. Identity narrows along an invocation chain and never
-			// widens (ADR-099): a sub-flow may do what its caller could do, and
-			// nothing more. Passing `triggeredBy` here would hand the child the
-			// identity that CAUSED the parent, which for a scheduled run is a
-			// different — and possibly more privileged — user than the one the
-			// parent was actually executing as.
-			user: ($context['runAs'] ?? null)
-			);
+		return $childCtx;
+	}//end childContext()
 
-			return $items;
-		}
-
-		// Wait: run the sub-flow now, seeded with these items, and return what
-		// it produced. It gets its own persisted run and trace, so a sub-flow
-		// is as inspectable as a top-level one.
-		$run = $this->runs->queue(
-			flowId: $flowId,
-			subject: $subject,
+	/**
+	 * Queue the child run against the parent's subject.
+	 *
+	 * @param SubFlowRun           $run          The step's call: target and run context.
+	 * @param array<string, mixed> $childContext The child run's context.
+	 *
+	 * @return FlowRun The queued child run.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function queueChild(SubFlowRun $run, array $childContext): FlowRun {
+		return $this->runs->queue(
+			flowId: $run->target->flowId,
+			subject: $this->subjectDescriptor(context: $run->context),
 			trigger: 'sub-flow',
-			context: $childCtx,
+			context: $childContext,
 			// The child inherits the parent's ACTING identity, not its
 			// provenance. Identity narrows along an invocation chain and never
 			// widens (ADR-099): a sub-flow may do what its caller could do, and
@@ -323,24 +378,9 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 			// identity that CAUSED the parent, which for a scheduled run is a
 			// different — and possibly more privileged — user than the one the
 			// parent was actually executing as.
-			user: ($context['runAs'] ?? null)
+			user: ($run->context['runAs'] ?? null)
 		);
-
-		$run = $this->runs->execute(
-			run: $run,
-			flow: $target->flow,
-			subject: new stdClass(),
-			seedItems: $items
-		);
-
-		// The child ran to a stop; hand what it gathered back to the parent.
-		// `$parentToken` is the parent's own instance, so merging here is what
-		// the parent's later steps read. The child wins on a conflicting key —
-		// it ran later and is the more specific writer.
-		$parentToken->merge((array)(($run->getContext() ?? [])[FlowToken::CONTEXT_KEY] ?? []));
-
-		return $this->itemsFrom(run: $run, flowId: $flowId);
-	}//end invoke()
+	}//end queueChild()
 
 	/**
 	 * Refuse a sub-flow that would recurse, and return the stack it should push.

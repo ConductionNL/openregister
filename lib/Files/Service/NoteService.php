@@ -119,12 +119,7 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function getNotesForObject(
-		string $objectUuid,
-		int $limit = 50,
-		int $offset = 0,
-		?string $visibility = null,
-	): array {
+	public function getNotesForObject(string $objectUuid, int $limit = 50, int $offset = 0, ?string $visibility = null): array {
 		$page = new ListQuery(limit: $limit, offset: $offset);
 		return $this->listNotes(query: new ObjectNotesQuery(objectUuid: $objectUuid, page: $page, visibility: $visibility));
 	}//end getNotesForObject()
@@ -297,13 +292,7 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function createNoteAs(
-		string $objectUuid,
-		string $message,
-		string $actorType,
-		string $actorId,
-		?string $visibility = null,
-	): array {
+	public function createNoteAs(string $objectUuid, string $message, string $actorType, string $actorId, ?string $visibility = null): array {
 		$draft = new NoteDraft(objectUuid: $objectUuid, message: $message, visibility: $visibility);
 		return $this->postNote(draft: $draft, author: new NoteAuthor(type: $actorType, id: $actorId));
 	}//end createNoteAs()
@@ -379,12 +368,7 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function updateNote(
-		int $noteId,
-		?string $message = null,
-		?string $visibility = null,
-		bool $mayManage = false,
-	): array {
+	public function updateNote(int $noteId, ?string $message = null, ?string $visibility = null, bool $mayManage = false): array {
 		return $this->editNote(noteId: $noteId, edit: new NoteEdit(message: $message, visibility: $visibility, mayManage: $mayManage));
 	}//end updateNote()
 

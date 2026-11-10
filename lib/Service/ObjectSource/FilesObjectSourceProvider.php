@@ -115,6 +115,18 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findFile(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findFile(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		$userFolder = $this->userFolder();
 		if ($userFolder === null || is_numeric($id) === false) {
 			return null;
@@ -125,9 +137,8 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 		return $this->fileEntity(binding: $binding, data: $this->fileData(file: $file, userFolder: $userFolder));
-	}//end find()
+	}//end findFile()
 
 	/**
 	 * {@inheritDoc}
@@ -147,6 +158,18 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+		return $this->listFiles(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects.
+	 */
+	private function listFiles(SourcedObjectBinding $binding, array $query): array {
 		$limit = (int)($query['limit'] ?? 200);
 		$offset = (int)($query['offset'] ?? 0);
 
@@ -155,12 +178,11 @@ class FilesObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 		return array_map(
 			fn (File $file): ObjectEntity => $this->fileEntity(binding: $binding, data: $this->fileData(file: $file, userFolder: $userFolder)),
 			array_slice($this->collectFiles(root: $userFolder), $offset, $limit)
 		);
-	}//end findAll()
+	}//end listFiles()
 
 	/**
 	 * Resolve the acting user's home folder, or null when there is no session user.

@@ -48,20 +48,19 @@ class SpreadsheetReportWriter {
 	/**
 	 * Render the spreadsheet bytes.
 	 *
-	 * @param array<string, mixed> $dashboard Dashboard payload.
-	 * @param array<int, array{widget: array, data: array|null}> $resolvedWidgets Widget+data tuples.
-	 * @param string $format csv|xlsx|ods.
+	 * @param ReportContent $content The dashboard payload and its resolved widgets.
+	 * @param string        $format  csv|xlsx|ods.
 	 *
 	 * @return string Rendered bytes.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-5
 	 */
-	public function write(array $dashboard, array $resolvedWidgets, string $format): string {
-		$spreadsheet = $this->newWorkbook(dashboard: $dashboard);
+	public function write(ReportContent $content, string $format): string {
+		$spreadsheet = $this->newWorkbook(dashboard: $content->dashboard);
 		$overview = $spreadsheet->getActiveSheet();
-		$this->writeOverviewSheet(sheet: $overview, dashboard: $dashboard);
-		$this->writeOverviewTable(sheet: $overview, resolvedWidgets: $resolvedWidgets);
-		foreach ($resolvedWidgets as $i => $entry) {
+		$this->writeOverviewSheet(sheet: $overview, dashboard: $content->dashboard);
+		$this->writeOverviewTable(sheet: $overview, resolvedWidgets: $content->resolvedWidgets);
+		foreach ($content->resolvedWidgets as $i => $entry) {
 			$widgetEntry = new ReportWidgetEntry(index: $i, widget: $entry['widget'], data: $entry['data']);
 			$this->writeWidgetSheet(sheet: $spreadsheet->createSheet(), entry: $widgetEntry);
 		}

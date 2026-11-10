@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use Throwable;
 
 /**
  * Thrown when archiving is asked of a schema that does not offer it.
@@ -64,19 +63,15 @@ class ArchiveNotOfferedException extends Exception {
 	/**
 	 * Constructor for ArchiveNotOfferedException.
 	 *
+	 * The HTTP status is always HTTP_STATUS (422).
+	 *
 	 * @param string $message The refusal message.
-	 * @param int $code The error code (default: 422).
-	 * @param Throwable|null $previous The previous exception that caused this one.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function __construct(
-		string $message = 'This schema does not offer archiving',
-		int $code = 422,
-		?Throwable $previous = null,
-	) {
-		parent::__construct(message: $message, code: $code, previous: $previous);
+	public function __construct(string $message='This schema does not offer archiving') {
+		parent::__construct(message: $message, code: self::HTTP_STATUS);
 	}//end __construct()
 }//end class

@@ -53,18 +53,35 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 	private const MODE_SYNC = 'sync';
 
 	/**
+	 * Finds flows wired to an event.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Queues the runs.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowLocator $resolvers Finds flows wired to an event.
-	 * @param FlowRunServiceInterface $runner Queues the runs.
-	 * @param LoggerInterface $logger The logger.
+	 * @param FlowExecution $execution Finds flows wired to an event, queues the runs and logs.
 	 */
-	public function __construct(
-		private readonly FlowLocator $resolvers,
-		private readonly FlowRunServiceInterface $runner,
-		private readonly LoggerInterface $logger,
-	) {
-
+	public function __construct(FlowExecution $execution) {
+		$this->resolvers = $execution->resolvers;
+		$this->runner    = $execution->runner;
+		$this->logger    = $execution->logger;
 	}//end __construct()
 
 	/**

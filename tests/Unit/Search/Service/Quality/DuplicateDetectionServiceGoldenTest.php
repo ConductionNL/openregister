@@ -260,7 +260,7 @@ class DuplicateDetectionServiceGoldenTest extends TestCase {
 			$this->log[] = ['log' => ['warning', (string) $message]];
 		});
 
-		$this->service = new DuplicateDetectionService($objectService, new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources($schemaMapper, $registerMapper, new SimilarityCalculator()), $store, $logger);
+		$this->service = new DuplicateDetectionService($objectService, new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()), $store, $logger);
 		return $this->service;
 	}
 

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -31,16 +32,34 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class TextExtractionObjects {
 	/**
-	 * Bundle the services.
+	 * Mapper for object entities.
 	 *
-	 * @param MagicMapperInterface    $objectEntityMapper Mapper for object entities
-	 * @param SchemaMapperInterface   $schemaMapper       Mapper for schemas
-	 * @param RegisterMapperInterface $registerMapper     Mapper for registers
+	 * @var MagicMapperInterface
 	 */
-	public function __construct(
-		public readonly MagicMapperInterface $objectEntityMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
-	) {
+	public readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Mapper for schemas.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Mapper for registers.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Take the mappers from the schema catalog.
+	 *
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
+	 */
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->objectEntityMapper = $catalog->tables();
+		$this->schemaMapper = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
 	}//end __construct()
 }//end class
