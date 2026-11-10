@@ -4446,7 +4446,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
-		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(entity: $entity, register: $register, schema: $schema);
+		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(
+			entity: $entity,
+			table: new RegisterSchema(register: $register, schema: $schema)
+		);
 	}//end slugForMove()
 
 	/**
@@ -9036,8 +9039,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// (#4037). Resolved lazily: the handler needs this mapper.
 		$restoredSlug = $this->container->get(ObjectSlugTargetInterface::class)->slugForRestore(
 			entity: $entity,
-			register: $register,
-			schema: $schema
+			table: new RegisterSchema(register: $register, schema: $schema)
 		);
 
 		// Clear the soft-delete marker directly on the owning magic table.

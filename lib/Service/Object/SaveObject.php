@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -3310,10 +3311,8 @@ class SaveObject implements SaveObjectInterface {
 	private function decideSlug(ObjectEntity $entity, Schema $schema, ?string $stored, array $sent): void {
 		[$selfData, $data] = $sent;
 		$this->slugHandler->applyOnSave(
-			entity: $entity,
-			schema: $schema,
-			originalSlug: $stored,
-			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+			request: new SlugRequest(entity: $entity, schema: $schema, clientSlug: $this->clientSlug(selfData: $selfData, data: $data)),
+			originalSlug: $stored
 		);
 	}//end decideSlug()
 

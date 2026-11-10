@@ -31,6 +31,7 @@
 
 namespace OCA\OpenRegister\Service\Configuration;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
@@ -4571,7 +4572,8 @@ class ImportHandler {
 			return;
 		}
 
-		$this->slugHandler->applyOnSeed(entity: $entity, schema: $object->schema, clientSlug: $this->seedClientSlug(objectData: $object->data));
+		$clientSlug = $this->seedClientSlug(objectData: $object->data);
+		$this->slugHandler->applyOnSeed(request: new SlugRequest(entity: $entity, schema: $object->schema, clientSlug: $clientSlug));
 	}//end applySeedSlug()
 
 	/**
