@@ -400,40 +400,20 @@ class FlowRecipientAddresses {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function mappedAddressOf(array $entry): ?array {
-		if ($this->stringOrNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) !== null) {
+		if (FlowScalarText::orNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) !== null) {
 			return null;
 		}
 
-		$address = $this->stringOrNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
+		$address = FlowScalarText::orNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
 		if ($address === null) {
 			return null;
 		}
 
 		return [
 			'address' => $address,
-			'name' => (string)($this->stringOrNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
+			'name' => (string)(FlowScalarText::orNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
 		];
 	}//end mappedAddressOf()
-
-	/**
-	 * A scalar as a non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string, or null when empty or not scalar.
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$value = trim((string)$value);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
 
 	/**
 	 * Resolve a node's recipients config against one item.

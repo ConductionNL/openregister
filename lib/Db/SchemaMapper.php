@@ -56,6 +56,7 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Schemas\ScopedField;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
@@ -886,8 +887,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * multi-tenancy and RBAC filtering.
 	 *
 	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param ListQuery $query The page: its limit and offset
 	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
 	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
 	 *
@@ -899,8 +899,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function findBySlug(
 		string $slug,
-		int $limit = 10,
-		int $offset = 0,
+		ListQuery $query,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
@@ -908,8 +907,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$qb = $this->exactSlugQuery(slug: $slug);
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
-		$qb->setMaxResults($limit)
-			->setFirstResult($offset);
+		$qb->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0);
 
 		return array_values($this->fetchSchemas(qb: $qb));
 	}//end findBySlug()
@@ -1096,7 +1095,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		foreach ($this->scopedProperties(schema: $entity) as $name => $scope) {
 			$governance->assertMayAddAtScope(scope: $scope, path: (string)$name);
-			$governance->assertBelowCeiling(schema: $entity, scope: $scope, property: (string)$name);
+			$governance->assertBelowCeiling(schema: $entity, field: new ScopedField(property: (string)$name, scope: $scope));
 		}
 	}//end assertScopedPropertiesAreGoverned()
 
@@ -1743,26 +1742,24 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * Returns the uuids of the schemas that reference the given schema in their
 	 * allOf, oneOf or anyOf composition patterns.
 	 *
-	 * @param int|string  $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid        Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug        Pre-known slug to avoid redundant lookups.
+	 * @param Schema|int|string $schema The schema, or its ID, UUID or slug to look it up by.
 	 *
 	 * @return array Array of schema UUIDs that compose with this schema
 	 *
 	 * @psalm-return list{0?: mixed,...}
+	 *
+	 * @spec exclude schema composition lookup, no OpenSpec capability of its own yet
 	 */
-	public function findExtendedBy(int|string $schemaIdentifier, string|null $knownUuid = null, string|null $knownSlug = null): array {
-		$identifiers = [(string)$schemaIdentifier, $knownUuid, $knownSlug];
-		if ($knownUuid === null && $knownSlug === null) {
+	public function findExtendedBy(Schema|int|string $schema): array {
+		if ($schema instanceof Schema === false) {
 			try {
-				$targetSchema = $this->find(id: $schemaIdentifier);
+				$schema = $this->find(id: $schema);
 			} catch (Exception $e) {
 				return [];
 			}
-
-			$identifiers = [(string)$targetSchema->getId(), $targetSchema->getUuid(), $targetSchema->getSlug()];
 		}
 
+		$identifiers = [(string)$schema->getId(), $schema->getUuid(), $schema->getSlug()];
 		return (new ExtendedByReads(db: $this->db, tableName: $this->getTableName()))->referencing(identifiers: $identifiers);
 	}//end findExtendedBy()
 

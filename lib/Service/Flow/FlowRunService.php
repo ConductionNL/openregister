@@ -53,7 +53,7 @@ use Throwable;
  * signal, persist — plus the stream walk's wiring and the in-request advance; each is one
  * entry into the same engine and belongs beside the others.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 50 against 50, and the
- * one branch is the version-pin refusal in advanceStream(): the same rule
+ * one branch is the version-pin refusal in advanceBranch(): the same rule
  * execute() enforces, applied to the completion path so a week-old task
  * continues the graph its run was pinned to.
  * @SuppressWarnings(PHPMD.TooManyMethods) 28 against 25, from or-flow-run-node's
@@ -249,26 +249,6 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * `$budget` is `0` (nothing; the run is left queued), a count, or `"all"`
 	 * (bounded by the same three things a worker is).
 	 *
-	 * @param FlowRun $run The run, already resolved and pinned.
-	 * @param array $flow The pinned flow document.
-	 * @param object $subject The subject.
-	 * @param string $streamId The completing branch.
-	 * @param int|string $budget `0`, `N`, or `"all"`.
-	 *
-	 * @return FlowRun The run as it stands after the advance.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
-	 */
-	public function advanceStream(FlowRun $run, array $flow, object $subject, string $streamId, int|string $budget): FlowRun {
-		return $this->advanceBranch(
-			pass: new FlowRunPass(run: $run, flow: $flow, subject: $subject),
-			advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
-		);
-	}//end advanceStream()
-
-	/**
-	 * Advance one stream of a run in the calling request, as {@see advanceStream()} documents.
-	 *
 	 * @param FlowRunPass       $pass    The run, already resolved and pinned, its flow document and subject.
 	 * @param FlowStreamAdvance $advance The completing branch and its budget.
 	 *
@@ -276,7 +256,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
 	 */
-	private function advanceBranch(FlowRunPass $pass, FlowStreamAdvance $advance): FlowRun {
+	public function advanceBranch(FlowRunPass $pass, FlowStreamAdvance $advance): FlowRun {
 		$run = $pass->run;
 		if ($advance->firings() === 0) {
 			return $this->requeue(run: $run);
@@ -312,7 +292,10 @@ class FlowRunService implements FlowRunServiceInterface {
 		$context['resuming'] = true;
 
 		$start = $this->startFor(pass: $pinned, guard: $guard);
-		$result = $this->walk->engine->run(start: $start->withContext(context: $context)->withStreams(streams: $walk), items: ($run->getItems() ?? []));
+		$result = $this->walk->engine->run(
+			start: $start->withContext(context: $context)->withStreams(streams: $walk),
+			origin: new FlowRunOrigin(items: ($run->getItems() ?? []))
+		);
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end advanceBranch()
@@ -502,7 +485,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowToken::fromArray and
 	 * FlowResumeState::fromArray are stateless rehydrators for value objects;
 	 * injecting a factory to call them would add a dependency without removing
-	 * any coupling. Carried over from execute(), which held the same suppression
+	 * any coupling. Carried over from executePass(), which held the same suppression
 	 * for the same two calls before they moved here.
 	 */
 	private function nodeContextFor(FlowRun $run, FlowRunGuard $guard): array {
@@ -624,58 +607,6 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * arbitrary graph must not sit on that critical path — so the trigger only
 	 * records the intent and returns.
 	 *
-	 * @param string $flowId The flow to run.
-	 * @param array $subject `{uuid, register, schema}` of the object.
-	 * @param string $trigger What caused this run.
-	 * @param array $context Run-level metadata.
-	 * @param string|null $user The user whose action caused it.
-	 *
-	 * @return FlowRun The queued run.
-	 *
-	 * @throws FlowLifecycleRefused When the trigger is not `test` and the flow
-	 *                     has no published version (or its published version
-	 *                     is unsound) — `requirePublishedAndSound()`'s
-	 *                     refusal. Pre-existing but previously undeclared
-	 *                     here: `FlowController::run()` already catches it
-	 *                     around this same call chain, so the contract was
-	 *                     always real, just missing from this signature —
-	 *                     surfaced by phpstan flagging a new caller's catch
-	 *                     of it as dead, which it was not.
-	 * @throws FlowDeadEnd When a node has no outgoing edge and does not end the
-	 *                     flow, so the run is refused rather than started. Declared
-	 *                     because it is part of this method's contract: every
-	 *                     dispatch path arrives here, and a caller that cannot see
-	 *                     the refusal in the signature will not handle it — which
-	 *                     is how it reached HTTP as a bare 500.
-	 * @throws FlowUnattributed When nothing names the identity the run would
-	 *                         execute as. Declared for the same reason: the
-	 *                         schedule sweep must catch it PER FLOW, and a caller
-	 *                         that cannot see it in the signature lets one
-	 *                         unattributed flow abort the whole sweep.
-	 * @throws DelegationRefused When the trigger asserts a delegation that is no
-	 *                         longer live. Declared for the same reason again —
-	 *                         and it is a DIFFERENT fault from the one above, so
-	 *                         it must not be folded into it: "nobody was named"
-	 *                         and "the person named it may no longer act as them"
-	 *                         want opposite fixes.
-	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-	 * @spec openspec/specs/delegated-identity/spec.md
-	 */
-	public function queue(
-		string $flowId,
-		array $subject = [],
-		string $trigger = 'manual',
-		array $context = [],
-		?string $user = null,
-	): FlowRun {
-		$options = new FlowRunQueueOptions(subject: $subject, trigger: $trigger, context: $context, user: $user);
-		return $this->queueRun(flowId: $flowId, options: $options);
-	}//end queue()
-
-	/**
-	 * Queue a run without executing it, as {@see queue()} documents, refusals included.
-	 *
 	 * @param string              $flowId  The flow to run.
 	 * @param FlowRunQueueOptions $options The subject, the trigger, run-level metadata and the user who caused it.
 	 *
@@ -689,7 +620,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
-	private function queueRun(string $flowId, FlowRunQueueOptions $options): FlowRun {
+	public function queueRun(string $flowId, FlowRunQueueOptions $options): FlowRun {
 		$trigger = $options->trigger;
 		// Every dispatch path arrives here — manual, trigger, schedule, MCP,
 		// the workflow-engine operation and a sub-flow call — so this is the
@@ -709,7 +640,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		//
 		// This is the general form of a defect this codebase has now patched
 		// five times one call site at a time (or#2158: FlowMcpToolProvider,
-		// FlowRunService::execute(), FlowRunController::test(), and
+		// FlowRunService::executePass(), FlowRunController::test(), and
 		// FlowScheduleService::fire(), which spells out that an ownerless run
 		// makes every attribution-requiring node refuse — ObjectWriteNode
 		// answers "this flow run has no owner"). Fixing it HERE covers all six
@@ -854,16 +785,18 @@ class FlowRunService implements FlowRunServiceInterface {
 			return null;
 		}
 
-		return $this->queue(
+		return $this->queueRun(
 			flowId: (string)$run->getFlowId(),
-			subject: [
-				'uuid' => $run->getSubjectUuid(),
-				'register' => $run->getSubjectRegister(),
-				'schema' => $run->getSubjectSchema(),
-			],
-			trigger: 'retry',
-			context: ($run->getContext() ?? []),
-			user: $run->getTriggeredBy()
+			options: new FlowRunQueueOptions(
+				subject: [
+					'uuid' => $run->getSubjectUuid(),
+					'register' => $run->getSubjectRegister(),
+					'schema' => $run->getSubjectSchema(),
+				],
+				trigger: 'retry',
+				context: ($run->getContext() ?? []),
+				user: $run->getTriggeredBy()
+			)
 		);
 
 	}//end retry()
@@ -997,11 +930,8 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * Called by the queue worker, never by a trigger. Returns the run in
 	 * whatever state the walk left it: terminal, or suspended and resumable.
 	 *
-	 * @param FlowRun $run The run to advance.
-	 * @param array $flow The flow document.
-	 * @param object $subject The object the run is about.
-	 * @param array $seedItems Items to start from; ignored when resuming.
-	 * @param string|null $startAt Node to start from (run-from-here); ignored when resuming.
+	 * @param FlowRunPass   $pass   The run, the caller's flow document and the subject.
+	 * @param FlowRunOrigin $origin The seed items and start node; ignored when resuming.
 	 *
 	 * @return FlowRun The updated run.
 	 *
@@ -1011,24 +941,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * rehydrator for a value object; injecting a factory to call it would add a
 	 * dependency without removing any coupling.
 	 */
-	public function execute(FlowRun $run, array $flow, object $subject, ?array $seedItems = null, ?string $startAt = null): FlowRun {
-		return $this->executePass(
-			pass: new FlowRunPass(run: $run, flow: $flow, subject: $subject),
-			origin: new FlowRunOrigin(items: $seedItems, startAt: $startAt)
-		);
-	}//end execute()
-
-	/**
-	 * Execute (or continue) a run to its next stopping point, as {@see execute()} documents.
-	 *
-	 * @param FlowRunPass   $pass   The run, the caller's flow document and the subject.
-	 * @param FlowRunOrigin $origin The seed items and start node; ignored when resuming.
-	 *
-	 * @return FlowRun The updated run.
-	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-	 */
-	private function executePass(FlowRunPass $pass, FlowRunOrigin $origin): FlowRun {
+	public function executePass(FlowRunPass $pass, FlowRunOrigin $origin): FlowRun {
 		if ($pass->run->isTerminal() === true) {
 			// Re-executing a finished run would repeat every side effect it
 			// already performed. Retry creates a NEW run instead.
@@ -1083,8 +996,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			$begin = $this->startFor(pass: $pass, guard: $guard);
 			$result = $this->walk->engine->run(
 				start: $begin->withContext(context: $context)->withStreams(streams: $walk),
-				items: $items,
-				startAt: $start
+				origin: new FlowRunOrigin(items: $items, startAt: $start)
 			);
 		} catch (Throwable $e) {
 			$this->releaseWalk(walk: $walk);
@@ -1182,7 +1094,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * Run exactly ONE named node of a queued run's published graph, and stop.
 	 *
 	 * The mode or-flow-run-node's tasks.md asked for, distinct from
-	 * {@see execute()}'s `startAt`: `startAt` still walks the WHOLE graph
+	 * {@see executePass()}'s `startAt`: `startAt` still walks the WHOLE graph
 	 * onward from a chosen node, following every real edge, join and loop it
 	 * meets. This does not walk at all — it dispatches the one named step
 	 * directly through {@see RegistryStepDispatcher}, exactly the way
@@ -1193,7 +1105,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * output onward would silently run MORE of the flow than the caller was
 	 * authorized (RN-1) to run.
 	 *
-	 * The queued run this expects came from {@see queue()} with
+	 * The queued run this expects came from {@see queueRun()} with
 	 * `trigger: self::TRIGGER_DIRECT_NODE`, so it already carries a resolved
 	 * attribution and a version pin exactly like any other dispatch — a
 	 * direct-invoked node still needs to know WHOSE rights it writes with and
@@ -1201,27 +1113,6 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * The node to run is the one the run was queued for, named in its context
 	 * under {@see FlowRunServiceInterface::NODE_ID_CONTEXT_KEY}.
-	 *
-	 * @param FlowRun $run The queued run.
-	 * @param array $flow The flow document (used only to resolve the published pin).
-	 * @param object $subject The subject object the node acts on.
-	 * @param array $config The caller's config, overlaid on the published step's config after
-	 *                      pinning (caller keys win). The pin replaces the graph's nodes, so
-	 *                      this is the only way a picker's choice reaches the node.
-	 *
-	 * @return FlowRun The updated run: COMPLETED with the node's output items,
-	 *                 or FAILED with the node's exception recorded. Never
-	 *                 SUSPENDED — see {@see failSuspendedNode()}.
-	 *
-	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-a-node-type-opts-in-to-direct-invocation
-	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#scenario-the-callers-config-reaches-the-node
-	 */
-	public function executeNode(FlowRun $run, array $flow, object $subject, array $config = []): FlowRun {
-		return $this->runNode(pass: new FlowRunPass(run: $run, flow: $flow, subject: $subject), config: $config);
-	}//end executeNode()
-
-	/**
-	 * Run exactly one named node of a queued run's published graph, as {@see executeNode()} documents.
 	 *
 	 * @param FlowRunPass          $pass   The queued run, its flow document (used only to resolve the pin) and subject.
 	 * @param array<string, mixed> $config The caller's config, overlaid on the published step's config.
@@ -1235,7 +1126,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * suppression reasoning already given there: injecting a factory to call
 	 * them would add a dependency without removing any coupling.
 	 */
-	private function runNode(FlowRunPass $pass, array $config): FlowRun {
+	public function runNode(FlowRunPass $pass, array $config=[]): FlowRun {
 		$run = $pass->run;
 		if ($run->getStatus() !== FlowRun::STATUS_QUEUED) {
 			// Parked awaiting delegated-identity consent, or otherwise not

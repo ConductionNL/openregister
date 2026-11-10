@@ -1034,6 +1034,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			throw new Exception('Failed to replace words in Word document: ' . $e->getMessage(), 0, $e);
 		} finally {
 			if (file_exists($tempFile) === true) {
+				// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the tempnam() file this method created.
 				unlink($tempFile);
 			}
 		}//end try

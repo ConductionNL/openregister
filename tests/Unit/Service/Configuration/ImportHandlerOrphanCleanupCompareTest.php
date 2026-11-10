@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportedSchemaComparison;
 use OCP\IGroupManager;
@@ -142,9 +143,11 @@ class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 		$handler->setGroupManager($this->createMock(IGroupManager::class));
 
 		$handler->importSchema(
-			data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => [], 'configuration' => ['orphanCleanup' => true, 'allowFiles' => true]],
-			slugsAndIdsMap: [],
-			registerSchemaIds: []
+			definition: new ImportedSchemaLookup(
+				data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => [], 'configuration' => ['orphanCleanup' => true, 'allowFiles' => true]],
+				registerSchemaIds: []
+			),
+			slugsAndIdsMap: []
 		);
 
 		$this->assertSame(['allowFiles' => true], $stored);

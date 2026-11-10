@@ -35,6 +35,7 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
@@ -456,10 +457,12 @@ class FileTextController extends Controller {
 			// mark them again (a second UPDATE would overwrite anonymized_value).
 			$anonymizedFile = $this->fileService->anonymizeDocument(
 				node: $fileNode,
-				entities: $entities,
-				scope: $this->requestedPlaceholderScope(),
-				fileKey: $this->requestedDossierKey(),
-				preserveStructure: $this->requestedPreserveStructure()
+				anonymization: new DocumentAnonymization(
+					entities: $entities,
+					scope: $this->requestedPlaceholderScope(),
+					fileKey: $this->requestedDossierKey(),
+					preserveStructure: $this->requestedPreserveStructure()
+				)
 			);
 
 			$residualEntities = $this->fileService->getLastResidualEntities();
@@ -538,6 +541,7 @@ class FileTextController extends Controller {
 			$entities[] = [
 				'text'       => $value,
 				'entityType' => $entity['entity_type'],
+				// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 				'key'        => substr(md5($value . $entity['entity_type']), 0, 8),
 			];
 		}

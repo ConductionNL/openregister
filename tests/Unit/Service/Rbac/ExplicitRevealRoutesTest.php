@@ -237,7 +237,7 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$rbac->method('canReadProperty')->willReturn(true);
 		$rbac->method('filterReadableProperties')->willReturnArgument(1);
 		$encryption = $this->createMock(FieldEncryptionHandler::class);
-		$encryption->method('decryptProperties')->willReturnCallback(
+		$encryption->method('decryptInScope')->willReturnCallback(
 			static fn (array $data): array => (['citizenServiceNumber' => self::BSN] + $data)
 		);
 		$render = $this->bare(RenderObject::class, ['runtime' => $this->maskingRuntime($encryption)]);

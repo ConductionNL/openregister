@@ -11,7 +11,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Controller\Support\GeoServices;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
@@ -229,12 +231,12 @@ class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 
 	private function builder(): GeoFeatureCollectionBuilder {
 		$builder = $this->createMock(GeoFeatureCollectionBuilder::class);
-		$builder->method('buildFeatureCollection')->willReturnCallback(function (...$args): array {
-			$this->calls[] = ['buildFeatureCollection' => $args];
+		$builder->method('buildFeatureCollection')->willReturnCallback(function (array $rows, FeatureShape $shape): array {
+			$this->calls[] = ['buildFeatureCollection' => [$rows, $shape->geoProperty, $shape->fields, $shape->includeArea]];
 			return ['type' => 'FeatureCollection'];
 		});
-		$builder->method('buildWfsResponse')->willReturnCallback(function (...$args): array {
-			$this->calls[] = ['buildWfsResponse' => $args];
+		$builder->method('buildWfsResponse')->willReturnCallback(function (array $rows, GetFeatureRequest $request): array {
+			$this->calls[] = ['buildWfsResponse' => [$rows, $request->geoProperty, $request->maxFeatures]];
 			return ['type' => 'wfs'];
 		});
 		return $builder;

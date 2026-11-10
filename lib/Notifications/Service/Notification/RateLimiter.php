@@ -366,6 +366,7 @@ class RateLimiter implements RateLimiterInterface {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	private function sharedKey(string $recipient): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return 'notification:rate:shared:' . sha1($recipient);
 	}//end sharedKey()
 
@@ -478,6 +479,7 @@ class RateLimiter implements RateLimiterInterface {
 	 * @return string Cache key.
 	 */
 	private function key(string $ruleId, string $recipient): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return 'notification:rate:' . sha1($ruleId . '|' . $recipient);
 	}//end key()
 

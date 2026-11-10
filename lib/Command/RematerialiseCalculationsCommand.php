@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Command;
 use DateTimeInterface;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
@@ -121,9 +122,8 @@ class RematerialiseCalculationsCommand extends Command {
 
 		$this->announce(run: $run);
 		$entities = $this->storage->magicMapper->findAllInRegisterSchemaTable(
-			register: $register,
-			schema: $schema,
-			limit: 100000
+			table: new RegisterSchema(register: $register, schema: $schema),
+			listing: new ListQuery(limit: 100000)
 		);
 		foreach ($entities as $entity) {
 			$this->rematerialiseRow(run: $run, entity: $entity);

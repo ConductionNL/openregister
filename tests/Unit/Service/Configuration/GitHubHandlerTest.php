@@ -27,6 +27,9 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 
 /**
  * Unit tests for GitHubHandler
@@ -142,7 +145,7 @@ class GitHubHandlerTest extends TestCase {
 				$this->createMockResponse($enrichResponse)
 			);
 
-		$result = $this->handler->searchConfigurations();
+		$result = $this->handler->searchConfigurations(search: '', page: new RepositorySearchPage(page: 1, perPage: 30));
 
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('total_count', $result);
@@ -173,7 +176,7 @@ class GitHubHandlerTest extends TestCase {
 			)
 			->willReturn($this->createMockResponse($apiResponse));
 
-		$result = $this->handler->searchConfigurations('mySearch');
+		$result = $this->handler->searchConfigurations(search: 'mySearch', page: new RepositorySearchPage(page: 1, perPage: 30));
 
 		$this->assertIsArray($result);
 		$this->assertEquals(0, $result['total_count']);
@@ -189,7 +192,7 @@ class GitHubHandlerTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$this->handler->searchConfigurations();
+		$this->handler->searchConfigurations(search: '', page: new RepositorySearchPage(page: 1, perPage: 30));
 	}
 
 	// =========================================================================
@@ -216,7 +219,9 @@ class GitHubHandlerTest extends TestCase {
 			->with('GET', $this->stringContains('raw.githubusercontent.com/owner/repo/main/config.json'))
 			->willReturn($this->createMockResponse($configJson));
 
-		$result = $this->handler->enrichConfigurationDetails('owner', 'repo', 'config.json');
+		$result = $this->handler->enrichConfigurationDetails(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'),
+		);
 
 		$this->assertIsArray($result);
 		$this->assertEquals('My Config', $result['title']);
@@ -232,7 +237,9 @@ class GitHubHandlerTest extends TestCase {
 		$this->client->method('request')
 			->willReturn($this->createMockResponse('not valid json {{{'));
 
-		$result = $this->handler->enrichConfigurationDetails('owner', 'repo', 'config.json');
+		$result = $this->handler->enrichConfigurationDetails(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'),
+		);
 
 		$this->assertNull($result);
 	}
@@ -242,7 +249,9 @@ class GitHubHandlerTest extends TestCase {
 		$this->client->method('request')
 			->willThrowException(new Exception('Network error'));
 
-		$result = $this->handler->enrichConfigurationDetails('owner', 'repo', 'config.json');
+		$result = $this->handler->enrichConfigurationDetails(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'),
+		);
 
 		$this->assertNull($result);
 	}
@@ -259,7 +268,9 @@ class GitHubHandlerTest extends TestCase {
 			->with('GET', $this->stringContains('raw.githubusercontent.com/owner/repo/develop/config.json'))
 			->willReturn($this->createMockResponse($configJson));
 
-		$result = $this->handler->enrichConfigurationDetails('owner', 'repo', 'config.json', 'develop');
+		$result = $this->handler->enrichConfigurationDetails(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'develop'),
+		);
 
 		$this->assertIsArray($result);
 		$this->assertEquals('Dev Config', $result['title']);
@@ -338,7 +349,9 @@ class GitHubHandlerTest extends TestCase {
 			->method('request')
 			->willReturn($this->createMockResponse($apiResponse));
 
-		$result = $this->handler->getFileContent('owner', 'repo', 'path/to/file.json');
+		$result = $this->handler->getFileContent(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'path/to/file.json', branch: 'main'),
+		);
 
 		$this->assertEquals(['key' => 'value', 'nested' => ['a' => 1]], $result);
 	}
@@ -358,7 +371,7 @@ class GitHubHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Invalid JSON in file');
 
-		$this->handler->getFileContent('owner', 'repo', 'file.json');
+		$this->handler->getFileContent(location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'file.json', branch: 'main'));
 	}
 
 	#[Test]
@@ -374,7 +387,7 @@ class GitHubHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No content found in file');
 
-		$this->handler->getFileContent('owner', 'repo', 'file.json');
+		$this->handler->getFileContent(location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'file.json', branch: 'main'));
 	}
 
 	// =========================================================================
@@ -589,7 +602,9 @@ class GitHubHandlerTest extends TestCase {
 			->method('request')
 			->willReturn($this->createMockResponse($apiResponse));
 
-		$result = $this->handler->getFileSha('owner', 'repo', 'path/to/file.json');
+		$result = $this->handler->getFileSha(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'path/to/file.json', branch: 'main'),
+		);
 
 		$this->assertEquals('abc123def456', $result);
 	}
@@ -612,7 +627,9 @@ class GitHubHandlerTest extends TestCase {
 		$this->client->method('request')
 			->willThrowException($exception);
 
-		$result = $this->handler->getFileSha('owner', 'repo', 'nonexistent.json');
+		$result = $this->handler->getFileSha(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'nonexistent.json', branch: 'main'),
+		);
 
 		$this->assertNull($result);
 	}
@@ -640,12 +657,8 @@ class GitHubHandlerTest extends TestCase {
 			->willReturn($this->createMockResponse($apiResponse));
 
 		$result = $this->handler->publishConfiguration(
-			'owner',
-			'repo',
-			'config.json',
-			'main',
-			'{"key":"value"}',
-			'Update configuration'
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'),
+			write: new GitHubFileWrite(content: '{"key":"value"}', commitMessage: 'Update configuration'),
 		);
 
 		$this->assertIsArray($result);
@@ -666,12 +679,8 @@ class GitHubHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 
 		$this->handler->publishConfiguration(
-			'owner',
-			'repo',
-			'config.json',
-			'main',
-			'{"key":"value"}',
-			'Update'
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'),
+			write: new GitHubFileWrite(content: '{"key":"value"}', commitMessage: 'Update'),
 		);
 	}
 
@@ -698,7 +707,7 @@ class GitHubHandlerTest extends TestCase {
 			)
 			->willReturn($this->createMockResponse($apiResponse));
 
-		$this->handler->searchConfigurations();
+		$this->handler->searchConfigurations(search: '', page: new RepositorySearchPage(page: 1, perPage: 30));
 	}
 
 	#[Test]
@@ -719,7 +728,7 @@ class GitHubHandlerTest extends TestCase {
 			)
 			->willReturn($this->createMockResponse($apiResponse));
 
-		$this->handler->searchConfigurations();
+		$this->handler->searchConfigurations(search: '', page: new RepositorySearchPage(page: 1, perPage: 30));
 	}
 
 	#[Test]
@@ -788,7 +797,9 @@ class GitHubHandlerTest extends TestCase {
 	public function testEnrichConfigurationDetailsRefusesATraversalSegment(): void {
 		$this->client->expects($this->never())->method('request');
 
-		$this->assertNull($this->handler->enrichConfigurationDetails('owner', 'repo', 'a/../b.json'));
+		$this->assertNull($this->handler->enrichConfigurationDetails(
+			location: new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'a/../b.json', branch: 'main'),
+		));
 	}
 
 	#[Test]
@@ -804,7 +815,9 @@ class GitHubHandlerTest extends TestCase {
 
 		$this->assertSame(
 			['title' => 'my#conf', 'description' => '', 'version' => 'v.unknown', 'app' => null, 'type' => 'unknown', 'openregister' => null],
-			$this->handler->enrichConfigurationDetails('my org', '/repo/', 'dir//my#conf.json', 'feat?x')
+			$this->handler->enrichConfigurationDetails(
+				location: new GitHubFileLocation(owner: 'my org', repo: '/repo/', path: 'dir//my#conf.json', branch: 'feat?x'),
+			)
 		);
 	}
 }

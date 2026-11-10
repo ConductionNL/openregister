@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -181,22 +182,20 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 	 * edited — getting that wrong leaves a flow subscribed to an event it no
 	 * longer declares, which is the one outcome worse than not being subscribed.
 	 *
-	 * @param string $flowUuid The flow's UUID.
-	 * @param array $triggers The derived triggers, each event/register/schema.
-	 * @param bool $enabled Whether the flow is enabled.
+	 * @param FlowTriggerSet $set The flow's UUID, its derived triggers (each event/register/schema) and whether it is enabled.
 	 *
 	 * @return int The number of rows written.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
 	 */
-	public function replaceFor(string $flowUuid, array $triggers, bool $enabled): int {
-		$this->deleteFor(flowUuid: $flowUuid);
+	public function replaceFor(FlowTriggerSet $set): int {
+		$this->deleteFor(flowUuid: $set->flowUuid);
 
-		foreach ($triggers as $trigger) {
-			$this->insertRow(row: self::triggerRow(flowUuid: $flowUuid, trigger: $trigger), enabled: $enabled);
+		foreach ($set->triggers as $trigger) {
+			$this->insertRow(row: self::triggerRow(flowUuid: $set->flowUuid, trigger: $trigger), enabled: $set->enabled);
 		}
 
-		return count($triggers);
+		return count($set->triggers);
 	}//end replaceFor()
 
 	/**

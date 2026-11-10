@@ -28,7 +28,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use Exception;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1227,7 +1229,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
-			static function (Schema $schema, array $object, array $incomingData, bool $isCreate = false) use (&$seen): array {
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$seen = $object;
 
 				return ['name'];
@@ -1295,7 +1298,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
 			register: $this->mockRegister,
@@ -1329,7 +1332,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
 			register: $this->mockRegister,
@@ -1366,15 +1369,15 @@ class SaveObjectAdditionalTest extends TestCase {
 			->willReturn($newObject);
 
 		// File property detected.
-		$this->filePropertyHandler->method('isFileProperty')
-			->willReturnCallback(function ($value, $schema, $propertyName) {
+		$this->filePropertyHandler->method('isFileInSchema')
+			->willReturnCallback(function ($schema, $propertyName) {
 				return $propertyName === 'logo';
 			});
 
 		// File handling modifies data in-place (simulated).
 		$this->filePropertyHandler->method('handleFileProperty')
-			->willReturnCallback(function ($objectEntity, &$object, $propertyName) {
-				$object[$propertyName] = 42;
+			->willReturnCallback(function ($write, $propertyName) {
+				$write->data[$propertyName] = 42;
 			});
 
 		$this->objectEntityMapper->method('update')
@@ -1531,8 +1534,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['slug' => 'my-slug'],
-			[],
+			new SelfSubmission(selfData: ['slug' => 'my-slug']),
 		]);
 
 		// The slug is decided after hydration by ObjectSlugHandler (#4037).

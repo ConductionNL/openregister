@@ -38,8 +38,10 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\ICache;
@@ -448,7 +450,8 @@ final class ScheduledNotificationJob extends TimedJob {
 		}
 
 		$objectData = (array)($object->getObject() ?? []);
-		if ($this->sources->filterEvaluator->matches(objectData: $objectData, filter: $fire->filter, now: $fire->nowDt) === true) {
+		$target     = new ScheduledFilterTarget(objectData: $objectData, now: $fire->nowDt);
+		if ($this->sources->filterEvaluator->matchesTarget(filter: $fire->filter, target: $target) === true) {
 			$fire->matched++;
 			$this->fireOnMatch(fire: $fire, object: $object);
 		}
@@ -482,7 +485,8 @@ final class ScheduledNotificationJob extends TimedJob {
 	 * @return void
 	 */
 	private function dispatchUnlessUnchanged(ScheduledFire $fire, ObjectEntity $object): void {
-		$existing = $this->delivery->dedupeMapper->findOne(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid);
+		$key      = new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid);
+		$existing = $this->delivery->dedupeMapper->findByKey(key: $key);
 		if ($existing === null || (string)$existing->getFingerprint() !== $fire->fingerprint) {
 			$this->dispatch(fire: $fire, object: $object);
 			return;
@@ -535,9 +539,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	private function upsertState(ScheduledFire $fire, bool $dispatched): void {
 		$this->delivery->dedupeMapper->upsert(
 			key: new NotificationDedupeKey(schemaId: $fire->schemaId, ruleKey: $fire->name, objectUuid: $fire->objectUuid),
-			fingerprint: $fire->fingerprint,
-			now: $fire->seenAt,
-			dispatched: $dispatched
+			sighting: new DedupeSighting(fingerprint: $fire->fingerprint, now: $fire->seenAt, dispatched: $dispatched)
 		);
 	}//end upsertState()
 
@@ -631,6 +633,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function computeFingerprint(array $objectData, array $watchedFields): string {
 		if ($watchedFields === []) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			return sha1('constant');
 		}
 
@@ -645,6 +648,7 @@ final class ScheduledNotificationJob extends TimedJob {
 			$encoded = var_export($payload, true);
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1($encoded);
 	}//end computeFingerprint()
 }//end class

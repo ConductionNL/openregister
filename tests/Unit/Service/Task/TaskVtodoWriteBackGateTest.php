@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
@@ -46,6 +47,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 class TaskVtodoWriteBackGateTest extends TestCase {
 	private const UUID = TaskCalendarProjectorTest::PROJECTED_UUID;
@@ -244,7 +246,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$this->expectRevertAndNotice('EXAMPLE_APPROVER_USER', 'cannot be requested from a calendar');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->gate()->request(self::UUID, 'assign', 'EXAMPLE_APPROVER_USER');
+		$this->gate()->request(self::UUID, new TaskAct('assign', 'EXAMPLE_APPROVER_USER'));
 	}
 
 	public function testANullActorIsPassedToTheLifecycleWhichDeniesIt(): void {
@@ -266,7 +268,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$cancelled = TaskCalendarProjectorTest::assignedTask();
 		$cancelled->setState(Task::STATE_TERMINATED);
 		$this->tasks->expects($this->once())->method('cancel')
-			->with(self::UUID, $this->anything(), 'EXAMPLE_APPROVER_USER')
+			->with(new TaskActorRef(uuid: self::UUID, actor: 'EXAMPLE_APPROVER_USER'), $this->anything())
 			->willReturn($cancelled);
 
 		$this->assertSame('RENDERED:terminated', $this->gate()->handleWrite($this->vtodo('CANCELLED'), 'EXAMPLE_APPROVER_USER'));

@@ -38,6 +38,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 /**
@@ -229,7 +230,7 @@ class EmailsController extends Controller {
 	 */
 	private function linksOf(\OCA\OpenRegister\Db\ObjectEntity $object): array {
 		$params = $this->request->getParams();
-		$limit = null;
+		$limit = ListQuery::UNBOUNDED;
 		if (isset($params['limit']) === true) {
 			$limit = (int)$params['limit'];
 		}
@@ -239,7 +240,7 @@ class EmailsController extends Controller {
 			$offset = (int)$params['offset'];
 		}
 
-		return $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
+		return $this->emailService->getEmailsForObject($object->getUuid(), new ListQuery(limit: $limit, offset: $offset));
 	}//end linksOf()
 
 	/**

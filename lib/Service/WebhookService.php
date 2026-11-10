@@ -41,8 +41,8 @@ use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
-use OCP\EventDispatcher\Event;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -502,16 +502,15 @@ class WebhookService {
 	/**
 	 * Dispatch event to all matching webhooks
 	 *
-	 * @param Event $_event The event to dispatch (unused but provided by event system)
 	 * @param string $eventName Event class name
-	 * @param array $payload Event payload data
+	 * @param array  $payload   Event payload data
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function dispatchEvent(Event $_event, string $eventName, array $payload): void {
+	public function dispatchEvent(string $eventName, array $payload): void {
 		$this->dispatch(event: new WebhookEvent(name: $eventName, payload: $payload));
 	}//end dispatchEvent()
 
@@ -733,21 +732,6 @@ class WebhookService {
 	 * shaped it: a delivery whose mapping is missing or fails falls back to the
 	 * standard payload, and the preview must not show that fallback as mapped.
 	 *
-	 * @param Webhook $webhook   The webhook, saved or as the dialog holds it.
-	 * @param string  $eventName The event class the payload is for.
-	 * @param array   $payload   The event payload.
-	 *
-	 * @return array{payload: array, mapped: bool}
-	 *
-	 * @spec openspec/specs/webhook-payload-mapping/spec.md
-	 */
-	public function previewPayload(Webhook $webhook, string $eventName, array $payload): array {
-		return $this->previewEvent(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload));
-	}//end previewPayload()
-
-	/**
-	 * The payload a delivery of this webhook would send for one event (value-object form of previewPayload()).
-	 *
 	 * @param Webhook      $webhook The webhook, saved or as the dialog holds it.
 	 * @param WebhookEvent $event   The event name and payload.
 	 *
@@ -755,7 +739,7 @@ class WebhookService {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function previewEvent(Webhook $webhook, WebhookEvent $event): array {
+	public function previewPayload(Webhook $webhook, WebhookEvent $event): array {
 		$delivery = new WebhookDelivery(webhook: $webhook, event: $event);
 		$mapped = false;
 		$mappingId = $webhook->getMapping();
@@ -767,7 +751,7 @@ class WebhookService {
 			'payload' => $this->buildPayload(delivery: $delivery),
 			'mapped' => $mapped,
 		];
-	}//end previewEvent()
+	}//end previewPayload()
 
 	/**
 	 * Build webhook payload
@@ -821,10 +805,12 @@ class WebhookService {
 			);
 
 			return $this->dispatch->cloudEventFormatter->formatAsCloudEvent(
-				eventType: $eventName,
-				payload: $enrichedPayload,
-				source: $config['cloudEventSource'] ?? null,
-				subject: $config['cloudEventSubject'] ?? null
+				attributes: new CloudEventAttributes(
+					type: $eventName,
+					source: $config['cloudEventSource'] ?? null,
+					subject: $config['cloudEventSubject'] ?? null
+				),
+				payload: $enrichedPayload
 			);
 		}
 

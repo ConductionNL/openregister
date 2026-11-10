@@ -30,9 +30,11 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Service\SchemaImport\SourceUpdate;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaDefinition;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaHeading;
@@ -243,8 +245,8 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 		$this->params = ['resolveConflicts' => ['c', 3]];
 		$seen = [];
 		$this->service->method('previewUpdateFromSource')->willReturnCallback(
-			function (array $source, array $current, array $resolved) use (&$seen): array {
-				$seen[] = [$source, $current, $resolved];
+			function (SourceUpdate $update) use (&$seen): array {
+				$seen[] = [$update->importSource, $update->currentProperties, $update->resolvedConflicts];
 				return $this->diff(applied: false);
 			}
 		);
@@ -267,7 +269,7 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 		$this->service->method('previewUpdateFromSource')->willReturn($this->diff(applied: true));
 		$changes = new SchemaChangeSet([['kind' => 'added']], 'additive', 'minor');
 		$this->versioning->expects($this->once())->method('classify')
-			->with($schema, ['properties' => ['a' => [], 'b' => []], 'required' => ['a']])
+			->with($schema, new IncomingDefinition(['properties' => ['a' => [], 'b' => []], 'required' => ['a']]))
 			->willReturn($changes);
 		$this->versioning->method('nextVersion')->willReturn('1.1.0');
 		$this->schemas->expects($this->once())->method('update')->with($schema)->willReturnArgument(0);

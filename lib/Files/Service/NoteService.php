@@ -410,7 +410,7 @@ class NoteService implements NoteServiceInterface {
 				throw new NoteEditForbiddenException();
 			}
 
-			$this->versions->record(noteId: $noteId, previous: $comment, editedBy: $user->getUID());
+			$this->versions->record(previous: $comment, editedBy: $user->getUID());
 
 			$comment->setMessage($edit->message);
 		}

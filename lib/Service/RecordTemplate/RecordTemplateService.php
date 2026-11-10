@@ -96,16 +96,15 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	/**
 	 * The templates the caller may use, each with the access they hold on it.
 	 *
-	 * @param ViewerReach $reach    The caller.
-	 * @param string|null $register Only templates for this register id.
-	 * @param string|null $schema   Only templates for this schema id.
+	 * @param ViewerReach         $reach   The caller.
+	 * @param TemplateListOptions $options Only templates for this register id and this schema id, where set.
 	 *
 	 * @return RecordTemplate[] The usable templates.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
-		$scope      = ListQuery::unbounded(filters: ['register' => $register, 'schema' => $schema]);
+	public function listFor(ViewerReach $reach, TemplateListOptions $options=new TemplateListOptions()): array {
+		$scope      = ListQuery::unbounded(filters: ['register' => $options->register, 'schema' => $options->schema]);
 		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, query: $scope);
 
 		return array_values(array_filter($candidates, fn (RecordTemplate $template): bool => $this->resolveUse(template: $template, reach: $reach)));
@@ -161,22 +160,18 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	/**
 	 * Change a template the caller owns, or any template for an administrator.
 	 *
-	 * @param string               $uuid    The template uuid.
-	 * @param array<string, mixed> $data    The fields to set.
-	 * @param ViewerReach          $reach   The caller.
-	 * @param bool                 $partial True for PATCH (only the fields sent), false for PUT.
+	 * @param TemplateChange $change The template uuid, the fields to set and whether only those are set (PATCH) or all (PUT).
+	 * @param ViewerReach    $reach  The caller.
 	 *
 	 * @return RecordTemplate The stored template.
 	 *
 	 * @throws RecordTemplateRefused 404, 403 or 400.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) PUT and PATCH differ only in this.
-	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function change(string $uuid, array $data, ViewerReach $reach, bool $partial): RecordTemplate {
-		$template = $this->administered(uuid: $uuid, reach: $reach);
-		$fields = $this->input->validated(data: $data, partial: $partial);
+	public function change(TemplateChange $change, ViewerReach $reach): RecordTemplate {
+		$template = $this->administered(uuid: $change->uuid, reach: $reach);
+		$fields = $this->input->validated(data: $change->data, partial: $change->partial);
 		if (isset($fields['schema']) === true && $fields['schema'] !== $template->getSchema()) {
 			$this->assertMayCreate(schema: (string)$fields['schema'], reach: $reach);
 		}
@@ -213,7 +208,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @return bool True when they may use it.
 	 */
 	private function resolveUse(RecordTemplate $template, ViewerReach $reach): bool {
-		$access = $this->shares->accessFor(view: $template->jsonSerialize(), userId: $reach->userId, userGroups: $reach->groups);
+		$access = $this->shares->accessOf(view: $template->jsonSerialize(), reach: $reach);
 		if ($access === null && $reach->isAdmin === true) {
 			$access = ViewShareResolver::ACCESS_WRITE;
 		}

@@ -92,16 +92,14 @@ interface RetentionServiceInterface {
 	 * when it cannot be answered. Kept here because callers and the spec both
 	 * name this method.
 	 *
-	 * @param ObjectEntity $object The object to calculate for
-	 * @param Schema $schema The schema with afleidingswijze config
-	 * @param string $retentionPeriod ISO 8601 duration (e.g., P5Y, P20Y)
+	 * @param RetentionClock $clock The object, its schema (with the afleidingswijze config) and the ISO 8601 retention period
 	 *
 	 * @return string|null ISO 8601 date string or null if calculation not possible
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	public function calculateArchiveActionDate(ObjectEntity $object, Schema $schema, string $retentionPeriod): ?string;
+	public function calculateArchiveActionDate(RetentionClock $clock): ?string;
 
 	/**
 	 * Recalculate archiefactiedatum when a source property changes.
@@ -167,28 +165,26 @@ interface RetentionServiceInterface {
 	/**
 	 * Place a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object   The object to place hold on
-	 * @param string       $reason   The reason for the legal hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
+	 * @param ObjectEntity $object The object to place the hold on
+	 * @param HoldOrder    $order  Why, and for which matter; no matter for a manual hold
 	 *
 	 * @return ObjectEntity The object with legal hold applied
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function placeLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity;
+	public function placeHold(ObjectEntity $object, HoldOrder $order): ObjectEntity;
 
 	/**
 	 * Release a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object   The object to release hold from
-	 * @param string       $reason   The reason for releasing the hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
+	 * @param ObjectEntity $object The object to release the hold from
+	 * @param HoldOrder    $order  Why, and for which matter; no matter releases every hold
 	 *
 	 * @return ObjectEntity The object with legal hold released
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity;
+	public function releaseHold(ObjectEntity $object, HoldOrder $order): ObjectEntity;
 
 	/**
 	 * Check if an object has an active legal hold.

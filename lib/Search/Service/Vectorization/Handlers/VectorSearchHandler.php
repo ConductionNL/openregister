@@ -287,6 +287,7 @@ class VectorSearchHandler {
 			return null;
 		}
 
+		// NOSEMGREP: php.lang.security.unserialize-use.unserialize-use -- Allowed_classes is false, so no object can be created.
 		$storedEmbedding = unserialize($blob, ['allowed_classes' => false]);
 		if (is_array($storedEmbedding) === false) {
 			return null;
