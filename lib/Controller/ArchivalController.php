@@ -41,7 +41,10 @@ use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
@@ -379,9 +382,11 @@ class ArchivalController extends Controller {
 
 			$result = $this->destructionService->approveList(
 				destructionList: $destructionList,
-				choice: $this->destructionService->approvalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons),
-				requiresDual: $requiresDual,
-				listUuid: $id
+				request: new ApprovalRequest(
+					choice: $this->destructionService->approvalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons),
+					requiresDual: $requiresDual,
+					listUuid: $id
+				)
 			);
 
 			// Check if dual approval was rejected (same user).
@@ -546,7 +551,7 @@ class ArchivalController extends Controller {
 		}
 
 		$object = $this->objectMapper->find($objectId);
-		$result = $this->legalHoldService->placeHold($object, $reason, $this->ownerKeyParam(params: $params));
+		$result = $this->legalHoldService->placeHold($object, new HoldOrder(reason: $reason, ownerKey: $this->ownerKeyParam(params: $params)));
 
 		return new JSONResponse(
 			data: [
@@ -576,8 +581,7 @@ class ArchivalController extends Controller {
 		}
 
 		$this->legalHoldService->bulkPlaceHold(
-			(int)$params['schemaId'],
-			(int)$registerId,
+			new RegisterSchemaRef(register: (int)$registerId, schema: (int)$params['schemaId']),
 			$reason
 		);
 
@@ -617,7 +621,7 @@ class ArchivalController extends Controller {
 
 		try {
 			$object = $this->objectMapper->find($id);
-			$result = $this->legalHoldService->releaseHold($object, $reason, $this->ownerKeyParam(params: $params));
+			$result = $this->legalHoldService->releaseHold($object, new HoldOrder(reason: $reason, ownerKey: $this->ownerKeyParam(params: $params)));
 
 			return new JSONResponse(
 				data: [

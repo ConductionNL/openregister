@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -570,22 +571,16 @@ class SharesProviderTest extends TestCase {
 			 */
 			public array $lastArgs = [];
 
-			public function mint(
-				string $objectUuid,
-				?int $registerId = null,
-				?int $schemaId = null,
-				?string $label = null,
-				?int $ttlSeconds = null,
-			): array {
+			public function mintFor(CaseTokenTarget $target, ?int $ttlSeconds = null): array {
 				$this->lastArgs = [
-					'objectUuid' => $objectUuid,
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-					'label' => $label,
+					'objectUuid' => $target->objectUuid,
+					'registerId' => $target->registerId,
+					'schemaId' => $target->schemaId,
+					'label' => $target->label,
 					'ttlSeconds' => $ttlSeconds,
 				];
 				return ['token' => 'MINTED', 'url' => 'https://nc/x/MINTED'];
-			}//end mint()
+			}//end mintFor()
 		};
 
 		$container = $this->buildContainer([

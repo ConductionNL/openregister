@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEvent;
@@ -56,6 +57,8 @@ use OCA\OpenRegister\Exception\FlowTimerStateException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -477,7 +480,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function cancelForSubject(string $subjectType, string $subjectUuid, string $reason, ?string $actor, ?DateTimeInterface $now = null): int {
-		$open = $this->storage->timers->findBySubject(subjectType: $subjectType, subjectUuid: $subjectUuid, states: self::OPEN_STATES);
+		$open = $this->storage->timers->findBySubject(subject: new TimerSubject(type: $subjectType, uuid: $subjectUuid), states: self::OPEN_STATES);
 		$cancellation = new FlowTimerLedgerEntry(type: FlowTimerEvent::TYPE_CANCELLED, actor: $actor, reason: $reason, moment: $this->instant(now: $now));
 		return $this->cancelAll(timers: $open, cancellation: $cancellation);
 	}//end cancelForSubject()
@@ -926,9 +929,13 @@ class FlowTimerService implements FlowTimerControlInterface {
 		try {
 			$this->subjects->taskService->applyTimerOutcome(
 				uuid: (string)$timer->getSubjectUuid(),
-				outcome: $outcome,
-				source: 'flow-timer:' . (string)$timer->getUuid(),
-				reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), $basis)
+				outcome: new TimerOutcome(
+					outcome: $outcome,
+					trigger: new TaskTrigger(
+						source: 'flow-timer:' . (string)$timer->getUuid(),
+						reason: sprintf("Expiry timer '%s' (%s) reached its deadline.", (string)$timer->getUuid(), $basis)
+					)
+				)
 			);
 		} catch (TaskConflictException $race) {
 			// The task closed concurrently: nothing to do, the timer is cancelled by that close.

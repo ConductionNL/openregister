@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -359,10 +360,10 @@ class SharesProviderGoldenTest extends TestCase {
 			 */
 			public array $args = [];
 
-			public function mint(string $objectUuid, ?int $registerId, ?int $schemaId, ?string $label, ?int $ttlSeconds): array {
-				$this->args = [$objectUuid, $registerId, $schemaId, $label, $ttlSeconds];
+			public function mintFor(CaseTokenTarget $target, ?int $ttlSeconds): array {
+				$this->args = [$target->objectUuid, $target->registerId, $target->schemaId, $target->label, $ttlSeconds];
 				return ['ok' => true];
-			}//end mint()
+			}//end mintFor()
 		};
 		$provider = $this->provider(services: ['OCA\\OpenRegister\\Service\\CaseTokenService' => $service]);
 

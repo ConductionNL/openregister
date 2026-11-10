@@ -33,6 +33,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 final class DestructionRecordShapeGoldenTest extends TestCase {
 
@@ -73,12 +74,7 @@ final class DestructionRecordShapeGoldenTest extends TestCase {
 			));
 
 		$recorder = new DestructionRecorder($mapper, $this->session('rm-1'), new NullLogger());
-		$record   = $recorder->record(
-			object: $this->object(),
-			scope: ['scope' => ['notes'], 'destroyed' => ['notes' => 1], 'total' => 1, 'failed' => ['files']],
-			rule: 'retention-sweep',
-			context: ['rule' => 'overridden', 'window' => ['days' => 30]]
-		);
+		$record   = $recorder->recordDestruction(command: new RecordDestructionCommand(object: $this->object(), scope: ['scope' => ['notes'], 'destroyed' => ['notes' => 1], 'total' => 1, 'failed' => ['files']], rule: 'retention-sweep', context: ['rule' => 'overridden', 'window' => ['days' => 30]]));
 
 		self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $record['destroyedAt']);
 		unset($record['destroyedAt']);
@@ -108,7 +104,7 @@ final class DestructionRecordShapeGoldenTest extends TestCase {
 	public function testAnEmptyScopeReportDefaultsAndTheSystemActs(): void {
 		$mapper   = $this->createMock(AuditTrailMapper::class);
 		$recorder = new DestructionRecorder($mapper, $this->session(null), new NullLogger());
-		$record   = $recorder->record($this->object(), [], 'destroy-right-granted');
+		$record   = $recorder->recordDestruction(new RecordDestructionCommand($this->object(), [], 'destroy-right-granted'));
 
 		self::assertSame('system', $record['destroyedBy']);
 		self::assertSame('System', $record['destroyedByName']);
@@ -126,7 +122,7 @@ final class DestructionRecordShapeGoldenTest extends TestCase {
 
 		$recorder = new DestructionRecorder($mapper, $this->session('rm-1'), new NullLogger());
 		try {
-			$recorder->record($this->object(), [], 'destroy-right-granted');
+			$recorder->recordDestruction(new RecordDestructionCommand($this->object(), [], 'destroy-right-granted'));
 			self::fail('An unrecorded destruction must refuse.');
 		} catch (DestructionRefusedException $e) {
 			self::assertSame('destruction-unrecordable', $e->getRule());
