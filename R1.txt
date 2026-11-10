@@ -27,3 +27,5 @@ PER PR, in the order given:
 
 FINAL MESSAGE (always, also when you stop early): per PR: verdict (APPROVE, BLOCK, or NOT REVIEWED with why), the full reviewed head sha, findings (file:line, old vs new, consequence, fix), 🟡/🟢 follow-ups, check counts (which suites, tests, merged on which development sha), conflicts, and which brief references you read and which you did NOT read. Under 150 words per PR. Then `PRIVATE (coordinator only)`: security specifics, or "none".
 
+
+NO "SIG" IN PUBLIC TEXT (owner rule): never write "SIG", "sig", "Sigrid" or "sig-" in branch names, commit messages, PR titles or PR bodies. Describe the work by what it does (e.g. "refactor(object): deleteObject takes a DeletionRequest", "reduce method parameters"), never by the rating or tool. The file name sigrid.yaml itself is fixed by the scanner; a commit that edits it says "analysis scope". Metric numbers in PR bodies are written as "parameter-count" or "unit size" figures without naming the tool.
