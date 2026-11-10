@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FieldAssignment;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -216,8 +217,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: $this->reshape(json: (array)($item[FlowItems::JSON] ?? []), plan: $plan->forItem(itemIndex: (int)$index)),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
