@@ -272,19 +272,21 @@ class ExampleSetPeople {
 			return;
 		}
 
-		$password = $run->install->terms->password;
-		$generated = '';
-		if ($password === '') {
-			$generated = $this->accounts->newPassword();
-			$password  = $generated;
-		}
+		$this->installNewUser(run: $run, person: $person);
+	}//end installUser()
 
-		$error = $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) ($person['displayName'] ?? $uid),
-			email: (string) ($person['email'] ?? ''),
-			password: $password
-		);
+	/**
+	 * Create the account for a cast person that does not exist yet, and report it.
+	 *
+	 * @param ExampleSetPeopleRun  $run    The install in progress.
+	 * @param array<string, mixed> $person The cast person, its uid not yet taken.
+	 *
+	 * @return void
+	 */
+	private function installNewUser(ExampleSetPeopleRun $run, array $person): void {
+		$uid = (string) $person['uid'];
+		$generated = $this->generatedPassword(run: $run);
+		$error = $this->createAccount(person: $person, password: $this->passwordOf(run: $run, generated: $generated));
 		if ($error !== '') {
 			$run->report['dropped'][] = 'account '.$uid.': '.$error;
 			return;
@@ -294,7 +296,57 @@ class ExampleSetPeople {
 		if ($generated !== '') {
 			$run->report['passwords'][$uid] = $generated;
 		}
-	}//end installUser()
+	}//end installNewUser()
+
+	/**
+	 * A fresh password when the install terms name none, else the empty string.
+	 *
+	 * @param ExampleSetPeopleRun $run The install in progress.
+	 *
+	 * @return string The generated password, or ''.
+	 */
+	private function generatedPassword(ExampleSetPeopleRun $run): string {
+		if ($run->install->terms->password === '') {
+			return $this->accounts->newPassword();
+		}
+
+		return '';
+	}//end generatedPassword()
+
+	/**
+	 * The password a new account gets: the generated one, or else the one the terms name.
+	 *
+	 * @param ExampleSetPeopleRun $run       The install in progress.
+	 * @param string              $generated The generated password, or ''.
+	 *
+	 * @return string The password.
+	 */
+	private function passwordOf(ExampleSetPeopleRun $run, string $generated): string {
+		if ($generated !== '') {
+			return $generated;
+		}
+
+		return $run->install->terms->password;
+	}//end passwordOf()
+
+	/**
+	 * Create one account for a cast person.
+	 *
+	 * @param array<string, mixed> $person   The cast person.
+	 * @param string               $password Its password.
+	 *
+	 * @return string The error, or '' when it was created.
+	 */
+	private function createAccount(array $person, string $password): string {
+		$uid = (string) $person['uid'];
+
+		return $this->accounts->createUser(
+			uid: $uid,
+			displayName: (string) ($person['displayName'] ?? $uid),
+			email: (string) ($person['email'] ?? ''),
+			password: $password
+		);
+	}//end createAccount()
 
 	/**
 	 * An account that is there: kept, or adopted when the record does not hold it and the administrator lets the set
