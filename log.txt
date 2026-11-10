@@ -1134,3 +1134,4 @@
 2026-11-10T04:55:07Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8471 f8415c89
 2026-11-10T04:55:21Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8492 d543473d
 2026-11-10T04:55:20Z precheck-20261109T215756-57e3989d RED tree 83e98b3a3b prs 1 front=red: Tests: 54743, Assertions: 180025, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: FAIL src/views/schema/CalendarProviderTab.dom.golden.spec.js
+2026-11-10T04:55:51Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8502 3ff5ec88
