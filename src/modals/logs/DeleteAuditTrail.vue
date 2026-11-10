@@ -63,6 +63,31 @@ import { confirmDialogState } from '../shared/confirmDialogState.js'
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 
+/**
+ * Ask the server to delete an audit trail entry and read its answer.
+ *
+ * @param {number|string} id The entry id
+ * @return {Promise<object>} The answer
+ */
+async function requestDeletion(id) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/audit-trails/${id}`,
+		{
+			method: 'DELETE',
+		},
+	)
+	return response.json()
+}
+
+/**
+ * The message for a deletion that failed without saying why.
+ *
+ * @return {string} The message
+ */
+function deletionFailedText() {
+	return t('openregister', 'An error occurred while deleting the audit trail')
+}
+
 export default {
 	name: 'DeleteAuditTrail',
 	components: {
@@ -83,36 +108,34 @@ export default {
 			this.loading = true
 
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`,
-					{
-						method: 'DELETE',
-					},
+				const result = await requestDeletion(
+					auditTrailStore.auditTrailItem.id,
 				)
-
-				const result = await response.json()
-
-				if (result.success) {
-					this.success = true
-					this.error = false
-					// Refresh the audit trail list
-					await auditTrailStore.refreshAuditTrailList()
-					// Auto-close after 2 seconds
-					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-				} else {
+				if (!result.success) {
 					throw new Error(result.error || 'Deletion failed')
 				}
+				await this.showDeleted()
 			} catch (error) {
 				this.success = false
-				this.error =
-					error.message
-					|| t(
-						'openregister',
-						'An error occurred while deleting the audit trail',
-					)
+				this.error = error.message || deletionFailedText()
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Say the entry was deleted, refresh the audit trail list and close
+		 * after two seconds.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async showDeleted() {
+			this.success = true
+			this.error = false
+			// Refresh the audit trail list
+			await auditTrailStore.refreshAuditTrailList()
+			// Auto-close after 2 seconds
+			this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 		},
 
 		/**
