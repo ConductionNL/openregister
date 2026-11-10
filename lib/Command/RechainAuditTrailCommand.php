@@ -43,6 +43,8 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 /**
  * Rebuilds the audit hash chain end to end.
+ *
+ * @spec openspec/specs/audit-hash-chain/spec.md
  */
 class RechainAuditTrailCommand extends Command {
 	/**
@@ -97,41 +99,90 @@ class RechainAuditTrailCommand extends Command {
 			return Command::SUCCESS;
 		}
 
-		if ($input->getOption('force') !== true) {
-			$helper = $this->getHelper(name: 'question');
+		$refusal = $this->refusalToProceed(input: $input, output: $output);
+		if ($refusal !== null) {
+			return $refusal;
+		}
 
-			// If we cannot prompt, we must not proceed. The alternative — assume
-			// consent because the helper is missing — would rewrite every stored
-			// audit hash on the strength of an environment quirk. --force is the
-			// supported way to say yes without a prompt.
-			if (($helper instanceof QuestionHelper) === false) {
-				$output->writeln(
-					'<error>No question helper available to confirm with. '
-					. 'Re-run with --force if you really mean to rewrite every audit hash.</error>'
-				);
+		return $this->rechainAndVerify(output: $output);
+	}//end execute()
 
-				return Command::FAILURE;
-			}
+	/**
+	 * Ask before rewriting, unless --force says yes.
+	 *
+	 * @param InputInterface  $input  Console input.
+	 * @param OutputInterface $output Console output.
+	 *
+	 * @return int|null Null to proceed, or the exit code to stop with.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function refusalToProceed(InputInterface $input, OutputInterface $output): ?int {
+		if ($input->getOption('force') === true) {
+			return null;
+		}
 
-			$question = new ConfirmationQuestion(
-				'<comment>This REWRITES every stored audit hash. Continue? [y/N] </comment>',
-				false
-			);
+		$helper = $this->getHelper(name: 'question');
 
-			if ($helper->ask($input, $output, $question) !== true) {
-				$output->writeln('Aborted.');
-				return Command::SUCCESS;
-			}
-		}//end if
+		// If we cannot prompt, we must not proceed. The alternative — assume
+		// consent because the helper is missing — would rewrite every stored
+		// audit hash on the strength of an environment quirk. --force is the
+		// supported way to say yes without a prompt.
+		if (($helper instanceof QuestionHelper) === false) {
+			return $this->refuseWithoutPrompt(output: $output);
+		}
 
-		$result = $this->hashes->rechainAll();
+		if ($helper->ask($input, $output, self::confirmation()) !== true) {
+			$output->writeln('Aborted.');
+			return Command::SUCCESS;
+		}
+
+		return null;
+	}//end refusalToProceed()
+
+	/**
+	 * Refuse to rewrite when there is no way to ask.
+	 *
+	 * @param OutputInterface $output Console output.
+	 *
+	 * @return int The failure exit code.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function refuseWithoutPrompt(OutputInterface $output): int {
 		$output->writeln(
-			sprintf(
-				'<info>Re-chained %d row(s); left %d retention tombstone(s) untouched.</info>',
-				$result['rechained'],
-				$result['tombstonesPreserved']
-			)
+			'<error>No question helper available to confirm with. '
+			. 'Re-run with --force if you really mean to rewrite every audit hash.</error>'
 		);
+
+		return Command::FAILURE;
+	}//end refuseWithoutPrompt()
+
+	/**
+	 * The confirmation question; the default answer is no.
+	 *
+	 * @return ConfirmationQuestion The question.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private static function confirmation(): ConfirmationQuestion {
+		return new ConfirmationQuestion(
+			'<comment>This REWRITES every stored audit hash. Continue? [y/N] </comment>',
+			false
+		);
+	}//end confirmation()
+
+	/**
+	 * Re-chain, then verify again and fail when the chain is still broken.
+	 *
+	 * @param OutputInterface $output Console output.
+	 *
+	 * @return int Exit code.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function rechainAndVerify(OutputInterface $output): int {
+		$this->writeRechained(output: $output, result: $this->hashes->rechainAll());
 
 		$after = $this->hashes->verifyChain();
 		$output->writeln('<info>After:</info>');
@@ -143,7 +194,27 @@ class RechainAuditTrailCommand extends Command {
 		}
 
 		return Command::SUCCESS;
-	}//end execute()
+	}//end rechainAndVerify()
+
+	/**
+	 * Print what the re-chain rewrote and what it left alone.
+	 *
+	 * @param OutputInterface      $output Console output.
+	 * @param array<string, mixed> $result The rechainAll() result.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function writeRechained(OutputInterface $output, array $result): void {
+		$output->writeln(
+			sprintf(
+				'<info>Re-chained %d row(s); left %d retention tombstone(s) untouched.</info>',
+				$result['rechained'],
+				$result['tombstonesPreserved']
+			)
+		);
+	}//end writeRechained()
 
 	/**
 	 * One line describing a verifyChain() report.
