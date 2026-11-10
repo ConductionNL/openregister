@@ -137,41 +137,66 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 		}
 
 		if ($trigger === 'transition') {
-			$this->dispatcher->dispatch(
-				object: $object,
-				trigger: 'transition',
-				context: [
-					'action' => (string)($entry['action'] ?? ''),
-					'from' => (string)($entry['from'] ?? ''),
-					'to' => (string)($entry['to'] ?? ''),
-				]
-			);
+			$this->dispatchTransition(entry: $entry, object: $object);
 			return;
 		}
 
 		if ($trigger === 'updated') {
-			$oldData = ($entry['oldData'] ?? null);
-
-			$updatedContext = [];
-			if (is_array($oldData) === true) {
-				$updatedContext = [
-					'_newData' => ($object->getObject() ?? []),
-					'_oldData' => $oldData,
-				];
-			}
-
-			$this->dispatcher->dispatch(object: $object, trigger: 'updated', context: $updatedContext);
-
-			if (is_array($oldData) === true) {
-				$this->dispatcher->dispatch(
-					object: $object,
-					trigger: 'calculatedChange',
-					context: [
-						'_newData' => ($object->getObject() ?? []),
-						'_oldData' => $oldData,
-					]
-				);
-			}
-		}//end if
+			$this->dispatchUpdated(entry: $entry, object: $object);
+		}
 	}//end dispatchEntry()
+
+	/**
+	 * Dispatch a lifecycle transition with the action and the states it moved between.
+	 *
+	 * @param array<string, mixed> $entry  The deferred entry.
+	 * @param ObjectEntity         $object The live object.
+	 *
+	 * @return void
+	 */
+	private function dispatchTransition(array $entry, ObjectEntity $object): void {
+		$this->dispatcher->dispatch(
+			object: $object,
+			trigger: 'transition',
+			context: [
+				'action' => (string)($entry['action'] ?? ''),
+				'from' => (string)($entry['from'] ?? ''),
+				'to' => (string)($entry['to'] ?? ''),
+			]
+		);
+	}//end dispatchTransition()
+
+	/**
+	 * Dispatch an update, and a calculated change when the entry carries the old data.
+	 *
+	 * @param array<string, mixed> $entry  The deferred entry.
+	 * @param ObjectEntity         $object The live object.
+	 *
+	 * @return void
+	 */
+	private function dispatchUpdated(array $entry, ObjectEntity $object): void {
+		$oldData = ($entry['oldData'] ?? null);
+		if (is_array($oldData) === false) {
+			$this->dispatcher->dispatch(object: $object, trigger: 'updated', context: []);
+			return;
+		}
+
+		$this->dispatcher->dispatch(object: $object, trigger: 'updated', context: self::changeOf(object: $object, oldData: $oldData));
+		$this->dispatcher->dispatch(object: $object, trigger: 'calculatedChange', context: self::changeOf(object: $object, oldData: $oldData));
+	}//end dispatchUpdated()
+
+	/**
+	 * The old/new context of an update, the new data read from the object now.
+	 *
+	 * @param ObjectEntity         $object  The live object.
+	 * @param array<string, mixed> $oldData The data before the update.
+	 *
+	 * @return array{_newData: array, _oldData: array}
+	 */
+	private static function changeOf(ObjectEntity $object, array $oldData): array {
+		return [
+			'_newData' => ($object->getObject() ?? []),
+			'_oldData' => $oldData,
+		];
+	}//end changeOf()
 }//end class
