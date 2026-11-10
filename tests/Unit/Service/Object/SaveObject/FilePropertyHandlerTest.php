@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -1905,11 +1907,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('addFile')
 			->with(
-				$entity,
-				$this->matchesRegularExpression('/^document_\d+_[a-f0-9]+\.txt$/'),
-				$content,
-				true,
-				$this->isType('array')
+				$this->callback(fn (FileTarget $target): bool => $target->object === $entity),
+				$this->callback(fn (FileUpload $upload): bool => $this->matchesRegularExpression('/^document_\d+_[a-f0-9]+\.txt$/')->evaluate($upload->fileName, '', true) && $upload->content === $content && $upload->share === true && $this->isType('array')->evaluate($upload->tags, '', true))
 			)
 			->willReturn($fileMock);
 
@@ -1940,11 +1939,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('addFile')
 			->with(
-				$entity,
-				$this->isType('string'),
-				$content,
-				true,
-				$this->isType('array')
+				$this->callback(fn (FileTarget $target): bool => $target->object === $entity),
+				$this->callback(fn (FileUpload $upload): bool => $this->isType('string')->evaluate($upload->fileName, '', true) && $upload->content === $content && $upload->share === true && $this->isType('array')->evaluate($upload->tags, '', true))
 			)
 			->willReturn($fileMock);
 
@@ -1980,11 +1976,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('addFile')
 			->with(
-				$entity,
-				$this->isType('string'),
-				$content,
-				false,
-				['property:photo', 'category:profile', 'public']
+				$this->callback(fn (FileTarget $target): bool => $target->object === $entity),
+				$this->callback(fn (FileUpload $upload): bool => $this->isType('string')->evaluate($upload->fileName, '', true) && $upload->content === $content && $upload->share === false && $upload->tags === ['property:photo', 'category:profile', 'public'])
 			)
 			->willReturn($fileMock);
 
@@ -2205,12 +2198,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('addFile')
 			->with(
-				$entity,
-				// Filename should contain the index.
-				$this->matchesRegularExpression('/^images_3_\d+_[a-f0-9]+\.txt$/'),
-				$content,
-				false,
-				$this->isType('array')
+				$this->callback(fn (FileTarget $target): bool => $target->object === $entity),
+				$this->callback(fn (FileUpload $upload): bool => $this->matchesRegularExpression('/^images_3_\d+_[a-f0-9]+\.txt$/')->evaluate($upload->fileName, '', true) && $upload->content === $content && $upload->share === false && $this->isType('array')->evaluate($upload->tags, '', true))
 			)
 			->willReturn($fileMock);
 
@@ -2555,11 +2544,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('addFile')
 			->with(
-				$entity,
-				$this->isType('string'),
-				$content,
-				false,
-				$this->isType('array')
+				$this->callback(fn (FileTarget $target): bool => $target->object === $entity),
+				$this->callback(fn (FileUpload $upload): bool => $this->isType('string')->evaluate($upload->fileName, '', true) && $upload->content === $content && $upload->share === false && $this->isType('array')->evaluate($upload->tags, '', true))
 			)
 			->willReturn($fileMock);
 
@@ -2732,9 +2718,9 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('addFile')
 			->willReturnCallback(
-				function (ObjectEntity $object, string $fileName, string $content, bool $share = false, array $tags = []) use ($fileMock, &$capturedName, &$capturedContent): File {
-					$capturedName = $fileName;
-					$capturedContent = $content;
+				function (FileTarget $target, FileUpload $upload) use ($fileMock, &$capturedName, &$capturedContent): File {
+					$capturedName = $upload->fileName;
+					$capturedContent = $upload->content;
 					return $fileMock;
 				}
 			);
@@ -2774,8 +2760,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->fileService->expects($this->once())
 			->method('addFile')
 			->willReturnCallback(
-				function (ObjectEntity $object, string $fileName, string $content, bool $share = false, array $tags = []) use ($fileMock, &$capturedName): File {
-					$capturedName = $fileName;
+				function (FileTarget $target, FileUpload $upload) use ($fileMock, &$capturedName): File {
+					$capturedName = $upload->fileName;
 					return $fileMock;
 				}
 			);

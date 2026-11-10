@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1242,9 +1244,8 @@ class FilesControllerTest extends TestCase {
 
 		$storedNames = [];
 		$this->fileService->method('addFile')
-			->willReturnCallback(function (...$args) use (&$storedNames) {
-				$named = func_get_args();
-				$fileName = $named[1] ?? '';
+			->willReturnCallback(function (FileTarget $target, FileUpload $upload) use (&$storedNames) {
+				$fileName = $upload->fileName;
 				if ($fileName === 'rejected.png') {
 					throw new Exception("File 'rejected.png' contains PHP code. PHP files are blocked for security reasons.");
 				}
