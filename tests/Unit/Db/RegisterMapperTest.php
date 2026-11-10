@@ -63,10 +63,6 @@ class RegisterMapperTest extends TestCase {
 	// Construction
 	// -------------------------------------------------------------------------
 
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(RegisterMapper::class, $this->mapper);
-	}
-
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_registers', $this->mapper->getTableName());
 	}
