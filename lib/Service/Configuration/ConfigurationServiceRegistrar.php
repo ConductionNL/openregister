@@ -228,13 +228,13 @@ final class ConfigurationServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function startImportHandlerBuild(ContainerInterface $container): ImportHandlerBuildRun {
-		$run            = new ImportHandlerBuildRun();
-		$run->container = $container;
+		$dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
 
-		$dataDir          = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+		$run = new ImportHandlerBuildRun(
+			container: $container,
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
 		$run->appDataPath = $dataDir . '/appdata_openregister';
-
-		$run->logger = $container->get('Psr\Log\LoggerInterface');
 
 		return $run;
 	}//end startImportHandlerBuild()

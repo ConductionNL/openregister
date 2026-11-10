@@ -54,4 +54,17 @@ final class ImportHandlerBuildRun {
 	 * @var string
 	 */
 	public string $appDataPath = '';
+
+	/**
+	 * Start a build from the container and the logger it handed out.
+	 *
+	 * @param ContainerInterface $container The container.
+	 * @param LoggerInterface    $logger    Where an absent optional service is noted.
+	 *
+	 * @return void
+	 */
+	public function __construct(ContainerInterface $container, LoggerInterface $logger) {
+		$this->container = $container;
+		$this->logger    = $logger;
+	}//end __construct()
 }//end class
