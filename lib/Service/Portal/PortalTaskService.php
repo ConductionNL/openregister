@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileWriterInterface;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\InboxListing;
 use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -119,7 +120,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		$party = $subject->partyReference();
 		$offset = (int)$query->offset;
 
-		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, limit: $query->limit, offset: $offset);
+		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, page: $query);
 		$total = $this->sources->mapper->countOpenExternalForParty(partyReference: $party);
 
 		return [
@@ -249,7 +250,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		// 1. Authorize, and audit a denial, BEFORE any other step. A stranger
 		//    who knows the uuid must not get a validation message, let alone a
 		//    file on somebody else's case.
-		$task = $this->sources->tasks->openFor(verb: 'complete', uuid: $command->uuid, actor: $command->subject->actor());
+		$task = $this->sources->tasks->openFor(act: new TaskAct(verb: 'complete', actor: $command->subject->actor()), uuid: $command->uuid);
 
 		$this->assertCompletableBy(task: $task, viaApp: $command->viaApp);
 
