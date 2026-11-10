@@ -137,7 +137,7 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->service = new RegisterService(
-			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $schemaMapper, db: $this->createMock(IDBConnection::class)),
+			storage: new RegisterServiceStorage(db: $this->createMock(IDBConnection::class), catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			helpers: new RegisterServiceHelpers($fileService, new RegisterSerializer($schemaMapper, $this->logger)),
 			organisationService: $this->createMock(OrganisationService::class),
 			logger: $this->logger

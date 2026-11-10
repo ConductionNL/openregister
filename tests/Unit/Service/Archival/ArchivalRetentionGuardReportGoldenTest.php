@@ -114,7 +114,7 @@ final class ArchivalRetentionGuardReportGoldenTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($mapper, $logger);
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($mapper, $logger));
 	}//end guard()
 
 	/**

@@ -157,15 +157,33 @@ class SearchTrailService implements SearchTrailServiceInterface {
 		float $responseTime = 0.0,
 		string $executionType = 'sync',
 	): SearchTrail {
+		$stats = new SearchMeasurement(resultCount: $resultCount, totalResults: $totalResults, responseTime: $responseTime, executionType: $executionType);
+		return $this->recordSearch(query: $query, measured: $stats);
+	}//end createSearchTrail()
+
+	/**
+	 * Record one executed search as a search trail.
+	 *
+	 * @param array             $query    The search query parameters.
+	 * @param SearchMeasurement $measured The result counts, response time and execution type.
+	 *
+	 * @return SearchTrail The created search trail entity.
+	 *
+	 * @throws Exception If search trail creation fails.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+	 */
+	public function recordSearch(array $query, SearchMeasurement $measured): SearchTrail {
 		try {
 			// Mapper handles filtering of system parameters (starting with _).
-			$outcome = $this->outcome(resultCount: $resultCount, totalResults: $totalResults);
-			return $this->selfCleared(trail: $this->searchTrailMapper->createSearchTrail($query, $outcome, $responseTime, $executionType));
+			$outcome = $this->outcome(resultCount: $measured->resultCount, totalResults: $measured->totalResults);
+			$trail   = $this->searchTrailMapper->createSearchTrail($query, $outcome, $measured->responseTime, $measured->executionType);
+			return $this->selfCleared(trail: $trail);
 		} catch (Exception $e) {
 			// Wrap exception with more context for debugging.
 			throw new Exception('Search trail creation failed: ' . $e->getMessage(), 0, $e);
 		}
-	}//end createSearchTrail()
+	}//end recordSearch()
 
 	/**
 	 * The unsaved trail carrying what a search returned.
@@ -313,10 +331,24 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function getPopularSearchTerms(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		$terms = $this->searchTrailMapper->getPopularSearchTerms(limit: $limit, from: $from, to: $to);
-
-		return $this->statistics->popularTerms(terms: $terms, from: $from, to: $to);
+		return $this->popularSearchTermsIn(period: new SearchPeriod(from: $from, to: $to), limit: $limit);
 	}//end getPopularSearchTerms()
+
+	/**
+	 * Popular search terms within a date range.
+	 *
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param int          $limit Maximum number of terms to return
+	 *
+	 * @return array Popular search terms data
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function popularSearchTermsIn(SearchPeriod $period, int $limit): array {
+		$terms = $this->searchTrailMapper->getPopularSearchTerms(limit: $limit, from: $period->from, to: $period->to);
+
+		return $this->statistics->popularTerms(terms: $terms, from: $period->from, to: $period->to);
+	}//end popularSearchTermsIn()
 
 	/**
 	 * Get search activity patterns by time period
@@ -330,15 +362,29 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function getSearchActivity(string $interval = 'day', ?DateTime $from = null, ?DateTime $to = null): array {
-		$activity = $this->searchTrailMapper->getSearchActivityByTime(interval: $interval, from: $from, to: $to);
+		return $this->searchActivityIn(period: new SearchPeriod(from: $from, to: $to), interval: $interval);
+	}//end getSearchActivity()
+
+	/**
+	 * Search activity over time within a date range.
+	 *
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param string       $interval Time interval ('hour', 'day', 'week', 'month')
+	 *
+	 * @return array Search activity data with insights
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function searchActivityIn(SearchPeriod $period, string $interval): array {
+		$activity = $this->searchTrailMapper->getSearchActivityByTime(interval: $interval, from: $period->from, to: $period->to);
 
 		return [
 			'activity' => $activity,
 			'insights' => $this->activityInsights->insights(activity: $activity),
 			'interval' => $interval,
-			'period' => $this->statistics->period(from: $from, to: $to),
+			'period' => $this->statistics->period(from: $period->from, to: $period->to),
 		];
-	}//end getSearchActivity()
+	}//end searchActivityIn()
 
 	/**
 	 * Get search statistics by register and schema with insights
@@ -368,11 +414,25 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function getUserAgentStatistics(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		$stats = $this->searchTrailMapper->getUserAgentStatistics(limit: $limit, from: $from, to: $to);
+		return $this->userAgentStatisticsIn(period: new SearchPeriod(from: $from, to: $to), limit: $limit);
+	}//end getUserAgentStatistics()
+
+	/**
+	 * User agent statistics within a date range.
+	 *
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param int          $limit Maximum number of user agents to return
+	 *
+	 * @return array User agent statistics data
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function userAgentStatisticsIn(SearchPeriod $period, int $limit): array {
+		$stats = $this->searchTrailMapper->getUserAgentStatistics(limit: $limit, from: $period->from, to: $period->to);
 		$enhancedStats = $this->userAgentParser->withBrowserInfo(stats: $stats);
 
-		return $this->statistics->userAgentUsage(userAgentStats: $enhancedStats, from: $from, to: $to);
-	}//end getUserAgentStatistics()
+		return $this->statistics->userAgentUsage(userAgentStats: $enhancedStats, from: $period->from, to: $period->to);
+	}//end userAgentStatisticsIn()
 
 	/**
 	 * Clean up old search trail logs

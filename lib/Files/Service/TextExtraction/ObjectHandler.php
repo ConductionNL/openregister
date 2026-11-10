@@ -26,9 +26,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -40,27 +38,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectHandler implements TextExtractionHandlerInterface {
 	/**
-	 * Object mapper.
-	 *
-	 * @var MagicObjectFinderInterface
-	 */
-	private readonly MagicObjectFinderInterface $objectMapper;
-
-	/**
-	 * Schema mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Register mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param TextExtractionObjects $objects     The object, schema and register mappers.
@@ -68,14 +45,22 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 * @param LoggerInterface       $logger      Logger.
 	 */
 	public function __construct(
-		TextExtractionObjects $objects,
+		private readonly TextExtractionObjects $objects,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->objectMapper   = $objects->objectEntityMapper;
-		$this->schemaMapper   = $objects->schemaMapper;
-		$this->registerMapper = $objects->registerMapper;
 	}//end __construct()
+
+	/**
+	 * The object finder this handler reads objects through.
+	 *
+	 * @return MagicObjectFinderInterface The finder.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	private function objectFinder(): MagicObjectFinderInterface {
+		return $this->objects->objectEntityMapper;
+	}//end objectFinder()
 
 	/**
 	 * Get the source type this handler supports.
@@ -139,7 +124,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'objectId' => $sourceId]
 		);
 
-		$object = $this->objectMapper->find($sourceId);
+		$object = $this->objectFinder()->find($sourceId);
 		$text = implode("\n", $this->textParts(object: $object, sourceId: $sourceId));
 
 		return [
@@ -194,7 +179,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 				return [];
 			}
 
-			$schema = $this->schemaMapper->find($object->getSchema());
+			$schema = $this->objects->schemaMapper->find($object->getSchema());
 			return $this->describedParts(entity: $schema, labels: ['Type', 'Schema Description']);
 		} catch (Exception $e) {
 			$this->logger->debug(
@@ -222,7 +207,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 				return [];
 			}
 
-			$register = $this->registerMapper->find($object->getRegister());
+			$register = $this->objects->registerMapper->find($object->getRegister());
 			return $this->describedParts(entity: $register, labels: ['Register', 'Register Description']);
 		} catch (Exception $e) {
 			$this->logger->debug(
@@ -380,7 +365,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	public function getSourceMetadata(int $sourceId): array {
-		$object = $this->objectMapper->find($sourceId);
+		$object = $this->objectFinder()->find($sourceId);
 
 		return [
 			'id' => $object->getId(),
@@ -405,7 +390,7 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 */
 	public function getSourceTimestamp(int $sourceId): int {
 		try {
-			$object = $this->objectMapper->find($sourceId);
+			$object = $this->objectFinder()->find($sourceId);
 			return $object->getUpdated()?->getTimestamp() ?? time();
 		} catch (DoesNotExistException $e) {
 			return time();

@@ -143,7 +143,7 @@ class WebhookMappingPreviewTest extends TestCase {
 		$webhook = new Webhook();
 		$webhook->setMapping(5);
 		$build = new \ReflectionMethod(WebhookService::class, 'buildPayload');
-		$delivered = $build->invoke($this->service, $webhook, 'OCA\OpenRegister\Event\ObjectCreatedEvent', ['objectUuid' => 'abc', 'action' => 'create'], 1);
+		$delivered = $build->invoke($this->service, new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\OpenRegister\Event\ObjectCreatedEvent', payload: ['objectUuid' => 'abc', 'action' => 'create'])));
 		$this->assertSame($delivered, $data['payload']);
 	}//end testThePreviewIsWhatTheDeliverySends()
 

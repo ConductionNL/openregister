@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -88,7 +89,7 @@ class FederatedShareMapperTenancyTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->mapper = new class($db, $this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(IAppConfig::class)) extends FederatedShareMapper {
+		$this->mapper = new class($db, new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)), $this->createMock(IAppConfig::class)) extends FederatedShareMapper {
 
 			/**
 			 * Names of the methods that reached the organisation filter.

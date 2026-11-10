@@ -117,7 +117,7 @@ class ObjectFavouriteController extends Controller {
 	 * @return JSONResponse The stored star.
 	 */
 	private function starForObject(ObjectRef $ref): JSONResponse {
-		$object = $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		$object = $this->endpoint->resolve(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -165,7 +165,7 @@ class ObjectFavouriteController extends Controller {
 	 * @return JSONResponse The new state.
 	 */
 	private function unstarForObject(ObjectRef $ref): JSONResponse {
-		$object = $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		$object = $this->endpoint->resolve(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}

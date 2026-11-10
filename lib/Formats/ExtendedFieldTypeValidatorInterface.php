@@ -60,6 +60,18 @@ interface ExtendedFieldTypeValidatorInterface {
 	public function validateColor(mixed $value, ?string $format, string $propertyName): ?string;
 
 	/**
+	 * Validate a `color` value against the declared format of its property.
+	 *
+	 * @param mixed             $value    The colour value submitted by the client.
+	 * @param FormattedProperty $property The property name and its declared `format` (null => hex).
+	 *
+	 * @return string|null Null on success, or the exact 422 error message on failure.
+	 *
+	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
+	 */
+	public function validateColorProperty(mixed $value, FormattedProperty $property): ?string;
+
+	/**
 	 * Validate a `recurrence` value as an RFC 5545 RRULE.
 	 *
 	 * @param mixed  $value        The RRULE string submitted by the client.
@@ -83,4 +95,15 @@ interface ExtendedFieldTypeValidatorInterface {
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
 	 */
 	public function materialiseOccurrences(string $rrule, int $count, ?DateTimeInterface $start = null): array;
+
+	/**
+	 * Materialise the occurrences of a recurrence window.
+	 *
+	 * @param RecurrenceWindow $window The RRULE, the number of occurrences and the start.
+	 *
+	 * @return array<int, string> ISO-8601 occurrence timestamps, or empty on parse failure.
+	 *
+	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
+	 */
+	public function occurrencesIn(RecurrenceWindow $window): array;
 }//end interface

@@ -36,6 +36,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Db\SearchTrail\SearchTrailFilterRun;
 use OCA\OpenRegister\Db\SearchTrail\SearchTrailPage;
+use OCA\OpenRegister\Db\SearchTrail\CreatedRange;
 use OCA\OpenRegister\Db\SearchTrail\SearchTrailStatistics;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -273,12 +274,23 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @return SearchTrail The created search trail entity
 	 */
 	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail {
-		$outcome->setUuid(Uuid::v4()->toRfc4122());
-		$outcome->setCreated(new DateTime());
 		$outcome->setExecutionType($executionType);
 		$outcome->setResponseTime((int)round($responseTime));
-		return $this->recordSearch(searchTrail: $outcome, searchQuery: $searchQuery);
+		return $this->recordSearch(searchTrail: $this->stamped(searchTrail: $outcome), searchQuery: $searchQuery);
 	}//end createSearchTrail()
+
+	/**
+	 * The trail with a fresh uuid and the current moment as its creation time.
+	 *
+	 * @param SearchTrail $searchTrail The unsaved trail.
+	 *
+	 * @return SearchTrail The same trail.
+	 */
+	private function stamped(SearchTrail $searchTrail): SearchTrail {
+		$searchTrail->setUuid(Uuid::v4()->toRfc4122());
+		$searchTrail->setCreated(new DateTime());
+		return $searchTrail;
+	}//end stamped()
 
 	/**
 	 * Complete a stamped trail with the search, the request and the user, size it and insert it.
@@ -318,7 +330,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     non_empty_searches: int}
 	 */
 	public function getSearchStatistics(?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->summary(from: $from, to: $to);
+		return $this->statistics()->summary(range: new CreatedRange(from: $from, to: $to));
 	}//end getSearchStatistics()
 
 	/**
@@ -334,7 +346,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getPopularSearchTerms(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->popularTerms(limit: $limit, from: $from, to: $to);
+		return $this->statistics()->popularTerms(limit: $limit, range: new CreatedRange(from: $from, to: $to));
 	}//end getPopularSearchTerms()
 
 	/**
@@ -350,7 +362,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getSearchActivityByTime(string $interval = 'day', ?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->activityByTime(interval: $interval, from: $from, to: $to);
+		return $this->statistics()->activityByTime(interval: $interval, range: new CreatedRange(from: $from, to: $to));
 	}//end getSearchActivityByTime()
 
 	/**
@@ -366,7 +378,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getSearchStatisticsByRegisterSchema(?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->byRegisterSchema(from: $from, to: $to);
+		return $this->statistics()->byRegisterSchema(range: new CreatedRange(from: $from, to: $to));
 	}//end getSearchStatisticsByRegisterSchema()
 
 	/**
@@ -382,7 +394,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getUserAgentStatistics(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array {
-		return $this->statistics()->userAgents(limit: $limit, from: $from, to: $to);
+		return $this->statistics()->userAgents(limit: $limit, range: new CreatedRange(from: $from, to: $to));
 	}//end getUserAgentStatistics()
 
 	/**
@@ -396,7 +408,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @psalm-return int<0, max>
 	 */
 	public function getUniqueSearchTermsCount(?DateTime $from = null, ?DateTime $to = null): int {
-		return $this->statistics()->distinctCount(column: 'search_term', from: $from, to: $to);
+		return $this->statistics()->distinctCount(column: 'search_term', range: new CreatedRange(from: $from, to: $to));
 	}//end getUniqueSearchTermsCount()
 
 	/**
@@ -410,7 +422,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @psalm-return int<0, max>
 	 */
 	public function getUniqueUsersCount(?DateTime $from = null, ?DateTime $to = null): int {
-		return $this->statistics()->distinctCount(column: 'user', from: $from, to: $to);
+		return $this->statistics()->distinctCount(column: 'user', range: new CreatedRange(from: $from, to: $to));
 	}//end getUniqueUsersCount()
 
 	/**
@@ -422,7 +434,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @return float Average searches per session
 	 */
 	public function getAverageSearchesPerSession(?DateTime $from = null, ?DateTime $to = null): float {
-		return $this->statistics()->searchesPerSession(from: $from, to: $to);
+		return $this->statistics()->searchesPerSession(range: new CreatedRange(from: $from, to: $to));
 	}//end getAverageSearchesPerSession()
 
 	/**
@@ -436,7 +448,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @return float Average object views per session
 	 */
 	public function getAverageObjectViewsPerSession(?DateTime $from = null, ?DateTime $to = null): float {
-		return $this->statistics()->objectViewsPerSession(from: $from, to: $to);
+		return $this->statistics()->objectViewsPerSession(range: new CreatedRange(from: $from, to: $to));
 	}//end getAverageObjectViewsPerSession()
 
 	/**

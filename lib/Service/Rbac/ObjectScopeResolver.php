@@ -369,19 +369,20 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * The not-private term comes from {@see notPrivateSql()}; this adds the
 	 * granted disjunct beside it, and is the only place that does.
 	 *
-	 * @param string $notPrivateSql The not-private term for the row, from notPrivateSql().
-	 * @param string $uuidColumn The `_uuid` column, qualified by the caller.
-	 * @param string[] $quotedUuids Granted object UUIDs, ALREADY quoted as SQL literals.
+	 * @param string      $notPrivateSql The not-private term for the row, from notPrivateSql().
+	 * @param GrantedRows $granted       The `_uuid` column and the granted uuids, quoted.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function notPrivateOrGrantedSql(string $notPrivateSql, string $uuidColumn, array $quotedUuids): string {
-		if (empty($quotedUuids) === true) {
+	public function notPrivateOrGrantedSql(string $notPrivateSql, GrantedRows $granted): string {
+		if (empty($granted->quotedUuids) === true) {
 			return $notPrivateSql;
 		}
 
-		$inList = implode(', ', $quotedUuids);
+		$inList = implode(', ', $granted->quotedUuids);
 
-		return "({$notPrivateSql} OR {$uuidColumn} IN ({$inList}))";
+		return "({$notPrivateSql} OR {$granted->uuidColumn} IN ({$inList}))";
 	}//end notPrivateOrGrantedSql()
 }//end class
