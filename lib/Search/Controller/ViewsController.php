@@ -37,6 +37,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 /**
  * Controller for managing saved search views
@@ -553,17 +554,23 @@ class ViewsController extends Controller {
 	 */
 	private function saveUpdate(ViewPatch $update): JSONResponse {
 		$data = $update->data;
-		$view = $this->viewService->update(
+		$view = $this->viewService->revise(
 			id: $update->id,
-			name: $data['name'],
-			description: $data['description'] ?? '',
-			owner: $update->view->getOwner(),
-			isPublic: $data['isPublic'] ?? false,
-			isDefault: $data['isDefault'] ?? false,
-			query: $update->query(),
-			presentation: $update->presentation(),
-			sharedWith: $update->shares(),
-			alert: ViewAlert::declaredIn(body: $data)
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'],
+					description: $data['description'] ?? '',
+					query: $update->query(),
+					presentation: $update->presentation()
+				),
+				audience: new ViewAudience(
+					owner: $update->view->getOwner(),
+					isPublic: $data['isPublic'] ?? false,
+					isDefault: $data['isDefault'] ?? false,
+					sharedWith: $update->shares()
+				),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
 		);
 		return new JSONResponse(data: ['view' => $view->jsonSerialize()]);
 	}//end saveUpdate()
@@ -653,18 +660,24 @@ class ViewsController extends Controller {
 			return $shareRefusal;
 		}
 
-		$updatedView = $this->viewService->update(
+		$updatedView = $this->viewService->revise(
 			id: $patch->id,
-			name: $data['name'] ?? $view->getName() ?? '',
-			description: $data['description'] ?? $view->getDescription() ?? '',
-			owner: $view->getOwner(),
-			isPublic: $data['isPublic'] ?? $view->getIsPublic(),
-			isDefault: $data['isDefault'] ?? $view->getIsDefault(),
-			query: $query,
-			favoredBy: $data['favoredBy'] ?? $view->getFavoredBy(),
-			presentation: $presentation,
-			sharedWith: $patch->shares(),
-			alert: ViewAlert::declaredIn(body: $data)
+			edit: new ViewEdit(
+				definition: new ViewDefinition(
+					name: $data['name'] ?? $view->getName() ?? '',
+					description: $data['description'] ?? $view->getDescription() ?? '',
+					query: $query,
+					presentation: $presentation
+				),
+				audience: new ViewAudience(
+					owner: $view->getOwner(),
+					isPublic: $data['isPublic'] ?? $view->getIsPublic(),
+					isDefault: $data['isDefault'] ?? $view->getIsDefault(),
+					sharedWith: $patch->shares()
+				),
+				favoredBy: $data['favoredBy'] ?? $view->getFavoredBy(),
+				alert: ViewAlert::declaredIn(body: $data)
+			)
 		);
 		return new JSONResponse(data: ['view' => $updatedView->jsonSerialize()]);
 	}//end savePatch()
