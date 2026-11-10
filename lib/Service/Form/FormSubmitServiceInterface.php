@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Form;
 
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
-use OCA\OpenRegister\Service\Object\DraftOwner;
-use OCP\IUser;
 
 /**
  * Submit forms into their destinations and keep the subject's drafts.
@@ -42,15 +40,13 @@ interface FormSubmitServiceInterface {
 	 * administrator still may not write into somebody else's draft by id.
 	 *
 	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
-	 * @param string                                  $draftId     The draft's uuid.
-	 * @param IUser|null                              $subject     The subject.
-	 * @param DraftOwner|null                         $owner       The asserted owner; null takes the subject (decision 195).
+	 * @param FormSubmitter                           $submitter   The draft's uuid, the subject, the asserted owner (decision 195).
 	 *
-	 * @return bool True when it is the subject's own draft.
+	 * @return bool True when it is the subject's own draft; false without a draft id.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
-	public function isOwnerOfDraft(array $destination, string $draftId, ?IUser $subject, ?DraftOwner $owner = null): bool;
+	public function isOwnerOfDraft(array $destination, FormSubmitter $submitter): bool;
 
 	/**
 	 * Save the subject's draft of a destination: the destination object itself, in status `draft`.
@@ -63,13 +59,8 @@ interface FormSubmitServiceInterface {
 	 * `portal:<subjectRef>` for a portal resident without an account
 	 * (decision 195); only that owner then reads, saves or sends it.
 	 *
-	 * @param array{register?: mixed, schema?: mixed} $destination The resolved destination pair.
-	 * @param array<string, mixed>|null               $mapping     The form's mapping.
-	 * @param array<string, mixed>                    $payload     What the subject filled in so far.
-	 * @param IUser|null                              $subject     The signed-in subject.
-	 * @param string|null                             $draftId     The draft to update; null starts one.
-	 * @param string                                  $scope       The form id.
-	 * @param DraftOwner|null                         $owner       The asserted owner; null takes the subject (decision 195).
+	 * @param FormSubmission $submission The one write `{ register, schema, mapping }`, what the subject filled in so far,
+	 *                                   and the submitter: subject, form id as scope, the draft to update (null starts one), owner.
 	 *
 	 * @return array{id: string, status: string} The draft.
 	 *
@@ -77,74 +68,29 @@ interface FormSubmitServiceInterface {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
-	public function saveDraft(
-		array $destination,
-		?array $mapping,
-		array $payload,
-		?IUser $subject,
-		?string $draftId = null,
-		string $scope = '',
-		?DraftOwner $owner = null,
-	): array;
+	public function saveDraft(FormSubmission $submission): array;
 
 	/**
-	 * Submit one form into one destination.
+	 * Submit one payload into one or several destinations, all or none.
 	 *
-	 * @param array{register?: mixed, schema?: mixed} $destination    The resolved destination pair.
-	 * @param array<string, mixed>|null               $mapping        The form's mapping; null takes the payload as the object.
-	 * @param array<string, mixed>                    $payload        What the submitter filled in.
-	 * @param IUser|null                              $subject        The signed-in subject; null for an anonymous submit.
-	 * @param string|null                             $idempotencyKey The Idempotency-Key, when the caller sent one.
-	 * @param string                                  $scope          The form id the key and upload tokens belong to.
-	 * @param string|null                             $draftId        The subject's draft of this destination, to leave draft.
-	 * @param DraftOwner|null                         $owner          The draft's asserted owner; null takes the subject (decision 195).
+	 * Each write is `{ register, schema, mapping?, as? }`; a mapping of null
+	 * takes the payload as the object. A fixed value `{ "$write": "<as>" }` is
+	 * the id of an earlier write of this submit. The answer's `reference`,
+	 * `id`, `receivedAt` and `confirmation` are the first write's; `objects`
+	 * lists every write. The submitter carries the signed-in subject (null for
+	 * anonymous), the form id the key and upload tokens belong to, the
+	 * subject's draft to leave draft (one write only) and the draft's asserted
+	 * owner (null takes the subject, decision 195).
+	 *
+	 * @param FormSubmission $submission     The writes, the payload and the submitter.
+	 * @param string|null    $idempotencyKey The Idempotency-Key, when the caller sent one.
 	 *
 	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
 	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 409 key taken or in use, 503 try again later.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
-	 */
-	public function submit(
-		array $destination,
-		?array $mapping,
-		array $payload,
-		?IUser $subject = null,
-		?string $idempotencyKey = null,
-		string $scope = '',
-		?string $draftId = null,
-		?DraftOwner $owner = null,
-	): array;
-
-	/**
-	 * Submit one payload into several destinations, all or none.
-	 *
-	 * Each write is `{ register, schema, mapping?, as? }`. A fixed value
-	 * `{ "$write": "<as>" }` is the id of an earlier write of this submit.
-	 * The answer's `reference`, `id`, `receivedAt` and `confirmation` are
-	 * the first write's; `objects` lists every write.
-	 *
-	 * @param array<int, array<string, mixed>> $writes         The writes, in order.
-	 * @param array<string, mixed>             $payload        What the submitter filled in.
-	 * @param IUser|null                       $subject        The signed-in subject; null for anonymous.
-	 * @param string|null                      $idempotencyKey The Idempotency-Key, when sent.
-	 * @param string                           $scope          The form id the key and tokens belong to.
-	 * @param string|null                      $draftId        The subject's draft to leave draft (one write only).
-	 * @param DraftOwner|null                  $owner          The draft's asserted owner; null takes the subject (decision 195).
-	 *
-	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
-	 *
-	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 409 key taken or in use, 503 try again later.
-	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-writing-several-objects-must-commit-all-or-none
 	 */
-	public function submitAll(
-		array $writes,
-		array $payload,
-		?IUser $subject = null,
-		?string $idempotencyKey = null,
-		string $scope = '',
-		?string $draftId = null,
-		?DraftOwner $owner = null,
-	): array;
+	public function submit(FormSubmission $submission, ?string $idempotencyKey = null): array;
 }//end interface

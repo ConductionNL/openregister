@@ -138,20 +138,17 @@ class ShippedBaselineStore {
 	 * fail an upgrade. A missing baseline degrades to today's behaviour, which
 	 * is the state every instance is in before this ships.
 	 *
-	 * @param string               $subject    The subject reference.
-	 * @param array<string, mixed> $definition What the app ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 * @param string               $configKey  Which baseline.
+	 * @param string            $subject The subject reference.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
 	 *
 	 * @return bool True when it was recorded.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function record(string $subject, array $definition, string $app, string $appVersion, string $configKey = self::KEY_SCHEMA): bool {
-		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: $configKey);
+	public function record(string $subject, ShippedDefinition $shipped): bool {
+		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: self::KEY_SCHEMA);
 
-		return $this->recordAt(address: $address, shipped: new ShippedDefinition(definition: $definition, app: $app, appVersion: $appVersion));
+		return $this->recordAt(address: $address, shipped: $shipped);
 	}//end record()
 
 	/**

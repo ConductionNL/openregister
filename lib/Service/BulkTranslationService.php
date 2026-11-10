@@ -39,42 +39,25 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapperInterface;
-use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use Psr\Log\LoggerInterface;
 
 class BulkTranslationService implements BulkTranslationServiceInterface {
-	/**
-	 * The translation mapper.
-	 *
-	 * @var TranslationMapperInterface
-	 */
-	private readonly TranslationMapperInterface $translationMapper;
-
-	/**
-	 * The translation handler.
-	 *
-	 * @var TranslationHandler
-	 */
-	private readonly TranslationHandler $translationHandler;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param TranslationProviderInterface $provider The translation provider.
-	 * @param TranslationStores $stores The translation mapper and translation handler.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param LoggerInterface $logger The logger.
+	 * @param TranslationProviderInterface $provider     The translation provider.
+	 * @param TranslationStores            $stores       The translation mapper and translation handler.
+	 * @param SchemaMapperInterface        $schemaMapper The schema mapper.
+	 * @param LoggerInterface              $logger       The logger.
 	 */
 	public function __construct(
 		private readonly TranslationProviderInterface $provider,
-		TranslationStores $stores,
+		private readonly TranslationStores $stores,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->translationMapper = $stores->translationMapper;
-		$this->translationHandler = $stores->translationHandler;
 	}//end __construct()
 
 	/**
@@ -148,7 +131,7 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 			return 'schema-not-resolvable';
 		}
 
-		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+		$translatableProps = $this->stores->translationHandler->getTranslatableProperties($schema);
 		if (count($translatableProps) === 0) {
 			return 'no-translatable-properties';
 		}
@@ -302,7 +285,7 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	 */
 	private function mirrorTranslation(ObjectTranslationRequest $request, array $translation): void {
 		try {
-			$this->translationMapper->upsert(
+			$this->stores->translationMapper->upsert(
 				slot: new TranslationSlot(objectUuid: (string)$request->object->getUuid(), property: $translation['property'], language: $request->toLong),
 				edit: new TranslationEdit(
 					value: $translation['value'],

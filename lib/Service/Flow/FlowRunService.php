@@ -386,15 +386,15 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * replace it — the caller still gets `FlowUnattributed`, which is the part
 	 * that actually prevents the run.
 	 *
-	 * @param string            $flowId  The flow that could not be attributed.
-	 * @param string            $trigger What started the run.
-	 * @param FlowUnattributed  $refusal The refusal, whose message is stored.
+	 * @param FlowUnattributed $refusal The refusal: the flow that could not be attributed, what started
+	 *                                  the run, and the message that is stored.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
-	private function recordUnattributed(string $flowId, string $trigger, FlowUnattributed $refusal): void {
+	private function recordUnattributed(FlowUnattributed $refusal): void {
+		$flowId = $refusal->getFlowId();
 		try {
 			$mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
 			$flow = $mapper->findByUuid($flowId);
@@ -402,7 +402,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			$flow->setStatus(Flow::STATUS_ERROR);
 			$flow->setStatusMessage($refusal->getMessage());
 
-			if ($trigger === 'schedule') {
+			if ($refusal->getTrigger() === 'schedule') {
 				$flow->setEnabled(false);
 			}
 
@@ -669,6 +669,28 @@ class FlowRunService implements FlowRunServiceInterface {
 		array $context = [],
 		?string $user = null,
 	): FlowRun {
+		$options = new FlowRunQueueOptions(subject: $subject, trigger: $trigger, context: $context, user: $user);
+		return $this->queueRun(flowId: $flowId, options: $options);
+	}//end queue()
+
+	/**
+	 * Queue a run without executing it, as {@see queue()} documents, refusals included.
+	 *
+	 * @param string              $flowId  The flow to run.
+	 * @param FlowRunQueueOptions $options The subject, the trigger, run-level metadata and the user who caused it.
+	 *
+	 * @return FlowRun The queued run.
+	 *
+	 * @throws FlowLifecycleRefused When the flow has no sound published version (trigger other than `test`).
+	 * @throws FlowDeadEnd          When a node has no outgoing edge and does not end the flow.
+	 * @throws FlowUnattributed     When nothing names the identity the run would execute as.
+	 * @throws DelegationRefused    When the trigger asserts a delegation that is no longer live.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function queueRun(string $flowId, FlowRunQueueOptions $options): FlowRun {
+		$trigger = $options->trigger;
 		// Every dispatch path arrives here — manual, trigger, schedule, MCP,
 		// the workflow-engine operation and a sub-flow call — so this is the
 		// one place a refusal covers all of them. Guarding `FlowService::run()`
@@ -694,7 +716,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		// dispatch paths for the same reason the dead-end refusal lives here,
 		// so the next path added inherits it instead of becoming the sixth.
 		$attribution = (new FlowRunAttribution($this->container, $this->logger))
-			->resolve(flowId: $flowId, user: $user, trigger: $trigger);
+			->resolve(flowId: $flowId, user: $options->user, trigger: $trigger);
 
 		// REFUSE, rather than record a run every node will reject one at a time.
 		//
@@ -709,21 +731,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		// this guard the nodes BEFORE the first object write still ran, so a
 		// flow could send mail and then fail to record why.
 		if ($attribution['user'] === null) {
-			$refusal = new FlowUnattributed(flowId: $flowId, trigger: $trigger, reason: ($attribution['refusal'] ?? null));
-
-			$this->logger->warning(
-				message: '[FlowRunService] Refused to queue an unattributed run',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $flowId,
-					'trigger' => $trigger,
-				]
-			);
-
-			$this->recordUnattributed(flowId: $flowId, trigger: $trigger, refusal: $refusal);
-
-			throw $refusal;
+			$this->refuseUnattributed(refusal: new FlowUnattributed(flowId: $flowId, trigger: $trigger, reason: ($attribution['refusal'] ?? null)));
 		}
 
 		// 🔴 RE-RESOLVE, never trust the definition. The save-time check answered
@@ -741,13 +749,40 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		$run = (new FlowRunRow(attribution: $attribution, version: $version?->getVersion()))->build(
 			flowId: $flowId,
-			subject: $subject,
+			subject: $options->subject,
 			trigger: $trigger,
-			context: $context
+			context: $options->context
 		);
 
 		return $this->parkIfAwaiting(run: $this->stores->mapper->insert($run), park: $park);
-	}//end queue()
+	}//end queueRun()
+
+	/**
+	 * Log, record on the flow, and throw the refusal of a run nothing attributes.
+	 *
+	 * @param FlowUnattributed $refusal The refusal, naming the flow and the trigger.
+	 *
+	 * @return never
+	 *
+	 * @throws FlowUnattributed Always: the refusal itself.
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function refuseUnattributed(FlowUnattributed $refusal): never {
+		$this->logger->warning(
+			message: '[FlowRunService] Refused to queue an unattributed run',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => $refusal->getFlowId(),
+				'trigger' => $refusal->getTrigger(),
+			]
+		);
+
+		$this->recordUnattributed(refusal: $refusal);
+
+		throw $refusal;
+	}//end refuseUnattributed()
 
 	/**
 	 * Park a freshly-inserted run whose delegation is still unanswered.

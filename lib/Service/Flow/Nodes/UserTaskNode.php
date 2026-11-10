@@ -336,9 +336,8 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		}
 
 		$resume = $this->resumeSlot(context: $context);
-		$step = new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId());
 
-		return $this->pass(step: $step, resume: $resume);
+		return $this->pass(step: new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId()), resume: $resume);
 	}//end execute()
 
 	/**

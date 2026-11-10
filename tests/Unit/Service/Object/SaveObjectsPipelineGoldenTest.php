@@ -214,9 +214,13 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 
 		$result = ['invalid' => [], 'errors' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
 		$rows   = [0 => ['a' => 0], 1 => ['a' => 1], 'k' => ['a' => 'k'], 3 => ['a' => 3]];
-		$passed = $this->call($handler, 'refuseInvalidDecisionTables', [$rows, 10, 7, &$result]);
+		$run           = new BulkSaveRun();
+		$run->register = 10;
+		$run->schema   = 7;
+		$run->result   = $result;
+		$passed        = $this->call($handler, 'refuseInvalidDecisionTables', [$run, $rows]);
 
-		return ['passed' => $passed, 'result' => $result];
+		return ['passed' => $passed, 'result' => $run->result];
 	}//end refuseDecisionTables()
 
 	/**
