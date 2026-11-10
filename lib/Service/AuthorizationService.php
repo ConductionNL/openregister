@@ -351,7 +351,8 @@ class AuthorizationService {
 		$this->resolvedConsumer = null;
 		$user = $this->basicUser(header: $header);
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		$audience = new Consumer\EndpointAudience(users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAdmits(user: $user, audience: $audience);
 		$this->actAs(user: $user);
 
 	}//end authorizeBasic()
@@ -412,7 +413,8 @@ class AuthorizationService {
 		$this->assertRequestCarriedBearer();
 		$user = $this->oauthSessionUser();
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		$audience = new Consumer\EndpointAudience(users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAdmits(user: $user, audience: $audience);
 
 	}//end authorizeOAuth()
 
@@ -512,7 +514,8 @@ class AuthorizationService {
 			);
 		}
 
-		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+		$audience = new Consumer\EndpointAudience(users: $users, groups: $groups);
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAdmits(user: $user, audience: $audience);
 
 	}//end authorizeNcSession()
 
