@@ -1948,39 +1948,61 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
 	public function unlock(IUserSession $userSession, ?string $runUuid = null, bool $break = false): bool {
+		if ($break === true) {
+			return $this->breakLock();
+		}
+
+		return $this->releaseLock(userSession: $userSession, runUuid: $runUuid);
+	}//end unlock()
+
+	/**
+	 * Release the lock for its holder: the signed-in user, and the run when the lock is run-scoped.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string|null  $runUuid     Flow run releasing the lock, for a run-scoped lock
+	 *
+	 * @throws Exception Without a signed-in user, or when another holder has the lock
+	 *
+	 * @return true True when the object is unlocked
+	 */
+	private function releaseLock(IUserSession $userSession, ?string $runUuid): bool {
 		if ($this->isLocked() === false) {
 			return true;
 		}
 
 		$currentUser = $userSession->getUser();
-		if ($currentUser === null && $break === false) {
-			// A break has no session requirement. The engine releases a run's
-			// locks from a terminal-event listener and from the cron sweep,
-			// and neither has a session: `occ` and background jobs run as
-			// nobody. Requiring a user there would mean the release layers
-			// that exist for crashed runs could never fire, which is the
-			// whole case they were built for. Authorization for a break lives
-			// at the call site (administrator, or the engine releasing a lock
-			// whose holding run it has already matched).
+		if ($currentUser === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser?->getUID();
-
-		// Check if locked by different user.
-		if ($this->locked === null) {
-			throw new Exception('Object is not locked');
-		}
-
-		if ($break === false
-			&& $this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true
-		) {
+		if ($this->isLockedBySomeoneElse(userId: $currentUser->getUID(), runUuid: $runUuid) === true) {
 			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
 		}
 
 		$this->setLocked(null);
 		return true;
-	}//end unlock()
+	}//end releaseLock()
+
+	/**
+	 * Release the lock regardless of who holds it.
+	 *
+	 * A break has no session requirement. The engine releases a run's locks
+	 * from a terminal-event listener and from the cron sweep, and neither has
+	 * a session: `occ` and background jobs run as nobody. Requiring a user
+	 * there would mean the release layers that exist for crashed runs could
+	 * never fire, which is the whole case they were built for. Authorization
+	 * for a break lives at the call site (administrator, or the engine
+	 * releasing a lock whose holding run it has already matched).
+	 *
+	 * @return true True when the object is unlocked
+	 */
+	private function breakLock(): bool {
+		if ($this->isLocked() === true) {
+			$this->setLocked(null);
+		}
+
+		return true;
+	}//end breakLock()
 
 	/**
 	 * Check if the object is currently locked
