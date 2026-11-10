@@ -335,7 +335,7 @@ class DsarService implements DsarServiceInterface {
 	 *
 	 * @param DsarSubjectQuery $query The subject, type and mode.
 	 *
-	 * @return array<int, array{object_id: int, object_uuid: string}>
+	 * @return array<string, array{object_id: int, object_uuid: string}> The objects by canonical key.
 	 */
 	private function erasureEntries(DsarSubjectQuery $query): array {
 		return array_map(
@@ -347,7 +347,7 @@ class DsarService implements DsarServiceInterface {
 	/**
 	 * Erase every matched object under one erasure run.
 	 *
-	 * @param array<int, array{object_id: int, object_uuid: string}> $entries The matched objects.
+	 * @param array<string, array{object_id: int, object_uuid: string}> $entries The matched objects.
 	 * @param string                                                 $subject The data subject.
 	 *
 	 * @return DsarErasureRun What was erased, failed and withheld.
