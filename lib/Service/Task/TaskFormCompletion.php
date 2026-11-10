@@ -89,7 +89,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	public function complete(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task {
+	public function completeWith(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task {
 		// The task verb's authorization FIRST, fail-closed and audited on
 		// denial, before a single byte reaches the subject object.
 		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $uuid);
@@ -102,6 +102,31 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 			comment: $answer->comment,
 			actor: $actor
 		);
+	}//end completeWith()
+
+	/**
+	 * Complete a task, by the loose values other apps pass positionally.
+	 *
+	 * @param string               $uuid       The task uuid.
+	 * @param string               $outcome    The completion outcome.
+	 * @param string|null          $resultText The result text, or null.
+	 * @param string|null          $comment    The comment, or null.
+	 * @param array<string, mixed> $data       The declared field values; empty for a form-less completion.
+	 * @param string|null          $actor      The completing identity.
+	 *
+	 * @return Task The completed task.
+	 *
+	 * @throws TaskFormRefusedException When the payload violates the form.
+	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature dossiq calls positionally.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	public function complete(string $uuid, string $outcome, ?string $resultText, ?string $comment, array $data, ?string $actor): Task {
+		$answer = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment);
+
+		return $this->completeWith(uuid: $uuid, answer: $answer, data: $data, actor: $actor);
 	}//end complete()
 
 	/**

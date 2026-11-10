@@ -47,5 +47,5 @@ interface TaskFormCompletionInterface {
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write.
 	 * @throws TaskAccessDeniedException When the task verb or the object write is not authorized.
 	 */
-	public function complete(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task;
+	public function completeWith(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task;
 }//end interface

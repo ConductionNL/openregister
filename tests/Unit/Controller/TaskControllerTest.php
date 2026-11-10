@@ -320,7 +320,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testCompletePassesTheFieldValuesThrough(): void {
-		$this->completion->expects($this->once())->method('complete')
+		$this->completion->expects($this->once())->method('completeWith')
 			->with('t-1', new TaskAnswer(outcome: 'rejected', comment: 'late'), ['reason' => 'late'], 'alice')
 			->willReturn($this->task());
 
@@ -335,7 +335,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testANonObjectDataIs400(): void {
-		$this->completion->expects($this->never())->method('complete');
+		$this->completion->expects($this->never())->method('completeWith');
 
 		$response = $this->controller->complete(uuid: 't-1', outcome: 'approved', data: 'late');
 
@@ -350,7 +350,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFormRefusalIs400WithFieldsAndKind(): void {
-		$this->completion->method('complete')->willThrowException(
+		$this->completion->method('completeWith')->willThrowException(
 			new TaskFormRefusedException(
 				message: 'Transition "complete" is missing required input field(s): "reason".',
 				kind: TaskFormRefusedException::KIND_MISSING,
@@ -372,7 +372,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testASubjectWriteRefusalIs422(): void {
-		$this->completion->method('complete')->willThrowException(
+		$this->completion->method('completeWith')->willThrowException(
 			new TaskSubjectWriteRefusedException('reason must be one of: late, incomplete')
 		);
 
@@ -456,7 +456,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeniedVerbIs404WhenTheCallerMayNotReadTheTask(): void {
-		$this->completion->method('complete')->willThrowException(new TaskAccessDeniedException('denied'));
+		$this->completion->method('completeWith')->willThrowException(new TaskAccessDeniedException('denied'));
 		$this->tasks->method('get')->willReturn($this->task());
 		$this->authorization->method('mayRead')->willReturn(false);
 
@@ -473,7 +473,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeniedVerbIs403WhenTheCallerMayReadTheTask(): void {
-		$this->completion->method('complete')->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: only the current assignee may perform it."));
+		$this->completion->method('completeWith')->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: only the current assignee may perform it."));
 		$this->tasks->method('get')->willReturn($this->task());
 		$this->authorization->method('mayRead')->willReturn(true);
 
@@ -568,7 +568,7 @@ class TaskControllerTest extends TestCase {
 
 		// Complete goes through the form-aware completion, which owns the
 		// write-then-complete order and delegates the verb to the service.
-		$this->completion->expects($this->once())->method('complete')->willReturn($this->task());
+		$this->completion->expects($this->once())->method('completeWith')->willReturn($this->task());
 
 		$responses = [
 			$this->controller->offer(uuid: 't-1'),

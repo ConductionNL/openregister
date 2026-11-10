@@ -169,7 +169,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->objects->expects($this->never())->method('saveObject');
 		$this->tasks->expects($this->once())->method('complete')->with('t-7', 'approved', null, 'fine', 'alice');
 
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: 'fine'), data: [], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: 'fine'), data: [], actor: 'alice');
 	}//end testAFormlessTaskCompletesWithoutAnyFieldValidation()
 
 	/**
@@ -189,7 +189,7 @@ class TaskFormCompletionTest extends TestCase {
 		);
 
 		try {
-			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'x'], actor: 'alice');
+			$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'x'], actor: 'alice');
 			$this->fail('Expected a refusal.');
 		} catch (TaskFormRefusedException $refused) {
 			$this->assertSame(TaskFormRefusedException::KIND_UNDECLARED, $refused->getKind());
@@ -210,7 +210,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->tasks->expects($this->never())->method('complete');
 
 		try {
-			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['note' => 'n'], actor: 'alice');
+			$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['note' => 'n'], actor: 'alice');
 			$this->fail('Expected a refusal.');
 		} catch (TaskFormRefusedException $refused) {
 			$this->assertSame(TaskFormRefusedException::KIND_MISSING, $refused->getKind());
@@ -228,7 +228,7 @@ class TaskFormCompletionTest extends TestCase {
 			->willThrowException(new InvalidTransitionInputException('Transition "complete" does not accept input field(s): "extra".', ['extra']));
 
 		try {
-			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'r', 'extra' => 1], actor: 'alice');
+			$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'r', 'extra' => 1], actor: 'alice');
 			$this->fail('Expected a refusal.');
 		} catch (TaskFormRefusedException $refused) {
 			$this->assertSame(TaskFormRefusedException::KIND_UNDECLARED, $refused->getKind());
@@ -267,7 +267,7 @@ class TaskFormCompletionTest extends TestCase {
 		);
 		$this->engine->expects($this->never())->method('transition');
 
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'late'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'late'], actor: 'alice');
 
 		$this->assertSame(['authorize', 'save', 'complete'], $this->calls);
 	}//end testAnInlineFormWritesTheSubjectBeforeCompleting()
@@ -282,7 +282,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->objects->expects($this->never())->method('find');
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
 
 		$this->assertSame(['authorize', 'complete'], $this->calls);
 	}//end testAnEmptyAcceptedPayloadWritesNothing()
@@ -303,7 +303,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->engine->expects($this->never())->method('resolveTransitionInputs');
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'late'), data: ['reason' => 'late'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'late'), data: ['reason' => 'late'], actor: 'alice');
 
 		$this->assertSame(['authorize', 'transition', 'complete'], $this->calls);
 	}//end testAnActionFormTransitionsTheSubjectBeforeCompleting()
@@ -320,7 +320,7 @@ class TaskFormCompletionTest extends TestCase {
 
 		$this->expectException(TaskSubjectWriteRefusedException::class);
 		$this->expectExceptionMessage('reason must be one of');
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'other'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'other'], actor: 'alice');
 	}//end testASchemaRefusalLeavesTheTaskOpen()
 
 	/**
@@ -337,7 +337,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->tasks->expects($this->never())->method('complete');
 
 		$this->expectException(TaskSubjectWriteRefusedException::class);
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 7], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 7], actor: 'alice');
 	}//end testAnInlineSaveRefusalLeavesTheTaskOpen()
 
 	/**
@@ -349,7 +349,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->engine->method('transition')->willThrowException(new \RuntimeException('Transition "reject" is not allowed from current state "closed".'));
 
 		$this->expectException(TaskSubjectWriteRefusedException::class);
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
 	}//end testATransitionRefusedFromTheCurrentStateIs422NotMalformed()
 
 	/**
@@ -364,7 +364,7 @@ class TaskFormCompletionTest extends TestCase {
 
 		$this->expectException(TaskAccessDeniedException::class);
 		$this->expectExceptionMessage('obj-1');
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
 	}//end testTheObjectWritesAuthorizationMayRefuse()
 
 	/**
@@ -384,7 +384,7 @@ class TaskFormCompletionTest extends TestCase {
 
 		$this->expectException(TaskAccessDeniedException::class);
 		$this->expectExceptionMessage('Insufficient permissions to read');
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
 	}//end testAnUnreadableSubjectStaysAnAccessDenial()
 
 	/**
@@ -398,7 +398,7 @@ class TaskFormCompletionTest extends TestCase {
 		);
 
 		$this->expectException(TaskSubjectWriteRefusedException::class);
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
 	}//end testAMissingSubjectIsAWriteRefusal()
 
 	/**
@@ -410,7 +410,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->engine->expects($this->never())->method('transition');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'late'], actor: 'mallory');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'late'], actor: 'mallory');
 	}//end testTheTaskVerbIsAuthorizedBeforeAnythingElse()
 
 	/**
@@ -427,7 +427,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->tasks->expects($this->never())->method('complete');
 
 		try {
-			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
+			$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
 			$this->fail('Expected a refusal.');
 		} catch (TaskFormRefusedException $refused) {
 			$this->assertSame(TaskFormRefusedException::KIND_UNRESOLVABLE, $refused->getKind());
@@ -453,7 +453,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->tasks->expects($this->never())->method('complete');
 
 		try {
-			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
+			$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'x'), data: ['reason' => 'late'], actor: 'alice');
 			$this->fail('Expected a refusal.');
 		} catch (TaskFormRefusedException $refused) {
 			$this->assertSame(TaskFormRefusedException::KIND_CHECKLIST, $refused->getKind());
@@ -471,7 +471,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->forms->method('describe')->willReturn(['form' => null, 'requireChecklist' => true]);
 		$this->tasks->expects($this->once())->method('complete');
 
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: [], actor: 'alice');
 	}//end testACompleteChecklistSatisfiesThePrecondition()
 
 	/**
@@ -484,7 +484,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->forms->method('describe')->willReturn($this->nativeForm());
 
 		try {
-			$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'r'], actor: 'alice');
+			$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'r'], actor: 'alice');
 			$this->fail('Expected a refusal.');
 		} catch (TaskFormRefusedException $refused) {
 			$this->assertSame(TaskFormRefusedException::KIND_NO_SUBJECT, $refused->getKind());
@@ -503,7 +503,7 @@ class TaskFormCompletionTest extends TestCase {
 		$this->objects->expects($this->never())->method('saveObject');
 		$this->tasks->expects($this->once())->method('complete')->with('t-7', 'submitted', 'submission 41', null, 'alice');
 
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'submitted', resultText: 'submission 41'), data: [], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'submitted', resultText: 'submission 41'), data: [], actor: 'alice');
 	}//end testAnExternalFormWritesNoObjectField()
 	/**
 	 * 🔴 THE FORM WRITE IS THE RUN'S WRITE, EVEN THOUGH A PERSON MADE THE REQUEST.
@@ -541,7 +541,7 @@ class TaskFormCompletionTest extends TestCase {
 			}
 		);
 
-		$this->completion->complete(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'late'], actor: 'alice');
+		$this->completion->completeWith(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', comment: null), data: ['reason' => 'late'], actor: 'alice');
 
 		$this->assertSame('run-9', $seen, 'the write must act as the run that raised the task');
 		$this->assertNull(
@@ -549,4 +549,26 @@ class TaskFormCompletionTest extends TestCase {
 			'and the scope must be left again, so the rest of the request is not a run'
 		);
 	}//end testTheFormWriteActsAsTheRunThatRaisedTheTask()
+
+	/**
+	 * The loose-value signature dossiq calls positionally, and by name, completes the task with the same answer.
+	 */
+	public function testTheLooseValueSignatureCompletesPositionallyAndByName(): void {
+		$this->openTask($this->task());
+		$this->forms->method('describe')->willReturn(['form' => null, 'requireChecklist' => false]);
+		$this->objects->expects($this->never())->method('saveObject');
+		$calls = [];
+		$this->tasks->expects($this->exactly(2))->method('complete')->willReturnCallback(
+			function (mixed ...$arguments) use (&$calls) {
+				$calls[] = $arguments;
+				return $this->task();
+			}
+		);
+
+		$this->completion->complete('t-7', 'done', null, null, [], 'alice');
+		$this->completion->complete(uuid: 't-7', outcome: 'approved', resultText: 'ok', comment: 'fine', data: [], actor: 'alice');
+
+		$this->assertSame(['t-7', 'done', null, null, 'alice'], array_slice(array_values($calls[0]), 0, 5));
+		$this->assertSame(['t-7', 'approved', 'ok', 'fine', 'alice'], array_slice(array_values($calls[1]), 0, 5));
+	}//end testTheLooseValueSignatureCompletesPositionallyAndByName()
 }//end class

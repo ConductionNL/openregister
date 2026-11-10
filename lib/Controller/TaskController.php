@@ -726,7 +726,7 @@ class TaskController extends Controller {
 		}
 
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->completion->complete(
+			verb: fn (): TaskInterface => $this->completion->completeWith(
 				uuid: $command->uuid,
 				answer: $command->answer,
 				data: ($data ?? []),
