@@ -57,7 +57,7 @@ class AdministeredValidationsGoldenTest extends TestCase {
 
 	protected function setUp(): void {
 		$evaluator = $this->createMock(NamedConditionEvaluator::class);
-		$evaluator->method('holds')->willReturnCallback(
+		$evaluator->method('holdsIn')->willReturnCallback(
 			function (mixed $node, ConditionEvaluation $evaluation): bool {
 				$this->calls[] = json_encode([$node, $evaluation->document, $evaluation->library]);
 				if ($node === 'broken') {

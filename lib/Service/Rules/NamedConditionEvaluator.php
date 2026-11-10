@@ -66,8 +66,26 @@ class NamedConditionEvaluator {
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	public function holds(mixed $node, ConditionEvaluation $evaluation): bool {
+	public function holdsIn(mixed $node, ConditionEvaluation $evaluation): bool {
 		return $this->evaluate(node: $node, evaluation: $evaluation);
+	}//end holdsIn()
+
+	/**
+	 * Whether a condition holds against a document, by the loose values other apps pass.
+	 *
+	 * @param mixed                $node     The condition node.
+	 * @param array<string, mixed> $document The document it is evaluated against.
+	 * @param array<string, mixed> $library  The named conditions in scope.
+	 * @param int                  $depth    The composition depth so far.
+	 *
+	 * @return bool True when it holds.
+	 *
+	 * @throws ConditionRefusedException When a reference cannot be resolved.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	public function holds(mixed $node, array $document, array $library, int $depth=0): bool {
+		return $this->holdsIn(node: $node, evaluation: new ConditionEvaluation(document: $document, library: $library, depth: $depth));
 	}//end holds()
 
 	/**

@@ -251,7 +251,7 @@ class AdministeredValidations {
 	private function entryFor(array $declaration, ValidationInput $input): ?array {
 		try {
 			$node     = ($declaration['condition'] ?? null);
-			$violated = $this->evaluator->holds(
+			$violated = $this->evaluator->holdsIn(
 				node: $node,
 				evaluation: new ConditionEvaluation(document: $input->document, library: $input->library, depth: 0)
 			);

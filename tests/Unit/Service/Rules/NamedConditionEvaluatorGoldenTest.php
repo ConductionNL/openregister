@@ -133,7 +133,7 @@ class NamedConditionEvaluatorGoldenTest extends TestCase {
 
 	private static function verdict(NamedConditionEvaluator $evaluator, mixed $node, array $document, int $depth = 0): string {
 		try {
-			return var_export($evaluator->holds(node: $node, evaluation: new ConditionEvaluation(document: $document, library: self::library(), depth: $depth)), true);
+			return var_export($evaluator->holdsIn(node: $node, evaluation: new ConditionEvaluation(document: $document, library: self::library(), depth: $depth)), true);
 		} catch (ConditionRefusedException $refused) {
 			return '!' . $refused->getConditionName() . ': ' . $refused->getWhy();
 		}
