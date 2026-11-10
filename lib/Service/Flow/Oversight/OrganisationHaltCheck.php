@@ -81,6 +81,18 @@ class OrganisationHaltCheck implements IFlowOversightCheck, OrganisationHaltChec
 			return 'A halt covers this step and the run\'s organisation could not be established, so the step was refused.';
 		}
 
+		return self::refusalFor(matching: $matching, organisation: $organisation);
+	}//end veto()
+
+	/**
+	 * The refusal of the first matching halt that covers the organisation, or null.
+	 *
+	 * @param array<int, array<string, mixed>> $matching     The halts covering this step's node type.
+	 * @param string                           $organisation The run's organisation.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function refusalFor(array $matching, string $organisation): ?string {
 		foreach ($matching as $halt) {
 			if ($halt['organisation'] === $organisation) {
 				return self::haltMessage(halt: $halt);
@@ -88,7 +100,7 @@ class OrganisationHaltCheck implements IFlowOversightCheck, OrganisationHaltChec
 		}
 
 		return null;
-	}//end veto()
+	}//end refusalFor()
 
 	/**
 	 * What a halt that covers the run's organisation says: which app, since when, by whom and why.
