@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\GrantDeclaration;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
@@ -93,9 +94,11 @@ final class AuthorizationBlockCheck {
 	private function assertGrantsAndDeny(Schema $schema, array $authorization): void {
 		$subject = sprintf('the schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? ''));
 		AccessDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
-			authorization: $this->withoutDeclaredActions(authorization: $authorization, declared: $schema->declaredActionNames()),
-			roleDefinitions: null,
-			subject: $subject
+			declaration: new GrantDeclaration(
+				authorization: $this->withoutDeclaredActions(authorization: $authorization, declared: $schema->declaredActionNames()),
+				roleDefinitions: null,
+				subject: $subject
+			)
 		);
 
 		AccessDeclarationValidators::denyValidator()->assertStorable(

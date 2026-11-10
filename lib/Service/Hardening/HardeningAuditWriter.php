@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange as HardeningAuditChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -63,32 +64,28 @@ class HardeningAuditWriter {
 	/**
 	 * Record a hardening fact that was allowed to happen.
 	 *
-	 * @param string           $fact   What happened, as `area.event`.
-	 * @param int|string|array $before The state before.
-	 * @param int|string|array $after  The state after.
+	 * @param HardeningFact $change What happened, as `area.event`, and the states before and after.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md
 	 */
-	public function accepted(string $fact, int|string|array $before, int|string|array $after): void {
-		$this->write(change: new HardeningFact(fact: $fact, before: $before, after: $after), refusal: null);
+	public function accepted(HardeningFact $change): void {
+		$this->write(change: $change, refusal: null);
 	}//end accepted()
 
 	/**
 	 * Record a hardening fact that was refused.
 	 *
-	 * @param string           $fact    What was asked, as `area.event`.
-	 * @param int|string|array $before  The state before.
-	 * @param int|string|array $after   The state asked for.
-	 * @param string           $refusal The refusal.
+	 * @param HardeningFact $change  What was asked, as `area.event`, the state before and the state asked for.
+	 * @param string        $refusal The refusal.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md
 	 */
-	public function refused(string $fact, int|string|array $before, int|string|array $after, string $refusal): void {
-		$this->write(change: new HardeningFact(fact: $fact, before: $before, after: $after), refusal: $refusal);
+	public function refused(HardeningFact $change, string $refusal): void {
+		$this->write(change: $change, refusal: $refusal);
 	}//end refused()
 
 	/**
@@ -101,12 +98,9 @@ class HardeningAuditWriter {
 	 */
 	private function write(HardeningFact $change, ?string $refusal): void {
 		try {
-			$this->auditTrailMapper->createHardeningChangeEntry(
-				control: $change->fact,
-				before: $change->before,
-				after: $change->after,
-				accepted: $refusal === null,
-				refusal: ($refusal ?? ''),
+			$this->auditTrailMapper->recordHardeningChange(
+				change: new HardeningAuditChange(control: $change->fact, before: $change->before, after: $change->after, refusal: ($refusal ?? '')),
+				accepted: $refusal === null
 			);
 		} catch (Throwable $failure) {
 			$this->logger->error(

@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Unit\Service\Archival;
 
 use DateTime;
+use OCA\OpenRegister\Service\RetentionClock;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\ArchivalDeclarationReader;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -47,7 +48,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			->getMock();
 		$retention->method('lookupSelectielijstEntry')->willReturn($entry);
 		$retention->method('calculateArchiveActionDate')->willReturnCallback(
-			static fn (ObjectEntity $object, Schema $schema, string $retentionPeriod): ?string => ($dates[$retentionPeriod] ?? null)
+			static fn (RetentionClock $clock): ?string => ($dates[$clock->retentionPeriod] ?? null)
 		);
 		$logger = new NullLogger();
 		$objects = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAcrossAllSources'])->getMock();

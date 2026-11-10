@@ -22,10 +22,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
@@ -78,12 +78,12 @@ class MapperPagingGoldenTest extends TestCase {
 			'bulk job all' => [BulkJobMapper::class, 'findAllJobs', ['state' => null]],
 			'email link by object' => [EmailLinkMapper::class, 'findByObjectUuid', ['objectUuid' => 'o-2']],
 			'endpoint log all (newest first trait)' => [EndpointLogMapper::class, 'findAll', []],
-			'import preview by actor' => [ImportPreviewMapper::class, 'findByActor', ['createdBy' => 'bob', 'state' => null]],
+			'import preview by actor' => [ImportPreviewMapper::class, 'findByActor', ['createdBy' => 'bob', 'query' => ListQuery::class]],
 			'schema changelog by schema' => [SchemaChangelogMapper::class, 'findBySchema', ['schemaId' => 3]],
 			'schema run entry by run' => [SchemaRunEntryMapper::class, 'findByRun', ['runId' => 5, 'outcome' => 'failed']],
 			'schema run by schema' => [SchemaRunMapper::class, 'findBySchema', ['schemaId' => 6]],
 			'search trail all' => [SearchTrailMapper::class, 'findAll', []],
-			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7]],
+			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7, 'page' => null]],
 			'chunk unvectorized' => [ChunkMapper::class, 'findUnvectorized', []],
 			'chunk file source summaries' => [ChunkMapper::class, 'getFileSourceSummaries', ['search' => 'abc']],
 			'webhook all' => [WebhookMapper::class, 'findAll', ['filters' => ['a' => 1]]],
@@ -136,6 +136,10 @@ class MapperPagingGoldenTest extends TestCase {
 	 * and ListQuery reads take the page as one ListQuery.
 	 */
 	private static function withPage(array $args, array $page): array {
+		if (array_key_exists('page', $args) === true) {
+			return ['page' => new ListQuery(($page['limit'] ?? ListQuery::UNBOUNDED), ($page['offset'] ?? null))] + $args;
+		}
+
 		if (($args['query'] ?? null) === ListQuery::class) {
 			return ['query' => new ListQuery(limit: ($page['limit'] ?? ListQuery::UNBOUNDED), offset: ($page['offset'] ?? null))] + $args;
 		}

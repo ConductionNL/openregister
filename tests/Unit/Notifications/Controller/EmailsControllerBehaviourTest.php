@@ -46,6 +46,8 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 #[CoversClass(EmailsController::class)]
 #[UsesClass(EmailsControllerServices::class)]
@@ -138,7 +140,7 @@ class EmailsControllerBehaviourTest extends TestCase {
 	public function testIndexPassesLimitAndOffsetAsIntegers(): void {
 		$this->emails->method('isMailAvailable')->willReturn(true);
 		$this->objects->method('getObject')->willReturn($this->object);
-		$this->emails->expects($this->once())->method('getEmailsForObject')->with('uuid-1', 10, 20)->willReturn(['results' => []]);
+		$this->emails->expects($this->once())->method('getEmailsForObject')->with('uuid-1', new ListQuery(limit: 10, offset: 20))->willReturn(['results' => []]);
 		$response = $this->controller(['limit' => '10', 'offset' => '20'])->index('reg', 'sch', 'id');
 		$this->assertSame(['results' => []], $response->getData());
 	}
@@ -164,7 +166,7 @@ class EmailsControllerBehaviourTest extends TestCase {
 		$this->emails->method('isMailAvailable')->willReturn(true);
 		$this->objects->method('getObject')->willReturn($this->object);
 		$this->links->expects($this->once())->method('assertAccountOwnership')->with(7);
-		$this->emails->expects($this->once())->method('linkEmail')->with('uuid-1', 3, 7, 42)
+		$this->emails->expects($this->once())->method('linkEmail')->with(new EmailLinkRequest(objectUuid: 'uuid-1', registerId: 3, mailAccountId: 7, mailMessageId: 42))
 			->willReturn(new EmailLink());
 		$response = $this->controller(['mailAccountId' => '7', 'mailMessageId' => '42'])->create('reg', 'sch', 'id');
 		$this->assertSame(201, $response->getStatus());

@@ -82,18 +82,26 @@ class BulkJobReversal implements BulkJobReversalInterface {
 	public function reverse(BulkJob $original, string $actorUid, ?string $justification = null): BulkJob {
 		$this->assertReversible(job: $original);
 		$uuids = $this->writtenUuids(job: $original);
-
-		$reversal = $this->service->create(
-			call: $this->restoreCall(job: $original),
-			selection: new BulkJobSelection(criteria: ['ids' => $uuids], registerId: $original->getRegisterId(), schemaId: $original->getSchemaId()),
-			actorUid: $actorUid,
-			justification: $justification
+		$call     = $this->restoreCall(job: $original);
+		$reversal = $this->service->createFromRequest(
+			request: new BulkJobRequest(call: $call, selection: self::selectionOf(job: $original, uuids: $uuids), actorUid: $actorUid, justification: $justification)
 		);
-
 		$reverses = $this->reversesEntry(job: $original, written: count($uuids));
 
 		return $this->link(original: $original, reversal: $this->nameOriginal(reversal: $reversal, reverses: $reverses));
 	}//end reverse()
+
+	/**
+	 * The selection of a reversal: the written objects, in the original's register and schema.
+	 *
+	 * @param BulkJob            $job   The job to undo.
+	 * @param array<int, string> $uuids The uuids it wrote.
+	 *
+	 * @return BulkJobSelection The selection.
+	 */
+	private static function selectionOf(BulkJob $job, array $uuids): BulkJobSelection {
+		return new BulkJobSelection(criteria: ['ids' => $uuids], registerId: $job->getRegisterId(), schemaId: $job->getSchemaId());
+	}//end selectionOf()
 
 	/**
 	 * The uuids the original job wrote, refusing a job that wrote nothing.

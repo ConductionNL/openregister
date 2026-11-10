@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
+use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
 
 /**
  * Keeps rows in memory, per register and schema.
@@ -150,20 +153,20 @@ class FakeExampleSetStore extends ExampleSetStore {
 	 * Refuses what the real validator refuses for the fields named above,
 	 * with OpenRegister's own wording.
 	 */
-	public function validate(string $register, string $schema, array $data, array $plannedUsers = []): array {
+	public function refusalsFor(RegisterSchemaRef $table, ObjectCheck $check): array {
 		$this->validations++;
-		if ($this->offers(register: $register, schema: $schema) === false) {
-			return ['this instance has no schema "'.$schema.'" in a register "'.$register.'"'];
+		if ($this->offers(register: (string) $table->register, schema: (string) $table->schema) === false) {
+			return ['this instance has no schema "'.$table->schema.'" in a register "'.$table->register.'"'];
 		}
 
 		$refusals = [];
-		foreach (($this->refusedFields[$register.' '.$schema] ?? []) as $field) {
-			if (array_key_exists($field, $data) === true) {
+		foreach (($this->refusedFields[$table->register.' '.$table->schema] ?? []) as $field) {
+			if (array_key_exists($field, $check->object) === true) {
 				$refusals[] = 'The property '.$field.' is not allowed';
 			}
 		}
 
-		return array_merge($refusals, $this->typeRefusals(type: $register.' '.$schema, data: $data, plannedUsers: $plannedUsers));
+		return array_merge($refusals, $this->typeRefusals(type: $table->register.' '.$table->schema, data: $check->object, plannedUsers: $check->plannedUsers));
 	}
 
 	/**
@@ -202,27 +205,27 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return ($this->textFields[$register.' '.$schema] ?? []);
 	}
 
-	public function find(string $register, string $schema, array $filters): array {
-		return array_values($this->rows[$register.' '.$schema] ?? []);
+	public function find(RegisterSchemaRef $table, array $filters): array {
+		return array_values($this->rows[$table->register.' '.$table->schema] ?? []);
 	}
 
 	/** @var array<int, string> Ids whose read fails with an error, as a database that is down would. */
 	public array $unreadable = [];
 
-	public function get(string $register, string $schema, string $id): ?array {
-		if (in_array($id, $this->unreadable, true) === true) {
+	public function row(ObjectRef $ref): ?array {
+		if (in_array($ref->id, $this->unreadable, true) === true) {
 			return null;
 		}
 
-		return $this->withLenses(type: $register.' '.$schema, row: ($this->rows[$register.' '.$schema][$id] ?? null));
+		return $this->withLenses(type: $ref->register.' '.$ref->schema, row: ($this->rows[$ref->register.' '.$ref->schema][$ref->id] ?? null));
 	}
 
-	public function read(string $register, string $schema, string $id): array {
-		if (in_array($id, $this->unreadable, true) === true) {
+	public function readRow(ObjectRef $ref): array {
+		if (in_array($ref->id, $this->unreadable, true) === true) {
 			return ['row' => null, 'error' => 'database is gone'];
 		}
 
-		return ['row' => $this->withLenses(type: $register.' '.$schema, row: ($this->rows[$register.' '.$schema][$id] ?? null)), 'error' => ''];
+		return ['row' => $this->withLenses(type: $ref->register.' '.$ref->schema, row: ($this->rows[$ref->register.' '.$ref->schema][$ref->id] ?? null)), 'error' => ''];
 	}
 
 	public function create(string $register, string $schema, array $data, ?string $owner = null): array {
@@ -251,17 +254,17 @@ class FakeExampleSetStore extends ExampleSetStore {
 	/** @var int Number of updates. */
 	public int $updates = 0;
 
-	public function update(string $register, string $schema, string $id, array $data): string {
-		if (isset($this->rows[$register.' '.$schema][$id]) === false) {
+	public function update(ObjectRef $ref, array $data): string {
+		if (isset($this->rows[$ref->register.' '.$ref->schema][$ref->id]) === false) {
 			return 'no such row';
 		}
 
-		$refused = $this->typeRefusals(type: $register.' '.$schema, data: $data, plannedUsers: []);
+		$refused = $this->typeRefusals(type: $ref->register.' '.$ref->schema, data: $data, plannedUsers: []);
 		if ($refused !== []) {
 			return implode(' ', $refused);
 		}
 
-		$refused = $this->writeRefusal(type: $register.' '.$schema, stored: $this->rows[$register.' '.$schema][$id], data: $data);
+		$refused = $this->writeRefusal(type: $ref->register.' '.$ref->schema, stored: $this->rows[$ref->register.' '.$ref->schema][$ref->id], data: $data);
 		if ($refused !== '') {
 			return $refused;
 		}
@@ -269,7 +272,7 @@ class FakeExampleSetStore extends ExampleSetStore {
 		$this->updates++;
 		$this->causes[] = \OCA\OpenRegister\Service\WriteCause::current();
 		unset($data['@self'], $data['id']);
-		$this->rows[$register.' '.$schema][$id] = (['id' => $id] + $this->asStored(type: $register.' '.$schema, data: $data));
+		$this->rows[$ref->register.' '.$ref->schema][$ref->id] = (['id' => $ref->id] + $this->asStored(type: $ref->register.' '.$ref->schema, data: $data));
 
 		return '';
 	}
@@ -282,8 +285,8 @@ class FakeExampleSetStore extends ExampleSetStore {
 	 *
 	 * @return array<string, mixed>
 	 */
-	public function ownerOf(string $register, string $schema, string $id): ?string {
-		return ($this->owners[$id] ?? null);
+	public function ownerOf(ObjectRef $ref): ?string {
+		return ($this->owners[$ref->id] ?? null);
 	}
 
 	public function assignOwner(string $id, string $owner): string {
@@ -379,16 +382,16 @@ class FakeExampleSetStore extends ExampleSetStore {
 	 * As the real store: '' when gone, otherwise why not; a held row stays.
 	 * The archival system path itself is tested on the real store.
 	 */
-	public function deleteRecorded(string $register, string $schema, string $id): string {
-		if (in_array($id, $this->undeletable, true) === true) {
+	public function deleteRecorded(ObjectRef $ref): string {
+		if (in_array($ref->id, $this->undeletable, true) === true) {
 			return 'the register refused it';
 		}
 
-		if (in_array($id, $this->held, true) === true) {
+		if (in_array($ref->id, $this->held, true) === true) {
 			return 'it is under an active legal hold';
 		}
 
-		unset($this->rows[$register.' '.$schema][$id]);
+		unset($this->rows[$ref->register.' '.$ref->schema][$ref->id]);
 
 		return '';
 	}

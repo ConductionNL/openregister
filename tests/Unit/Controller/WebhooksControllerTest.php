@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Controller\WebhooksController;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -849,8 +852,7 @@ class WebhooksControllerTest extends TestCase {
 			->method('findByWebhook')
 			->with(
 				$this->equalTo(1),
-				$this->equalTo(25),
-				$this->equalTo(10)
+				$this->equalTo(new ListQuery(25, 10))
 			)
 			->willReturn([$logEntity]);
 
@@ -1400,10 +1402,13 @@ class WebhooksControllerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
 			->with(
-				$this->equalTo($webhook),
-				$this->equalTo('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'),
-				$this->equalTo(['id' => 42, 'name' => 'test']),
-				$this->equalTo(4)
+				$this->equalTo(
+					new WebhookDelivery(
+						webhook: $webhook,
+						event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['id' => 42, 'name' => 'test']),
+						attempt: 4
+					)
+				)
 			)
 			->willReturn(true);
 
@@ -1429,10 +1434,13 @@ class WebhooksControllerTest extends TestCase {
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
 			->with(
-				$this->equalTo($webhook),
-				$this->equalTo('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'),
-				$this->equalTo(['id' => 42, 'name' => 'test']),
-				$this->equalTo(2)
+				$this->equalTo(
+					new WebhookDelivery(
+						webhook: $webhook,
+						event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['id' => 42, 'name' => 'test']),
+						attempt: 2
+					)
+				)
 			)
 			->willReturn(true);
 

@@ -30,6 +30,8 @@ use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MailMessageKey;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCP\AppFramework\Db\Entity;
@@ -116,11 +118,12 @@ final class ReadStateAndEmailLinkMapperGoldenTest extends TestCase {
 		}
 
 		foreach (self::uuidCases() as $name => [$args, $rows]) {
+			$args = ['userId' => $args['userId'], 'query' => new ListQuery(limit: ($args['limit'] ?? ObjectReadStateMapper::SEEN_SET_LIMIT), filters: array_diff_key($args, ['userId' => 1, 'limit' => 1]))];
 			$actual['uuidsForUser / ' . $name] = $this->outcome(mapper: $this->readStateMapper(rows: $rows, failInsert: false), method: 'uuidsForUser', args: $args);
 		}
 
 		foreach (self::emailCases() as $name => [$uid, $rows]) {
-			$args = ['objectUuid' => 'o-1', 'mailAccountId' => 3, 'mailMessageId' => 9, 'mailMessageUid' => $uid];
+			$args = ['objectUuid' => 'o-1', 'message' => new MailMessageKey(mailAccountId: 3, mailMessageId: 9, mailMessageUid: $uid)];
 			$actual['findByObjectAccountMessageUid / ' . $name] = $this->outcome(mapper: new EmailLinkMapper($this->connection(rows: $rows)), method: 'findByObjectAccountMessageUid', args: $args);
 		}
 

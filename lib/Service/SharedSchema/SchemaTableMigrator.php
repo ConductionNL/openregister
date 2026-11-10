@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\SharedSchema;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -199,24 +199,22 @@ class SchemaTableMigrator {
 	 * stray table behind on MySQL, where DDL does not roll back with the
 	 * transaction.
 	 *
-	 * @param string            $table      The bare source table name.
-	 * @param array<string, mixed> $definition The register's configured definition, or null
-	 *                                      when the split falls back to cloning.
-	 * @param array<string, mixed> $content The current shared entity content.
+	 * @param SplitTableColumns $split The bare source table, the register's configured definition (null when
+	 *                                 the split falls back to cloning) and the current shared entity content.
 	 *
 	 * @return string[] Source columns with no destination.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function planUnmapped(string $table, ?array $definition, array $content): array {
-		$source = $this->columnsOf(table: $table);
+	public function planUnmapped(SplitTableColumns $split): array {
+		$source = $this->columnsOf(table: $split->table);
 		if ($source === []) {
-			$source = $this->columnsForDefinition(definition: $content);
+			$source = $this->columnsForDefinition(definition: $split->content);
 		}
 
-		$target = $content;
-		if ($definition !== null) {
-			$target = $definition;
+		$target = $split->content;
+		if ($split->definition !== null) {
+			$target = $split->definition;
 		}
 
 		return self::planColumnMapping(
@@ -297,17 +295,16 @@ class SchemaTableMigrator {
 	/**
 	 * Move a register's rows onto the table of its replacement schema.
 	 *
-	 * @param Register $register The register being split off.
-	 * @param Schema   $schema   The register's new schema.
-	 * @param int      $oldId    The shared schema id being left behind.
+	 * @param RegisterSchema $table The register being split off and its new schema.
+	 * @param int            $oldId The shared schema id being left behind.
 	 *
 	 * @return array{rows: int, unmapped: string[], backup: string|null} How many rows moved,
 	 *         which source columns had no destination, and where the source table went.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function migrate(Register $register, Schema $schema, int $oldId): array {
-		$registerId = (int)$register->getId();
+	public function migrate(RegisterSchema $table, int $oldId): array {
+		$registerId = $table->registerId();
 		$sourceBare = $this->tableNameFor(registerId: $registerId, schemaId: $oldId);
 		$source     = ($this->prefix() . $sourceBare);
 
@@ -315,8 +312,8 @@ class SchemaTableMigrator {
 			return ['rows' => 0, 'unmapped' => [], 'backup' => null];
 		}
 
-		$this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
-		$targetBare = $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$this->magicMapper->ensureTableForRegisterSchema(register: $table->register, schema: $table->schema);
+		$targetBare = $this->magicMapper->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
 
 		$mapping = self::planColumnMapping(
 			sourceColumns: $this->columnsOf(table: $sourceBare),
@@ -333,7 +330,7 @@ class SchemaTableMigrator {
 
 		$rows = $this->restamp(
 			table: ($this->prefix() . $targetBare),
-			restamp: new RowRestamp(registerId: $registerId, oldId: $oldId, newId: (int)$schema->getId())
+			restamp: new RowRestamp(registerId: $registerId, oldId: $oldId, newId: $table->schemaId())
 		);
 
 		$backup = ($source . self::BACKUP_SUFFIX);

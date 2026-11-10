@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\SequenceProvenance;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCA\OpenRegister\Service\Task\TaskSequenceServices;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -105,8 +106,8 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 			}
 		);
 		$tasks->method('enable')->willReturnCallback(
-			function (string $uuid, ?string $source = null, ?string $reason = null): Task {
-				$this->calls[] = ['enable', $uuid, $source, $reason];
+			function (string $uuid, TaskTrigger $trigger): Task {
+				$this->calls[] = ['enable', $uuid, $trigger->source, $trigger->reason];
 				return new Task();
 			}
 		);

@@ -612,10 +612,12 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	public function previewPublish(Flow $flow): array {
 		$previous = $this->versions->findPublished(flowUuid: (string)$flow->getUuid());
 
-		$preview = $this->semver->preview(
-			publishedGraph: $this->publishedGraphOf(version: $previous),
-			candidateGraph: $this->graphOf(flow: $flow),
-			previousSemver: $previous?->getSemver()
+		$preview = $this->semver->previewOf(
+			revision: new FlowGraphRevision(
+				published: $this->publishedGraphOf(version: $previous),
+				candidate: $this->graphOf(flow: $flow),
+				previousSemver: $previous?->getSemver()
+			)
 		);
 
 		$preview['current'] = $previous?->getSemver();

@@ -295,6 +295,8 @@ class ValidateObjectBranchCoverageTest extends TestCase {
 		$this->invokePrivate('transformPropertyForOpenRegister', [$schema]);
 
 		$this->assertIsArray($schema->items->oneOf);
+		$this->assertCount(2, $schema->items->oneOf);
+		$this->assertSame('string', $schema->items->oneOf[0]->type);
 	}
 
 	public function testTransformPropertyInversedByObject(): void {

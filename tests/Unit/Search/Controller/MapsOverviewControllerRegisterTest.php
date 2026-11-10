@@ -27,6 +27,7 @@ use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\MapOverview;
 
 /**
  * The register endpoint, and the points branches the existing test leaves:
@@ -52,12 +53,9 @@ class MapsOverviewControllerRegisterTest extends TestCase {
 			]
 		);
 		$this->overviews->expects($this->once())->method('ensureCanRegister');
-		$this->overviews->expects($this->once())->method('registerOverview')
+		$this->overviews->expects($this->once())->method('declareOverview')
 			->with(
-				'zaken-kaart',
-				$this->equalTo(new MapMarkerSource('5', 'zaak', 'locatie', ['status' => 'open'])),
-				'Zaken',
-				['url' => 'tiles']
+				$this->equalTo(new MapOverview('zaken-kaart', new MapMarkerSource('5', 'zaak', 'locatie', ['status' => 'open']), 'Zaken', ['url' => 'tiles']))
 			)
 			->willReturn(['id' => 'maps-overview:zaken-kaart']);
 
@@ -69,8 +67,8 @@ class MapsOverviewControllerRegisterTest extends TestCase {
 
 	public function testRegisterWithOnlyRequiredFieldsPassesNullsAndEmptyFilters(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->overviews->expects($this->once())->method('registerOverview')
-			->with('', $this->equalTo(new MapMarkerSource('', '', null, [])), null, null)
+		$this->overviews->expects($this->once())->method('declareOverview')
+			->with($this->equalTo(new MapOverview('', new MapMarkerSource('', '', null, []), null, null)))
 			->willReturn([]);
 
 		$this->assertSame(201, $this->controller->register()->getStatus());
@@ -80,7 +78,7 @@ class MapsOverviewControllerRegisterTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['overviewKey' => 'k', 'register' => 'r', 'schema' => 's']);
 		$this->overviews->method('ensureCanRegister')
 			->willThrowException(new InvalidArgumentException('A logged-in user is required to register a map overview'));
-		$this->overviews->expects($this->never())->method('registerOverview');
+		$this->overviews->expects($this->never())->method('declareOverview');
 
 		$response = $this->controller->register();
 
@@ -90,7 +88,7 @@ class MapsOverviewControllerRegisterTest extends TestCase {
 
 	public function testRegisterRejectedByTheServiceIs400(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->overviews->method('registerOverview')->willThrowException(new InvalidArgumentException('overviewKey is required'));
+		$this->overviews->method('declareOverview')->willThrowException(new InvalidArgumentException('overviewKey is required'));
 
 		$response = $this->controller->register();
 

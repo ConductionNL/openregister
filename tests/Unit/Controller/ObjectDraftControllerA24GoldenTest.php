@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -107,7 +109,8 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 			activation: $this->activation,
 			session: $session,
 			l10n: $l10n,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end controller()
 
@@ -204,7 +207,7 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(user: $user, body: ['a' => 1]);
 		[$register, $schema] = $this->resolves();
 		$activated = new ObjectEntity();
-		$this->activation->expects($this->once())->method('activateAsUser')->with(new DraftAddress(register: $register, schema: $schema, draftId: 'd1'), $user, ['a' => 1])->willReturn($activated);
+		$this->activation->expects($this->once())->method('activateAsUser')->with(new UserDraftActivation(address: new DraftAddress(register: $register, schema: $schema, draftId: 'd1'), user: $user, changes: ['a' => 1]))->willReturn($activated);
 		$this->objects->method('renderEntity')->willReturn(['rendered' => true]);
 		$response = $controller->activate('reg', 'sch', 'd1');
 

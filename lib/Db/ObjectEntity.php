@@ -29,7 +29,6 @@ use Exception;
 use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -1821,69 +1820,88 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		?int $duration = 3600,
 		?string $runUuid = null,
 	): bool {
+		return $this->acquireLock(userSession: $userSession, terms: new LockTerms(process: $process, duration: $duration, runUuid: $runUuid));
+	}//end lock()
+
+	/**
+	 * Take or extend a lock on the object under the given terms.
+	 *
+	 * A run uuid in the terms takes a RUN-scoped lock that refuses every
+	 * caller but that run, the run's own `runAs` user included; without one
+	 * this takes the user lock. The current holder extends its own lock.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param LockTerms    $terms       Process, duration and holding run
+	 *
+	 * @throws Exception If no user is logged in or the object is locked by another holder
+	 *
+	 * @return true True if lock was successful
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function acquireLock(IUserSession $userSession, LockTerms $terms=new LockTerms()): bool {
+		$now = new DateTime();
+		$payload = $terms->payloadFor(userId: self::loggedInUid(userSession: $userSession), now: $now);
+
+		// If already locked, only the holder may extend it.
+		if ($this->isLocked() === true) {
+			$payload = $this->extensionOf(payload: $payload);
+		}
+
+		$this->setLocked($this->withExpiration(payload: $payload, now: $now));
+
+		return true;
+	}//end acquireLock()
+
+	/**
+	 * The payload that extends the current lock for the caller it was built for.
+	 *
+	 * Two runs under ONE user are told apart here: ownership is not keyed on
+	 * the user alone, so the second run is refused instead of silently
+	 * extending the first's lock and being handed the object.
+	 *
+	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: string, duration: ?int} $payload The
+	 *        caller's new lock payload.
+	 *
+	 * @throws Exception If the lock data is missing or another holder has the lock
+	 *
+	 * @return array The payload keeping the current lock's creation time and, when none is given, its process.
+	 */
+	private function extensionOf(array $payload): array {
+		$lock = $this->getLocked();
+		if ($lock === null) {
+			throw new Exception('Lock data is missing');
+		}
+
+		if ($this->isLockedBySomeoneElse(userId: $payload['user'], runUuid: $payload['runUuid']) === true) {
+			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
+		}
+
+		$payload['process'] = ($payload['process'] ?? $lock['process']);
+		$payload['created'] = $lock['created'];
+
+		return $payload;
+	}//end extensionOf()
+
+	/**
+	 * The logged-in user's id.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @return string The user id.
+	 */
+	private static function loggedInUid(IUserSession $userSession): string {
 		$currentUser = $userSession->getUser();
 		if ($currentUser === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser->getUID();
-		$now = new DateTime();
-
-		$kind = self::LOCK_KIND_USER;
-		if ($runUuid !== null && trim($runUuid) !== '') {
-			$kind = self::LOCK_KIND_RUN;
-			$runUuid = trim($runUuid);
-		}
-
-		// If already locked, check whether this caller is the holder.
-		if ($this->isLocked() === true) {
-			$lock = $this->getLocked();
-			if ($lock === null) {
-				throw new Exception('Lock data is missing');
-			}
-
-			// Held against this caller. Note that two runs under ONE user land
-			// here now: ownership is no longer keyed on the user alone, so the
-			// second run is refused instead of silently extending the first's
-			// lock and being handed the object.
-			if ($this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true) {
-				throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
-			}
-
-			// Same holder: extend the lock.
-			$this->setLocked(
-				$this->withExpiration(
-					payload: [
-						'kind' => $kind,
-						'runUuid' => $runUuid,
-						'user' => $userId,
-						'process' => ($process ?? $lock['process']),
-						'created' => $lock['created'],
-						'duration' => $duration,
-					],
-					now: $now
-				)
-			);
-			return true;
-		}//end if
-
-		// Create new lock.
-		$this->setLocked(
-			$this->withExpiration(
-				payload: [
-					'kind' => $kind,
-					'runUuid' => $runUuid,
-					'user' => $userId,
-					'process' => $process,
-					'created' => $now->format('c'),
-					'duration' => $duration,
-				],
-				now: $now
-			)
-		);
-
-		return true;
-	}//end lock()
+		return $currentUser->getUID();
+	}//end loggedInUid()
 
 	/**
 	 * The stored shape of a lock.
@@ -1948,39 +1966,61 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
 	public function unlock(IUserSession $userSession, ?string $runUuid = null, bool $break = false): bool {
+		if ($break === true) {
+			return $this->breakLock();
+		}
+
+		return $this->releaseLock(userSession: $userSession, runUuid: $runUuid);
+	}//end unlock()
+
+	/**
+	 * Release the lock for its holder: the signed-in user, and the run when the lock is run-scoped.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string|null  $runUuid     Flow run releasing the lock, for a run-scoped lock
+	 *
+	 * @throws Exception Without a signed-in user, or when another holder has the lock
+	 *
+	 * @return true True when the object is unlocked
+	 */
+	private function releaseLock(IUserSession $userSession, ?string $runUuid): bool {
 		if ($this->isLocked() === false) {
 			return true;
 		}
 
 		$currentUser = $userSession->getUser();
-		if ($currentUser === null && $break === false) {
-			// A break has no session requirement. The engine releases a run's
-			// locks from a terminal-event listener and from the cron sweep,
-			// and neither has a session: `occ` and background jobs run as
-			// nobody. Requiring a user there would mean the release layers
-			// that exist for crashed runs could never fire, which is the
-			// whole case they were built for. Authorization for a break lives
-			// at the call site (administrator, or the engine releasing a lock
-			// whose holding run it has already matched).
+		if ($currentUser === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser?->getUID();
-
-		// Check if locked by different user.
-		if ($this->locked === null) {
-			throw new Exception('Object is not locked');
-		}
-
-		if ($break === false
-			&& $this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true
-		) {
+		if ($this->isLockedBySomeoneElse(userId: $currentUser->getUID(), runUuid: $runUuid) === true) {
 			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
 		}
 
 		$this->setLocked(null);
 		return true;
-	}//end unlock()
+	}//end releaseLock()
+
+	/**
+	 * Release the lock regardless of who holds it.
+	 *
+	 * A break has no session requirement. The engine releases a run's locks
+	 * from a terminal-event listener and from the cron sweep, and neither has
+	 * a session: `occ` and background jobs run as nobody. Requiring a user
+	 * there would mean the release layers that exist for crashed runs could
+	 * never fire, which is the whole case they were built for. Authorization
+	 * for a break lives at the call site (administrator, or the engine
+	 * releasing a lock whose holding run it has already matched).
+	 *
+	 * @return true True when the object is unlocked
+	 */
+	private function breakLock(): bool {
+		if ($this->isLocked() === true) {
+			$this->setLocked(null);
+		}
+
+		return true;
+	}//end breakLock()
 
 	/**
 	 * Check if the object is currently locked
@@ -2059,37 +2099,27 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
-		$currentUser = $userSession->getUser();
-		if ($currentUser === null) {
-			throw new Exception('No user logged in');
-		}
+		return $this->softDelete(userSession: $userSession, deletion: new SoftDeletion(reason: $deletedReason, retentionDays: $retentionPeriod));
+	}//end delete()
 
-		$userId = $currentUser->getUID();
-		$now = new DateTime();
-
-		// The retention handed in is the window. It used to be ignored: every
-		// object got a hard-coded 31 days whatever the schema or the instance
-		// said, so a schema declaring a year of recovery quietly had a month.
-		// A non-positive retention is not a window, so the default applies.
-		$days = $retentionPeriod;
-		if ($days === null || $days < 1) {
-			$days = DeletionWindowService::DEFAULT_RETENTION_DAYS;
-		}
-
-		$purgeDate = clone $now;
-		$purgeDate->add(new DateInterval('P' . (string)$days . 'D'));
-
-		$this->setDeleted(
-			[
-				'deleted' => $now->format('c'),
-				'deletedAt' => $now->format('c'),
-				'deletedBy' => $userId,
-				'deletedReason' => $deletedReason,
-				'retentionPeriod' => $days,
-				'purgeDate' => $purgeDate->format('c'),
-				'destroyableFrom' => $purgeDate->format('c'),
-			]
-		);
+	/**
+	 * Soft-delete the object: record who deleted it, why, and until when it stays recoverable.
+	 *
+	 * The retention handed in is the window (a non-positive one takes the
+	 * default), so a schema declaring a year of recovery gets a year.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param SoftDeletion $deletion    The reason and the retention window
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @return static Returns the entity
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function softDelete(IUserSession $userSession, SoftDeletion $deletion=new SoftDeletion()): static {
+		$userId = self::loggedInUid(userSession: $userSession);
+		$this->setDeleted($deletion->metadataFor(userId: $userId, now: new DateTime()));
 
 		return $this;
 	}//end delete()
@@ -2247,46 +2277,50 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * it when a state declared the freeze, and is null when a person did.
 	 *
 	 * @param IUserSession $userSession Current user session.
-	 * @param string|null $reason Why the object was frozen.
-	 * @param string|null $state The lifecycle state that declared the freeze.
-	 * @param string|null $actor Explicit actor, for a freeze declared by a
-	 *                           lifecycle transition running without a session.
+	 * @param string|null  $reason      Why the object was frozen.
 	 *
-	 * @throws Exception If no user is logged in and no actor was named.
+	 * @throws Exception If no user is logged in.
 	 *
 	 * @return static Returns the entity.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function freeze(
-		IUserSession $userSession,
-		?string $reason = null,
-		?string $state = null,
-		?string $actor = null,
-	): static {
-		$userId = $actor;
-		if ($userId === null) {
-			$currentUser = $userSession->getUser();
-			if ($currentUser === null) {
-				throw new Exception('No user logged in');
-			}
+	public function freeze(IUserSession $userSession, ?string $reason = null): static {
+		return $this->freezeWith(userSession: $userSession, terms: new FreezeTerms(reason: $reason));
+	}//end freeze()
 
-			$userId = $currentUser->getUID();
+	/**
+	 * Freeze the object on the given terms: the reason and, when a lifecycle
+	 * state declared the freeze, that state.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param FreezeTerms  $terms       Why the object was frozen, and the state that declared it.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freezeWith(IUserSession $userSession, FreezeTerms $terms): static {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
 		}
 
 		$now = new DateTime();
 
 		$this->setFrozen(
 			[
-				'by' => $userId,
+				'by' => $currentUser->getUID(),
 				'at' => $now->format('c'),
-				'reason' => $reason,
-				'state' => $state,
+				'reason' => $terms->reason,
+				'state' => $terms->state,
 			]
 		);
 
 		return $this;
-	}//end freeze()
+	}//end freezeWith()
 
 	/**
 	 * Unfreeze the object.

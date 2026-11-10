@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Throwable;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Email (NC Mail link-only) integration provider.
@@ -147,7 +148,8 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 */
 	private function emailPage(string $objectId, EmailListPaging $paging): array {
 		try {
-			$result = $this->emailService->getEmailsForObject(objectUuid: $objectId, limit: $paging->limit(), offset: $paging->offset());
+			$page   = new ListQuery(limit: ($paging->limit() ?? ListQuery::UNBOUNDED), offset: $paging->offset());
+			$result = $this->emailService->getEmailsForObject(objectUuid: $objectId, query: $page);
 		} catch (Throwable $e) {
 			return ['items' => [], 'total' => 0, 'nextCursor' => null];
 		}
