@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
@@ -161,7 +162,8 @@ class FlowService implements FlowServiceInterface {
 			return 0;
 		}
 
-		return $this->definitions->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		return $this->definitions->mapper->countFlows(selection: $selection);
 	}//end count()
 
 	/**
@@ -744,22 +746,17 @@ class FlowService implements FlowServiceInterface {
 	 * (ADR-023). The run still executes as the acting user, so every write
 	 * inside it is checked against their rights.
 	 *
-	 * @param string               $uuid    The flow uuid.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
-	 * @param array<string, mixed> $context Run-level metadata.
-	 * @param boolean              $sync    Execute inline and return the finished run.
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject (`{uuid, register, schema}`), run-level metadata, whether to
+	 *                                execute inline, and the trigger (manual for an action).
 	 *
-	 * @return FlowRun The queued run, or the finished run when $sync is true.
+	 * @return FlowRun The queued run, or the finished run when the options ask for a sync run.
 	 *
 	 * @throws DoesNotExistException When no such flow exists.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As run(): $sync chooses who advances the run.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
 	 */
-	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
-		$options = new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: Flow::TRIGGER_MANUAL);
-
+	public function runForAction(string $uuid, FlowRunOptions $options): FlowRun {
 		return $this->start(flow: $this->definitions->mapper->findByUuid($uuid), options: $options);
 	}//end runForAction()
 
@@ -775,12 +772,14 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
-		$run = $this->dispatch->runner->queue(
+		$run = $this->dispatch->runner->queueRun(
 			flowId: (string)$flow->getUuid(),
-			subject: $options->subject,
-			trigger: $options->trigger,
-			context: $options->context,
-			user: $this->caller()->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: $options->subject,
+				trigger: $options->trigger,
+				context: $options->context,
+				user: $this->caller()->actingUser()
+			)
 		);
 
 		if ($options->sync === false) {

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Object\TransitionGate;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
@@ -169,6 +170,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
 	 */
 	private function writesDeclaredState(LifecycleEdit $edit): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::isActive() === true && $this->access->edits->writesDeclaredState(edit: $edit) === true;
 	}//end writesDeclaredState()
 
@@ -248,9 +250,8 @@ class LifecycleValidationListener implements IEventListener {
 		}
 
 		$authorized = $this->access->permissionHandler->isTransitionAuthorized(
-			authorizationList: $authorizationList,
-			userId: ($this->access->userSession->getUser()?->getUID() ?? null),
-			schema: $attempt->edit->declaration->schema
+			gate: new TransitionGate(authorizationList: $authorizationList, schema: $attempt->edit->declaration->schema),
+			userId: ($this->access->userSession->getUser()?->getUID() ?? null)
 		);
 		if ($authorized === true) {
 			return null;

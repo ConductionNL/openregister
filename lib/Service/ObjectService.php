@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -58,6 +59,7 @@ use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
@@ -76,6 +78,9 @@ use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectPatch;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
@@ -104,7 +109,11 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\SearchOptions;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -512,6 +521,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function runAsSystem(callable $operation)
     {
+        // NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
         return SystemOperationContext::run($operation);
     }//end runAsSystem()
 
@@ -1715,7 +1725,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         try {
             $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
-                ->registerProcessingReadList(objects: $objects, query: $query);
+                ->registerListRead(objects: $objects, read: new \OCA\OpenRegister\Service\Interaction\ProcessingListRead(query: $query));
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks the list.
             $this->logger->debug(
@@ -1829,6 +1839,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        return $this->findAllRendered(config: $config, access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy));
+    }//end findAll()
+
+    /**
+     * Load the rows of one findAll() call and render them.
+     *
+     * @param array       $config The findAll() configuration (filters, limit, offset, extend, ...).
+     * @param AccessFlags $access The caller's RBAC and multitenancy flags.
+     *
+     * @return array The rendered objects.
+     *
+     * @spec exclude Private step of findAll(); list/render behaviour owned by the render handler.
+     */
+    private function findAllRendered(array $config, AccessFlags $access): array
+    {
         $this->discardPendingSchemaRef();
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig(config: $config);
@@ -1841,17 +1866,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // only with the relation/file caches pre-warmed, so output is unchanged;
         // registers/schemas were a pre-resolution optimization renderEntity()
         // reproduces internally, not a correctness input.
-        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
-
         return $this->renderHandler->renderEntities(
             entities: $this->loadFindAllRows(config: $config, access: $access),
             _extend: ($config['extend'] ?? []),
             _filter: ($config['unset'] ?? null),
             _fields: ($config['fields'] ?? null),
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _rbac: $access->rbac,
+            _multitenancy: $access->multitenancy
         );
-    }//end findAll()
+    }//end findAllRendered()
 
     /**
      * Load the rows of a findAll() call through the handler.
@@ -3016,8 +3039,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $kept = (new DraftCallerRule())->keptFromCaller(
             object: $stored,
             schema: $this->currentSchema,
-            userId: $user?->getUID(),
-            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            caller: new DraftCaller(
+                userId: $user?->getUID(),
+                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            )
         );
         if ($kept === true) {
             throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
@@ -3215,7 +3240,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return $object;
         }
 
-        return ExplicitReveal::restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
+        return ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? [])));
     }//end restoreMaskedReveals()
 
     /**
@@ -4129,8 +4154,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return;
         }
 
-        $shared->assertWritable(table: SharedMasterDataService::REGISTERS, id: $registerId, activeOrgUuids: $organisations);
-        $shared->assertWritable(table: SharedMasterDataService::SCHEMAS, id: $schemaId, activeOrgUuids: $organisations);
+        $shared->assertWritable(row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $registerId), activeOrgUuids: $organisations);
+        $shared->assertWritable(row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $schemaId), activeOrgUuids: $organisations);
     }//end rejectSharedMasterDataDelete()
 
     /**
@@ -4494,8 +4519,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         return (new DraftCallerRule())->keptFromCaller(
             object: $object,
             schema: $schema,
-            userId: $user?->getUID(),
-            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            caller: new DraftCaller(
+                userId: $user?->getUID(),
+                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            )
         );
     }//end draftKeptFromCaller()
 
@@ -4813,10 +4840,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses,
-            views: $views,
-            _viewScopeRequired: $_viewScopeRequired
+            options: new SearchOptions(
+                selection: new ObjectSelection(ids: $ids, uses: $uses),
+                views: $views,
+                viewScopeRequired: $_viewScopeRequired
+            )
         );
     }//end searchObjects()
 
@@ -4997,8 +5025,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
+            selection: new ObjectSelection(ids: $ids, uses: $uses)
         );
     }//end countSearchObjects()
 
@@ -5802,14 +5829,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function lock(LockRequest $request, bool $advisory=false): array
     {
-        return $this->lockHandler->lock(
-            identifier: $request->identifier,
-            process: $request->process,
-            duration: $request->duration,
-            advisory: $advisory,
-            runUuid: $request->runUuid,
-            nodeId: $request->nodeId
-        );
+        return $this->lockHandler->lock(request: $request, advisory: $advisory);
     }//end lock()
 
     /**
@@ -5831,9 +5851,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool
     {
         return $this->lockHandler->unlock(
-            identifier: (string) $identifier,
-            advisory: $advisory,
-            runUuid: $runUuid
+            request: new UnlockRequest(identifier: (string) $identifier, advisory: $advisory, runUuid: $runUuid, break: false)
         );
     }//end unlockObject()
 
@@ -5971,17 +5989,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $this->openBulkSave(register: $options['register'], schema: $options['schema']);
 
-        $bulkResult = $this->saveObjectsHandler->saveObjects(
+        $bulkOptions = new BulkSaveOptions(
+            defaults: new BulkBatchDefaults(register: $this->currentRegister, schema: $this->currentSchema),
+            validation: $options['_validation'],
+            events: $options['_events'],
+            audit: $options['_audit']
+        );
+        $bulkResult  = $this->saveObjectsHandler->saveObjects(
             objects: $objects,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
+            options: $bulkOptions,
             _rbac: $options['_rbac'],
-            _multitenancy: $options['_multitenancy'],
-            _validation: $options['_validation'],
-            _events: $options['_events'],
-            deduplicateIds: $options['deduplicateIds'],
-            enrich: $options['enrich'],
-            _audit: $options['_audit']
+            _multitenancy: $options['_multitenancy']
         );
 
         $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
@@ -6069,15 +6087,28 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null
     ): BatchOperationStatus {
-        // A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
-        // Same contract as saveObject(); see restoreScopeContext().
-        return $this->preservingScope(
-            operation: function () use ($objects, $register, $schema): BatchOperationStatus {
-                $this->applyScope(register: $register, schema: $schema);
-                return $this->streamIntoContext(objects: $objects);
-            }
-        );
+        $target = new ObjectFindTarget(register: $register, schema: $schema);
+        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $objects, target: $target));
     }//end saveObjectsStreaming()
+
+    /**
+     * Apply the streaming save's register and schema, then stream the rows into them.
+     *
+     * A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. saveObjectsStreaming()
+     * runs this inside preservingScope(), the same contract as saveObject(); see restoreScopeContext().
+     *
+     * @param array            $objects The rows to stream.
+     * @param ObjectFindTarget $target  The register and schema the caller named.
+     *
+     * @return BatchOperationStatus The status of the streamed batch.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function streamIntoTarget(array $objects, ObjectFindTarget $target): BatchOperationStatus
+    {
+        $this->applyScope(register: $target->register, schema: $target->schema);
+        return $this->streamIntoContext(objects: $objects);
+    }//end streamIntoTarget()
 
     /**
      * Stream rows into the current register and schema.
@@ -6095,9 +6126,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->saveHandler->clearReferenceValidationCache();
 
         return $this->saveHandler->saveObjectsStreaming(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            rows: $objects
+            save: new StreamingSave(register: $this->currentRegister, schema: $this->currentSchema, rows: $objects)
         );
     }//end streamIntoContext()
 
@@ -6384,10 +6413,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $permitted = $this->migratableObjectIds(table: $source, objectIds: $migration->objectIds);
         $report    = $this->migrationHandler->migrateObjects(
-            source: [$migration->source->register, $migration->source->schema],
-            target: [$migration->target->register, $migration->target->schema],
-            objectIds: $permitted,
-            mapping: $migration->mapping
+            migration: new ObjectMigration(
+                source: $migration->source,
+                target: $migration->target,
+                objectIds: $permitted,
+                mapping: $migration->mapping
+            )
         );
 
         return $this->reportUnmigratedAsNotFound(
@@ -6528,12 +6559,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        return $this->deleteUuids(uuids: $uuids, flags: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy));
+    }//end deleteObjects()
+
+    /**
+     * Delete each permitted object of a bulk delete on its own, and report what was deleted and skipped.
+     *
+     * @param array       $uuids The UUIDs of the objects to delete.
+     * @param AccessFlags $flags The caller's RBAC and multitenancy flags.
+     *
+     * @phpstan-param array<int, string> $uuids
+     * @psalm-param   array<int, string> $uuids
+     *
+     * @return array The bulk delete report (see deleteObjects()).
+     *
+     * @spec exclude Private step of deleteObjects(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
+     */
+    private function deleteUuids(array $uuids, AccessFlags $flags): array
+    {
         $this->discardPendingSchemaRef();
         if (empty($uuids) === true) {
             return $this->bulkDeleteReport(run: ['deleted' => [], 'skipped' => [], 'skippedReasons' => [], 'cascadeCount' => 0]);
         }
 
-        $flags         = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
         $filteredUuids = $this->uuidsPermittedForDelete(uuids: $uuids, flags: $flags);
         $run           = $this->openBulkDelete(uuids: $filteredUuids, flags: $flags);
         $this->skipRefusedUuids(refused: array_diff($uuids, $filteredUuids), run: $run);
@@ -6548,7 +6596,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->bulkCacheInvalidator()->afterBulkDelete(run: $run);
 
         return $this->bulkDeleteReport(run: $run);
-    }//end deleteObjects()
+    }//end deleteUuids()
 
     /**
      * Keeps the uuids this caller may delete, when RBAC or multi-organization filtering is on.
@@ -7260,10 +7308,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
-            registerId: (int) $table->register,
-            schemaId: (int) $table->schema,
-            hardDelete: $hardDelete,
-            triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE
+            table: new RegisterSchemaRef(register: (int) $table->register, schema: (int) $table->schema),
+            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE)
         );
     }//end deleteObjectsOfTable()
 
@@ -7299,7 +7345,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $schemaDeletionService->deleteObjectsByRegister(
             register: $register,
-            hardDelete: $hardDelete
+            options: new TableDeletionOptions(hardDelete: $hardDelete)
         );
     }//end deleteObjectsByRegister()
 
@@ -7820,11 +7866,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function validateAndSaveTable(RegisterSchemaRef $table, ListQuery $query): array
     {
         return $this->validationHandler->validateAndSaveObjectsBySchema(
-            registerId: (int) $table->register,
-            schemaId: (int) $table->schema,
-            saveCallback: [$this, 'saveObject'],
-            limit: $query->limitOrNull(),
-            offset: ($query->offset ?? 0)
+            revalidation: new SchemaRevalidation(table: $table, query: $query, saveCallback: [$this, 'saveObject'])
         );
     }//end validateAndSaveTable()
 

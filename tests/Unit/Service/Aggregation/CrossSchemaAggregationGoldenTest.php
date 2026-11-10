@@ -38,6 +38,8 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -170,11 +172,8 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 		$runner = $this->runner(case: $case);
 		try {
 			$result = $runner->run(
-				registerRef: 'reg',
-				schemaRef: 'parent',
-				name: 'agg',
-				bypassRbac: $case['bypass'],
-				parentRow: $case['parentRow']
+				ref: new NamedAggregationRef(register: 'reg', schema: 'parent', name: 'agg'),
+				options: new NamedAggregationOptions(bypassRbac: $case['bypass'], parentRow: $case['parentRow'])
 			);
 			$outcome = ['result' => $result];
 		} catch (Throwable $e) {

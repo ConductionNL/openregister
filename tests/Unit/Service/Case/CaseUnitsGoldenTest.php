@@ -85,6 +85,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use Stringable;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseCompletion;
@@ -904,9 +905,9 @@ class CaseUnitsGoldenTest extends TestCase {
 	private function realisationScenario(): array {
 		$queued = [];
 		$runs = $this->createMock(FlowRunServiceInterface::class);
-		$runs->method('queue')->willReturnCallback(
-			static function (...$args) use (&$queued): \OCA\OpenRegister\Db\FlowRun {
-				$queued[] = $args;
+		$runs->method('queueRun')->willReturnCallback(
+			static function (string $flowId, FlowRunQueueOptions $options) use (&$queued): \OCA\OpenRegister\Db\FlowRun {
+				$queued[] = [$flowId, $options->subject, $options->trigger, $options->context, $options->user];
 				$run = new \OCA\OpenRegister\Db\FlowRun();
 				$run->setUuid('run-' . count($queued));
 
@@ -1021,13 +1022,13 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$out = [];
 		foreach ($rows as $label => $row) {
-			$out['entered'][$label] = $timers->onEntered(item: $row, actor: 'alice', now: $now);
+			$out['entered'][$label] = $timers->onEntered(item: $row, act: new FlowTimerAct(actor: 'alice', now: DateTimeImmutable::createFromInterface($now)));
 			$out['rearm'][$label] = $timers->rearmStatutoryExpiry(item: $row, act: new FlowTimerAct(actor: null, now: $now));
 			$out['mark'][$label] = $timers->markIfStatutory(item: $row);
 		}
 
 		$refuse = true;
-		$out['refused'] = $timers->onEntered(item: $rows['both statutory'], actor: null, now: $now);
+		$out['refused'] = $timers->onEntered(item: $rows['both statutory'], act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now)));
 		$out['refused rearm'] = $timers->rearmStatutoryExpiry(item: $rows['both statutory'], act: new FlowTimerAct(actor: 'bob', now: $now));
 		$out['armed'] = $armed;
 		$out['marked'] = array_keys($markers->all());

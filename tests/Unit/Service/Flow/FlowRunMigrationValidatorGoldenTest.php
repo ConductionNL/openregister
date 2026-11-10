@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Service\Flow\FlowRunMigration;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use PHPUnit\Framework\TestCase;
@@ -91,7 +92,7 @@ class FlowRunMigrationValidatorGoldenTest extends TestCase {
 	public function testAnUnreadableTargetGraphIsRefused(): void {
 		$validator = $this->validator([2 => 'broken', 3 => ['nodes' => 'broken']]);
 		foreach ([2, 3, 9] as $target) {
-			$verdict = $validator->validate($this->suspendedRun(['a' => 1]), $target);
+			$verdict = $validator->validate($this->suspendedRun(['a' => 1]), self::onto($target));
 			$this->assertFalse($verdict['ok']);
 			$this->assertSame('Version '.$target.' of this flow could not be read, so nothing was migrated.', $verdict['reason']);
 		}
@@ -120,10 +121,10 @@ class FlowRunMigrationValidatorGoldenTest extends TestCase {
 			]
 		);
 
-		$verdict = $validator->validate($this->suspendedRun(['a' => 1, 'b' => 2, 'c' => 1]), 2, ['a' => 'keyed', 'c' => 'cc']);
+		$verdict = $validator->validate($this->suspendedRun(['a' => 1, 'b' => 2, 'c' => 1]), self::onto(2, ['a' => 'keyed', 'c' => 'cc']));
 		$this->assertSame(['ok' => true, 'marking' => ['keyed' => 1, 'b' => 2, 'cc' => 1], 'unmapped' => [], 'reason' => ''], $verdict);
 
-		$miss = $validator->validate($this->suspendedRun(['a' => 1, 'c' => 1]), 2);
+		$miss = $validator->validate($this->suspendedRun(['a' => 1, 'c' => 1]), self::onto(2));
 		$this->assertFalse($miss['ok']);
 		$this->assertSame(['a', 'c'], $miss['unmapped']);
 		$this->assertStringContainsString('Map them to a node', $miss['reason']);
@@ -139,14 +140,14 @@ class FlowRunMigrationValidatorGoldenTest extends TestCase {
 		$target = ['nodes' => [['id' => 'x', 'type' => 'gateway'], ['id' => 'y', 'type' => 'user-task']]];
 		$known  = $this->validator([1 => ['nodes' => [['id' => 'a', 'type' => 'user-task']]], 2 => $target]);
 
-		$mismatch = $known->validate($this->suspendedRun(['a' => 1]), 2, ['a' => 'x']);
+		$mismatch = $known->validate($this->suspendedRun(['a' => 1]), self::onto(2, ['a' => 'x']));
 		$this->assertSame(['a'], $mismatch['unmapped']);
 		$this->assertStringContainsString('Map it to a node', $mismatch['reason']);
 
-		$this->assertTrue($known->validate($this->suspendedRun(['a' => 1]), 2, ['a' => 'y'])['ok']);
+		$this->assertTrue($known->validate($this->suspendedRun(['a' => 1]), self::onto(2, ['a' => 'y']))['ok']);
 
 		$unknownSource = $this->validator([2 => $target]);
-		$this->assertSame(['x' => 1], $unknownSource->validate($this->suspendedRun(['a' => 1]), 2, ['a' => 'x'])['marking']);
+		$this->assertSame(['x' => 1], $unknownSource->validate($this->suspendedRun(['a' => 1]), self::onto(2, ['a' => 'x']))['marking']);
 
 	}//end testKindsMustMatchWhenBothAreKnown()
 
@@ -158,10 +159,23 @@ class FlowRunMigrationValidatorGoldenTest extends TestCase {
 	public function testAFinishedRunIsRefused(): void {
 		$run = $this->suspendedRun(['a' => 1]);
 		$run->setStatus('completed');
-		$verdict = $this->validator([])->validate($run, 2);
+		$verdict = $this->validator([])->validate($run, self::onto(2));
 
 		$this->assertFalse($verdict['ok']);
 		$this->assertStringStartsWith('This run is completed', $verdict['reason']);
 
 	}//end testAFinishedRunIsRefused()
+
+	/**
+	 * A migration request onto a version, with an optional node mapping.
+	 *
+	 * @param int                   $version The version asked for.
+	 * @param array<string, string> $mapping Old node id to new node id.
+	 *
+	 * @return FlowRunMigration
+	 */
+	private static function onto(int $version, array $mapping = []): FlowRunMigration {
+		return (new FlowRunMigration(runUuid: '', targetVersion: $version, reason: '', actor: ''))->withPlan(mapping: $mapping, dryRun: false);
+	}
+
 }//end class

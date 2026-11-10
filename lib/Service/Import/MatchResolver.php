@@ -34,9 +34,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -104,26 +101,6 @@ class MatchResolver {
 
 		return array_values(array_unique($normalised));
 	}//end normaliseKey()
-
-	/**
-	 * The uuids of every object the row matches.
-	 *
-	 * Kept for the callers that pass the four values loose; it builds the
-	 * query and delegates to matchesOf().
-	 *
-	 * @param array<string, mixed> $object The mapped object, in the shape the save path takes.
-	 * @param array<int, string> $matchKey The declared key's property names.
-	 * @param Register $register The target register.
-	 * @param Schema $schema The target schema.
-	 *
-	 * @return array<int, string> The uuids the key hit, capped.
-	 *
-	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
-	 */
-	public function resolve(array $object, array $matchKey, Register $register, Schema $schema): array {
-		$table = new RegisterSchema(register: $register, schema: $schema);
-		return $this->matchesOf(query: new MatchQuery(object: $object, matchKey: $matchKey, table: $table));
-	}//end resolve()
 
 	/**
 	 * The uuids of every object the row matches.

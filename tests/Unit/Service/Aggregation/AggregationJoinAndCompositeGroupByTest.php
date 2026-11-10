@@ -47,6 +47,8 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -352,9 +354,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$runner = $this->makeJoinRunner();
 
 		$result = $runner->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 		$this->assertSame('php-fallback', $result['backend']);
@@ -415,10 +415,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$runner = $this->makeTenantJoinRunner();
 
 		$result = $runner->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed',
-			extraFilter: ['administrationId' => 'A']
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'),
+			options: new NamedAggregationOptions(bypassRbac: false, extraFilter: ['administrationId' => 'A'])
 		);
 
 		$joined = [];
@@ -441,9 +439,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 */
 	public function testJoinWithoutACallerFilterStillSeesEveryTenant(): void {
 		$result = $this->makeTenantJoinRunner()->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 		$joined = [];
@@ -469,10 +465,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 */
 	public function testJoinDropsACallerFilterTheJoinedSchemaDoesNotDeclare(): void {
 		$result = $this->makeTenantJoinRunner()->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed',
-			extraFilter: ['costCentre' => 'C1']
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'),
+			options: new NamedAggregationOptions(bypassRbac: false, extraFilter: ['costCentre' => 'C1'])
 		);
 
 		$joined = [];
@@ -501,10 +495,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$annotation['join']['filter'] = ['administrationId' => 'A'];
 
 		$result = $this->makeTenantJoinRunner($annotation)->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed',
-			extraFilter: ['administrationId' => 'B']
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'),
+			options: new NamedAggregationOptions(bypassRbac: false, extraFilter: ['administrationId' => 'B'])
 		);
 
 		$joined = [];
@@ -539,10 +531,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$annotation['filter'] = ['administrationId' => 'A'];
 
 		$result = $this->makeTenantJoinRunner($annotation)->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed',
-			extraFilter: ['administrationId' => 'B']
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'),
+			options: new NamedAggregationOptions(bypassRbac: false, extraFilter: ['administrationId' => 'B'])
 		);
 
 		$joined = [];
@@ -584,9 +574,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$annotation['join']['on'] = ['programme' => 'programmeCode'];
 
 		$result = $this->makeHierarchyRunner($annotation)->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 		$folded = [];
@@ -619,9 +607,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 
 		// P9 has no matching budget row.
 		$result = $this->makeHierarchyRunner($annotation, orphanRow: true)->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 		$total = 0.0;
@@ -662,9 +648,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$this->expectExceptionMessageMatches('/explicit join\.on map/');
 
 		$this->makeHierarchyRunner($annotation)->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 	}//end testJoinedGroupByRefusesTheOnShorthand()
@@ -685,9 +669,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$annotation['join']['on'] = ['programme' => 'programmeCode'];
 
 		$result = $this->makeHierarchyRunner($annotation)->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 		$this->assertTrue($result['join']['consumedForGrouping']);
@@ -704,17 +686,13 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 
 	public function testNativeJoinAgreesWithPhpFallback(): void {
 		$php = $this->makeJoinRunner()->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 		// Fresh mocks: the SQLite-backed runner needs its own DB stub.
 		$this->setUp();
 		$native = $this->makeNativeJoinRunner()->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 
 		// assertEquals, not assertSame, and deliberately so: the two paths
@@ -764,9 +742,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$this->expectExceptionMessage('Forbidden: caller lacks read permission on join target "commitment-budget"');
 
 		$runner->run(
-			registerRef: 'finance',
-			schemaRef: 'commitment-line',
-			name: 'committed'
+			ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed')
 		);
 	}//end testJoinIsRefusedWhenCallerLacksListOnJoinedSchema()
 
@@ -839,7 +815,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 			]
 		);
 
-		$result = $runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'byTwo');
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'byTwo'));
 
 		$this->assertSame('Wonen', $result['groups'][0]['keys']['programme'], 'translatable member MUST be projected');
 		$this->assertSame('C1', $result['groups'][0]['keys']['costCentre'], 'non-translatable member MUST be untouched');
@@ -865,7 +841,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 			]
 		);
 
-		$result = $runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'byTwo');
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'byTwo'));
 
 		$this->assertSame('Wonen', $result['groups'][0]['key']);
 		$this->assertArrayNotHasKey('keys', $result['groups'][0], 'single-field groups MUST NOT grow a `keys` map');
@@ -1075,7 +1051,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 			groupBy: ['programme'],
 			rows: [['programme' => 'P1', 'costCentre' => 'C1', 'remainingCommitted' => 10]]
 		);
-		$result = $runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'byTwo');
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'byTwo'));
 
 		$this->assertSame('P1', $result['groups'][0]['key']);
 		$this->assertArrayNotHasKey('keys', $result['groups'][0]);
@@ -1115,11 +1091,11 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$mapSpec['join']['on'] = ['programme' => 'programmeCode'];
 
 		$viaString = $this->makeJoinRunner(annotations: ['committed' => $stringSpec])
-			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+			->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 
 		$this->setUp();
 		$viaMap = $this->makeJoinRunner(annotations: ['committed' => $mapSpec])
-			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+			->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 
 		$this->assertSame(['programme' => 'programmeCode'], $viaString['join']['on']);
 		$this->assertSame(['programme' => 'programmeCode'], $viaMap['join']['on']);
@@ -1141,7 +1117,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('is not one of the groupBy fields');
 
-		$runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+		$runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 	}//end testOnMapNamingUngroupedParentFieldIsRefused()
 
 	/**
@@ -1159,7 +1135,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 			]
 		);
 
-		$result = $runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 		$folded = $this->foldJoined($result['groups']);
 
 		$this->assertSame(1250.0, $folded['P1|C1']['joined'], 'duplicate join keys MUST reduce, not overwrite');
@@ -1179,7 +1155,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		$maxSpec['join']['select'] = [['field' => 'authorisedAmount', 'metric' => 'max', 'alias' => 'cap']];
 
 		$result = $this->makeJoinRunner(annotations: ['committed' => $maxSpec])
-			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+			->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 
 		$this->assertSame(['cap'], $result['join']['select'], 'the declared alias MUST be the response key');
 		$this->assertSame(1000.0, $result['groups'][0]['joined']['cap']);
@@ -1191,7 +1167,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('join.select metric "median" is not supported');
-		$runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+		$runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 	}//end testSelectObjectSpellingHonoursMetricAndRejectsUnknownOnes()
 
 	/**
@@ -1207,7 +1183,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		}
 
 		$result = $this->makeJoinRunner(joinedRowsOverride: $capped)
-			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+			->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 
 		$this->assertTrue($result['join']['truncated'], 'a joined hydrate at the cap MUST flag truncation');
 		$this->assertSame(10000.0, $result['groups'][0]['joined']['commitment-budget.authorisedAmount']);
@@ -1219,7 +1195,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 */
 	public function testJoinTruncatedIsFalseBelowTheRowCap(): void {
 		$result = $this->makeJoinRunner()
-			->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'committed');
+			->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'committed'));
 
 		$this->assertFalse($result['join']['truncated']);
 	}//end testJoinTruncatedIsFalseBelowTheRowCap()
@@ -1289,8 +1265,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	private function cacheKeysFor(array $specOne, array $specTwo): array {
 		$runner = $this->makeJoinRunner(annotations: ['one' => $specOne, 'two' => $specTwo]);
 
-		$runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'one');
-		$runner->run(registerRef: 'finance', schemaRef: 'commitment-line', name: 'two');
+		$runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'one'));
+		$runner->run(ref: new NamedAggregationRef(register: 'finance', schema: 'commitment-line', name: 'two'));
 
 		$this->assertCount(2, $this->capturedCacheKeys, 'both runs MUST have written a cache entry');
 		return $this->capturedCacheKeys;

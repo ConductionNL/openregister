@@ -47,27 +47,24 @@ class DraftCallerRule {
 	/**
 	 * Whether a stored draft is kept from this caller.
 	 *
-	 * @param ObjectEntity $object      The stored object.
-	 * @param Schema       $schema      Its schema.
-	 * @param string|null  $userId      The caller, null when nobody is signed in.
-	 * @param bool         $isAdmin     Whether the caller is an administrator.
-	 * @param bool|null    $commandLine Whether PHP runs on the command line; null reads PHP_SAPI.
+	 * @param ObjectEntity $object The stored object.
+	 * @param Schema       $schema Its schema.
+	 * @param DraftCaller  $caller Who asks, whether they administer and whether PHP runs on the command line.
 	 *
 	 * @return bool True when the caller may not touch it.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Both contexts are ambient static markers by design.
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The caller's two facts, resolved by each caller from the services it holds.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
-	public function keptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId, bool $isAdmin, ?bool $commandLine = null): bool {
+	public function keptFromCaller(ObjectEntity $object, Schema $schema, DraftCaller $caller): bool {
 		// Open to the caller: not a draft kept from them, or the caller is an admin.
-		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === false || $isAdmin === true) {
+		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $caller->userId) === false || $caller->isAdmin === true) {
 			return false;
 		}
 
-		if ($userId === null) {
-			return self::keptFromNoUser(commandLine: $commandLine);
+		if ($caller->userId === null) {
+			return self::keptFromNoUser(commandLine: $caller->commandLine);
 		}
 
 		return true;
@@ -92,6 +89,7 @@ class DraftCallerRule {
 
 		$cli = ($commandLine ?? (PHP_SAPI === 'cli'));
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $cli === false && SystemOperationContext::isActive() === false;
 	}//end keptFromNoUser()
 }//end class

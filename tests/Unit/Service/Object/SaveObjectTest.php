@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use Exception;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1904,7 +1905,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->runContext->push($runUuid, 'lock-object', 1);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: $runUuid, nodeId: 'lock-object', sequence: 1));
 		try {
 			$result = $this->invokePrivateMethod('findAndValidateExistingObject', [self::lookupCall('test-uuid')]);
 		} finally {
@@ -1932,7 +1933,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->runContext->push('run-bbbbbbbb-0000-0000-0000-000000000002', 'lock-object', 1);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: 'run-bbbbbbbb-0000-0000-0000-000000000002', nodeId: 'lock-object', sequence: 1));
 
 		// The refusal is captured rather than caught around a fail(): PHPUnit's
 		// fail() throws, and a catch broad enough for the guard's \Exception
@@ -1968,7 +1969,7 @@ class SaveObjectTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->runContext->push('run-aaaaaaaa-0000-0000-0000-000000000001', 'object-write', 1);
+		$this->runContext->push(frame: new FlowRunFrame(runUuid: 'run-aaaaaaaa-0000-0000-0000-000000000001', nodeId: 'object-write', sequence: 1));
 
 		$refusal = null;
 		try {
@@ -3045,7 +3046,7 @@ class SaveObjectTest extends TestCase {
 		$schemaObject->properties = [];
 		$schema = $this->createSchemaWithSchemaObject($schemaObject);
 
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$data = ['name' => 'Test'];
 		$result = $this->invokePrivateMethod('processFilePropertiesWithRollback', [$entity, &$data, $register, $schema]);
@@ -3062,7 +3063,7 @@ class SaveObjectTest extends TestCase {
 		$schemaObject->properties = [];
 		$schema = $this->createSchemaWithSchemaObject($schemaObject);
 
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(true);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(true);
 		$this->filePropertyHandler->method('handleFileProperty')
 			->willThrowException(new Exception('File upload failed'));
 

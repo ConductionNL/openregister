@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCP\IDBConnection;
@@ -130,7 +131,7 @@ class ObjectReadStateMapperBehaviourTest extends TestCase {
 			['object_uuid' => 'a'],
 		]];
 
-		$uuids = $this->mapper()->uuidsForUser('anna', 'reg', 'sch', 50);
+		$uuids = $this->mapper()->uuidsForUser('anna', new ListQuery(limit: 50, filters: ['register' => 'reg', 'schema' => 'sch']));
 
 		$this->assertSame(['a', 'b'], $uuids);
 		$log = $this->log();
@@ -147,7 +148,7 @@ class ObjectReadStateMapperBehaviourTest extends TestCase {
 	public function testUuidsForUserWithoutScopeIsNotNarrowed(): void {
 		$this->queuedRows = [[]];
 
-		$this->assertSame([], $this->mapper()->uuidsForUser('anna', '', null));
+		$this->assertSame([], $this->mapper()->uuidsForUser('anna', new ListQuery(limit: ObjectReadStateMapper::SEEN_SET_LIMIT, filters: ['register' => '', 'schema' => null])));
 		$log = $this->log();
 		$this->assertStringNotContainsString('eq(register', $log);
 		$this->assertStringNotContainsString('eq(schema', $log);

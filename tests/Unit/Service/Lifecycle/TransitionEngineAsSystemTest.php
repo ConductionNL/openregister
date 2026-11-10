@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
@@ -264,7 +265,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 	 */
 	private function engine(): TransitionEngine {
 		return new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary($this->actions), $this->createMock(LifecycleActionProviderRegistry::class)),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->userSession, $this->createMock(IAppConfig::class), $this->logger),
 			$this->permission
@@ -430,7 +431,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 		$this->actions->enterSystem(uuid: self::OBJECT_ID, app: 'learniq');
 
 		try {
-			$row = $this->auditMapper()->buildAuditTrail(old: $this->draft(), new: $this->submitted());
+			$row = $this->auditMapper()->buildEntry(change: new AuditedChange(old: $this->draft(), new: $this->submitted()));
 		} finally {
 			$this->actions->leaveSystem(uuid: self::OBJECT_ID);
 		}
@@ -443,7 +444,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 	 * Control: an ordinary write carries no system mark.
 	 */
 	public function testOrdinaryAuditRowCarriesNoSystemMark(): void {
-		$row = $this->auditMapper()->buildAuditTrail(old: $this->draft(), new: $this->submitted());
+		$row = $this->auditMapper()->buildEntry(change: new AuditedChange(old: $this->draft(), new: $this->submitted()));
 
 		$this->assertArrayNotHasKey('transitionAsSystem', $row->getChanged());
 	}//end testOrdinaryAuditRowCarriesNoSystemMark()

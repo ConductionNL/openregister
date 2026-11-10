@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileWriterInterface;
+use OCA\OpenRegister\Service\Task\InboxListing;
 use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -118,7 +119,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 		$party = $subject->partyReference();
 		$offset = (int)$query->offset;
 
-		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, limit: $query->limit, offset: $offset);
+		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, page: $query);
 		$total = $this->sources->mapper->countOpenExternalForParty(partyReference: $party);
 
 		return [
@@ -151,7 +152,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 
 			// The page was read with the open-blocker exclusion, so no row of it is
 			// blocked: saying so up front spares every row its own blocker query.
-			$results[] = $this->sources->inbox->row(task: $task, subjects: $contexts, now: $now, openBlockers: []);
+			$results[] = $this->sources->inbox->row(task: $task, listing: new InboxListing(subjects: $contexts, now: $now, openBlockers: []));
 		}
 
 		return $results;
@@ -197,11 +198,7 @@ class PortalTaskService implements PortalTaskServiceInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
 	public function row(Task $task): array {
-		return $this->sources->inbox->row(
-			task: $task,
-			subjects: $this->sources->inbox->subjectContextsFor(tasks: [$task]),
-			now: $this->sources->temporal->now()
-		);
+		return $this->sources->inbox->enrich(task: $task);
 	}//end row()
 
 	/**

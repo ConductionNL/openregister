@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use JsonSerializable;
+use OCA\OpenRegister\Service\Flow\LiveSubject;
+use OCA\OpenRegister\Service\Flow\FlowSubjectItems;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -130,7 +132,7 @@ class FlowItemsGoldenTest extends TestCase {
 		];
 		foreach ($cases as $name => [$list, $subject, $uuid]) {
 			try {
-				$actual['refresh / ' . $name] = FlowItems::refreshSubjectProjection(items: $list, subject: $subject, subjectUuid: $uuid);
+				$actual['refresh / ' . $name] = FlowSubjectItems::refreshSubjectProjection(items: $list, subject: new LiveSubject(subject: $subject, uuid: $uuid));
 			} catch (Throwable $error) {
 				$actual['refresh / ' . $name] = ['error' => get_class($error), 'message' => $error->getMessage()];
 			}

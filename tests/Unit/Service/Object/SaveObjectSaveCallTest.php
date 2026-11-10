@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -43,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 
 /**
  * The branches of SaveObject::saveObject() that decide between update, create
@@ -185,8 +187,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 	private function stoppingDedupPolicy(array &$seen): void {
 		$policy = $this->createMock(DedupCreatePolicy::class);
 		$policy->method('guardCreate')->willReturnCallback(
-			static function ($register, $schema, array $data, bool $overrideRequested) use (&$seen): array {
-				$seen = ['register' => $register, 'schema' => $schema, 'data' => $data, 'override' => $overrideRequested];
+			static function (CreateCandidate $candidate) use (&$seen): array {
+				$seen = ['register' => $candidate->register, 'schema' => $candidate->schema, 'data' => $candidate->data, 'override' => $candidate->overrideRequested];
 				throw new RuntimeException('stop');
 			}
 		);
@@ -296,7 +298,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 		$this->unifiedObjectMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
-			static function (Schema $schema, array $object, array $incomingData, bool $isCreate) use (&$seen): array {
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$seen = [$object, $incomingData, $isCreate];
 				return ['name'];
 			}
@@ -316,7 +319,8 @@ final class SaveObjectSaveCallTest extends TestCase {
 		$this->unifiedObjectMapper->method('find')->willReturn($stored);
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
-			static function (Schema $schema, array $object, array $incomingData, bool $isCreate) use (&$seen): array {
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$seen = [$object, $isCreate];
 				return ['name'];
 			}

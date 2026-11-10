@@ -29,9 +29,17 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
+use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\ProtectedCarryForward;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
@@ -52,6 +60,7 @@ use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -73,6 +82,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
@@ -106,6 +116,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
@@ -619,13 +630,11 @@ class SaveObject implements SaveObjectInterface {
 
 		try {
 			$resolver->assertWritable(
-				table: SharedMasterDataService::REGISTERS,
-				id: $target->registerId,
+				row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $target->registerId),
 				activeOrgUuids: $activeOrgUuids
 			);
 			$resolver->assertWritable(
-				table: SharedMasterDataService::SCHEMAS,
-				id: $target->schemaId,
+				row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $target->schemaId),
 				activeOrgUuids: $activeOrgUuids
 			);
 		} catch (SharedMasterDataWriteException $refusal) {
@@ -1977,8 +1986,7 @@ class SaveObject implements SaveObjectInterface {
 		// Normalize translatable properties (wrap simple values under default language).
 		$call->data = $this->translationHandler->normalizeTranslationsForSave(
 			objectData: $call->data,
-			schema: $call->schema,
-			register: $call->register
+			scope: new TranslationScope(schema: $call->schema, register: $call->register)
 		);
 
 		// Skip when _rbac is false (internal/system calls bypass all authorization).
@@ -2017,10 +2025,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
-			schema: $call->schema,
-			object: $existingObjectData,
-			incomingData: $call->data,
-			isCreate: $isCreate
+			write: new PropertyWriteCheck(schema: $call->schema, request: new PropertyAccessRequest(object: $existingObjectData, isCreate: $isCreate), incoming: $call->data)
 		);
 
 		if (empty($unauthorizedProps) === false) {
@@ -2236,10 +2241,12 @@ class SaveObject implements SaveObjectInterface {
 		$dedupPolicy = $this->resolveDedupCreatePolicy();
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: $call->registerId,
-				schema: $call->schemaId,
-				data: $call->data,
-				overrideRequested: $call->flags->dedupOverride
+				candidate: new CreateCandidate(
+					register: $call->registerId,
+					schema: $call->schemaId,
+					data: $call->data,
+					overrideRequested: $call->flags->dedupOverride
+				)
 			);
 		}
 
@@ -2656,10 +2663,8 @@ class SaveObject implements SaveObjectInterface {
 		// active, and refused once it has been nominated.
 		$retentionService = $this->resolveRetentionService();
 		if ($retentionService !== null) {
-			$preparedObject = $retentionService->applyClassificationOnUpdate(
-				object: $preparedObject,
-				schema: $call->schema,
-				previousData: ($oldObjectData ?? [])
+			$preparedObject = $retentionService->applyClassification(
+				update: new RecordUpdate(object: $preparedObject, schema: $call->schema, previousData: ($oldObjectData ?? []))
 			);
 		}
 
@@ -3051,7 +3056,7 @@ class SaveObject implements SaveObjectInterface {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $flags->unowned, _owner: $flags->owner);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, flags: $flags);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -3111,16 +3116,17 @@ class SaveObject implements SaveObjectInterface {
 	 * owned by `portal:<subjectRef>` (decision 195, see DraftOwner), names
 	 * it here. No controller forwards it either.
 	 *
-	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
-	 * @param bool         $_unowned     Stamp the system identity even when a session exists.
-	 * @param string|null  $_owner       An explicit owner; wins over the session and the system identity.
+	 * @param ObjectEntity    $objectEntity Entity being prepared for creation.
+	 * @param ObjectSaveFlags $flags        Its `unowned` stamps the system identity even when a session exists;
+	 *                                      its `owner` is an explicit owner that wins over the session and the
+	 *                                      system identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
-		$owner = ($this->attributedOwner(_unowned: $_unowned, _owner: $_owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
+	private function applyOwnerAttribution(ObjectEntity $objectEntity, ObjectSaveFlags $flags = new ObjectSaveFlags()): void {
+		$owner = ($this->attributedOwner(_unowned: $flags->unowned, _owner: $flags->owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
 		if ($owner !== null) {
 			$objectEntity->setOwner($owner);
 		}
@@ -3243,11 +3249,7 @@ class SaveObject implements SaveObjectInterface {
 			array_unique(
 				array_merge(
 					$omittedWriteOnly,
-					$this->propertyRbacHandler->collectOmittedProtectedProperties(
-						schema: $schema,
-						incoming: $data,
-						stored: $storedRecord
-					)
+					$this->propertyRbacHandler->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: $data, stored: $storedRecord))
 				)
 			)
 		);
@@ -3337,10 +3339,8 @@ class SaveObject implements SaveObjectInterface {
 	private function decideSlug(ObjectEntity $entity, Schema $schema, ?string $stored, array $sent): void {
 		[$selfData, $data] = $sent;
 		$this->slugHandler->applyOnSave(
-			entity: $entity,
-			schema: $schema,
-			originalSlug: $stored,
-			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+			request: new SlugRequest(entity: $entity, schema: $schema, clientSlug: $this->clientSlug(selfData: $selfData, data: $data)),
+			originalSlug: $stored
 		);
 	}//end decideSlug()
 
@@ -3694,7 +3694,7 @@ class SaveObject implements SaveObjectInterface {
 			}
 		}
 
-		$this->tmloService->populateDefaults($objectEntity, $register, $schema);
+		$this->tmloService->populateDefaults($objectEntity, new RegisterSchema(register: $register, schema: $schema));
 	}//end populateTmloDefaults()
 
 	/**
@@ -3835,38 +3835,28 @@ class SaveObject implements SaveObjectInterface {
 	 * re-validation is sequenced after this primitive lands and is
 	 * tracked separately.
 	 *
-	 * @param Register|null $register Register context for the batch.
-	 * @param Schema|int|string|null $schema Schema context for the batch.
-	 * @param iterable $rows Input rows (each is the same
-	 *                       shape `saveObject` accepts).
-	 * @param BatchOperationStatus|null $status Optional pre-existing status
-	 *                                          (for callers that want to
-	 *                                          accumulate across multiple
-	 *                                          calls).
+	 * @param StreamingSave $save The register and schema context of the batch, its rows (each the shape
+	 *                            `saveObject` accepts) and an optional pre-existing status for callers
+	 *                            that accumulate across multiple calls.
 	 *
 	 * @return BatchOperationStatus
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function saveObjectsStreaming(
-		Register|int|string|null $register,
-		Schema|int|string|null $schema,
-		iterable $rows,
-		?BatchOperationStatus $status = null,
-	): BatchOperationStatus {
-		$status ??= new BatchOperationStatus();
+	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus {
+		$status = ($save->status ?? new BatchOperationStatus());
 		$status->start();
 
 		$run = new StreamRun();
-		$run->register = $register;
-		$run->schema = $schema;
+		$run->register = $save->register;
+		$run->schema = $save->schema;
 		$run->status = $status;
 
 		// Position in the submitted batch. A failed create has no UUID yet, so
 		// this is the only thing that lets a caller identify the row it lost
 		// (issue #2778). Counted rather than read from the key because $rows is
 		// an iterable and may be a generator.
-		foreach ($rows as $row) {
+		foreach ($save->rows as $row) {
 			$run->rowIndex++;
 			$run->row = $row;
 			$cacheBefore = $this->referenceExistence()->verdictCount();
@@ -4114,8 +4104,7 @@ class SaveObject implements SaveObjectInterface {
 		if ($this->computedFieldHandler->hasComputedProperties($schema) === true) {
 			$data = $this->computedFieldHandler->evaluateComputedFields(
 				data: $data,
-				schema: $schema,
-				evaluateOn: 'save'
+				pass: new ComputedPass(schema: $schema, evaluateOn: 'save')
 			);
 		}
 
@@ -4331,10 +4320,8 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			return $retentionService->recalculateArchiveActionDate(
-				$preparedObject,
-				$run->schema,
-				$run->oldObject->getObject()
+			return $retentionService->recalculateActionDate(
+				new RecordUpdate($preparedObject, $run->schema, $run->oldObject->getObject())
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());
@@ -4439,13 +4426,20 @@ class SaveObject implements SaveObjectInterface {
 		$config = ($objectSource['config'] ?? []);
 
 		if ($uuid === null || $uuid === '') {
-			$entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
+			$entity = $provider->insert(
+				source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
+				data: $data
+			);
 			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $silent);
 			return $entity;
 		}
 
-		$old = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
-		$entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
+		$old = $provider->find(source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config), id: $uuid);
+		$entity = $provider->update(
+			source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
+			id: $uuid,
+			data: $data
+		);
 		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $silent);
 
 		return $entity;
