@@ -39,6 +39,22 @@ use OCP\AppFramework\Utility\ITimeFactory;
  */
 final class DeliveryHold {
 	/**
+	 * The hold reason per (inside quiet hours, digest declared) pair, each as 0 or 1.
+	 *
+	 * @var array<int, array<int, string|null>>
+	 */
+	private const REASONS = [
+		0 => [
+			0 => null,
+			1 => QueuedNotification::REASON_DIGEST_SCHEDULE,
+		],
+		1 => [
+			0 => QueuedNotification::REASON_QUIET_HOURS,
+			1 => QueuedNotification::REASON_BOTH,
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param NotificationDeliveryWindowService|null $windowService   Override-only quiet-hours resolver + evaluator.
@@ -124,19 +140,7 @@ final class DeliveryHold {
 	 * @return string|null A QueuedNotification reason, or null.
 	 */
 	private function reason(bool $windowActive, bool $digestDeclared): ?string {
-		if ($windowActive === true && $digestDeclared === true) {
-			return QueuedNotification::REASON_BOTH;
-		}
-
-		if ($windowActive === true) {
-			return QueuedNotification::REASON_QUIET_HOURS;
-		}
-
-		if ($digestDeclared === true) {
-			return QueuedNotification::REASON_DIGEST_SCHEDULE;
-		}
-
-		return null;
+		return self::REASONS[(int)$windowActive][(int)$digestDeclared];
 	}//end reason()
 
 	/**

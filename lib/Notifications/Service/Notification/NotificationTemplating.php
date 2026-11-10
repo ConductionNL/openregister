@@ -366,22 +366,45 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 			return $this->relationDisplayCache[$value];
 		}
 
-		$name = null;
-		try {
-			$related = WriteCause::asLookup(fn () => $this->objectService->find(id: $value, _rbac: true));
-			if ($related !== null) {
-				$candidate = $related->getName();
-				if (is_string($candidate) === true && $candidate !== '') {
-					$name = $candidate;
-				}
-			}
-		} catch (\Throwable $e) {
-			$this->logger->debug('[NotificationTemplating] relation display-name resolve failed: ' . $e->getMessage());
-			$name = null;
-		}
-
+		$name = $this->lookUpDisplayName(uuid: $value);
 		$this->relationDisplayCache[$value] = $name;
 
 		return $name;
 	}//end resolveRelationDisplayName()
+
+	/**
+	 * Ask the object service for the related object's display name.
+	 *
+	 * @param string $uuid The related object's UUID.
+	 *
+	 * @return string|null The display name, or null when nothing named resolves or the lookup fails.
+	 */
+	private function lookUpDisplayName(string $uuid): ?string {
+		try {
+			$related = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, _rbac: true));
+			if ($related === null) {
+				return null;
+			}
+
+			return $this->nonEmptyName(name: $related->getName());
+		} catch (\Throwable $e) {
+			$this->logger->debug('[NotificationTemplating] relation display-name resolve failed: ' . $e->getMessage());
+			return null;
+		}
+	}//end lookUpDisplayName()
+
+	/**
+	 * A name when it is a non-empty string.
+	 *
+	 * @param mixed $name The object's name.
+	 *
+	 * @return string|null The name, or null when it is absent or empty.
+	 */
+	private function nonEmptyName(mixed $name): ?string {
+		if (is_string($name) === true && $name !== '') {
+			return $name;
+		}
+
+		return null;
+	}//end nonEmptyName()
 }//end class
