@@ -28,7 +28,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
+use OCA\OpenRegister\Service\SharedSchema\SchemaIdSwap;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
 use Psr\Log\LoggerInterface;
@@ -243,7 +246,7 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 		$run->newId = (int)$schema->getId();
 		$this->relink(run: $run);
 
-		$moved = $this->store->migrator->migrate(register: $run->register, schema: $schema, oldId: $run->oldId());
+		$moved = $this->store->migrator->migrate(table: new RegisterSchema(register: $run->register, schema: $schema), oldId: $run->oldId());
 		$this->logSplit(run: $run, rows: $moved['rows']);
 
 		return [
@@ -265,8 +268,7 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 		$run->register->setSchemas(
 			schemas: $this->ownership->attribution->replaceSchemaId(
 				schemas: $run->register->getSchemas(),
-				oldId: $run->oldId(),
-				newId: $run->newId
+				swap: new SchemaIdSwap(oldId: $run->oldId(), newId: $run->newId)
 			)
 		);
 		$this->store->registerMapper->update($run->register);
@@ -409,7 +411,10 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 		$schemaId = $scope['schemaId'];
 		$rules    = $this->ownership->attribution;
 		$verdict  = $rules->classify(candidates: $scope['candidates'], entity: $scope['content']);
-		$owner    = $rules->resolveOwner(verdict: $verdict, schemaId: $schemaId, registerIds: $scope['registerIds'], keep: $scope['keep']);
+		$owner    = $rules->resolveOwner(
+			verdict: $verdict,
+			candidates: new OwnerCandidates(schemaId: $schemaId, registerIds: $scope['registerIds'], keep: $scope['keep'])
+		);
 
 		$shared = ['schemaId' => $schemaId, 'owner' => $owner['owner'], 'candidates' => $scope['candidates'], 'content' => $scope['content']];
 

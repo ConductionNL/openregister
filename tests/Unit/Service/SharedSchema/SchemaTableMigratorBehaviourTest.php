@@ -26,6 +26,7 @@ use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
 use OCP\DB\IPreparedStatement;
@@ -285,7 +286,7 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['rows' => 0, 'unmapped' => [], 'backup' => null],
-			$this->migrator()->migrate(register: $register, schema: $schema, oldId: 2)
+			$this->migrator()->migrate(table: new RegisterSchema(register: $register, schema: $schema), oldId: 2)
 		);
 	}//end testMigrateWithoutSourceTableIsANoOp()
 
@@ -328,7 +329,7 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(8);
 
-		$result = $this->migrator()->migrate(register: $register, schema: $schema, oldId: 2);
+		$result = $this->migrator()->migrate(table: new RegisterSchema(register: $register, schema: $schema), oldId: 2);
 
 		$this->assertSame(
 			['rows' => 5, 'unmapped' => ['legacy'], 'backup' => 'oc_openregister_table_3_2_predupe'],
@@ -365,7 +366,7 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(8);
 
-		$result = $this->migrator()->migrate(register: $register, schema: $schema, oldId: 2);
+		$result = $this->migrator()->migrate(table: new RegisterSchema(register: $register, schema: $schema), oldId: 2);
 
 		$this->assertSame(4, $result['rows']);
 		$this->assertSame(

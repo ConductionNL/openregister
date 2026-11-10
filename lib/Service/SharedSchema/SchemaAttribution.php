@@ -233,17 +233,16 @@ class SchemaAttribution {
 	 * relink every referencing register onto a fresh entity for no reason, which
 	 * is a bigger change than the one the operator asked for.
 	 *
-	 * @param array<string, mixed> $verdict  The attribution verdict.
-	 * @param int               $schemaId    The shared schema id.
-	 * @param int[]             $registerIds The referencing registers.
-	 * @param array<string, mixed> $keep     The parsed overrides.
+	 * @param array<string, mixed> $verdict    The attribution verdict.
+	 * @param OwnerCandidates      $candidates The shared schema id, the referencing registers and the parsed overrides.
 	 *
 	 * @return array{owner: int|null, source: string} The resolved owner and where it came from.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function resolveOwner(array $verdict, int $schemaId, array $registerIds, array $keep): array {
-		$pinned = ($keep['perSchema'][$schemaId] ?? null);
+	public function resolveOwner(array $verdict, OwnerCandidates $candidates): array {
+		$registerIds = $candidates->registerIds;
+		$pinned      = ($candidates->keep['perSchema'][$candidates->schemaId] ?? null);
 		if ($pinned !== null && in_array($pinned, $registerIds, true) === true) {
 			return ['owner' => $pinned, 'source' => 'keep'];
 		}
@@ -252,7 +251,7 @@ class SchemaAttribution {
 			return ['owner' => $verdict['owner'], 'source' => 'configuration'];
 		}
 
-		$fallback = ($keep['global'] ?? null);
+		$fallback = ($candidates->keep['global'] ?? null);
 		if ($fallback !== null && in_array($fallback, $registerIds, true) === true) {
 			return ['owner' => $fallback, 'source' => 'keep-global'];
 		}
@@ -269,18 +268,17 @@ class SchemaAttribution {
 	 * loss rather than cleanup.
 	 *
 	 * @param array<int, mixed> $schemas The stored schemas list.
-	 * @param int               $oldId   The id to replace.
-	 * @param int               $newId   The id to put in its place.
+	 * @param SchemaIdSwap      $swap    The id to replace and the id to put in its place.
 	 *
 	 * @return array<int, mixed> The rewritten list.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function replaceSchemaId(array $schemas, int $oldId, int $newId): array {
+	public function replaceSchemaId(array $schemas, SchemaIdSwap $swap): array {
 		$result = [];
 		foreach ($schemas as $entry) {
-			if (is_numeric($entry) === true && (int)$entry === $oldId) {
-				$result[] = $newId;
+			if (is_numeric($entry) === true && (int)$entry === $swap->oldId) {
+				$result[] = $swap->newId;
 				continue;
 			}
 
