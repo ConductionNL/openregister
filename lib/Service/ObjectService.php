@@ -2018,11 +2018,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function getLogs(string $uuid, array $filters=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
-        // Get logs for the specified object.
-        $object = $this->objectMapper->find($uuid);
-        $logs   = $this->getHandler->findLogs(object: $object, filters: $filters);
-
-        return $logs;
+        return $this->getHandler->findLogs(object: $this->objectMapper->find($uuid), filters: $filters);
     }//end getLogs()
 
     /**
