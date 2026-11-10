@@ -326,6 +326,25 @@ export default {
 		webhookActions(webhook) {
 			return [
 				editAction(() => this.editWebhook(webhook)),
+				...this.deliveryActions(webhook),
+				this.toggleAction(webhook),
+				{
+					label: t('openregister', 'Delete'),
+					icon: DeleteOutline,
+					run: () => this.deleteWebhook(webhook.id),
+				},
+			]
+		},
+
+		/**
+		 * The menu entries that send a test delivery and show the deliveries.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} webhook The webhook
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		deliveryActions(webhook) {
+			return [
 				{
 					label: t('openregister', 'Test'),
 					icon: PlayOutline,
@@ -335,12 +354,6 @@ export default {
 					label: t('openregister', 'View Logs'),
 					icon: FileDocumentOutline,
 					run: () => this.viewLogs(webhook.id),
-				},
-				this.toggleAction(webhook),
-				{
-					label: t('openregister', 'Delete'),
-					icon: DeleteOutline,
-					run: () => this.deleteWebhook(webhook.id),
 				},
 			]
 		},
