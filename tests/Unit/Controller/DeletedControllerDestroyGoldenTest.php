@@ -146,7 +146,7 @@ final class DeletedControllerDestroyGoldenTest extends TestCase {
 		$this->request->method('getParam')->willReturnCallback(
 			static fn (string $key, $default = null) => ($key === 'force') ? $force : $default
 		);
-		$this->windows->method('windowFor')->willReturn($this->window($daysRemaining));
+		$this->windows->method('windowOf')->willReturn($this->window($daysRemaining));
 		$recorded = [];
 		$this->recorder->method('recordDestruction')->willReturnCallback(
 			static function (\OCA\OpenRegister\Service\Deletion\RecordDestructionCommand $command) use (&$recorded): array {

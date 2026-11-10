@@ -31,8 +31,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\UserTaskListInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -114,17 +112,15 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The VTODO id (calendar-object uri) or uid.
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		$selection = VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		$selection = VtodoSelection::fromConfig(binding: $source->binding(), config: $source->config);
 
 		return $this->findTask(selection: $selection, id: $id);
 	}//end find()
@@ -150,17 +146,15 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/limit/offset).
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$selection = VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		$selection = VtodoSelection::fromConfig(binding: $source->binding(), config: $source->config);
 
 		return $this->listTasks(selection: $selection, query: $query);
 	}//end findAll()
