@@ -192,21 +192,35 @@ class DenyResolver implements DenyResolverInterface {
 		$merged = [];
 
 		foreach ([$baseline, $override] as $block) {
-			if (is_array($block) === false) {
-				continue;
-			}
-
-			foreach ($block as $action => $entries) {
-				if (is_array($entries) === false) {
-					continue;
-				}
-
-				$merged[$action] = array_merge(($merged[$action] ?? []), array_values($entries));
-			}
+			$merged = self::withBlock(merged: $merged, block: $block);
 		}
 
 		return $this->deduplicate(block: $merged);
 	}//end mergeDeny()
+
+	/**
+	 * The union so far with one more level's readable actions appended.
+	 *
+	 * @param array<string, array> $merged The union so far.
+	 * @param array|null           $block  One level's deny block.
+	 *
+	 * @return array<string, array> The union including this level.
+	 */
+	private static function withBlock(array $merged, ?array $block): array {
+		if (is_array($block) === false) {
+			return $merged;
+		}
+
+		foreach ($block as $action => $entries) {
+			if (is_array($entries) === false) {
+				continue;
+			}
+
+			$merged[$action] = array_merge(($merged[$action] ?? []), array_values($entries));
+		}
+
+		return $merged;
+	}//end withBlock()
 
 	/**
 	 * Drop entries repeated by the union, keeping declaration order.
@@ -258,23 +272,49 @@ class DenyResolver implements DenyResolverInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function principalsFor(?string $userId, array $userGroups): array {
-		$principals = [self::PRINCIPAL_PUBLIC];
+		$principals = array_merge(
+			[self::PRINCIPAL_PUBLIC],
+			self::userPrincipals(userId: $userId),
+			self::groupPrincipals(userGroups: $userGroups)
+		);
 
-		if ($userId !== null && $userId !== '') {
-			$principals[] = self::PRINCIPAL_AUTHENTICATED;
-			$principals[] = (self::USER_PREFIX . $userId);
+		return array_values(array_unique($principals));
+	}//end principalsFor()
+
+	/**
+	 * The names a signed-in caller is reached by; none for an anonymous caller.
+	 *
+	 * @param string|null $userId The caller, or null when anonymous.
+	 *
+	 * @return string[] `authenticated` and `user:<id>`, or nothing.
+	 */
+	private static function userPrincipals(?string $userId): array {
+		if ($userId === null || $userId === '') {
+			return [];
 		}
 
+		return [self::PRINCIPAL_AUTHENTICATED, (self::USER_PREFIX . $userId)];
+	}//end userPrincipals()
+
+	/**
+	 * The caller's usable group ids, in order.
+	 *
+	 * @param array<mixed> $userGroups The caller's group IDs.
+	 *
+	 * @return string[] The non-empty string ids.
+	 */
+	private static function groupPrincipals(array $userGroups): array {
+		$groups = [];
 		foreach ($userGroups as $groupId) {
 			if (is_string($groupId) === false || $groupId === '') {
 				continue;
 			}
 
-			$principals[] = $groupId;
+			$groups[] = $groupId;
 		}
 
-		return array_values(array_unique($principals));
-	}//end principalsFor()
+		return $groups;
+	}//end groupPrincipals()
 
 	/**
 	 * Whether one deny entry names one of these principals.
