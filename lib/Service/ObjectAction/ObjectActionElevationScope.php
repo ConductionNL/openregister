@@ -71,21 +71,6 @@ final class ObjectActionElevationScope {
 	}//end run()
 
 	/**
-	 * Whether a write the person's rights refused may go ahead as the system.
-	 *
-	 * @param string|int|null $schemaId   The schema written to.
-	 * @param string|int|null $registerId The register written to, when the write names one.
-	 * @param string          $verb       `create`, `update` or `delete`.
-	 *
-	 * @return bool True when the open elevation lists it.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
-	 */
-	public static function allows(string|int|null $schemaId, string|int|null $registerId, string $verb): bool {
-		return self::permits(write: new ElevatedWrite(schemaId: $schemaId, registerId: $registerId, verb: $verb));
-	}//end allows()
-
-	/**
 	 * Whether a write the person's rights refused may go ahead as the system; marks the entry used.
 	 *
 	 * @param ElevatedWrite $write The schema, register and verb of the write.

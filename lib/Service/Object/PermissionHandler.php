@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -582,7 +583,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::allows(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action);
+		return ObjectActionElevationScope::permits(
+			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
+		);
 	}//end elevated()
 
 	/**

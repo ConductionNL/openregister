@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -384,14 +385,14 @@ class ObjectActionRunnerTest extends TestCase {
 		$during = null;
 		$this->flows->method('runForAction')->willReturnCallback(
 			function () use (&$during): FlowRun {
-				$during = ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create');
+				$during = ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
 				return $this->flowRun(FlowRun::STATUS_COMPLETED);
 			}
 		);
 
 		$this->assertSame(Http::STATUS_OK, $this->invoke('release')['status']);
 		$this->assertTrue($during, 'the listed write was not elevated during the run');
-		$this->assertFalse(ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create'), 'the elevation outlived the run');
+		$this->assertFalse(ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create')), 'the elevation outlived the run');
 	}//end testAnElevatingActionOpensItsElevationAroundTheBodyOnly()
 
 	public function testARefusedActionNeverOpensItsElevation(): void {
