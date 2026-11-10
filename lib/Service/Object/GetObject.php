@@ -36,9 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
-use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\AppFramework\Db\DoesNotExistException;
-use Psr\Log\LoggerInterface;
 
 /**
  * Handler class for retrieving objects in the OpenRegister application.
@@ -57,20 +55,6 @@ use Psr\Log\LoggerInterface;
 class GetObject
 {
     /**
-     * Registry of object-source providers (virtual schemas).
-     *
-     * @var ObjectSourceRegistry
-     */
-    private readonly ObjectSourceRegistry $objectSourceRegistry;
-
-    /**
-     * Logger for object-source delegation warnings.
-     *
-     * @var LoggerInterface
-     */
-    private readonly LoggerInterface $logger;
-
-    /**
      * Constructor for GetObject handler.
      *
      * @param MagicObjectFinderInterface $objectMapper     Object entity data mapper.
@@ -84,10 +68,8 @@ class GetObject
         private readonly MagicObjectFinderInterface $objectMapper,
         private readonly AuditTrailMapperInterface $auditTrailMapper,
         private readonly ReadHistoryService $readHistory,
-        GetObjectSources $sources
+        private readonly GetObjectSources $sources
     ) {
-        $this->objectSourceRegistry = $sources->objectSourceRegistry;
-        $this->logger = $sources->logger;
     }//end __construct()
 
     /**
@@ -135,9 +117,9 @@ class GetObject
      */
     private function enabledProvider(Schema $schema, array $source): ?object
     {
-        $provider = $this->objectSourceRegistry->get($source['provider']);
+        $provider = $this->sources->objectSourceRegistry->get($source['provider']);
         if ($provider === null || $provider->isEnabled() === false) {
-            $this->logger->warning(
+            $this->sources->logger->warning(
                 sprintf(
                     '[ObjectSource] schema "%s" declares object-source provider "%s" but it is missing or disabled — returning empty result',
                     (string) $schema->getSlug(),

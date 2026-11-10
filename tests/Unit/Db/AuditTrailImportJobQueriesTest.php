@@ -94,9 +94,7 @@ class AuditTrailImportJobQueriesTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$db,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class))
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 	}
 

@@ -117,7 +117,7 @@ class FlowDefinitionPinGoldenTest extends TestCase {
 
 		$canonical = $this->pin->canonicalise(flow: $this->flow());
 		$this->mapper->expects($this->exactly(3))->method('store')
-			->with($canonical['hash'], $canonical['json'], 'f-2')
+			->with($this->callback(static fn (FlowDefinition $d): bool => [$d->getHash(), $d->getDefinition(), $d->getFlowUuid()] === [$canonical['hash'], $canonical['json'], 'f-2']))
 			->willReturnOnConsecutiveCalls(
 				$this->throwException(new RuntimeException('disk full')),
 				null,

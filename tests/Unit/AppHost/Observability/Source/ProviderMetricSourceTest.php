@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
+use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
@@ -55,7 +56,7 @@ class ProviderMetricSourceTest extends TestCase {
 		$locator = $this->createMock(AppContainerLocator::class);
 		$locator->method('findOr')->with('shillinq', $fallback)->willReturn($this->appContainer);
 
-		$this->source = new ProviderMetricSource($fallback, $locator, $this->logger);
+		$this->source = new ProviderMetricSource(new AppProviderResolver($fallback, $locator), $this->logger);
 	}
 
 	private function descriptor(): MetricDescriptor {

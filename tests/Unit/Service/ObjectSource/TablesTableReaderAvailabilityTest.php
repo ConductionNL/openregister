@@ -45,7 +45,7 @@ class TablesTableReaderAvailabilityTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->expects($this->never())->method('get');
 
-		$this->assertFalse((new TablesTableReader(appManager: $failing, container: $container, logger: new NullLogger()))->isAvailable());
-		$this->assertFalse((new TablesTableReader(appManager: $disabled, container: $container, logger: new NullLogger()))->isAvailable());
+		$this->assertFalse((new TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $failing, container: $container, logger: new NullLogger())))->isAvailable());
+		$this->assertFalse((new TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $disabled, container: $container, logger: new NullLogger())))->isAvailable());
 	}//end testAnUnanswerableAppManagerMeansUnavailable()
 }//end class

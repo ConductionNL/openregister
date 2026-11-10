@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\AuditTrail;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
@@ -40,9 +42,14 @@ final class AuditTrailMapperServicesTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$logger = new NullLogger();
 
-		$bundle = new AuditTrailMapperServices($container, $logger);
+		$session = $this->createMock(IUserSession::class);
+		$request = $this->createMock(IRequest::class);
+
+		$bundle = new AuditTrailMapperServices($container, $logger, $session, $request);
 
 		$this->assertSame($container, $bundle->container);
 		$this->assertSame($logger, $bundle->logger);
+		$this->assertSame($session, $bundle->userSession);
+		$this->assertSame($request, $bundle->request);
 	}//end testItHandsBackTheServicesItWasBuiltWith()
 }//end class
