@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Service\SchemaImport\SourceUpdate;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaInterface;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
@@ -284,9 +285,11 @@ class SchemaImportController extends Controller {
 
 		try {
 			return $this->importService->previewUpdateFromSource(
-				importSource: $this->importSourceOf(schema: $schema),
-				currentProperties: $schema->getProperties(),
-				resolvedConflicts: array_values(array_filter($resolveConflicts, 'is_string'))
+				update: new SourceUpdate(
+					importSource: $this->importSourceOf(schema: $schema),
+					currentProperties: $schema->getProperties(),
+					resolvedConflicts: array_values(array_filter($resolveConflicts, 'is_string'))
+				)
 			);
 		} catch (SchemaImportException $e) {
 			return $this->importFailure(e: $e);

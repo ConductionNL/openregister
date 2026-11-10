@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\SchemaImport;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\SchemaImport\SourceUpdate;
 use OCA\OpenRegister\Service\SchemaImport\BundledImporters;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
@@ -106,10 +107,7 @@ class SchemaImportServiceRegistryTest extends TestCase {
 		$service = $this->service();
 		$service->register($this->importer('fake', 'v1'));
 
-		$preview = $service->previewUpdateFromSource(
-			['dialect' => 'fake', 'reference' => 'Thing', 'baseline' => 'corrupt'],
-			['name' => ['type' => 'string']]
-		);
+		$preview = $service->previewUpdateFromSource(new SourceUpdate(['dialect' => 'fake', 'reference' => 'Thing', 'baseline' => 'corrupt'], ['name' => ['type' => 'string']]));
 
 		$this->assertSame(['dialect' => 'fake', 'reference' => 'Thing'], $preview['incomingSource']);
 		$this->assertSame(['@type' => 'Thing'], $preview['jsonld']);
