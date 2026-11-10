@@ -66,6 +66,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 
 /**
  * Catalog and CRUD endpoints for flows.
@@ -1391,15 +1392,17 @@ class FlowController extends Controller {
 		try {
 			$version = $this->flowVersionService->publish(
 				flow: $flow,
-				// From FlowAccess, which already holds the session — a second
-				// IUserSession here would push this constructor past the
-				// parameter limit for one string.
-				publishedBy: $this->access->currentUser()?->getUID(),
-				// The author may RAISE the derived verdict and never lower it.
-				// A refusal to call a removal minor is an
-				// UnexpectedValueException rather than a lifecycle refusal:
-				// the flow's state is fine, the request is not.
-				bump: $this->request->getParam('bump')
+				options: new FlowPublishOptions(
+					// From FlowAccess, which already holds the session — a second
+					// IUserSession here would push this constructor past the
+					// parameter limit for one string.
+					publishedBy: $this->access->currentUser()?->getUID(),
+					// The author may RAISE the derived verdict and never lower it.
+					// A refusal to call a removal minor is an
+					// UnexpectedValueException rather than a lifecycle refusal:
+					// the flow's state is fine, the request is not.
+					bump: $this->request->getParam('bump')
+				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
 			return $this->refusal(refusal: $e);

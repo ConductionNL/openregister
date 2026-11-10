@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener;
 use OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleAuditTrail;
@@ -327,7 +328,8 @@ abstract class ManifestScheduleHarness extends TestCase {
 	private function flowVersionService(): FlowVersionService&MockObject {
 		$versions = $this->createMock(FlowVersionService::class);
 		$versions->method('publish')->willReturnCallback(
-			function (Flow $flow, ?string $by): FlowVersion {
+			function (Flow $flow, FlowPublishOptions $options): FlowVersion {
+				$by = $options->publishedBy;
 				$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
 				$this->published[] = [(string)$flow->getUuid(), $by];
 				return new FlowVersion();

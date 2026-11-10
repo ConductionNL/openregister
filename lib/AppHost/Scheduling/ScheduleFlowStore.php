@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 
 /**
  * Reads, writes and removes the flows compiled from one application's schedules.
@@ -162,7 +163,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 		$this->validator->validate(flow: $flow);
 
 		$stored = $this->mapper->insert($flow);
-		$this->versions->publish(flow: $stored, publishedBy: $compiled->release->publisher);
+		$this->versions->publish(flow: $stored, options: new FlowPublishOptions(publishedBy: $compiled->release->publisher));
 	}//end create()
 
 	/**
@@ -181,6 +182,6 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 		$compiled->applyTo(flow: $stored);
 		$this->validator->validate(flow: $stored);
 		$this->mapper->update($stored);
-		$this->versions->publish(flow: $stored, publishedBy: $compiled->release->publisher);
+		$this->versions->publish(flow: $stored, options: new FlowPublishOptions(publishedBy: $compiled->release->publisher));
 	}//end republish()
 }//end class

@@ -462,7 +462,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 		}
 
 		try {
-			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow, publishedBy: null);
+			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow);
 		} catch (Throwable $e) {
 			$this->warnUnpublished(flow: $flow, wording: self::unpublishedWording(kind: 'versionOne', error: $e));
 		}
