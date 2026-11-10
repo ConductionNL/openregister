@@ -1698,7 +1698,7 @@ class ImportHandlerTest extends TestCase {
 		$connectorSvc = $this->getMockBuilder(\stdClass::class)
 			->addMethods(['importConfiguration'])
 			->getMock();
-		$connectorSvc->method('importConfiguration')
+		$connectorSvc->expects($this->once())->method('importConfiguration')
 			->willThrowException(new Exception('Connector unavailable'));
 
 		$this->handler->setOpenConnectorConfigurationService($connectorSvc);
@@ -1711,6 +1711,7 @@ class ImportHandlerTest extends TestCase {
 		);
 
 		$this->assertIsArray($result);
+		$this->assertSame([], $result['schemas']);
 
 	}//end testImportFromJsonContinuesWhenOpenConnectorThrows()
 

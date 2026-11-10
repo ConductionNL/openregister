@@ -91,9 +91,14 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class => [
-			'router'          => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager'      => \OCP\App\IAppManager::class,
-			'l10n'            => \OCP\IL10N::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
@@ -118,10 +123,15 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::class => [
-			'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'logger'  => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-openproject/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class => [
@@ -234,9 +244,14 @@ final class BuiltinIntegrationServices {
 		// @spec openspec/specs/integration-talk/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class => [
 			'container'      => self::CONTAINER,
-			'appManager'     => \OCP\App\IAppManager::class,
+			'description'    => [
+				\OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription::class,
+				[
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'userSession'    => \OCP\IUserSession::class,
-			'l10n'           => \OCP\IL10N::class,
 			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-talk/spec.md
@@ -273,9 +288,8 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-activity/spec.md
 		\OCA\OpenRegister\Service\ActivityFilterService::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'db'      => \OCP\IDBConnection::class,
+			'runtime' => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\FlowLinkService::class => [
@@ -415,26 +429,41 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class => [
 			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
 			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
-			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
-			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+			'runs'            => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 			'userSession'     => \OCP\IUserSession::class,
 			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class => [
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
-			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+			'runs'           => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 			'validateObject' => \OCA\OpenRegister\Service\Object\ValidateObject::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationService::class => [
-			'planner'        => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
-			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
-			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
+			'planner' => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
+			'runs'    => [
+				\OCA\OpenRegister\Service\Schema\SchemaPopulationRuns::class,
+				[
+					'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
+					'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class,
+					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
+				],
+			],
 		],
 	];
 

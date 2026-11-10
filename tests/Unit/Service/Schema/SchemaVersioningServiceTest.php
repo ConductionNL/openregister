@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
@@ -48,8 +49,7 @@ class SchemaVersioningServiceTest extends TestCase {
 		$this->service = new SchemaVersioningService(
 			new SchemaDiffService(),
 			$this->changelogMapper,
-			$this->runMapper,
-			$this->runEntryMapper,
+			new SchemaPopulationRuns($this->runMapper, $this->runEntryMapper, $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			$userSession,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -80,15 +80,17 @@ class SchemaVersioningServiceTest extends TestCase {
 	}
 
 	public function testGatePassesOnAcknowledgedBreaking(): void {
+		$this->expectNotToPerformAssertions();
+
 		$cs = new SchemaChangeSet([['property' => 'email', 'kind' => 'removed']], SchemaChangeSet::CLASS_BREAKING, 'major');
 		$this->service->gateChange(1, new SchemaChangeRecord($cs, true));
-		$this->addToAssertionCount(1);
 	}
 
 	public function testGatePassesOnCompatible(): void {
+		$this->expectNotToPerformAssertions();
+
 		$cs = new SchemaChangeSet([['property' => 'x', 'kind' => 'added']], SchemaChangeSet::CLASS_COMPATIBLE, 'minor');
 		$this->service->gateChange(1, new SchemaChangeRecord($cs, false));
-		$this->addToAssertionCount(1);
 	}
 
 	public function testGate409CarriesChangesAndInvalidCount(): void {

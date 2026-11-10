@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterfac
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayerInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationScope;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewServiceInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
@@ -443,9 +444,11 @@ class ConfigurationDeploymentController extends Controller {
 		return new JSONResponse(
 			data: $this->explainer->explain(
 				configKey: $configKey,
-				register: $this->optional(key: 'register'),
-				bundle: $this->optional(key: 'bundle'),
-				subject: $this->optional(key: 'subject')
+				scope: new ConfigurationScope(
+					register: $this->optional(key: 'register'),
+					bundle: $this->optional(key: 'bundle'),
+					subject: $this->optional(key: 'subject')
+				)
 			)
 		);
 
