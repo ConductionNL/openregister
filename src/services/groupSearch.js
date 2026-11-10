@@ -73,6 +73,25 @@ function offerGroups(vm, groups) {
 }
 
 /**
+ * Fetch the groups matching a search and offer them on the picker; a refused
+ * answer is logged when the search asks for it.
+ *
+ * @param {object} vm The component: `availableGroups` and `selectedGroups`.
+ * @param {{query: string, toGroup: Function, warnOnRefusal: boolean}} search The query, how a group id becomes a picker option, and whether a refused answer is logged.
+ * @return {Promise<void>}
+ */
+async function searchAndOffer(vm, search) {
+	const response = await fetchGroupsMatching(search.query)
+	if (response.ok) {
+		const data = await response.json()
+		offerGroups(vm, foundGroups(data, search.toGroup))
+	} else if (search.warnOnRefusal) {
+		// eslint-disable-next-line no-console
+		console.warn('Failed to search groups:', response.statusText)
+	}
+}
+
+/**
  * Query the Nextcloud groups matching a search and offer them on the picker.
  *
  * @param {object} vm The component: `availableGroups`, `selectedGroups` and `loadingGroups`.
@@ -82,14 +101,7 @@ function offerGroups(vm, groups) {
 async function runGroupSearch(vm, search) {
 	vm.loadingGroups = true
 	try {
-		const response = await fetchGroupsMatching(search.query)
-		if (response.ok) {
-			const data = await response.json()
-			offerGroups(vm, foundGroups(data, search.toGroup))
-		} else if (search.warnOnRefusal) {
-			// eslint-disable-next-line no-console
-			console.warn('Failed to search groups:', response.statusText)
-		}
+		await searchAndOffer(vm, search)
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error('Error searching Nextcloud groups:', error)
