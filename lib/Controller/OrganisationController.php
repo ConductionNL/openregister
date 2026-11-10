@@ -33,6 +33,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\MembershipChangeRun;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
 use OCA\OpenRegister\Db\Organisation;
@@ -52,6 +53,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -74,6 +76,46 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class OrganisationController extends Controller {
+
+	/**
+	 * The refusal of a join or leave for another user, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_REFUSALS = [
+		MembershipChangeRun::JOIN => 'Only admins or organisation owners may enroll other users',
+		MembershipChangeRun::LEAVE => 'Only admins or organisation owners may remove other users',
+	];
+
+	/**
+	 * The error of a join or leave the service declined, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_FAILURES = [
+		MembershipChangeRun::JOIN => 'Failed to join organisation',
+		MembershipChangeRun::LEAVE => 'Failed to leave organisation',
+	];
+
+	/**
+	 * The log message of a join or leave that threw, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_FAILURE_LOGS = [
+		MembershipChangeRun::JOIN => '[OrganisationController] Failed to join organisation',
+		MembershipChangeRun::LEAVE => '[OrganisationController] Failed to leave organisation',
+	];
+
+	/**
+	 * How the failure log names the caller acting for themselves, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_LOG_CALLER = [
+		MembershipChangeRun::JOIN => 'current_user',
+		MembershipChangeRun::LEAVE => 'current-user',
+	];
 
 	/**
 	 * Organisation service for business logic
@@ -478,69 +520,21 @@ class OrganisationController extends Controller {
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function join(string $uuid): JSONResponse {
+		$run = new MembershipChangeRun(operation: MembershipChangeRun::JOIN, uuid: $uuid);
 		try {
 			// Get optional userId from request body.
 			$requestData = $this->request->getParams();
-			$userId = $requestData['userId'] ?? null;
-
-			// Authorization: enrolling another user is privileged. A caller may
-			// only enroll themselves; admins or organisation owners may enroll
-			// arbitrary users. This blocks the cross-user enroll vector where
-			// any authenticated user could otherwise add anyone (incl. admins)
-			// to an organisation whose UUID they know.
-			$currentUser = $this->userSession->getUser();
-			if ($currentUser === null) {
-				return new JSONResponse(
-					data: ['error' => 'Not authenticated'],
-					statusCode: Http::STATUS_UNAUTHORIZED
-				);
-			}
-
-			if ($userId !== null && $userId !== $currentUser->getUID()
-				&& $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
-			) {
-				return new JSONResponse(
-					data: ['error' => 'Only admins or organisation owners may enroll other users'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
+			$run->userId = $requestData['userId'] ?? null;
+			$refusal = $this->membershipRefusal(run: $run);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
 			// Join organisation with optional userId parameter.
-			$success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $userId);
-
-			if ($success === true) {
-				return new JSONResponse(
-					data: [
-						'message' => 'Successfully joined organisation',
-					],
-					statusCode: Http::STATUS_OK
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to join organisation',
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			$success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $run->userId);
+			return self::membershipOutcome(run: $run, success: $success);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[OrganisationController] Failed to join organisation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'userId' => $requestData['userId'] ?? 'current_user',
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->membershipFailure(run: $run, error: $e);
 		}//end try
 	}//end join()
 
@@ -558,76 +552,172 @@ class OrganisationController extends Controller {
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function leave(string $uuid): JSONResponse {
+		$run = new MembershipChangeRun(operation: MembershipChangeRun::LEAVE, uuid: $uuid);
 		try {
 			// Check if a specific userId is provided in the request body.
 			$data = $this->request->getParams();
-			$userId = $data['userId'] ?? null;
-
-			// Authorization: removing another user from an organisation is
-			// privileged. A caller may only remove themselves; admins or
-			// organisation owners may remove arbitrary users. This blocks the
-			// cross-user removal vector where any authenticated user could
-			// otherwise kick anyone (incl. admins) out of an organisation
-			// whose UUID they know.
-			$currentUser = $this->userSession->getUser();
-			if ($currentUser === null) {
-				return new JSONResponse(
-					data: ['error' => 'Not authenticated'],
-					statusCode: Http::STATUS_UNAUTHORIZED
-				);
+			$run->userId = $data['userId'] ?? null;
+			$refusal = $this->membershipRefusal(run: $run);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
-			if ($userId !== null && $userId !== $currentUser->getUID()
-				&& $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
-			) {
-				return new JSONResponse(
-					data: ['error' => 'Only admins or organisation owners may remove other users'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
-			}
-
-			$success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $userId);
-
-			if ($success === true) {
-				$message = 'Successfully left organisation';
-				if ($userId !== null) {
-					$message = 'Successfully removed user from organisation';
-				}
-
-				return new JSONResponse(
-					data: [
-						'message' => $message,
-					],
-					statusCode: Http::STATUS_OK
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to leave organisation',
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			$success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $run->userId);
+			return self::membershipOutcome(run: $run, success: $success);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[OrganisationController] Failed to leave organisation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'userId' => $userId ?? 'current-user',
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->membershipFailure(run: $run, error: $e);
 		}//end try
 	}//end leave()
+
+	/**
+	 * The refusal of a join or leave, or null when the caller may make it.
+	 *
+	 * Authorization: enrolling another user into, or removing another user
+	 * from, an organisation is privileged. A caller may only act for
+	 * themselves; admins or organisation owners may act for arbitrary users.
+	 * This blocks the cross-user vectors where any authenticated user could
+	 * otherwise add anyone (incl. admins) to, or kick anyone out of, an
+	 * organisation whose UUID they know.
+	 *
+	 * @param MembershipChangeRun $run The join or leave.
+	 *
+	 * @return JSONResponse|null 401 without a session, 403 for another user without the right, else null.
+	 */
+	private function membershipRefusal(MembershipChangeRun $run): ?JSONResponse {
+		$currentUser = $this->userSession->getUser();
+		if ($currentUser === null) {
+			return self::notAuthenticatedResponse();
+		}
+
+		if ($this->actsForAnotherUserWithoutRight(run: $run, caller: $currentUser) === true) {
+			return new JSONResponse(
+				data: ['error' => self::MEMBERSHIP_REFUSALS[$run->operation]],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return null;
+	}//end membershipRefusal()
+
+	/**
+	 * The answer to a caller without a session.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function notAuthenticatedResponse(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Not authenticated'],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end notAuthenticatedResponse()
+
+	/**
+	 * Whether the change is for another user and the caller may not manage the organisation's members.
+	 *
+	 * @param MembershipChangeRun $run    The join or leave.
+	 * @param IUser               $caller The signed-in caller.
+	 *
+	 * @return bool
+	 */
+	private function actsForAnotherUserWithoutRight(MembershipChangeRun $run, IUser $caller): bool {
+		return $run->userId !== null && $run->userId !== $caller->getUID()
+			&& $this->canManageOrganisationMembers(organisationUuid: $run->uuid) === false;
+	}//end actsForAnotherUserWithoutRight()
+
+	/**
+	 * The answer to a join or leave the service accepted or declined.
+	 *
+	 * @param MembershipChangeRun $run     The join or leave.
+	 * @param bool                $success Whether the service made the change.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function membershipOutcome(MembershipChangeRun $run, bool $success): JSONResponse {
+		if ($success === true) {
+			return new JSONResponse(
+				data: [
+					'message' => self::membershipSuccessMessage(run: $run),
+				],
+				statusCode: Http::STATUS_OK
+			);
+		}
+
+		return self::membershipDeclined(run: $run);
+	}//end membershipOutcome()
+
+	/**
+	 * The answer to a join or leave the service declined.
+	 *
+	 * @param MembershipChangeRun $run The join or leave.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function membershipDeclined(MembershipChangeRun $run): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => self::MEMBERSHIP_FAILURES[$run->operation],
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end membershipDeclined()
+
+	/**
+	 * The success message of a join or leave.
+	 *
+	 * @param MembershipChangeRun $run The join or leave.
+	 *
+	 * @return string
+	 */
+	private static function membershipSuccessMessage(MembershipChangeRun $run): string {
+		if ($run->operation === MembershipChangeRun::JOIN) {
+			return 'Successfully joined organisation';
+		}
+
+		if ($run->userId !== null) {
+			return 'Successfully removed user from organisation';
+		}
+
+		return 'Successfully left organisation';
+	}//end membershipSuccessMessage()
+
+	/**
+	 * Log a failed join or leave and answer it with the error.
+	 *
+	 * @param MembershipChangeRun $run   The join or leave.
+	 * @param Exception           $error The failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private function membershipFailure(MembershipChangeRun $run, Exception $error): JSONResponse {
+		$this->logger->error(
+			message: self::MEMBERSHIP_FAILURE_LOGS[$run->operation],
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $run->uuid,
+				'userId' => $run->userId ?? self::MEMBERSHIP_LOG_CALLER[$run->operation],
+				'error' => $error->getMessage(),
+			]
+		);
+
+		return self::errorResponse(error: $error);
+	}//end membershipFailure()
+
+	/**
+	 * A 400 answer carrying an exception's message.
+	 *
+	 * @param Exception $error The failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function errorResponse(Exception $error): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $error->getMessage(),
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end errorResponse()
 
 	/**
 	 * Get organisation details by UUID
