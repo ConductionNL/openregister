@@ -183,7 +183,6 @@ class ObjectGrantsReportTest extends TestCase {
 
 		$report = new ObjectGrantsReport(
 			sources: new GrantReportSources(accessReport: $accessReport, shares: $shareReader, inherited: $lister, rules: new GrantRuleFit($matcher)),
-			scopeResolver: new ObjectScopeResolver(),
 			directory: new PrincipalDirectory(userManager: $users, groupManager: $groups)
 		);
 

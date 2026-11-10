@@ -56,19 +56,31 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	private const SHARE_BIT_VERBS = ['read', 'update', 'create', 'delete'];
 
 	/**
+	 * The owning group; stateless, so it is built in place.
+	 *
+	 * @var ObjectScopeResolver
+	 */
+	private readonly ObjectScopeResolver $scopeResolver;
+
+	/**
+	 * Extension verbs and the inheritable flag of a share; stateless, so it is built in place.
+	 *
+	 * @var ShareGrantAttributes
+	 */
+	private readonly ShareGrantAttributes $attributes;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param GrantReportSources   $sources       The access report, the object's shares, its ancestors' shares and the rule fit.
-	 * @param ObjectScopeResolver  $scopeResolver The owning group.
-	 * @param PrincipalDirectory   $directory     User and group display names.
-	 * @param ShareGrantAttributes $attributes    Extension verbs and the inheritable flag of a share.
+	 * @param GrantReportSources $sources   The access report, the object's shares, its ancestors' shares and the rule fit.
+	 * @param PrincipalDirectory $directory User and group display names.
 	 */
 	public function __construct(
 		private readonly GrantReportSources $sources,
-		private readonly ObjectScopeResolver $scopeResolver,
 		private readonly PrincipalDirectory $directory,
-		private readonly ShareGrantAttributes $attributes = new ShareGrantAttributes(),
 	) {
+		$this->scopeResolver = new ObjectScopeResolver();
+		$this->attributes = new ShareGrantAttributes();
 	}//end __construct()
 
 	/**

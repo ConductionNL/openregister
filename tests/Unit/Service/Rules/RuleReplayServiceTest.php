@@ -36,8 +36,6 @@ use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
-use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -93,8 +91,6 @@ class RuleReplayServiceTest extends TestCase {
 
 		return new RuleInventoryService(
 			summaries: $summaries,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 	}//end inventory()

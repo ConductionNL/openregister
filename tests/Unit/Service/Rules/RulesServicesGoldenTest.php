@@ -67,7 +67,6 @@ use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
-use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
 use OCP\IAppConfig;
@@ -174,8 +173,6 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		return new RuleInventoryService(
 			summaries: $summaries,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: $published)
 		);
 	}//end inventory()
