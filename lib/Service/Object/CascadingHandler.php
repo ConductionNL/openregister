@@ -200,7 +200,7 @@ class CascadingHandler {
 	private function cascadeItem(mixed $item, CascadeTarget $target): array {
 		if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
 			// A failed create keeps the item, so the list does not come out empty.
-			return [$this->createFor(objectData: $item, target: $target) ?? $item];
+			return [$this->createRelatedObject(objectData: $item, target: $target) ?? $item];
 		}
 
 		if (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
@@ -220,30 +220,11 @@ class CascadingHandler {
 	 */
 	private function cascadeNested(mixed $value, CascadeTarget $target): mixed {
 		if (is_array($value) === true && $this->utilityHandler->isUuid($value) === false) {
-			return $this->createFor(objectData: $value, target: $target) ?? $value;
+			return $this->createRelatedObject(objectData: $value, target: $target) ?? $value;
 		}
 
 		return $value;
 	}//end cascadeNested()
-
-	/**
-	 * Create one nested object under the target's parent.
-	 *
-	 * @param array         $objectData The nested object.
-	 * @param CascadeTarget $target     The parent and the property definition.
-	 *
-	 * @return string|null The created uuid, or null when the create failed.
-	 *
-	 * @throws NotAuthorizedException When the caller may not create objects in the target schema.
-	 */
-	private function createFor(array $objectData, CascadeTarget $target): ?string {
-		return $this->createRelatedObject(
-			objectData: $objectData,
-			definition: $target->definition(),
-			parentUuid: $target->parentUuid,
-			currentRegister: $target->register
-		);
-	}//end createFor()
 
 	/**
 	 * Create one nested object under the target; a failure other than a refused right is logged and answers null.
@@ -368,10 +349,9 @@ class CascadingHandler {
 	 * This method creates a nested object with an inverse relationship to the parent.
 	 * It resolves the schema from the property definition and sets the inversedBy field.
 	 *
-	 * @param array $objectData Object data to create.
-	 * @param array $definition Property definition containing schema reference.
-	 * @param string $parentUuid UUID of the parent object.
-	 * @param int|null $currentRegister Current register ID (nullable for seedData).
+	 * @param array         $objectData Object data to create.
+	 * @param CascadeTarget $target     The parent (its uuid and register, nullable for seedData)
+	 *                                  and the property definition containing the schema reference.
 	 *
 	 * @return string|null UUID of created object or null if creation failed.
 	 *
@@ -379,9 +359,7 @@ class CascadingHandler {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function createRelatedObject(array $objectData, array $definition, string $parentUuid, ?int $currentRegister): ?string {
-		$target = (new CascadeTarget(parentUuid: $parentUuid, register: $currentRegister))->with(definition: $definition);
-
+	public function createRelatedObject(array $objectData, CascadeTarget $target): ?string {
 		return $this->createUnder(objectData: $objectData, target: $target);
 	}//end createRelatedObject()
 

@@ -202,10 +202,12 @@ class ObjectCalendarFeedService {
 		$events = $this->collectEvents(objects: $objects, timeZone: $timeZone);
 
 		return $this->writer->calendar(
-			calendarName: $scope['name'],
-			timeZone: $timeZone,
-			componentLines: $events['lines'],
-			years: new CalendarYearSpan(fromYear: min($events['years']), toYear: max($events['years']))
+			contents: new CalendarContents(
+				calendarName: $scope['name'],
+				timeZone: $timeZone,
+				componentLines: $events['lines'],
+				years: new CalendarYearSpan(fromYear: min($events['years']), toYear: max($events['years']))
+			)
 		);
 	}//end renderAsCurrentUser()
 
@@ -228,28 +230,32 @@ class ObjectCalendarFeedService {
 				continue;
 			}
 
-			$events = $this->addObjectEvents(events: $events, object: $object, timeZone: $timeZone);
+			$added = $this->objectEvents(object: $object, timeZone: $timeZone);
+			$events['lines'] = array_merge($events['lines'], $added['lines']);
+			$events['years'] = array_merge($events['years'], $added['years']);
 		}
 
 		return $events;
 	}//end collectEvents()
 
 	/**
-	 * Append the events of every date one object declares.
+	 * The events of every date one object declares.
 	 *
-	 * @param array{lines: array<int, string>, years: array<int, int>} $events The events so far.
 	 * @param ObjectEntity $object The publishable object.
 	 * @param DateTimeZone $timeZone The tenant zone.
 	 *
-	 * @return array{lines: array<int, string>, years: array<int, int>} The events with the object's added.
+	 * @return array{lines: array<int, string>, years: array<int, int>} The object's lines and years.
 	 */
-	private function addObjectEvents(array $events, ObjectEntity $object, DateTimeZone $timeZone): array {
+	private function objectEvents(ObjectEntity $object, DateTimeZone $timeZone): array {
+		$events = ['lines' => [], 'years' => []];
 		foreach ($this->declarationsFor(object: $object) as $declaration) {
 			$event = $this->eventBuilder->build(
-				object: $object,
-				schemaId: (string)$object->getSchema(),
-				declaration: $declaration,
-				timeZone: $timeZone
+				occurrence: new ObjectDateOccurrence(
+					object: $object,
+					schemaId: (string)$object->getSchema(),
+					declaration: $declaration,
+					timeZone: $timeZone
+				)
 			);
 
 			if ($event === null) {
@@ -261,7 +267,7 @@ class ObjectCalendarFeedService {
 		}
 
 		return $events;
-	}//end addObjectEvents()
+	}//end objectEvents()
 
 	/**
 	 * Resolve what a token covers: one schema, or one saved view.

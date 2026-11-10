@@ -71,19 +71,33 @@ class FileVersioningHandler {
 	private readonly ContainerInterface $container;
 
 	/**
+	 * User session for current user context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for FileVersioningHandler.
 	 *
 	 * @param FileVersionsPlatform $platform    The root folder, the app manager and the container the versions manager is resolved from.
-	 * @param IUserSession         $userSession User session for current user context.
-	 * @param LoggerInterface      $logger      Logger for logging operations.
+	 * @param FileSession          $session     The user session and logger.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		FileVersionsPlatform $platform,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		FileSession $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 		$this->rootFolder = $platform->rootFolder;
 		$this->appManager = $platform->appManager;
 		$this->container = $platform->container;
