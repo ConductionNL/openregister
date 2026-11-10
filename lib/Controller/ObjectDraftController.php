@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -161,6 +162,17 @@ class ObjectDraftController extends Controller {
 	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
 	public function activate(string $register, string $schema, string $id): JSONResponse {
+		return $this->activateForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end activate()
+
+	/**
+	 * activate() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The activated object, or the refusal.
+	 */
+	private function activateForObject(ObjectRef $ref): JSONResponse {
 		$user = $this->session->getUser();
 		if ($user === null) {
 			return $this->notSignedIn();
@@ -169,13 +181,13 @@ class ObjectDraftController extends Controller {
 		// Through the RBAC boundary first: a record the caller may not read
 		// answers the same 404 an unknown id gets, so this endpoint cannot be
 		// used to probe which ids exist.
-		$draft = $this->readableDraft(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+		$draft = $this->readableDraft(route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 		if ($draft === null) {
 			return $this->notFound();
 		}
 
 		return $this->activateFor(draft: $draft, user: $user);
-	}//end activate()
+	}//end activateForObject()
 
 	/**
 	 * The register and schema of a draft the caller may read, or null when it is unknown or not readable.
