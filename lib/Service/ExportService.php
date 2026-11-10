@@ -1320,7 +1320,7 @@ class ExportService implements ObjectExporterInterface {
 		}
 
 		if (is_bool($value) === true) {
-			return $value === true ? 'true' : 'false';
+			return var_export($value, true);
 		}
 
 		if (is_scalar($value) === true) {
