@@ -1827,3 +1827,4 @@
 2026-11-10T10:13:25Z integrator-20261110T083641-bf44b7c8 DEV-MOVED before push; rebuild
 2026-11-10T10:13:47Z precheck-20261110T063022-b9b347f5 GREEN tree 576594bd33 on dev 60b7dd3615 prs 1 front=skip: Tests: 54804, Assertions: 181031, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T10:13:59Z precheck-20261110T063543-bf60aaeb GREEN tree afba410d2b on dev 60b7dd3615 prs 1 front=skip: Tests: 54804, Assertions: 181028, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-10T10:14:16Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8617 79133840
