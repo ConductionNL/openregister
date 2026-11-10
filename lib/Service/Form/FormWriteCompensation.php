@@ -51,16 +51,14 @@ final readonly class FormWriteCompensation {
 	/**
 	 * Delete the writes this submit made before a later one was refused, and record it.
 	 *
-	 * @param array<int, array{plan: array<string, mixed>, object: ObjectEntity}> $created  The writes made.
-	 * @param string                                                             $failedAt The write that was refused.
-	 * @param Throwable                                                          $reason   Why.
+	 * @param array<int, array{plan: array<string, mixed>, object: ObjectEntity}> $created The writes made.
+	 * @param FormSubmitFailure                                                  $failure The write that was refused, and why.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
-	public function compensate(array $created, string $failedAt, Throwable $reason): void {
-		$failure = new FormSubmitFailure(failedAt: $failedAt, reason: $reason);
+	public function compensate(array $created, FormSubmitFailure $failure): void {
 		foreach (array_reverse($created) as $done) {
 			$this->undo(done: $done, failure: $failure);
 		}
