@@ -29,6 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Rbac\LinkProtection;
+use OCA\OpenRegister\Service\Rbac\LinkInvitation;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\MapperBackedSchemaCatalog;
 use OCA\OpenRegister\Controller\ObjectSharingController;
 use OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices;
@@ -195,8 +199,8 @@ class ObjectSharingControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testCreateShareDefaultsToUserAndRead(): void {
-		$this->sharing->expects($this->once())->method('grant')
-			->with($this->isInstanceOf(ObjectEntity::class), 'user', '', 1)
+		$this->sharing->expects($this->once())->method('grantWithTerms')
+			->with($this->isInstanceOf(ObjectEntity::class), new GrantRequest(type: 'user', shareWith: '', terms: new GrantTerms(permissions: 1)))
 			->willReturn(['id' => '5']);
 
 		$this->assertOutcome(201, ['id' => '5'], $this->controller($this->object())->createShare('r', 's', 'x'));
@@ -204,7 +208,7 @@ class ObjectSharingControllerA24GoldenTest extends TestCase {
 
 	public function testCreateShareOutcomes(): void {
 		$this->params = ['type' => 'group', 'shareWith' => 'staff', 'permissions' => '15'];
-		$this->sharing->method('grant')->with($this->anything(), 'group', 'staff', 15)->willReturnOnConsecutiveCalls(
+		$this->sharing->method('grantWithTerms')->with($this->anything(), new GrantRequest(type: 'group', shareWith: 'staff', terms: new GrantTerms(permissions: 15)))->willReturnOnConsecutiveCalls(
 			['id' => '6'],
 			$this->throwException(new NotAuthorizedException('Only the owner')),
 			$this->throwException(new \InvalidArgumentException('Bad type')),
@@ -220,7 +224,7 @@ class ObjectSharingControllerA24GoldenTest extends TestCase {
 
 	public function testCreateLinkOutcomes(): void {
 		$this->params = ['password' => '  ', 'expiration' => '2030-01-01'];
-		$this->sharing->method('createLink')->with($this->anything(), 1, null, '2030-01-01')->willReturnOnConsecutiveCalls(
+		$this->sharing->method('createLink')->with($this->anything(), new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: '2030-01-01')))->willReturnOnConsecutiveCalls(
 			['token' => 't'],
 			$this->throwException(new NotAuthorizedException('Only the owner')),
 			$this->throwException(new \InvalidArgumentException('Bad expiry')),
@@ -237,7 +241,7 @@ class ObjectSharingControllerA24GoldenTest extends TestCase {
 
 	public function testInviteByEmailOutcomes(): void {
 		$this->params = ['email' => 'a@example.org', 'permissions' => 3, 'password' => 'pw'];
-		$this->sharing->method('inviteByEmail')->with($this->anything(), 'a@example.org', 3, 'pw', null)->willReturnOnConsecutiveCalls(
+		$this->sharing->method('inviteByEmail')->with($this->anything(), new LinkInvitation(recipient: 'a@example.org', permissions: 3, protection: new LinkProtection(password: 'pw', expiration: null)))->willReturnOnConsecutiveCalls(
 			['id' => 'i'],
 			$this->throwException(new NotAuthorizedException('Only the owner')),
 			$this->throwException(new \InvalidArgumentException('Bad email')),
