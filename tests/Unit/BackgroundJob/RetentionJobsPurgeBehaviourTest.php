@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\BackgroundJob\ProcessingLogRetentionJob;
@@ -60,7 +61,7 @@ class RetentionJobsPurgeBehaviourTest extends TestCase {
 		$entries->method('deleteCreatedBefore')->willReturn($deleted);
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueString')->willReturn('P1Y');
-		return new ProcessingLogRetentionJob($this->time(), new ProcessingLogRetentionStores($entries, $audit), $config, $logger);
+		return new ProcessingLogRetentionJob(new ConfiguredJobRuntime($this->time(), $config, $logger), new ProcessingLogRetentionStores($entries, $audit));
 	}
 
 	public function testAPurgeThatCannotBeRecordedIsLoggedWithItsFigures(): void {

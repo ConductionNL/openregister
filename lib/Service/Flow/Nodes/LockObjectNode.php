@@ -375,12 +375,26 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	public function execute(array $items, array $config, array $context): array {
 		// An empty firing must not suspend the whole run. After a route, the
 		// un-taken branch is marked and its steps still fire with zero items.
-		if ($items === []) {
-			return $items;
+		if ($items !== []) {
+			$this->validateConfig(config: $config);
+			$this->lockTargets(run: new LockStepRun(items: $items, config: $config, context: $context, resume: $this->resumeSlot(context: $context)));
 		}
 
-		$this->validateConfig(config: $config);
+		// Returning normally clears the slot, so a later re-entry of this node
+		// starts a fresh budget, which is correct: it is a different wait.
+		return $items;
+	}//end execute()
 
+	/**
+	 * This node's resume slot; a lock step cannot wait without one.
+	 *
+	 * @param array<string, mixed> $context The run context.
+	 *
+	 * @return FlowNodeResumeState
+	 *
+	 * @throws RuntimeException When the run provided no slot.
+	 */
+	private function resumeSlot(array $context): FlowNodeResumeState {
 		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		if ($resume instanceof FlowNodeResumeState === false) {
 			// Without a slot the node cannot remember its deadline, so every
@@ -390,49 +404,82 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			);
 		}
 
-		$runUuid = $this->lockContext->runUuid(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_RUN));
-		$owner = $this->lockContext->owner(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_IDENTITY));
-		$targets = $this->lockContext->targets(items: $items, config: $config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET));
+		return $resume;
+	}//end resumeSlot()
 
-		$duration = $this->seconds(config: $config, key: 'duration', default: self::DEFAULT_DURATION);
-		$process = trim((string)($config['process'] ?? ''));
-		if ($process === '') {
-			$process = sprintf('flow run %s', $runUuid);
-		}
-
-		$deadline = $this->deadline(resume: $resume, config: $config);
-
+	/**
+	 * Take the lock on every target, or park the run on the first contended one.
+	 *
+	 * @param LockStepRun $run The firing: items, configuration, run context and resume slot.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowSuspension When a lock is contended and the budget remains.
+	 * @throws RuntimeException When the budget is spent, or the step cannot act.
+	 */
+	private function lockTargets(LockStepRun $run): void {
+		$hold = $this->holdFor(run: $run);
+		$targets = $this->lockContext->targets(items: $run->items, config: $run->config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET));
+		$deadline = $this->deadline(run: $run);
 		foreach ($targets as $uuid) {
-			try {
-				$this->objects->runAs(
-					$owner,
-					fn (): array => $this->objects->lockObject(
-						identifier: $uuid,
-						process: $process,
-						duration: $duration,
-						advisory: false,
-						runUuid: $runUuid,
-						nodeId: $resume->nodeId()
-					)
-				);
-			} catch (Throwable $e) {
-				$this->parkOrGiveUp(
-					resume: $resume,
-					deadline: $deadline,
-					uuid: $uuid,
-					cause: $e
-				);
-			}//end try
+			$this->lockOne(hold: $hold, attempt: new LockAttempt(resume: $run->resume, deadline: $deadline, uuid: $uuid));
 		}
 
 		// Every target is held. Only now, with the lock actually taken, is the
 		// object something the run can honestly say it is working on.
-		$this->recordSubject(targets: $targets, config: $config, context: $context);
+		$this->recordSubject(run: $run, targets: $targets);
+	}//end lockTargets()
 
-		// Returning normally clears the slot, so a later re-entry of this node
-		// starts a fresh budget, which is correct: it is a different wait.
-		return $items;
-	}//end execute()
+	/**
+	 * Who takes the lock, for which run and process, and for how long.
+	 *
+	 * @param LockStepRun $run The firing.
+	 *
+	 * @return LockHold
+	 *
+	 * @throws RuntimeException When the run did not identify itself or has no acting identity.
+	 */
+	private function holdFor(LockStepRun $run): LockHold {
+		$runUuid = $this->lockContext->runUuid(context: $run->context, refusal: $this->l10n->t(self::REFUSE_NO_RUN));
+		$owner = $this->lockContext->owner(context: $run->context, refusal: $this->l10n->t(self::REFUSE_NO_IDENTITY));
+		$process = trim((string)($run->config['process'] ?? ''));
+		if ($process === '') {
+			$process = sprintf('flow run %s', $runUuid);
+		}
+
+		$duration = self::seconds(raw: ($run->config['duration'] ?? null), default: self::DEFAULT_DURATION);
+
+		return new LockHold(owner: $owner, runUuid: $runUuid, process: $process, duration: $duration);
+	}//end holdFor()
+
+	/**
+	 * Take one lock as the run's acting identity, or park or fail on contention.
+	 *
+	 * @param LockHold    $hold    Who takes it, for which run and process, for how long.
+	 * @param LockAttempt $attempt The target, the resume slot and the wait deadline.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowSuspension When the lock is contended and the budget remains.
+	 * @throws RuntimeException When the budget is spent.
+	 */
+	private function lockOne(LockHold $hold, LockAttempt $attempt): void {
+		try {
+			$this->objects->runAs(
+				$hold->owner,
+				fn (): array => $this->objects->lockObject(
+					identifier: $attempt->uuid,
+					process: $hold->process,
+					duration: $hold->duration,
+					advisory: false,
+					runUuid: $hold->runUuid,
+					nodeId: $attempt->resume->nodeId()
+				)
+			);
+		} catch (Throwable $e) {
+			$this->parkOrGiveUp(attempt: $attempt, cause: $e);
+		}
+	}//end lockOne()
 
 	/**
 	 * Record the locked object under the role its author named.
@@ -448,23 +495,22 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * A task attaching to this role is anchored by uuid alone, which is what
 	 * the inbox and the sidebar match on.
 	 *
-	 * @param array<int, string>   $targets The uuids this step locked.
-	 * @param array<string, mixed> $config  The step configuration.
-	 * @param array<string, mixed> $context The run context.
+	 * @param LockStepRun        $run     The firing: its configuration and run context.
+	 * @param array<int, string> $targets The uuids this step locked.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function recordSubject(array $targets, array $config, array $context): void {
+	private function recordSubject(LockStepRun $run, array $targets): void {
 		// The empty role is NOT guarded here. Recording is opt-in and the
 		// recorder enforces that, so a second guard would be a second copy of
 		// one rule — and this class is at its complexity budget, which is the
 		// concrete cost of keeping the copy.
 		$this->subjects?->recordOne(
-			context: $context,
+			context: $run->context,
 			candidates: new FlowSubjectCandidates(
-				role: (string)($config['subjectRole'] ?? ''),
+				role: (string)($run->config['subjectRole'] ?? ''),
 				uuids: array_values(array_unique($targets))
 			)
 		);
@@ -474,42 +520,35 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Park the run and retry, or fail because the budget is spent.
 	 *
-	 * @param FlowNodeResumeState $resume This node's resume slot.
-	 * @param DateTime $deadline The absolute wait deadline.
-	 * @param string $uuid The contended object.
-	 * @param Throwable $cause Why the acquire failed.
+	 * @param LockAttempt $attempt The contended object, this node's resume slot and the absolute wait deadline.
+	 * @param Throwable   $cause   Why the acquire failed.
 	 *
 	 * @return void
 	 *
 	 * @throws FlowSuspension To park the run.
 	 * @throws RuntimeException When the budget is spent.
 	 */
-	private function parkOrGiveUp(
-		FlowNodeResumeState $resume,
-		DateTime $deadline,
-		string $uuid,
-		Throwable $cause,
-	): void {
+	private function parkOrGiveUp(LockAttempt $attempt, Throwable $cause): void {
 		$now = new DateTime();
-		if ($now >= $deadline) {
+		if ($now >= $attempt->deadline) {
 			// Fail, naming the holder. Do NOT break the lock and do NOT
 			// proceed: proceeding is the data race the lock exists to stop.
 			throw new RuntimeException(
 				$this->l10n->t(
 					'Waited as long as allowed for object %s, and it is still locked: %s',
-					[$uuid, $cause->getMessage()]
+					[$attempt->uuid, $cause->getMessage()]
 				),
 				0,
 				$cause
 			);
 		}
 
-		$attempts = ((int)$resume->get(self::SLOT_ATTEMPTS, 0) + 1);
-		$resume->set(self::SLOT_ATTEMPTS, $attempts);
+		$attempts = ((int)$attempt->resume->get(self::SLOT_ATTEMPTS, 0) + 1);
+		$attempt->resume->set(self::SLOT_ATTEMPTS, $attempts);
 
 		throw new FlowSuspension(
-			resumeAt: $this->nextAttemptAt(attempts: $attempts, deadline: $deadline),
-			reason: sprintf('waiting for a lock on %s', $uuid)
+			resumeAt: $this->nextAttemptAt(attempts: $attempts, deadline: $attempt->deadline),
+			reason: sprintf('waiting for a lock on %s', $attempt->uuid)
 		);
 	}//end parkOrGiveUp()
 
@@ -542,13 +581,12 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * The absolute wait deadline, stamped ONCE on the first attempt.
 	 *
-	 * @param FlowNodeResumeState $resume This node's resume slot.
-	 * @param array $config The step configuration.
+	 * @param LockStepRun $run The firing: this node's resume slot and the step configuration.
 	 *
 	 * @return DateTime The deadline.
 	 */
-	private function deadline(FlowNodeResumeState $resume, array $config): DateTime {
-		$stored = $resume->get(self::SLOT_DEADLINE, '');
+	private function deadline(LockStepRun $run): DateTime {
+		$stored = $run->resume->get(self::SLOT_DEADLINE, '');
 		if (is_string($stored) === true && trim($stored) !== '') {
 			try {
 				return new DateTime($stored);
@@ -560,9 +598,9 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			}
 		}
 
-		$wait = $this->seconds(config: $config, key: 'waitSeconds', default: self::DEFAULT_WAIT_SECONDS);
+		$wait = self::seconds(raw: ($run->config['waitSeconds'] ?? null), default: self::DEFAULT_WAIT_SECONDS);
 		$stamp = (new DateTime())->modify('+' . $wait . ' seconds')->format('c');
-		$resume->set(self::SLOT_DEADLINE, $stamp);
+		$run->resume->set(self::SLOT_DEADLINE, $stamp);
 
 		// Return the value as PERSISTED, not as computed. `format('c')` drops
 		// sub-second precision, so the deadline this attempt compares against
@@ -575,14 +613,12 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Read a positive integer from the config.
 	 *
-	 * @param array $config The step configuration.
-	 * @param string $key The key to read.
-	 * @param int $default The fallback.
+	 * @param mixed $raw     The configured value.
+	 * @param int   $default The fallback.
 	 *
 	 * @return int The value.
 	 */
-	private function seconds(array $config, string $key, int $default): int {
-		$raw = ($config[$key] ?? null);
+	private static function seconds(mixed $raw, int $default): int {
 		if (is_numeric($raw) === false || (int)$raw < 1) {
 			return $default;
 		}

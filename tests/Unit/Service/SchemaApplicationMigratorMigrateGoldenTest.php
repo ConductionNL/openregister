@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\SchemaApplicationMigrator;
+use OCA\OpenRegister\Service\ApplicationMove;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -25,9 +26,9 @@ use PHPUnit\Framework\TestCase;
 class SchemaApplicationMigratorMigrateGoldenTest extends TestCase {
 
 	public function testInvalidArgumentsRefuseWithoutLookups(): void {
-		$migrator = $this->createPartialMock(SchemaApplicationMigrator::class, ['collidingSlugs', 'moveApplication']);
+		$migrator = $this->createPartialMock(SchemaApplicationMigrator::class, ['collidingSlugs', 'moveTable']);
 		$migrator->expects($this->never())->method('collidingSlugs');
-		$migrator->expects($this->never())->method('moveApplication');
+		$migrator->expects($this->never())->method('moveTable');
 		$expected = ['ok' => false, 'reason' => 'invalid-arguments', 'collisions' => [], 'schemas' => 0, 'registers' => 0];
 		$this->assertSame($expected, $migrator->migrate('', 'b'));
 		$this->assertSame($expected, $migrator->migrate('a', ''));
@@ -35,9 +36,9 @@ class SchemaApplicationMigratorMigrateGoldenTest extends TestCase {
 	}//end testInvalidArgumentsRefuseWithoutLookups()
 
 	public function testCollisionsRefuseWithoutMoving(): void {
-		$migrator = $this->createPartialMock(SchemaApplicationMigrator::class, ['collidingSlugs', 'moveApplication']);
+		$migrator = $this->createPartialMock(SchemaApplicationMigrator::class, ['collidingSlugs', 'moveTable']);
 		$migrator->method('collidingSlugs')->with('a', 'b')->willReturn(['person']);
-		$migrator->expects($this->never())->method('moveApplication');
+		$migrator->expects($this->never())->method('moveTable');
 		$this->assertSame(
 			['ok' => false, 'reason' => 'collisions', 'collisions' => ['person'], 'schemas' => 0, 'registers' => 0],
 			$migrator->migrate('a', 'b')
@@ -45,12 +46,12 @@ class SchemaApplicationMigratorMigrateGoldenTest extends TestCase {
 	}//end testCollisionsRefuseWithoutMoving()
 
 	public function testMovesSchemasThenRegisters(): void {
-		$migrator = $this->createPartialMock(SchemaApplicationMigrator::class, ['collidingSlugs', 'moveApplication']);
+		$migrator = $this->createPartialMock(SchemaApplicationMigrator::class, ['collidingSlugs', 'moveTable']);
 		$migrator->method('collidingSlugs')->willReturn([]);
 		$calls = [];
-		$migrator->method('moveApplication')->willReturnCallback(
-			function (string $table, string $from, string $to) use (&$calls): int {
-				$calls[] = [$table, $from, $to];
+		$migrator->method('moveTable')->willReturnCallback(
+			function (string $table, ApplicationMove $move) use (&$calls): int {
+				$calls[] = [$table, $move->from, $move->to];
 				return count($calls) * 2;
 			}
 		);

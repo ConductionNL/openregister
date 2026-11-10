@@ -105,12 +105,14 @@ final class ProcessingPurposeControllerTest extends TestCase {
 		$registry->method('boundActivity')->willReturn($bound);
 
 		return new ProcessingPurposeController(
-			'openregister',
 			$request,
-			$purposes,
-			$registry,
-			($audit ?? $this->createMock(AuditTrailMapper::class)),
-			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->session($uid), $this->groupManager($admin), $this->createMock(\Psr\Log\LoggerInterface::class)));
+			new \OCA\OpenRegister\Controller\Support\ProcessingPurposeControllerServices(
+				$purposes,
+				$registry,
+				($audit ?? $this->createMock(AuditTrailMapper::class)),
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($this->session($uid), $this->groupManager($admin), $this->createMock(\Psr\Log\LoggerInterface::class)),
+			)
+		);
 	}//end controller()
 
 	public function testAnyAuthenticatedCallerMaySeeThePurposesItCouldName(): void {

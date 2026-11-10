@@ -42,10 +42,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Service\Configuration\AppSettingsAccess;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Resolves the active credential-store leaf (Doriath preferred, vault fallback).
@@ -121,18 +119,15 @@ class CredentialStoreResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager Probes whether the doriath app is enabled.
-	 * @param IAppConfig $appConfig Holds OR's Doriath self-registration state.
-	 * @param CredentialStoreLeaves $leaves The Doriath leaf (selected when eligible) and the NC-vault leaf (fallback).
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param CredentialStoreLeaves $leaves   The Doriath leaf (selected when eligible) and the NC-vault leaf (fallback).
+	 * @param AppSettingsAccess     $settings Probes whether the doriath app is enabled, holds OR's Doriath
+	 *                                        self-registration state, and takes secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
-		private readonly IAppConfig $appConfig,
 		private readonly CredentialStoreLeaves $leaves,
-		private readonly LoggerInterface $logger,
+		private readonly AppSettingsAccess $settings,
 	) {
 	}//end __construct()
 
@@ -159,13 +154,13 @@ class CredentialStoreResolver {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	public function isDoriathEligible(): bool {
-		if (FleetAppId::isEnabledForUser($this->appManager, self::CREDENTIAL_APP) === false) {
+		if (FleetAppId::isEnabledForUser($this->settings->appManager, self::CREDENTIAL_APP) === false) {
 			return false;
 		}
 
 		foreach ($this->doriathServiceClasses() as $className) {
 			if (class_exists($className) === false) {
-				$this->logger->debug(
+				$this->settings->logger->debug(
 					'[CredentialStoreResolver] Doriath ineligible: service class missing',
 					['service' => $className]
 				);
@@ -176,7 +171,7 @@ class CredentialStoreResolver {
 		$secretServiceClass = $this->secretServiceClass();
 		foreach (self::REQUIRED_SEAM_METHODS as $method) {
 			if (method_exists($secretServiceClass, $method) === false) {
-				$this->logger->debug(
+				$this->settings->logger->debug(
 					'[CredentialStoreResolver] Doriath ineligible: application-scoped seam method missing',
 					['method' => $method]
 				);
@@ -195,12 +190,12 @@ class CredentialStoreResolver {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function isSelfRegistered(): bool {
-		$applicationId = $this->appConfig->getValueString(
+		$applicationId = $this->settings->appConfig->getValueString(
 			'openregister',
 			DoriathCredentialStore::APP_CONFIG_APPLICATION_ID,
 			''
 		);
-		$publicPem = $this->appConfig->getValueString(
+		$publicPem = $this->settings->appConfig->getValueString(
 			'openregister',
 			DoriathCredentialStore::APP_CONFIG_PUBLIC_KEY_PEM,
 			''

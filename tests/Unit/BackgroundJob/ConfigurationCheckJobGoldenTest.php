@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob;
 use OCA\OpenRegister\BackgroundJob\Support\ConfigurationCheckServices;
@@ -119,10 +120,8 @@ class ConfigurationCheckJobGoldenTest extends TestCase {
 		};
 
 		return new ConfigurationCheckJob(
-			$this->createMock(ITimeFactory::class),
-			new ConfigurationCheckServices($this->mapper, $this->service, $this->notifications),
-			$appConfig,
-			$logger
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $logger),
+			new ConfigurationCheckServices($this->mapper, $this->service, $this->notifications)
 		);
 	}//end job()
 

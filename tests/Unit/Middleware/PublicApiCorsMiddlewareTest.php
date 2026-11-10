@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
+use OCA\OpenRegister\Middleware\InboundCall;
 use OCA\OpenRegister\Middleware\PublicApiCorsMiddleware;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCP\AppFramework\Controller;
@@ -29,7 +30,9 @@ use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Utility\IControllerMethodReflector;
 use OCP\IAppConfig;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\PublicApiCorsMiddleware
@@ -66,7 +69,7 @@ class PublicApiCorsMiddlewareTest extends TestCase {
 			}
 		);
 
-		$middleware = new PublicApiCorsMiddleware($request, $reflector, new HardeningPolicy($appConfig));
+		$middleware = new PublicApiCorsMiddleware(new InboundCall($request, $this->createMock(IUserSession::class), $reflector, $this->createMock(LoggerInterface::class)), new HardeningPolicy($appConfig));
 
 		return $middleware->afterController(
 			$this->createMock(Controller::class),
