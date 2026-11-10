@@ -22,9 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 
 /**
  * The stores a render reads registers, schemas and objects from.
@@ -35,17 +33,13 @@ final class RenderMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param MagicMapperInterface         $objectEntityMapper The object store.
-	 * @param RegisterMapperInterface      $registerMapper     The register store.
-	 * @param SchemaMapperInterface        $schemaMapper       The schema store.
-	 * @param CacheHandlerInterface        $objectCacheService The object cache.
+	 * @param SchemaCatalogInterface $catalog            The register, schema and object stores.
+	 * @param CacheHandlerInterface  $objectCacheService The object cache.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
-		public readonly MagicMapperInterface $objectEntityMapper,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly CacheHandlerInterface $objectCacheService,
 	) {
 	}//end __construct()

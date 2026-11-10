@@ -175,7 +175,7 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Create the SaveObjects handler with mocked dependencies.
 		$this->saveObjectsHandler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->mockObjectMapper, schemaMapper: $this->mockSchemaMapper, registerMapper: $this->mockRegisterMapper, saveHandler: $this->mockSaveHandler),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->mockRegisterMapper, schemas: $this->mockSchemaMapper, tables: $this->mockObjectMapper), saveHandler: $this->mockSaveHandler),
 			session: new BulkSaveSession(userSession: $this->mockUserSession, organisationService: $this->mockOrganisationService),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks()
