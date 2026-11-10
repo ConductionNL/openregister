@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -176,12 +177,12 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		$settings = $this->createMock(SettingsService::class);
 		$settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => ($case['audit'] ?? true)]);
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrail')->willReturnCallback(function (?ObjectEntity $old = null, ?ObjectEntity $new = null): AuditTrail {
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(function (?ObjectEntity $old = null, ?ObjectEntity $new = null): AuditTrail {
 			$this->trace[] = ['audit', $old?->getObject(), $new?->getObject()];
 			$log = $this->createMock(AuditTrail::class);
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
 			return $log;
-		});
+		}));
 		$files = $this->createMock(FilePropertyHandler::class);
 		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
 		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName): void {

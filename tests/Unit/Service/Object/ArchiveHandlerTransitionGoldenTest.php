@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -73,12 +74,12 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 			}
 		);
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrail')->willReturnCallback(
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
 			function (?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail {
 				$this->events[] = 'audit:' . $action;
 				return new AuditTrail();
 			}
-		);
+		));
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('checkPermission')->willReturnCallback(
 			function (Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true, ?ObjectEntity $object=null): void {

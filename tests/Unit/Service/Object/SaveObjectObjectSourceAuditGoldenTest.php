@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
@@ -185,7 +186,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 
 		$rows = [];
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrail')->willReturnCallback(
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
 			function (?ObjectEntity $old, ?ObjectEntity $new, string $action) use (&$rows, $auditFails) {
 				$rows[] = [$old?->getUuid(), $new?->getUuid(), $action];
 				if ($auditFails === true) {
@@ -194,7 +195,7 @@ final class SaveObjectObjectSourceAuditGoldenTest extends TestCase {
 
 				return new \OCA\OpenRegister\Db\AuditTrail();
 			}
-		);
+		));
 
 		$reflection = new ReflectionClass(SaveObject::class);
 		$service = $reflection->newInstanceWithoutConstructor();

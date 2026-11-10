@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportResult;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
@@ -129,12 +130,12 @@ class EdepotTransferServiceGoldenTest extends TestCase {
 		);
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrail')->willReturnCallback(
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
 			function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
 				$this->calls[] = ['audit', $old?->getUuid(), $new?->getUuid(), $action];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$records = $this->createMock(TransferRecordService::class);
 		$records->method('createProof')->willReturnCallback(
