@@ -116,34 +116,53 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-an-author-may-raise-the-verdict-and-never-lower-it
 	 */
 	public function reconcile(string $derived, ?string $requested, string $removed = ''): string {
-		$asked = strtolower(trim((string)$requested));
+		$asked = self::askedBump(requested: $requested);
 		if ($asked === '') {
 			return $derived;
 		}
 
-		if ($asked === FlowGraphDiff::MAJOR) {
-			return FlowGraphDiff::MAJOR;
+		if ($asked === FlowGraphDiff::MINOR && $derived === FlowGraphDiff::MAJOR) {
+			throw self::notMinor(removed: $removed);
 		}
 
-		if ($asked !== FlowGraphDiff::MINOR) {
+		return $asked;
+	}//end reconcile()
+
+	/**
+	 * The bump the author asked for: '', `major` or `minor`.
+	 *
+	 * @param string|null $requested What the author asked for, or null.
+	 *
+	 * @return string The normalised bump, '' when none was asked.
+	 *
+	 * @throws UnexpectedValueException When the request is neither major nor minor.
+	 */
+	private static function askedBump(?string $requested): string {
+		$asked = strtolower(trim((string)$requested));
+		if (in_array($asked, ['', FlowGraphDiff::MAJOR, FlowGraphDiff::MINOR], true) === false) {
 			throw new UnexpectedValueException(
 				sprintf('A version bump is "major" or "minor"; "%s" is neither.', (string)$requested)
 			);
 		}
 
-		if ($derived === FlowGraphDiff::MAJOR) {
-			$detail = $removed;
-			if ($detail === '') {
-				$detail = 'Something a consumer could depend on was removed.';
-			}
+		return $asked;
+	}//end askedBump()
 
-			throw new UnexpectedValueException(
-				'This publish cannot be minor. ' . $detail
-			);
+	/**
+	 * The refusal of a minor bump over a removal the diff found.
+	 *
+	 * @param string $removed A summary of what was removed, or ''.
+	 *
+	 * @return UnexpectedValueException
+	 */
+	private static function notMinor(string $removed): UnexpectedValueException {
+		$detail = $removed;
+		if ($detail === '') {
+			$detail = 'Something a consumer could depend on was removed.';
 		}
 
-		return FlowGraphDiff::MINOR;
-	}//end reconcile()
+		return new UnexpectedValueException('This publish cannot be minor. ' . $detail);
+	}//end notMinor()
 
 	/**
 	 * The sequence a back-fill assigns: 1.0.0, 1.1.0, 1.2.0, …
@@ -195,21 +214,37 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 		?string $previousSemver,
 		?string $requested
 	): string {
-		if ($publishedGraph === null) {
+		$revision = new FlowGraphRevision(published: $publishedGraph, candidate: $candidateGraph, previousSemver: $previousSemver);
+
+		return $this->versionFor(revision: $revision, requested: $requested);
+	}//end forPublish()
+
+	/**
+	 * The semantic version a publish of this revision stores.
+	 *
+	 * @param FlowGraphRevision $revision  The live graph, the candidate, and the last semantic version.
+	 * @param string|null       $requested `major`, `minor`, or null.
+	 *
+	 * @return string The semantic version to store.
+	 *
+	 * @throws UnexpectedValueException When the author asked to call a removal minor.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
+	 */
+	private function versionFor(FlowGraphRevision $revision, ?string $requested): string {
+		if ($revision->published === null) {
 			return self::FIRST;
 		}
 
-		$comparison = $this->diff->compare(published: $publishedGraph, candidate: $candidateGraph);
-
+		$comparison = $this->diff->compare(published: $revision->published, candidate: $revision->candidate);
 		$verdict = $this->reconcile(
 			derived: $comparison['verdict'],
 			requested: $requested,
 			removed: $this->diff->summarise(diff: $comparison)
 		);
 
-		return $this->next(previous: $previousSemver, verdict: $verdict);
-
-	}//end forPublish()
+		return $this->next(previous: $revision->previousSemver, verdict: $verdict);
+	}//end versionFor()
 
 	/**
 	 * What publishing WOULD do, without doing it.
@@ -241,7 +276,20 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
 	 */
 	public function preview(?array $publishedGraph, array $candidateGraph, ?string $previousSemver): array {
-		if ($publishedGraph === null) {
+		return $this->previewOf(revision: new FlowGraphRevision(published: $publishedGraph, candidate: $candidateGraph, previousSemver: $previousSemver));
+	}//end preview()
+
+	/**
+	 * The preview of one revision: verdict, next number and what was removed.
+	 *
+	 * @param FlowGraphRevision $revision The live graph, the candidate, and the last semantic version.
+	 *
+	 * @return array<string, mixed> The preview, shaped as {@see preview()} documents.
+	 *
+	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
+	 */
+	private function previewOf(FlowGraphRevision $revision): array {
+		if ($revision->published === null) {
 			// Nothing to have broken. The first publish is not "minor over
 			// nothing", it is the first publish, and saying so is the
 			// difference between a number and an explanation.
@@ -256,11 +304,11 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 			];
 		}
 
-		$comparison = $this->diff->compare(published: $publishedGraph, candidate: $candidateGraph);
+		$comparison = $this->diff->compare(published: $revision->published, candidate: $revision->candidate);
 
 		return [
 			'verdict'      => $comparison['verdict'],
-			'next'         => $this->next(previous: $previousSemver, verdict: $comparison['verdict']),
+			'next'         => $this->next(previous: $revision->previousSemver, verdict: $comparison['verdict']),
 			'removed'      => $this->diff->summarise(diff: $comparison),
 			'removedNodes' => $comparison['removedNodes'],
 			'removedEdges' => $comparison['removedEdges'],
@@ -268,7 +316,7 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 			'first'        => false,
 		];
 
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * Read a semantic version into its three components.

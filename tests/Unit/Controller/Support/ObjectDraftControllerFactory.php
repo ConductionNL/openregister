@@ -18,7 +18,7 @@ final class ObjectDraftControllerFactory {
 	/**
 	 * The constructor arguments of ObjectDraftController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objects Constructor argument.
 	 * @param RegisterMapper $registers Constructor argument.
@@ -42,7 +42,6 @@ final class ObjectDraftControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\ObjectDraftDomain(

@@ -224,12 +224,14 @@ final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectActionIdentity  $identity The key, label, description and icon.
-	 * @param ObjectActionOffer     $offer    The surfaces, inputs and precondition.
-	 * @param ObjectActionBody      $run      The body kind, body, mode and `next` hint.
-	 * @param ObjectActionRunPolicy $policy   The confirmation, elevations and reversibility.
+	 * @param ObjectActionPresentation $presentation The key, label, description and icon; the surfaces, inputs and precondition.
+	 * @param ObjectActionExecution    $execution    The body kind, body, mode and `next` hint; the confirmation, elevations and reversibility.
 	 */
-	private function __construct(ObjectActionIdentity $identity, ObjectActionOffer $offer, ObjectActionBody $run, ObjectActionRunPolicy $policy) {
+	private function __construct(ObjectActionPresentation $presentation, ObjectActionExecution $execution) {
+		$identity          = $presentation->identity;
+		$offer             = $presentation->offer;
+		$run               = $execution->run;
+		$policy            = $execution->policy;
 		$this->key         = $identity->key;
 		$this->label       = $identity->label;
 		$this->description = $identity->description;
@@ -258,14 +260,15 @@ final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
 	public static function fromDeclaration(string $key, array $definition): self {
-		return new self(
+		$presentation = new ObjectActionPresentation(
 			identity: ObjectActionDeclarationReader::identity(key: $key, definition: $definition),
-			offer: ObjectActionDeclarationReader::offer(definition: $definition),
-			run: ObjectActionDeclarationReader::body(definition: $definition),
-			policy: ObjectActionDeclarationReader::policy(
-				definition: $definition,
-				elevate: ObjectActionElevation::entriesOf(definition: $definition)
-			)
+			offer: ObjectActionDeclarationReader::offer(definition: $definition)
+		);
+		$policy       = ObjectActionDeclarationReader::policy(definition: $definition, elevate: ObjectActionElevation::entriesOf(definition: $definition));
+
+		return new self(
+			presentation: $presentation,
+			execution: new ObjectActionExecution(run: ObjectActionDeclarationReader::body(definition: $definition), policy: $policy)
 		);
 	}//end fromDeclaration()
 
@@ -285,7 +288,10 @@ final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 	public static function parse(array $configuration, array $lifecycle = []): array {
 		$definitions = [];
 		foreach (self::declarations(configuration: $configuration) as $key => $definition) {
-			$refusals = ObjectActionShape::refusals(key: $key, definition: $definition, lifecycle: $lifecycle, authorization: null);
+			$refusals = ObjectActionShape::refusals(
+				action: new ObjectActionEntry(key: $key, definition: $definition),
+				rules: new SchemaRules(lifecycle: $lifecycle, authorization: null)
+			);
 			if ($refusals !== []) {
 				continue;
 			}
@@ -312,12 +318,10 @@ final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 			$lifecycle = [];
 		}
 
+		$rules    = new SchemaRules(lifecycle: $lifecycle, authorization: ($authorization ?? []));
 		$refusals = [];
 		foreach (self::declarations(configuration: $configuration) as $key => $definition) {
-			$refusals = array_merge(
-				$refusals,
-				ObjectActionShape::refusals(key: $key, definition: $definition, lifecycle: $lifecycle, authorization: ($authorization ?? []))
-			);
+			$refusals = array_merge($refusals, ObjectActionShape::refusals(action: new ObjectActionEntry(key: $key, definition: $definition), rules: $rules));
 		}
 
 		return $refusals;
@@ -389,12 +393,16 @@ final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
 	public function withoutElevation(): self {
-		return new self(
+		$presentation = new ObjectActionPresentation(
 			identity: new ObjectActionIdentity(key: $this->key, label: $this->label, description: $this->description, icon: $this->icon),
-			offer: new ObjectActionOffer(surfaces: $this->surfaces, inputs: $this->inputs, when: $this->when, whenMessage: $this->whenMessage),
+			offer: new ObjectActionOffer(surfaces: $this->surfaces, inputs: $this->inputs, when: $this->when, whenMessage: $this->whenMessage)
+		);
+		$execution    = new ObjectActionExecution(
 			run: new ObjectActionBody(mode: $this->mode, next: $this->next, kind: $this->kind, body: $this->body),
 			policy: new ObjectActionRunPolicy(confirm: $this->confirm, elevate: [], reversible: $this->reversible)
 		);
+
+		return new self(presentation: $presentation, execution: $execution);
 	}//end withoutElevation()
 
 	/**

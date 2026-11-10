@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCP\IL10N;
@@ -203,7 +204,7 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(user: $user, body: ['a' => 1]);
 		[$register, $schema] = $this->resolves();
 		$activated = new ObjectEntity();
-		$this->activation->expects($this->once())->method('activateAsUser')->with($register, $schema, 'd1', $user, ['a' => 1])->willReturn($activated);
+		$this->activation->expects($this->once())->method('activateAsUser')->with(new DraftAddress(register: $register, schema: $schema, draftId: 'd1'), $user, ['a' => 1])->willReturn($activated);
 		$this->objects->method('renderEntity')->willReturn(['rendered' => true]);
 		$response = $controller->activate('reg', 'sch', 'd1');
 

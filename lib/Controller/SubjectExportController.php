@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
 use OCP\AppFramework\Controller;
@@ -50,16 +51,14 @@ class SubjectExportController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string               $appName The app name.
 	 * @param IRequest             $request The request.
 	 * @param SubjectExportServiceInterface $exports The export service.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly SubjectExportServiceInterface $exports,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()

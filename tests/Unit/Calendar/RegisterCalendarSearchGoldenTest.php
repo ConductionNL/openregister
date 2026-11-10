@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Calendar;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Calendar\CalendarDefinition;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
 use OCA\OpenRegister\Calendar\RegisterCalendarSources;
@@ -30,6 +31,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -135,7 +138,7 @@ class RegisterCalendarSearchGoldenTest extends TestCase {
 
 		$transformer = $this->createMock(CalendarEventTransformer::class);
 		$transformer->method('transform')->willReturnCallback(
-			static function (ObjectEntity $object, Schema $schema, array $config) use ($scenario, &$record): ?array {
+			static function (ObjectEntity $object, CalendarDefinition $calendar) use ($scenario, &$record): ?array {
 				$uuid = (string) $object->getUuid();
 				$record['transformed'][] = $uuid;
 				$name = substr($uuid, -1);
@@ -234,6 +237,7 @@ class RegisterCalendarSearchGoldenTest extends TestCase {
 		string $principalUri,
 		LoggerInterface $logger
 	): RegisterCalendar {
-		return new RegisterCalendar($schema, $config, $principalUri, new RegisterCalendarSources($magicMapper, $registerMapper, $transformer, $logger));
+		$catalog = new SchemaCatalog($registerMapper, $this->createMock(SchemaMapper::class), $magicMapper);
+		return new RegisterCalendar(new CalendarDefinition($schema, $config), $principalUri, new RegisterCalendarSources($catalog, $transformer, $logger));
 	}
 }

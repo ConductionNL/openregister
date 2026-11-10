@@ -48,12 +48,23 @@ trait NcAppLinkRowsProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->rowsOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The rows of the links an object has; none while the backing app is off.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function rowsOf(string $objectId): array {
 		if ($this->isEnabled() === false) {
 			return [];
 		}
 
 		return array_values(array_map(fn (object $link): array => $this->rowFromLink(link: $link), $this->linksOf(objectId: $objectId)));
-	}//end list()
+	}//end rowsOf()
 
 	/**
 	 * The object's link rows.

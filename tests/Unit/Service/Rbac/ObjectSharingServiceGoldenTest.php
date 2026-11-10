@@ -106,9 +106,11 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 		$calls = [
 			'grant group' => fn () => $sharing->grantWithTerms(
 				object: $object,
-				type: 'group',
-				shareWith: ' juristen ',
-				terms: new \OCA\OpenRegister\Service\Rbac\GrantTerms(permissions: 31, verbs: ['read', '', 'read', 'export'])
+				request: new \OCA\OpenRegister\Service\Rbac\GrantRequest(
+					type: 'group',
+					shareWith: ' juristen ',
+					terms: new \OCA\OpenRegister\Service\Rbac\GrantTerms(permissions: 31, verbs: ['read', '', 'read', 'export'])
+				)
 			),
 			'grant user' => fn () => $sharing->grant(object: $object, type: 'user', shareWith: 'tvisser'),
 			'grant bad type' => fn () => $sharing->grant(object: $object, type: 'circle', shareWith: 'x'),

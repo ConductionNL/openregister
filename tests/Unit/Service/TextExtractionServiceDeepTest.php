@@ -56,6 +56,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Files\Service\ChunkSizing;
+use OCA\OpenRegister\Files\Service\SplitLevel;
+use OCA\OpenRegister\Files\Service\SourceStamp;
 
 /**
  * Deep coverage tests for TextExtractionService
@@ -592,7 +594,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 	public function testIsSourceUpToDateForceFalse(): void {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'isSourceUpToDate');
 
-		$result = $method->invoke($this->service, 1, 'file', 1000, true);
+		$result = $method->invoke($this->service, new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 1000), true);
 		$this->assertFalse($result);
 
 	}//end testIsSourceUpToDateForceFalse()
@@ -606,7 +608,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'isSourceUpToDate');
 
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
-		$result = $method->invoke($this->service, 1, 'file', 1000, false);
+		$result = $method->invoke($this->service, new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 1000), false);
 		$this->assertFalse($result);
 
 	}//end testIsSourceUpToDateNoChunks()
@@ -620,7 +622,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'isSourceUpToDate');
 
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(2000);
-		$result = $method->invoke($this->service, 1, 'file', 1000, false);
+		$result = $method->invoke($this->service, new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 1000), false);
 		$this->assertTrue($result);
 
 	}//end testIsSourceUpToDateChunkNewer()
@@ -634,7 +636,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'isSourceUpToDate');
 
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(500);
-		$result = $method->invoke($this->service, 1, 'file', 1000, false);
+		$result = $method->invoke($this->service, new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 1000), false);
 		$this->assertFalse($result);
 
 	}//end testIsSourceUpToDateChunkOlder()
@@ -893,7 +895,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'recursiveSplit');
 
 		$text = str_repeat('a', 500);
-		$result = $method->invoke($this->service, $text, [], new ChunkSizing(200, 20));
+		$result = $method->invoke($this->service, $text, new SplitLevel(separators: [], sizing: new ChunkSizing(200, 20)));
 		$this->assertNotEmpty($result);
 
 	}//end testRecursiveSplitNoSeparators()

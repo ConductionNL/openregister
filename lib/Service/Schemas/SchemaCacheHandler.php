@@ -136,53 +136,22 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	private static array $memoryCache = [];
 
 	/**
-	 * Database connection
-	 *
-	 * Used for persistent cache storage and retrieval.
-	 *
-	 * @var IDBConnection Database connection instance
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * Schema mapper for database operations
-	 *
-	 * Used to load schemas from database when cache misses occur.
-	 *
-	 * @var SchemaMapperInterface Schema mapper instance
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Logger for performance monitoring
-	 *
-	 * Used for logging cache hits, misses, and performance metrics.
-	 *
-	 * @var LoggerInterface Logger instance
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * Initializes handler with database connection, schema mapper, and logger
 	 * for schema caching operations.
 	 *
-	 * @param IDBConnection $db Database connection for persistent cache
+	 * @param IDBConnection         $db           Database connection for persistent cache storage and retrieval
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for loading schemas on cache miss
-	 * @param LoggerInterface $logger Logger for performance monitoring and debugging
+	 * @param LoggerInterface       $logger       Logger for cache hits, misses and performance metrics
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		IDBConnection $db,
-		SchemaMapperInterface $schemaMapper,
-		LoggerInterface $logger,
+		private readonly IDBConnection $db,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly LoggerInterface $logger,
 	) {
-		// Store dependencies for use in handler methods.
-		$this->db = $db;
-		$this->schemaMapper = $schemaMapper;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -205,7 +174,8 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 
 		// Check in-memory cache first.
 		if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
-			$this->debugAbout(message: '[SchemaCacheHandler] Schema cache hit (memory)', line: __LINE__, schemaId: $schemaId);
+			$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+			$this->logger->debug(message: '[SchemaCacheHandler] Schema cache hit (memory)', context: $context);
 			return self::$memoryCache[$cacheKey];
 		}
 
@@ -235,7 +205,8 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 
 		// Store in memory cache for future requests.
 		self::$memoryCache[$cacheKey] = $schema;
-		$this->debugAbout(message: '[SchemaCacheHandler] Schema cache hit (database)', line: __LINE__, schemaId: $schemaId);
+		$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+		$this->logger->debug(message: '[SchemaCacheHandler] Schema cache hit (database)', context: $context);
 		return $schema;
 	}//end schemaFromDatabaseCache()
 
@@ -252,7 +223,8 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 		try {
 			$schema = $this->schemaMapper->find($schemaId);
 			$this->cacheSchema(schema: $schema);
-			$this->debugAbout(message: '[SchemaCacheHandler] Schema loaded from database and cached', line: __LINE__, schemaId: $schemaId);
+			$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+			$this->logger->debug(message: '[SchemaCacheHandler] Schema loaded from database and cached', context: $context);
 			return $schema;
 		} catch (DoesNotExistException $e) {
 			return null;
@@ -306,7 +278,8 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 			$qb->delete(self::CACHE_TABLE)
 				->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
 			$qb->executeStatement();
-			$this->debugAbout(message: '[SchemaCacheHandler] Cleared schema cache', line: __LINE__, schemaId: $schemaId);
+			$context = $this->schemaContext(line: __LINE__, schemaId: $schemaId);
+			$this->logger->debug(message: '[SchemaCacheHandler] Cleared schema cache', context: $context);
 		} catch (Exception $e) {
 			// `warning`, not `error`: this is the same cause as the catch in
 			// invalidateForSchemaChange() and the two used to disagree about
@@ -333,7 +306,8 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 		$schemaId = $schema->getId();
 		$schemaData = $this->serializeSchemaForCache(schema: $schema);
 
-		$this->setCachedData(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA, data: $schemaData, ttl: $ttl);
+		$slot = new SchemaCacheSlot(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
+		$this->setCachedData(row: $this->cacheRow(slot: $slot, data: $schemaData), ttl: $ttl);
 
 		// Store in memory cache.
 		$cacheKey = $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
@@ -358,12 +332,8 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	 */
 	public function cacheSchemaConfiguration(Schema $schema, int $ttl = self::DEFAULT_TTL): void {
 		$configuration = $schema->getConfiguration();
-		$this->setCachedData(
-			schemaId: $schema->getId(),
-			cacheKey: self::CACHE_KEY_CONFIGURATION,
-			data: $configuration,
-			ttl: $ttl
-		);
+		$slot          = new SchemaCacheSlot(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_CONFIGURATION);
+		$this->setCachedData(row: $this->cacheRow(slot: $slot, data: $configuration), ttl: $ttl);
 	}//end cacheSchemaConfiguration()
 
 	/**
@@ -380,7 +350,8 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	 */
 	public function cacheSchemaProperties(Schema $schema, int $ttl = self::DEFAULT_TTL): void {
 		$properties = $schema->getProperties();
-		$this->setCachedData(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_PROPERTIES, data: $properties, ttl: $ttl);
+		$slot       = new SchemaCacheSlot(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_PROPERTIES);
+		$this->setCachedData(row: $this->cacheRow(slot: $slot, data: $properties), ttl: $ttl);
 	}//end cacheSchemaProperties()
 
 	/**
@@ -651,19 +622,6 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	}//end schemaContext()
 
 	/**
-	 * Log a debug message about one schema.
-	 *
-	 * @param string $message  The message.
-	 * @param int    $line     The caller's line.
-	 * @param int    $schemaId The schema ID.
-	 *
-	 * @return void
-	 */
-	private function debugAbout(string $message, int $line, int $schemaId): void {
-		$this->logger->debug(message: $message, context: $this->schemaContext(line: $line, schemaId: $schemaId));
-	}//end debugAbout()
-
-	/**
 	 * Get cached data from database
 	 *
 	 * @param int $schemaId The schema ID
@@ -710,12 +668,27 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	}//end fetchCacheRow()
 
 	/**
+	 * The row that holds one piece of cached data, stamped with the time of writing.
+	 *
+	 * @param SchemaCacheSlot $slot The schema and cache key the data is cached under.
+	 * @param mixed           $data The data to cache.
+	 *
+	 * @return array<string, mixed> The row: schema_id, cache_key, cache_data and now.
+	 */
+	private function cacheRow(SchemaCacheSlot $slot, mixed $data): array {
+		return [
+			'schema_id'  => $slot->schemaId,
+			'cache_key'  => $slot->cacheKey,
+			'cache_data' => json_encode($data),
+			'now'        => new DateTime(),
+		];
+	}//end cacheRow()
+
+	/**
 	 * Set cached data in database
 	 *
-	 * @param int $schemaId The schema ID
-	 * @param string $cacheKey The cache key type
-	 * @param mixed $data The data to cache
-	 * @param int $ttl Cache TTL in seconds
+	 * @param array<string, mixed> $row The row from cacheRow().
+	 * @param int                  $ttl Cache TTL in seconds
 	 *
 	 * @return void
 	 *
@@ -724,13 +697,7 @@ class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Database upsert logic with conditional insert/update
 	 * Insert alternative when update returns zero rows
 	 */
-	private function setCachedData(int $schemaId, string $cacheKey, mixed $data, int $ttl): void {
-		$row = [
-			'schema_id'  => $schemaId,
-			'cache_key'  => $cacheKey,
-			'cache_data' => json_encode($data),
-			'now'        => new DateTime(),
-		];
+	private function setCachedData(array $row, int $ttl): void {
 		// Enforce maximum cache TTL for office environments.
 		$row['expires'] = $this->expiresAt(now: $row['now'], ttl: min($ttl, self::MAX_CACHE_TTL));
 

@@ -27,8 +27,7 @@ namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
-use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -384,12 +383,11 @@ class AutoTransitionSelectorTest extends TestCase {
 			 * Answer true for every rule, without evaluating it.
 			 *
 			 * @param mixed $rule The rule.
-			 * @param LifecycleWrite $write The object, the previous object, the schema slug and the field.
-			 * @param TransitionMove $move The transition name and the states it moves between.
+			 * @param TransitionAttempt $attempt The write and the transition it attempts.
 			 *
 			 * @return bool Always true.
 			 */
-			public function holds(mixed $rule, LifecycleWrite $write, TransitionMove $move): bool {
+			public function holds(mixed $rule, TransitionAttempt $attempt): bool {
 				$this->asked[] = $rule;
 				return true;
 			}

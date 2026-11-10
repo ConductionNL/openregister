@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\DAV\CardDAV\CardDavBackend;
+use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
@@ -87,8 +88,18 @@ class ContactServiceVcardFieldsTest extends TestCase {
 			$this->createMock(IURLGenerator::class)
 		);
 
+		$link = new ContactLink();
+		if ($addressbookId !== null) {
+			$link->setAddressbookId($addressbookId);
+		}
+
+		if ($contactUri !== null) {
+			$link->setContactUri($contactUri);
+		}
+
+		$card = (new ReflectionMethod(ContactService::class, 'cardRefOf'))->invoke($service, $link);
 		$method = new ReflectionMethod(ContactService::class, 'extractVcardFields');
-		$actual = $method->invoke($service, $addressbookId, $contactUri, $contactUid);
+		$actual = $method->invoke($service, $card, $contactUid);
 
 		$this->assertSame($expected, $actual);
 	}//end testExtractVcardFields()

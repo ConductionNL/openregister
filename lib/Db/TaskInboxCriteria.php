@@ -32,11 +32,8 @@ use DateTime;
 /**
  * One inbox read's scope, filters and sort.
  *
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) A criteria value object:
- * one parameter per filter the spec names, all optional. A builder or an
- * array would hide exactly the shape this class exists to make explicit.
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag) isAdmin, sortDescending and openFirst
- * are filter VALUES carried into the WHERE/ORDER BY, not behaviour switches.
+ * Built from its two parts — audience and selection — and flattened onto one
+ * property per filter the spec names, so every predicate reads one field.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
@@ -72,75 +69,156 @@ final class TaskInboxCriteria {
 	public const SORT_CREATED = 'created';
 
 	/**
+	 * The calling user.
+	 *
+	 * @var string
+	 */
+	public readonly string $uid;
+
+	/**
+	 * The caller's group ids.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $groupIds;
+
+	/**
+	 * Whether the caller is an administrator.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $isAdmin;
+
+	/**
+	 * One of the SCOPE_* values.
+	 *
+	 * @var string
+	 */
+	public readonly string $scope;
+
+	/**
+	 * Restrict to these states.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $states;
+
+	/**
+	 * Restrict on terminality, or null for both.
+	 *
+	 * @var bool|null
+	 */
+	public readonly ?bool $isTerminal;
+
+	/**
+	 * Restrict to one priority.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $priority;
+
+	/**
+	 * Restrict to tasks anchored to this object.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $objectUuid;
+
+	/**
+	 * Restrict to the tasks one flow run raised.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $runUuid;
+
+	/**
+	 * Only tasks due strictly before this instant.
+	 *
+	 * @var DateTime|null
+	 */
+	public readonly ?DateTime $overdueAt;
+
+	/**
+	 * Only tasks due at or after this instant.
+	 *
+	 * @var DateTime|null
+	 */
+	public readonly ?DateTime $dueAfter;
+
+	/**
+	 * Only tasks due strictly before this instant.
+	 *
+	 * @var DateTime|null
+	 */
+	public readonly ?DateTime $dueBefore;
+
+	/**
+	 * One of the SORT_* values.
+	 *
+	 * @var string
+	 */
+	public readonly string $sort;
+
+	/**
+	 * Whether to invert the sort.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $sortDescending;
+
+	/**
+	 * Only tasks carrying this kind.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $kind;
+
+	/**
+	 * Whether tasks whose blocker is still open are listed.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $includeBlocked;
+
+	/**
+	 * Whether open tasks sort before finished ones.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $openFirst;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $uid The calling user.
-	 * @param array<int, string> $groupIds The caller's group ids, resolved by
-	 *                                     the SERVICE (the mapper never asks a
-	 *                                     group backend).
-	 * @param bool $isAdmin Whether the caller is an administrator — the one
-	 *                      case visibility is not narrowed.
-	 * @param string $scope One of the SCOPE_* values.
-	 * @param array<int, string> $states Restrict to these states.
-	 * @param bool|null $isTerminal Restrict on terminality, or null for both.
-	 * @param string|null $priority Restrict to one priority.
-	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
-	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
-	 *                             ANCHORS the read the way `objectUuid` does:
-	 *                             the question is what the RUN asked, not what
-	 *                             it asked ME, so the scope narrowing is
-	 *                             dropped. Visibility is not — a caller still
-	 *                             sees only tasks they hold a sanctioned
-	 *                             relationship to, and for a run's own tasks
-	 *                             that relationship is `requester`, which the
-	 *                             engine stamps with the run's acting identity.
-	 * @param DateTime|null $overdueAt When set, only tasks whose `due_at` lies
-	 *                                 strictly before this instant — the
-	 *                                 derived-overdue filter, handed the clock
-	 *                                 by TaskTemporalProjection.
-	 * @param DateTime|null $dueAfter When set, only tasks whose effective
-	 *                                deadline is at or after this instant.
-	 *                                Pairs with `dueBefore` to express a
-	 *                                WINDOW ("due this week"), which
-	 *                                `overdueAt` cannot: that one is
-	 *                                open-ended in the past by design.
-	 * @param DateTime|null $dueBefore When set, only tasks whose effective
-	 *                                 deadline is strictly before this
-	 *                                 instant.
-	 * @param string $sort One of the SORT_* values.
-	 * @param bool $sortDescending Whether to invert the sort.
-	 * @param string|null $kind When set, only tasks carrying this kind. Last
-	 *                          in the list on purpose: every caller names its
-	 *                          arguments, and appending cannot shift one.
-	 * @param bool $includeBlocked When true, tasks whose blocker is still open
-	 *                             are listed too. An object or run anchor
-	 *                             lists them regardless: the case shows what
-	 *                             waits and on what.
-	 * @param bool $openFirst When true, open tasks sort before finished ones,
-	 *                        and the chosen sort orders within each.
+	 * @param TaskInboxAudience       $audience  The caller and the scope of the read.
+	 * @param TaskInboxSelection|null $selection The filters, due window, anchor and sort; the defaults when null.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function __construct(
-		public readonly string $uid,
-		public readonly array $groupIds = [],
-		public readonly bool $isAdmin = false,
-		public readonly string $scope = self::SCOPE_ASSIGNED,
-		public readonly array $states = [],
-		public readonly ?bool $isTerminal = null,
-		public readonly ?string $priority = null,
-		public readonly ?string $objectUuid = null,
-		public readonly ?string $runUuid = null,
-		public readonly ?DateTime $overdueAt = null,
-		public readonly ?DateTime $dueAfter = null,
-		public readonly ?DateTime $dueBefore = null,
-		public readonly string $sort = self::SORT_DUE,
-		public readonly bool $sortDescending = false,
-		public readonly ?string $kind = null,
-		public readonly bool $includeBlocked = false,
-		public readonly bool $openFirst = false,
+		TaskInboxAudience $audience,
+		?TaskInboxSelection $selection = null,
 	) {
+		$selection = ($selection ?? new TaskInboxSelection());
+		$order = $selection->order;
+		$this->uid = $audience->uid;
+		$this->groupIds = $audience->groupIds;
+		$this->isAdmin = $audience->isAdmin;
+		$this->scope = $audience->scope;
+		$this->states = $selection->filter->states;
+		$this->isTerminal = $selection->filter->isTerminal;
+		$this->priority = $selection->filter->priority;
+		$this->objectUuid = $selection->anchor->objectUuid;
+		$this->runUuid = $selection->anchor->runUuid;
+		$this->overdueAt = $selection->window->overdueAt;
+		$this->dueAfter = $selection->window->dueAfter;
+		$this->dueBefore = $selection->window->dueBefore;
+		$this->sort = $order->sort;
+		$this->sortDescending = $order->sortDescending;
+		$this->kind = $selection->filter->kind;
+		$this->includeBlocked = $selection->anchor->includeBlocked;
+		$this->openFirst = $order->openFirst;
 
 	}//end __construct()
 

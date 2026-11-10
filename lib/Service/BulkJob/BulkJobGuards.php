@@ -138,32 +138,53 @@ class BulkJobGuards {
 			return;
 		}
 
-		$ceiling = $this->undoCeiling;
 		$bytes = 0;
 
 		foreach ($objects as $object) {
-			$plan = $action->reversalPlanFor(object: $object, parameters: $parameters);
-			$encoded = json_encode($plan);
-
-			if ($encoded === false) {
+			$size = $this->encodedSize(plan: $action->reversalPlanFor(object: $object, parameters: $parameters));
+			if ($size === null) {
 				continue;
 			}
 
-			$bytes += strlen($encoded);
-
-			if ($bytes <= $ceiling) {
-				continue;
+			$bytes += $size;
+			if ($bytes > $this->undoCeiling) {
+				throw $this->undoCeilingRefusal(objectCount: count($objects));
 			}
-
-			throw new BulkJobRefusedException(
-				message: 'This instance stores at most '.$ceiling.' bytes of undo data per bulk job, and this one '
-					.'would store more. Narrow the selection, write fewer properties, or ask an administrator to '
-					.'raise the ceiling.',
-				reason: 'undo-ceiling',
-				details: ['ceiling' => $ceiling, 'objects' => count($objects)]
-			);
-		}//end foreach
+		}
 	}//end assertUndoCeiling()
+
+	/**
+	 * The size of one reversal plan as stored, or null when it cannot be encoded.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return int|null The encoded byte count.
+	 */
+	private function encodedSize(array $plan): ?int {
+		$encoded = json_encode($plan);
+		if ($encoded === false) {
+			return null;
+		}
+
+		return strlen($encoded);
+	}//end encodedSize()
+
+	/**
+	 * The refusal for a job that would store more undo data than the ceiling.
+	 *
+	 * @param int $objectCount How many objects the selection holds.
+	 *
+	 * @return BulkJobRefusedException The refusal.
+	 */
+	private function undoCeilingRefusal(int $objectCount): BulkJobRefusedException {
+		return new BulkJobRefusedException(
+			message: 'This instance stores at most '.$this->undoCeiling.' bytes of undo data per bulk job, and this one '
+				.'would store more. Narrow the selection, write fewer properties, or ask an administrator to '
+				.'raise the ceiling.',
+			reason: 'undo-ceiling',
+			details: ['ceiling' => $this->undoCeiling, 'objects' => $objectCount]
+		);
+	}//end undoCeilingRefusal()
 
 	/**
 	 * Refuse a commit with no reason where the action requires one.

@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 
@@ -37,14 +36,12 @@ final readonly class ImportPreviewTargets {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
+	 * @param SchemaCatalogInterface $catalog The register and schema lookups.
 	 * @param ObjectValidatorInterface $validateObject Schema validation.
 	 * @param ObjectOperationsInterface $objectService The write path.
 	 */
 	public function __construct(
-		public RegisterMapperInterface $registerMapper,
-		public SchemaMapperInterface $schemaMapper,
+		public SchemaCatalogInterface $catalog,
 		public ObjectValidatorInterface $validateObject,
 		public ObjectOperationsInterface $objectService,
 	) {

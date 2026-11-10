@@ -41,7 +41,7 @@ use OCP\Search\SearchResultEntry;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-final class ObjectSearchResultFormatter {
+final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterInterface {
 
 	/**
 	 * Number of characters of context shown on each side of an excerpt match.
@@ -49,27 +49,6 @@ final class ObjectSearchResultFormatter {
 	 * @var int
 	 */
 	private const EXCERPT_CONTEXT = 60;
-
-	/**
-	 * The URL generator service
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
-	 * Deep link registry for resolving URLs to consuming apps
-	 *
-	 * @var DeepLinkRegistryService
-	 */
-	private readonly DeepLinkRegistryService $deepLinkRegistry;
-
-	/**
-	 * Shared preview-formatting service (schema icon/name resolution).
-	 *
-	 * @var ObjectPreviewFormatter
-	 */
-	private readonly ObjectPreviewFormatter $formatter;
 
 	/**
 	 * Constructor for ObjectSearchResultFormatter.
@@ -83,13 +62,10 @@ final class ObjectSearchResultFormatter {
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
 	 */
 	public function __construct(
-		IURLGenerator $urlGenerator,
-		DeepLinkRegistryService $deepLinkRegistry,
-		ObjectPreviewFormatter $formatter,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly DeepLinkRegistryService $deepLinkRegistry,
+		private readonly ObjectPreviewFormatter $formatter,
 	) {
-		$this->urlGenerator = $urlGenerator;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->formatter = $formatter;
 	}//end __construct()
 
 	/**
@@ -108,35 +84,23 @@ final class ObjectSearchResultFormatter {
 			$result = $result->jsonSerialize();
 		}
 
-		// Extract metadata from @self (jsonSerialize puts metadata there).
-		$selfData = $result['@self'] ?? [];
-		$registerId = (int)($selfData['register'] ?? $result['register'] ?? 0);
-		$schemaId = (int)($selfData['schema'] ?? $result['schema'] ?? 0);
-		$uuid = $selfData['id'] ?? $result['id'] ?? '';
+		$hit = new ObjectSearchHit(object: $result);
 
-		// Build a flat data array for deep link URL resolution. The
-		// resolveUrl method needs {uuid} and other top-level keys.
-		$selfArray = [];
-		if (is_array($selfData) === true) {
-			$selfArray = $selfData;
-		}
-
-		$objectUrl = $this->resolveObjectUrl(
-			object: $result,
-			selfData: $selfArray,
-			ids: ['uuid' => (string)$uuid, 'register' => $registerId, 'schema' => $schemaId]
-		);
+		$objectUrl = $this->resolveObjectUrl(hit: $hit);
 
 		// Resolve the per-app label for this (register, schema) pair.
-		$appLabel = $this->deepLinkRegistry->resolveDisplayName(
-			registerId: $registerId,
-			schemaId: $schemaId
+		$hit = $hit->withAppLabel(
+			$this->deepLinkRegistry->resolveDisplayName(
+				registerId: $hit->registerId(),
+				schemaId: $hit->schemaId()
+			)
 		);
 
-		[$thumbnailUrl, $icon, $rounded] = $this->resolveIcon(schemaId: $schemaId, appLabel: $appLabel, registerId: $registerId);
+		[$thumbnailUrl, $icon, $rounded] = $this->resolveIcon(hit: $hit);
 
 		// Create descriptive title and subline.
-		$name = $selfData['name'] ?? '';
+		$name = $hit->selfData()['name'] ?? '';
+		$uuid = $hit->uuid();
 
 		$title = 'Unknown Object';
 		if (isset($result['title']) === true && is_string($result['title']) === true) {
@@ -144,21 +108,13 @@ final class ObjectSearchResultFormatter {
 		} elseif (is_string($name) === true && $name !== '') {
 			$title = $name;
 		} elseif ($uuid !== '') {
-			$title = (string)$uuid;
+			$title = $uuid;
 		}
-
-		$subline = $this->buildSubline(
-			object: $result,
-			registerId: $registerId,
-			schemaId: $schemaId,
-			appLabel: $appLabel,
-			term: $term
-		);
 
 		return new SearchResultEntry(
 			$thumbnailUrl,
 			$title,
-			$subline,
+			$this->buildSubline(hit: $hit, term: $term),
 			$objectUrl,
 			$icon,
 			$rounded
@@ -169,20 +125,19 @@ final class ObjectSearchResultFormatter {
 	 * The hit's link: the owning app's deep link when one is registered and
 	 * every placeholder in it filled, otherwise OpenRegister's own page.
 	 *
-	 * @param array<string|int,mixed>                       $object   The serialised object.
-	 * @param array<string,mixed>                           $selfData The object's `@self` metadata.
-	 * @param array{uuid:string,register:int,schema:int}    $ids      The resolved uuid, register and schema.
+	 * @param ObjectSearchHit $hit The search hit.
 	 *
 	 * @return string The link.
 	 *
 	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
 	 */
-	private function resolveObjectUrl(array $object, array $selfData, array $ids): string {
+	private function resolveObjectUrl(ObjectSearchHit $hit): string {
 		// The object's own scalar properties come first, so a template can
 		// name one (`/apps/dossiq/cases/{case}`), and `@self` plus the
 		// resolved uuid, register and schema are merged over them: an own
 		// property named `uuid` or `owner` never hijacks the metadata.
-		$flatData = array_merge($this->ownLinkProperties(object: $object), $selfData, $ids);
+		$ids = $hit->ids();
+		$flatData = array_merge($this->ownLinkProperties(object: $hit->object()), $hit->selfData(), $ids);
 
 		$objectUrl = $this->deepLinkRegistry->resolveUrl(
 			registerId: $ids['register'],
@@ -252,25 +207,23 @@ final class ObjectSearchResultFormatter {
 	 * the THUMBNAIL, because Nextcloud search only paints a thumbnail from
 	 * a URL — an icon-class name or a data: URI is not rendered as an image.
 	 *
-	 * @param int $schemaId The schema database ID
-	 * @param string|null $appLabel The owning app's display name, or null
-	 * @param int $registerId The register database ID
+	 * @param ObjectSearchHit $hit The search hit.
 	 *
 	 * @return array{0: string, 1: string, 2: bool} [thumbnailUrl, icon, rounded]
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
-	private function resolveIcon(int $schemaId, ?string $appLabel, int $registerId): array {
-		$mdiIconUrl = $this->formatter->resolveMdiIconUrl(schemaId: $schemaId);
+	private function resolveIcon(ObjectSearchHit $hit): array {
+		$mdiIconUrl = $this->formatter->resolveMdiIconUrl(schemaId: $hit->schemaId());
 		if ($mdiIconUrl !== null) {
 			return [$mdiIconUrl, 'icon-openregister', false];
 		}
 
 		$icon = $this->deepLinkRegistry->resolveIcon(
-			registerId: $registerId,
-			schemaId: $schemaId
+			registerId: $hit->registerId(),
+			schemaId: $hit->schemaId()
 		) ?? 'icon-openregister';
-		$rounded = ($appLabel !== null);
+		$rounded = ($hit->appLabel() !== null);
 
 		return ['', $icon, $rounded];
 	}//end resolveIcon()
@@ -282,23 +235,18 @@ final class ObjectSearchResultFormatter {
 	 * `Open Register` for unclaimed pairs. The excerpt is appended when a
 	 * term-driven match (or fallback summary/description) is available.
 	 *
-	 * @param array $object The rendered object data.
-	 * @param int $registerId The register database ID.
-	 * @param int $schemaId The schema database ID.
-	 * @param string|null $appLabel The owning app's display name, or null.
-	 * @param string|null $term The search term, or null for filter-only.
+	 * @param ObjectSearchHit $hit  The search hit.
+	 * @param string|null     $term The search term, or null for filter-only.
 	 *
 	 * @return string The composed subline.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
-	private function buildSubline(
-		array $object,
-		int $registerId,
-		int $schemaId,
-		?string $appLabel,
-		?string $term,
-	): string {
+	private function buildSubline(ObjectSearchHit $hit, ?string $term): string {
+		$appLabel = $hit->appLabel();
+		$registerId = $hit->registerId();
+		$schemaId = $hit->schemaId();
+
 		$owner = 'Open Register';
 		if ($appLabel !== null && $appLabel !== '') {
 			$owner = $appLabel;
@@ -315,7 +263,7 @@ final class ObjectSearchResultFormatter {
 
 		$subline = implode(' · ', $parts);
 
-		$excerpt = $this->buildExcerpt(object: $object, term: (string)$term);
+		$excerpt = $this->buildExcerpt(object: $hit->object(), term: (string)$term);
 		if ($excerpt !== '') {
 			$subline .= ' — ' . $excerpt;
 		}
@@ -365,12 +313,10 @@ final class ObjectSearchResultFormatter {
 					continue;
 				}
 
-				$position = mb_stripos($value, $term);
-				if ($position === false) {
-					continue;
+				$excerpt = $this->excerptAround(value: $value, term: $term);
+				if ($excerpt !== null) {
+					return $excerpt;
 				}
-
-				return $this->sliceExcerpt(value: $value, position: $position, length: mb_strlen($term));
 			}
 		}
 
@@ -392,19 +338,25 @@ final class ObjectSearchResultFormatter {
 	}//end buildExcerpt()
 
 	/**
-	 * Cut a ±context window around a match position, ellipsising the edges.
+	 * Cut a ±context window around the first case-insensitive match of the
+	 * term, ellipsising the edges.
 	 *
 	 * @param string $value The full field value.
-	 * @param int $position The byte/char position of the match.
-	 * @param int $length The length of the matched term.
+	 * @param string $term  The (non-empty) search term.
 	 *
-	 * @return string The ellipsised fragment with the matched substring verbatim.
+	 * @return string|null The ellipsised fragment with the matched substring
+	 *                     verbatim, or null when the value does not contain the term.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
-	private function sliceExcerpt(string $value, int $position, int $length): string {
+	private function excerptAround(string $value, string $term): ?string {
+		$position = mb_stripos($value, $term);
+		if ($position === false) {
+			return null;
+		}
+
 		$start = max(0, ($position - self::EXCERPT_CONTEXT));
-		$end = min(mb_strlen($value), ($position + $length + self::EXCERPT_CONTEXT));
+		$end = min(mb_strlen($value), ($position + mb_strlen($term) + self::EXCERPT_CONTEXT));
 
 		$fragment = mb_substr($value, $start, ($end - $start));
 
@@ -417,5 +369,5 @@ final class ObjectSearchResultFormatter {
 		}
 
 		return $fragment;
-	}//end sliceExcerpt()
+	}//end excerptAround()
 }//end class

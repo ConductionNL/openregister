@@ -70,6 +70,7 @@ import CodeMirror from 'vue-codemirror6'
 import AutoFix from 'vue-material-design-icons/AutoFix.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { isValidJson } from '../../composables/jsonText.js'
 import { getTheme } from '../../services/getTheme.js'
 
 export default {
@@ -155,18 +156,7 @@ export default {
 				})
 		},
 
-		/**
-		 * @param {string} json
-		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
-		 */
-		validateJson(json) {
-			try {
-				JSON.parse(json)
-				return true
-			} catch {
-				return false
-			}
-		},
+		validateJson: isValidJson,
 	},
 }
 </script>

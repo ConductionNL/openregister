@@ -14,6 +14,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 
 /**
  * An assistant message with RAG sources is stored, with the sources on the
@@ -31,7 +32,7 @@ class MessageHistoryHandlerSourcesTest extends TestCase
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->createMock(LoggerInterface::class));
 
-        $message = $handler->storeAssistantMessage(5, 'answer', $sources);
+        $message = $handler->storeAssistantMessage(5, new ChatReply('answer', $sources));
 
         $this->assertSame($sources, $message->getSources());
         $this->assertSame($sources, $message->jsonSerialize()['sources']);
@@ -43,7 +44,7 @@ class MessageHistoryHandlerSourcesTest extends TestCase
         $mapper->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->createMock(LoggerInterface::class));
 
-        $message = $handler->storeAssistantMessage(5, 'answer', []);
+        $message = $handler->storeAssistantMessage(5, new ChatReply('answer', []));
 
         $this->assertNull($message->getSources());
         $this->assertArrayNotHasKey('sources', $message->getUpdatedFields());

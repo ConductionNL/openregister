@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -44,16 +45,14 @@ class SelectielijstReferenceController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                         $appName  The app name.
 	 * @param IRequest                       $request  The request.
 	 * @param SelectielijstReferenceResolverInterface $resolver Reads the row behind a URL.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly SelectielijstReferenceResolverInterface $resolver,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

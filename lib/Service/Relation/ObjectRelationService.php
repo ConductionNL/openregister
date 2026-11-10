@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Relation;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Db\Schema;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -99,7 +100,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	): ObjectRelation {
 		$link ??= new ProvenanceLink();
 		return $this->stores->mapper->createFromArray(
-			$this->fields->objectLink(from: $created, to: $source, origin: ObjectRelation::ORIGIN_SPLIT)
+			$this->fields->splitLink(from: $created, to: $source)
 			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'createdBy' => $this->actor()]
 		);
 	}//end recordSplit()
@@ -172,7 +173,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	): ObjectRelation {
 		$link ??= new ProvenanceLink();
 		return $this->stores->mapper->createFromArray(
-			$this->fields->objectLink(from: $child, to: $parent, origin: ObjectRelation::ORIGIN_DERIVE)
+			$this->fields->derivedLink(from: $child, to: $parent)
 			+ ['relationType' => $link->relationType, 'sourceEntry' => $link->entry, 'inherited' => $this->fields->recordOf(inherited: $inherited)]
 			+ ['createdBy' => $this->actor()]
 		);
@@ -231,64 +232,55 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * Idempotent per anchor and target: saving the same note twice does not
 	 * write the mention twice.
 	 *
-	 * @param RelationEndpoint $source The object the text belongs to, in its register and schema.
-	 * @param RelationEndpoint $target The object the text names, in its register and schema.
-	 * @param string $anchor What identifies the text, so it can be withdrawn.
-	 * @param string|null $relationType The vocabulary key, when there is one.
+	 * @param ProseMention $mention The object the text belongs to and the one it names, each in its
+	 *                              register and schema; the anchor that identifies the text so it can
+	 *                              be withdrawn; and the vocabulary key, when there is one.
 	 *
 	 * @return array<int, ObjectRelation> The rows written, one per direction.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordProseReference(
-		RelationEndpoint $source,
-		RelationEndpoint $target,
-		string $anchor,
-		?string $relationType = null,
-	): array {
-		if ($this->isNewProseReference(sourceUuid: $source->uuid, targetUuid: $target->uuid, anchor: $anchor) === false) {
+	public function recordProseReference(ProseMention $mention): array {
+		if ($this->isNewProseReference(mention: $mention) === false) {
 			return [];
 		}
 
 		// The second row is the far side. A mention is a link somebody reading
 		// the OTHER object should see, which is the whole reason the corpus
 		// counts it as a relation rather than as formatting.
-		$detail = ['relationType' => $relationType, 'anchor' => $anchor];
 		return [
-			$this->proseRow(from: $source, to: $target, detail: $detail),
-			$this->proseRow(from: $target, to: $source, detail: $detail),
+			$this->proseRow(mention: $mention),
+			$this->proseRow(mention: $mention->reversed()),
 		];
 	}//end recordProseReference()
 
 	/**
 	 * Whether a mention links two different objects and is not already recorded under its anchor.
 	 *
-	 * @param string $sourceUuid The object whose text carries the mention.
-	 * @param string $targetUuid The object it mentions.
-	 * @param string $anchor     The anchor of the mention.
+	 * @param ProseMention $mention The object whose text carries the mention, the object it mentions and the anchor.
 	 *
 	 * @return bool True when the mention should be written.
 	 */
-	private function isNewProseReference(string $sourceUuid, string $targetUuid, string $anchor): bool {
+	private function isNewProseReference(ProseMention $mention): bool {
+		$sourceUuid = $mention->source->uuid;
+		$targetUuid = $mention->target->uuid;
 		if ($sourceUuid === '' || $targetUuid === '' || $sourceUuid === $targetUuid) {
 			return false;
 		}
 
-		return $this->isRecorded(sourceUuid: $sourceUuid, targetUuid: $targetUuid, anchor: $anchor) === false;
+		return $this->isRecorded(mention: $mention) === false;
 	}//end isNewProseReference()
 
 	/**
 	 * Whether a mention of the target is already recorded under the anchor.
 	 *
-	 * @param string $sourceUuid The object whose text carries the mention.
-	 * @param string $targetUuid The object it mentions.
-	 * @param string $anchor     The anchor of the mention.
+	 * @param ProseMention $mention The object whose text carries the mention, the object it mentions and the anchor.
 	 *
 	 * @return bool True when it is.
 	 */
-	private function isRecorded(string $sourceUuid, string $targetUuid, string $anchor): bool {
-		foreach ($this->stores->mapper->findByAnchor(sourceUuid: $sourceUuid, anchor: $anchor) as $existing) {
-			if ($existing->getTargetUuid() === $targetUuid) {
+	private function isRecorded(ProseMention $mention): bool {
+		foreach ($this->stores->mapper->findByAnchor(sourceUuid: $mention->source->uuid, anchor: $mention->anchor) as $existing) {
+			if ($existing->getTargetUuid() === $mention->target->uuid) {
 				return true;
 			}
 		}
@@ -299,13 +291,13 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	/**
 	 * Write one side of a prose reference.
 	 *
-	 * @param RelationEndpoint     $from   The row's source.
-	 * @param RelationEndpoint     $to     The row's target.
-	 * @param array<string, mixed> $detail `relationType` and `anchor`.
+	 * @param ProseMention $mention The mention, seen from the row's source.
 	 *
 	 * @return ObjectRelation The row.
 	 */
-	private function proseRow(RelationEndpoint $from, RelationEndpoint $to, array $detail): ObjectRelation {
+	private function proseRow(ProseMention $mention): ObjectRelation {
+		$from = $mention->source;
+		$to   = $mention->target;
 		return $this->stores->mapper->createFromArray(
 			[
 				'sourceUuid' => $from->uuid,
@@ -316,7 +308,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 				'targetSchema' => $to->schema,
 				'kind' => ObjectRelation::KIND_OBJECT,
 				'origin' => ObjectRelation::ORIGIN_PROSE,
-			] + $detail + ['createdBy' => $this->actor()]
+			] + ['relationType' => $mention->relationType, 'anchor' => $mention->anchor, 'createdBy' => $this->actor()]
 		);
 	}//end proseRow()
 
@@ -378,22 +370,30 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function declarationFor(?int $schemaId, string $property, string $language = 'nl'): ?array {
+		// No schema reads as no declaration: the resolver answers null for it.
+		return $this->stores->relationTypes->descriptorFor(schema: $this->schemaOrNull(schemaId: $schemaId), property: $property, language: $language);
+	}//end declarationFor()
+
+	/**
+	 * The schema behind an id, or null when there is none or it cannot be found.
+	 *
+	 * Metadata only, so the read is not scoped to the caller.
+	 *
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOrNull(?int $schemaId): ?Schema {
 		if ($schemaId === null) {
 			return null;
 		}
 
 		try {
-			$schema = $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
+			return $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			return null;
 		}
-
-		return $this->stores->relationTypes->descriptorFor(
-			schema: $schema,
-			property: $property,
-			language: $language
-		);
-	}//end declarationFor()
+	}//end schemaOrNull()
 
 	/**
 	 * Every stored relation row touching an object, with its labels resolved.
@@ -441,19 +441,27 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function render(ObjectRelation $row, string $direction, string $language = 'nl'): array {
-		$rendered = $row->jsonSerialize();
-		$descriptor = $this->descriptorOf(row: $row, language: $language);
+		$relation = $this->stores->relationTypes->row(descriptor: $this->descriptorOf(row: $row, language: $language), direction: $direction, path: null);
 
-		$rendered['relation'] = $this->stores->relationTypes->row(
-			descriptor: $descriptor,
-			direction: $direction,
-			path: null
-		);
-		$rendered['relation']['origin'] = $row->getOrigin();
-		$rendered['relation']['kind'] = $row->getKind();
+		return $this->withRelation(row: $row, relation: $relation);
+	}//end render()
+
+	/**
+	 * The row as JSON with its relation reading, origin and kind under `relation`.
+	 *
+	 * @param ObjectRelation       $row      The relation row.
+	 * @param array<string, mixed> $relation The reading of the relation in one direction.
+	 *
+	 * @return array<string, mixed> The rendered row.
+	 */
+	private function withRelation(ObjectRelation $row, array $relation): array {
+		$rendered = $row->jsonSerialize();
+		$relation['origin'] = $row->getOrigin();
+		$relation['kind']   = $row->getKind();
+		$rendered['relation'] = $relation;
 
 		return $rendered;
-	}//end render()
+	}//end withRelation()
 
 	/**
 	 * Resolve a row's labels: from the schema when it names a type, from the
@@ -484,25 +492,24 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @return array<string, mixed>|null The descriptor.
 	 */
 	private function vocabularyDescriptor(ObjectRelation $row, string $language): array|null {
-		$type     = $row->getRelationType();
-		$schemaId = $row->getSourceSchema();
-		if ($type === null || $schemaId === null) {
+		if ($row->getRelationType() === null || $row->getSourceSchema() === null) {
 			return null;
 		}
 
-		return $this->typeInSchema(schemaId: $schemaId, type: $type, language: $language);
+		return $this->typeInSchema(row: $row, language: $language);
 	}//end vocabularyDescriptor()
 
 	/**
-	 * The descriptor of a relation type in one schema's vocabulary; null when it or the schema does not resolve.
+	 * The descriptor of a row's relation type in its source schema's vocabulary; null when it or the schema does not resolve.
 	 *
-	 * @param int    $schemaId The schema id.
-	 * @param string $type     The relation type.
-	 * @param string $language The BCP-47 tag.
+	 * @param ObjectRelation $row      The stored row, naming a relation type and a source schema.
+	 * @param string         $language The BCP-47 tag.
 	 *
 	 * @return array<string, mixed>|null The descriptor.
 	 */
-	private function typeInSchema(int $schemaId, string $type, string $language): array|null {
+	private function typeInSchema(ObjectRelation $row, string $language): array|null {
+		$schemaId = (int)$row->getSourceSchema();
+		$type     = (string)$row->getRelationType();
 		try {
 			$schema = $this->stores->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
 			return $this->fields->descriptorOfType(descriptors: $this->stores->relationTypes->descriptors(schema: $schema, language: $language), type: $type);

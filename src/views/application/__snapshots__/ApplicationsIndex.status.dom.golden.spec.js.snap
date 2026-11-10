@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`applications list status renders the card and column status of an active and an inactive row 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<div class="index" title="t:Applications" description="t:Manage your applications and modules" showtitle="true" columns="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" pagination="[object Object]" loading="false" viewmode="cards" selectable="true" selectedids="" showeditaction="false" showcopyaction="false" showdeleteaction="false" showmassimport="false" showmassexport="false" showmasscopy="false" showmassdelete="false" showviewtoggle="" addlabel="t:Add Application" rowkey="id" emptytext="t:Loading applications..." refreshing="false">
+<div class="card">
+<div class="card">
+<div class="cardHeader">
+<h2>
+<x-applicationoutline size="20">
+</x-applicationoutline>On</h2>
+<x-actionmenu actions="[{},{}]" primary="">
+</x-actionmenu>
+</div>
+<div class="applicationDetails">
+<div class="applicationInfo">
+<div class="applicationInfoItem">
+<strong>t:Status:</strong>
+<span class="status-active">t:Active</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell">
+<span class="status-active">t:Active</span>
+</div>
+<div class="card">
+<div class="card">
+<div class="cardHeader">
+<h2>
+<x-applicationoutline size="20">
+</x-applicationoutline>Off</h2>
+<x-actionmenu actions="[{},{}]" primary="">
+</x-actionmenu>
+</div>
+<div class="applicationDetails">
+<div class="applicationInfo">
+<div class="applicationInfoItem">
+<strong>t:Status:</strong>
+<span class="status-inactive">t:Inactive</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell">
+<span class="status-inactive">t:Inactive</span>
+</div>
+</div>
+</slot-default>
+</x-ncappcontent>"
+`;

@@ -137,19 +137,36 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 * @return array The combined items.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$mode = (string)($config['mode'] ?? 'append');
+		return $this->merged(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * The items combined the way the configured mode says.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The step configuration.
+	 *
+	 * @return array The combined items.
+	 */
+	private function merged(array $items, array $config): array {
 		$key = (string)($config['key'] ?? '');
 
-		if ($mode === 'mergeByKey') {
-			return $this->mergeByKey(items: $items, key: $key);
-		}
+		return match ((string)($config['mode'] ?? 'append')) {
+			'mergeByKey' => $this->mergeByKey(items: $items, key: $key),
+			'unique' => $this->unique(items: $items, key: $key),
+			default => $this->append(items: $items),
+		};
+	}//end merged()
 
-		if ($mode === 'unique') {
-			return $this->unique(items: $items, key: $key);
-		}
-
-		// Append: the engine already concatenated the branches; re-pair each
-		// item to its own position so provenance stays intact.
+	/**
+	 * Append: the engine already concatenated the branches; re-pair each
+	 * item to its own position so provenance stays intact.
+	 *
+	 * @param array $items The input items.
+	 *
+	 * @return array The items, re-paired.
+	 */
+	private function append(array $items): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
@@ -160,7 +177,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 		}
 
 		return $out;
-	}//end execute()
+	}//end append()
 
 	/**
 	 * Group items by their `key` value and shallow-merge each group's records.

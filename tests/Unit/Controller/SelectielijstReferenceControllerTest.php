@@ -48,7 +48,7 @@ class SelectielijstReferenceControllerTest extends TestCase {
 		$resolver->method('isResolvable')->willReturn(str_starts_with($url, 'https://selectielijst.openzaak.nl/'));
 		$resolver->method('resolve')->willReturn($resolved);
 
-		return new SelectielijstReferenceController('openregister', $request, $resolver);
+		return new SelectielijstReferenceController($request, $resolver);
 	}//end controller()
 
 	/**

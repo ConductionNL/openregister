@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion + local fixture helpers take positional args by convention; mirroring ExternalIntegrationRouterTest in this repo.
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
+use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\MessageDispatchController;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -240,7 +241,7 @@ class IntegrationMockModeTest extends TestCase {
 			}
 		);
 
-		$controller = new CompanyLookupController($request, $kvk, $oc, new CompanySearchFactory());
+		$controller = new CompanyLookupController($request, new CompanyLookupControllerServices($kvk, $oc, new CompanySearchFactory()));
 		$response = $controller->kvkCompany();
 
 		$this->assertSame(200, $response->getStatus());
@@ -254,7 +255,7 @@ class IntegrationMockModeTest extends TestCase {
 		// @var MessageDispatchProvider $dispatch
 		$dispatch = $this->provider(MessageDispatchProvider::class, $fixture);
 		$request = $this->createMock(IRequest::class);
-		$controller = new MessageDispatchController('openregister', $request, $dispatch);
+		$controller = new MessageDispatchController($request, $dispatch);
 
 		// The send endpoint signature is exercised in MessageDispatchControllerTest;
 		// here we assert the leaf surfaces the canned body through dispatch().

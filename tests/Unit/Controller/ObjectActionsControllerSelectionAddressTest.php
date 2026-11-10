@@ -104,7 +104,6 @@ class ObjectActionsControllerSelectionAddressTest extends TestCase {
 		);
 
 		return ObjectActionsControllerFactory::create(
-			'openregister',
 			$request,
 			$objects,
 			$this->macros,
