@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
@@ -395,11 +396,13 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function expressionData(array $json, SetFieldsPlan $plan): array {
-		return FlowExpression::dataFor(
+		return FlowExpression::documentFor(
 			item: [FlowItems::JSON => $json],
-			itemIndex: $plan->itemIndex(),
-			itemCount: $plan->itemCount,
-			context: $plan->context
+			options: new FlowExpressionDataOptions(
+				itemIndex: $plan->itemIndex(),
+				itemCount: $plan->itemCount,
+				context: $plan->context
+			)
 		);
 
 	}//end expressionData()
