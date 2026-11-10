@@ -140,6 +140,22 @@ class RateLimiter implements RateLimiterInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-8
 	 */
 	public function tryConsume(string $ruleId, string $recipient, ?array $perRuleOverride = null): bool {
+		return $this->consume(subject: new RateLimitSubject(ruleId: $ruleId, recipient: $recipient), perRuleOverride: $perRuleOverride);
+	}//end tryConsume()
+
+	/**
+	 * Try to spend one token for the subject's rule and recipient; see tryConsume() for the contract.
+	 *
+	 * @param RateLimitSubject          $subject         The rule and the recipient.
+	 * @param array<string, mixed>|null $perRuleOverride Optional `rateLimit` block from the rule spec.
+	 *
+	 * @return bool True when the dispatch may proceed.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-8
+	 */
+	public function consume(RateLimitSubject $subject, ?array $perRuleOverride = null): bool {
+		$ruleId    = $subject->ruleId;
+		$recipient = $subject->recipient;
 		if ($this->bypasses(ruleId: $ruleId, recipient: $recipient) === true) {
 			return true;
 		}
@@ -150,7 +166,7 @@ class RateLimiter implements RateLimiterInterface {
 		);
 
 		return $this->consumeFromRule(rule: $rule, recipient: $recipient);
-	}//end tryConsume()
+	}//end consume()
 
 	/**
 	 * Decide on the rule bucket that was read; null (cache down) fails open.
