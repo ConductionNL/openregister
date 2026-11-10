@@ -93,26 +93,31 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 		$offending = [];
 
 		foreach ($this->entries(authorization: $authorization) as $found) {
-			if ($this->isExternal(entry: $found['entry']) === false) {
-				continue;
+			if ($this->isExternal(entry: $found['entry']) === true && $this->hasUsableEnd(entry: $found['entry']) === false) {
+				$offending[] = $this->endlessOffence(found: $found);
 			}
-
-			if ($this->hasUsableEnd(entry: $found['entry']) === true) {
-				continue;
-			}
-
-			$offending[] = [
-				'action' => $found['action'],
-				'principal' => $this->principalOf(entry: $found['entry']),
-				'rule' => self::RULE,
-				'message' => 'A grant to a principal outside the organisation carries an end date. '
-					. 'Add `' . GrantConstraints::UNTIL_KEY . '` to this entry, or drop `'
-					. self::EXTERNAL_KEY . '` if the principal is not external after all.',
-			];
 		}
 
 		return $offending;
 	}//end endlessExternalGrants()
+
+	/**
+	 * The finding for an external grant written without a usable end date.
+	 *
+	 * @param array{action: string, entry: mixed} $found The entry and the action it sits under.
+	 *
+	 * @return array{action: string, principal: mixed, rule: string, message: string} The finding.
+	 */
+	private function endlessOffence(array $found): array {
+		return [
+			'action' => $found['action'],
+			'principal' => $this->principalOf(entry: $found['entry']),
+			'rule' => self::RULE,
+			'message' => 'A grant to a principal outside the organisation carries an end date. '
+				. 'Add `' . GrantConstraints::UNTIL_KEY . '` to this entry, or drop `'
+				. self::EXTERNAL_KEY . '` if the principal is not external after all.',
+		];
+	}//end endlessOffence()
 
 	/**
 	 * The refusal body for a block that may not be written, or null.
