@@ -25,6 +25,7 @@ use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\AuditExportDelivery;
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCA\OpenRegister\Service\Operations\JobRunStart;
@@ -156,7 +157,7 @@ class AuditTrailExportJobBehaviourTest extends TestCase {
 
 	public function testFormatIsLowercasedAndChangesAreIncludedByDefault(): void {
 		$this->pageQuery->expects($this->once())->method('collect')
-			->with([], 'needle', AuditTrailExportJob::JOB_LIMIT)
+			->with(new AuditTrailCriteria([], 'needle'), AuditTrailExportJob::JOB_LIMIT)
 			->willReturn(['results' => [], 'truncated' => false]);
 		$this->logService->expects($this->once())->method('exportRows')
 			->with('json', [], ['includeChanges' => true])

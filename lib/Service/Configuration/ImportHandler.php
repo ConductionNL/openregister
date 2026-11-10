@@ -36,6 +36,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -1267,7 +1268,7 @@ class ImportHandler {
 		}
 
 		try {
-			$candidates = $this->schemaMapper->findBySlug(slug: $slug, limit: 50, _rbac: false);
+			$candidates = $this->schemaMapper->findBySlug(slug: $slug, query: new ListQuery(limit: 50), _rbac: false);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -1368,50 +1369,14 @@ class ImportHandler {
 	}//end resolveSchemaGlobally()
 
 	/**
-	 * Import a schema from configuration data.
-	 *
-	 * @param array $data The schema data with slugs to be converted to IDs.
-	 * @param array $slugsAndIdsMap Slugs with their IDs for quick lookup.
-	 * @param string|null $owner The owner of the schema.
-	 * @param string|null $appId The application ID importing the schema.
-	 * @param string|null $version The version of the import.
-	 * @param bool $force Force import even if version is not newer.
-	 * @param array|null $registerSchemaIds PER-REGISTER SLUG-UNIQUENESS (openspec/changes/
-	 *                                      per-register-schema-slug-uniqueness): when non-null,
-	 *                                      the pre-import schema ids of the register(s) this
-	 *                                      import declares this slug for. The existing schema is
-	 *                                      resolved strictly within this set (not globally, not
-	 *                                      merely per-application) so two different registers may
-	 *                                      each own a distinct schema with the same slug, while a
-	 *                                      schema legitimately shared by multiple registers stays
-	 *                                      one row. `null` preserves the previous
-	 *                                      application-scoped/global fallback for schemas with no
-	 *                                      register context in this import.
-	 *
-	 * @return Schema The imported schema.
-	 *
-	 * @throws Exception If import fails.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force flag to override version checks
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	public function importSchema(
-		array $data,
-		array $slugsAndIdsMap,
-		?string $owner = null,
-		?string $appId = null,
-		?string $version = null,
-		bool $force = false,
-		?array $registerSchemaIds = null,
-	): Schema {
-		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
-		$definition = new ImportedSchemaLookup(data: $data, registerSchemaIds: $registerSchemaIds, options: $options);
-		return $this->importSchemaDefinition(definition: $definition, slugsAndIdsMap: $slugsAndIdsMap);
-	}//end importSchema()
-
-	/**
 	 * Import a schema definition, resolved within the target registers when they are known.
+	 *
+	 * PER-REGISTER SLUG-UNIQUENESS (openspec/changes/per-register-schema-slug-uniqueness): when the
+	 * definition's `registerSchemaIds` is non-null, the existing schema is resolved strictly within
+	 * those pre-import schema ids (not globally, not merely per-application), so two different
+	 * registers may each own a distinct schema with the same slug while a schema legitimately shared
+	 * by multiple registers stays one row. `null` keeps the application-scoped/global fallback for
+	 * schemas with no register context in this import.
 	 *
 	 * @param ImportedSchemaLookup $definition     The schema data, the target registers' schema ids and the
 	 *                                             owner, app id, version and force flag of the import.
@@ -1423,7 +1388,7 @@ class ImportHandler {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function importSchemaDefinition(ImportedSchemaLookup $definition, array $slugsAndIdsMap): Schema {
+	public function importSchema(ImportedSchemaLookup $definition, array $slugsAndIdsMap): Schema {
 		$data = $definition->data;
 		$options = $definition->options;
 		$this->schemaShape->assertShape(data: $data);
@@ -1453,7 +1418,7 @@ class ImportHandler {
 			);
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
-	}//end importSchemaDefinition()
+	}//end importSchema()
 
 	/**
 	 * Run a schema write of the import with an unlinkable notification url action as a warning.
@@ -2457,13 +2422,12 @@ class ImportHandler {
 	private function importSchemaComponent(ImportRun $run, ImportComponent $component): Schema {
 		$schemaSlugLower = strtolower((string)($component->data['slug'] ?? $component->key));
 		return $this->importSchema(
-			data: $component->data,
-			slugsAndIdsMap: $run->slugsAndIdsMap,
-			owner: $run->owner,
-			appId: $run->appId,
-			version: $run->version,
-			force: $run->force,
-			registerSchemaIds: $run->slugToSchemaIds[$schemaSlugLower] ?? null
+			definition: new ImportedSchemaLookup(
+				data: $component->data,
+				registerSchemaIds: $run->slugToSchemaIds[$schemaSlugLower] ?? null,
+				options: new SchemaImportOptions(owner: $run->owner, appId: $run->appId, version: $run->version, force: $run->force)
+			),
+			slugsAndIdsMap: $run->slugsAndIdsMap
 		);
 	}//end importSchemaComponent()
 
@@ -2562,13 +2526,12 @@ class ImportHandler {
 		}
 
 		return $this->importSchema(
-			data: $component->data,
-			slugsAndIdsMap: $run->slugsAndIdsMap,
-			owner: $run->owner,
-			appId: $run->appId,
-			version: $run->version,
-			force: true,
-			registerSchemaIds: $schemaIds
+			definition: new ImportedSchemaLookup(
+				data: $component->data,
+				registerSchemaIds: $schemaIds,
+				options: new SchemaImportOptions(owner: $run->owner, appId: $run->appId, version: $run->version, force: true)
+			),
+			slugsAndIdsMap: $run->slugsAndIdsMap
 		);
 	}//end reimportSchemaComponent()
 
@@ -4554,6 +4517,7 @@ class ImportHandler {
 		//
 		// Scoped to seeding alone. Schemas, registers and mappings are imported
 		// outside this call and are unaffected, as is every ordinary save.
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		SystemOperationContext::run(
 			function () use ($seed, $configuration): void {
 				$this->importSeedDataObjects(seed: $seed, configuration: $configuration);
@@ -4620,18 +4584,18 @@ class ImportHandler {
 			return null;
 		}
 
-		$candidate = $this->slugHandler->candidate(
-			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
-			schema: $schema,
-			clientSlug: $this->seedClientSlug(objectData: $objectData)
-		);
+		$candidate = $this->slugHandler->clientCandidate(clientSlug: $this->seedClientSlug(objectData: $objectData))
+			?? $this->slugHandler->candidate(
+				objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
+				schema: $schema
+			);
 		if ($candidate === null) {
 			return null;
 		}
 
 		// `<base>-` of a suffixed variant, the base being cut to fit the column.
 		$prefix = substr($this->slugHandler->withSuffix(slug: $candidate, stamp: '00000000000000'), 0, -14);
-		foreach ($this->routingMapper->findSlugsByPrefix(register: $register, schema: $schema, prefix: $prefix) as $match) {
+		foreach ($this->routingMapper->findSlugsByPrefix(table: new RegisterSchema(register: $register, schema: $schema), prefix: $prefix) as $match) {
 			if ($this->slugHandler->isSuffixOf(slug: $match['slug'], candidate: $candidate) === false) {
 				continue;
 			}
@@ -4671,11 +4635,11 @@ class ImportHandler {
 			return $slug;
 		}
 
-		$candidate = $this->slugHandler->candidate(
-			objectData: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema),
-			schema: $object->schema,
-			clientSlug: $this->seedClientSlug(objectData: $object->data)
-		);
+		$candidate = $this->slugHandler->clientCandidate(clientSlug: $this->seedClientSlug(objectData: $object->data))
+			?? $this->slugHandler->candidate(
+				objectData: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema),
+				schema: $object->schema
+			);
 
 		return ($candidate ?? $slug);
 	}//end seedLookupSlug()
@@ -5142,7 +5106,7 @@ class ImportHandler {
 		}
 
 		try {
-			$externalSchemas = $this->schemaMapper->findBySlug(slug: $slug, limit: 1, offset: 0, _multitenancy: false, _rbac: false);
+			$externalSchemas = $this->schemaMapper->findBySlug(slug: $slug, query: new ListQuery(limit: 1, offset: 0), _multitenancy: false, _rbac: false);
 			if (empty($externalSchemas) === true) {
 				$this->logger->warning(
 					message: '[ImportHandler] External schema not found - using current schema',

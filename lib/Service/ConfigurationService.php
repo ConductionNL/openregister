@@ -511,6 +511,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		// app boot happens before session resolution and webcron never has
 		// one. Run them as a scoped system operation so RBAC treats them like
 		// the CLI cron path instead of denying them as anonymous every boot.
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::run(
 			fn (): array => $this->getImportHandler()->importFromApp(appId: $appId, data: $data, version: $version, force: $force)
 		);
@@ -556,6 +557,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
 	 */
 	public function softDeleteAppImports(string $appId): array {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::run(
 			fn (): array => $this->removeRecordedImports(appId: $appId)
 		);

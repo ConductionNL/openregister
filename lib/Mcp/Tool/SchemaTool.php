@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Mcp\Tool;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -383,10 +384,12 @@ class SchemaTool extends AbstractTool {
 
 		$changeSet = $this->schemaVersioning->classify(
 			existing: $schema,
-			newDefinition: [
-				'properties' => ($properties ?? $schema->getProperties() ?? []),
-				'required' => ($required ?? $schema->getRequired() ?? []),
-			]
+			incoming: new IncomingDefinition(
+				definition: [
+					'properties' => ($properties ?? $schema->getProperties() ?? []),
+					'required' => ($required ?? $schema->getRequired() ?? []),
+				]
+			)
 		);
 		if ($changeSet->hasChanges() === true) {
 			$schema->setVersion($this->schemaVersioning->nextVersion(existing: $schema, changeSet: $changeSet));

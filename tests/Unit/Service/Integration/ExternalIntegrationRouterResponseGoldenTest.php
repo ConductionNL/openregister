@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -347,7 +348,7 @@ final class GoldenExternalProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<int, mixed>
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}
 }

@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -217,7 +218,7 @@ class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNode
 				default => $this->handOver(json: $json, handoff: $handoff),
 			};
 
-			$out[] = FlowItems::item(json: $json, binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index));
 		}
 
 		return $out;
