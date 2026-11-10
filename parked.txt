@@ -144,3 +144,4 @@ openregister#9258 7aa01f5423553318cd08a1b2dc7ff25e1f9afcb3 bisect-park: PHP Fata
 openregister#9818 a16b1e9d4e6dcac18029ac2202616c9def8b4594 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 openregister#9277 47ec2a61e7be743f579d2de5bbe5c7d860762d52 bisect-park: FAIL OCA\OpenRegister\Tests\Unit\Service\Archival\ActionDateFollowerGoldenTest::testALostSourceDateClearsTheDate
 openregister#9824 4b98967b8d107f365d1b4183d2dface33b2ce43f precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
+openregister#9103 6fc29f5b3d35403c98c9e44106aea5045e7287a6 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\Configuration\ImportHandlerSeedLookupCharacterisationTest::testTheSeedSear
