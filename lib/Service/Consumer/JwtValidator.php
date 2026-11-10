@@ -285,54 +285,125 @@ class JwtValidator {
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function validateClaims(array $payload): void {
-		$now = new DateTime();
+		$run = new ClaimValidationRun(payload: $payload, now: new DateTime());
 
+		$this->refuseMissingIssueTime(payload: $payload);
+		$run->iat = new DateTime('@' . $payload['iat']);
+
+		$this->refuseFutureIssueTime(run: $run);
+		$run->exp = $this->expiryOf(run: $run);
+
+		$this->refuseExpired(run: $run);
+		$this->refuseNotYetValid(run: $run);
+
+		$this->refuseReplay(payload: $payload, lifetime: ($run->exp->getTimestamp() - $run->now->getTimestamp()));
+	}//end validateClaims()
+
+	/**
+	 * Refuse a token without an iat.
+	 *
+	 * @param array $payload The token payload.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the token has no time of creation.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseMissingIssueTime(array $payload): void {
 		if (isset($payload['iat']) === false) {
 			throw new AuthenticationException(
 				message: 'The token has no time of creation',
 				details: ['iat' => null]
 			);
 		}
+	}//end refuseMissingIssueTime()
 
-		$iat = new DateTime('@' . $payload['iat']);
-
-		// A token issued in the future (beyond the skew) is pre-generated:
-		// accepting it would stretch its usable window past its stated life.
-		if ($iat->getTimestamp() > ($now->getTimestamp() + self::CLOCK_SKEW_SECONDS)) {
+	/**
+	 * Refuse a token issued in the future beyond the skew: it is pre-generated,
+	 * and accepting it would stretch its usable window past its stated life.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the iat and the moment checked.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the issue time lies beyond the skew.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseFutureIssueTime(ClaimValidationRun $run): void {
+		if ($run->iat->getTimestamp() > ($run->now->getTimestamp() + self::CLOCK_SKEW_SECONDS)) {
 			throw new AuthenticationException(
 				message: 'The token has an invalid issue time',
-				details: ['iat' => $iat->getTimestamp(), 'time checked' => $now->getTimestamp()]
+				details: ['iat' => $run->iat->getTimestamp(), 'time checked' => $run->now->getTimestamp()]
 			);
 		}
+	}//end refuseFutureIssueTime()
 
-		$exp = clone $iat;
+	/**
+	 * The token's expiry: its exp claim, else one hour after its iat.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the payload and the iat.
+	 *
+	 * @return DateTime The expiry.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function expiryOf(ClaimValidationRun $run): DateTime {
+		$exp = clone $run->iat;
 		$exp->modify('+1 Hour');
-		if (isset($payload['exp']) === true) {
-			$exp = new DateTime('@' . $payload['exp']);
+		if (isset($run->payload['exp']) === true) {
+			$exp = new DateTime('@' . $run->payload['exp']);
 		}
 
-		if ($exp->diff($now)->format('%R') === '+') {
+		return $exp;
+	}//end expiryOf()
+
+	/**
+	 * Refuse a token whose expiry has passed.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the iat, the expiry and the moment checked.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the token has expired.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseExpired(ClaimValidationRun $run): void {
+		if ($run->exp->diff($run->now)->format('%R') === '+') {
 			throw new AuthenticationException(
 				message: 'The token has expired',
 				details: [
-					'iat' => $iat->getTimestamp(),
-					'exp' => $exp->getTimestamp(),
-					'time checked' => $now->getTimestamp(),
+					'iat' => $run->iat->getTimestamp(),
+					'exp' => $run->exp->getTimestamp(),
+					'time checked' => $run->now->getTimestamp(),
 				]
 			);
 		}
+	}//end refuseExpired()
 
-		if (isset($payload['nbf']) === true
-			&& $now->getTimestamp() < ((int)$payload['nbf'] - self::CLOCK_SKEW_SECONDS)
+	/**
+	 * Refuse a token whose nbf, when present, has not been reached within the skew.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the payload and the moment checked.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the token is not yet valid.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseNotYetValid(ClaimValidationRun $run): void {
+		if (isset($run->payload['nbf']) === true
+			&& $run->now->getTimestamp() < ((int)$run->payload['nbf'] - self::CLOCK_SKEW_SECONDS)
 		) {
 			throw new AuthenticationException(
 				message: 'The token is not yet valid',
-				details: ['nbf' => (int)$payload['nbf'], 'time checked' => $now->getTimestamp()]
+				details: ['nbf' => (int)$run->payload['nbf'], 'time checked' => $run->now->getTimestamp()]
 			);
 		}
-
-		$this->refuseReplay(payload: $payload, lifetime: ($exp->getTimestamp() - $now->getTimestamp()));
-	}//end validateClaims()
+	}//end refuseNotYetValid()
 
 	/**
 	 * Accept a token's jti once: remember it until the token expires.
