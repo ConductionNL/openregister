@@ -53,6 +53,8 @@ use OCP\IL10N;
 use OCP\IURLGenerator;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Creates a related object, or runs a declared handoff, per item.
@@ -263,8 +265,9 @@ class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNode
 	private function createAndLink(array $json, array $config): array {
 		$created = $this->objects->saveObject(
 			object: (array)FlowValueTemplate::render(value: ($config['data'] ?? []), json: $json),
-			register: (string)$config['register'],
-			schema: (string)$config['schema']
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: (string)$config['register'], schema: (string)$config['schema'])
+			)
 		);
 
 		$relation = trim((string)($config['relation'] ?? ''));
@@ -288,9 +291,10 @@ class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNode
 
 		$this->objects->saveObject(
 			object: $this->withRelation(data: $source->getObject(), link: $link),
-			register: $source->getRegister(),
-			schema: $source->getSchema(),
-			uuid: (string)$source->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $source->getRegister(), schema: $source->getSchema()),
+				uuid: (string)$source->getUuid()
+			)
 		);
 	}//end writeRelation()
 

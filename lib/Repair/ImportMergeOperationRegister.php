@@ -12,9 +12,13 @@
  * every merge straight into it:
  *
  *     $this->objectService->saveObject(
- *         object:   $mergeOperation,
- *         register: self::MERGE_REGISTER,   // 'merge-operation'
- *         schema:   self::MERGE_SCHEMA      // 'mergeOperation'
+ *         object:  $mergeOperation,
+ *         options: new ObjectSaveOptions(
+ *             target: new ObjectFindTarget(
+ *                 register: self::MERGE_REGISTER, // 'merge-operation'
+ *                 schema: self::MERGE_SCHEMA      // 'mergeOperation'
+ *             )
+ *         )
  *     );
  *
  * and `reverseMerge` reads the `preMergeSnapshot` back out of that row to undo

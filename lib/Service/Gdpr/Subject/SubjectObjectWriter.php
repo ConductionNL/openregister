@@ -32,6 +32,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\DsarService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Attributed, scoped persistence for data-subject fulfilment writes.
@@ -88,8 +90,9 @@ class SubjectObjectWriter {
 	public function save(ObjectEntity $object): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $object,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema())
+			),
 			_rbac: true,
 			_multitenancy: true
 		);

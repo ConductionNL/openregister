@@ -146,6 +146,10 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * Writes one OpenRegister object per flow item, as the run's owner.
@@ -891,10 +895,11 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	private function replaceMatched(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
 		return $this->objects->saveObject(
 			object: $item->payload,
-			register: $plan->register,
-			schema: $plan->schema,
-			uuid: (string)$item->matched->getUuid(),
-			currentUser: $plan->owner
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				uuid: (string)$item->matched->getUuid(),
+				actor: new SaveActor(currentUser: $plan->owner)
+			)
 		);
 	}//end replaceMatched()
 
@@ -914,10 +919,11 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	private function insert(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
 		return $this->objects->saveObject(
 			object: $item->payload,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner,
-			failIfExists: ($plan->onConflict === ObjectWriteOptions::ON_CONFLICT_FAIL)
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				policy: new SavePolicy(failIfExists: ($plan->onConflict === ObjectWriteOptions::ON_CONFLICT_FAIL)),
+				actor: new SaveActor(currentUser: $plan->owner)
+			)
 		);
 	}//end insert()
 

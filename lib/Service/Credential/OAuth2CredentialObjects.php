@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Loads a brokered credential object by id.
@@ -100,9 +102,10 @@ final readonly class OAuth2CredentialObjects {
 	public function save(string $credentialId, array $object): void {
 		$this->objectService->saveObject(
 			object: $object,
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
-			uuid: $credentialId,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+				uuid: $credentialId
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

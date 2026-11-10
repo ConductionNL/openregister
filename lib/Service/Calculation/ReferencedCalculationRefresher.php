@@ -46,6 +46,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Re-saves the objects whose materialised calculations read a field of an updated object.
@@ -369,9 +371,10 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 			// The read decodes JSON held in a `type: string` property; hand it back as stored.
 			$service->saveObject(
 				object: (new SchemaTypeConverter())->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
-				register: $row->getRegister(),
-				schema: $row->getSchema(),
-				uuid: $row->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $row->getRegister(), schema: $row->getSchema()),
+					uuid: $row->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

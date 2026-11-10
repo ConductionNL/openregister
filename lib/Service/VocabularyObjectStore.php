@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Uri-keyed persistence for the objects of one vocabulary schema.
@@ -100,9 +102,10 @@ class VocabularyObjectStore {
 	public function save(array $data, ?string $uuid): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $data,
-			register: VocabularyImporterInterface::REGISTER,
-			schema: $this->schema,
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: VocabularyImporterInterface::REGISTER, schema: $this->schema),
+				uuid: $uuid
+			)
 		);
 	}//end save()
 

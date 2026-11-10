@@ -50,6 +50,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Declarative install of a store item's components.
@@ -167,8 +169,7 @@ class GenericStoreInstaller {
 		try {
 			$this->objectService->saveObject(
 				object: $this->asNewObject(object: $object),
-				register: $store->localRegister,
-				schema: $slug
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $store->localRegister, schema: $slug))
 			);
 			return ['schema' => $slug, 'status' => 'installed', 'message' => ''];
 		} catch (Throwable $e) {

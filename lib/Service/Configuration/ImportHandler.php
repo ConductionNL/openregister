@@ -65,6 +65,9 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * Class ImportHandler
@@ -3278,12 +3281,13 @@ class ImportHandler {
 	private function saveListedObject(ListedSeed $seed, array $save): ObjectEntity {
 		return $this->objectService->saveObject(
 			object: $save['data'],
-			register: $seed->register,
-			schema: $seed->schema,
-			uuid: $save['uuid'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $seed->register, schema: $seed->schema),
+				uuid: $save['uuid'],
+				actor: new SaveActor(currentUser: $seed->actingUser)
+			),
 			_rbac: false,
-			_multitenancy: false,
-			currentUser: $seed->actingUser
+			_multitenancy: false
 		);
 	}//end saveListedObject()
 

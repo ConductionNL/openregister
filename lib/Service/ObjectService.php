@@ -150,6 +150,8 @@ use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -2085,38 +2087,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * FOR BULK OPERATIONS: Use saveObjects() method for optimized bulk processing
      *
-     * @param array|ObjectEntity       $object        The object data to save or ObjectEntity instance
-     * @param array|null               $extend        Properties to extend the object with
-     * @param Register|string|int|null $register      The register object or its ID/UUID
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID
-     * @param string|null              $uuid          The UUID of the object to update (if updating)
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
-     * @param bool                     $_validation   Whether to validate the object against its schema (default: true).
-     *                                                Was hardcoded true here, so a bulk importer with pre-validated
-     *                                                rows had no way to decline re-validating every one of them.
-     * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
-     * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
-     * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
-     * @param bool                     $_unowned      Stamp the SYSTEM identity as owner even when a user session
-     *                                                exists. For a genuinely anonymous write — a citizen submitting
-     *                                                a form on a public portal with no account — where the row must
-     *                                                not be attributed to whoever happens to be signed into the
-     *                                                instance in that browser. Defaults to false, so nothing changes
-     *                                                for any existing caller, and no controller forwards it, so no
-     *                                                REST request can ask to be anonymised.
-     *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
-     *                                                Defaults to null → `IUserSession::getUser()` resolution.
-     *                                                Non-HTTP callers (cron, import pipelines, event listeners)
-     *                                                MUST pass an explicit user to avoid the
-     *                                                default-deny fall-through on every folder-bound save.
-     * @param bool                     $_dedupOverride Save through a blocking duplicate match, when the caller is
-     *                                                entitled to. Read from the RAW request by ObjectsController,
-     *                                                because the body filter there strips `_`-prefixed keys.
-     * @param string|null              $_owner        An explicit owner for a NEW object (a draft's scope value such as
-     *                                                `portal:<subjectRef>`, decision 195). Service-level only: no
-     *                                                controller forwards it. An update keeps the stored owner.
+     * @param array|ObjectEntity $object        The object data to save or ObjectEntity instance
+     * @param ObjectSaveOptions  $options       The register and schema (object or ID/UUID), the UUID of the
+     *                                          object to update, the properties to extend the result with,
+     *                                          the files uploaded from multipart/form-data, the save policy
+     *                                          (events and audit, validation, insert-only, duplicate
+     *                                          override) and the actor (explicit acting user, explicit or
+     *                                          SYSTEM owner of a new row). See SavePolicy and SaveActor.
+     * @param bool               $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool               $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -2126,45 +2105,32 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
-     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function saveObject(
         array | ObjectEntity $object,
-        ?array $extend=[],
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        ?string $uuid=null,
+        ObjectSaveOptions $options=new ObjectSaveOptions(),
         bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $silent=false,
-        bool $_validation=true,
-        ?array $uploadedFiles=null,
-        ?IUser $currentUser=null,
-        bool $failIfExists=false,
-        bool $_unowned=false,
-        bool $_dedupOverride=false,
-        ?string $_owner=null
+        bool $_multitenancy=true
     ): ObjectEntity {
         return $this->saveAtTransitionBoundary(
             object: $object,
             options: [
-                'extend'         => $extend,
-                'register'       => $register,
-                'schema'         => $schema,
-                'uuid'           => $uuid,
+                'extend'         => $options->extend,
+                'register'       => $options->target->register,
+                'schema'         => $options->target->schema,
+                'uuid'           => $options->uuid,
                 '_rbac'          => $_rbac,
                 '_multitenancy'  => $_multitenancy,
-                'silent'         => $silent,
-                '_validation'    => $_validation,
-                'uploadedFiles'  => $uploadedFiles,
-                'currentUser'    => $currentUser,
-                'failIfExists'   => $failIfExists,
-                '_unowned'       => $_unowned,
-                '_dedupOverride' => $_dedupOverride,
-                '_owner'         => $_owner,
+                'silent'         => $options->policy->silent,
+                '_validation'    => $options->policy->validation,
+                'uploadedFiles'  => $options->uploadedFiles,
+                'currentUser'    => $options->actor->currentUser,
+                'failIfExists'   => $options->policy->failIfExists,
+                '_unowned'       => $options->actor->unowned,
+                '_dedupOverride' => $options->policy->dedupOverride,
+                '_owner'         => $options->actor->owner,
             ]
         );
     }//end saveObject()
@@ -7553,11 +7519,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $this->saveObject(
             object: $merged,
-            register: $patch->target->register,
-            schema: $patch->target->schema,
+            options: new ObjectSaveOptions(target: $patch->target, actor: new SaveActor(currentUser: $patch->currentUser)),
             _rbac: $access->rbac,
-            _multitenancy: $access->multitenancy,
-            currentUser: $patch->currentUser
+            _multitenancy: $access->multitenancy
         );
     }//end patchWithinScope()
 

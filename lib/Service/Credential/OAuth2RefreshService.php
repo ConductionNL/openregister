@@ -51,6 +51,8 @@ use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Refreshes and rotates OAuth2 token sets on behalf of the broker.
@@ -531,9 +533,10 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 
 		$this->stores->objectService->saveObject(
 			object: array_merge($data, $metadata),
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
-			uuid: $existing->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+				uuid: $existing->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

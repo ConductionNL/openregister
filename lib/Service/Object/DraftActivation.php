@@ -112,12 +112,13 @@ class DraftActivation implements DraftActivationInterface {
 			// as DraftFinder::own() is on the form path.
 			$saved = $this->objects->saveObject(
 				object: $object,
-				register: $address->register,
-				schema: $address->schema,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $address->register, schema: $address->schema),
+					uuid: $uuid,
+					actor: new SaveActor(currentUser: $owner->user())
+				),
 				_rbac: $owner->isScoped() === false,
-				_multitenancy: true,
-				currentUser: $owner->user()
+				_multitenancy: true
 			);
 			// Two requests on one draft can both pass the "still a draft" read.
 			// The save that did not use the allowance found it already sent:

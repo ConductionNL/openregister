@@ -62,6 +62,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Server-authoritative, reversible merge engine driven by
@@ -446,9 +448,10 @@ class MergeService implements ObjectMergerInterface {
 		$fromObject->setObject($run->fromData);
 		$this->objectService->saveObject(
 			object: $fromObject,
-			register: $fromObject->getRegister(),
-			schema: $fromObject->getSchema(),
-			uuid: $fromObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $fromObject->getRegister(), schema: $fromObject->getSchema()),
+				uuid: $fromObject->getUuid()
+			)
 		);
 	}//end markMerged()
 
@@ -466,9 +469,10 @@ class MergeService implements ObjectMergerInterface {
 		$intoObject->setObject($this->survivorPayload(run: $run));
 		$run->survivor = $this->objectService->saveObject(
 			object: $intoObject,
-			register: $intoObject->getRegister(),
-			schema: $intoObject->getSchema(),
-			uuid: $intoObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $intoObject->getRegister(), schema: $intoObject->getSchema()),
+				uuid: $intoObject->getUuid()
+			)
 		);
 	}//end saveSurvivor()
 
@@ -530,7 +534,12 @@ class MergeService implements ObjectMergerInterface {
 			$mergeOperation['fieldDecisions'] = $decisions;
 		}
 
-		return $this->objectService->saveObject(object: $mergeOperation, register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA);
+		return $this->objectService->saveObject(
+			object: $mergeOperation,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA)
+			)
+		);
 	}//end persistOperation()
 
 	/**
@@ -659,9 +668,10 @@ class MergeService implements ObjectMergerInterface {
 		$operationEntity->setObject($operation);
 		$savedOperation = $this->objectService->saveObject(
 			object: $operationEntity,
-			register: self::MERGE_REGISTER,
-			schema: self::MERGE_SCHEMA,
-			uuid: $operationEntity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA),
+				uuid: $operationEntity->getUuid()
+			)
 		);
 
 		$this->logger->info(
@@ -903,9 +913,10 @@ class MergeService implements ObjectMergerInterface {
 			try {
 				$this->objectService->saveObject(
 					object: $object,
-					register: $object->getRegister(),
-					schema: $object->getSchema(),
-					uuid: $object->getUuid()
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+						uuid: $object->getUuid()
+					)
 				);
 				$moves[] = [
 					'sourceUuid' => (string)$object->getUuid(),
@@ -1057,9 +1068,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($state);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -1131,9 +1143,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($data);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

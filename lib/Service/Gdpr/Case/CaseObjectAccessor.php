@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Load + audited-save helper for data-subject-request case objects.
@@ -170,9 +172,10 @@ class CaseObjectAccessor implements CaseObjectAccessorInterface {
 
 		return $this->objectService->saveObject(
 			object: $case,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
-			uuid: $case->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG),
+				uuid: $case->getUuid()
+			),
 			_rbac: true,
 			_multitenancy: true
 		);

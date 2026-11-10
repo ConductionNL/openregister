@@ -53,6 +53,9 @@ use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * Validate all, write in order, compensate on a late refusal, answer with the real record.
@@ -725,15 +728,14 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	private function save(array $plan, FormWriteContext $context): ObjectEntity {
 		return $this->destinations->objects->saveObject(
 			object: $this->withStatus(object: $plan['object'], status: $context->status),
-			register: $plan['register'],
-			schema: $plan['schema'],
-			uuid: $context->uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan['register'], schema: $plan['schema']),
+				uuid: $context->uuid,
+				uploadedFiles: $this->filesOf(plan: $plan),
+				actor: new SaveActor(currentUser: $context->subject, owner: $context->explicitOwner(), unowned: $context->unowned())
+			),
 			_rbac: $context->rbac(),
-			_multitenancy: true,
-			uploadedFiles: $this->filesOf(plan: $plan),
-			currentUser: $context->subject,
-			_unowned: $context->unowned(),
-			_owner: $context->explicitOwner()
+			_multitenancy: true
 		);
 	}//end save()
 

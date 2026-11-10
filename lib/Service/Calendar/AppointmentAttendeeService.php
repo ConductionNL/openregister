@@ -37,6 +37,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Reads and writes attendee answers on an object.
@@ -193,9 +195,10 @@ class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface 
 		);
 		$this->objects->saveObject(
 			object: $data,
-			uuid: (string)$object->getUuid(),
-			register: $object->getRegister(),
-			schema: $object->getSchema()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+				uuid: (string)$object->getUuid()
+			)
 		);
 
 		return $data[self::RESPONSES_PROPERTY];

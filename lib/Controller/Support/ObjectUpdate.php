@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Controller\Support;
 
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * One full replace: the target, the submitted object and the caller.
@@ -60,13 +62,14 @@ final class ObjectUpdate {
 	 */
 	public function saved(string $uuid): ObjectEntity {
 		return $this->target->objectService->saveObject(
-			register: $this->target->resolved['register'],
-			schema: $this->target->resolved['schema'],
 			object: $this->object,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->target->resolved['register'], schema: $this->target->resolved['schema']),
+				uuid: $uuid,
+				uploadedFiles: $this->caller->uploads()
+			),
 			_rbac: $this->caller->scoped,
-			_multitenancy: $this->caller->scoped,
-			uuid: $uuid,
-			uploadedFiles: $this->caller->uploads()
+			_multitenancy: $this->caller->scoped
 		);
 	}//end saved()
 }//end class

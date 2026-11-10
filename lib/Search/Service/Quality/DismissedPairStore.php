@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * The store behind "we already looked at these two, they are different people".
@@ -224,9 +226,10 @@ class DismissedPairStore {
 
 		$saved = $this->objectService->saveObject(
 			object: $row,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
-			uuid: $uuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
+				uuid: $uuid
+			)
 		);
 
 		$stored = ($saved->getObject() ?? []);

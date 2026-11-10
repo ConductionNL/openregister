@@ -57,6 +57,8 @@ use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Daily DPIA pattern-detection sweep over DSAR cases.
@@ -308,9 +310,10 @@ class DsarDpiaDetectionJob extends TimedJob {
 
 				$saved = $this->objectService->saveObject(
 					object: $data,
-					register: CaseObjectAccessorInterface::REGISTER_SLUG,
-					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
-					uuid: $entity->getUuid(),
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG),
+						uuid: $entity->getUuid()
+					),
 					_rbac: false,
 					_multitenancy: false
 				);

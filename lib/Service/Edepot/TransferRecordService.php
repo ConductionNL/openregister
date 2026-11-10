@@ -43,6 +43,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Persist + load durable e-Depot transfer + proof records via ObjectService.
@@ -106,9 +108,10 @@ class TransferRecordService implements TransferRecordServiceInterface, TransferR
 		// subsequent status writes update the same durable object.
 		$saved = $this->objectService->saveObject(
 			object: self::alignedWith(transferList: $transferList, uuid: $uuid),
-			register: self::REGISTER_SLUG,
-			schema: self::TRANSFER_SCHEMA_SLUG,
-			uuid: self::uuidOrNull(uuid: $uuid)
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::TRANSFER_SCHEMA_SLUG),
+				uuid: self::uuidOrNull(uuid: $uuid)
+			)
 		);
 
 		return self::rendered(object: $saved);

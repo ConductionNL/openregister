@@ -50,6 +50,8 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Token-scoped federation serving endpoints (read; write-through in a later phase).
@@ -394,8 +396,9 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -439,9 +442,10 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
-				uuid: $target['uuid'],
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema()),
+					uuid: $target['uuid']
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

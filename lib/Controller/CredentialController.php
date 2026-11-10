@@ -66,6 +66,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * HTTP controller for owner-scoped credentials and the constrained broker call.
@@ -573,9 +575,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: $target->uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: $target->uuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->services->session->logger->error(
@@ -676,9 +679,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: (string) $existing->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: (string) $existing->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);

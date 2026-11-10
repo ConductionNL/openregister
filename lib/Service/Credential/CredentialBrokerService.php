@@ -84,6 +84,8 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Constrained, host-locked, secret-injecting outbound broker.
@@ -543,8 +545,7 @@ class CredentialBrokerService {
 		// below, which already bypasses RBAC for exactly this reason.
 		$saved = $this->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)),
 			_rbac: false,
 			_multitenancy: false
 		);

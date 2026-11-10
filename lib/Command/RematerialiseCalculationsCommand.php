@@ -43,6 +43,8 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Re-evaluate every materialised calculation declared on a (register, schema).
@@ -397,9 +399,10 @@ class RematerialiseCalculationsCommand extends Command {
 			// No user session under occ: write as the system (live pass O7).
 			$saved = $this->storage->objectService->saveObject(
 				object: $row['data'],
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

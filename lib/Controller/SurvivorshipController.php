@@ -51,6 +51,8 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
 use OCA\OpenRegister\Controller\Support\SurvivorshipControllerServices;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Source records and attribute overrides of a master object.
@@ -216,9 +218,10 @@ class SurvivorshipController extends Controller {
 
 		return $this->objectService->saveObject(
 			object: $object,
-			register: $object->getRegister(),
-			schema: $object->getSchema(),
-			uuid: $object->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+				uuid: $object->getUuid()
+			)
 		);
 	}//end overrideAndSave()
 

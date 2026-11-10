@@ -67,6 +67,8 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * ObjectRelationsController.
@@ -658,8 +660,9 @@ class ObjectRelationsController extends Controller {
 		try {
 			return $this->objectService->saveObject(
 				object: $data,
-				register: $derivation->register,
-				schema: $derivation->schema
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $derivation->register, schema: $derivation->schema)
+				)
 			);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);

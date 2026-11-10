@@ -42,6 +42,9 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * Register access for the example-set loader.
@@ -379,7 +382,15 @@ class ExampleSetStore {
 
 		try {
 			$saved = $service->runAsSystem(
-				fn () => $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _owner: $owner)
+				fn () => $service->saveObject(
+					object: $data,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $register, schema: $schema),
+						actor: new SaveActor(owner: $owner)
+					),
+					_rbac: false,
+					_multitenancy: false
+				)
 			);
 		} catch (Throwable $e) {
 			return ['id' => '', 'error' => $e->getMessage()];
@@ -414,7 +425,15 @@ class ExampleSetStore {
 		$actions?->enterDeclaredState(uuid: $ref->id);
 		try {
 			$service->runAsSystem(
-				fn () => $service->saveObject(object: $data, register: $ref->register, schema: $ref->schema, uuid: $ref->id, _rbac: false, _multitenancy: false)
+				fn () => $service->saveObject(
+					object: $data,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $ref->register, schema: $ref->schema),
+						uuid: $ref->id
+					),
+					_rbac: false,
+					_multitenancy: false
+				)
 			);
 		} catch (Throwable $e) {
 			return $e->getMessage();

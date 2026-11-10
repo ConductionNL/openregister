@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Refresh one object whose time-dependent calculations moved.
@@ -116,9 +118,10 @@ final class TemporalObjectRefresher {
 		$schema = $target->schema;
 		$this->objectService->saveObject(
 			object: $this->types->restoreStringTypedValues(data: ($object->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
-			register: $target->register,
-			schema: $schema,
-			uuid: (string)$object->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $target->register, schema: $schema),
+				uuid: (string)$object->getUuid()
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

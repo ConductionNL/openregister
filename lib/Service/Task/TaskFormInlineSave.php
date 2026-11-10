@@ -35,6 +35,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use OCA\OpenRegister\Service\Flow\FlowRunFrame;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * Writes a task form's accepted values onto its subject object, as the run that raised the task.
@@ -148,10 +151,11 @@ final class TaskFormInlineSave {
 		try {
 			$this->objects->saveObject(
 				object: array_merge($object->getObject(), $accepted),
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid(),
-				currentUser: $this->userSession->getUser()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					actor: new SaveActor(currentUser: $this->userSession->getUser())
+				)
 			);
 		} catch (NotAuthorizedException $denied) {
 			throw new TaskAccessDeniedException(message: $denied->getMessage());

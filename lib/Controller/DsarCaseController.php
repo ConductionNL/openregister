@@ -55,6 +55,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * RBAC + case-level access controlled DSAR case-management endpoints.
@@ -202,8 +204,9 @@ class DsarCaseController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $body,
-				register: CaseObjectAccessorInterface::REGISTER_SLUG,
-				schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG)
+				),
 				_rbac: true,
 				_multitenancy: true
 			);

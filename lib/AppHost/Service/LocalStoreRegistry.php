@@ -36,6 +36,8 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Reads store items from a register on this instance.
@@ -145,7 +147,13 @@ class LocalStoreRegistry {
 				return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''];
 			}
 
-			$objects->saveObject($body, [], (string)$store->register, (string)$store->schema, $uuid);
+			$objects->saveObject(
+				object: $body,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: (string)$store->register, schema: (string)$store->schema),
+					uuid: $uuid
+				)
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('AppHost store: local registry write failed: '.$e->getMessage());
 			return ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''];

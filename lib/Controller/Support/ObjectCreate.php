@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Controller\Support;
 use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 
 /**
  * One create: the submitted object, where it goes and how it was asked for.
@@ -65,14 +68,14 @@ final class ObjectCreate {
 	public function saver(array $body): Closure {
 		return fn (?string $uuid): ObjectEntity => $this->objectService->saveObject(
 			object: $body,
-			register: $this->resolved['register'],
-			schema: $this->resolved['schema'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->resolved['register'], schema: $this->resolved['schema']),
+				uuid: $uuid,
+				uploadedFiles: $this->controls->caller->uploads(),
+				policy: new SavePolicy(failIfExists: $this->controls->failIfExists, dedupOverride: $this->controls->dedupOverride)
+			),
 			_rbac: $this->controls->caller->scoped,
-			_multitenancy: true,
-			uuid: $uuid,
-			uploadedFiles: $this->controls->caller->uploads(),
-			failIfExists: $this->controls->failIfExists,
-			_dedupOverride: $this->controls->dedupOverride
+			_multitenancy: true
 		);
 	}//end saver()
 }//end class
