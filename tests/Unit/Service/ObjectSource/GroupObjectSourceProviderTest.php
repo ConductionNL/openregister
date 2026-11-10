@@ -102,7 +102,7 @@ class GroupObjectSourceProviderTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($acting);
 
-		return new GroupObjectSourceProvider($groupManager, $session, new NullLogger());
+		return new GroupObjectSourceProvider(groupManager: $groupManager, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: new NullLogger()));
 	}//end provider()
 
 	/**

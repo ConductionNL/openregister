@@ -106,7 +106,7 @@ class MigrationPackServiceLookupsTest extends TestCase {
 		$this->config->method('getValueArray')->willReturn(['other-pack']);
 		$this->config->expects($this->never())->method('setValueArray');
 
-		$pack = $this->service()->create(['id' => 'zaken-v1', 'name' => 'Zaken', 'sourceFormat' => 'csv', 'version' => '1.0.0', 'idStrategy' => ['type' => 'generate'], 'fieldMappings' => [['source' => 'Naam', 'target' => 'title']]], null, true);
+		$pack = $this->service()->seedBuiltin(['id' => 'zaken-v1', 'name' => 'Zaken', 'sourceFormat' => 'csv', 'version' => '1.0.0', 'idStrategy' => ['type' => 'generate'], 'fieldMappings' => [['source' => 'Naam', 'target' => 'title']]]);
 
 		$this->assertTrue($pack->getBuiltin());
 
@@ -125,7 +125,7 @@ class MigrationPackServiceLookupsTest extends TestCase {
 			->method('setValueArray')
 			->with('openregister', MigrationPackService::DELETED_BUILTIN_SLUGS_KEY, ['other-pack'], true);
 
-		$this->service()->create(['id' => 'zaken-v1', 'name' => 'Zaken', 'sourceFormat' => 'csv', 'version' => '1.0.0', 'idStrategy' => ['type' => 'generate'], 'fieldMappings' => [['source' => 'Naam', 'target' => 'title']]], null, true);
+		$this->service()->seedBuiltin(['id' => 'zaken-v1', 'name' => 'Zaken', 'sourceFormat' => 'csv', 'version' => '1.0.0', 'idStrategy' => ['type' => 'generate'], 'fieldMappings' => [['source' => 'Naam', 'target' => 'title']]]);
 
 	}//end testABuiltinCreateClearsARecordedSlug()
 }//end class

@@ -71,19 +71,33 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	];
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param UserTaskListInterface $taskService The CalDAV VTODO read/list service.
-	 * @param IAppManager $appManager App availability checks.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge     $app         Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly UserTaskListInterface $taskService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**

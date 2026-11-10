@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\CospendProjectDraft;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
@@ -299,7 +300,7 @@ class LinkRowStampGoldenTest extends TestCase {
 				match ($flow) {
 					'project' => $service->linkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'p-1'),
 					'bill' => $service->linkBill((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'p-1', 6),
-					default => $service->createAndLinkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'Trip', ''),
+					default => $service->createAndLinkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), new CospendProjectDraft('Trip', '')),
 				}
 			)
 		);

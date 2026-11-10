@@ -249,28 +249,14 @@ final class VocabularyEntries {
 		}
 
 		foreach (['roles', 'identityShapes'] as $listKey) {
-			$normalised = self::withList(normalised: $normalised, listKey: $listKey, list: self::distinctStrings(value: ($entry[$listKey] ?? null)));
+			$list = self::distinctStrings(value: ($entry[$listKey] ?? null));
+			if ($list !== []) {
+				$normalised[$listKey] = $list;
+			}
 		}
 
 		return $normalised;
 	}//end normalisePartyKind()
-
-	/**
-	 * The entry with a list added under its key, unless the list is empty.
-	 *
-	 * @param array<string, mixed> $normalised The entry so far.
-	 * @param string               $listKey    `roles` or `identityShapes`.
-	 * @param array<int, string>   $list       The distinct strings declared for it.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function withList(array $normalised, string $listKey, array $list): array {
-		if ($list !== []) {
-			$normalised[$listKey] = $list;
-		}
-
-		return $normalised;
-	}//end withList()
 
 	/**
 	 * The distinct, trimmed, non-empty strings of a list, in order; [] for anything else.

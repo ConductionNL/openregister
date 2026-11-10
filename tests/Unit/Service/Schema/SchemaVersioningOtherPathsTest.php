@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemaImportControllerFactory;
 use OCA\OpenRegister\Controller\SchemaImportController;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -90,8 +91,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 		return new SchemaVersioningService(
 			diffService: new SchemaDiffService(),
 			changelogMapper: $this->changelogMapper,
-			runMapper: $this->createMock(SchemaRunMapper::class),
-			runEntryMapper: $this->createMock(SchemaRunEntryMapper::class),
+			runs: new SchemaPopulationRuns($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class), $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			userSession: $this->userSession,
 			logger: ($logger ?? $this->createMock(LoggerInterface::class))
 		);

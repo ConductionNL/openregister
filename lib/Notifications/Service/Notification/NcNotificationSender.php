@@ -113,21 +113,38 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 		array $actions = [],
 		bool $webPushActive = false,
 	): string {
+		$rule    = new NoticeRule(name: $name, originApp: $originApp, actions: $actions, webPushActive: $webPushActive);
+		$content = new NoticeContent(subjectKey: $subjectKey, subject: $subject, message: $message, context: $context);
+
+		return $this->notify(notice: new InAppNotice(uid: $uid, object: $object, rule: $rule, content: $content));
+	}//end send()
+
+	/**
+	 * Persist + dispatch a single in-app Nextcloud notification row; see {@see self::send()}.
+	 *
+	 * @param InAppNotice $notice The recipient, the object, the rule and what it says.
+	 *
+	 * @return string One of the OUTCOME_* constants.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 */
+	public function notify(InAppNotice $notice): string {
 		return $this->dispatch(
-			uid: $uid,
+			uid: $notice->uid,
 			notice: [
-				'object' => $object,
-				'subjectKey' => $subjectKey,
-				'name' => $name,
-				'subject' => $subject,
-				'message' => $message,
-				'context' => $context,
-				'originApp' => $originApp,
-				'actions' => $actions,
-				'webPushActive' => $webPushActive,
+				'object' => $notice->object,
+				'subjectKey' => $notice->content->subjectKey,
+				'name' => $notice->rule->name,
+				'subject' => $notice->content->subject,
+				'message' => $notice->content->message,
+				'context' => $notice->content->context,
+				'originApp' => $notice->rule->originApp,
+				'actions' => $notice->rule->actions,
+				'webPushActive' => $notice->rule->webPushActive,
 			]
 		);
-	}//end send()
+	}//end notify()
 
 	/**
 	 * Persist + dispatch one notification unless the channel is switched off.
@@ -265,18 +282,34 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 		array $actions,
 		ObjectEntity $object,
 	): void {
+		$rule = new NoticeRule(name: $ruleId, originApp: $originApp, actions: $actions);
+		$text = new NoticeContent(subjectKey: '', subject: $subject, message: $message);
+
+		$this->enqueuePush(push: new PushRideAlong(recipients: $recipients, object: $object, rule: $rule, content: $text));
+	}//end enqueueWebPush()
+
+	/**
+	 * Enqueue the web-push ride-along for a set of recipients; see {@see self::enqueueWebPush()}.
+	 *
+	 * @param PushRideAlong $push The recipients, the object, the rule and the push's subject and body.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function enqueuePush(PushRideAlong $push): void {
 		$this->enqueueFor(
-			recipients: $recipients,
+			recipients: $push->recipients,
 			push: [
-				'ruleId' => $ruleId,
-				'originApp' => $originApp,
-				'title' => $subject,
-				'body' => $message,
-				'actions' => $actions,
-				'object' => $object,
+				'ruleId' => $push->rule->name,
+				'originApp' => $push->rule->originApp,
+				'title' => $push->content->subject,
+				'body' => $push->content->message,
+				'actions' => $push->rule->actions,
+				'object' => $push->object,
 			]
 		);
-	}//end enqueueWebPush()
+	}//end enqueuePush()
 
 	/**
 	 * Enqueue one web-push job per enqueueable recipient, unless push cannot or may not ride along.
