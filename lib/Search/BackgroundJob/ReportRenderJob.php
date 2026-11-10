@@ -397,17 +397,12 @@ class ReportRenderJob extends TimedJob {
 	 * @return void
 	 */
 	private function writeToFiles(DashboardRenderRun $run, array $rendered): void {
-		$owner = $this->deliveryOwner(run: $run);
-		if ($owner === null) {
-			return;
-		}
-
-		$userFolder = $this->ownerFolder(owner: $owner);
+		$userFolder = $this->ownerHome(run: $run);
 		if ($userFolder === null) {
 			return;
 		}
 
-		$folderPath = $this->safeDeliveryFolder(run: $run, owner: $owner);
+		$folderPath = $this->safeDeliveryFolder(run: $run);
 		if ($folderPath !== null) {
 			$folder = self::deliveryFolder(userFolder: $userFolder, folderPath: $folderPath);
 			$this->writeRendered(folder: $folder, rendered: $rendered);
@@ -443,13 +438,19 @@ class ReportRenderJob extends TimedJob {
 	}//end deliveryOwner()
 
 	/**
-	 * The owner's home folder, or null (logged) when it is unavailable.
+	 * The dashboard owner's home folder, or null (logged) when the owner is
+	 * missing or their home is unavailable.
 	 *
-	 * @param string $owner The dashboard owner.
+	 * @param DashboardRenderRun $run The dashboard and its data.
 	 *
 	 * @return Folder|null
 	 */
-	private function ownerFolder(string $owner): ?Folder {
+	private function ownerHome(DashboardRenderRun $run): ?Folder {
+		$owner = $this->deliveryOwner(run: $run);
+		if ($owner === null) {
+			return null;
+		}
+
 		try {
 			return $this->delivery->rootFolder->getUserFolder(userId: $owner);
 		} catch (NotFoundException $e) {
@@ -459,7 +460,7 @@ class ReportRenderJob extends TimedJob {
 			);
 			return null;
 		}
-	}//end ownerFolder()
+	}//end ownerHome()
 
 	/**
 	 * The delivery folder relative to the owner's home, or null (logged) when it is unsafe.
@@ -470,17 +471,16 @@ class ReportRenderJob extends TimedJob {
 	 * segment that escapes the home root (`..`) or addresses an
 	 * absolute filesystem path.
 	 *
-	 * @param DashboardRenderRun $run   The dashboard, its data and delivery descriptor.
-	 * @param string             $owner The dashboard owner.
+	 * @param DashboardRenderRun $run The dashboard, its data and delivery descriptor.
 	 *
 	 * @return string|null
 	 */
-	private function safeDeliveryFolder(DashboardRenderRun $run, string $owner): ?string {
+	private function safeDeliveryFolder(DashboardRenderRun $run): ?string {
 		$folderPath = ltrim($this->deliveryFolderPath(run: $run), '/');
 		if ($folderPath === '' || str_contains($folderPath, '..') === true) {
 			$this->platform->logger->warning(
 				message: '[ReportRenderJob] Rejected delivery folder containing path traversal',
-				context: ['folder' => $folderPath, 'owner' => $owner]
+				context: ['folder' => $folderPath, 'owner' => $run->dashboard->getOwner()]
 			);
 			return null;
 		}
