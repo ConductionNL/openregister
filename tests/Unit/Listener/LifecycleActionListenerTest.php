@@ -67,7 +67,7 @@ class LifecycleActionListenerTest extends TestCase {
 		$executor = new LifecycleActionExecutor($this->registry, $logger);
 
 		$this->listener = new LifecycleActionListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
 			$executor,
 			$logger
 		);

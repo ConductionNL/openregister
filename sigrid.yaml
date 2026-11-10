@@ -87,8 +87,14 @@ exclude:
 # only the licence property is excluded: vulnerabilities, freshness, activity and
 # management are still scored. [:/] matches the scoped npm name in either form,
 # because the name Sigrid compares against is not documented.
+#
+# The path entry excludes the Newman test harness (tests/integration/package.json),
+# which runs the API tests against a dev instance and is not shipped with the app.
+# Its only findings are in newman's own dependencies, with no release of newman
+# that fixes them.
 dependencychecker:
   exclude:
+    - path: ".*/tests/integration/.*"
     - license: "^@nextcloud[:/]vue$"
     - license: "^@nextcloud[:/]dialogs$"
     - license: "^@nextcloud[:/]auth$"
@@ -97,3 +103,14 @@ dependencychecker:
     - license: "^@nextcloud[:/]router$"
     - license: "^@nextcloud[:/]initial-state$"
     - license: "^@nextcloud[:/]capabilities$"
+
+# Architecture Quality. Knowledge Awareness and Team Stability are computed from
+# commit authors. Most commits here are made by AI agents, recorded either as
+# "Claude" or under the name of the developer running them, so the author of a
+# commit does not represent who wrote the code.
+# Sigrid documents disabled_metrics for exactly that case ("Excluding
+# process-related metrics" in the reference above).
+architecture:
+  disabled_metrics:
+    - knowledge_awareness
+    - team_stability

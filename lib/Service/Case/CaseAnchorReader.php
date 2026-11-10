@@ -57,20 +57,18 @@ class CaseAnchorReader {
 	/**
 	 * The anchor's data for sentry evaluation. Empty when unreadable.
 	 *
-	 * @param string $objectUuid The anchor uuid.
-	 * @param int|null $registerId Its register, when known.
-	 * @param int|null $schemaId Its schema, when known.
+	 * @param CaseAnchor $anchor The anchor uuid, and its register and schema when known.
 	 *
 	 * @return array<string, mixed> The object's data, or [] when it cannot be read.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	public function read(string $objectUuid, ?int $registerId, ?int $schemaId): array {
+	public function read(CaseAnchor $anchor): array {
 		try {
 			$entity = $this->objects->find(
-				id: $objectUuid,
-				register: $registerId,
-				schema: $schemaId,
+				id: $anchor->objectUuid,
+				register: $anchor->registerId,
+				schema: $anchor->schemaId,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false,
@@ -79,7 +77,7 @@ class CaseAnchorReader {
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[CaseAnchorReader] The anchoring object could not be read; every if-part over it is false: ' . $failure->getMessage(),
-				['object' => $objectUuid]
+				['object' => $anchor->objectUuid]
 			);
 
 			return [];
@@ -100,20 +98,18 @@ class CaseAnchorReader {
 	/**
 	 * Whether a caller may read the anchor (and therefore its plan).
 	 *
-	 * @param string $objectUuid The anchor uuid.
-	 * @param int|null $registerId Its register, when known.
-	 * @param int|null $schemaId Its schema, when known.
+	 * @param CaseAnchor $anchor The anchor uuid, and its register and schema when known.
 	 *
 	 * @return boolean True only when the RBAC-checked read succeeds.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function mayRead(string $objectUuid, ?int $registerId, ?int $schemaId): bool {
+	public function mayRead(CaseAnchor $anchor): bool {
 		try {
 			return $this->objects->find(
-				id: $objectUuid,
-				register: $registerId,
-				schema: $schemaId,
+				id: $anchor->objectUuid,
+				register: $anchor->registerId,
+				schema: $anchor->schemaId,
 				_render: false,
 				_audit: false
 			) !== null;

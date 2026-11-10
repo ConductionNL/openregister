@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\AnonymisationBatch;
 use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\AnonymisationRun;
 use OCA\OpenRegister\Service\Archival\AnonymisationSweep;
@@ -258,4 +259,22 @@ class AnonymisationSweepTest extends TestCase {
 			$this->assertNotSame('', $refusal['reason'], 'every refusal must carry a reason somebody can act on');
 		}
 	}//end testTheRefusalsAreCountedApartFromTheSuccesses()
+
+	/**
+	 * The batch form reports exactly what the three-argument form reports.
+	 *
+	 * @return void
+	 */
+	public function testTheBatchFormMatchesTheArgumentForm(): void {
+		$candidates = [$this->candidate('obj-1'), $this->candidate('obj-2', ['hasLegalHold' => true, 'holdReason' => 'WOO-1'])];
+
+		$fromArguments = $this->sweep->run(candidates: $candidates, targetsFor: $this->workingTargets(), salt: 'instance-salt');
+		$fromBatch = $this->sweep->sweep(
+			batch: new AnonymisationBatch(candidates: $candidates, targetsFor: \Closure::fromCallable($this->workingTargets()), salt: 'instance-salt')
+		);
+
+		$this->assertSame($fromArguments['refused'], $fromBatch['refused']);
+		$this->assertSame(array_column($fromArguments['anonymised'], 'uuid'), array_column($fromBatch['anonymised'], 'uuid'));
+		$this->assertSame([1, 1], [$fromBatch['anonymisedCount'], $fromBatch['refusedCount']]);
+	}//end testTheBatchFormMatchesTheArgumentForm()
 }//end class

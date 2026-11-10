@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\Case\CasePlanMechanics;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
-use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
 use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
@@ -165,7 +164,6 @@ class CasePlanServiceTest extends TestCase {
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
 		$machine = new CasePlanStateMachine(
 			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
-			table: new CasePlanTransitions(),
 			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer)
 		);
 
@@ -178,7 +176,7 @@ class CasePlanServiceTest extends TestCase {
 			),
 			mechanics: new CasePlanMechanics(
 				machine: $machine,
-				cascade: new CasePlanCascade(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor)),
+				cascade: new CasePlanCascade(machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor)),
 				sentries: $sentries,
 				definitions: new CasePlanDefinition(sentries: $sentries)
 			),

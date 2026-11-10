@@ -121,27 +121,52 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function findings(?array $authorization, string $context, ?array $stored = null): array {
+		return array_map(
+			fn (array $condition): string => $this->findingFor(condition: $condition, context: $context),
+			$this->addedConditions(authorization: $authorization, stored: $stored)
+		);
+	}//end findings()
+
+	/**
+	 * The unknown-metadata conditions of a block that the stored block does not already hold.
+	 *
+	 * @param array|null $authorization The block.
+	 * @param array|null $stored        The block as stored, when saving over one.
+	 *
+	 * @return array<int, array<string, string>> The conditions, in block order.
+	 */
+	private function addedConditions(?array $authorization, ?array $stored): array {
 		$held = array_column($this->unknownConditions(authorization: $stored), 'fingerprint');
 
-		$findings = [];
+		$added = [];
 		foreach ($this->unknownConditions(authorization: $authorization) as $condition) {
-			if (in_array($condition['fingerprint'], $held, true) === true) {
-				continue;
+			if (in_array($condition['fingerprint'], $held, true) === false) {
+				$added[] = $condition;
 			}
-
-			$findings[] = sprintf(
-				'The %s rule for %s in %s has a condition on "%s", which is not metadata records carry,'
-				.' so it can never match. Keys starting with "_" or "@self." name record metadata: %s.',
-				$condition['label'],
-				$condition['principal'],
-				$context,
-				$condition['key'],
-				implode(', ', $this->conditions->fields())
-			);
 		}
 
-		return $findings;
-	}//end findings()
+		return $added;
+	}//end addedConditions()
+
+	/**
+	 * The sentence for one condition that can never match.
+	 *
+	 * @param array<string, string> $condition The condition: its label, principal and key.
+	 * @param string                $context   What the block belongs to, for the message.
+	 *
+	 * @return string The finding.
+	 */
+	private function findingFor(array $condition, string $context): string {
+		return sprintf(
+			'The %s rule for %s in %s has a condition on "%s", which is not metadata records carry,'
+			.' so it can never match. Keys starting with "_" or "@self." name record metadata: %s.',
+			$condition['label'],
+			$condition['principal'],
+			$context,
+			$condition['key'],
+			implode(', ', $this->conditions->fields())
+		);
+	}//end findingFor()
 
 	/**
 	 * The findings of a schema's own block and of every property's rules.

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
+use OCA\OpenRegister\Service\Schemas\UniqueConflict;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -64,7 +65,7 @@ class UniqueConstraintListenerGoldenTest extends TestCase {
 			static fn (array $c, array $o): ?array => ($c['name'] === 'skip' ? null : ['k' => $c['name']])
 		);
 		$evaluator->method('describeBreach')->willReturnCallback(
-			static fn (array $c, array $o, ?string $id): string => 'breach '.$c['name'].' by '.$id
+			static fn (array $c, UniqueConflict $conflict): string => 'breach '.$c['name'].' by '.$conflict->conflictingId
 		);
 
 		$schemas = $this->createMock(SchemaMapperInterface::class);

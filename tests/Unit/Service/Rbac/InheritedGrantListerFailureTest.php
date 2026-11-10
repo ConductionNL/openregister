@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectShareReader;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -59,7 +60,7 @@ class InheritedGrantListerFailureTest extends TestCase {
 	 */
 	public function testUnresolvableHierarchy(): void {
 		$hierarchy = $this->createMock(HierarchyDescender::class);
-		$hierarchy->method('ancestorsOf')->with(3, 7, 'child')->willThrowException(new RuntimeException('no table'));
+		$hierarchy->method('ancestorsOf')->with(new ObjectRef(3, 7, 'child'))->willThrowException(new RuntimeException('no table'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')
 			->with('[InheritedGrantLister] Could not resolve the ancestors of an object; its inherited grants are not listed');

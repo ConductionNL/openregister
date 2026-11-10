@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\WorkingCalendarController;
+use OCA\OpenRegister\Controller\Support\WorkingCalendarControllerServices;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -50,9 +51,11 @@ class WorkingCalendarControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->controller = new WorkingCalendarController(
 			$this->createMock(IRequest::class),
-			$this->userSession,
-			$this->groupManager,
-			new WorkingCalendars()
+			new WorkingCalendarControllerServices(
+				$this->userSession,
+				$this->groupManager,
+				new WorkingCalendars()
+			)
 		);
 	}
 

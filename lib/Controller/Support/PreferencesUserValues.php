@@ -50,23 +50,24 @@ final class PreferencesUserValues {
 	}//end __construct()
 
 	/**
-	 * Run $action with the user id and stored key: 401 when anonymous, 400 when no safe key remains.
+	 * Where the user's preference is stored: 401 when anonymous, 400 when no safe key remains.
 	 *
-	 * @param IUser|null                            $user   The session user.
-	 * @param string                                $key    The raw preference key.
-	 * @param callable(string, string): JSONResponse $action Gets the user id and the stored (`pref_`) key.
+	 * @param IUser|null $user The session user.
+	 * @param string     $key  The raw preference key.
 	 *
-	 * @return JSONResponse The response.
+	 * @return PreferenceSlot|JSONResponse The user id and stored (`pref_`) key, or the refusal.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
-	public function forUser(?IUser $user, string $key, callable $action): JSONResponse {
+	public function slotFor(?IUser $user, string $key): PreferenceSlot|JSONResponse {
 		$safeKey = $this->sanitizeKey(key: $key);
 		$refusal = $this->refusal(user: $user, safeKey: $safeKey);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $action($user->getUID(), 'pref_' . $safeKey);
-	}//end forUser()
+		return new PreferenceSlot(userId: $user->getUID(), storedKey: 'pref_' . $safeKey);
+	}//end slotFor()
 
 	/**
 	 * The refusal of an anonymous call (401) or of a key with nothing safe left (400).
@@ -91,13 +92,14 @@ final class PreferencesUserValues {
 	/**
 	 * The stored value, null when none is stored.
 	 *
-	 * @param string $userId    The user id.
-	 * @param string $storedKey The stored (`pref_`) key.
+	 * @param PreferenceSlot $slot The user id and stored (`pref_`) key.
 	 *
 	 * @return string|null The value.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
-	public function read(string $userId, string $storedKey): ?string {
-		$value = $this->config->getUserValue(userId: $userId, appName: $this->appName, key: $storedKey, default: '');
+	public function read(PreferenceSlot $slot): ?string {
+		$value = $this->config->getUserValue(userId: $slot->userId, appName: $this->appName, key: $slot->storedKey, default: '');
 		if ($value === '') {
 			return null;
 		}
@@ -108,19 +110,20 @@ final class PreferencesUserValues {
 	/**
 	 * Store the value, or delete the stored one when it is empty.
 	 *
-	 * @param string $userId    The user id.
-	 * @param string $storedKey The stored (`pref_`) key.
-	 * @param string $value     The value; empty clears it.
+	 * @param PreferenceSlot $slot  The user id and stored (`pref_`) key.
+	 * @param string         $value The value; empty clears it.
 	 *
 	 * @return string|null The value now stored.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
-	public function write(string $userId, string $storedKey, string $value): ?string {
+	public function write(PreferenceSlot $slot, string $value): ?string {
 		if ($value === '') {
-			$this->config->deleteUserValue(userId: $userId, appName: $this->appName, key: $storedKey);
+			$this->config->deleteUserValue(userId: $slot->userId, appName: $this->appName, key: $slot->storedKey);
 			return null;
 		}
 
-		$this->config->setUserValue(userId: $userId, appName: $this->appName, key: $storedKey, value: $value);
+		$this->config->setUserValue(userId: $slot->userId, appName: $this->appName, key: $slot->storedKey, value: $value);
 		return $value;
 	}//end write()
 

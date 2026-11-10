@@ -29,8 +29,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -58,34 +56,6 @@ use Psr\Log\LoggerInterface;
  */
 class LockHandler {
 	/**
-	 * Magic mapper for magic table operations.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $magicMapper;
-
-	/**
-	 * Audit trail mapper for logging actions.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Pre-creation locks, for identifiers that do not resolve to a stored object.
-	 *
-	 * @var AdvisoryLockStore
-	 */
-	private readonly AdvisoryLockStore $advisory;
-
-	/**
-	 * Bookkeeping for run-held locks, so the terminal listener and the sweep can find them.
-	 *
-	 * @var RunLockRegistry|null
-	 */
-	private readonly ?RunLockRegistry $runLocks;
-
-	/**
 	 * Constructor
 	 *
 	 * @param LockStores        $stores        The magic, audit trail, advisory and run-lock stores
@@ -93,14 +63,10 @@ class LockHandler {
 	 * @param LockAuthorization $authorization Who may take, release and break a lock
 	 */
 	public function __construct(
-		LockStores $stores,
+		private readonly LockStores $stores,
 		private readonly LoggerInterface $logger,
 		private readonly LockAuthorization $authorization,
 	) {
-		$this->magicMapper      = $stores->magicMapper;
-		$this->auditTrailMapper = $stores->auditTrailMapper;
-		$this->advisory         = $stores->advisory;
-		$this->runLocks         = $stores->runLocks;
 	}//end __construct()
 
 	/**
@@ -123,7 +89,7 @@ class LockHandler {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC bypass flag follows established API patterns.
 	 */
 	private function findObjectWithContext(string $identifier, bool $_rbacBypass = false): array {
-		$result = $this->magicMapper->findAcrossAllSources(
+		$result = $this->stores->magicMapper->findAcrossAllSources(
 			identifier: $identifier,
 			includeDeleted: false,
 			_rbac: ($_rbacBypass === false),
@@ -198,7 +164,7 @@ class LockHandler {
 		$this->authorization->assertMayLock(context: $context);
 
 		// Use MagicMapper for lock operation.
-		$objectAfter = $this->magicMapper->lockObjectEntity(
+		$objectAfter = $this->stores->magicMapper->lockObjectEntity(
 			entity: $context['object'],
 			register: $context['register'],
 			schema: $context['schema'],
@@ -206,7 +172,12 @@ class LockHandler {
 			process: $request->process,
 			runUuid: $request->runUuid
 		);
-		$this->recordLock(before: $context['object'], after: $objectAfter, request: $request);
+		// The run bookkeeping lets the terminal listener and the sweep find a run's
+		// lock without reading objects; the payload on the object stays the sole
+		// authority for the write guard.
+		$this->stores->runLocks?->record(object: $objectAfter, step: new LockRunStep($request->runUuid, $request->nodeId));
+		$this->stores->auditTrailMapper->createAuditTrail(old: $context['object'], new: $objectAfter, action: 'lock');
+		$this->logLocked(after: $objectAfter, request: $request);
 
 		// `held` is read back off the entity rather than assumed from the fact that
 		// the write did not throw, so an already-expired lock is not reported as held.
@@ -296,7 +267,7 @@ class LockHandler {
 		// displaced. After unlockObjectEntity() there is nothing left to name.
 		$displaced = ['displacedHolder' => $objectBefore->describeLockHolder(), 'displacedRun' => $objectBefore->getLockedByRun()];
 
-		$objectAfter = $this->magicMapper->unlockObjectEntity(
+		$objectAfter = $this->stores->magicMapper->unlockObjectEntity(
 			entity: $objectBefore,
 			register: $context['register'],
 			schema: $context['schema'],
@@ -305,7 +276,7 @@ class LockHandler {
 		);
 		$this->forgetDisplacedRun(displaced: $displaced, after: $objectAfter);
 		if ($request->break === true) {
-			$this->auditTrailMapper->createAuditTrailEntry(object: $objectAfter, action: 'lock.broken', context: $displaced);
+			$this->stores->auditTrailMapper->createAuditTrailEntry(object: $objectAfter, action: 'lock.broken', context: $displaced);
 		}
 
 		$this->recordUnlock(before: $objectBefore, after: $objectAfter);
@@ -336,7 +307,6 @@ class LockHandler {
 
 		return $this->unlock(identifier: $identifier, break: true);
 	}//end breakLock()
-
 
 	/**
 	 * Check if an object is locked
@@ -482,30 +452,23 @@ class LockHandler {
 	 * @throws LockedException If the advisory lock is held.
 	 */
 	private function acquireAdvisory(LockRequest $request): array {
-		return $this->advisory->acquire(identifier: $request->identifier, process: $request->process, duration: $request->duration);
+		return $this->stores->advisory->acquire(request: $request);
 	}//end acquireAdvisory()
 
 	/**
-	 * Record a lock that was taken: the run bookkeeping, the audit trail and the log.
+	 * Log a lock that was taken. The run bookkeeping and the audit row are written before it.
 	 *
-	 * The run bookkeeping lets the terminal listener and the sweep find a run's
-	 * lock without reading objects. The payload on the object stays the sole
-	 * authority for the write guard.
-	 *
-	 * @param ObjectEntity $before  The object before the lock.
-	 * @param ObjectEntity $after   The locked object.
-	 * @param LockRequest  $request What the caller asked for.
+	 * @param ObjectEntity $after   The object as locked.
+	 * @param LockRequest  $request The process that asked for it.
 	 *
 	 * @return void
 	 */
-	private function recordLock(ObjectEntity $before, ObjectEntity $after, LockRequest $request): void {
-		$this->runLocks?->record(object: $after, runUuid: $request->runUuid, nodeId: $request->nodeId);
-		$this->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'lock');
+	private function logLocked(ObjectEntity $after, LockRequest $request): void {
 		$this->logger->info(
 			message: '[LockHandler] Object locked successfully',
 			context: $this->logContext(fields: ['uuid' => $after->getUuid(), 'process' => $request->process])
 		);
-	}//end recordLock()
+	}//end logLocked()
 
 	/**
 	 * Release the lock on a stored object, logging a failure before it is rethrown.
@@ -589,7 +552,7 @@ class LockHandler {
 	 * @return bool Always true.
 	 */
 	private function releaseAdvisory(string $identifier): bool {
-		$this->advisory->release(identifier: $identifier);
+		$this->stores->advisory->release(identifier: $identifier);
 
 		return true;
 	}//end releaseAdvisory()
@@ -604,7 +567,7 @@ class LockHandler {
 	 */
 	private function forgetDisplacedRun(array $displaced, ObjectEntity $after): void {
 		if ($displaced['displacedRun'] !== null) {
-			$this->runLocks?->forget(runUuid: $displaced['displacedRun'], objectUuid: (string) $after->getUuid());
+			$this->stores->runLocks?->forget(runUuid: $displaced['displacedRun'], objectUuid: (string) $after->getUuid());
 		}
 	}//end forgetDisplacedRun()
 
@@ -617,7 +580,7 @@ class LockHandler {
 	 * @return void
 	 */
 	private function recordUnlock(ObjectEntity $before, ObjectEntity $after): void {
-		$this->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'unlock');
+		$this->stores->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'unlock');
 		$this->logger->info(message: '[LockHandler] Object unlocked successfully', context: $this->logContext(fields: ['uuid' => $after->getUuid()]));
 	}//end recordUnlock()
 

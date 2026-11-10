@@ -51,27 +51,6 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	private const EXCERPT_CONTEXT = 60;
 
 	/**
-	 * The URL generator service
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
-	 * Deep link registry for resolving URLs to consuming apps
-	 *
-	 * @var DeepLinkRegistryService
-	 */
-	private readonly DeepLinkRegistryService $deepLinkRegistry;
-
-	/**
-	 * Shared preview-formatting service (schema icon/name resolution).
-	 *
-	 * @var ObjectPreviewFormatter
-	 */
-	private readonly ObjectPreviewFormatter $formatter;
-
-	/**
 	 * Constructor for ObjectSearchResultFormatter.
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator service
@@ -83,13 +62,10 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
 	 */
 	public function __construct(
-		IURLGenerator $urlGenerator,
-		DeepLinkRegistryService $deepLinkRegistry,
-		ObjectPreviewFormatter $formatter,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly DeepLinkRegistryService $deepLinkRegistry,
+		private readonly ObjectPreviewFormatter $formatter,
 	) {
-		$this->urlGenerator = $urlGenerator;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->formatter = $formatter;
 	}//end __construct()
 
 	/**

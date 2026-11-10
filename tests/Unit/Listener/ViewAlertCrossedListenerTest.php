@@ -197,7 +197,7 @@ class ViewAlertCrossedListenerTest extends TestCase {
 		return new ViewAlertCrossedListener(
 			audience: new ViewAlertAudience(
 				recipients: new NotificationRecipientResolver(userManager: $userManager, groupManager: $groupManager, logger: $logger),
-				viewers: new ViewerReachResolver(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $logger)
+				viewers: new ViewerReachResolver(caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->createMock(IUserSession::class), $groupManager), logger: $logger)
 			),
 			notifications: $manager,
 			mail: new ViewAlertMail(

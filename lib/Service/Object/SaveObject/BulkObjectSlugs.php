@@ -110,7 +110,21 @@ class BulkObjectSlugs {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function apply(array $objects, Register|string|int|null $register=null, Schema|string|int|null $schema=null): array {
-		foreach ($this->groups(objects: $objects, caller: new BulkSlugCaller(register: $register, schema: $schema)) as $group) {
+		return $this->applyFor(objects: $objects, caller: new BulkSlugCaller(register: $register, schema: $schema));
+	}//end apply()
+
+	/**
+	 * Decide the object slugs of a prepared batch for the register and schema its caller passed.
+	 *
+	 * @param array          $objects The prepared rows.
+	 * @param BulkSlugCaller $caller  The register and schema the caller passed, if any.
+	 *
+	 * @return array The rows, each with its slug decided and without the carrier key.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function applyFor(array $objects, BulkSlugCaller $caller): array {
+		foreach ($this->groups(objects: $objects, caller: $caller) as $group) {
 			$this->decideGroup(objects: $objects, group: $group);
 		}
 
@@ -122,7 +136,7 @@ class BulkObjectSlugs {
 		}
 
 		return $objects;
-	}//end apply()
+	}//end applyFor()
 
 	/**
 	 * Whether a prepared row has the `@self` shape.
@@ -187,13 +201,13 @@ class BulkObjectSlugs {
 	 * @return void
 	 */
 	private function decideGroup(array &$objects, array $group): void {
-		$schema = $this->groupSchema(group: $group);
-		if ($schema === null || $this->slugHandler->isManaged(schema: $schema) === false) {
+		$group['schema'] = $this->groupSchema(group: $group);
+		if ($group['schema'] === null || $this->slugHandler->isManaged(schema: $group['schema']) === false) {
 			return;
 		}
 
-		foreach ($this->groupDecisions(objects: $objects, group: $group, schema: $schema) as $index => $slug) {
-			$this->writeDecision(objects: $objects, index: $index, slug: $slug);
+		foreach ($this->groupDecisions(objects: $objects, group: $group) as $index => $slug) {
+			$objects[$index] = $this->withSlug(row: $objects[$index], slug: $slug);
 		}
 	}//end decideGroup()
 
@@ -201,12 +215,11 @@ class BulkObjectSlugs {
 	 * The slug decisions of one managed group.
 	 *
 	 * @param array                $objects The prepared rows.
-	 * @param array<string, mixed> $group   The group, as groups() builds it.
-	 * @param Schema               $schema  The group's schema (managed).
+	 * @param array<string, mixed> $group   The group, as groups() builds it, its schema resolved (managed).
 	 *
 	 * @return array<int|string, string|null> Row index => slug.
 	 */
-	private function groupDecisions(array $objects, array $group, Schema $schema): array {
+	private function groupDecisions(array $objects, array $group): array {
 		$register = $this->groupRegister(group: $group);
 		if ($register === null) {
 			// Fail closed: without the table there is no uniqueness check, so no
@@ -219,7 +232,7 @@ class BulkObjectSlugs {
 			$rows[$index] = $this->slugRow(object: $objects[$index]);
 		}
 
-		return $this->slugHandler->decideBatch(rows: $rows, register: $register, schema: $schema);
+		return $this->slugHandler->decideBatch(rows: $rows, register: $register, schema: $group['schema']);
 	}//end groupDecisions()
 
 	/**
@@ -338,20 +351,20 @@ class BulkObjectSlugs {
 	}//end nonEmptyString()
 
 	/**
-	 * Write a slug decision back into its row, as an explicit null when there is none.
+	 * A row with its slug decision written in, as an explicit null when there is none.
 	 *
-	 * @param array       $objects The prepared rows, by reference.
-	 * @param int|string  $index   The row.
-	 * @param string|null $slug    The decision.
+	 * @param array       $row  The prepared row.
+	 * @param string|null $slug The decision.
 	 *
-	 * @return void
+	 * @return array The row.
 	 */
-	private function writeDecision(array &$objects, int|string $index, string|null $slug): void {
-		if ($this->hasSelf(row: $objects[$index]) === true) {
-			$objects[$index]['@self']['slug'] = $slug;
-			return;
+	private function withSlug(array $row, string|null $slug): array {
+		if ($this->hasSelf(row: $row) === true) {
+			$row['@self']['slug'] = $slug;
+			return $row;
 		}
 
-		$objects[$index]['slug'] = $slug;
-	}//end writeDecision()
+		$row['slug'] = $slug;
+		return $row;
+	}//end withSlug()
 }//end class

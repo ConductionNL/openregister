@@ -853,8 +853,8 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			$sql,
 			'the null-resolved $organisation predicate MUST become the impossible predicate'
 		);
-		$this->assertStringContainsString(
-			"`status` = 'published'",
+		$this->assertMatchesRegularExpression(
+			"/[`\"]status[`\"] = 'published'/",
 			$sql,
 			'the static half of the rule MUST still be emitted, ANDed with the denial'
 		);
@@ -897,7 +897,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
 		$sql = implode(' OR ', $result['conditions']);
 
-		$this->assertStringContainsString("`status` = 'published'", $sql);
+		$this->assertMatchesRegularExpression("/[`\"]status[`\"] = 'published'/", $sql);
 		$this->assertStringNotContainsString(
 			'1 = 0',
 			$sql,

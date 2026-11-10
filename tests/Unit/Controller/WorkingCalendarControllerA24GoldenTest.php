@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\WorkingCalendarController;
+use OCA\OpenRegister\Controller\Support\WorkingCalendarControllerServices;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -75,7 +76,7 @@ class WorkingCalendarControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturnCallback(fn (string $checked): bool => ($checked === $uid && $admin));
-		return new WorkingCalendarController($this->createMock(IRequest::class), $session, $this->groupManager, new WorkingCalendars());
+		return new WorkingCalendarController($this->createMock(IRequest::class), new WorkingCalendarControllerServices($session, $this->groupManager, new WorkingCalendars()));
 	}//end controller()
 
 	/**

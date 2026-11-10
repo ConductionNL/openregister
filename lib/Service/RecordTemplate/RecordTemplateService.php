@@ -89,7 +89,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 		private readonly ViewerReachResolver $viewers,
 	) {
 		$this->shares = new ViewShareResolver();
-		$this->input = new RecordTemplateInput();
+		$this->input = new RecordTemplateInput(shareFindings: $this->viewers->shareFindings(...));
 	}//end __construct()
 
 	/**
@@ -104,14 +104,9 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
-		$usable = [];
-		foreach ($this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema) as $template) {
-			if ($this->resolveUse(template: $template, reach: $reach) === true) {
-				$usable[] = $template;
-			}
-		}
+		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema);
 
-		return $usable;
+		return array_values(array_filter($candidates, fn (RecordTemplate $template): bool => $this->resolveUse(template: $template, reach: $reach)));
 	}//end listFor()
 
 	/**
@@ -148,7 +143,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function create(array $data, ViewerReach $reach): RecordTemplate {
-		$fields = $this->input->validated(data: $data, partial: false, shareFindings: $this->shareFindings(...));
+		$fields = $this->input->validated(data: $data, partial: false);
 		$this->assertMayCreate(schema: (string)$fields['schema'], reach: $reach);
 
 		$template = new RecordTemplate();
@@ -179,7 +174,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 */
 	public function change(string $uuid, array $data, ViewerReach $reach, bool $partial): RecordTemplate {
 		$template = $this->administered(uuid: $uuid, reach: $reach);
-		$fields = $this->input->validated(data: $data, partial: $partial, shareFindings: $this->shareFindings(...));
+		$fields = $this->input->validated(data: $data, partial: $partial);
 		if (isset($fields['schema']) === true && $fields['schema'] !== $template->getSchema()) {
 			$this->assertMayCreate(schema: (string)$fields['schema'], reach: $reach);
 		}
@@ -321,15 +316,4 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 
 		return $this->mayCreate[$key];
 	}//end mayCreateIn()
-
-	/**
-	 * What is wrong with a share list, judged against the groups that exist.
-	 *
-	 * @param mixed $sharedWith The declared shares.
-	 *
-	 * @return array<int, array{code: string, message: string}> The findings.
-	 */
-	private function shareFindings(mixed $sharedWith): array {
-		return $this->viewers->shareFindings(sharedWith: $sharedWith);
-	}//end shareFindings()
 }//end class

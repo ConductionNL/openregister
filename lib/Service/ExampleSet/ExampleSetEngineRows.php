@@ -166,14 +166,9 @@ abstract class ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
 	protected function dateRefusal(string $field, mixed $value, array $context, bool $isEnd): string {
-		if ($this->isBlank(value: $value) === true) {
-			return $field.' is not a date';
-		}
-
-		try {
-			$moment = new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return $field.' "'.$value.'" is not a date';
+		$moment = $this->momentOf(value: $value);
+		if ($moment === null) {
+			return $this->notADate(field: $field, value: $value);
 		}
 
 		if ($isEnd === true && $this->beforeDay(moment: $moment, today: ($context['today'] ?? null)) === true) {
@@ -182,6 +177,41 @@ abstract class ExampleSetEngineRows {
 
 		return '';
 	}//end dateRefusal()
+
+	/**
+	 * The moment a declared date names, or null when it names none.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return DateTimeImmutable|null
+	 */
+	private function momentOf(mixed $value): ?DateTimeImmutable {
+		if ($this->isBlank(value: $value) === true) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($value);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end momentOf()
+
+	/**
+	 * The refusal for a value that is not a date: blank, or not parseable.
+	 *
+	 * @param string $field The field.
+	 * @param mixed  $value The declared value.
+	 *
+	 * @return string
+	 */
+	private function notADate(string $field, mixed $value): string {
+		if ($this->isBlank(value: $value) === true) {
+			return $field.' is not a date';
+		}
+
+		return $field.' "'.$value.'" is not a date';
+	}//end notADate()
 
 	/**
 	 * Whether a filled value is no text, or only blanks.
@@ -295,15 +325,10 @@ abstract class ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
+		$check    = new ExampleSetFragmentCheck(context: $context, users: $users, values: $values);
 		$refusals = [];
 		foreach (($fragment[$this->part()] ?? []) as $entry) {
-			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $this->fillContext(context: $context), gaps: $gaps);
-			$why  = $this->refusalIn(data: $data, users: $users, context: $context);
-			if ($gaps !== []) {
-				$why = 'cannot resolve '.implode(', ', array_unique($gaps));
-			}
-
+			$why = $this->entryRefusal(entry: $entry, check: $check);
 			if ($why !== '') {
 				$refusals[] = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'": '.$why;
 			}
@@ -311,6 +336,26 @@ abstract class ExampleSetEngineRows {
 
 		return $refusals;
 	}//end checkFragment()
+
+	/**
+	 * Why one row of a fragment cannot be written, or ''. A placeholder the
+	 * set cannot resolve outranks the row's own refusal.
+	 *
+	 * @param array<string, mixed>    $entry The declared row.
+	 * @param ExampleSetFragmentCheck $check The context, accounts and filler.
+	 *
+	 * @return string
+	 */
+	private function entryRefusal(array $entry, ExampleSetFragmentCheck $check): string {
+		$gaps = [];
+		$data = (array) $check->values->fill(value: $entry['data'], context: $this->fillContext(context: $check->context), gaps: $gaps);
+		$why  = $this->refusalIn(data: $data, users: $check->users, context: $check->context);
+		if ($gaps !== []) {
+			return 'cannot resolve '.implode(', ', array_unique($gaps));
+		}
+
+		return $why;
+	}//end entryRefusal()
 
 	/**
 	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.

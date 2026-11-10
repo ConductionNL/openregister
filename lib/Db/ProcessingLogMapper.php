@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -127,22 +128,35 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * @return ProcessingLogEntry[]
 	 */
 	public function findBySubject(string $idType, string $idValue, ?ProcessingLogReadScope $scope = null): array {
+		$subject = new ProcessingLogSubject(type: $idType, value: $idValue);
+		return $this->findForSubject(subject: $subject, scope: ($scope ?? new ProcessingLogReadScope()));
+	}//end findBySubject()
+
+	/**
+	 * Find entries for one subject within a read scope, list entries reduced to that subject.
+	 *
+	 * @param ProcessingLogSubject   $subject The subject, type and value both given.
+	 * @param ProcessingLogReadScope $scope   Period, tenant scope and confidentiality.
+	 *
+	 * @return ProcessingLogEntry[]
+	 */
+	private function findForSubject(ProcessingLogSubject $subject, ProcessingLogReadScope $scope): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
+			->where($this->subjectMatch(qb: $qb, subject: $subject));
 
-		$this->applyReadScope(qb: $qb, scope: ($scope ?? new ProcessingLogReadScope()));
+		$this->applyReadScope(qb: $qb, scope: $scope);
 
 		$qb->orderBy('created', 'ASC');
 
 		$entries = $this->findEntities(query: $qb);
 		foreach ($entries as $entry) {
-			$this->narrowToSubject(entry: $entry, idType: $idType, idValue: $idValue);
+			$this->narrowToSubject(entry: $entry, subject: $subject);
 		}
 
 		return $entries;
-	}//end findBySubject()
+	}//end findForSubject()
 
 	/**
 	 * The predicate for one subject, on single reads and on list reads.
@@ -152,13 +166,14 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * stored: its braces and quotes keep `111` from matching `1112`, and JSON
 	 * escaping keeps a value from imitating an element.
 	 *
-	 * @param IQueryBuilder $qb      Query under construction.
-	 * @param string|null   $idType  Subject identifier type, or null for any.
-	 * @param string|null   $idValue Subject identifier value, or null for any.
+	 * @param IQueryBuilder        $qb      Query under construction.
+	 * @param ProcessingLogSubject $subject The subject; a null type or value matches any.
 	 *
 	 * @return ICompositeExpression The expression.
 	 */
-	private function subjectMatch(IQueryBuilder $qb, ?string $idType, ?string $idValue): ICompositeExpression {
+	private function subjectMatch(IQueryBuilder $qb, ProcessingLogSubject $subject): ICompositeExpression {
+		$idType = $subject->type;
+		$idValue = $subject->value;
 		$columns = [];
 		$element = '';
 		if ($idType !== null) {
@@ -187,20 +202,19 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * carry the other subjects in the list, the objects it covered or the
 	 * query, which can name other people. The count stays.
 	 *
-	 * @param ProcessingLogEntry $entry   The entry as read.
-	 * @param string             $idType  Subject identifier type.
-	 * @param string             $idValue Subject identifier value.
+	 * @param ProcessingLogEntry   $entry   The entry as read.
+	 * @param ProcessingLogSubject $subject The subject, type and value both given.
 	 *
 	 * @return void
 	 */
-	private function narrowToSubject(ProcessingLogEntry $entry, string $idType, string $idValue): void {
+	private function narrowToSubject(ProcessingLogEntry $entry, ProcessingLogSubject $subject): void {
 		if ($entry->getSubjectIds() === null) {
 			return;
 		}
 
-		$entry->setSubjectIdType($idType);
-		$entry->setSubjectIdValue($idValue);
-		$entry->setSubjectIds([['type' => $idType, 'value' => $idValue]]);
+		$entry->setSubjectIdType($subject->type);
+		$entry->setSubjectIdValue($subject->value);
+		$entry->setSubjectIds([['type' => $subject->type, 'value' => $subject->value]]);
 		$entry->setObjectUuids(null);
 		$entry->setQueryParams(null);
 	}//end narrowToSubject()
@@ -220,26 +234,34 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	public function findFiltered(
-		array $filters = [],
-		ProcessingLogReadScope|null $scope = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array {
+	public function findFiltered(array $filters = [], ProcessingLogReadScope|null $scope = null, int $limit = 100, int $offset = 0): array {
+		$query = new ListQuery(limit: $limit, offset: $offset, filters: $filters);
+		return $this->findListed(query: $query, scope: ($scope ?? new ProcessingLogReadScope()));
+	}//end findFiltered()
+
+	/**
+	 * One page of entries matching the query's filters within a read scope, newest first.
+	 *
+	 * @param ListQuery              $query The filters, limit and offset.
+	 * @param ProcessingLogReadScope $scope Period, tenant scope and confidentiality.
+	 *
+	 * @return ProcessingLogEntry[]
+	 */
+	private function findListed(ListQuery $query, ProcessingLogReadScope $scope): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-		$this->applySubjectFilter(qb: $qb, filters: $filters);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
+		$this->applySubjectFilter(qb: $qb, filters: $query->filters);
 
-		$this->applyReadScope(qb: $qb, scope: ($scope ?? new ProcessingLogReadScope()));
+		$this->applyReadScope(qb: $qb, scope: $scope);
 
 		$qb->orderBy('created', 'DESC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0);
 
 		return $this->findEntities(query: $qb);
-	}//end findFiltered()
+	}//end findListed()
 
 	/**
 	 * One equality per filled column filter, compared as a string.
@@ -252,9 +274,9 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * @return void
 	 */
 	private function applyColumnFilters(IQueryBuilder $qb, array $filters): void {
-		foreach (['register_id', 'schema_id', 'activity_id', 'actor', 'action'] as $column) {
-			$this->applyEqualsWhenSet(qb: $qb, column: $column, value: ($filters[$column] ?? null));
-		}
+		$columns = ['register_id', 'schema_id', 'activity_id', 'actor', 'action'];
+		$values = array_map(static fn (string $column): mixed => ($filters[$column] ?? null), $columns);
+		$this->applyEqualsWhenSet(qb: $qb, values: array_combine($columns, $values));
 	}//end applyColumnFilters()
 
 	/**
@@ -266,25 +288,28 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * @return void
 	 */
 	private function applySubjectFilter(IQueryBuilder $qb, array $filters): void {
-		$idType = $this->subjectFilter(value: ($filters['subject_id_type'] ?? null));
-		$idValue = $this->subjectFilter(value: ($filters['subject_id_value'] ?? null));
-		if ($idType !== null || $idValue !== null) {
-			$qb->andWhere($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
+		$subject = new ProcessingLogSubject(
+			type: $this->subjectFilter(value: ($filters['subject_id_type'] ?? null)),
+			value: $this->subjectFilter(value: ($filters['subject_id_value'] ?? null))
+		);
+		if ($subject->isOpen() === false) {
+			$qb->andWhere($this->subjectMatch(qb: $qb, subject: $subject));
 		}
 	}//end applySubjectFilter()
 
 	/**
-	 * An equality on a column, as a string, unless the value is null or the empty string.
+	 * An equality per column, as a string, in the given order; a null or '' value adds no condition.
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param string        $column The column.
-	 * @param mixed         $value  The value, or null / '' for no condition.
+	 * @param IQueryBuilder        $qb     The query.
+	 * @param array<string, mixed> $values Column to value.
 	 *
 	 * @return void
 	 */
-	private function applyEqualsWhenSet(IQueryBuilder $qb, string $column, mixed $value): void {
-		if ($value !== null && $value !== '') {
-			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$value)));
+	private function applyEqualsWhenSet(IQueryBuilder $qb, array $values): void {
+		foreach ($values as $column => $value) {
+			if ($value !== null && $value !== '') {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$value)));
+			}
 		}
 	}//end applyEqualsWhenSet()
 
@@ -320,8 +345,7 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 			->from($this->getTableName())
 			->groupBy('activity_id');
 
-		$this->applyEqualsWhenSet(qb: $qb, column: 'organisation_id', value: $organisationId);
-		$this->applyEqualsWhenSet(qb: $qb, column: 'register_id', value: $registerId);
+		$this->applyEqualsWhenSet(qb: $qb, values: ['organisation_id' => $organisationId, 'register_id' => $registerId]);
 
 		$result = $qb->executeQuery();
 		$counts = [];
@@ -358,20 +382,21 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * @return void
 	 */
 	private function applyReadScope(IQueryBuilder $qb, ProcessingLogReadScope $scope): void {
-		$this->applyPeriod(qb: $qb, from: $scope->from, to: $scope->to);
-		$this->applyScope(qb: $qb, organisationId: $scope->organisationId, includeConfidential: $scope->includeConfidential);
+		$this->applyPeriod(qb: $qb, scope: $scope);
+		$this->applyScope(qb: $qb, scope: $scope);
 	}//end applyReadScope()
 
 	/**
 	 * Apply the period filter shared by the read helpers.
 	 *
-	 * @param IQueryBuilder $qb Query under construction.
-	 * @param DateTime|null $from Inclusive lower bound.
-	 * @param DateTime|null $to Inclusive upper bound.
+	 * @param IQueryBuilder          $qb    Query under construction.
+	 * @param ProcessingLogReadScope $scope Its inclusive from and to bounds.
 	 *
 	 * @return void
 	 */
-	private function applyPeriod(IQueryBuilder $qb, ?DateTime $from, ?DateTime $to): void {
+	private function applyPeriod(IQueryBuilder $qb, ProcessingLogReadScope $scope): void {
+		$from = $scope->from;
+		$to = $scope->to;
 		if ($from !== null) {
 			$qb->andWhere(
 				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
@@ -389,13 +414,14 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	/**
 	 * Apply the tenant and confidentiality filters shared by the read helpers.
 	 *
-	 * @param IQueryBuilder $qb Query under construction.
-	 * @param string|null $organisationId Tenant scope.
-	 * @param bool $includeConfidential Whether to include confidential entries.
+	 * @param IQueryBuilder          $qb    Query under construction.
+	 * @param ProcessingLogReadScope $scope Its tenant scope and whether confidential entries are included.
 	 *
 	 * @return void
 	 */
-	private function applyScope(IQueryBuilder $qb, ?string $organisationId, bool $includeConfidential): void {
+	private function applyScope(IQueryBuilder $qb, ProcessingLogReadScope $scope): void {
+		$organisationId = $scope->organisationId;
+		$includeConfidential = $scope->includeConfidential;
 		if ($organisationId !== null && $organisationId !== '') {
 			$qb->andWhere(
 				$qb->expr()->eq('organisation_id', $qb->createNamedParameter($organisationId))

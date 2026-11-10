@@ -54,6 +54,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshStores;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
+use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2RefreshService
@@ -91,7 +92,7 @@ class OAuth2RefreshServiceTest extends TestCase {
 		$objectService->method('saveObject')->willReturn(new ObjectEntity());
 
 		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
-		$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+		$this->makeService(objectService: $objectService)->persist(address: new \OCA\OpenRegister\Service\Credential\TokenSetAddress(credentialId: 'cred-slug', scope: 'personal'), set: $set);
 
 		$this->assertSame(['cred-uuid'], array_keys($this->vault));
 	}
@@ -103,7 +104,7 @@ class OAuth2RefreshServiceTest extends TestCase {
 
 		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
 		try {
-			$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+			$this->makeService(objectService: $objectService)->persist(address: new \OCA\OpenRegister\Service\Credential\TokenSetAddress(credentialId: 'cred-slug', scope: 'personal'), set: $set);
 			$this->fail('A token set for a credential that is not stored must be refused.');
 		} catch (\RuntimeException $e) {
 			$this->assertSame([], $this->vault);
@@ -117,7 +118,7 @@ class OAuth2RefreshServiceTest extends TestCase {
 
 		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
 		$this->expectException(\RuntimeException::class);
-		$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+		$this->makeService(objectService: $objectService)->persist(address: new \OCA\OpenRegister\Service\Credential\TokenSetAddress(credentialId: 'cred-slug', scope: 'personal'), set: $set);
 	}
 
 	public function testTheMetadataIsWrittenOnTheFoundRowByItsUuid(): void {
@@ -135,7 +136,7 @@ class OAuth2RefreshServiceTest extends TestCase {
 		);
 
 		$set = OAuth2TokenSet::fromStoredJson(stored: $this->tokenSetJson(expiresIn: 3600));
-		$this->makeService(objectService: $objectService)->persist(credentialId: 'cred-slug', scope: 'personal', set: $set);
+		$this->makeService(objectService: $objectService)->persist(address: new \OCA\OpenRegister\Service\Credential\TokenSetAddress(credentialId: 'cred-slug', scope: 'personal'), set: $set);
 
 		$this->assertSame(['cred-uuid'], $written);
 	}
@@ -555,12 +556,12 @@ class OAuth2RefreshServiceTest extends TestCase {
 
 		$notifier = $this->createMock(CredentialRelinkNotifier::class);
 		$notifier->method('announce')->willReturnCallback(
-			function (string $credentialId, string $provider, string $owner, string $reason): void {
+			function (CredentialRelinkRequiredEvent $event): void {
 				$this->announcements[] = [
-					'credentialId' => $credentialId,
-					'provider' => $provider,
-					'owner' => $owner,
-					'reason' => $reason,
+					'credentialId' => $event->getCredentialId(),
+					'provider' => $event->getProvider(),
+					'owner' => $event->getOwner(),
+					'reason' => $event->getReason(),
 				];
 			}
 		);

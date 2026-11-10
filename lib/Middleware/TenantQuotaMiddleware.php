@@ -37,8 +37,6 @@ use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Middleware that enforces tenant quotas and organisation status.
@@ -73,16 +71,14 @@ class TenantQuotaMiddleware extends Middleware {
 	/**
 	 * Constructor
 	 *
-	 * @param OrganisationServiceInterface $organisationService Organisation service
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param LoggerInterface $logger Logger
+	 * @param OrganisationServiceInterface $organisationService Organisation service (the tenancy scope)
+	 * @param InboundCall                  $call                The session and the logger
+	 * @param IGroupManager                $groupManager        Group manager
 	 */
 	public function __construct(
 		private readonly OrganisationServiceInterface $organisationService,
-		private readonly IUserSession $userSession,
+		private readonly InboundCall $call,
 		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -114,7 +110,7 @@ class TenantQuotaMiddleware extends Middleware {
 	 */
 	public function beforeController(string|Controller $controller, string $methodName): void {
 		// Skip for non-authenticated requests (public endpoints).
-		$user = $this->userSession->getUser();
+		$user = $this->call->userSession->getUser();
 		if ($user === null) {
 			return;
 		}
@@ -143,15 +139,27 @@ class TenantQuotaMiddleware extends Middleware {
 	 * @spec openspec/specs/tenant-quotas/spec.md
 	 */
 	public function afterController(string|Controller $controller, string $methodName, Response $response): Response {
+		$this->trackResponseBandwidth(response: $response);
+		return $response;
+	}//end afterController()
+
+	/**
+	 * Add the size of a response to the bandwidth of the active organisation, when there is one.
+	 *
+	 * @param Response $response The response
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	private function trackResponseBandwidth(Response $response): void {
 		$orgUuid = $this->loadOrganisation(where: ' in afterController')?->getUuid();
 		if ($orgUuid === null) {
-			return $response;
+			return;
 		}
 
 		$this->trackBandwidth(orgUuid: $orgUuid, contentLength: $this->contentLength(response: $response));
-
-		return $response;
-	}//end afterController()
+	}//end trackResponseBandwidth()
 
 	/**
 	 * Handle exceptions thrown during quota/status checks.
@@ -167,6 +175,21 @@ class TenantQuotaMiddleware extends Middleware {
 	 * @spec openspec/specs/tenant-quotas/spec.md
 	 */
 	public function afterException(string|Controller $controller, string $methodName, \Exception $exception): ?Response {
+		return $this->refusalResponse(exception: $exception);
+	}//end afterException()
+
+	/**
+	 * The JSON response for a status or quota refusal; anything else is re-thrown.
+	 *
+	 * @param \Exception $exception The exception
+	 *
+	 * @return Response The refusal response
+	 *
+	 * @throws \Exception The exception when it is not a tenant refusal
+	 *
+	 * @spec openspec/specs/tenant-quotas/spec.md
+	 */
+	private function refusalResponse(\Exception $exception): Response {
 		if ($exception instanceof TenantStatusException) {
 			return $this->statusResponse(exception: $exception);
 		}
@@ -176,7 +199,7 @@ class TenantQuotaMiddleware extends Middleware {
 		}
 
 		throw $exception;
-	}//end afterException()
+	}//end refusalResponse()
 
 	/**
 	 * Load the active organisation, or null when it cannot be loaded.
@@ -194,7 +217,7 @@ class TenantQuotaMiddleware extends Middleware {
 		try {
 			return $this->organisationService->getActiveOrganisation();
 		} catch (\Exception $e) {
-			$this->logger->warning('[TenantQuotaMiddleware] Could not load organisation' . $where . ': ' . $e->getMessage());
+			$this->call->logger->warning('[TenantQuotaMiddleware] Could not load organisation' . $where . ': ' . $e->getMessage());
 			return null;
 		}
 	}//end loadOrganisation()

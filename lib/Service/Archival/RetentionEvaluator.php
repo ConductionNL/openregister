@@ -109,6 +109,20 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 	 * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-4
 	 */
 	public function evaluate(array $annotation, array $row, DateTimeInterface $createdAt): array {
+		return $this->evaluated(subject: new AnnotatedRow(annotation: $annotation, row: $row, createdAt: $createdAt));
+	}//end evaluate()
+
+	/**
+	 * The effective retention of one annotated row, and the archival facts it establishes.
+	 *
+	 * @param AnnotatedRow $subject The annotation, the row and its creation moment.
+	 *
+	 * @return array<string, mixed> The evaluation, as {@see evaluate()} describes it.
+	 *
+	 * @throws InvalidArgumentException When the annotation has no usable retention.
+	 */
+	private function evaluated(AnnotatedRow $subject): array {
+		[$annotation, $row, $createdAt] = [$subject->annotation, $subject->row, $subject->createdAt];
 		$retention = $this->retentionBlock(annotation: $annotation);
 		$matched = $this->firstMatchingRule(rules: ($retention['rules'] ?? []), row: $row);
 
@@ -123,7 +137,7 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 		$evaluation = ['effectiveRetention' => $effectiveDur, 'matchedRule' => $matchedRule, 'expiresAt' => $expiresAt];
 
 		return array_merge($evaluation, $this->declaredFacts(annotation: $annotation, row: $row));
-	}//end evaluate()
+	}//end evaluated()
 
 	/**
 	 * The annotation's retention block, refused when it has no usable default.
@@ -166,9 +180,9 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 		}
 
 		foreach ($rules as $index => $rule) {
-			$ruleRet = $this->retentionIfMatches(index: $index, rule: $rule, row: $row);
-			if ($ruleRet !== null) {
-				return ['index' => (int)$index, 'retention' => $ruleRet];
+			$usable = $this->usableRule(index: $index, rule: $rule);
+			if ($usable !== null && $this->conditionMatches(rule: $usable, row: $row) === true) {
+				return ['index' => (int)$index, 'retention' => $usable->retention];
 			}
 		}
 
@@ -176,47 +190,41 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 	}//end firstMatchingRule()
 
 	/**
-	 * A rule's retention when its condition matches the row, or null.
+	 * A rule with a string condition and a string retention, or null.
 	 *
 	 * A rule that is not an array, or lacks a string condition or retention, is
 	 * skipped. A malformed condition is skipped with a warning: the cron must not
 	 * crash on a single malformed rule (spec D-Scenario "Malformed condition" of
 	 * the RetentionConditionEvaluator requirement).
 	 *
-	 * @param int|string           $index The rule's index, for the warning.
-	 * @param mixed                $rule  The rule.
-	 * @param array<string, mixed> $row   Row data keyed by field name.
+	 * @param int|string $index The rule's index, for the warning.
+	 * @param mixed      $rule  The rule.
 	 *
-	 * @return string|null The rule's retention, or null when it does not match.
+	 * @return IndexedRule|null The usable rule, or null when it is skipped.
 	 */
-	private function retentionIfMatches(int|string $index, mixed $rule, array $row): string|null {
+	private function usableRule(int|string $index, mixed $rule): ?IndexedRule {
 		$condition = $this->ruleField(rule: $rule, field: 'condition');
 		$ruleRet = $this->ruleField(rule: $rule, field: 'retention');
 		if ($condition === null || $ruleRet === null) {
 			return null;
 		}
 
-		if ($this->conditionMatches(index: $index, condition: $condition, row: $row) === true) {
-			return $ruleRet;
-		}
-
-		return null;
-	}//end retentionIfMatches()
+		return new IndexedRule(index: $index, condition: $condition, retention: $ruleRet);
+	}//end usableRule()
 
 	/**
 	 * Whether a rule's condition matches the row; a malformed one is logged and does not.
 	 *
-	 * @param int|string           $index     The rule's index, for the warning.
-	 * @param string               $condition The condition.
-	 * @param array<string, mixed> $row       Row data keyed by field name.
+	 * @param IndexedRule          $rule The rule: its index, for the warning, and its condition.
+	 * @param array<string, mixed> $row  Row data keyed by field name.
 	 *
 	 * @return bool True when it matches.
 	 */
-	private function conditionMatches(int|string $index, string $condition, array $row): bool {
+	private function conditionMatches(IndexedRule $rule, array $row): bool {
 		try {
-			return $this->conditionEvaluator->evaluate($condition, $row);
+			return $this->conditionEvaluator->evaluate($rule->condition, $row);
 		} catch (InvalidArgumentException $error) {
-			$this->logger->warning('Skipping malformed retention condition: ' . $error->getMessage(), ['rule_index' => $index]);
+			$this->logger->warning('Skipping malformed retention condition: ' . $error->getMessage(), ['rule_index' => $rule->index]);
 			return false;
 		}
 	}//end conditionMatches()
