@@ -99,8 +99,9 @@ interface SharedMasterDataServiceInterface {
 	 * refusal belongs, and the message names the holder so the caller knows who
 	 * to ask rather than only that they were told no.
 	 *
-	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
-	 * @param integer|null $id The row being written.
+	 * A row whose id is not known asks nothing.
+	 *
+	 * @param DeclaredRow        $row            The register or schema row being written ({@see REGISTERS} or {@see SCHEMAS}).
 	 * @param array<int, string> $activeOrgUuids The acting organisation and its parents.
 	 *
 	 * @return void
@@ -109,5 +110,5 @@ interface SharedMasterDataServiceInterface {
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function assertWritable(string $table, ?int $id, array $activeOrgUuids): void;
+	public function assertWritable(DeclaredRow $row, array $activeOrgUuids): void;
 }//end interface

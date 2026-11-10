@@ -232,7 +232,7 @@ class PartyLinkWriter {
 	 * @return string|null The address.
 	 */
 	private function primaryEmailOf(ObjectEntity $party, PartyDefinition $definition): ?string {
-		$preferred = $this->parties->addressesOfKind(party: $party, kind: 'correspondence', definition: $definition);
+		$preferred = $this->parties->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'correspondence', definition: $definition));
 		if ($preferred === []) {
 			$preferred = $this->parties->addresses(party: $party, definition: $definition);
 		}
