@@ -82,19 +82,98 @@ exclude:
   # the skills stay in the repository for developers.
   - ".*/[.]claude/.*"
 
-# Open Source Health. These eight are the Nextcloud platform's own libraries,
-# which a Nextcloud app cannot avoid. Their AGPL and GPL licences are accepted, so
-# only the licence property is excluded: vulnerabilities, freshness, activity and
-# management are still scored. [:/] matches the scoped npm name in either form,
-# because the name Sigrid compares against is not documented.
+# Open Source Health.
 #
-# The path entry excludes the Newman test harness (tests/integration/package.json),
-# which runs the API tests against a dev instance and is not shipped with the app.
-# Its only findings are in newman's own dependencies, with no release of newman
-# that fixes them.
+# Scope: what ships. Sigrid reads package.json and composer.json without telling
+# devDependencies and require-dev apart, and its configuration has no switch for
+# that. The blocklist therefore names every dev-only manifest entry (build,
+# lint, test and analysis tooling), so only the production dependencies are
+# scored. None of these names is also a production dependency; when a package
+# moves from dev to production, remove it here in the same change.
+#
+# The path entries drop manifests that are not part of the app at all:
+# - tests/integration/package.json is the Newman test harness, which runs the
+#   API tests against a dev instance. Its only findings are in newman's own
+#   dependencies, with no release of newman that fixes them.
+# - docs/package.json builds the Docusaurus documentation site.
+# - n8n-mcp/package.json configures the n8n container of the local development
+#   environment (docker-compose.yml mounts it there); nothing installs it into
+#   the app.
 dependencychecker:
+  blocklist:
+    # package.json devDependencies
+    - "^@babel[:/]core$"
+    - "^@babel[:/]plugin-transform-typescript$"
+    - "^@babel[:/]preset-env$"
+    - "^@babel[:/]preset-typescript$"
+    - "^@babel[:/]traverse$"
+    - "^@cyclonedx[:/]cyclonedx-npm$"
+    - "^@nextcloud[:/]browserslist-config$"
+    - "^@nextcloud[:/]eslint-config$"
+    - "^@nextcloud[:/]prettier-config$"
+    - "^@nextcloud[:/]stylelint-config$"
+    - "^@nextcloud[:/]webpack-vue-config$"
+    - "^@pinia[:/]testing$"
+    - "^@playwright[:/]test$"
+    - "^@stoplight[:/]spectral-cli$"
+    - "^@types[:/]jest$"
+    - "^@types[:/]node$"
+    - "^@typescript-eslint[:/]parser$"
+    - "^@vue[:/]test-utils$"
+    - "^@vue[:/]vue3-jest$"
+    - "^axe-core$"
+    - "^babel-jest$"
+    - "^babel-loader$"
+    - "^css-loader$"
+    - "^esbuild$"
+    - "^eslint$"
+    - "^eslint-config-prettier$"
+    - "^eslint-webpack-plugin$"
+    - "^jest$"
+    - "^jest-environment-jsdom$"
+    - "^jest-transform-stub$"
+    - "^postcss$"
+    - "^postcss-html$"
+    - "^prettier$"
+    - "^style-loader$"
+    - "^stylelint$"
+    - "^stylelint-config-recommended-scss$"
+    - "^stylelint-config-recommended-vue$"
+    - "^stylelint-webpack-plugin$"
+    - "^terser-webpack-plugin$"
+    - "^ts-jest$"
+    - "^ts-loader$"
+    - "^typescript$"
+    - "^vue-eslint-parser$"
+    - "^vue-loader$"
+    # composer.json require-dev
+    - "^conduction[:/]coding-standard$"
+    - "^conduction[:/]hydra-gates$"
+    - "^cyclonedx[:/]cyclonedx-php-composer$"
+    - "^doctrine[:/]dbal$"
+    - "^edgedesign[:/]phpqa$"
+    - "^nextcloud[:/]ocp$"
+    - "^phpcsstandards[:/]phpcsextra$"
+    - "^phpmd[:/]phpmd$"
+    - "^phpmetrics[:/]phpmetrics$"
+    - "^phpstan[:/]phpstan$"
+    - "^phpunit[:/]phpunit$"
+    - "^roave[:/]security-advisories$"
+    - "^sabre[:/]vobject$"
+    - "^sabre[:/]xml$"
+    - "^squizlabs[:/]php_codesniffer$"
+    - "^symfony[:/]console$"
+    - "^symfony[:/]http-foundation$"
+    - "^vimeo[:/]psalm$"
   exclude:
     - path: ".*/tests/integration/.*"
+    - path: ".*/docs/package(-lock)?[.]json"
+    - path: ".*/n8n-mcp/.*"
+    # These eight are the Nextcloud platform's own libraries, which a Nextcloud
+    # app cannot avoid. Their AGPL and GPL licences are accepted, so only the
+    # licence property is excluded: vulnerabilities, freshness, activity and
+    # management are still scored. [:/] matches the scoped npm name in either
+    # form, because the name Sigrid compares against is not documented.
     - license: "^@nextcloud[:/]vue$"
     - license: "^@nextcloud[:/]dialogs$"
     - license: "^@nextcloud[:/]auth$"
@@ -103,6 +182,25 @@ dependencychecker:
     - license: "^@nextcloud[:/]router$"
     - license: "^@nextcloud[:/]initial-state$"
     - license: "^@nextcloud[:/]capabilities$"
+    # Freshness that this app cannot change on its own.
+    # The Nextcloud server ships guzzlehttp/guzzle 7, phpseclib/phpseclib 3 and
+    # symfony/process and symfony/uid 6.4 in its 3rdparty (stable35: 7.15.2,
+    # 3.0.55, 6.4.33 and 6.4.32). The server's
+    # autoloader registers first, so the server's copy is the one that runs; a
+    # newer major in this app's vendor/ would be shadowed, or would break when
+    # both copies load. These follow the server's major.
+    - freshness: "^guzzlehttp[:/]guzzle$"
+    - freshness: "^phpseclib[:/]phpseclib$"
+    - freshness: "^symfony[:/]process$"
+    - freshness: "^symfony[:/]uid$"
+    # zbateson/mail-mime-parser stays on 3.x by owner decision.
+    - freshness: "^zbateson[:/]mail-mime-parser$"
+    # apexcharts 5 and later, and vue3-apexcharts 1.9 and later, are published
+    # under the proprietary ApexCharts License (paid above a revenue threshold
+    # our users exceed). apexcharts 4.7 and vue3-apexcharts 1.8 are the last
+    # MIT releases; .github/dependabot.yml holds both back for the same reason.
+    - freshness: "^apexcharts$"
+    - freshness: "^vue3-apexcharts$"
 
 # Architecture Quality. Knowledge Awareness and Team Stability are computed from
 # commit authors. Most commits here are made by AI agents, recorded either as

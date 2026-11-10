@@ -46,6 +46,10 @@ updates:
       # line, and the one @conduction/nextcloud-vue bundles.
       - dependency-name: "apexcharts"
         versions: [">=5.0.0"]
+      # vue3-apexcharts 1.9 and later carry the same ApexCharts License, and
+      # 1.11 peers apexcharts >= 5.10. 1.8 is the last MIT release.
+      - dependency-name: "vue3-apexcharts"
+        versions: [">=1.9.0"]
     cooldown:
       default-days: 1
       include:
