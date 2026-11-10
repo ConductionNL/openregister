@@ -141,9 +141,9 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 		$this->engine->expects($this->once())->method('run')->willReturnCallback(
 			function () use (&$seenItems): array {
 				$args = func_get_args();
-				// run(start, items, startAt):
+				// run(start, origin):
 				// PHPUnit hands named arguments through positionally.
-				$seenItems = $args[1];
+				$seenItems = $args[1]->items;
 
 				return [
 					'status' => FlowEngine::STATUS_COMPLETED,
