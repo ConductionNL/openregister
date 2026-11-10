@@ -18,8 +18,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -57,10 +59,12 @@ class GetObjectFindAllGoldenTest extends TestCase {
 	 */
 	private function getObject(): GetObject {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturnCallback(
-			function (...$args): array {
-				$args[10] = $args[10]?->getId();
-				$args[11] = $args[11]?->getId();
+		$mapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$q    = $request->query;
+				$args = [$q->limitOrNull(), $q->offset, $q->filters, null, null, $q->sort, $q->search, $request->ids, $request->uses, false];
+				$args[10] = $request->table?->register->getId();
+				$args[11] = $request->table?->schema->getId();
 				$this->calls[] = ['table', $args];
 				$rows = [];
 				foreach (['r1' => ['a' => 1], 'r2' => ['b' => 2]] as $uuid => $data) {
@@ -84,11 +88,11 @@ class GetObjectFindAllGoldenTest extends TestCase {
 					return 'live';
 				}
 
-				public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity {
+				public function find(SourcedTable $source, string $id): ?ObjectEntity {
 					return null;
 				}
 
-				public function count(Register $register, Schema $schema, array $query=[], array $config=[]): int {
+				public function count(SourcedTable $source, array $query = []): int {
 					return 0;
 				}
 
@@ -96,7 +100,10 @@ class GetObjectFindAllGoldenTest extends TestCase {
 					return $this->enabled;
 				}
 
-				public function findAll(Register $register, Schema $schema, array $query=[], array $config=[]): array {
+				public function findAll(SourcedTable $source, array $query = []): array {
+					$register = $source->table->register;
+					$schema   = $source->table->schema;
+					$config   = $source->config;
 					$this->calls[] = ['source', $register->getId(), $schema->getId(), $query, $config];
 					return [['live' => true]];
 				}

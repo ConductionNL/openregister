@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use Closure;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Removes an installed example set.
@@ -223,7 +224,7 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 		}
 
 		$entry = $held->entry;
-		return $this->objects->store->deleteRecorded(register: $entry['register'], schema: $entry['schema'], id: $entry['id']);
+		return $this->objects->store->deleteRecorded(ref: new ObjectRef(register: $entry['register'], schema: $entry['schema'], id: $entry['id']));
 	}//end deleteObject()
 
 	/**
@@ -361,7 +362,8 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	private function deleteFilesOf(ExampleSetRemovalRun $run, ExampleSetRecordedObject $held): array {
 		$left = [];
 		foreach (($run->record['files'][$held->name] ?? []) as $file) {
-			$why = $this->objects->files->delete(fileId: (string) $file['id'], name: (string) $file['name'], objectId: (string) $held->entry['id']);
+			$attached = new AttachedFile(id: (string) $file['id'], name: (string) $file['name']);
+			$why      = $this->objects->files->deleteAttached(file: $attached, objectId: (string) $held->entry['id']);
 			if ($why !== '') {
 				$run->report['failed'][] = 'file '.$file['name'].' on '.$held->name.': '.$why;
 				$left[] = $file;

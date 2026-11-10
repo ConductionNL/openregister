@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -128,10 +130,8 @@ class SaveObjectDeepTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -913,12 +913,12 @@ class SaveObjectDeepTest extends TestCase {
 	public function testSetSelfMetadataNoLongerSetsTheSlug(): void {
 		// ObjectSlugHandler decides the slug after hydration (#4037).
 		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['slug' => 'my-slug'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['slug' => 'my-slug'])]);
 		$this->assertNull($entity->getSlug());
 	}
 
 	public function testClientSlugReadsSelfFirst(): void {
-		$this->assertSame('my-slug', $this->invokePrivateMethod('clientSlug', [['slug' => 'my-slug'], ['slug' => 'data-slug']]));
+		$this->assertSame('my-slug', (new ObjectPayload(data: ['slug' => 'data-slug'], selfData: ['slug' => 'my-slug']))->clientSlug());
 	}
 
 	public function testSetSelfMetadataOwnerIsIgnored(): void {
@@ -930,7 +930,7 @@ class SaveObjectDeepTest extends TestCase {
 		// Ensure owner starts as null (default for a new entity).
 		$this->assertNull($entity->getOwner());
 		// Pass a client-supplied owner value — it must be silently ignored.
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['owner' => 'injected-owner'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['owner' => 'injected-owner'])]);
 		// Owner remains null; applyOwnerAttribution() will set it from the session.
 		$this->assertNull($entity->getOwner());
 	}
@@ -943,7 +943,7 @@ class SaveObjectDeepTest extends TestCase {
 		// BOTH arms of the gate are closed and the organisation must NOT be stamped
 		// from client input.
 		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['organisation' => 'org-uuid'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['organisation' => 'org-uuid'])]);
 		$this->assertNull($entity->getOrganisation());
 	}
 
@@ -956,13 +956,13 @@ class SaveObjectDeepTest extends TestCase {
 			->willReturn(true);
 
 		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['organisation' => 'org-uuid'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['organisation' => 'org-uuid'])]);
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}
 
 	public function testClientSlugFallsBackToTheData(): void {
-		$this->assertSame('data-slug', $this->invokePrivateMethod('clientSlug', [[], ['slug' => 'data-slug']]));
-		$this->assertNull($this->invokePrivateMethod('clientSlug', [['slug' => ''], []]));
+		$this->assertSame('data-slug', (new ObjectPayload(data: ['slug' => 'data-slug'], selfData: []))->clientSlug());
+		$this->assertNull((new ObjectPayload(data: [], selfData: ['slug' => '']))->clientSlug());
 	}
 
 }

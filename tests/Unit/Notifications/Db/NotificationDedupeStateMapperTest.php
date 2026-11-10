@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
@@ -103,7 +104,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 		$this->queuedRows = [[self::row()]];
 		$mapper = $this->mapper();
 
-		$found = $mapper->findOne(3, 'r1', 'u-1');
+		$found = $mapper->findByKey(new NotificationDedupeKey(3, 'r1', 'u-1'));
 
 		$this->assertSame(5, $found?->getId());
 		$log = $this->log();
@@ -116,14 +117,14 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 
 	public function testFindOneReturnsNullWhenNothingMatches(): void {
 		$this->queuedRows = [[]];
-		$this->assertNull($this->mapper()->findOne(3, 'r1', 'u-1'));
+		$this->assertNull($this->mapper()->findByKey(new NotificationDedupeKey(3, 'r1', 'u-1')));
 	}
 
 	public function testUpsertRefreshesAnExistingRowAndStampsDispatchWhenDispatched(): void {
 		$this->queuedRows = [[self::row()]];
 		$now = new DateTime('2026-05-06 07:08:09');
 
-		$state = $this->mapper()->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), 'new', $now, true);
+		$state = $this->mapper()->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), new DedupeSighting('new', $now, true));
 
 		$this->assertSame('new', $state->getFingerprint());
 		$this->assertSame($now, $state->getSeenAt());
@@ -135,7 +136,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 		$this->queuedRows = [[self::row()]];
 		$now = new DateTime('2026-05-06 07:08:09');
 
-		$state = $this->mapper()->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), 'new', $now, false);
+		$state = $this->mapper()->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), new DedupeSighting('new', $now, false));
 
 		$this->assertSame($now, $state->getSeenAt());
 		$this->assertNull($state->getDispatchedAt());
@@ -145,7 +146,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 		$this->queuedRows = [[self::row()]];
 		$now = new DateTime('2026-05-06 07:08:09');
 
-		$state = $this->mapper(null, new RuntimeException('locked'))->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), 'fp', $now, false);
+		$state = $this->mapper(null, new RuntimeException('locked'))->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), new DedupeSighting('fp', $now, false));
 
 		$this->assertSame(5, $state->getId());
 		$this->assertSame('fp', $state->getFingerprint());
@@ -155,7 +156,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 		$this->queuedRows = [[]];
 		$now = new DateTime('2026-05-06 07:08:09');
 
-		$state = $this->mapper()->upsert(new NotificationDedupeKey(4, 'r2', 'u-2'), 'fp', $now, false);
+		$state = $this->mapper()->upsert(new NotificationDedupeKey(4, 'r2', 'u-2'), new DedupeSighting('fp', $now, false));
 
 		$this->assertSame(4, $state->getSchemaId());
 		$this->assertSame('r2', $state->getRuleKey());
@@ -169,7 +170,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 	public function testUpsertUniqueRaceReturnsTheWinningRow(): void {
 		$this->queuedRows = [[], [self::row(['id' => 9])]];
 
-		$state = $this->mapper(self::uniqueViolation())->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), 'fp', new DateTime(), false);
+		$state = $this->mapper(self::uniqueViolation())->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), new DedupeSighting('fp', new DateTime(), false));
 
 		$this->assertSame(9, $state->getId());
 	}
@@ -179,7 +180,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 		$violation = self::uniqueViolation();
 
 		try {
-			$this->mapper($violation)->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), 'fp', new DateTime(), false);
+			$this->mapper($violation)->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), new DedupeSighting('fp', new DateTime(), false));
 			$this->fail('Expected the unique violation to surface');
 		} catch (DbException $e) {
 			$this->assertSame($violation, $e);
@@ -191,7 +192,7 @@ final class NotificationDedupeStateMapperTest extends TestCase {
 		$error = new DbException('disk full');
 
 		try {
-			$this->mapper($error)->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), 'fp', new DateTime(), false);
+			$this->mapper($error)->upsert(new NotificationDedupeKey(3, 'r1', 'u-1'), new DedupeSighting('fp', new DateTime(), false));
 			$this->fail('Expected the database error to surface');
 		} catch (DbException $e) {
 			$this->assertSame($error, $e);

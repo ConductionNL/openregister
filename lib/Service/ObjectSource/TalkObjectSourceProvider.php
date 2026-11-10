@@ -278,6 +278,12 @@ class TalkObjectSourceProvider implements ObjectSourceProvider {
 			}
 		} catch (Throwable $e) {
 			// Getter missing on this Talk version — leave null.
+			$this->logger->debug(
+				message: '[TalkObjectSourceProvider] Room last activity not readable',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;

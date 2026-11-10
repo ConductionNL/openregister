@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -229,7 +230,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		}
 
 		$before = clone $object;
-		$object->freeze(userSession: $this->userSession, reason: $request->reason, state: $state);
+		$object->freezeWith(userSession: $this->userSession, terms: new FreezeTerms(reason: $request->reason, state: $state));
 
 		$saved = $this->persist(context: $context, transition: new ObjectStateTransition(action: 'freeze', before: $before));
 
@@ -352,10 +353,12 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$this->permissionHandler->checkPermission(
 			schema: $schemaEntity,
 			action: 'update',
-			userId: $this->userSession->getUser()?->getUID(),
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			options: new PermissionCheckOptions(
+				userId: $this->userSession->getUser()?->getUID(),
+				objectOwner: $object->getOwner(),
+				object: $object
+			),
+			_rbac: true
 		);
 
 		return [

@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\AuditTrailQuery;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -346,7 +347,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true, self::HIDDEN => false]
 		);
 
-		$page = $lister->page(userId: 'alice', limit: 20);
+		$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$uuids = array_column($page['results'], 'objectUuid');
 
@@ -372,7 +373,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			],
 			located: [$located],
 			readable: [self::READABLE => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame(
 			[['register' => '12', 'schema' => '7', 'id' => self::READABLE]],
@@ -391,7 +392,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: [$this->entry(objectUuid: self::READABLE)],
 			located: [$this->object(uuid: self::READABLE), $this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertCount(1, $page['results']);
 		$this->assertCount(1, $this->readChecks, 'An object found in two tables was read twice.');
@@ -421,7 +422,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			objectMapper: $objectMapper,
 			history: $history,
 			cursors: $this->auditCursors()
-		))->page(userId: 'alice', limit: 20);
+		))->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results']);
 	}//end testAShortRedactionHidesTheRows()
@@ -496,7 +497,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			objectMapper: $objectMapper,
 			history: $reader,
 			cursors: $this->auditCursors()
-		))->page(userId: 'alice', limit: 20);
+		))->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results'], 'Rows were shown on the strength of a read of another object.');
 	}//end testARowIsHiddenWhenTheReadCheckAnswersAnotherObject()
@@ -511,7 +512,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: [$this->entry(objectUuid: self::READABLE)],
 			located: [$this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertCount(1, $page['results']);
 		$changed = $page['results'][0]['changed'];
@@ -536,7 +537,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: [$this->entry(objectUuid: self::READABLE)],
 			located: [$object],
 			readable: [self::READABLE => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertCount(1, $page['results']);
 		$this->assertArrayNotHasKey('interneAantekening', $page['results'][0]['changed']);
@@ -554,7 +555,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true],
 			groups: ['redactie']
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame(['old' => 'klokkenluider', 'new' => 'geheim'], $page['results'][0]['changed']['interneAantekening']);
 	}//end testACallerAllowedThePropertySeesItInTheChangeSet()
@@ -571,8 +572,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true]
 		);
 
-		$this->assertSame([], $lister->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(search: 'klokkenluider'))['results'], 'A search matched a withheld value.');
-		$this->assertCount(1, $lister->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(search: 'nieuw'))['results'], 'A search on a visible value found nothing.');
+		$this->assertSame([], $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20, query: new AuditTrailQuery(search: 'klokkenluider')))['results'], 'A search matched a withheld value.');
+		$this->assertCount(1, $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20, query: new AuditTrailQuery(search: 'nieuw')))['results'], 'A search on a visible value found nothing.');
 		foreach ($this->queries as $query) {
 			$this->assertNull(($query[4] ?? null), 'The search term reached the query on the stored change set.');
 		}
@@ -590,8 +591,10 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true]
 		)->page(
 			userId: 'alice',
-			limit: 20,
-			query: new AuditTrailQuery(filters: ['changed' => 'x', 'session' => 'sess-abc', 'request' => 'req-1', 'ip_address' => '203.0.113.9', 'action' => 'update'])
+			options: new TrailPageOptions(
+				limit: 20,
+				query: new AuditTrailQuery(filters: ['changed' => 'x', 'session' => 'sess-abc', 'request' => 'req-1', 'ip_address' => '203.0.113.9', 'action' => 'update'])
+			)
 		);
 
 		$this->assertSame(['action' => 'update'], $this->queries[0][2], 'A filter on a withheld column reached the query.');
@@ -613,7 +616,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 				$this->object(uuid: self::READABLE),
 			],
 			readable: ['obj-purpose' => true, self::READABLE => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([self::READABLE], array_column($page['results'], 'objectUuid'));
 	}//end testADoelbindingRefusalHidesThatObjectsRows()
@@ -636,7 +639,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true],
 			reads: $hidden
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame(['update'], array_column($page['results'], 'action'), 'a read entry reached a caller who may not see reads');
 	}//end testReadEntriesAreLeftOutForACallerWhoMayNotSeeThem()
@@ -657,7 +660,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			cursors: $this->auditCursors()
 		);
 
-		$page = $lister->page(userId: null, limit: 20);
+		$page = $lister->page(userId: null, options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results']);
 		$this->assertNull($page['nextCursor']);
@@ -674,7 +677,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: [$this->entry(objectUuid: 'obj-deleted')],
 			located: [],
 			readable: ['obj-deleted' => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results'], 'An entry whose object did not resolve was returned anyway.');
 	}//end testAnEntryWhoseObjectIsGoneIsAbsent()
@@ -712,7 +715,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			objectMapper: $objectMapper,
 			history: $reader,
 			cursors: $this->auditCursors()
-		))->page(userId: 'alice', limit: 20);
+		))->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results'], 'An entry whose schema did not resolve was returned anyway.');
 	}//end testAnEntryWhoseSchemaIsGoneIsAbsent()
@@ -738,7 +741,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			objectMapper: $objectMapper,
 			history: $history,
 			cursors: $this->auditCursors()
-		))->page(userId: 'alice', limit: 20);
+		))->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results'], 'A throwing read path let the row through.');
 	}//end testAThrowingReadPathHidesTheRow()
@@ -766,7 +769,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			objectMapper: $objectMapper,
 			history: $history,
 			cursors: $this->auditCursors()
-		))->page(userId: 'alice', limit: 20);
+		))->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results'], 'A failed lookup let the batch through.');
 	}//end testAThrowingLookupHidesTheBatch()
@@ -781,7 +784,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: [$this->entry(objectUuid: self::READABLE, action: 'update', session: 'sess-abc')],
 			located: [$this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertCount(1, $page['results']);
 		$row = $page['results'][0];
@@ -828,7 +831,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			cursors: $this->auditCursors()
 		);
 
-		$page = $lister->page(userId: 'alice', limit: 20);
+		$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([], $page['results']);
 		$this->assertArrayNotHasKey('scanned', $page, 'The page counts the rows it walked, readable or not.');
@@ -860,13 +863,13 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		// A page of one: the readable row is the third of four candidates, so
 		// filling the page consumes three and leaves the fourth for next time.
-		$page = $lister->page(userId: 'alice', limit: 1);
+		$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1));
 
 		$this->assertCount(1, $page['results']);
 		$this->assertArrayNotHasKey('scanned', $page);
 
 		$this->queries = [];
-		$lister->page(userId: 'alice', limit: 1, cursor: $page['nextCursor']);
+		$lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: $page['nextCursor']));
 		$this->assertSame(3, $this->queries[0][1], 'The cursor did not advance past the rows that were filtered out.');
 	}//end testTheCursorAdvancesPastFilteredRows()
 
@@ -884,7 +887,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			],
 			located: [$this->object(uuid: 'obj-b'), $this->object(uuid: 'obj-a')],
 			readable: ['obj-a' => true, 'obj-b' => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame(
 			['audit-obj-a-update', 'audit-obj-b-update', 'audit-obj-a-create'],
@@ -902,7 +905,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: [$this->entry(objectUuid: self::READABLE)],
 			located: [$this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true]
-		)->page(userId: 'alice', limit: 20);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertCount(1, $page['results']);
 		$this->assertNull($page['nextCursor'], 'A trail shorter than one batch reported more pages.');
@@ -953,9 +956,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: $this->entriesOf(count: 7, objectUuid: self::HIDDEN),
 			located: [$this->object(uuid: self::HIDDEN)],
 			readable: [self::HIDDEN => false]
-		)->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
 		$withNone = $this->lister(entries: [], located: [], readable: [])
-			->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
+			->page(userId: 'alice', options: new TrailPageOptions(limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
 
 		$this->assertSame($withNone, $withEntries);
 		$this->assertSame(['results', 'limit', 'cursor', 'nextCursor'], array_keys($withEntries));
@@ -975,7 +978,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			entries: $entries,
 			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true, self::HIDDEN => false]
-		)->page(userId: 'alice', limit: 1);
+		)->page(userId: 'alice', options: new TrailPageOptions(limit: 1));
 
 		$this->assertCount(1, $page['results']);
 		$this->assertIsString($page['nextCursor']);
@@ -995,7 +998,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true]
 		);
 
-		$lister->page(userId: 'alice', limit: 1, cursor: 'sealed-forged');
+		$lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: 'sealed-forged'));
 
 		$this->assertSame(0, $this->queries[0][1]);
 	}//end testAForgedCursorStartsAtTheTop()
@@ -1012,8 +1015,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true]
 		);
 
-		$lister->page(userId: 'alice', limit: 1, cursor: '40');
-		$lister->page(userId: 'alice', limit: 1, cursor: 40);
+		$lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: '40'));
+		$lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: 40));
 
 		$this->assertSame([0, 0], array_column($this->queries, 1));
 	}//end testAPlainOffsetStartsAtTheTop()
@@ -1034,9 +1037,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true, self::HIDDEN => false]
 		);
 
-		$page = $lister->page(userId: 'alice', limit: 1);
+		$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1));
 		$this->queries = [];
-		$lister->page(userId: 'bob', limit: 1, cursor: $page['nextCursor']);
+		$lister->page(userId: 'bob', options: new TrailPageOptions(limit: 1, cursor: $page['nextCursor']));
 
 		$this->assertSame(0, $this->queries[0][1]);
 	}//end testACursorDoesNotResumeAnotherCallersWalk()
@@ -1057,9 +1060,9 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true, self::HIDDEN => false]
 		);
 
-		$page = $lister->page(userId: 'alice', limit: 1);
+		$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1));
 		$this->queries = [];
-		$lister->page(userId: 'alice', limit: 1, cursor: $page['nextCursor'], query: new AuditTrailQuery(search: 'Nieuw'));
+		$lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: $page['nextCursor'], query: new AuditTrailQuery(search: 'Nieuw')));
 
 		$this->assertSame(0, $this->queries[0][1]);
 	}//end testACursorDoesNotResumeAnotherSearch()
@@ -1085,7 +1088,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$readable[self::READABLE] = true;
 
 		$trail = $this->createMock(AuditTrailMapper::class);
-		$trail->expects($this->once())->method('createPurposeRefusalEntry');
+		$trail->expects($this->once())->method('recordPurposeRefusal');
 
 		$history = $this->historyWithRealGuard(located: $located, trail: $trail);
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
@@ -1100,7 +1103,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			objectMapper: $objectMapper,
 			history: $history,
 			cursors: $this->auditCursors()
-		))->page(userId: 'alice', limit: 20);
+		))->page(userId: 'alice', options: new TrailPageOptions(limit: 20));
 
 		$this->assertSame([self::READABLE], array_column($page['results'], 'objectUuid'));
 	}//end testAPurposeBoundSchemaIsRefusedOnceAPage()
@@ -1227,8 +1230,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::HIDDEN => false]
 		);
 
-		$a = $this->rw126Shape($short->page(userId: 'alice', limit: 20, cursor: '346', query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
-		$b = $this->rw126Shape($long->page(userId: 'alice', limit: 20, cursor: '346', query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
+		$a = $this->rw126Shape($short->page(userId: 'alice', options: new TrailPageOptions(limit: 20, cursor: '346', query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]))));
+		$b = $this->rw126Shape($long->page(userId: 'alice', options: new TrailPageOptions(limit: 20, cursor: '346', query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]))));
 		$this->assertSame($a, $b, 'offset 346: the answer tells a 2345-row hidden trail from a 2346-row one');
 	}//end testRw126PlainOffsetDoesNotTellTheHiddenTrailsLength()
 
@@ -1249,7 +1252,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$calls = 0;
 		while ($lo < $hi) {
 			$mid = intdiv($lo + $hi, 2);
-			$page = $lister->page(userId: 'alice', limit: 20, cursor: (string)$mid, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
+			$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20, cursor: (string)$mid, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
 			$calls++;
 			if ($page['nextCursor'] === null) {
 				$hi = $mid;
@@ -1282,11 +1285,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true, self::HIDDEN => false, self::HIDDEN . '-2' => false]
 		);
 
-		$first = $lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => 'mixed']));
+		$first = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => 'mixed'])));
 		$this->assertCount(1, $first['results']);
 		$this->assertNotNull($first['nextCursor']);
 
-		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE]));
+		$replay = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE])));
 		$got = ($replay['results'][0]['uuid'] ?? 'none');
 		$this->assertSame('audit-' . self::READABLE . '-0', $got, 'the replayed cursor revealed its raw offset');
 	}//end testRw126ACursorDoesNotCarryItsOffsetToAnotherFilter()
@@ -1302,7 +1305,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::HIDDEN)],
 			readable: [self::HIDDEN => false]
 		);
-		$page = $lister->page(userId: 'alice', limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN]));
+		$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 20, query: new AuditTrailQuery(filters: ['object_uuid' => self::HIDDEN])));
 		$this->assertSame([], $page['results']);
 		$this->assertNull($page['nextCursor']);
 	}//end testRw126ControlShortHiddenTrailEnds()
@@ -1319,8 +1322,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true]
 		);
-		$first = $lister->page(userId: 'alice', limit: 5, query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE]));
-		$second = $lister->page(userId: 'alice', limit: 5, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'cursor' => $first['nextCursor']]));
+		$first = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 5, query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE])));
+		$second = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 5, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'cursor' => $first['nextCursor']])));
 		$this->assertSame('audit-' . self::READABLE . '-5', ($second['results'][0]['uuid'] ?? 'none'), 'page 2 restarted at the top');
 	}//end testRw139SecondPageResumesWhenTheCursorIsAlsoAFilter()
 
@@ -1354,8 +1357,8 @@ class ReadableAuditTrailListerTest extends TestCase {
 			located: [$this->object(uuid: self::HIDDEN), $this->object(uuid: self::HIDDEN . '-2'), $this->object(uuid: self::READABLE)],
 			readable: [self::READABLE => true, self::HIDDEN => false, self::HIDDEN . '-2' => false]
 		);
-		$first = $lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => 'mixed', 'x' => "\xff"]));
-		$replay = $lister->page(userId: 'alice', limit: 1, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'x' => "\xff"]));
+		$first = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => 'mixed', 'x' => "\xff"])));
+		$replay = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: $first['nextCursor'], query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'x' => "\xff"])));
 		$this->assertSame('audit-' . self::READABLE . '-0', ($replay['results'][0]['uuid'] ?? 'none'), 'the replayed cursor kept its raw offset');
 	}//end testRw139ReplayAcrossFiltersWithAnIgnoredNonUtf8Key()
 
@@ -1372,12 +1375,12 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::HIDDEN => false]
 		);
 
-		$page = $lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(search: "\xff"));
+		$page = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, query: new AuditTrailQuery(search: "\xff")));
 		$this->assertNull($page['nextCursor']);
 
-		$sealed = $lister->page(userId: 'alice', limit: 1)['nextCursor'];
+		$sealed = $lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1))['nextCursor'];
 		$this->queries = [];
-		$lister->page(userId: 'alice', limit: 1, cursor: $sealed, query: new AuditTrailQuery(search: "\xff"));
+		$lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, cursor: $sealed, query: new AuditTrailQuery(search: "\xff")));
 		$this->assertSame(0, $this->queries[0][1]);
 	}//end testAnUnencodableSearchIsHandedNoCursorAndResumesNothing()
 
@@ -1393,7 +1396,7 @@ class ReadableAuditTrailListerTest extends TestCase {
 			readable: [self::READABLE => true]
 		);
 
-		$lister->page(userId: 'alice', limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'x' => 'y', '_cursor' => 'c', 'cursor' => 'c']));
+		$lister->page(userId: 'alice', options: new TrailPageOptions(limit: 1, query: new AuditTrailQuery(filters: ['object_uuid' => self::READABLE, 'x' => 'y', '_cursor' => 'c', 'cursor' => 'c'])));
 
 		$this->assertSame(['object_uuid' => self::READABLE], $this->queries[0][2]);
 	}//end testOnlyAppliedColumnsReachTheQuery()

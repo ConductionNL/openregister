@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\File\ExecutableContentDetector;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
 use Psr\Log\LoggerInterface;
@@ -117,77 +116,6 @@ class FilePropertyHandler {
 	];
 
 	/**
-	 * Dangerous executable extensions to block.
-	 *
-	 * @var list<string>
-	 */
-	private const DANGEROUS_EXECUTABLE_EXTENSIONS = [
-		// Windows executables.
-		'exe',
-		'bat',
-		'cmd',
-		'com',
-		'msi',
-		'scr',
-		'vbs',
-		'vbe',
-		'js',
-		'jse',
-		'wsf',
-		'wsh',
-		'ps1',
-		'dll',
-		// Unix/Linux executables.
-		'sh',
-		'bash',
-		'csh',
-		'ksh',
-		'zsh',
-		'run',
-		'bin',
-		'app',
-		'deb',
-		'rpm',
-		// Scripts and code.
-		'php',
-		'phtml',
-		'php3',
-		'php4',
-		'php5',
-		'phps',
-		'phar',
-		'py',
-		'pyc',
-		'pyo',
-		'pyw',
-		'pl',
-		'pm',
-		'cgi',
-		'rb',
-		'rbw',
-		'jar',
-		'war',
-		'ear',
-		'class',
-		// Containers and packages.
-		'appimage',
-		'snap',
-		'flatpak',
-		// MacOS.
-		'dmg',
-		'pkg',
-		'command',
-		// Android.
-		'apk',
-		// Other dangerous.
-		'elf',
-		'out',
-		'o',
-		'so',
-		'dylib',
-	];
-
-	/**
 	 * The keys a file object, as the file renderer returns it, may carry.
 	 *
 	 * @var list<string>
@@ -236,8 +164,6 @@ class FilePropertyHandler {
 	/**
 	 * Constructor for FilePropertyHandler.
 	 *
-	 * The executable-content detector is stateless, so the handler builds its own.
-	 *
 	 * @param LoggerInterface $logger Logger for logging operations
 	 * @param ObjectFilesInterface $fileService File service for file operations
 	 *
@@ -247,12 +173,7 @@ class FilePropertyHandler {
 		LoggerInterface $logger,
 		private readonly ObjectFilesInterface $fileService,
 	) {
-		$this->parts = new FilePropertyParts(
-			logger: $logger,
-			fileService: $fileService,
-			executableDetector: new ExecutableContentDetector(),
-			dangerousExtensions: self::DANGEROUS_EXECUTABLE_EXTENSIONS
-		);
+		$this->parts = new FilePropertyParts(logger: $logger, fileService: $fileService);
 	}//end __construct()
 
 	/**
@@ -288,37 +209,15 @@ class FilePropertyHandler {
 	}//end processUploadedFiles()
 
 	/**
-	 * Check if a value should be treated as a file property
-	 *
-	 * With a schema and a property name the schema decides: a `file` property,
-	 * or an array of `file` items. Otherwise the value decides: a file string,
-	 * a file object, or a list holding either.
-	 *
-	 * @param mixed $value The value to check
-	 * @param Schema|null $schema Optional schema for property-based checking
-	 * @param string|null $propertyName Optional property name for schema lookup
-	 *
-	 * @return bool True if the value should be treated as a file property
-	 * @phpstan-return bool
-	 *
-	 * @spec openspec/specs/content-versioning/spec.md
-	 */
-	public function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool {
-		if ($schema !== null && $propertyName !== null) {
-			return $this->isFileInSchema(schema: $schema, propertyName: $propertyName);
-		}
-
-		return $this->isFileValue(value: $value);
-	}//end isFileProperty()
-
-	/**
 	 * Whether a value is a file string, a file object, or a list holding either.
 	 *
 	 * @param mixed $value The value.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	private function isFileValue(mixed $value): bool {
+	public function isFileValue(mixed $value): bool {
 		if (is_string($value) === true) {
 			return $this->looksLikeFile(value: $value);
 		}
@@ -371,7 +270,7 @@ class FilePropertyHandler {
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	private function isFileInSchema(Schema $schema, string $propertyName): bool {
+	public function isFileInSchema(Schema $schema, string $propertyName): bool {
 		$propertyConfig = ($schema->getProperties() ?? [])[$propertyName] ?? null;
 		if ($propertyConfig === null) {
 			return false;
@@ -597,7 +496,7 @@ class FilePropertyHandler {
 			return $this->storeFiles(target: $target, fileValue: $fileValue);
 		}
 
-		if ($this->isFileProperty(value: $fileValue) === false) {
+		if ($this->isFileValue(value: $fileValue) === false) {
 			return $fileValue;
 		}
 
@@ -632,7 +531,7 @@ class FilePropertyHandler {
 
 		$fileIds = [];
 		foreach ($fileValue as $index => $singleFileContent) {
-			if ($this->isFileProperty(value: $singleFileContent) === true) {
+			if ($this->isFileValue(value: $singleFileContent) === true) {
 				$fileIds[] = $this->processSingleFileProperty(
 					request: $this->storeRequest(target: $target, index: $index),
 					fileInput: $singleFileContent
@@ -835,7 +734,7 @@ class FilePropertyHandler {
 			$extension = $this->getExtensionFromMimeType(mimeType: $mimeType);
 		}
 
-		return $this->parts->reader->fileData(content: $content, mimeType: $mimeType, extension: $extension);
+		return $this->parts->reader->fileData(content: $content, format: new FileFormat(mimeType: $mimeType, extension: $extension));
 	}//end parseFileDataFromUrl()
 
 	/**
@@ -880,7 +779,7 @@ class FilePropertyHandler {
 			$this->blockExecutableFiles(fileData: $fileData, errorPrefix: $errorPrefix);
 		}
 
-		$this->parts->guard->assertAccepted(fileData: $fileData, fileConfig: $request->fileConfig, errorPrefix: $errorPrefix);
+		$this->parts->guard->assertAccepted(check: new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix, fileConfig: $request->fileConfig));
 	}//end validateFileAgainstConfig()
 
 	/**
@@ -909,15 +808,12 @@ class FilePropertyHandler {
 		if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
 			// The checks live in ExecutableContentDetector, shared with FileValidationHandler.
 			$this->parts->guard->blockExecutableContent(
-				content: $fileData['content'],
-				errorPrefix: $errorPrefix,
-				fileName: (string)($fileData['filename'] ?? '')
+				upload: new UploadedContent(content: $fileData['content'], errorPrefix: $errorPrefix, fileName: (string)($fileData['filename'] ?? ''))
 			);
 		}
 
 		$this->parts->guard->blockMimeTypeIn(
-			fileData: $fileData,
-			errorPrefix: $errorPrefix,
+			check: new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix),
 			mimeTypes: $this->getExecutableMimeTypes()
 		);
 	}//end blockExecutableFiles()

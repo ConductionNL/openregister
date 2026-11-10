@@ -49,7 +49,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
 
@@ -120,9 +122,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * The object is loaded through `ObjectService::find()` under the caller's
 	 * RBAC (read guard, ADR-005).
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object id/uuid.
+	 * @param HandoffSourceRef $ref The register and schema (slug or id) and the object id/uuid.
 	 *
 	 * @return array<int, array<string, mixed>> One availability record per declared handoff.
 	 *
@@ -131,8 +131,8 @@ class HandoffService implements HandoffServiceInterface {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: Handoff REST surface)
 	 */
-	public function listAvailability(string $register, string $schema, string $id): array {
-		return $this->availabilityOf(source: $this->loadSource(ref: new HandoffSourceRef(register: $register, schema: $schema, id: $id)));
+	public function listAvailability(HandoffSourceRef $ref): array {
+		return $this->availabilityOf(source: $this->loadSource(ref: $ref));
 	}//end listAvailability()
 
 	/**
@@ -277,8 +277,7 @@ class HandoffService implements HandoffServiceInterface {
 		$this->objects->permissionHandler->checkPermission(
 			schema: $plan->sourceSchema,
 			action: 'update',
-			objectOwner: $plan->source->getOwner(),
-			object: $plan->source
+			options: new PermissionCheckOptions(objectOwner: $plan->source->getOwner(), object: $plan->source)
 		);
 
 		// 3. Resolve the provider (complete-binding filter on the resolver result).
@@ -508,9 +507,17 @@ class HandoffService implements HandoffServiceInterface {
 	 *
 	 * @param HandoffQueueEntry $entry The parked entry.
 	 *
-	 * @return string `skipped` (still no provider), `drained` or `failed`.
+	 * @return string `skipped` (still no provider, or inside a system-operation scope), `drained` or `failed`.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is a process-scoped flag with no instance to inject.
 	 */
 	private function drainOutcome(HandoffQueueEntry $entry): string {
+		// Inside a system-operation scope every permission check passes, so the
+		// requester's own rights could not be re-evaluated: leave it parked.
+		if (SystemOperationContext::isActive() === true) {
+			return 'skipped';
+		}
+
 		// Cheap pre-check: still no provider → leave parked.
 		$this->providers->semanticTypeResolver->clearCache();
 		if ($this->resolveProvider(kindUri: $entry->getTargetKind(), consumingRegisterId: $entry->getSourceRegister()) === null) {

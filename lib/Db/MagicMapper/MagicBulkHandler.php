@@ -198,13 +198,11 @@ class MagicBulkHandler {
 			);
 
 			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
-			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object, selfData: $selfData);
+			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object);
 
-			$preparedObject = $this->withDisplayColumns(
-				prepared: $preparedObject,
-				selfData: $selfData,
-				object: $object,
-				managedSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema)
+			$preparedObject = array_merge(
+				$preparedObject,
+				$this->displayColumns(object: $object, managedSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema))
 			);
 
 			$preparedObject['_version'] = $this->versionHandler->initialVersionFor(candidate: ($selfData['version'] ?? $object['version'] ?? null));
@@ -255,38 +253,42 @@ class MagicBulkHandler {
 
 
 	/**
-	 * Map the six display-metadata columns onto a prepared row.
+	 * The six display-metadata columns of a prepared row.
 	 *
 	 * Each reads `@self` first and the raw payload second, which is the same
 	 * fallback the surrounding method applies to every other metadata column.
 	 * Extracted as a group because they share that rule exactly, and because
 	 * `prepareObjectsForDynamicTable()` sits on the method-length threshold.
 	 *
-	 * @param array<string, mixed> $prepared The row being built.
-	 * @param array<string, mixed> $selfData The object's `@self` metadata.
-	 * @param array<string, mixed> $object The raw object payload.
-	 * @param bool $managedSlug Whether the schema has managed slugs; only then is a slug carried onto the row.
+	 * @param array<string, mixed> $object      The raw object payload; its `@self` block, when present, is the metadata.
+	 * @param bool                 $managedSlug Whether the schema has managed slugs; only then is a slug carried onto the row.
 	 *
-	 * @return array<string, mixed> The row with the display columns set.
+	 * @return array<string, mixed> The display columns, in column order.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `managedSlug` is a fact about the schema, carried to the one column that varies on it.
 	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
-	private function withDisplayColumns(array $prepared, array $selfData, array $object, bool $managedSlug=false): array {
-		$prepared['_name'] = $selfData['name'] ?? $object['name'] ?? null;
-		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
-		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
-		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
-		$prepared['_slug'] = match ($managedSlug) {
+	private function displayColumns(array $object, bool $managedSlug=false): array {
+		$selfData = $object;
+		if (($object['@self'] ?? null) !== null) {
+			$selfData = $object['@self'];
+		}
+
+		$columns = [];
+		$columns['_name'] = $selfData['name'] ?? $object['name'] ?? null;
+		$columns['_description'] = $selfData['description'] ?? $object['description'] ?? null;
+		$columns['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
+		$columns['_image'] = $selfData['image'] ?? $object['image'] ?? null;
+		$columns['_slug'] = match ($managedSlug) {
 			true => MagicBulkUpsertSql::managedRowSlug(selfData: $selfData, object: $object),
 			false => MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object),
 		};
-		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
+		$columns['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
-		return $prepared;
-	}//end withDisplayColumns()
+		return $columns;
+	}//end displayColumns()
 
 	/**
 	 * Copy an object's expiry into the prepared row's `_expires` column, when it has one.
@@ -302,15 +304,19 @@ class MagicBulkHandler {
 	 * never purged.
 	 *
 	 * @param array $prepared The prepared row so far.
-	 * @param array $object   The object as passed to bulkUpsert().
-	 * @param array $selfData The object's metadata block.
+	 * @param array $object   The object as passed to bulkUpsert(); its `@self` block, when present, is the metadata.
 	 *
 	 * @return array The prepared row, with `_expires` set when the object carries an expiry.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
-	private function withExpiry(array $prepared, array $object, array $selfData): array {
+	private function withExpiry(array $prepared, array $object): array {
 		$hasMetadataBlock = (($object['@self'] ?? null) !== null || isset($object['object']) === true);
+		$selfData = $object;
+		if (($object['@self'] ?? null) !== null) {
+			$selfData = $object['@self'];
+		}
+
 		$expiresValue = $selfData['expires'] ?? null;
 		if ($expiresValue === null || $hasMetadataBlock === false) {
 			return $prepared;
@@ -413,6 +419,12 @@ class MagicBulkHandler {
 			}
 		} catch (\Exception $e) {
 			// Use default buffer on error.
+			$this->logger->debug(
+				message: '[MagicBulkHandler] Could not size the packet buffer, keeping the default',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 	}//end initializeMaxPacketSize()
 

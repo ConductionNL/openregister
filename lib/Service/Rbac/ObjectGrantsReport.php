@@ -56,28 +56,38 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	private const SHARE_BIT_VERBS = ['read', 'update', 'create', 'delete'];
 
 	/**
+	 * The owning group; stateless, so it is built in place.
+	 *
+	 * @var ObjectScopeResolver
+	 */
+	private readonly ObjectScopeResolver $scopeResolver;
+
+	/**
+	 * Extension verbs and the inheritable flag of a share; stateless, so it is built in place.
+	 *
+	 * @var ShareGrantAttributes
+	 */
+	private readonly ShareGrantAttributes $attributes;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param GrantReportSources   $sources       The access report, the object's shares, its ancestors' shares and the rule fit.
-	 * @param ObjectScopeResolver  $scopeResolver The owning group.
-	 * @param PrincipalDirectory   $directory     User and group display names.
-	 * @param ShareGrantAttributes $attributes    Extension verbs and the inheritable flag of a share.
+	 * @param GrantReportSources $sources   The access report, the object's shares, its ancestors' shares and the rule fit.
+	 * @param PrincipalDirectory $directory User and group display names.
 	 */
 	public function __construct(
 		private readonly GrantReportSources $sources,
-		private readonly ObjectScopeResolver $scopeResolver,
 		private readonly PrincipalDirectory $directory,
-		private readonly ShareGrantAttributes $attributes = new ShareGrantAttributes(),
 	) {
+		$this->scopeResolver = new ObjectScopeResolver();
+		$this->attributes = new ShareGrantAttributes();
 	}//end __construct()
 
 	/**
 	 * The grant rows of one object.
 	 *
-	 * @param ObjectEntity $object         The object, already resolved and gated.
-	 * @param mixed        $registerRef    The register as the request named it.
-	 * @param mixed        $schemaRef      The schema as the request named it.
-	 * @param string[]     $principalTypes Keep only these principal types; empty keeps all.
+	 * @param ObjectEntity   $object The object, already resolved and gated.
+	 * @param GrantRowsQuery $query  The register and schema as the request named them, and the principal types to keep.
 	 *
 	 * @return array{object: string|null, results: array<int, array<string, mixed>>, denyEnforcement: string}
 	 *         The rows.
@@ -86,12 +96,12 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 *
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
-	public function rowsFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef, array $principalTypes = []): array {
-		$set = $this->sources->accessReport->setFor(object: $object, registerRef: $registerRef, schemaRef: $schemaRef);
+	public function rowsFor(ObjectEntity $object, GrantRowsQuery $query): array {
+		$set = $this->sources->accessReport->setFor(object: $object, table: $query->table);
 
 		return [
 			'object' => $object->getUuid(),
-			'results' => $this->named(rows: $this->rowSetFor(object: $object, set: $set)->rows(), principalTypes: $principalTypes),
+			'results' => $this->named(rows: $this->rowSetFor(object: $object, set: $set)->rows(), principalTypes: $query->principalTypes),
 			'denyEnforcement' => $set['denyEnforcement'],
 		];
 	}//end rowsFor()
@@ -175,7 +185,7 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 * @return void
 	 */
 	private function sharedRows(ObjectEntity $object, GrantRowSet $rows): void {
-		$found = $this->sources->shares->sharesOn(object: $object, sharers: [(string)$object->getOwner()], complete: true);
+		$found = $this->sources->shares->completeSharesOn(object: $object, sharers: [(string)$object->getOwner()]);
 		foreach ($found as $share) {
 			if ($share['type'] === 'link') {
 				continue;

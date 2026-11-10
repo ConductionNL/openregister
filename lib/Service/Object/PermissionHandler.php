@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -49,6 +50,8 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -65,7 +68,9 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
+use OCA\OpenRegister\Service\Rbac\StagedDenial;
 use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -582,7 +587,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::allows(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action);
+		return ObjectActionElevationScope::permits(
+			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
+		);
 	}//end elevated()
 
 	/**
@@ -618,9 +625,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 		return (new DraftCallerRule())->keptFromCaller(
 			object: $ask->object,
 			schema: $ask->schema,
-			userId: $subject,
-			isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
-			commandLine: $this->isCommandLine()
+			caller: new DraftCaller(
+				userId: $subject,
+				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
+				commandLine: $this->isCommandLine()
+			)
 		);
 	}//end draftIsKeptFromCaller()
 
@@ -1025,14 +1034,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function publicGrantForStranger(PermissionCheck $check): bool {
 		return $this->hasGroupPermission(
-			authorization: $check->authorization,
-			groupId: 'public',
-			action: $check->action,
-			userId: null,
-			userGroup: null,
-			objectOwner: $check->objectOwner,
-			objectData: $check->objectData,
-			objectOrganisation: $check->objectOrganisation
+			request: (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+				->forGroup(groupId: 'public', userGroup: null)
+				->forUser(userId: null, objectOwner: $check->objectOwner)
+				->onObject(data: $check->objectData, organisation: $check->objectOrganisation)
 		);
 	}//end publicGrantForStranger()
 
@@ -1158,13 +1163,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function groupGrants(PermissionCheck $check, string $groupId): bool {
 		return $this->hasGroupPermission(
-			authorization: $check->authorization,
-			groupId: $groupId,
-			action: $check->action,
-			userId: $check->userId,
-			objectOwner: $check->objectOwner,
-			objectData: $check->objectData,
-			objectOrganisation: $check->objectOrganisation
+			request: (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+				->forGroup(groupId: $groupId, userGroup: null)
+				->forUser(userId: $check->userId, objectOwner: $check->objectOwner)
+				->onObject(data: $check->objectData, organisation: $check->objectOrganisation)
 		);
 	}//end groupGrants()
 
@@ -1273,7 +1275,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// `staging`. The denial is real, and it is recorded, and it changes
 		// nothing. Returning null here rather than skipping the resolution above
 		// is the whole difference between a dry run and a disabled feature.
-		$mode->record(denial: $denial, action: $action, userId: $this->callerId(userId: $userId), context: $context);
+		$mode->record(staged: new StagedDenial(denial: $denial, action: $action, userId: $this->callerId(userId: $userId), context: $context));
 
 		return null;
 	}//end enforcedDenialFor()
@@ -1394,7 +1396,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $request->actions, blocks: $blocks, denials: $denials, enforced: $enforced);
+		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
 	}//end provenance()
 
 	/**
@@ -1686,7 +1688,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// schema stays the CEILING (design D3b). `private` narrows and a grant
 		// re-opens within that ceiling; neither can admit somebody the schema
 		// refuses.
-		if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid(), action: $check->action) === true) {
+		if ($this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $userId, objectUuid: $object->getUuid()), action: $check->action) === true) {
 			return null;
 		}
 
@@ -1880,13 +1882,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	/**
 	 * Check permission and throw exception if not granted
 	 *
-	 * @param Schema $schema Schema to check permissions for.
-	 * @param string $action Action to check permission for.
-	 * @param string|null $userId User ID to check permissions for.
-	 * @param string|null $objectOwner Object owner ID.
-	 * @param bool $_rbac Whether to enforce RBAC checks.
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object.
+	 * @param Schema                 $schema  Schema to check permissions for.
+	 * @param string                 $action  Action to check permission for.
+	 * @param PermissionCheckOptions $options The caller, object owner, object and register of the check.
+	 * @param bool                   $_rbac   Whether to enforce RBAC checks.
 	 *
 	 * @return void
 	 *
@@ -1899,15 +1898,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public function checkPermission(
 		Schema $schema,
 		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
+		PermissionCheckOptions $options = new PermissionCheckOptions(),
 		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
 	): void {
 		$ask = (new PermissionAsk(schema: $schema, action: $action))
-			->askedBy(userId: $userId, objectOwner: $objectOwner)
-			->about(object: $object, register: $register);
+			->askedBy(userId: $options->userId, objectOwner: $options->objectOwner)
+			->about(object: $options->object, register: $options->register);
 		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
 			throw $this->notAuthorized(ask: $ask);
 		}
@@ -2165,34 +2161,14 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *   interpreter of the same rule grammar — it produces SQL WHERE fragments
 	 *   instead of PHP verdicts. Do not introduce a fourth match evaluator here.
 	 *
-	 * @param array|null $authorization The schema's authorization array
-	 * @param string $groupId The group ID to check
-	 * @param string $action The CRUD action (create, read, update, delete)
-	 * @param string|null $userId Optional user ID for owner check
-	 * @param string|null $userGroup Optional user group for admin check
-	 * @param string|null $objectOwner Optional object owner for ownership check
-	 * @param array|null $objectData Optional object data for conditional matching
-	 * @param string|null $objectOrganisation Optional object organisation (folded into @self.organisation)
+	 * @param GroupRuleRequest $request The authorization block and action, the group and the caller's
+	 *                                  group, the user and object owner, and the object data and organisation.
 	 *
 	 * @return bool True if the group has permission
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function hasGroupPermission(
-		?array $authorization,
-		string $groupId,
-		string $action,
-		?string $userId = null,
-		?string $userGroup = null,
-		?string $objectOwner = null,
-		?array $objectData = null,
-		?string $objectOrganisation = null,
-	): bool {
-		$request = (new GroupRuleRequest(authorization: $authorization, action: $action))
-			->forGroup(groupId: $groupId, userGroup: $userGroup)
-			->forUser(userId: $userId, objectOwner: $objectOwner)
-			->onObject(data: $objectData, organisation: $objectOrganisation);
-
+	public function hasGroupPermission(GroupRuleRequest $request): bool {
 		return $this->groupRuleVerdict(request: $request);
 	}//end hasGroupPermission()
 
@@ -2835,8 +2811,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->grants->derived->tokenGrantNarrower->narrow(
 			authorization: $authorization,
-			grant: $grant,
-			target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug)
+			use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug))
 		);
 	}//end narrowByToken()
 
@@ -3719,17 +3694,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * the listener only calls it when the key is present — so existing
 	 * transitions are completely unaffected (additive).
 	 *
-	 * @param array<int, mixed> $authorizationList Group ids / `{role}` entries permitted to perform the transition.
-	 * @param string|null $userId Caller uid, or null for an anonymous principal.
-	 * @param Schema $schema Schema the transition belongs to (for named-role expansion).
+	 * @param TransitionGate $gate   The group ids / `{role}` entries permitted to perform the transition, and the
+	 *                              schema it belongs to (for named-role expansion).
+	 * @param string|null    $userId Caller uid, or null for an anonymous principal.
 	 *
 	 * @return bool True when the caller is authorised; false (fail-closed) otherwise.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
-	public function isTransitionAuthorized(array $authorizationList, ?string $userId, Schema $schema): bool {
+	public function isTransitionAuthorized(TransitionGate $gate, ?string $userId): bool {
 		// Fail-closed: an empty list authorises nobody.
-		if ($authorizationList === []) {
+		if ($gate->authorizationList === []) {
 			return false;
 		}
 
@@ -3739,9 +3714,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		$run = new TransitionAuthorizationRun(userGroupSet: array_flip($userGroups), schema: $schema);
+		$run = new TransitionAuthorizationRun(userGroupSet: array_flip($userGroups), schema: $gate->schema);
 
-		return $this->transitionListAdmits(run: $run, authorizationList: $authorizationList);
+		return $this->transitionListAdmits(run: $run, authorizationList: $gate->authorizationList);
 	}//end isTransitionAuthorized()
 
 	/**
