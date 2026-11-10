@@ -18,6 +18,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -25,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -346,9 +350,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testValidateAndSaveObjectsBySchemaInvalidIds(): void {
 		$result = $this->validationHandler->validateAndSaveObjectsBySchema(
-			999999,
-			999999,
-			[$this->objectService, 'saveObjects']
+			new SchemaRevalidation(new RegisterSchemaRef(999999, 999999), ListQuery::unbounded(), [$this->objectService, 'saveObjects'])
 		);
 
 		$this->assertEquals(0, $result['processed']);
@@ -363,9 +365,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$this->saveTestObject(['title' => 'Validate and Save 2']);
 
 		$result = $this->validationHandler->validateAndSaveObjectsBySchema(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
-			[$this->objectService, 'saveObjects']
+			new SchemaRevalidation(new RegisterSchemaRef($this->testRegister->getId(), $this->testSchema->getId()), ListQuery::unbounded(), [$this->objectService, 'saveObjects'])
 		);
 
 		$this->assertArrayHasKey('processed', $result);
@@ -385,11 +385,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$this->saveTestObject(['title' => 'Limit Test 3']);
 
 		$result = $this->validationHandler->validateAndSaveObjectsBySchema(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
-			[$this->objectService, 'saveObjects'],
-			1,  // limit
-			1   // offset
+			new SchemaRevalidation(new RegisterSchemaRef($this->testRegister->getId(), $this->testSchema->getId()), new ListQuery(limit: 1, offset: 1), [$this->objectService, 'saveObjects'])
 		);
 
 		$this->assertArrayHasKey('processed', $result);
@@ -1006,8 +1002,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$this->permissionHandler->checkPermission(
 				$restrictedSchema,
 				'delete',
-				'admin',
-				null,
+				new PermissionCheckOptions(userId: 'admin'),
 				true
 			);
 			$this->assertTrue(true, 'Admin can delete');

@@ -44,6 +44,8 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
 
 /**
  * Class DeletedController
@@ -189,9 +191,8 @@ class DeletedController extends Controller {
 		$rows = [];
 		foreach ($objects as $object) {
 			$row = $object->jsonSerialize();
-			$window = $this->services->store->deletion->window->windowFor(
-				object: $object,
-				schema: $this->services->access->authorizer->resolveSchema(object: $object)
+			$window = $this->services->store->deletion->window->windowOf(
+				query: new DeletionWindowQuery(object: $object, schema: $this->services->access->authorizer->resolveSchema(object: $object))
 			);
 
 			$row['deletionWindow'] = null;
@@ -426,9 +427,8 @@ class DeletedController extends Controller {
 			);
 		}
 
-		$window = $this->services->store->deletion->window->windowFor(
-			object: $object,
-			schema: $this->services->access->authorizer->resolveSchema(object: $object)
+		$window = $this->services->store->deletion->window->windowOf(
+			query: new DeletionWindowQuery(object: $object, schema: $this->services->access->authorizer->resolveSchema(object: $object))
 		);
 
 		// Objects live in per-register/schema magic tables, so the restore goes through MagicMapper.
@@ -646,7 +646,7 @@ class DeletedController extends Controller {
 		$purge = new PurgeRequest(
 			object: $object,
 			schema: $schema,
-			window: $this->services->store->deletion->window->windowFor(object: $object, schema: $schema),
+			window: $this->services->store->deletion->window->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema)),
 			force: filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN)
 		);
 
@@ -777,14 +777,16 @@ class DeletedController extends Controller {
 		$object = $purge->object;
 		try {
 			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $purge->schema);
-			$record = $this->services->store->deletion->destruction->recorder->record(
-				object: $object,
-				scope: $scopeReport,
-				rule: 'destroy-right-granted',
-				context: [
-					'deletionWindow' => $purge->window?->toArray(),
-					'windowWaived' => ($purge->force === true),
-				]
+			$record = $this->services->store->deletion->destruction->recorder->recordDestruction(
+				command: new RecordDestructionCommand(
+					object: $object,
+					scope: $scopeReport,
+					rule: 'destroy-right-granted',
+					context: [
+						'deletionWindow' => $purge->window?->toArray(),
+						'windowWaived' => ($purge->force === true),
+					]
+				)
 			);
 		} catch (DestructionRefusedException $e) {
 			return new JSONResponse(
@@ -845,7 +847,7 @@ class DeletedController extends Controller {
 				);
 			}
 
-			$window = $this->services->store->deletion->window->windowFor(object: $object, schema: $schema);
+			$window = $this->services->store->deletion->window->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema));
 
 			return new JSONResponse(
 				data: [
