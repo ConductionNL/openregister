@@ -177,3 +177,22 @@ describe('MergeObject merge choices (golden)', () => {
 		console.error.mockRestore()
 	})
 })
+
+describe('MergeObject.getFileType (golden)', () => {
+	it.each([
+		[undefined, 'Unknown'],
+		['', 'Unknown'],
+		['report.PDF', 'PDF'],
+		['a.docx', 'Word'],
+		['sheet.xls', 'Excel'],
+		['deck.pptx', 'PowerPoint'],
+		['notes.txt', 'Text'],
+		['photo.JPEG', 'Image'],
+		['bundle.rar', 'Archive'],
+		['data.csv', 'CSV'],
+		['noextension', 'NOEXTENSION'],
+		['trailing.', 'Unknown'],
+	])('names %p as %p', (filename, label) => {
+		expect(MergeObject.methods.getFileType(filename)).toBe(label)
+	})
+})
