@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -138,10 +139,8 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->with(
 				$this->schema,
 				'update',
-				null,
-				'owner-uid',
-				true,
-				$this->object
+				new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object),
+				true
 			)
 			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
 		$this->magic->expects($this->never())->method('lockObjectEntity');
@@ -181,10 +180,8 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 			->with(
 				$this->schema,
 				'update',
-				null,
-				'owner-uid',
-				true,
-				$this->object
+				new PermissionCheckOptions(objectOwner: 'owner-uid', object: $this->object),
+				true
 			)
 			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
 		$this->magic->expects($this->never())->method('lockObjectEntity');
