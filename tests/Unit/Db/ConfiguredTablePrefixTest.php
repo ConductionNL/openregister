@@ -59,8 +59,6 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
-use OCA\OpenRegister\Db\SchemaCatalog;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * The connection double replaces `*PREFIX*` with `nc_`, as Nextcloud's does.
