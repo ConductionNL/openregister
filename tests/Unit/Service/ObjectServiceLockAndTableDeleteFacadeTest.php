@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\TableDeletionOptions;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -76,7 +78,7 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 	public function testDeleteObjectsBySchemaForwardsIdsAndHardDeleteAsBulkDelete(): void {
 		$deletion = $this->createMock(SchemaDeletionService::class);
 		$deletion->expects($this->once())->method('deleteObjectsBySchema')
-			->with(7, 42, true, SchemaDeletionService::TRIGGER_BULK_DELETE)
+			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(true, SchemaDeletionService::TRIGGER_BULK_DELETE))
 			->willReturn(['deleted_count' => 1, 'deleted_uuids' => ['u'], 'schema_id' => 42]);
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->with(SchemaDeletionService::class)->willReturn($deletion);
@@ -89,7 +91,7 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 	public function testDeleteObjectsBySchemaIsSoftByDefault(): void {
 		$deletion = $this->createMock(SchemaDeletionService::class);
 		$deletion->expects($this->once())->method('deleteObjectsBySchema')
-			->with(7, 42, false, SchemaDeletionService::TRIGGER_BULK_DELETE)
+			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(false, SchemaDeletionService::TRIGGER_BULK_DELETE))
 			->willReturn(['deleted_count' => 0, 'deleted_uuids' => [], 'schema_id' => 42]);
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturn($deletion);

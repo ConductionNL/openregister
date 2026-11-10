@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -249,7 +250,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		);
 
 		try {
-			$service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+			$service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: 42));
 			self::fail('The failure was swallowed.');
 		} catch (RuntimeException $failure) {
 			self::assertSame('gone away', $failure->getMessage());
@@ -367,7 +368,7 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		$this->registers->method('find')->willReturn($this->register());
 		$this->schemas->method('find')->willReturn($this->schema(id: 42));
 
-		return $this->service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+		return $this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: 42));
 	}//end deleteBySchema()
 
 	/**
