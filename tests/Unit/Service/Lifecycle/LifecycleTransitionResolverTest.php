@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateMove;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -62,7 +63,7 @@ class LifecycleTransitionResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testWithoutADeclarationTheFirstMatchWins(): void {
-		$matched = $this->resolver->resolve(self::TWINS, self::UUID, 'received', 'verifying');
+		$matched = $this->resolver->resolve(self::TWINS, new StateMove(self::UUID, 'received', 'verifying'));
 
 		$this->assertSame('startVerifying', $matched[0]);
 	}//end testWithoutADeclarationTheFirstMatchWins()
@@ -75,7 +76,7 @@ class LifecycleTransitionResolverTest extends TestCase {
 		// to be judged as `startVerifying`, so assign's condition never ran.
 		$this->context->declare(uuid: self::UUID, action: 'assign');
 
-		$matched = $this->resolver->resolve(self::TWINS, self::UUID, 'received', 'verifying');
+		$matched = $this->resolver->resolve(self::TWINS, new StateMove(self::UUID, 'received', 'verifying'));
 
 		$this->assertSame('assign', $matched[0]);
 		$this->assertArrayHasKey(key: 'condition', array: $matched[1]);
@@ -90,7 +91,7 @@ class LifecycleTransitionResolverTest extends TestCase {
 		// so for a received→verifying edit it is ignored and value matching runs.
 		$this->context->declare(uuid: self::UUID, action: 'close');
 
-		$matched = $this->resolver->resolve(self::TWINS, self::UUID, 'received', 'verifying');
+		$matched = $this->resolver->resolve(self::TWINS, new StateMove(self::UUID, 'received', 'verifying'));
 
 		$this->assertSame('startVerifying', $matched[0]);
 	}//end testADeclaredActionThatDoesNotMatchTheEditIsIgnored()
@@ -103,7 +104,7 @@ class LifecycleTransitionResolverTest extends TestCase {
 		// conjure a match out of nothing.
 		$this->context->declare(uuid: self::UUID, action: 'assign');
 
-		$this->assertNull($this->resolver->resolve(self::TWINS, self::UUID, 'verifying', 'received'));
+		$this->assertNull($this->resolver->resolve(self::TWINS, new StateMove(self::UUID, 'verifying', 'received')));
 	}//end testADeclaredActionNeverLegalisesAnUndeclaredMove()
 
 	/**
@@ -112,7 +113,7 @@ class LifecycleTransitionResolverTest extends TestCase {
 	public function testAnUnknownDeclaredActionFallsBackToValueMatching(): void {
 		$this->context->declare(uuid: self::UUID, action: 'nosuchaction');
 
-		$matched = $this->resolver->resolve(self::TWINS, self::UUID, 'received', 'verifying');
+		$matched = $this->resolver->resolve(self::TWINS, new StateMove(self::UUID, 'received', 'verifying'));
 
 		$this->assertSame('startVerifying', $matched[0]);
 	}//end testAnUnknownDeclaredActionFallsBackToValueMatching()
@@ -123,7 +124,7 @@ class LifecycleTransitionResolverTest extends TestCase {
 	public function testADeclarationOnAnotherObjectDoesNotLeak(): void {
 		$this->context->declare(uuid: '00000000-0000-0000-0000-000000000002', action: 'assign');
 
-		$matched = $this->resolver->resolve(self::TWINS, self::UUID, 'received', 'verifying');
+		$matched = $this->resolver->resolve(self::TWINS, new StateMove(self::UUID, 'received', 'verifying'));
 
 		$this->assertSame('startVerifying', $matched[0]);
 	}//end testADeclarationOnAnotherObjectDoesNotLeak()
@@ -134,7 +135,7 @@ class LifecycleTransitionResolverTest extends TestCase {
 	public function testAStringFromIsReadAsAOneElementList(): void {
 		$transitions = ['open' => ['from' => 'draft', 'to' => 'open']];
 
-		$this->assertSame('open', $this->resolver->resolve($transitions, self::UUID, 'draft', 'open')[0]);
+		$this->assertSame('open', $this->resolver->resolve($transitions, new StateMove(self::UUID, 'draft', 'open'))[0]);
 	}//end testAStringFromIsReadAsAOneElementList()
 
 	/**

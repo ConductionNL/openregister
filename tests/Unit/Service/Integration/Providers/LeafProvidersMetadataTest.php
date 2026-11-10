@@ -71,6 +71,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProviderServices;
 
 /**
@@ -177,7 +178,7 @@ class LeafProvidersMetadataTest extends TestCase {
 			);
 		}
 
-		// PollsProvider — (platform, mapper, userSession).
+		// PollsProvider — (platform, mapper).
 		if ($class === PollsProvider::class) {
 			return new $class(
 				platform: new LeafProviderPlatform(
@@ -186,7 +187,6 @@ class LeafProvidersMetadataTest extends TestCase {
 					l10n: $l10n,
 				),
 				pollLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\PollLinkMapper::class),
-				userSession: $this->createMock(IUserSession::class),
 			);
 		}
 
@@ -199,13 +199,15 @@ class LeafProvidersMetadataTest extends TestCase {
 			);
 		}
 
-		// FlowProvider — (mapper, db, appManager, l10n).
+		// FlowProvider — (platform, mapper).
 		if ($class === FlowProvider::class) {
 			return new $class(
+				platform: new LeafProviderPlatform(
+					db: $db,
+					appManager: $appManager,
+					l10n: $l10n,
+				),
 				flowLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\FlowLinkMapper::class),
-				db: $db,
-				appManager: $appManager,
-				l10n: $l10n,
 			);
 		}
 
@@ -221,7 +223,7 @@ class LeafProvidersMetadataTest extends TestCase {
 			);
 		}
 
-		// TimeProvider — (platform, mapper, config, logger).
+		// TimeProvider — (leaf, mapper, config).
 		if ($class === TimeProvider::class) {
 			$config = $this->createMock(\OCP\IConfig::class);
 			$config->method('getAppValue')->willReturnCallback(
@@ -230,18 +232,18 @@ class LeafProvidersMetadataTest extends TestCase {
 				}
 			);
 			return new TimeProvider(
-				platform: new LeafProviderPlatform(
+				leaf: new LeafMarkerScanning(
 					db: $db,
 					appManager: $appManager,
 					l10n: $l10n,
+					logger: $this->createMock(LoggerInterface::class),
 				),
 				linkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
 				config: $config,
-				logger: $this->createMock(LoggerInterface::class),
 			);
 		}
 
-		// Providers shaped (platform, <mapper>, logger).
+		// Providers shaped (leaf, <mapper>).
 		$trailingMapper = [
 			AnalyticsProvider::class => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
 			CollectivesProvider::class => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
@@ -251,18 +253,19 @@ class LeafProvidersMetadataTest extends TestCase {
 		];
 		if (isset($trailingMapper[$class]) === true) {
 			return new $class(
-				new LeafProviderPlatform($db, $appManager, $l10n),
+				new LeafMarkerScanning($db, $appManager, $l10n, $this->createMock(LoggerInterface::class)),
 				$this->buildLinkMapper($trailingMapper[$class]),
-				$this->createMock(LoggerInterface::class),
 			);
 		}
 
-		// Default: plain (db, appManager, l10n, logger) providers (Activity, ...).
+		// Default: (leaf) providers (Activity, ...).
 		return new $class(
-			db: $db,
-			appManager: $appManager,
-			l10n: $l10n,
-			logger: $this->createMock(LoggerInterface::class),
+			leaf: new LeafMarkerScanning(
+				db: $db,
+				appManager: $appManager,
+				l10n: $l10n,
+				logger: $this->createMock(LoggerInterface::class),
+			),
 		);
 	}//end instantiateGreenfieldProvider()
 

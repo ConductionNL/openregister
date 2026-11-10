@@ -173,7 +173,8 @@ class OperationsControllersA24GoldenTest extends TestCase {
 			$this->console,
 			$this->jobs,
 			$this->alerts,
-			$this->session($uid)
+			$this->session($uid),
+			$this->createMock(\OCP\IGroupManager::class)
 		);
 	}//end consoleController()
 
@@ -265,9 +266,8 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		$this->jobs->method('runs')->willReturnCallback(
 			fn (
 				JobRunFilter $filter,
-				int $limit,
-				int $offset
-			): array => [$filter->jobClass, $filter->outcome, $filter->windowHours, $limit, $offset]
+				\OCA\OpenRegister\Db\ListQuery $page
+			): array => [$filter->jobClass, $filter->outcome, $filter->windowHours, $page->limit, $page->offset]
 		);
 		$this->assertSame(
 			['J', 'failed', 3, 10, 20],

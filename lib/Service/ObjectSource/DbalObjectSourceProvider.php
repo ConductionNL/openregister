@@ -519,7 +519,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		$table = $this->fromExpression(connection: $connection, config: $ref->config);
 
-		$query = $this->aggregator->query(connection: $connection, table: $table, aggregation: $aggregation);
+		$query = $this->aggregator->query(from: new DbalFromClause(connection: $connection, table: $table), aggregation: $aggregation);
 
 		return $this->aggregator->run(query: $query, shape: $request->shape);
 	}//end aggregateMetric()

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Rules\DependentValueWrite;
 
 /**
  * Task 5.3, in one place rather than as a comment pointing at four others.
@@ -239,7 +240,7 @@ class NoCeilingRegressionTest extends TestCase {
 
 		$tables = new DependentValueTable();
 		$this->assertFalse($tables->declaresAny(properties: $properties));
-		$this->assertSame([], $tables->violations(properties: $properties, data: $data));
+		$this->assertSame([], $tables->violations(properties: $properties, write: new DependentValueWrite(data: $data, stored: [])));
 		$this->assertSame([], (new DependentValueValidator())->validate(['properties' => $properties]));
 
 		$resolver = new ExpressionDefaultResolver(

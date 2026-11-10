@@ -127,7 +127,11 @@ final class LockStepContext {
 	public function targets(array $items, array $config, string $refusal): array {
 		$targets = [];
 		foreach ($items as $item) {
-			$uuid = $this->targetOf(item: $item, configured: ($config['uuid'] ?? null), refusal: $refusal);
+			$uuid = $this->targetOf(item: $item, configured: ($config['uuid'] ?? null));
+			if ($uuid === '') {
+				throw new RuntimeException($refusal);
+			}
+
 			$targets[$uuid] = $uuid;
 		}
 
@@ -135,19 +139,16 @@ final class LockStepContext {
 	}//end targets()
 
 	/**
-	 * The object one item names.
+	 * The object one item names, or an empty string when it names none.
 	 *
-	 * @param mixed  $item       The item.
-	 * @param mixed  $configured The configured `uuid` template, if any.
-	 * @param string $refusal    The translated refusal when the item names no object.
+	 * @param mixed $item       The item.
+	 * @param mixed $configured The configured `uuid` template, if any.
 	 *
-	 * @return string The target UUID.
-	 *
-	 * @throws RuntimeException When the item resolves to no object.
+	 * @return string The target UUID, empty when the item resolves to no object.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function targetOf(mixed $item, mixed $configured, string $refusal): string {
+	private function targetOf(mixed $item, mixed $configured): string {
 		$json = ($item[FlowItems::JSON] ?? []);
 		if (is_array($json) === false) {
 			$json = [];
@@ -156,10 +157,6 @@ final class LockStepContext {
 		$uuid = trim((string)($json['uuid'] ?? ''));
 		if (is_string($configured) === true && trim($configured) !== '') {
 			$uuid = trim((string)FlowValueTemplate::render($configured, $json));
-		}
-
-		if ($uuid === '') {
-			throw new RuntimeException($refusal);
 		}
 
 		return $uuid;

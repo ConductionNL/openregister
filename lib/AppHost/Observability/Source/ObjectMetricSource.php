@@ -29,13 +29,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Observability\Source;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricSourceInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -62,15 +60,11 @@ class ObjectMetricSource implements MetricSourceInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService OR object service (aggregation).
-	 * @param RegisterMapperInterface $registerMapper Slug → register id.
-	 * @param SchemaMapperInterface $schemaMapper Slug → schema id.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param SchemaScopeLookups        $lookups       Slug → register/schema id, and the PSR logger.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
+		private readonly SchemaScopeLookups $lookups,
 	) {
 	}//end __construct()
 
@@ -109,7 +103,7 @@ class ObjectMetricSource implements MetricSourceInterface {
 				$appId,
 				$e->getMessage()
 			);
-			$this->logger->warning(
+			$this->lookups->logger->warning(
 				message: $logMessage,
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -142,11 +136,11 @@ class ObjectMetricSource implements MetricSourceInterface {
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema slug is unknown.
 	 */
 	private function buildBaseQuery(array $source): array {
-		$schemaId = $this->schemaMapper->find($source['schema'], _rbac: false, _multitenancy: false)->getId();
+		$schemaId = $this->lookups->schemaMapper->find($source['schema'], _rbac: false, _multitenancy: false)->getId();
 
 		$self = ['schema' => $schemaId];
 		if (isset($source['register']) === true && $source['register'] !== '') {
-			$registerId = $this->registerMapper->find($source['register'], _rbac: false, _multitenancy: false)->getId();
+			$registerId = $this->lookups->registerMapper->find($source['register'], _rbac: false, _multitenancy: false)->getId();
 			$self['register'] = $registerId;
 		}
 

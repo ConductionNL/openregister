@@ -131,7 +131,8 @@ final class OperationsConsoleControllerTest extends TestCase {
 			$this->console,
 			$this->jobsService,
 			$this->createMock(\OCA\OpenRegister\Service\Operations\JobAlertService::class),
-			$session
+			$session,
+			$this->createMock(\OCP\IGroupManager::class)
 		);
 	}
 
