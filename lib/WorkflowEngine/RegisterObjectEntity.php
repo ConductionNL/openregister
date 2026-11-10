@@ -110,7 +110,7 @@ class RegisterObjectEntity implements RegisterObjectEntityInterface {
 	 * @return void
 	 */
 	public function prepareRuleMatcher(IRuleMatcher $ruleMatcher, string $eventName, Event $event): void {
-		$object = $this->objectFromEvent(event: $event);
+		$object = (new LifecycleEventObject())->of(event: $event);
 		if ($object !== null) {
 			$this->object = $object;
 			$ruleMatcher->setEntitySubject($this, $object);
@@ -140,22 +140,4 @@ class RegisterObjectEntity implements RegisterObjectEntityInterface {
 	public function getObject(): ?ObjectEntity {
 		return $this->object;
 	}//end getObject()
-
-	/**
-	 * Resolve the OpenRegister object from a lifecycle event.
-	 *
-	 * @param Event $event The dispatched event.
-	 *
-	 * @return ObjectEntity|null
-	 */
-	private function objectFromEvent(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectCreatedEvent
-			|| $event instanceof ObjectUpdatedEvent
-			|| $event instanceof ObjectDeletedEvent
-		) {
-			return $event->getObject();
-		}
-
-		return null;
-	}//end objectFromEvent()
 }//end class
