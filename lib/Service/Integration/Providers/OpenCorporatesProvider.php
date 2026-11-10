@@ -47,10 +47,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -101,27 +98,6 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider implements Open
 	private const REQUIRED_APP = 'integriq';
 
 	/**
-	 * External-call router.
-	 *
-	 * @var ExternalIntegrationRouterInterface
-	 */
-	private ExternalIntegrationRouterInterface $router;
-
-	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private IAppManager $appManager;
-
-	/**
-	 * Localisation.
-	 *
-	 * @var IL10N
-	 */
-	private IL10N $l10n;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ConnectorRouting $routing The router, app manager and localisation.
@@ -133,9 +109,7 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider implements Open
 		ConnectorRouting $routing,
 		private LoggerInterface $logger,
 	) {
-		$this->router = $routing->router;
-		$this->appManager = $routing->appManager;
-		$this->l10n = $routing->l10n;
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	/**
