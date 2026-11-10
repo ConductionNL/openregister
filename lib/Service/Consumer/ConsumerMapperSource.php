@@ -108,12 +108,12 @@ class ConsumerMapperSource implements ConsumerSource {
 	 */
 	public static function resolve(Consumer $consumer): ResolvedConsumer {
 		return new ResolvedConsumer(
-			source: self::SOURCE,
-			uuid: $consumer->getUuid(),
-			name: (string)$consumer->getName(),
-			userId: $consumer->getUserId(),
-			authorizationType: $consumer->getAuthorizationType(),
-			configuration: $consumer->getAuthorizationConfiguration(),
+			identity: new ConsumerIdentity(source: self::SOURCE, uuid: $consumer->getUuid(), name: (string)$consumer->getName()),
+			authorization: new ConsumerAuthorization(
+				userId: $consumer->getUserId(),
+				authorizationType: $consumer->getAuthorizationType(),
+				configuration: $consumer->getAuthorizationConfiguration()
+			),
 			record: $consumer
 		);
 	}//end resolve()
