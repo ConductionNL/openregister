@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltCheck;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltRecords;
+use OCA\OpenRegister\Service\Flow\Oversight\HaltLookup;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService;
 use OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -231,14 +232,14 @@ class OrganisationHaltTest extends TestCase {
 		$this->signIn();
 		$halt = $halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'incident');
 
-		$this->assertSame($halt['id'], $halts->haltFor(organisation: self::ORG_A, app: 'hermiq')['id']);
-		$this->assertNotNull($halts->haltFor(organisation: self::ORG_A, app: 'hermiq', nodeType: 'hermiq.agent-tick'));
-		$this->assertNull($halts->haltFor(organisation: self::ORG_B, app: 'hermiq'));
-		$this->assertNull($halts->haltFor(organisation: self::ORG_A, app: 'learniq'));
+		$this->assertSame($halt['id'], $halts->haltFor(new HaltLookup(organisation: self::ORG_A, app: 'hermiq'))['id']);
+		$this->assertNotNull($halts->haltFor(new HaltLookup(organisation: self::ORG_A, app: 'hermiq', nodeType: 'hermiq.agent-tick')));
+		$this->assertNull($halts->haltFor(new HaltLookup(organisation: self::ORG_B, app: 'hermiq')));
+		$this->assertNull($halts->haltFor(new HaltLookup(organisation: self::ORG_A, app: 'learniq')));
 
 		$released = $halts->release(id: $halt['id']);
 		$this->assertTrue($released);
-		$this->assertNull($halts->haltFor(organisation: self::ORG_A, app: 'hermiq'));
+		$this->assertNull($halts->haltFor(new HaltLookup(organisation: self::ORG_A, app: 'hermiq')));
 		$this->assertSame([], $halts->list());
 
 		$this->assertSame(

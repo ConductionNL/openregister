@@ -34,9 +34,8 @@ namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Http;
 use OCP\IUser;
 
@@ -53,14 +52,12 @@ class RunActionAction implements RunActionActionInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectActionRunnerInterface  $runner  The single-object run path.
-	 * @param MacroActionResolver $schemas Loads a member's schema.
-	 * @param ObjectOperationsInterface       $objects Runs the commit as the job's actor.
+	 * @param ObjectActionRunnerInterface $runner The single-object run path.
+	 * @param BulkObjectAccess            $access Loads a member's schema and runs the commit as the job's actor.
 	 */
 	public function __construct(
 		private readonly ObjectActionRunnerInterface $runner,
-		private readonly MacroActionResolver $schemas,
-		private readonly ObjectOperationsInterface $objects,
+		private readonly BulkObjectAccess $access,
 	) {
 	}//end __construct()
 
@@ -155,7 +152,7 @@ class RunActionAction implements RunActionActionInterface {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
 	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		$schema = $this->schemas->loadSchema(schema: (string)$object->getSchema());
+		$schema = $this->schemaOf(object: $object);
 		if ($schema === null) {
 			return BulkActionResult::refused(rule: 'no-schema');
 		}
@@ -181,8 +178,26 @@ class RunActionAction implements RunActionActionInterface {
 			return $this->resultOf(answer: $run());
 		}
 
-		return $this->resultOf(answer: $this->objects->runAs($actor, $run));
+		return $this->resultOf(answer: $this->access->objects->runAs($actor, $run));
 	}//end apply()
+
+	/**
+	 * The member's schema, read the way the single-object run reads it.
+	 *
+	 * Read without RBAC or multitenancy: the declared action's own checks
+	 * decide who may run it. A schema that cannot be read is null.
+	 *
+	 * @param ObjectEntity $object The member.
+	 *
+	 * @return Schema|null The schema, or null.
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		try {
+			return $this->access->schemas->find((string)$object->getSchema(), _multitenancy: false, _rbac: false);
+		} catch (\Throwable) {
+			return null;
+		}
+	}//end schemaOf()
 
 	/**
 	 * The bulk outcome of a run's answer.

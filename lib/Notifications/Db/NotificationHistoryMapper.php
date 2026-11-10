@@ -155,7 +155,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 		$qb->select('*')
 			->from($this->getTableName());
 
-		$this->applyFilters(qb: $qb, filters: $filters, asOf: $asOf);
+		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $filters, asOf: ($asOf ?? new DateTime())));
 		$qb->orderBy('dispatched_at', 'DESC');
 		$this->page(qb: $qb, limit: $limit, offset: $offset);
 
@@ -210,7 +210,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from($this->getTableName());
 
-		$this->applyFilters(qb: $qb, filters: $filters, asOf: $asOf);
+		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $filters, asOf: ($asOf ?? new DateTime())));
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -238,25 +238,24 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * which states the same three rules in PHP and is where they are unit-tested
 	 * against a clock. Same rules, same order; change one and change the other.
 	 *
-	 * @param IQueryBuilder $qb The query being built.
-	 * @param array<string, mixed> $filters The filter map.
-	 * @param DateTime $asOf The moment to judge a snooze against.
+	 * @param IQueryBuilder     $qb     The query being built.
+	 * @param HistoryListFilter $filter The filter map and the moment to judge a snooze against.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
-	private function applyListStateFilters(IQueryBuilder $qb, array $filters, DateTime $asOf): void {
-		if ($this->flag(filters: $filters, key: 'unreadOnly') === true) {
+	private function applyListStateFilters(IQueryBuilder $qb, HistoryListFilter $filter): void {
+		if ($this->flag(filters: $filter->filters, key: 'unreadOnly') === true) {
 			$qb->andWhere($qb->expr()->isNull('read_at'));
 		}
 
-		if ($this->flag(filters: $filters, key: 'includeArchived') === false) {
+		if ($this->flag(filters: $filter->filters, key: 'includeArchived') === false) {
 			$qb->andWhere($qb->expr()->isNull('archived_at'));
 		}
 
-		if ($this->flag(filters: $filters, key: 'includeSnoozed') === false) {
-			$this->whereNotSnoozed(qb: $qb, asOf: $asOf);
+		if ($this->flag(filters: $filter->filters, key: 'includeSnoozed') === false) {
+			$this->whereNotSnoozed(qb: $qb, asOf: $filter->asOf);
 		}
 	}//end applyListStateFilters()
 
@@ -266,15 +265,14 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 *
 	 * A filter that is absent, null or empty narrows nothing.
 	 *
-	 * @param IQueryBuilder        $qb      The query.
-	 * @param array<string, mixed> $filters The filters, keyed as COLUMN_MAP plus the state flags.
-	 * @param DateTime|null        $asOf    The moment snoozes are judged against; null is now.
+	 * @param IQueryBuilder     $qb     The query.
+	 * @param HistoryListFilter $filter The filters, keyed as COLUMN_MAP plus the state flags, and the moment snoozes are judged against.
 	 *
 	 * @return void
 	 */
-	private function applyFilters(IQueryBuilder $qb, array $filters, ?DateTime $asOf): void {
-		$this->whereMappedColumns(qb: $qb, filters: $filters);
-		$this->applyListStateFilters(qb: $qb, filters: $filters, asOf: ($asOf ?? new DateTime()));
+	private function applyFilters(IQueryBuilder $qb, HistoryListFilter $filter): void {
+		$this->whereMappedColumns(qb: $qb, filters: $filter->filters);
+		$this->applyListStateFilters(qb: $qb, filter: $filter);
 
 	}//end applyFilters()
 

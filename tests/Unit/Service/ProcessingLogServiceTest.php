@@ -48,6 +48,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ProcessingLogService
@@ -103,8 +105,7 @@ class ProcessingLogServiceTest extends TestCase {
 		$this->service = new ProcessingLogService(
 			logMapper: $this->logMapper,
 			vrwMapper: $this->vrwMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 			userSession: $this->userSession,
 			logger: new NullLogger()
 		);
