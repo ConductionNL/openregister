@@ -46,6 +46,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -351,12 +353,9 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 
 			// Now one that does carry it.
 			[, , $withVerb] = $this->privateObject('verbgrant2');
-			$this->sharing()->grant(
+			$this->sharing()->grantWithTerms(
 				object: $withVerb,
-				type: 'user',
-				shareWith: $recipientUid,
-				permissions: 1,
-				verbs: ['use']
+				request: new GrantRequest(type: 'user', shareWith: $recipientUid, terms: new GrantTerms(permissions: 1, verbs: ['use']))
 			);
 			$resolver->forget();
 
