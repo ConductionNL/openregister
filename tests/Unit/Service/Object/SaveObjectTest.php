@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
@@ -30,7 +31,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\ObjectUpdateOptions;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
@@ -4869,7 +4872,12 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, [])]);
+		$preparation = new UpdatePreparation(
+			existingObject: $entity,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: [])
+		);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$preparation]);
 		$sent = new ObjectPayload(data: $data, selfData: []);
 		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), 'hello-world']);
 
@@ -4927,7 +4935,10 @@ class SaveObjectTest extends TestCase {
 		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), null]);
 		$this->assertNull($entity->getSlug(), 'precondition: the decision is no slug');
 
-		$updated = $this->handler->updateObject(register: $register, schema: $schema, data: $data, existingObject: $entity, silent: true);
+		$updated = $this->handler->updateObject(
+			update: new StoredObjectUpdate(register: $register, schema: $schema, data: $data, existingObject: $entity),
+			options: new ObjectUpdateOptions(silent: true)
+		);
 
 		$this->assertNull($updated->getSlug(), 'updateObject() leaves the decision alone');
 	}

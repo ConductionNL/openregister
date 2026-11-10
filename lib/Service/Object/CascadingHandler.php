@@ -271,12 +271,7 @@ class CascadingHandler {
 			return null;
 		}
 
-		$register = null;
-		if ($target->register !== null) {
-			$register = (string)$target->register;
-		}
-
-		$this->saveHandler->assertMayCascadeCreate(schema: $schema, register: $register);
+		$this->saveHandler->assertMayCascadeCreate(schema: $schema, register: self::registerKey(target: $target));
 
 		// A new uuid is generated; default RBAC and multitenancy apply to the cascade.
 		$createdObject = $this->saveHandler->saveObject(
@@ -288,6 +283,22 @@ class CascadingHandler {
 
 		return $this->trackCreated(createdObject: $createdObject);
 	}//end cascadeCreate()
+
+	/**
+	 * The register a cascade target names, as a string.
+	 *
+	 * @param CascadeTarget $target The cascade target.
+	 *
+	 * @return string|null Null when the target names no register.
+	 */
+	private static function registerKey(CascadeTarget $target): ?string {
+		$register = null;
+		if ($target->register !== null) {
+			$register = (string)$target->register;
+		}
+
+		return $register;
+	}//end registerKey()
 
 	/**
 	 * The schema a `#/components/schemas/<slug>` reference names, or null.

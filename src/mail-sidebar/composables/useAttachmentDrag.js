@@ -29,35 +29,30 @@ const PATCHED_FLAG = '__orAttachmentPatched'
  * @return {object|null} Attachment metadata or null if unavailable.
  */
 function readAttachmentProps(el) {
-	// Vue 3
-	const vue3 = el.__vueParentComponent
-	if (vue3 && vue3.props) {
-		const p = vue3.props
-		if (p.id && p.fileName) {
-			return {
-				id: p.id,
-				fileName: p.fileName,
-				mime: p.mime,
-				size: p.size,
-				url: p.url,
-			}
-		}
+	// Vue 3, then Vue 2
+	return (
+		attachmentFromProps(el.__vueParentComponent?.props)
+		|| attachmentFromProps(el.__vue__?.$props)
+	)
+}
+
+/**
+ * The attachment metadata a component's props carry.
+ *
+ * @param {object|undefined} p The component's props.
+ * @return {object|null} The metadata, or null without an id and a file name.
+ */
+function attachmentFromProps(p) {
+	if (!p || !p.id || !p.fileName) {
+		return null
 	}
-	// Vue 2
-	const vue2 = el.__vue__
-	if (vue2 && vue2.$props) {
-		const p = vue2.$props
-		if (p.id && p.fileName) {
-			return {
-				id: p.id,
-				fileName: p.fileName,
-				mime: p.mime,
-				size: p.size,
-				url: p.url,
-			}
-		}
+	return {
+		id: p.id,
+		fileName: p.fileName,
+		mime: p.mime,
+		size: p.size,
+		url: p.url,
 	}
-	return null
 }
 
 /**
@@ -101,24 +96,45 @@ function patchElement(el) {
 			// Nothing to offer — let the browser fall back to default behavior.
 			return
 		}
-		const payload = {
-			messageId,
-			attachmentId: props.id,
-			fileName: props.fileName,
-			mime: props.mime || 'application/octet-stream',
-			size: props.size || 0,
-			downloadUrl: buildDownloadUrl(messageId, props.id),
-		}
+		const payload = dragPayload(props, messageId)
 		event.dataTransfer.effectAllowed = 'copy'
-		try {
-			event.dataTransfer.setData(ATTACHMENT_MIME, JSON.stringify(payload))
-			// Also advertise as a URL so non-OR drop targets can handle it.
-			event.dataTransfer.setData('text/uri-list', payload.downloadUrl)
-			event.dataTransfer.setData('text/plain', payload.fileName)
-		} catch (err) {
-			console.warn('[openregister] Could not set drag data:', err)
-		}
+		writeDragData(event.dataTransfer, payload)
 	})
+}
+
+/**
+ * What a dragged attachment carries.
+ *
+ * @param {object} props The attachment metadata.
+ * @param {number} messageId The message (thread) ID.
+ * @return {object} The drag payload.
+ */
+function dragPayload(props, messageId) {
+	return {
+		messageId,
+		attachmentId: props.id,
+		fileName: props.fileName,
+		mime: props.mime || 'application/octet-stream',
+		size: props.size || 0,
+		downloadUrl: buildDownloadUrl(messageId, props.id),
+	}
+}
+
+/**
+ * Put the payload on the drag, as OpenRegister data, a URL and plain text.
+ *
+ * @param {DataTransfer} dataTransfer The drag's data.
+ * @param {object} payload The drag payload.
+ */
+function writeDragData(dataTransfer, payload) {
+	try {
+		dataTransfer.setData(ATTACHMENT_MIME, JSON.stringify(payload))
+		// Also advertise as a URL so non-OR drop targets can handle it.
+		dataTransfer.setData('text/uri-list', payload.downloadUrl)
+		dataTransfer.setData('text/plain', payload.fileName)
+	} catch (err) {
+		console.warn('[openregister] Could not set drag data:', err)
+	}
 }
 
 /**

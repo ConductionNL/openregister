@@ -546,7 +546,7 @@ class Flow extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function belongsTo(?string $organisation): bool {
+	public function belongsTo(string|null $organisation): bool {
 		if ($this->organisation === null || trim($this->organisation) === '') {
 			return false;
 		}

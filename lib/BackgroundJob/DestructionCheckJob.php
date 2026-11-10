@@ -29,8 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use Closure;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\BackgroundJob\Support\DestructionCheckRun;
+use OCA\OpenRegister\BackgroundJob\Support\PreDestructionPass;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\AppraisalInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
@@ -43,7 +46,9 @@ use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
+use OCP\Notification\INotification;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -61,11 +66,6 @@ class DestructionCheckJob extends TimedJob {
 	 * Default interval: 24 hours (daily).
 	 */
 	private const DEFAULT_INTERVAL = 86400;
-
-	/**
-	 * App config key for tracking notified objects.
-	 */
-	private const NOTIFIED_KEY = 'retention_notified_objects';
 
 	/**
 	 * Constructor.
@@ -100,10 +100,7 @@ class DestructionCheckJob extends TimedJob {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	protected function run($argument): void {
@@ -111,63 +108,131 @@ class DestructionCheckJob extends TimedJob {
 		$logger->info('[DestructionCheckJob] Starting destruction check');
 
 		try {
-			$retentionService = $this->container->get(RetentionServiceInterface::class);
-			$settingsHandler = $this->container->get(ArchivalSettingsReaderInterface::class);
-			$settings = $settingsHandler->getArchivalSettingsOnly();
-
-			if (empty($settings['destructionListRegister']) === true
-				|| empty($settings['destructionListSchema']) === true
-			) {
-				$logger->info('[DestructionCheckJob] Destruction list register/schema not configured, skipping');
-				return;
-			}
-
-			// Step 1: Send pre-destruction notifications.
-			$this->sendPreDestructionNotifications(
-				settings: $settings,
-				logger: $logger
-			);
-
-			// Step 2: Find eligible objects and create destruction list.
-			$excludeUuids = $retentionService->getObjectsOnPendingDestructionLists();
-			$eligible = $retentionService->findEligibleForDestruction($excludeUuids);
-
-			if (empty($eligible) === true) {
-				$logger->info('[DestructionCheckJob] No objects eligible for destruction');
-				return;
-			}
-
-			$logger->info('[DestructionCheckJob] Found ' . count($eligible) . ' objects eligible');
-
-			// Step 3: Create destruction list as register object.
-			$listData = $retentionService->createDestructionList($eligible);
-
-			if ($listData === null) {
-				$logger->warning('[DestructionCheckJob] Failed to create destruction list');
-				return;
-			}
-
-			$saveObject = $this->container->get(SaveObjectWriterInterface::class);
-			$savedList = $saveObject->saveObject(
-				data: $listData,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(register: $settings['destructionListRegister'], schema: $settings['destructionListSchema']),
-					policy: new SavePolicy(silent: true)
-				),
-				_rbac: false,
-				_multitenancy: false
-			);
-
-			$logger->info(
-				'[DestructionCheckJob] Created destruction list, UUID: ' . $savedList->getUuid()
-			);
-
-			// Step 4: Notify archivaris group.
-			$this->sendReviewNotification(listUuid: $savedList->getUuid(), objectCount: count($eligible));
+			$this->checkForDestruction(logger: $logger);
 		} catch (Exception $e) {
 			$logger->error('[DestructionCheckJob] Error: ' . $e->getMessage(), ['exception' => $e]);
-		}//end try
+		}
 	}//end run()
+
+	/**
+	 * Warn about approaching objects, then propose the eligible ones for destruction.
+	 *
+	 * @param LoggerInterface $logger The run's logger.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	private function checkForDestruction(LoggerInterface $logger): void {
+		$check = $this->startCheck(logger: $logger);
+		if (self::isListTargetMissing(settings: $check->settings) === true) {
+			$logger->info('[DestructionCheckJob] Destruction list register/schema not configured, skipping');
+			return;
+		}
+
+		// Step 1: Send pre-destruction notifications.
+		$this->sendPreDestructionNotifications(settings: $check->settings, logger: $logger);
+
+		// Step 2: Find eligible objects and create destruction list.
+		$eligible = $this->eligibleForDestruction(check: $check);
+		if ($eligible !== []) {
+			$this->proposeDestructionList(check: $check, eligible: $eligible);
+		}
+	}//end checkForDestruction()
+
+	/**
+	 * Resolve the retention service and read the archival settings for this run.
+	 *
+	 * @param LoggerInterface $logger The run's logger.
+	 *
+	 * @return DestructionCheckRun
+	 */
+	private function startCheck(LoggerInterface $logger): DestructionCheckRun {
+		$check           = new DestructionCheckRun(logger: $logger, retention: $this->container->get(RetentionServiceInterface::class));
+		$settingsHandler = $this->container->get(ArchivalSettingsReaderInterface::class);
+		$check->settings = $settingsHandler->getArchivalSettingsOnly();
+		return $check;
+	}//end startCheck()
+
+	/**
+	 * Whether the register or schema destruction lists are saved into is not configured.
+	 *
+	 * @param array<string, mixed> $settings Archival settings.
+	 *
+	 * @return bool
+	 */
+	private static function isListTargetMissing(array $settings): bool {
+		return empty($settings['destructionListRegister']) === true
+			|| empty($settings['destructionListSchema']) === true;
+	}//end isListTargetMissing()
+
+	/**
+	 * The objects eligible for destruction that are not on a pending list yet.
+	 *
+	 * @param DestructionCheckRun $check The run.
+	 *
+	 * @return array The eligible objects; empty when there are none.
+	 */
+	private function eligibleForDestruction(DestructionCheckRun $check): array {
+		$excludeUuids = $check->retention->getObjectsOnPendingDestructionLists();
+		$eligible     = $check->retention->findEligibleForDestruction($excludeUuids);
+
+		if (empty($eligible) === true) {
+			$check->logger->info('[DestructionCheckJob] No objects eligible for destruction');
+			return [];
+		}
+
+		$check->logger->info('[DestructionCheckJob] Found ' . count($eligible) . ' objects eligible');
+		return $eligible;
+	}//end eligibleForDestruction()
+
+	/**
+	 * Save the eligible objects as one destruction list and ask the archivists to review it.
+	 *
+	 * @param DestructionCheckRun $check    The run.
+	 * @param array               $eligible The eligible objects.
+	 *
+	 * @return void
+	 */
+	private function proposeDestructionList(DestructionCheckRun $check, array $eligible): void {
+		// Step 3: Create destruction list as register object.
+		$listData = $check->retention->createDestructionList($eligible);
+
+		if ($listData === null) {
+			$check->logger->warning('[DestructionCheckJob] Failed to create destruction list');
+			return;
+		}
+
+		$savedList = $this->saveDestructionList(settings: $check->settings, listData: $listData);
+
+		$check->logger->info(
+			'[DestructionCheckJob] Created destruction list, UUID: ' . $savedList->getUuid()
+		);
+
+		// Step 4: Notify archivaris group.
+		$this->sendReviewNotification(listUuid: $savedList->getUuid(), objectCount: count($eligible));
+	}//end proposeDestructionList()
+
+	/**
+	 * Save a destruction list as an object in the configured register and schema.
+	 *
+	 * @param array<string, mixed> $settings Archival settings.
+	 * @param array                $listData The list the retention service built.
+	 *
+	 * @return ObjectEntity The saved list.
+	 */
+	private function saveDestructionList(array $settings, array $listData): ObjectEntity {
+		$saveObject = $this->container->get(SaveObjectWriterInterface::class);
+		return $saveObject->saveObject(
+			data: $listData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $settings['destructionListRegister'], schema: $settings['destructionListSchema']),
+				policy: new SavePolicy(silent: true)
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end saveDestructionList()
 
 	/**
 	 * Send pre-destruction notifications for approaching objects.
@@ -177,31 +242,17 @@ class DestructionCheckJob extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-send-pre-destruction-notifications
 	 */
 	private function sendPreDestructionNotifications(
 		array $settings,
 		LoggerInterface $logger,
 	): void {
-		$leadDays = (int)($settings['notificationLeadDays'] ?? 30);
-		$threshold = (new DateTime())->modify("+{$leadDays} days")->format('Y-m-d');
-		$today = (new DateTime())->format('Y-m-d');
+		$accept = self::approachingWithin(leadDays: (int)($settings['notificationLeadDays'] ?? 30));
 
 		try {
 			$retentionService = $this->container->get(RetentionServiceInterface::class);
-
-			$appConfig = $this->container->get(\OCP\IAppConfig::class);
-			$notifiedJson = $appConfig->getValueString('openregister', self::NOTIFIED_KEY, '[]');
-			$notified = json_decode($notifiedJson, true) ?? [];
-			// Track which already-notified UUIDs are still inside the pre-destruction window
-			// this run; anything not re-seen has passed its date (or moved out) and is pruned
-			// below so the appconfig blob stays bounded over time (OPS-7).
-			$stillRelevant = [];
-			$newNotified = [];
-			$newCount = 0;
+			$pass = new PreDestructionPass(appConfig: $this->container->get(\OCP\IAppConfig::class), logger: $logger);
 
 			// 🔴 THE SCAN READS THE MAGIC TABLES AS WELL AS THE LEGACY BLOB
 			// TABLE. This loop used to select straight from
@@ -210,63 +261,82 @@ class DestructionCheckJob extends TimedJob {
 			// install it read zero rows and no pre-destruction warning was ever
 			// sent. {@see RetentionService::scanObjectsWithRetention()} visits
 			// both stores, pages them, and caps one run.
-			$scan = $retentionService->scanObjectsWithRetention(
-				accept: static function (ObjectEntity $object) use ($today, $threshold): bool {
-					$retention = ($object->getRetention() ?? []);
-					$actionDate = ($retention['archiefactiedatum'] ?? null);
+			$scan = $retentionService->scanObjectsWithRetention(accept: $accept);
 
-					// Every spelling that means live. Matching only the English
-					// one would make every pre-existing record invisible to the
-					// pre-destruction warning, so the first a records officer
-					// would hear of a destruction is after it happened.
-					$status = ($retention['archiefstatus'] ?? null);
-					if ($actionDate === null || in_array($status, RecordStateInterface::ACTIVE_ALIASES, true) === false) {
-						return false;
-					}
-
-					return ($actionDate > $today && $actionDate <= $threshold);
-				}
-			);
-
-			foreach ($scan['objects'] as $object) {
-				$retention = ($object->getRetention() ?? []);
-				$uuid = $object->getUuid();
-
-				// Object is still inside the notification window — keep it in the
-				// notified set even if we already alerted on it earlier.
-				if (in_array($uuid, $notified, true) === true) {
-					$stillRelevant[$uuid] = true;
-					continue;
-				}
-
-				if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
-					continue;
-				}
-
-				$this->sendObjectNotification(object: $object, logger: $logger);
-
-				$newNotified[$uuid] = true;
-				$newCount++;
-			}//end foreach
-
-			// Rebuild the persisted set from only the still-in-window UUIDs plus the freshly
-			// notified ones, dropping any whose destruction date has passed or moved away.
-			// A TRUNCATED RUN PRUNES NOTHING: it did not see every in-window object, so
-			// treating what it missed as "no longer in the window" would re-notify those
-			// records on a later run.
-			$rebuilt = array_keys($stillRelevant + $newNotified);
-			if ($scan['truncated'] === true) {
-				$rebuilt = array_values(array_unique(array_merge($notified, array_keys($newNotified))));
-			}
-
-			if ($newCount > 0 || count($rebuilt) !== count($notified)) {
-				$appConfig->setValueString('openregister', self::NOTIFIED_KEY, json_encode($rebuilt));
-				$logger->info('[DestructionCheckJob] Sent ' . $newCount . ' pre-destruction notifications');
-			}
+			$this->notifyEach(objects: $scan['objects'], pass: $pass);
+			$pass->save(truncated: ($scan['truncated'] === true));
 		} catch (Exception $e) {
 			$logger->warning('[DestructionCheckJob] Notification error: ' . $e->getMessage());
 		}//end try
 	}//end sendPreDestructionNotifications()
+
+	/**
+	 * The scan filter: live objects whose action date falls after today and within the lead days.
+	 *
+	 * @param int $leadDays How many days ahead the archivists are warned.
+	 *
+	 * @return Closure(ObjectEntity): bool
+	 */
+	private static function approachingWithin(int $leadDays): Closure {
+		$threshold = (new DateTime())->modify("+{$leadDays} days")->format('Y-m-d');
+		$today     = (new DateTime())->format('Y-m-d');
+
+		return static function (ObjectEntity $object) use ($today, $threshold): bool {
+			$retention  = ($object->getRetention() ?? []);
+			$actionDate = ($retention['archiefactiedatum'] ?? null);
+
+			// Every spelling that means live. Matching only the English
+			// one would make every pre-existing record invisible to the
+			// pre-destruction warning, so the first a records officer
+			// would hear of a destruction is after it happened.
+			$status = ($retention['archiefstatus'] ?? null);
+			if ($actionDate === null || in_array($status, RecordStateInterface::ACTIVE_ALIASES, true) === false) {
+				return false;
+			}
+
+			return ($actionDate > $today && $actionDate <= $threshold);
+		};
+	}//end approachingWithin()
+
+	/**
+	 * Warn about each approaching object the scan found.
+	 *
+	 * @param iterable<ObjectEntity> $objects The approaching objects.
+	 * @param PreDestructionPass     $pass    The pass's notified set.
+	 *
+	 * @return void
+	 */
+	private function notifyEach(iterable $objects, PreDestructionPass $pass): void {
+		foreach ($objects as $object) {
+			$this->notifyOnce(object: $object, pass: $pass);
+		}
+	}//end notifyEach()
+
+	/**
+	 * Warn about one approaching object unless it was already warned about or is held.
+	 *
+	 * @param ObjectEntity       $object The approaching object.
+	 * @param PreDestructionPass $pass   The pass's notified set.
+	 *
+	 * @return void
+	 */
+	private function notifyOnce(ObjectEntity $object, PreDestructionPass $pass): void {
+		$retention = ($object->getRetention() ?? []);
+		$uuid      = $object->getUuid();
+
+		// Object is still inside the notification window — keep it in the
+		// notified set even if we already alerted on it earlier.
+		if ($pass->keepIfNotified(uuid: $uuid) === true) {
+			return;
+		}
+
+		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
+			return;
+		}
+
+		$this->sendObjectNotification(object: $object, logger: $pass->logger);
+		$pass->markNotified(uuid: $uuid);
+	}//end notifyOnce()
 
 	/**
 	 * Send a notification about one approaching object to every archivist.
@@ -283,9 +353,26 @@ class DestructionCheckJob extends TimedJob {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	private function sendObjectNotification(ObjectEntity $object, LoggerInterface $logger): void {
+		$parameters = self::approachingParameters(object: $object);
+
+		try {
+			$this->notifyArchivists(describe: self::approachingNotice(uuid: $object->getUuid(), parameters: $parameters));
+		} catch (Exception $e) {
+			$logger->warning('[DestructionCheckJob] Notification send error: ' . $e->getMessage());
+		}//end try
+	}//end sendObjectNotification()
+
+	/**
+	 * The parameters an approaching object is announced with.
+	 *
+	 * @param ObjectEntity $object The approaching object.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function approachingParameters(ObjectEntity $object): array {
 		$retention = ($object->getRetention() ?? []);
-		$uuid = $object->getUuid();
-		$parameters = [
+		$uuid      = $object->getUuid();
+		return [
 			'subject' => self::subjectOf(retention: $retention),
 			// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title`
 			// PROPERTY, so Entity's magic accessor threw
@@ -299,29 +386,22 @@ class DestructionCheckJob extends TimedJob {
 			'actieDate' => (string)($retention['archiefactiedatum'] ?? ''),
 			'classification' => (self::classificationOf(retention: $retention) ?? ''),
 		];
+	}//end approachingParameters()
 
-		try {
-			$notificationManager = $this->container->get(INotificationManager::class);
-			$groupManager = $this->container->get(IGroupManager::class);
-
-			$group = $groupManager->get('archivaris');
-			if ($group === null) {
-				return;
-			}
-
-			foreach ($group->getUsers() as $user) {
-				$notification = $notificationManager->createNotification();
-				$notification->setApp('openregister')
-					->setUser($user->getUID())
-					->setDateTime(new DateTime())
-					->setObject('retention', $uuid)
-					->setSubject('retention_approaching', $parameters);
-				$notificationManager->notify($notification);
-			}
-		} catch (Exception $e) {
-			$logger->warning('[DestructionCheckJob] Notification send error: ' . $e->getMessage());
-		}//end try
-	}//end sendObjectNotification()
+	/**
+	 * What an approaching-object notice is about.
+	 *
+	 * @param string|null          $uuid       The approaching object's uuid.
+	 * @param array<string, mixed> $parameters The notice's parameters.
+	 *
+	 * @return Closure(INotification): void
+	 */
+	private static function approachingNotice(?string $uuid, array $parameters): Closure {
+		return static function (INotification $notification) use ($uuid, $parameters): void {
+			$notification->setObject('retention', $uuid)
+				->setSubject('retention_approaching', $parameters);
+		};
+	}//end approachingNotice()
 
 	/**
 	 * The subject an approaching object is announced with.
@@ -375,31 +455,68 @@ class DestructionCheckJob extends TimedJob {
 	 */
 	private function sendReviewNotification(string $listUuid, int $objectCount): void {
 		try {
-			$notificationManager = $this->container->get(INotificationManager::class);
-			$groupManager = $this->container->get(IGroupManager::class);
-
-			$group = $groupManager->get('archivaris');
-			if ($group === null) {
-				return;
-			}
-
-			foreach ($group->getUsers() as $user) {
-				$notification = $notificationManager->createNotification();
-				$notification->setApp('openregister')
-					->setUser($user->getUID())
-					->setDateTime(new DateTime())
-					->setObject('destruction_list', $listUuid)
-					->setSubject(
-						'destruction_list_review',
-						[
-							'listUuid' => $listUuid,
-							'objectCount' => $objectCount,
-						]
-					);
-				$notificationManager->notify($notification);
-			}
+			$this->notifyArchivists(describe: self::reviewNotice(listUuid: $listUuid, objectCount: $objectCount));
 		} catch (Exception $e) {
 			$this->container->get(LoggerInterface::class)->warning('[DestructionCheckJob] Review notification error: ' . $e->getMessage());
 		}//end try
 	}//end sendReviewNotification()
+
+	/**
+	 * What a destruction-list review notice is about.
+	 *
+	 * @param string $listUuid    Destruction list UUID.
+	 * @param int    $objectCount Number of objects on the list.
+	 *
+	 * @return Closure(INotification): void
+	 */
+	private static function reviewNotice(string $listUuid, int $objectCount): Closure {
+		return static function (INotification $notification) use ($listUuid, $objectCount): void {
+			$notification->setObject('destruction_list', $listUuid)
+				->setSubject(
+					'destruction_list_review',
+					[
+						'listUuid' => $listUuid,
+						'objectCount' => $objectCount,
+					]
+				);
+		};
+	}//end reviewNotice()
+	/**
+	 * Send one notification to every member of the archivaris group.
+	 *
+	 * Each notice is stamped with the app, the archivist and now; $describe sets
+	 * what it is about. Nothing is sent when the group does not exist.
+	 *
+	 * @param Closure(INotification): void $describe Sets the notice's object and subject.
+	 *
+	 * @return void
+	 */
+	private function notifyArchivists(Closure $describe): void {
+		$notificationManager = $this->container->get(INotificationManager::class);
+
+		foreach ($this->archivists() as $user) {
+			$notification = $notificationManager->createNotification();
+			$notification->setApp('openregister')
+				->setUser($user->getUID())
+				->setDateTime(new DateTime());
+			$describe($notification);
+			$notificationManager->notify($notification);
+		}
+	}//end notifyArchivists()
+
+	/**
+	 * The members of the archivaris group; none when the group does not exist.
+	 *
+	 * @return iterable<IUser>
+	 */
+	private function archivists(): iterable {
+		$groupManager = $this->container->get(IGroupManager::class);
+
+		$group = $groupManager->get('archivaris');
+		if ($group === null) {
+			return [];
+		}
+
+		return $group->getUsers();
+	}//end archivists()
 }//end class

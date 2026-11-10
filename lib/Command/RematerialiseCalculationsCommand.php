@@ -210,6 +210,23 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function evaluationPayload(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
+		$payload = $this->payloadWithReferences(run: $run, entity: $entity);
+		if ($run->aggregateSpecs === null) {
+			return $payload;
+		}
+
+		return $this->payloadWithAggregates(run: $run, row: ['entity' => $entity, 'payload' => $payload]);
+	}//end evaluationPayload()
+
+	/**
+	 * The row with `@self`, and `@ref` when the schema declares cross-object references.
+	 *
+	 * @param RematerialiseRun                  $run    The run.
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity The row.
+	 *
+	 * @return array<string, mixed> The payload.
+	 */
+	private function payloadWithReferences(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): array {
 		$payload = (new CalculationPayload())->withSelf(data: ($entity->getObject() ?? []), entity: $entity);
 		if ($run->referenceSpecs !== null) {
 			$payload['@ref'] = $this->evaluation->references->resolveAll(
@@ -220,27 +237,65 @@ class RematerialiseCalculationsCommand extends Command {
 			);
 		}
 
-		if ($run->aggregateSpecs === null) {
-			return $payload;
-		}
+		return $payload;
+	}//end payloadWithReferences()
 
+	/**
+	 * The payload with `@aggregate`, or null (and the row FAILED) when an aggregate could not be resolved.
+	 *
+	 * @param RematerialiseRun     $run The run.
+	 * @param array<string, mixed> $row The row: entity and payload.
+	 *
+	 * @return array<string, mixed>|null The payload, or null when an aggregate failed.
+	 */
+	private function payloadWithAggregates(RematerialiseRun $run, array $row): ?array {
 		$outcome = $this->evaluation->aggregates->resolveAllWithOutcome(
-			payload: $payload,
+			payload: $row['payload'],
 			aggregates: $run->aggregateSpecs,
-			registerRef: $entity->getRegister()
+			registerRef: $row['entity']->getRegister()
 		);
 		if ($outcome['failed'] !== []) {
-			$run->failed++;
-			foreach ($outcome['failed'] as $name => $reason) {
-				$run->output->writeln(sprintf('  <error>! aggregate %s on %s: %s</error>', $name, (string)$entity->getUuid(), $reason));
-			}
-
+			$messages = $this->aggregateFailureMessages(failed: $outcome['failed'], uuid: (string)$row['entity']->getUuid());
+			$this->reportFailedAggregates(run: $run, messages: $messages);
 			return null;
 		}
 
+		$payload = $row['payload'];
 		$payload['@aggregate'] = $outcome['values'];
 		return $payload;
-	}//end evaluationPayload()
+	}//end payloadWithAggregates()
+
+	/**
+	 * One error line per aggregate that could not be resolved.
+	 *
+	 * @param array<string, string> $failed The failure reason per aggregate name.
+	 * @param string                $uuid   The row's uuid.
+	 *
+	 * @return string[] The lines.
+	 */
+	private function aggregateFailureMessages(array $failed, string $uuid): array {
+		$messages = [];
+		foreach ($failed as $name => $reason) {
+			$messages[] = sprintf('  <error>! aggregate %s on %s: %s</error>', $name, $uuid, $reason);
+		}
+
+		return $messages;
+	}//end aggregateFailureMessages()
+
+	/**
+	 * Count the row as FAILED and write its aggregate error lines.
+	 *
+	 * @param RematerialiseRun $run      The run.
+	 * @param string[]         $messages The error lines.
+	 *
+	 * @return void
+	 */
+	private function reportFailedAggregates(RematerialiseRun $run, array $messages): void {
+		$run->failed++;
+		foreach ($messages as $message) {
+			$run->output->writeln($message);
+		}
+	}//end reportFailedAggregates()
 
 	/**
 	 * Evaluate the materialised calculations and keep the values that differ from the stored ones.
@@ -259,30 +314,86 @@ class RematerialiseCalculationsCommand extends Command {
 	 */
 	private function changedValues(RematerialiseRun $run, array $row): array {
 		$expected = [];
-		foreach ($run->materialised as $name => $spec) {
-			if ($this->evaluation->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true) {
-				continue;
+		foreach ($this->recomputedValues(run: $run, row: $row) as $name => $value) {
+			if (($row['data'][$name] ?? null) !== $value) {
+				$expected[$name] = $value;
 			}
-
-			try {
-				$value = $this->evaluation->evaluator->evaluate($row['payload'], $spec['expression'] ?? null);
-				if ($value instanceof DateTimeInterface) {
-					$value = $value->format(DateTimeInterface::ATOM);
-				}
-
-				if (($row['data'][(string)$name] ?? null) !== $value) {
-					$expected[(string)$name] = $value;
-				}
-			} catch (\Throwable $e) {
-				$run->failed++;
-				$run->output->writeln(
-					sprintf('  <error>! %s on %s: %s</error>', (string)$name, (string)$row['entity']->getUuid(), $e->getMessage())
-				);
-			}
-		}//end foreach
+		}
 
 		return $expected;
 	}//end changedValues()
+
+	/**
+	 * Evaluate every materialised calculation that does not use a sequence; a failing one is reported.
+	 *
+	 * @param RematerialiseRun     $run The run.
+	 * @param array<string, mixed> $row The row: entity, stored data and payload.
+	 *
+	 * @return array<string, mixed> The evaluated values, by calculation name.
+	 */
+	private function recomputedValues(RematerialiseRun $run, array $row): array {
+		$values = [];
+		foreach ($this->recomputableCalculations(run: $run) as $name => $spec) {
+			try {
+				$values[(string)$name] = $this->evaluatedValue(payload: $row['payload'], spec: $spec);
+			} catch (\Throwable $e) {
+				$this->reportFailedCalculation(
+					run: $run,
+					message: sprintf('  <error>! %s on %s: %s</error>', (string)$name, (string)$row['entity']->getUuid(), $e->getMessage())
+				);
+			}
+		}
+
+		return $values;
+	}//end recomputedValues()
+
+	/**
+	 * The materialised calculations whose expression uses no sequence.
+	 *
+	 * @param RematerialiseRun $run The run.
+	 *
+	 * @return array<string, array> The calculations, by name.
+	 */
+	private function recomputableCalculations(RematerialiseRun $run): array {
+		$recomputable = [];
+		foreach ($run->materialised as $name => $spec) {
+			if ($this->evaluation->evaluator->expressionUsesSequence($spec['expression'] ?? null) === false) {
+				$recomputable[$name] = $spec;
+			}
+		}
+
+		return $recomputable;
+	}//end recomputableCalculations()
+
+	/**
+	 * A calculation's value for a payload, a date written as ATOM.
+	 *
+	 * @param array<string, mixed> $payload The evaluation payload.
+	 * @param array                $spec    The calculation.
+	 *
+	 * @return mixed The value.
+	 */
+	private function evaluatedValue(array $payload, array $spec): mixed {
+		$value = $this->evaluation->evaluator->evaluate($payload, $spec['expression'] ?? null);
+		if ($value instanceof DateTimeInterface) {
+			return $value->format(DateTimeInterface::ATOM);
+		}
+
+		return $value;
+	}//end evaluatedValue()
+
+	/**
+	 * Count a calculation failure and write its error line.
+	 *
+	 * @param RematerialiseRun $run     The run.
+	 * @param string           $message The error line.
+	 *
+	 * @return void
+	 */
+	private function reportFailedCalculation(RematerialiseRun $run, string $message): void {
+		$run->failed++;
+		$run->output->writeln($message);
+	}//end reportFailedCalculation()
 
 	/**
 	 * Save a row whose calculations changed, unless an earlier save in this run already materialised it.

@@ -799,7 +799,7 @@
   },
   "src/store/modules/organisation.js": {
     "no-console": {
-      "count": 9
+      "count": 3
     }
   },
   "src/store/modules/quality.js": {
@@ -1062,9 +1062,6 @@
   },
   "src/views/schema/SchemaDetails.vue": {
     "no-console": {
-      "count": 1
-    },
-    "vue/match-component-import-name": {
       "count": 1
     },
     "vue/prefer-define-options": {

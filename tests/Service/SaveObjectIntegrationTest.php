@@ -21,7 +21,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectUpdateOptions;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -626,10 +628,12 @@ class SaveObjectIntegrationTest extends TestCase {
 		]);
 
 		$updated = $this->saveHandler->updateObject(
-			$this->testRegister,
-			$this->testSchema,
-			['title' => $created->getObject()['title'], 'summary' => 'Direct update'],
-			$created
+			new StoredObjectUpdate(
+				$this->testRegister,
+				$this->testSchema,
+				['title' => $created->getObject()['title'], 'summary' => 'Direct update'],
+				$created
+			)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $updated);
@@ -644,10 +648,12 @@ class SaveObjectIntegrationTest extends TestCase {
 		usleep(100000); // 100ms delay for timestamp difference.
 
 		$updated = $this->saveHandler->updateObject(
-			$this->testRegister,
-			$this->testSchema,
-			['title' => $created->getObject()['title'], 'priority' => 99],
-			$created
+			new StoredObjectUpdate(
+				$this->testRegister,
+				$this->testSchema,
+				['title' => $created->getObject()['title'], 'priority' => 99],
+				$created
+			)
 		);
 
 		$this->assertNotNull($updated->getUpdated());
@@ -659,11 +665,13 @@ class SaveObjectIntegrationTest extends TestCase {
 		]);
 
 		$updated = $this->saveHandler->updateObject(
-			$this->testRegister,
-			$this->testSchema,
-			['title' => $created->getObject()['title'], 'summary' => 'Silent update'],
-			$created,
-			true // silent mode.
+			new StoredObjectUpdate(
+				$this->testRegister,
+				$this->testSchema,
+				['title' => $created->getObject()['title'], 'summary' => 'Silent update'],
+				$created
+			),
+			new ObjectUpdateOptions(silent: true)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $updated);
@@ -675,10 +683,12 @@ class SaveObjectIntegrationTest extends TestCase {
 		]);
 
 		$updated = $this->saveHandler->updateObject(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
-			['title' => $created->getObject()['title'], 'summary' => 'ID-based update'],
-			$created
+			new StoredObjectUpdate(
+				$this->testRegister->getId(),
+				$this->testSchema->getId(),
+				['title' => $created->getObject()['title'], 'summary' => 'ID-based update'],
+				$created
+			)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $updated);

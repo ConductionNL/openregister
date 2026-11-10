@@ -180,35 +180,73 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function import(HarvestRun $harvest, array $records): array {
-		$summary = [
-			'executionId' => $harvest->executionId,
-			'gathered' => count($records),
+		$summary = self::openSummary(executionId: $harvest->executionId, gathered: count($records));
+
+		$target = new SourceMapping(source: $harvest->source, mapping: $this->resolveMapping(source: $harvest->source));
+
+		foreach ($records as $record) {
+			$summary[$this->outcomeOf(target: $target, record: $record)]++;
+		}
+
+		$summary['status'] = $this->deriveStatus(summary: $summary);
+
+		$this->logCompletion(harvest: $harvest, summary: $summary);
+
+		return $summary;
+	}//end import()
+
+	/**
+	 * A run summary with every counter at zero.
+	 *
+	 * @param string $executionId The run's execution id
+	 * @param int    $gathered    How many records were gathered
+	 *
+	 * @return array<string, int|string> The summary.
+	 */
+	private static function openSummary(string $executionId, int $gathered): array {
+		return [
+			'executionId' => $executionId,
+			'gathered' => $gathered,
 			'created' => 0,
 			'updated' => 0,
 			'unchanged' => 0,
 			'conflicts' => 0,
 			'errors' => 0,
 		];
+	}//end openSummary()
 
-		$target = new SourceMapping(source: $harvest->source, mapping: $this->resolveMapping(source: $harvest->source));
-
-		foreach ($records as $record) {
-			try {
-				$summary[$this->importRecord(target: $target, record: $record)]++;
-			} catch (Throwable $e) {
-				$summary['errors']++;
-				$this->syncRecordMapper->recordFailure(
-					record: $record,
-					failure: SyncRecordInputs::failure(status: SyncRecordStatus::IMPORT_ERROR, message: $e->getMessage())
-				);
-				$this->logger->warning(
-					message: sprintf('[HarvestPipeline] Import failed for %s: %s', $record->getExternalId(), $e->getMessage())
-				);
-			}
+	/**
+	 * Import one record and name the counter it lands in; a failure is recorded and lands in 'errors'.
+	 *
+	 * @param SourceMapping $target The source and the mapping its records go through
+	 * @param SyncRecord    $record The fetched record
+	 *
+	 * @return string The summary counter: created, updated, unchanged, conflicts or errors
+	 */
+	private function outcomeOf(SourceMapping $target, SyncRecord $record): string {
+		try {
+			return $this->importRecord(target: $target, record: $record);
+		} catch (Throwable $e) {
+			$this->syncRecordMapper->recordFailure(
+				record: $record,
+				failure: SyncRecordInputs::failure(status: SyncRecordStatus::IMPORT_ERROR, message: $e->getMessage())
+			);
+			$this->logger->warning(
+				message: sprintf('[HarvestPipeline] Import failed for %s: %s', $record->getExternalId(), $e->getMessage())
+			);
+			return 'errors';
 		}
+	}//end outcomeOf()
 
-		$summary['status'] = $this->deriveStatus(summary: $summary);
-
+	/**
+	 * Log the counters of a finished import.
+	 *
+	 * @param HarvestRun                $harvest The run
+	 * @param array<string, int|string> $summary The run summary
+	 *
+	 * @return void
+	 */
+	private function logCompletion(HarvestRun $harvest, array $summary): void {
 		$this->logger->info(
 			message: sprintf(
 				'[HarvestPipeline] Import complete: %d created, %d updated, %d unchanged, %d conflicts, %d errors',
@@ -220,9 +258,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 			),
 			context: ['source' => $harvest->source->getUuid(), 'execution' => $harvest->executionId]
 		);
-
-		return $summary;
-	}//end import()
+	}//end logCompletion()
 
 	/**
 	 * Import a single fetched record and name the summary counter it increments.

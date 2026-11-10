@@ -282,6 +282,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			return;
 		}
 
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a copy this app staged in the temp dir; only a staged path is removed.
 		if (is_file((string)$path) === true && unlink((string)$path) === false) {
 			$this->store->logger->warning(
 				message: '[ImportPreviewService] The staged source could not be removed',
