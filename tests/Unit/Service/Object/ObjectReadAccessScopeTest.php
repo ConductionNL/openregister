@@ -30,11 +30,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
-use ReflectionParameter;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ObjectReadAccess
@@ -51,13 +50,10 @@ class ObjectReadAccessScopeTest extends TestCase {
 	 * @return array<string, mixed> The arguments by name.
 	 */
 	private function byName(array $args): array {
-		$named = [];
-		foreach ((new ReflectionMethod(ObjectService::class, 'find'))->getParameters() as $index => $parameter) {
-			/** @var ReflectionParameter $parameter */
-			$named[$parameter->getName()] = ($args[$index] ?? null);
-		}
-
-		return $named;
+		return array_combine(
+			['id', '_extend', 'files', 'register', 'schema', '_rbac', '_multitenancy', '_render', '_audit'],
+			FindCallShape::find(args: $args)
+		);
 	}//end byName()
 
 	public function testTheReadKeepsRbacAndMultitenancyOnForTheIdentifierAsked(): void {

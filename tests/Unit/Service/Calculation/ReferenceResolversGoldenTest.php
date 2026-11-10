@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -149,6 +150,7 @@ class ReferenceResolversGoldenTest extends TestCase {
 	public function testRelatedObjectByIntegerKeyAndRegisterOverride(): void {
 		$this->objectService->expects($this->once())->method('find')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = FindCallShape::find(args: $args);
 				$this->assertSame([42, 'other', 'target', false, false], [$args[0], $args[3], $args[4], $args[5], $args[6]]);
 				return $this->entity(organisation: 'org-a');
 			}

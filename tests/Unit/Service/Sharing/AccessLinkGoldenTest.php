@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -495,7 +496,7 @@ class AccessLinkGoldenTest extends TestCase {
 	public function testTheGuardAdmitsAReadableObjectAskedWithTheRulesOn(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->readable());
 
 		$this->assertTrue($this->guard()->mayMint(subjectType: AccessLink::SUBJECT_OBJECT, subjectId: 'object-uuid'));
@@ -504,7 +505,7 @@ class AccessLinkGoldenTest extends TestCase {
 	public function testTheGuardAdmitsAFileOnlyThroughItsReadableOwner(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->readable());
 
 		$this->assertTrue($this->guard()->mayMint(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'object-uuid/12'));

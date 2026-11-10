@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -99,7 +100,7 @@ class AccessLinkMintGuardTest extends TestCase {
 	public function testTheSubjectIsFetchedAsTheCallingUserWithTheRulesOn(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->object());
 
 		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_OBJECT, subjectId: 'object-uuid'));
@@ -134,7 +135,7 @@ class AccessLinkMintGuardTest extends TestCase {
 	public function testAFileSubjectIsCheckedAgainstTheObjectThatOwnsIt(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->object());
 
 		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'object-uuid/12'));

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -278,7 +279,7 @@ class DraftExpiryBranchesTest extends TestCase {
 			[]
 		);
 		$this->objects->expects($this->once())->method('find')
-			->with('old', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false, false, false)
+			->with(...FindCallShape::findArgs('old', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false, false, false))
 			->willReturn($old);
 		$this->objects->expects($this->once())->method('deleteObject')
 			->with('old', $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), false, false)

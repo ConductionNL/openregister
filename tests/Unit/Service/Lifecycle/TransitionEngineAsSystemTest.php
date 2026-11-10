@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -160,14 +161,8 @@ class TransitionEngineAsSystemTest extends TestCase {
 		// RBAC-filtered find refuses the row, exactly as it does for a learner;
 		// only an unfiltered find (the system path) returns it.
 		$this->objectService->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				mixed $register = null,
-				mixed $schema = null,
-				bool $_rbac = true,
-			): ObjectEntity {
+			function (...$args): ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac] = FindCallShape::find(args: $args);
 				if ($_rbac === true) {
 					throw new DoesNotExistException('Object not found in any magic table');
 				}

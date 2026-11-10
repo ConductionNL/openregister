@@ -31,6 +31,7 @@ use OCA\OpenRegister\Notifications\Db\ReferencePattern;
 use OCA\OpenRegister\Notifications\Db\ReferencePatternMapper;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceSource;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\Entity;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -158,6 +159,7 @@ class ReferenceServiceGoldenTest extends TestCase {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('find')->willReturnCallback(
 			function (mixed ...$args): ?ObjectEntity {
+				$args        = FindCallShape::find(args: $args);
 				$this->log[] = 'objects.find(' . json_encode($args) . ')';
 				$code = (string)($args['id'] ?? $args[0]);
 				if (str_ends_with($code, '404') === true || $code === '7') {

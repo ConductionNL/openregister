@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -121,7 +122,7 @@ class FlowDryRunServiceTest extends TestCase {
 		$object->setUuid('o1');
 		$object->setObject($data);
 		$this->objects->expects($this->once())->method('find')
-			->with('o1', [], false, 'dossiq', 'case', true, true, true, false)
+			->with(...FindCallShape::findArgs('o1', [], false, 'dossiq', 'case', true, true, true, false))
 			->willReturn($object);
 	}
 

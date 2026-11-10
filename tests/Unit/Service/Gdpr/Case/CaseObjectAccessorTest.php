@@ -25,6 +25,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -71,7 +72,8 @@ final class CaseObjectAccessorTest extends TestCase {
 		)->willReturn([['@self' => ['uuid' => 'a']], ['id' => 'b'], 'not a row', ['@self' => []]]);
 		$loaded = [];
 		$this->objects->method('find')->willReturnCallback(
-			static function (int|string $id, ?array $_extend = [], bool $files = false, mixed $register = null, mixed $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($caseA, &$loaded): ?ObjectEntity {
+			static function (...$args) use ($caseA, &$loaded): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::find(args: $args);
 				$loaded[] = [$id, $register, $schema, $_rbac, $_multitenancy];
 				return $id === 'a' ? $caseA : null;
 			}

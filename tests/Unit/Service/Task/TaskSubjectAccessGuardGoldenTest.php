@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -64,17 +65,8 @@ final class TaskSubjectAccessGuardGoldenTest extends TestCase {
 	private function objects(): ObjectOperationsInterface {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend=[],
-				bool $files=false,
-				mixed $register=null,
-				mixed $schema=null,
-				bool $_rbac=true,
-				bool $_multitenancy=true,
-				bool $_render=true,
-				bool $_audit=true
-			): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render, $_audit] = FindCallShape::find(args: $args);
 				$this->reads[] = [
 					'id' => $id,
 					'files' => $files,

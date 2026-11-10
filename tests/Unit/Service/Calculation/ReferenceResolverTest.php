@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard;
 use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -101,7 +102,7 @@ class ReferenceResolverTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('find')
 			->willReturnCallback(function (...$args) use (&$captured) {
-				$captured = $args;
+				$captured = FindCallShape::find(args: $args);
 				return $this->entity(['acquisitionCost' => 10000]);
 			});
 
@@ -217,7 +218,7 @@ class ReferenceResolverTest extends TestCase {
 	public function testAnonymousWebSaveResolvesASameTenantReference(): void {
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('ct-1', $this->anything(), $this->anything(), 'reg-22', 'caseType', false, false)
+			->with(...FindCallShape::findArgs('ct-1', $this->anything(), $this->anything(), 'reg-22', 'caseType', false, false))
 			->willReturn($this->entity(['processingDeadline' => 'P8W'], 'org-a'));
 
 		$outcome = $this->resolver->resolveAllWithOutcome(

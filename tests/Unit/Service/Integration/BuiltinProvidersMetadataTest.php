@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IL10N;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
@@ -148,7 +149,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 		$schemaMapper->expects($this->once())->method('find')->with('my-schema')->willReturn($schema);
 		$objectService->expects($this->once())
 			->method('find')
-			->with('obj-uuid-1', [], false, $register, $schema)
+			->with(...FindCallShape::findArgs('obj-uuid-1', [], false, $register, $schema))
 			->willReturn($object);
 
 		$taskService->expects($this->once())

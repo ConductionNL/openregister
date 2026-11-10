@@ -31,6 +31,7 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -90,7 +91,8 @@ class VocabularyImportServiceTest extends TestCase {
 		);
 
 		$this->objectService->method('find')->willReturnCallback(
-			function ($id, $_extend = [], $files = false, $register = null, $schema = null, ...$rest) {
+			function (...$args) {
+				[$id, , , , $schema] = FindCallShape::find(args: $args);
 				return $this->fakeFind((string)$id, (string)$schema);
 			}
 		);

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -164,7 +165,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		$cause = null;
 		$service->expects($this->once())->method('find')->willReturnCallback(
 			static function (...$args) use (&$findArgs, &$cause, $existing): ObjectEntity {
-				$findArgs = $args;
+				$findArgs = FindCallShape::find(args: $args);
 				$cause = WriteCause::current()['cause'];
 				return $existing;
 			}

@@ -48,6 +48,7 @@ use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -300,7 +301,7 @@ class AccessLinkReaderTest extends TestCase {
 	public function testTheSubjectIsFetchedWithoutRbacBecauseThereIsNoPrincipalToJudge(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, false, false, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, false, false, false, false))
 			->willReturn($this->object());
 		$this->properties->method('filterReadableProperties')->willReturn([]);
 		$this->timeline->method('forObject')->willReturn([]);

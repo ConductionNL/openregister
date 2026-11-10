@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -226,6 +227,7 @@ class SchemaMigrationServiceGoldenTest extends TestCase {
 		$finds = [];
 		$this->objectService->method('find')->willReturnCallback(
 			function (...$args) use (&$finds): ?ObjectEntity {
+				$args    = FindCallShape::find(args: $args);
 				$finds[] = $args;
 				return match ($args[0]) {
 					'gone' => null,

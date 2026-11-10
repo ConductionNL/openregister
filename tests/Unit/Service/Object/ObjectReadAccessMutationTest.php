@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IUser;
@@ -83,7 +84,7 @@ final class ObjectReadAccessMutationTest extends TestCase {
 		$found->setUuid('zaak-1');
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('zaak-1', [], false, 'zaken', 'zaak', true, true)
+			->with(...FindCallShape::findArgs('zaak-1', [], false, 'zaken', 'zaak', true, true))
 			->willReturn($found);
 
 		$this->assertSame($found, $this->access()->readableOrAmbiguous('zaken', 'zaak', 'zaak-1'));
