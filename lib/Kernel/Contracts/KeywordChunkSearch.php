@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Db
- * @package  OCA\OpenRegister\Files\Db
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,25 +22,29 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\Db;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
- * The query text, result cap and filters of one chunk keyword search.
+ * The query text, result cap and filters of one chunk keyword search, and
+ * whether a platform without ranked search may answer with an unranked scan.
  *
  * @spec openspec/specs/zoeken-filteren/spec.md
  */
-final readonly class KeywordChunkSearch {
+final class KeywordChunkSearch {
 	/**
 	 * Bundle the search inputs.
 	 *
-	 * @param string $query   Search query text.
-	 * @param int    $limit   Maximum number of results.
-	 * @param array  $filters Optional filters (source_type).
+	 * @param string $query                 Search query text.
+	 * @param int    $limit                 Maximum number of results.
+	 * @param array  $filters               Optional filters (source_type).
+	 * @param bool   $allowUnrankedFallback When true, non-PostgreSQL platforms run an unranked
+	 *                                      `LIKE` scan over `text_content` instead of returning `[]`.
 	 */
 	public function __construct(
-		public string $query,
-		public int $limit,
-		public array $filters=[],
+		public readonly string $query,
+		public readonly int $limit,
+		public readonly array $filters=[],
+		public readonly bool $allowUnrankedFallback=false,
 	) {
 	}//end __construct()
 
