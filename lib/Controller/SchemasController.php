@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -1406,10 +1407,9 @@ class SchemasController extends Controller {
 		);
 
 		try {
-			$this->schemaVersioningService->enforceGate(
-				changeSet: $changeSet,
-				acknowledged: $update['acknowledged'],
-				schemaId: $update['id']
+			$this->schemaVersioningService->gateChange(
+				schemaId: $update['id'],
+				record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $update['acknowledged'])
 			);
 		} catch (BreakingSchemaChangeException $e) {
 			return new JSONResponse(data: $e->toResponse(), statusCode: 409);
@@ -1501,11 +1501,9 @@ class SchemasController extends Controller {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
 
 		if ($update['changeSet'] !== null) {
-			$this->schemaVersioningService->recordChangelog(
+			$this->schemaVersioningService->recordChange(
 				schemaId: $updatedSchema->getId(),
-				version: $updatedSchema->getVersion(),
-				changeSet: $update['changeSet'],
-				acknowledged: $update['acknowledged']
+				record: new SchemaChangeRecord(changeSet: $update['changeSet'], acknowledged: $update['acknowledged'], version: $updatedSchema->getVersion())
 			);
 		}
 

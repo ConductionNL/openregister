@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaInterface;
@@ -368,12 +369,9 @@ class SchemaImportController extends Controller {
 	 * @return void
 	 */
 	private function recordMerge(Schema $schema, SchemaChangeSet $changeSet): void {
-		$this->schemaVersioning?->recordChangelog(
+		$this->schemaVersioning?->recordChange(
 			schemaId: (int)$schema->getId(),
-			version: $schema->getVersion(),
-			changeSet: $changeSet,
-			acknowledged: false,
-			origin: 'source merge'
+			record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: false, version: $schema->getVersion(), origin: 'source merge')
 		);
 	}//end recordMerge()
 
