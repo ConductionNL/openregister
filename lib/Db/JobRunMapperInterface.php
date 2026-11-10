@@ -60,6 +60,17 @@ interface JobRunMapperInterface {
 	): int;
 
 	/**
+	 * How many runs match a narrowing.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countMatching(JobRunFilter $filter): int;
+
+	/**
 	 * The failed runs of one job inside a period, oldest first.
 	 *
 	 * The alert names the FIRST failure in the period (REQ-AOC-003), so the
@@ -91,6 +102,18 @@ interface JobRunMapperInterface {
 		int $limit = self::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array;
+
+	/**
+	 * One page of the most recent runs, narrowed by job, outcome and period.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param ListQuery    $query  The page: its limit is capped at MAX_LIMIT, a missing offset reads as zero.
+	 *
+	 * @return array<int, JobRun> The rows, newest first.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findPage(JobRunFilter $filter, ListQuery $query): array;
 
 	/**
 	 * The run currently holding a job, when one holds it.

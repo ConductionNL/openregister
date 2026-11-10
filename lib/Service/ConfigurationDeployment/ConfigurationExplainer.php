@@ -70,28 +70,21 @@ class ConfigurationExplainer {
 	/**
 	 * Explain one setting.
 	 *
-	 * @param string      $configKey The configuration key.
-	 * @param string|null $register  The register to read within, when there is one.
-	 * @param string|null $bundle    The bundle bound to the subject, when there is one.
-	 * @param string|null $subject   The schema, case type or role, when there is one.
+	 * @param string             $configKey The configuration key.
+	 * @param ConfigurationScope $scope     The register, bundle and subject to read within; none by default.
 	 *
 	 * @return array<string, mixed> The effective value, its layer, and its deployment.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function explain(
-		string $configKey,
-		?string $register = null,
-		?string $bundle = null,
-		?string $subject = null
-	): array {
+	public function explain(string $configKey, ConfigurationScope $scope = new ConfigurationScope()): array {
 		return $this->answerFor(
 			configKey: $configKey,
 			chain: $this->chainFor(
 				configKey: $configKey,
-				register: $register,
-				bundle: $bundle,
-				subject: $subject
+				register: $scope->register,
+				bundle: $scope->bundle,
+				subject: $scope->subject
 			)
 		);
 

@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 // phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
@@ -49,6 +51,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
@@ -129,8 +132,7 @@ class AccessLinkGoldenTest extends TestCase {
 	private function guard(): AccessLinkMintGuard {
 		return new AccessLinkMintGuard(
 			objects: $this->objects,
-			subjects: new AccessLinkSubject(),
-			viewReaders: new AccessLinkViewReaders(views: $this->views, registers: $this->registers, schemas: $this->schemas)
+			viewReaders: new AccessLinkViewReaders(views: $this->views, catalog: new SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(MagicMapperInterface::class)))
 		);
 	}
 
@@ -172,14 +174,16 @@ class AccessLinkGoldenTest extends TestCase {
 
 		$before = new DateTime();
 		$minted = $this->service()->mint(
-			userId: '  owner  ',
-			subjectType: ' OBJECT ',
-			subjectId: '  object-uuid  ',
-			terms: new AccessLinkTerms(
-				capabilities: ['Upload', ' ', 'comment', 'READ', 'upload'],
-				expiresAt: '+7 days',
-				password: ' geheim ',
-				label: '  Advice request  '
+			new LinkMintRequest(
+				minter: '  owner  ',
+				subjectType: ' OBJECT ',
+				subjectId: '  object-uuid  ',
+				terms: new AccessLinkTerms(
+					capabilities: ['Upload', ' ', 'comment', 'READ', 'upload'],
+					expiresAt: '+7 days',
+					password: ' geheim ',
+					label: '  Advice request  '
+				)
 			)
 		);
 		$after = new DateTime();
@@ -219,13 +223,15 @@ class AccessLinkGoldenTest extends TestCase {
 		$this->hasher->expects($this->never())->method('hash');
 
 		$minted = $this->service()->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_FILE,
-			subjectId: 'object-uuid/12',
-			terms: new AccessLinkTerms(
-				expiresAt: '+1 day',
-				password: '',
-				label: '   '
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_FILE,
+				subjectId: 'object-uuid/12',
+				terms: new AccessLinkTerms(
+					expiresAt: '+1 day',
+					password: '',
+					label: '   '
+				)
 			)
 		);
 
@@ -318,14 +324,16 @@ class AccessLinkGoldenTest extends TestCase {
 
 		try {
 			$this->service()->mint(
-				userId: $request['userId'],
-				subjectType: $request['subjectType'],
-				subjectId: $request['subjectId'],
-				terms: new AccessLinkTerms(
-					capabilities: $request['capabilities'],
-					expiresAt: $request['expiresAt'],
-					password: 'geheim',
-					label: 'label'
+				new LinkMintRequest(
+					minter: $request['userId'],
+					subjectType: $request['subjectType'],
+					subjectId: $request['subjectId'],
+					terms: new AccessLinkTerms(
+						capabilities: $request['capabilities'],
+						expiresAt: $request['expiresAt'],
+						password: 'geheim',
+						label: 'label'
+					)
 				)
 			);
 			$this->fail('The mint was not refused.');

@@ -52,7 +52,7 @@ class RelationCascadeUuidReferenceTest extends TestCase {
 		);
 		$registers->method('findAll')->willReturn([$register]);
 
-		return new RelationCascadeHandler($this->createMock(MagicMapperInterface::class), $schemas, $registers, new NullLogger());
+		return new RelationCascadeHandler(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class)), logger: new NullLogger());
 	}//end handler()
 
 	public function testUuidReferencesResolveDirectly(): void {

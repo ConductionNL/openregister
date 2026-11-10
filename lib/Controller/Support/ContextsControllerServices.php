@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
 
 /**
@@ -35,15 +34,13 @@ final class ContextsControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
+	 * @param SchemaCatalogInterface        $catalog        The register and schema mappers.
 	 * @param JsonLdContextServiceInterface $contextService The JSON-LD context service.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly JsonLdContextServiceInterface $contextService,
 	) {
 	}//end __construct()

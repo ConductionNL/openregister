@@ -75,10 +75,12 @@ final class RegistersControllerFactory {
 			),
 			new \OCA\OpenRegister\Controller\Support\RegistersControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\RegisterMappers(
-					registerMapper: $registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+						registers: $registerMapper,
+						schemas: $schemaMapper,
+						tables: $objectEntityMapper,
+					),
 					auditTrailMapper: $auditTrailMapper,
-					objectEntityMapper: $objectEntityMapper,
 				),
 				registers: new \OCA\OpenRegister\Controller\Support\RegisterServices(
 					registerService: $registerService,

@@ -176,8 +176,6 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		return new RuleInventoryService(
 			summaries: $summaries,
-			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary(),
 			flows: new FlowRuleDescriptors(triggers: $triggers, published: $published)
 		);
 	}//end inventory()

@@ -21,11 +21,17 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
 class SchemaObjectReaderGoldenTest extends TestCase {
+
+	private function catalog(RegisterMapper $registers, MagicMapper $objects): SchemaCatalog {
+		return new SchemaCatalog($registers, $this->createMock(SchemaMapper::class), $objects);
+	}
 
 	private function register(int $id, array $schemas): Register {
 		$register = new Register();
@@ -54,7 +60,7 @@ class SchemaObjectReaderGoldenTest extends TestCase {
 				}
 			);
 
-		$this->assertSame(['A'], (new SchemaObjectReader($registers, $request, $objects))->storedValues(5, 'name'));
+		$this->assertSame(['A'], (new SchemaObjectReader($this->catalog($registers, $objects), $request))->storedValues(5, 'name'));
 	}
 
 	public function testANonArrayResultReadsAsNoValues(): void {
@@ -63,7 +69,7 @@ class SchemaObjectReaderGoldenTest extends TestCase {
 		$objects = $this->createMock(MagicMapper::class);
 		$objects->method('searchObjects')->willReturn(7);
 
-		$this->assertSame([], (new SchemaObjectReader($this->createMock(RegisterMapper::class), $request, $objects))->storedValues(5, 'name'));
+		$this->assertSame([], (new SchemaObjectReader($this->catalog($this->createMock(RegisterMapper::class), $objects), $request))->storedValues(5, 'name'));
 	}
 
 	public function testANonNumericOverrideFallsBackToTheRegisterLookup(): void {
@@ -72,6 +78,6 @@ class SchemaObjectReaderGoldenTest extends TestCase {
 		$registers = $this->createMock(RegisterMapper::class);
 		$registers->method('findAll')->willReturn([$this->register(8, ['5'])]);
 
-		$this->assertSame(8, (new SchemaObjectReader($registers, $request))->resolveRegisterId(5));
+		$this->assertSame(8, (new SchemaObjectReader($this->catalog($registers, $this->createMock(MagicMapper::class)), $request))->resolveRegisterId(5));
 	}
 }

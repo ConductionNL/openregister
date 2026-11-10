@@ -295,6 +295,8 @@ class CacheSettingsHandlerTest extends TestCase {
 
 		$this->assertIsFloat($result['overview']['overallHitRate']);
 		$this->assertIsFloat($result['overview']['cacheEfficiency']);
+		// 25 hits out of 50 requests.
+		$this->assertSame(50.0, $result['overview']['overallHitRate']);
 	}
 
 	// =========================================================================
@@ -928,20 +930,6 @@ class CacheSettingsHandlerTest extends TestCase {
 	// =========================================================================
 	// Constructor test
 	// =========================================================================
-
-	/**
-	 * Test constructor with minimal parameters
-	 *
-	 * @return void
-	 */
-	public function testConstructorMinimalParams(): void {
-		$handler = new CacheSettingsHandler(
-			$this->cacheFactory,
-			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService)
-		);
-
-		$this->assertInstanceOf(CacheSettingsHandler::class, $handler);
-	}
 
 	// =========================================================================
 	// Edge case: clearNamesCache container fallback

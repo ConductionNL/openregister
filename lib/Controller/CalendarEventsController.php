@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -494,8 +495,7 @@ class CalendarEventsController extends Controller {
 
 			$events = $this->calendarLinkService->getEventsForCalendar(
 				calendarUri: $calendarUri,
-				limit: $limit,
-				after: $after
+				window: new CalendarPickerWindow(after: $after, limit: $limit)
 			);
 
 			return new JSONResponse(['results' => $events, 'total' => count($events)]);
