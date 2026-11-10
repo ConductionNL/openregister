@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -747,7 +748,7 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$session->method('getUser')->willReturn($this->createMock(IUser::class));
 		$guard = new OrphanDeletionGuard(objectMapper: $mapper, permissionHandler: $permissions, userSession: $session, container: $container);
 
-		$this->assertFalse($guard->allows(row: $this->row, register: new Register(), schema: new Schema()));
+		$this->assertFalse($guard->allows(row: $this->row, table: new RegisterSchema(register: new Register(), schema: new Schema())));
 	}
 
 	public function testAnInverseRelationOnThePropertyCounts(): void {

@@ -29,6 +29,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -108,7 +109,7 @@ class AuditTrailNotInFilterTest extends TestCase {
 	 * @return array<int, int>
 	 */
 	private function ids(array $filters, ?int $limit = null): array {
-		$rows = $this->mapper->findAll(limit: $limit, filters: $filters, sort: ['id' => 'ASC']);
+		$rows = $this->mapper->findTrail(new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), filters: $filters, sort: ['id' => 'ASC']));
 
 		return array_map(fn (AuditTrail $row): int => (int) $row->getId(), $rows);
 	}//end ids()
@@ -172,6 +173,6 @@ class AuditTrailNotInFilterTest extends TestCase {
 	public function testAnUnknownOperatorIsRefused(): void {
 		$this->expectException(exception: InvalidArgumentException::class);
 
-		$this->mapper->findAll(filters: ['action' => ['like' => 'read']]);
+		$this->mapper->findTrail(ListQuery::unbounded(['action' => ['like' => 'read']], ['created' => 'DESC']));
 	}//end testAnUnknownOperatorIsRefused()
 }//end class

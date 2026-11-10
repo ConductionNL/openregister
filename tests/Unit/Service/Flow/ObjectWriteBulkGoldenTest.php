@@ -33,7 +33,9 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -118,9 +120,9 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 	 * @return array<string, array<string, mixed>>
 	 */
 	private function cases(): array {
-		$one = [FlowItems::item(json: ['id' => 'u1', 'name' => 'a'], binary: ['b' => 1])];
+		$one = [FlowItems::item(json: ['id' => 'u1', 'name' => 'a'], options: new FlowItemOptions(binary: ['b' => 1]))];
 		$page = [
-			3 => FlowItems::item(json: ['id' => 'u1', 'name' => 'a'], binary: ['b' => 1]),
+			3 => FlowItems::item(json: ['id' => 'u1', 'name' => 'a'], options: new FlowItemOptions(binary: ['b' => 1])),
 			5 => FlowItems::item(json: ['id' => 'u2', 'name' => 'b', 'skip' => true]),
 			'k' => FlowItems::item(json: ['id' => 'u3', 'name' => 'c']),
 		];
@@ -142,7 +144,7 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 				],
 			],
 			'bulk upsert skips one' => ['config' => array_merge($upsert, ['skipWhen' => 'skip']), 'items' => $page, 'answer' => $saved],
-			'bulk skips all' => ['config' => array_merge($upsert, ['skipWhen' => 'id']), 'items' => [FlowItems::item(json: ['id' => 'skip'], binary: ['b' => 2])]],
+			'bulk skips all' => ['config' => array_merge($upsert, ['skipWhen' => 'id']), 'items' => [FlowItems::item(json: ['id' => 'skip'], options: new FlowItemOptions(binary: ['b' => 2]))]],
 			'bulk over the cap' => ['config' => array_merge($upsert, ['maxWrites' => 2]), 'items' => $page],
 			'bulk at the cap' => ['config' => array_merge($upsert, ['maxWrites' => 3]), 'items' => $page],
 			'bulk rejected, invalid larger' => [
@@ -188,7 +190,7 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$outcome['out'] = $this->node()->execute(items: $case['items'], config: $config, context: $context);
+			$outcome['out'] = $this->node()->execute(new FlowNodeCall(items: $case['items'], config: $config, context: $context));
 		} catch (Throwable $e) {
 			$outcome['failure'] = get_class($e) . ': ' . $e->getMessage();
 		}

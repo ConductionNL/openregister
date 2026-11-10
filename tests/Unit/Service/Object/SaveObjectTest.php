@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
 use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
@@ -1180,7 +1181,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('2025-01-15');
 
 		// objectPublishedField is deprecated — should not throw, just log warning.
@@ -1201,7 +1202,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('not-a-date');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -1220,7 +1221,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('2025-12-31');
 
 		// objectDepublishedField is deprecated — should not throw, just log warning.
@@ -1241,7 +1242,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('invalid');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -1260,7 +1261,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('');
 
 		// objectPublishedField is deprecated — should not throw.
@@ -3719,7 +3720,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -3739,7 +3740,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4048,7 +4049,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4068,7 +4069,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4822,7 +4823,7 @@ class SaveObjectTest extends TestCase {
 		$register = $this->createMockRegister(id: 7);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->objectEntityMapper->method('findSlugHolders')->willReturnCallback(
-			static fn (Register $r, Schema $s, string $slug): array => ($holders[$slug] ?? [])
+			static fn (RegisterSchema $table, string $slug): array => ($holders[$slug] ?? [])
 		);
 		$this->setPrivateProperty(
 			'slugHandler',

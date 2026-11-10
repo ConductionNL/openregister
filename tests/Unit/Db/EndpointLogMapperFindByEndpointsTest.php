@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Db\EndpointLogScope;
 use OCA\OpenRegister\Db\ListQuery;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -60,7 +61,7 @@ class EndpointLogMapperFindByEndpointsTest extends TestCase {
 	public function testAPageWithinVisibleEndpointsCoversAllOfThem(): void {
 		$this->queuedRows = [[['id' => 4]], [['id' => 4], ['id' => 5]]];
 
-		[$logs, $total] = $this->mapper()->findPageWithin([3, 7], null, 5, 10);
+		[$logs, $total] = $this->mapper()->findPageWithin(new EndpointLogScope([3, 7]), new ListQuery(5, 10));
 
 		$this->assertCount(1, $logs);
 		$this->assertSame(2, $total);
@@ -69,13 +70,13 @@ class EndpointLogMapperFindByEndpointsTest extends TestCase {
 	}
 
 	public function testAPageOfAVisibleEndpointNarrowsToIt(): void {
-		$this->mapper()->findPageWithin([3, 7], 7, 5, 10);
+		$this->mapper()->findPageWithin(new EndpointLogScope([3, 7], 7), new ListQuery(5, 10));
 
 		$this->assertContains('#1 param :p1 = [7], 101', $this->queryLog);
 	}
 
 	public function testAPageOfAnEndpointThatIsNotVisibleIsEmptyWithoutAQuery(): void {
-		$this->assertSame([[], 0], $this->mapper()->findPageWithin([3, 7], 99, 5, 10));
+		$this->assertSame([[], 0], $this->mapper()->findPageWithin(new EndpointLogScope([3, 7], 99), new ListQuery(5, 10)));
 		$this->assertSame([], $this->queryLog);
 	}
 

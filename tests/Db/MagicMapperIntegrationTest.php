@@ -13,10 +13,12 @@
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -338,7 +340,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		// findAll delegates to searchObjects which applies RBAC/multitenancy
-		$results = $this->mapper->findAllInRegisterSchemaTable($register, $schema);
+		$results = $this->mapper->findAllInRegisterSchemaTable(new RegisterSchema($register, $schema));
 		$this->assertIsArray($results);
 	}
 
@@ -1030,10 +1032,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		}
 
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register,
-			$schema,
-			2,
-			1
+			new RegisterSchema($register, $schema),
+			new ListQuery(2, 1)
 		);
 		$this->assertIsArray($results);
 	}
@@ -1055,12 +1055,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		}
 
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register,
-			$schema,
-			null,
-			null,
-			null,
-			['age' => 'ASC']
+			new RegisterSchema($register, $schema),
+			new ListQuery(ListQuery::UNBOUNDED, null, [], ['age' => 'ASC'])
 		);
 		$this->assertIsArray($results);
 	}
@@ -1080,11 +1076,8 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register,
-			$schema,
-			null,
-			null,
-			['name' => 'FilterAll']
+			new RegisterSchema($register, $schema),
+			ListQuery::unbounded(['name' => 'FilterAll'])
 		);
 		$this->assertIsArray($results);
 	}
@@ -2741,7 +2734,7 @@ class MagicMapperIntegrationTest extends TestCase {
 
 		// Exercises the findAllInRegisterSchemaTable with all parameters
 		$results = $this->mapper->findAllInRegisterSchemaTable(
-			$register, $schema, 1, 0, ['name' => 'Alpha'], ['name' => 'ASC']
+			new RegisterSchema($register, $schema), new ListQuery(1, 0, ['name' => 'Alpha'], ['name' => 'ASC'])
 		);
 		$this->assertIsArray($results);
 	}
@@ -2771,7 +2764,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		// search handler doesn't support "IS NOT NULL" as parameter perfectly
 		try {
 			$results = $this->mapper->findAllInRegisterSchemaTable(
-				$register, $schema, 10, 0, null, [], true
+				new RegisterSchema($register, $schema), new ListQuery(10, 0)
 			);
 			$this->assertIsArray($results);
 		} catch (\Exception $e) {

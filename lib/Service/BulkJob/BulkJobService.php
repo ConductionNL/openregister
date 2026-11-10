@@ -196,28 +196,6 @@ class BulkJobService implements BulkJobServiceInterface {
 	}//end selection()
 
 	/**
-	 * Create a job, rehearse it, and write nothing.
-	 *
-	 * @param BulkJobActionCall $call          The action to run and its parameters.
-	 * @param BulkJobSelection  $selection     The objects to run it on, and the register and schema they live in.
-	 * @param string            $actorUid      The actor's uid.
-	 * @param string|null       $justification The reason the operator typed.
-	 *
-	 * @return BulkJob The previewed job.
-	 *
-	 * @throws InvalidArgumentException When the action, its parameters or the
-	 *                                  register and schema do not resolve.
-	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
-	 *
-	 * @spec openspec/specs/bulk-action-jobs/spec.md
-	 */
-	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob {
-		return $this->createFromRequest(
-			request: new BulkJobRequest(call: $call, selection: $selection, actorUid: $actorUid, justification: $justification)
-		);
-	}//end create()
-
-	/**
 	 * Create a job from what the operator asked for, rehearse it, and write nothing.
 	 *
 	 * @param BulkJobRequest $request The action, the selection, the actor and the reason.
@@ -630,13 +608,11 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @throws InvalidArgumentException When it is neither.
 	 */
 	private function selectionTypeOf(array $selection): string {
-		$hasIds = (isset($selection['ids']) === true && is_array($selection['ids']) === true);
-		$hasQuery = (isset($selection['query']) === true && is_array($selection['query']) === true);
+		$hasIds = self::holdsList(selection: $selection, key: 'ids');
+		$hasQuery = self::holdsList(selection: $selection, key: 'query');
 
 		if ($hasIds === true && $hasQuery === true) {
-			throw new InvalidArgumentException(
-				'A selection is either a list of ids or a query, never both. Send one of the two.'
-			);
+			throw self::ambiguousSelection();
 		}
 
 		if ($hasIds === true) {
@@ -647,10 +623,42 @@ class BulkJobService implements BulkJobServiceInterface {
 			return BulkJob::SELECTION_QUERY;
 		}
 
-		throw new InvalidArgumentException(
+		throw self::emptySelection();
+	}//end selectionTypeOf()
+
+	/**
+	 * Whether the selection carries the key as an array.
+	 *
+	 * @param array<string, mixed> $selection The selection.
+	 * @param string               $key       `ids` or `query`.
+	 *
+	 * @return bool
+	 */
+	private static function holdsList(array $selection, string $key): bool {
+		return (isset($selection[$key]) === true && is_array($selection[$key]) === true);
+	}//end holdsList()
+
+	/**
+	 * The refusal of a selection that is both a list of ids and a query.
+	 *
+	 * @return InvalidArgumentException
+	 */
+	private static function ambiguousSelection(): InvalidArgumentException {
+		return new InvalidArgumentException(
+			'A selection is either a list of ids or a query, never both. Send one of the two.'
+		);
+	}//end ambiguousSelection()
+
+	/**
+	 * The refusal of a selection that is neither a list of ids nor a query.
+	 *
+	 * @return InvalidArgumentException
+	 */
+	private static function emptySelection(): InvalidArgumentException {
+		return new InvalidArgumentException(
 			'A selection needs either an ids array or a query object, so the job can say which of the two it holds.'
 		);
-	}//end selectionTypeOf()
+	}//end emptySelection()
 
 	/**
 	 * The refusals a job has to get past, built with this instance's ceiling.

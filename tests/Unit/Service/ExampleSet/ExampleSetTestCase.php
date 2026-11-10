@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Organisation;
@@ -86,7 +88,9 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Db\DeckLinkMapperInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
@@ -129,6 +133,7 @@ use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
@@ -550,7 +555,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	 */
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
-		$service->method('import')->willReturnCallback(function (array $data, ?string $actor, ?callable $blocker = null, ?\DateTime $at = null): Task {
+		$service->method('importTask')->willReturnCallback(function (TaskImport $import): Task {
+			[$data, $actor, $at] = [$import->data, $import->actor, $import->createdAt];
 			foreach ($this->engineTasks as $held) {
 				if ($held->getTaskKey() === (string) $data['key']) {
 					// The task key is unique in the engine (or_tasks_key_uniq).
@@ -611,15 +617,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function viewService(): ViewService {
 		$service = $this->createMock(ViewService::class);
 		$service->method('create')->willReturnCallback(
-			function (ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
+			function (ViewEdit $edit): View {
 				$view = new View();
 				$view->setUuid('view-'.(++$this->viewsCreated));
-				$view->setName($definition->name);
-				$view->setOwner($audience->owner);
-				$view->setIsPublic($audience->isPublic);
-				$view->setQuery($definition->query);
-				$view->setAlert($alert);
-				$view->setSharedWith($audience->sharedWith ?? []);
+				$view->setName($edit->definition->name);
+				$view->setOwner($edit->audience->owner);
+				$view->setIsPublic($edit->audience->isPublic);
+				$view->setQuery($edit->definition->query);
+				$view->setAlert($edit->alert);
+				$view->setSharedWith($edit->audience->sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
@@ -1304,8 +1310,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				return new ContactLink();
 			}
 		);
-		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, string $partyUuid, ?string $role = null): int {
-			unset($this->partyLinks[$objectUuid.' '.$partyUuid.' '.$role]);
+		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, PartyHolding $holding): int {
+			unset($this->partyLinks[$objectUuid.' '.$holding->partyUuid.' '.$holding->role]);
 			return 1;
 		});
 
@@ -1347,7 +1353,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function contactLinks(): ContactLinkMapper {
 		$links = $this->createMock(ContactLinkMapper::class);
 		$links->method('findByObjectContactAndRole')->willReturnCallback(
-			function (string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+			function (PersonLinkRef $ref): ?ContactLink {
+				[$objectUuid, $contactUid, $role] = [$ref->objectUuid, $ref->contactUid, $ref->role];
 				foreach (array_keys($this->partyLinks) as $key) {
 					[$object, $party, $linkRole] = explode(' ', $key, 3);
 					if ($object === $objectUuid && ContactLink::partyUid(partyUuid: $party) === $contactUid && $linkRole === $role) {
@@ -1447,7 +1454,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function fileService(): FileService {
 		$service = $this->createMock(FileService::class);
 		$service->method('addFile')->willReturnCallback(
-			function (string $objectEntity, string $fileName, mixed $content, bool $share = false): File {
+			function (FileTarget $target, FileUpload $upload): File {
+				[$objectEntity, $fileName, $content, $share] = [(string) $target->object, $upload->fileName, $upload->content, $upload->share];
 				$id = (string) (count($this->files, COUNT_RECURSIVE) + 100);
 				$this->files[$objectEntity][$id] = ['name' => $fileName, 'shared' => $share, 'content' => (string) $content];
 				$file = $this->createMock(File::class);

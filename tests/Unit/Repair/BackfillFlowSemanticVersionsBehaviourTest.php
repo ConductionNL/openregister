@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Repair\BackfillFlowSemanticVersions;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
@@ -94,16 +96,9 @@ class BackfillFlowSemanticVersionsBehaviourTest extends TestCase {
 	 */
 	private function runStep(array $flows): void {
 		$this->flowMapper->method('findAllFlows')->willReturnCallback(
-			function (
-				?string $app = null,
-				?string $applicationSlug = null,
-				?string $organisation = null,
-				?bool $enabled = null,
-				int $limit = 100,
-				int $offset = 0,
-			) use ($flows): array {
-				$this->pages[] = [$limit, $offset];
-				return array_slice($flows, $offset, $limit);
+			function (FlowSelection $selection, ListQuery $query) use ($flows): array {
+				$this->pages[] = [$query->limit, $query->offset];
+				return array_slice($flows, (int)$query->offset, $query->limit);
 			}
 		);
 		$container = $this->createMock(ContainerInterface::class);

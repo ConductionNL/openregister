@@ -44,11 +44,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Builds the merged activity feed for one object.
@@ -167,9 +167,7 @@ class ActivityFeedService {
 	private function activitySource(ActivityFeedObject $object): ?array {
 		try {
 			return $this->activity->list(
-				register: $object->register,
-				schema: $object->schema,
-				objectId: $object->id,
+				ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 				filters: []
 			);
 		} catch (Throwable $e) {

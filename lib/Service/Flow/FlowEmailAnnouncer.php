@@ -94,15 +94,15 @@ class FlowEmailAnnouncer {
 		$context = $send->context;
 
 		return new FlowEmailSentEvent(
-			register: $this->stringOrNull(value: ($self['register'] ?? null)),
-			schema: $this->stringOrNull(value: ($self['schema'] ?? null)),
-			objectUuid: $this->stringOrNull(value: ($self['id'] ?? ($item->json['uuid'] ?? null))),
+			register: FlowScalarText::orNull(value: ($self['register'] ?? null)),
+			schema: FlowScalarText::orNull(value: ($self['schema'] ?? null)),
+			objectUuid: FlowScalarText::orNull(value: ($self['id'] ?? ($item->json['uuid'] ?? null))),
 			recipient: $item->recipient,
 			channelKind: $item->kind,
 			subject: $item->title,
 			body: $item->body,
-			flowId: $this->stringOrNull(value: ($context[FlowRunServiceInterface::FLOW_ID_CONTEXT_KEY] ?? null)),
-			runId: $this->stringOrNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
+			flowId: FlowScalarText::orNull(value: ($context[FlowRunServiceInterface::FLOW_ID_CONTEXT_KEY] ?? null)),
+			runId: FlowScalarText::orNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
 			stepName: $this->stepName(fallback: $send->stepName),
 			actingUser: $send->actor
 		);
@@ -125,24 +125,4 @@ class FlowEmailAnnouncer {
 
 		return $fallback;
 	}//end stepName()
-
-	/**
-	 * A scalar as a non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string, or null when empty or not scalar.
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$value = trim((string)$value);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
 }//end class

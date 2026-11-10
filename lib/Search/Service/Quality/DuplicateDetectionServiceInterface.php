@@ -69,10 +69,10 @@ interface DuplicateDetectionServiceInterface {
 	 * has no bucket to sit in and therefore no match — the same treatment
 	 * {@see partition()} gives a stored object with an empty token.
 	 *
-	 * @param int|string $register Register id, uuid or slug — the boundary the schema resolves inside.
-	 * @param int|string $schema Schema id, uuid or slug.
+	 * @param DedupRun             $request   The register (id, uuid or slug: the boundary the schema resolves inside),
+	 *                                        the schema (id, uuid or slug) and the optional cut-off (the annotation's,
+	 *                                        then {@see DEFAULT_THRESHOLD}, when null), unresolved.
 	 * @param array<string, mixed> $candidate The unsaved body.
-	 * @param float|null $threshold Optional cut-off; the annotation's, then {@see DEFAULT_THRESHOLD}, when null.
 	 *
 	 * @return array<int, array{
 	 *   uuid: string,
@@ -83,7 +83,7 @@ interface DuplicateDetectionServiceInterface {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
-	public function checkCandidate($register, $schema, array $candidate, ?float $threshold = null): array;
+	public function checkCandidate(DedupRun $request, array $candidate): array;
 
 	/**
 	 * The cut-off a register/schema applies, so a caller that needs to know

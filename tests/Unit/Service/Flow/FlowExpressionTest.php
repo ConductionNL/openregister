@@ -13,6 +13,7 @@ use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
@@ -122,11 +123,11 @@ class FilterNodeTest extends TestCase {
 	}
 
 	public function testOnlyMatchingItemsSurvive(): void {
-		$out = $this->node->execute(
-			$this->items([['n' => 1], ['n' => 2], ['n' => 3]]),
-			['condition' => ['>' => [['var' => 'json.n'], 1]]],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['n' => 1], ['n' => 2], ['n' => 3]]),
+			config: ['condition' => ['>' => [['var' => 'json.n'], 1]]],
+			context: []
+		));
 
 		$this->assertSame([2, 3], array_column(array_column($out, 'json'), 'n'));
 	}
@@ -135,21 +136,21 @@ class FilterNodeTest extends TestCase {
 	 * Provenance must survive the drop: output item 0 came from input item 1.
 	 */
 	public function testSurvivingItemsPointAtTheirOriginalInputIndex(): void {
-		$out = $this->node->execute(
-			$this->items([['n' => 1], ['n' => 2]]),
-			['condition' => ['>' => [['var' => 'json.n'], 1]]],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['n' => 1], ['n' => 2]]),
+			config: ['condition' => ['>' => [['var' => 'json.n'], 1]]],
+			context: []
+		));
 
 		$this->assertSame(['item' => 1], $out[0]['pairedItem']);
 	}
 
 	public function testMatchingNothingIsALegitimateOutcome(): void {
-		$out = $this->node->execute(
-			$this->items([['n' => 1]]),
-			['condition' => ['>' => [['var' => 'json.n'], 99]]],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['n' => 1]]),
+			config: ['condition' => ['>' => [['var' => 'json.n'], 99]]],
+			context: []
+		));
 
 		$this->assertSame([], $out);
 	}
@@ -176,12 +177,12 @@ class WaitNodeTest extends TestCase {
 
 	public function testTheFirstPassSuspendsTheRun(): void {
 		$this->expectException(FlowSuspension::class);
-		$this->node->execute([], ['for' => '15 minutes'], []);
+		$this->node->execute(new FlowNodeCall(items: [], config: ['for' => '15 minutes'], context: []));
 	}
 
 	public function testTheSuspensionCarriesWhenToResume(): void {
 		try {
-			$this->node->execute([], ['for' => '1 hour'], []);
+			$this->node->execute(new FlowNodeCall(items: [], config: ['for' => '1 hour'], context: []));
 			$this->fail('expected a suspension');
 		} catch (FlowSuspension $e) {
 			$this->assertInstanceOf(DateTime::class, $e->getResumeAt());
@@ -196,14 +197,14 @@ class WaitNodeTest extends TestCase {
 	public function testResumingPassesItemsThroughRatherThanWaitingAgain(): void {
 		$items = [FlowItems::item(json: ['a' => 1])];
 
-		$out = $this->node->execute($items, ['for' => '1 hour'], ['resuming' => true]);
+		$out = $this->node->execute(new FlowNodeCall(items: $items, config: ['for' => '1 hour'], context: ['resuming' => true]));
 
 		$this->assertSame($items, $out);
 	}
 
 	public function testABareNumberIsReadAsSeconds(): void {
 		try {
-			$this->node->execute([], ['for' => '30'], []);
+			$this->node->execute(new FlowNodeCall(items: [], config: ['for' => '30'], context: []));
 			$this->fail('expected a suspension');
 		} catch (FlowSuspension $e) {
 			$this->assertLessThanOrEqual(time() + 31, $e->getResumeAt()->getTimestamp());
@@ -213,7 +214,7 @@ class WaitNodeTest extends TestCase {
 
 	public function testAnAbsoluteMomentIsAccepted(): void {
 		try {
-			$this->node->execute([], ['until' => '2030-01-01T00:00:00+00:00'], []);
+			$this->node->execute(new FlowNodeCall(items: [], config: ['until' => '2030-01-01T00:00:00+00:00'], context: []));
 			$this->fail('expected a suspension');
 		} catch (FlowSuspension $e) {
 			$this->assertSame('2030-01-01', $e->getResumeAt()->format('Y-m-d'));
@@ -227,7 +228,7 @@ class WaitNodeTest extends TestCase {
 	public function testAnUnreadableTimeAtRunTimePassesThroughRatherThanHanging(): void {
 		$items = [FlowItems::item(json: ['a' => 1])];
 
-		$this->assertSame($items, $this->node->execute($items, ['for' => 'whenever'], []));
+		$this->assertSame($items, $this->node->execute(new FlowNodeCall(items: $items, config: ['for' => 'whenever'], context: [])));
 	}
 
 	public function testAWaitWithNoTimeIsRefusedAtSaveTime(): void {

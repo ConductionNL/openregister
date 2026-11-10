@@ -93,7 +93,7 @@ class ManifestServiceAccessGoldenTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('findBySlug')->willReturnCallback(
 			function (...$args) use ($config, $failures): array {
-				$this->findBySlugCalls[] = $args;
+				$this->findBySlugCalls[] = [$args[0], $args[1]->limit, $args[1]->offset ?? 0, $args[2], $args[3]];
 				if (isset($failures['schema']) === true) {
 					throw new RuntimeException('schema down');
 				}

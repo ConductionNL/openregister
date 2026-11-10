@@ -131,7 +131,7 @@ class ActivityLinksController extends Controller {
 		}
 
 		try {
-			$object = $this->validateObject(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+			$object = $this->resolveLinkedObject(ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -224,7 +224,7 @@ class ActivityLinksController extends Controller {
 		}
 
 		try {
-			$resolved = $this->validateObject(register: $parts[0], schema: $parts[1], id: $parts[2]);
+			$resolved = $this->resolveLinkedObject(ref: new ObjectRef(register: $parts[0], schema: $parts[1], id: $parts[2]));
 			if ($resolved === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}

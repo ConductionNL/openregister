@@ -154,16 +154,8 @@ final class TaskConfigCommon {
 	 * @return array<int, string> Trimmed, non-empty entries.
 	 */
 	public function listOf(mixed $value): array {
-		if (is_string($value) === true) {
-			$value = explode(',', $value);
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
 		$list = [];
-		foreach ($value as $entry) {
+		foreach (self::entriesOf(value: $value) as $entry) {
 			if (is_scalar($entry) === false) {
 				continue;
 			}
@@ -176,6 +168,26 @@ final class TaskConfigCommon {
 
 		return $list;
 	}//end listOf()
+
+	/**
+	 * The raw entries of a configured list: a string split on commas, an array
+	 * as given, nothing for anything else.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<mixed> The untrimmed entries.
+	 */
+	private static function entriesOf(mixed $value): array {
+		if (is_string($value) === true) {
+			return explode(',', $value);
+		}
+
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end entriesOf()
 
 	/**
 	 * The record of the representative item: the first array item's json.

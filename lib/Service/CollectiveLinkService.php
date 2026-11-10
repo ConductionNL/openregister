@@ -718,29 +718,9 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	 * @return array<string,mixed>
 	 */
 	private function normalisePage(object $page, object $collective): array {
-		$lastModified = null;
-		try {
-			$timestamp = (int)$page->getTimestamp();
-			if ($timestamp > 0) {
-				$lastModified = (new DateTime())->setTimestamp($timestamp);
-			}
-		} catch (Throwable $e) {
-			$lastModified = null;
-		}
-
-		$emoji = null;
-		try {
-			$emoji = $page->getEmoji();
-		} catch (Throwable $e) {
-			$emoji = null;
-		}
-
-		$slug = null;
-		try {
-			$slug = $page->getSlug();
-		} catch (Throwable $e) {
-			$slug = null;
-		}
+		$lastModified = $this->pageModifiedTime(page: $page);
+		$emoji = $this->pageEmoji(page: $page);
+		$slug = $this->pageSlug(page: $page);
 
 		return [
 			'title' => (string)$page->getTitle(),
@@ -752,6 +732,42 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 			'url' => $this->pageDeepLink(pageId: (int)$page->getId()),
 		];
 	}//end normalisePage()
+
+	/**
+	 * When a Collectives page was last modified.
+	 *
+	 * @param object $page Collectives page entity.
+	 *
+	 * @return DateTime|null Null when the page has no timestamp or its getter throws.
+	 */
+	private function pageModifiedTime(object $page): ?DateTime {
+		$lastModified = null;
+		try {
+			$timestamp = (int)$page->getTimestamp();
+			if ($timestamp > 0) {
+				$lastModified = (new DateTime())->setTimestamp($timestamp);
+			}
+		} catch (Throwable $e) {
+			$lastModified = null;
+		}
+
+		return $lastModified;
+	}//end pageModifiedTime()
+
+	/**
+	 * The slug of a page; null when unset or unreadable.
+	 *
+	 * @param object $page Collectives page entity.
+	 *
+	 * @return mixed The slug.
+	 */
+	private function pageSlug(object $page): mixed {
+		try {
+			return $page->getSlug();
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end pageSlug()
 
 	/**
 	 * Build the NC Collectives deep link for a page.

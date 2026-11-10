@@ -110,6 +110,17 @@ class EntryMentionService {
 			return [];
 		}
 
+		return $this->resolvedUids(matches: $matches);
+	}//end parse()
+
+	/**
+	 * The real uids the matched tokens name, each once, in the order written.
+	 *
+	 * @param array<int,array<int,string>> $matches The `preg_match_all` result for TOKEN.
+	 *
+	 * @return array<int,string> The uids named.
+	 */
+	private function resolvedUids(array $matches): array {
 		$uids = [];
 		foreach (array_keys($matches[0]) as $index) {
 			$uid = $this->resolveToken(quoted: (string)$matches[1][$index], bare: (string)$matches[2][$index]);
@@ -121,7 +132,7 @@ class EntryMentionService {
 		}
 
 		return $uids;
-	}//end parse()
+	}//end resolvedUids()
 
 	/**
 	 * The real uid one token names, or null.
@@ -136,16 +147,7 @@ class EntryMentionService {
 	 * @return string|null The uid, or null when nobody real is named.
 	 */
 	private function resolveToken(string $quoted, string $bare): ?string {
-		$candidates = [$quoted];
-		if ($quoted === '') {
-			$candidates = [$bare];
-			$apostrophe = strpos($bare, "'");
-			if ($apostrophe !== false && $apostrophe > 0) {
-				$candidates[] = substr($bare, 0, $apostrophe);
-			}
-		}
-
-		foreach ($candidates as $candidate) {
+		foreach ($this->tokenCandidates(quoted: $quoted, bare: $bare) as $candidate) {
 			if ($candidate !== '' && $this->principals->userManager->userExists($candidate) === true) {
 				return $candidate;
 			}
@@ -153,6 +155,28 @@ class EntryMentionService {
 
 		return null;
 	}//end resolveToken()
+
+	/**
+	 * The uids one token could name, most specific first.
+	 *
+	 * @param string $quoted The uid of the `@"uid"` form, or ''.
+	 * @param string $bare   The uid of the `@uid` form, or ''.
+	 *
+	 * @return array<int,string> The quoted uid alone, or the bare uid and its part before an apostrophe.
+	 */
+	private function tokenCandidates(string $quoted, string $bare): array {
+		if ($quoted !== '') {
+			return [$quoted];
+		}
+
+		$candidates = [$bare];
+		$apostrophe = strpos($bare, "'");
+		if ($apostrophe !== false && $apostrophe > 0) {
+			$candidates[] = substr($bare, 0, $apostrophe);
+		}
+
+		return $candidates;
+	}//end tokenCandidates()
 
 	/**
 	 * Notify and subscribe everybody the entry named and who may read the object.
