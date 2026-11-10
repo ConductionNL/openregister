@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -194,7 +195,7 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->parties->method('definitionFor')->willReturn(new PartyDefinition());
 		$this->indicators->method('sendRefusalFor')->willReturn(null);
 		$this->parties->method('addressesOfKind')->willReturnCallback(
-			static fn (ObjectEntity $p, string $kind, ?PartyDefinition $d = null): array => [
+			static fn (ObjectEntity $p, PartyAddressSelection $selection): array => [
 				['kind' => 'correspondence', 'type' => 'email', 'value' => $byUuid[(string)$p->getUuid()][1], 'label' => null],
 			]
 		);
@@ -231,8 +232,8 @@ class PartyNotificationServiceTest extends TestCase {
 
 		$this->indicators->method('sendRefusalFor')->willReturn($refusal);
 		$this->parties->method('addressesOfKind')->willReturnCallback(
-			static fn (ObjectEntity $p, string $kind, ?PartyDefinition $d = null): array => array_values(
-				array_filter($addresses, static fn (array $a): bool => $a['kind'] === $kind)
+			static fn (ObjectEntity $p, PartyAddressSelection $selection): array => array_values(
+				array_filter($addresses, static fn (array $a): bool => $a['kind'] === $selection->kind)
 			)
 		);
 		$this->parties->method('addresses')->willReturn($addresses);
