@@ -1,0 +1,10 @@
+# Fleet classes implementing ObjectServiceInterface / ObjectOperationsInterface (their search declarations break; ko3 2026-11-10)
+procest/tests/Stubs/Contract/ObjectServiceInterface.php
+pipelinq/tests/Stubs/Service/ObjectService.php
+shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php
+shillinq/tests/Unit/Service/Support/FilteredObjectServiceStub.php
+shillinq/tests/Unit/Service/Support/InMemoryObjectServiceStub.php
+shillinq/tests/Unit/Service/Support/KnownCostFixtureObjectServiceStub.php
+shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php
+shillinq/tests/stubs/OpenRegister/Contract/ObjectServiceInterface.php

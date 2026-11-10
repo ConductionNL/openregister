@@ -1,0 +1,6739 @@
+{
+ "imports": [
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 100,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    562,
+    644,
+    669,
+    717,
+    732,
+    752,
+    777,
+    833,
+    868,
+    1019,
+    1066
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 101,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    534,
+    548,
+    577,
+    592,
+    608,
+    693,
+    717,
+    752,
+    777,
+    809,
+    833,
+    858,
+    868,
+    901,
+    965,
+    987,
+    1042,
+    1066,
+    1099
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 102,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    562,
+    777
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 103,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    534
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 104,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    486,
+    562,
+    644,
+    669,
+    717,
+    752,
+    777,
+    880,
+    944,
+    970,
+    1019,
+    1066
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 105,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    534,
+    548,
+    577,
+    592,
+    608,
+    693,
+    717,
+    752,
+    789,
+    809,
+    858,
+    965,
+    987,
+    999,
+    1042,
+    1066,
+    1078,
+    1099
+   ]
+  },
+  {
+   "file": "lib/Flow/AnonymiseExitInterviewsNode.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    38
+   ]
+  },
+  {
+   "file": "lib/Flow/HumaniqFlowNodeListener.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    108
+   ]
+  },
+  {
+   "file": "lib/Flow/PayrollFlowNodeBase.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    63
+   ]
+  },
+  {
+   "file": "lib/Flow/RevokeAccessNode.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    38
+   ]
+  },
+  {
+   "file": "lib/Flow/TeamDigestNode.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    43
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/ChangeApproverRoleGuard.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    75,
+    78,
+    82,
+    87,
+    90
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/ChangeApproverRoleGuard.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    43
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/CompEffectiveDateGuard.php",
+   "line": 49,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    80,
+    83,
+    90,
+    97,
+    103
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/CompEffectiveDateGuard.php",
+   "line": 50,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    59
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/DecisionReasonGuard.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    70,
+    73
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/DecisionReasonGuard.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    44
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/HandoffCloseGuard.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    51,
+    54,
+    58,
+    61
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/HandoffCloseGuard.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    35
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/HandoffReleaseGuard.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    51,
+    54,
+    58,
+    61
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/HandoffReleaseGuard.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    35
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/HrReopenGuard.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    72,
+    74,
+    79,
+    83,
+    87,
+    90
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/HrReopenGuard.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    43
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LeaveBuySellApprovalGuard.php",
+   "line": 62,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    114,
+    125,
+    136,
+    145,
+    153,
+    160
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LeaveBuySellApprovalGuard.php",
+   "line": 63,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    76
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LeaveSettlementPeriodGuard.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    78,
+    81,
+    87,
+    93
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LeaveSettlementPeriodGuard.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    57
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LeaveTypeConditionGuard.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    94,
+    98,
+    112,
+    115
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LeaveTypeConditionGuard.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    60
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LoonaangifteMessageGuard.php",
+   "line": 30,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    54,
+    56,
+    61,
+    65,
+    69,
+    73,
+    76
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/LoonaangifteMessageGuard.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    38
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/NoSelfApprovalGuard.php",
+   "line": 58,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    90,
+    92,
+    97,
+    105,
+    118,
+    123,
+    132
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/NoSelfApprovalGuard.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    69
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/PayrollRunApprovedGuard.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    101,
+    104,
+    116,
+    126,
+    132,
+    139,
+    145
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/PayrollRunApprovedGuard.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    60
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/RightToWorkGuard.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    80,
+    84,
+    89,
+    94,
+    98,
+    103,
+    106
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/RightToWorkGuard.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    51
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/RosterCompetenceGuard.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    90,
+    93,
+    99,
+    104,
+    114
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/RosterCompetenceGuard.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    55
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/SurveyOpenGuard.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    65,
+    67,
+    70
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/SurveyOpenGuard.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    39
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/TimesheetNotEmptyGuard.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    68,
+    71,
+    79,
+    85
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/TimesheetNotEmptyGuard.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    48
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/UbdReportReadyGuard.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    52,
+    55,
+    66,
+    70,
+    73
+   ]
+  },
+  {
+   "file": "lib/Lifecycle/UbdReportReadyGuard.php",
+   "line": 29,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    36
+   ]
+  },
+  {
+   "file": "lib/Listener/AnnouncementConfirmationListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    73
+   ]
+  },
+  {
+   "file": "lib/Listener/ApprovalDecisionStampListener.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    75
+   ]
+  },
+  {
+   "file": "lib/Listener/CandidateEvaluationStampListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    75
+   ]
+  },
+  {
+   "file": "lib/Listener/CandidateEvaluationStampListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    89
+   ]
+  },
+  {
+   "file": "lib/Listener/CaoComponentOverrideListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    78,
+    94,
+    95
+   ]
+  },
+  {
+   "file": "lib/Listener/CaoComponentOverrideListener.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    94,
+    95
+   ]
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    153
+   ]
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    91,
+    133,
+    153
+   ]
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    157
+   ]
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    96,
+    133,
+    157
+   ]
+  },
+  {
+   "file": "lib/Listener/EmployeeGuardedFieldListener.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    87,
+    177
+   ]
+  },
+  {
+   "file": "lib/Listener/ExitInterviewListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    79
+   ]
+  },
+  {
+   "file": "lib/Listener/ExitInterviewListener.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    79,
+    90
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpenseCategoryGuardListener.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    86,
+    90
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpenseCategoryGuardListener.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    86,
+    96
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpenseManagerStampListener.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    106,
+    110
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpenseManagerStampListener.php",
+   "line": 49,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    106,
+    115
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpensePayoutFieldsListener.php",
+   "line": 49,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    142,
+    146,
+    151,
+    198
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpensePayoutFieldsListener.php",
+   "line": 50,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    142,
+    168
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpenseRouteListener.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    81,
+    100
+   ]
+  },
+  {
+   "file": "lib/Listener/ExpenseRouteListener.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    86,
+    100
+   ]
+  },
+  {
+   "file": "lib/Listener/FieldAccessListener.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    98,
+    158
+   ]
+  },
+  {
+   "file": "lib/Listener/FieldAccessListener.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    105,
+    158
+   ]
+  },
+  {
+   "file": "lib/Listener/FrequentAbsenceListener.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    89
+   ]
+  },
+  {
+   "file": "lib/Listener/FrequentAbsenceListener.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    93,
+    115
+   ]
+  },
+  {
+   "file": "lib/Listener/HandoffIntakeListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    75
+   ]
+  },
+  {
+   "file": "lib/Listener/HrLifecycleEventListener.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    74
+   ]
+  },
+  {
+   "file": "lib/Listener/HrLifecycleEventListener.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    74,
+    79,
+    81
+   ]
+  },
+  {
+   "file": "lib/Listener/LearniqCredentialListener.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    93
+   ]
+  },
+  {
+   "file": "lib/Listener/LeaveApprovalListener.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    96
+   ]
+  },
+  {
+   "file": "lib/Listener/LeaveApprovalListener.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    97,
+    103
+   ]
+  },
+  {
+   "file": "lib/Listener/ManagerDeputyListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    69
+   ]
+  },
+  {
+   "file": "lib/Listener/ManagerDeputyListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    69,
+    74,
+    75
+   ]
+  },
+  {
+   "file": "lib/Listener/PayrollRunApprovedListener.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    75
+   ]
+  },
+  {
+   "file": "lib/Listener/PayrollRunFindingStampListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    72
+   ]
+  },
+  {
+   "file": "lib/Listener/RecurringAllowanceStampListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    78
+   ]
+  },
+  {
+   "file": "lib/Listener/RecurringAllowanceStampListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    85
+   ]
+  },
+  {
+   "file": "lib/Listener/ReferralListener.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    101
+   ]
+  },
+  {
+   "file": "lib/Listener/ReferralListener.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    95,
+    122
+   ]
+  },
+  {
+   "file": "lib/Listener/ReferralListener.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    107
+   ]
+  },
+  {
+   "file": "lib/Listener/RegisterAgendaLeafListener.php",
+   "line": 51,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    145
+   ]
+  },
+  {
+   "file": "lib/Listener/RegisterAgendaLeafListener.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    154,
+    163,
+    175,
+    178,
+    216,
+    220
+   ]
+  },
+  {
+   "file": "lib/Listener/RegisterHoursLeafListener.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    151
+   ]
+  },
+  {
+   "file": "lib/Listener/RegisterHoursLeafListener.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    160,
+    169,
+    181,
+    184,
+    222,
+    226
+   ]
+  },
+  {
+   "file": "lib/Listener/RelationsCaseListener.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    91,
+    121,
+    122
+   ]
+  },
+  {
+   "file": "lib/Listener/RelationsCaseListener.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    91,
+    121
+   ]
+  },
+  {
+   "file": "lib/Listener/TimesheetApprovalListener.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    77
+   ]
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    117
+   ]
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    94,
+    117
+   ]
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    121
+   ]
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    94,
+    121
+   ]
+  },
+  {
+   "file": "lib/Notification/CaseManagerResolver.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    72
+   ]
+  },
+  {
+   "file": "lib/Notification/CaseManagerResolver.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    47
+   ]
+  },
+  {
+   "file": "lib/Notification/ManagerOrDeputyRecipientResolver.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    67
+   ]
+  },
+  {
+   "file": "lib/Notification/ManagerOrDeputyRecipientResolver.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    44
+   ]
+  },
+  {
+   "file": "tests/Unit/AppInfo/CaoComponentOverrideWiringTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    42,
+    46,
+    52
+   ]
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 86,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    102,
+    106,
+    112,
+    137,
+    141,
+    148,
+    150,
+    151,
+    164,
+    168,
+    180,
+    182,
+    183,
+    196,
+    200,
+    206,
+    232,
+    236,
+    242,
+    259
+   ]
+  },
+  {
+   "file": "tests/Unit/AppInfo/CostAllocationWiringTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    42,
+    46,
+    52
+   ]
+  },
+  {
+   "file": "tests/Unit/AppInfo/HandoffIntakeWiringTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    42,
+    46,
+    52
+   ]
+  },
+  {
+   "file": "tests/Unit/AppInfo/PayrollRunFindingWiringTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    42,
+    46,
+    52
+   ]
+  },
+  {
+   "file": "tests/Unit/AppInfo/TrainingListenerWiringTest.php",
+   "line": 73,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    89,
+    93,
+    99
+   ]
+  },
+  {
+   "file": "tests/Unit/AppInfo/TravelListenerWiringTest.php",
+   "line": 73,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    88,
+    92,
+    98,
+    115,
+    119,
+    126
+   ]
+  },
+  {
+   "file": "tests/Unit/Controller/TravelControllerTest.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    176,
+    180,
+    209,
+    211
+   ]
+  },
+  {
+   "file": "tests/Unit/Flow/HumaniqFlowNodeListenerTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    108
+   ]
+  },
+  {
+   "file": "tests/Unit/Flow/HumaniqFlowNodeListenerTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    86,
+    87
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ApprovalDecisionStampListenerTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    77,
+    78
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ApprovalDecisionStampListenerTest.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    71
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CandidateAssessmentListenersTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    232,
+    233
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CandidateAssessmentListenersTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    160,
+    182
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CandidateAssessmentListenersTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    79,
+    122,
+    136,
+    151
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CandidateAssessmentListenersTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    197
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CandidateAssessmentListenersTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    97
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CaoComponentOverrideListenerTest.php",
+   "line": 29,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    56,
+    57
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CaoComponentOverrideListenerTest.php",
+   "line": 30,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    113
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CaoComponentOverrideListenerTest.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    90,
+    108
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CaoComponentOverrideListenerTest.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    85
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CostAllocationGuardListenerTest.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    85,
+    163,
+    167
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CostAllocationGuardListenerTest.php",
+   "line": 29,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    84,
+    89
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CostAllocationGuardListenerTest.php",
+   "line": 30,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    167
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/EmployeeChangeRequestFlowTest.php",
+   "line": 51,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    188,
+    189
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/EmployeeChangeRequestFlowTest.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    212
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/EmployeeChangeRequestFlowTest.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    204,
+    205
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/EmployeeChangeRequestFlowTest.php",
+   "line": 54,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    235,
+    294
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/EmployeeChangeRequestFlowTest.php",
+   "line": 55,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    225,
+    228,
+    375,
+    380,
+    384,
+    388,
+    392,
+    409,
+    456
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseCategoryGuardListenerTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    99,
+    100
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseCategoryGuardListenerTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    129,
+    134,
+    139,
+    143,
+    147,
+    151,
+    195,
+    199
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseCategoryGuardListenerTest.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    116
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseManagerStampListenerTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    119,
+    120
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseManagerStampListenerTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    135,
+    377,
+    381
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseManagerStampListenerTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    197,
+    218,
+    234,
+    395
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayoutFieldsListenerTest.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    131,
+    132
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayoutFieldsListenerTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    238,
+    245,
+    254,
+    266,
+    281
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayoutFieldsListenerTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    148,
+    250,
+    321,
+    366
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayrollListenersTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    77,
+    78
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayrollListenersTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    138,
+    229
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayrollListenersTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    107,
+    108,
+    236
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePreSaveChainTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    137,
+    138
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePreSaveChainTest.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    178,
+    225,
+    235
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePreSaveChainTest.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    122,
+    295
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FieldAccessListenerTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    156,
+    157
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FieldAccessListenerTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    219
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FieldAccessListenerTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    174,
+    190,
+    205,
+    235,
+    239,
+    254
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FrequentAbsenceListenerTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    123,
+    124
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FrequentAbsenceListenerTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    150,
+    190,
+    203
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FrequentAbsenceListenerTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    169,
+    187
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/HandoffIntakeListenerTest.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    121,
+    122
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/HandoffIntakeListenerTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    104
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/HandoffIntakeListenerTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    88,
+    102,
+    103,
+    110
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/HrLifecycleEventListenerTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    65,
+    66
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/HrLifecycleEventListenerTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    59,
+    60
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/LearniqCredentialListenerTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    144,
+    145
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/LearniqCredentialListenerTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    180,
+    181,
+    204,
+    216
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ManagerDeputyListenerTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    74,
+    75
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ManagerDeputyListenerTest.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    44,
+    52,
+    68
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ManagerDeputyListenerTest.php",
+   "line": 29,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    61
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/PayrollRunFindingStampListenerTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    83,
+    84
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/PayrollRunFindingStampListenerTest.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    143
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/PayrollRunFindingStampListenerTest.php",
+   "line": 29,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    101
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RegisterHoursLeafListenerTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    90
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RelationsCaseListenerTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    149,
+    150
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RelationsCaseListenerTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    78,
+    132,
+    137
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RelationsCaseListenerTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    92,
+    108,
+    114,
+    119
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RightToWorkCheckListenerTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    215,
+    216
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RightToWorkCheckListenerTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    205
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RightToWorkCheckListenerTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    155,
+    190
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RightToWorkCheckListenerTest.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    141
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ScenarioMutationListenerTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    115,
+    116
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ScenarioMutationListenerTest.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    71,
+    87,
+    101
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ScenarioMutationListenerTest.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    76
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SideActivityListenerTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    201,
+    202,
+    216,
+    217
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SideActivityListenerTest.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    191
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SideActivityListenerTest.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    118,
+    131,
+    175
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SideActivityListenerTest.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    108
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SideActivityListenerTest.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    145
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEntryStampListenerTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    136,
+    137,
+    494,
+    512
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEntryStampListenerTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    156,
+    196,
+    214,
+    222,
+    243,
+    273,
+    297,
+    320,
+    348,
+    375,
+    452,
+    477,
+    498,
+    568,
+    576,
+    655,
+    682,
+    709
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEntryStampListenerTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    420,
+    433
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEntryStampListenerTest.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    414,
+    426,
+    516,
+    551,
+    613,
+    623
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEstimateListenerTest.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    103
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEstimateListenerTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    102,
+    107
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetAggregateListenerTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    114,
+    115,
+    184
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetAggregateListenerTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    130,
+    201,
+    255
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetAggregateListenerTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    171
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetAggregateListenerTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    154,
+    188
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetProcessStampListenerTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    136,
+    137,
+    388,
+    412
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetProcessStampListenerTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    174,
+    392,
+    445,
+    506
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetProcessStampListenerTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    156,
+    373,
+    415,
+    517
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TrainingRecordListenerTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    135,
+    136
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TrainingRecordListenerTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    270,
+    271
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TrainingRecordListenerTest.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    160
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TrainingRecordListenerTest.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    156
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TravelAmountListenerTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    112,
+    113
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TravelAmountListenerTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    135,
+    167,
+    173,
+    201,
+    222,
+    229
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/TravelAmountListenerTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    150,
+    187
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/WorkingPatternOverlapListenerTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    98,
+    166
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/WorkingPatternOverlapListenerTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    97,
+    102
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/WorkingPatternOverlapListenerTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    175
+   ]
+  },
+  {
+   "file": "tests/Unit/Notification/CaseManagerResolverTest.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    108,
+    109
+   ]
+  },
+  {
+   "file": "tests/Unit/Notification/ManagerOrDeputyRecipientResolverTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    70
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/AnnouncementServiceTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    220,
+    221
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/AnnouncementServiceTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    174,
+    181
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/ExitInterviewServiceTest.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    155,
+    156
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/ExitInterviewServiceTest.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    77
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/ExitInterviewServiceTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    70
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/OvertimeCreditServiceTest.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    167,
+    168
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/OvertimeCreditServiceTest.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    136,
+    137,
+    138,
+    156
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/PayrollExpenseEdgePathsTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    56,
+    57
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/PayrollExpenseEdgePathsTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    131,
+    158
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/PayrollExpenseEdgePathsTest.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    117
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/PayrollExpenseEdgePathsTest.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    151
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/PayrollExpenseFoldServiceTest.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    274,
+    275
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/PayrollExpenseFoldServiceTest.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    282,
+    285
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/RegisterPrefillServiceTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    131,
+    136,
+    174,
+    186,
+    190
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/RouteDistanceServiceTest.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    76,
+    81,
+    109,
+    109,
+    111
+   ]
+  },
+  {
+   "file": "tests/Unit/Support/FakeObjectStore.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    179,
+    243,
+    272,
+    273
+   ]
+  },
+  {
+   "file": "tests/Unit/Support/FakeSlugResolver.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolution",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    61,
+    65,
+    67,
+    69,
+    72
+   ]
+  },
+  {
+   "file": "tests/Unit/Support/FakeSlugResolver.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    39
+   ]
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 139,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    222,
+    230,
+    246,
+    247,
+    255,
+    262,
+    277,
+    285,
+    300,
+    308,
+    323,
+    331,
+    349,
+    350,
+    358,
+    365
+   ]
+  },
+  {
+   "file": "tests/stubs/OpenRegisterRecipientResolverStub.php",
+   "line": 30,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    45
+   ]
+  }
+ ],
+ "string_lookups": [
+  {
+   "file": "lib/Command/ReferencesAuditCommand.php",
+   "line": 147,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/ExpenseController.php",
+   "line": 186,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/InterviewController.php",
+   "line": 174,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/LoonaangifteMessageController.php",
+   "line": 138,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/OfferController.php",
+   "line": 182,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/PayrollCheckController.php",
+   "line": 88,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/PayrollHandoffController.php",
+   "line": 214,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/ThirdPartyReportController.php",
+   "line": 236,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Flow/PayrollFlowNodeBase.php",
+   "line": 314,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LearniqCredentialListener.php",
+   "line": 167,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LearniqCredentialListener.php",
+   "line": 171,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LearniqCredentialListener.php",
+   "line": 198,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Repair/MigrateHoursProcess.php",
+   "line": 132,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Repair/MigrateHoursProcess.php",
+   "line": 480,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/AvgDsrService.php",
+   "line": 100,
+   "class": "OCA\\OpenRegister\\Service\\Gdpr\\DataSubjectRequestService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/CompCycleApprover.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/CostRateAccess.php",
+   "line": 191,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/CostRateAccess.php",
+   "line": 337,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/DemoDataService.php",
+   "line": 288,
+   "class": "OCA\\OpenRegister\\Service\\ConfigurationService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/FieldReadAccess.php",
+   "line": 67,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/FieldReadAccess.php",
+   "line": 68,
+   "class": "OCA\\OpenRegister\\Service\\PropertyRbacHandler",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HostObjectAccess.php",
+   "line": 70,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HoursMigrationRunner.php",
+   "line": 130,
+   "class": "OCA\\OpenRegister\\Exception\\FolderAccessDeniedException",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HoursRegisterGateway.php",
+   "line": 345,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HoursRegisterGateway.php",
+   "line": 417,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HoursRegisterGateway.php",
+   "line": 423,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HrDocumentService.php",
+   "line": 126,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HrDocumentSigningService.php",
+   "line": 80,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/HrLifecycleEventService.php",
+   "line": 209,
+   "class": "OCA\\OpenRegister\\Service\\WebhookService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/LeaveBalanceProjectionService.php",
+   "line": 469,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/LoonrunFlowRepairService.php",
+   "line": 170,
+   "class": "OCA\\OpenRegister\\Db\\FlowMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/LoonrunFlowRepairService.php",
+   "line": 194,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\FlowPublishedGraph",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/LoonrunFlowRepairService.php",
+   "line": 285,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\FlowVersionService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/LoonrunFlowRepairService.php",
+   "line": 292,
+   "class": "OCA\\OpenRegister\\Db\\FlowMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/OfferLetterService.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PayrollAuditVerificationService.php",
+   "line": 303,
+   "class": "OCA\\OpenRegister\\Service\\Object\\AuditHandler",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PayrollAuditVerificationService.php",
+   "line": 310,
+   "class": "OCA\\OpenRegister\\Service\\AuditHashService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PayrollRetentionGuardService.php",
+   "line": 142,
+   "class": "OCA\\OpenRegister\\Service\\RetentionService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PayrollRetentionGuardService.php",
+   "line": 171,
+   "class": "OCA\\OpenRegister\\Db\\MagicMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ReceiptExtractionRepository.php",
+   "line": 54,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/RetentionExpiryService.php",
+   "line": 301,
+   "class": "OCA\\OpenRegister\\Db\\MagicMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/RetentionExpiryService.php",
+   "line": 314,
+   "class": "OCA\\OpenRegister\\Service\\RetentionService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/SettingsService.php",
+   "line": 689,
+   "class": "OCA\\OpenRegister\\Service\\ConfigurationService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ThirdPartyStatementService.php",
+   "line": 167,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/TimeEntryEventService.php",
+   "line": 290,
+   "class": "OCA\\OpenRegister\\Service\\WebhookService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/TimesheetAggregationService.php",
+   "line": 271,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/TimesheetAggregationService.php",
+   "line": 277,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/WorkingCalendarReader.php",
+   "line": 76,
+   "class": "OCA\\OpenRegister\\Service\\WorkingCalendarService",
+   "context": "string",
+   "status": "fleet-stub"
+  },
+  {
+   "file": "lib/Service/WorkingCalendarReader.php",
+   "line": 77,
+   "class": "OCA\\OpenRegister\\Service\\Calendar\\WorkingCalendarService",
+   "context": "string",
+   "status": "missing"
+  },
+  {
+   "file": "lib/Standards/TableCheckEvaluator.php",
+   "line": 55,
+   "class": "OCA\\OpenRegister\\Service\\Dmn\\DecisionTableEvaluator",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/RegisterSlugLookup.php",
+   "line": 114,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/RegisterSlugLookup.php",
+   "line": 127,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/ResolvesObjectService.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/ResolvesObjectServiceByClass.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/ResolvesObjectServiceByClass.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/ResolvesObjectServiceThroughCaller.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/ResolvesObjectServiceWithReload.php",
+   "line": 56,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Support/ResolvesSchemaSlug.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/CaoComponentOverrideWiringTest.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/CaoComponentOverrideWiringTest.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 118,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 119,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 120,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 121,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 126,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 147,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 147,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 175,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 176,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 177,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 178,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 213,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 214,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 215,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 216,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 220,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 248,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 248,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 275,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 275,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 303,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 304,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 305,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 306,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 307,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 333,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 353,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 353,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 384,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 384,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 388,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 411,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 438,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 438,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 463,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 463,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/CostAllocationWiringTest.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/CostAllocationWiringTest.php",
+   "line": 60,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/HandoffIntakeWiringTest.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/PayrollRunFindingWiringTest.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TrainingListenerWiringTest.php",
+   "line": 105,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TrainingListenerWiringTest.php",
+   "line": 106,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TrainingListenerWiringTest.php",
+   "line": 107,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TrainingListenerWiringTest.php",
+   "line": 108,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TrainingListenerWiringTest.php",
+   "line": 116,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TravelListenerWiringTest.php",
+   "line": 104,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TravelListenerWiringTest.php",
+   "line": 104,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TravelListenerWiringTest.php",
+   "line": 132,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/TravelListenerWiringTest.php",
+   "line": 132,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/BackgroundJob/LeaveAccrualGoldenTest.php",
+   "line": 254,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/BackgroundJob/LeaveAccrualJobTest.php",
+   "line": 190,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Command/AvgDsrRectifyCommandTest.php",
+   "line": 126,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Command/PayrollReproduceCommandTest.php",
+   "line": 118,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Command/WageTaxRemitCommandTest.php",
+   "line": 60,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Command/WageTaxRemitCommandTest.php",
+   "line": 94,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/AvgDsrControllerTest.php",
+   "line": 289,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/ExpenseControllerTest.php",
+   "line": 228,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/InterviewControllerTest.php",
+   "line": 223,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/LoonbeslagControllerTest.php",
+   "line": 499,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/OfferControllerTest.php",
+   "line": 242,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/PayrollControllerDgaStatusTest.php",
+   "line": 266,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/PayrollControllerProformaTest.php",
+   "line": 260,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Flow/FlowNodeTestCase.php",
+   "line": 96,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Flow/PayrollFlowNodeServicesTest.php",
+   "line": 64,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Flow/TeamDigestNodeTest.php",
+   "line": 198,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Flow/TeamDigestNodeTest.php",
+   "line": 199,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Lifecycle/LeaveBuySellApprovalGuardTest.php",
+   "line": 99,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Lifecycle/PayrollRunApprovedGuardTest.php",
+   "line": 79,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Lifecycle/PayrollRunApprovedGuardTest.php",
+   "line": 282,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/LifecycleGuardRegistrationTest.php",
+   "line": 89,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/CandidateAssessmentListenersTest.php",
+   "line": 265,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/CandidateAssessmentListenersTest.php",
+   "line": 266,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/EmployeeChangeRequestFlowTest.php",
+   "line": 155,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/EmployeeChangeRequestFlowTest.php",
+   "line": 156,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseCategoryGuardListenerTest.php",
+   "line": 81,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseCategoryGuardListenerTest.php",
+   "line": 82,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseManagerStampListenerTest.php",
+   "line": 101,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpenseManagerStampListenerTest.php",
+   "line": 102,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayoutFieldsListenerTest.php",
+   "line": 106,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayoutFieldsListenerTest.php",
+   "line": 107,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayrollListenersTest.php",
+   "line": 216,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePayrollListenersTest.php",
+   "line": 217,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePreSaveChainTest.php",
+   "line": 93,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ExpensePreSaveChainTest.php",
+   "line": 94,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/FieldAccessListenerTest.php",
+   "line": 118,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/FieldAccessListenerTest.php",
+   "line": 119,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/FieldAccessListenerTest.php",
+   "line": 122,
+   "class": "OCA\\OpenRegister\\Service\\PropertyRbacHandler",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/FrequentAbsenceListenerTest.php",
+   "line": 88,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/FrequentAbsenceListenerTest.php",
+   "line": 89,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/HandoffIntakeListenerTest.php",
+   "line": 70,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/HandoffIntakeListenerTest.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/HrLifecycleEventListenerTest.php",
+   "line": 90,
+   "class": "OCA\\OpenRegister\\Service\\WebhookService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/LearniqCredentialListenerTest.php",
+   "line": 107,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/LearniqCredentialListenerTest.php",
+   "line": 108,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/LearniqCredentialListenerTest.php",
+   "line": 109,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/RelationsCaseListenerTest.php",
+   "line": 171,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/RelationsCaseListenerTest.php",
+   "line": 172,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/RightToWorkCheckListenerTest.php",
+   "line": 233,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/RightToWorkCheckListenerTest.php",
+   "line": 234,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ScenarioMutationListenerTest.php",
+   "line": 135,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/ScenarioMutationListenerTest.php",
+   "line": 136,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/SideActivityListenerTest.php",
+   "line": 234,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/SideActivityListenerTest.php",
+   "line": 235,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEntryStampListenerTest.php",
+   "line": 103,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TimeEntryStampListenerTest.php",
+   "line": 104,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetAggregateListenerTest.php",
+   "line": 90,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetAggregateListenerTest.php",
+   "line": 99,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetAggregateListenerTest.php",
+   "line": 248,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetProcessStampListenerTest.php",
+   "line": 104,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TimesheetProcessStampListenerTest.php",
+   "line": 105,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TrainingRecordListenerTest.php",
+   "line": 92,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TrainingRecordListenerTest.php",
+   "line": 93,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TravelAmountListenerTest.php",
+   "line": 88,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Listener/TravelAmountListenerTest.php",
+   "line": 89,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 128,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/MigrateHoursBackfillGoldenTest.php",
+   "line": 163,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/MigrateHoursProcessTest.php",
+   "line": 187,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/MigrateHoursProcessTest.php",
+   "line": 233,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/SettleShippedExampleClaimTest.php",
+   "line": 180,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/SettleShippedExampleClaimTest.php",
+   "line": 181,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AbsentRegisterFailureDirectionTest.php",
+   "line": 238,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AdministrationServiceTest.php",
+   "line": 311,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AnalyticsServiceTest.php",
+   "line": 623,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AnnouncementServiceTest.php",
+   "line": 238,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AnnouncementServiceTest.php",
+   "line": 239,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AssetDialectMigrationServiceTest.php",
+   "line": 336,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AvgDsrServiceTest.php",
+   "line": 338,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AvgDsrServiceTest.php",
+   "line": 342,
+   "class": "OCA\\OpenRegister\\Service\\Gdpr\\DataSubjectRequestService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AwfReviewServiceTest.php",
+   "line": 85,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AwfReviewServiceTest.php",
+   "line": 86,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/CompAdjustmentServiceTest.php",
+   "line": 187,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/CompCollectiveServiceTest.php",
+   "line": 233,
+   "class": "OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/CostAllocationServiceTest.php",
+   "line": 70,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/CostAllocationServiceTest.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ExitInterviewServiceTest.php",
+   "line": 177,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ExitInterviewServiceTest.php",
+   "line": 178,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ExitInterviewServiceTest.php",
+   "line": 211,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ExitInterviewServiceTest.php",
+   "line": 212,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HostObjectAccessTest.php",
+   "line": 89,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HostObjectAccessTest.php",
+   "line": 101,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HostObjectAccessTest.php",
+   "line": 108,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HoursRegisterGatewayTest.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HoursRegisterGatewayTest.php",
+   "line": 72,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HoursRegisterGatewayTest.php",
+   "line": 207,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentGenerateGoldenTest.php",
+   "line": 515,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentGenerateGoldenTest.php",
+   "line": 515,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentServiceTest.php",
+   "line": 385,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentServiceTest.php",
+   "line": 386,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentSigningServiceTest.php",
+   "line": 185,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentSigningServiceTest.php",
+   "line": 186,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentSigningServiceTest.php",
+   "line": 187,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/HrLifecycleEventServiceTest.php",
+   "line": 217,
+   "class": "OCA\\OpenRegister\\Service\\WebhookService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/InterviewCalendarServiceTest.php",
+   "line": 475,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/InterviewSyncGoldenTest.php",
+   "line": 130,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LearningPeopleFeedTest.php",
+   "line": 94,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LearningPeopleFeedTest.php",
+   "line": 95,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LeaveBalanceProjectionServiceTest.php",
+   "line": 173,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LeaveBalanceProjectionServiceTest.php",
+   "line": 661,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LeaveBuySellSettlementServiceTest.php",
+   "line": 186,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LeaveCalendarServiceTest.php",
+   "line": 386,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LeaveCalendarSyncGoldenTest.php",
+   "line": 464,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LoonaangifteCorrectionServiceTest.php",
+   "line": 306,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LoonaangifteCorrectionServiceTest.php",
+   "line": 307,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LoonaangifteMessageServiceTest.php",
+   "line": 445,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/LoonaangifteMessageServiceTest.php",
+   "line": 446,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ManagerStampRepairTest.php",
+   "line": 214,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ManagerStampRepairTest.php",
+   "line": 215,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ObligationsServiceTest.php",
+   "line": 274,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/OfferEsignServiceTest.php",
+   "line": 549,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/OfferEsignServiceTest.php",
+   "line": 550,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PackUploadServiceTest.php",
+   "line": 67,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PackUploadServiceTest.php",
+   "line": 68,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollAuditVerificationServiceTest.php",
+   "line": 224,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollAuditVerificationServiceTest.php",
+   "line": 225,
+   "class": "OCA\\OpenRegister\\Service\\Object\\AuditHandler",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollAuditVerificationServiceTest.php",
+   "line": 226,
+   "class": "OCA\\OpenRegister\\Service\\AuditHashService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollGLPostRunGoldenTest.php",
+   "line": 286,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollGLPostServiceTest.php",
+   "line": 197,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollHandoffPeriodItemsTest.php",
+   "line": 68,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollHandoffPeriodItemsTest.php",
+   "line": 69,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollMutationServiceTest.php",
+   "line": 191,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollNetPayRunGoldenTest.php",
+   "line": 307,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollNetPayServiceTest.php",
+   "line": 199,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollReproduceServiceTest.php",
+   "line": 224,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollReproduceServiceTest.php",
+   "line": 258,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollRetentionGuardServiceTest.php",
+   "line": 329,
+   "class": "OCA\\OpenRegister\\Service\\RetentionService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollRetentionGuardServiceTest.php",
+   "line": 333,
+   "class": "OCA\\OpenRegister\\Db\\MagicMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollRunServiceSickPayTest.php",
+   "line": 220,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PayrollRunServiceTest.php",
+   "line": 246,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ReceiptExtractionServiceTest.php",
+   "line": 272,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RetentionExpiryTest.php",
+   "line": 361,
+   "class": "OCA\\OpenRegister\\Service\\RetentionService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RetentionExpiryTest.php",
+   "line": 362,
+   "class": "OCA\\OpenRegister\\Db\\MagicMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RetentionExpiryTest.php",
+   "line": 363,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RetroAdjustmentServiceTest.php",
+   "line": 211,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RosterCheckServiceTest.php",
+   "line": 115,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RuleAuditRelatedContextGoldenTest.php",
+   "line": 201,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RuleAuditServicePayrollScopeTest.php",
+   "line": 109,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/RuleAuditServiceTest.php",
+   "line": 139,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/SalaryBureauExchangeServiceTest.php",
+   "line": 68,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/SalaryBureauExchangeServiceTest.php",
+   "line": 69,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/SurveyServiceTest.php",
+   "line": 343,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/SurveyServiceTest.php",
+   "line": 344,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ThirdPartyReportServiceTest.php",
+   "line": 248,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ThirdPartyReportServiceTest.php",
+   "line": 249,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ThirdPartyStatementServiceTest.php",
+   "line": 73,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ThirdPartyStatementServiceTest.php",
+   "line": 74,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ThirdPartyStatementServiceTest.php",
+   "line": 183,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/TimeEntryEventServiceTest.php",
+   "line": 120,
+   "class": "OCA\\OpenRegister\\Service\\WebhookService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/TimeEntryEventServiceTest.php",
+   "line": 133,
+   "class": "OCA\\OpenRegister\\Service\\WebhookService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/TimesheetAggregationServiceTest.php",
+   "line": 78,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/TimesheetAggregationServiceTest.php",
+   "line": 236,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/TimesheetAggregationServiceTest.php",
+   "line": 287,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/TimesheetAggregationServiceTest.php",
+   "line": 351,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/VacancyMatchServiceTest.php",
+   "line": 172,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/VacancyMatchServiceTest.php",
+   "line": 173,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/WageTaxRemittanceServiceTest.php",
+   "line": 122,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/WkrServiceTest.php",
+   "line": 182,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/WpmReportGoldenTest.php",
+   "line": 98,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/WpmReportGoldenTest.php",
+   "line": 98,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/WpmReportServiceTest.php",
+   "line": 72,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/WpmReportServiceTest.php",
+   "line": 73,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Settings/SickLeaveReminderDeclarationTest.php",
+   "line": 58,
+   "class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/ApprovalsFixture.php",
+   "line": 91,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/ApprovalsFixture.php",
+   "line": 92,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/ApprovalsFixture.php",
+   "line": 120,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/RegisterSlugLookupTest.php",
+   "line": 150,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/RegisterSlugLookupTest.php",
+   "line": 219,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/RegisterSlugLookupTest.php",
+   "line": 220,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/SharedPlumbingTraitsTest.php",
+   "line": 68,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/SharedPlumbingTraitsTest.php",
+   "line": 256,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 148,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 155,
+   "class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 156,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 169,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 177,
+   "class": "OCA\\OpenRegister\\Service\\WorkingCalendarService",
+   "context": "class_exists",
+   "status": "fleet-stub"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 188,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 200,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 210,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 221,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 222,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 234,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 244,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/bootstrap.php",
+   "line": 256,
+   "class": "OCA\\OpenRegister\\Service\\Dmn\\DecisionTableEvaluator",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLeafStub.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLeafStub.php",
+   "line": 93,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 142,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 338,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 375,
+   "class": "OCA\\OpenRegister\\Exception\\FolderAccessDeniedException",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterSlugResolverStub.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolution",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterSlugResolverStub.php",
+   "line": 128,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+   "context": "class_exists",
+   "status": "exists"
+  }
+ ],
+ "dynamic": [
+  {
+   "file": "lib/Command/ReferencesAuditCommand.php",
+   "line": 416,
+   "src": "$out = $row->$method();"
+  },
+  {
+   "file": "lib/Controller/LoonaangifteMessageController.php",
+   "line": 148,
+   "src": "$data = (is_object($filing) === true && method_exists($filing, 'jsonSerialize') === true) ? (array)$filing->jsonSerialize() : (array)$filing;"
+  },
+  {
+   "file": "lib/Controller/ThirdPartyReportController.php",
+   "line": 156,
+   "src": "$report = (is_object($report) === true && method_exists($report, 'jsonSerialize') === true) ? (array)$report->jsonSerialize() : (array)$report;"
+  },
+  {
+   "file": "lib/Lifecycle/PayrollRunApprovedGuard.php",
+   "line": 160,
+   "src": "if (is_object($run) === true && method_exists($run, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Listener/CostAllocationGuardListener.php",
+   "line": 223,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/CostAllocationGuardListener.php",
+   "line": 223,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/ResourceBookingOverlapListener.php",
+   "line": 180,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/ResourceBookingOverlapListener.php",
+   "line": 180,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/TimeEntryStampListener.php",
+   "line": 477,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/TimeEntryStampListener.php",
+   "line": 477,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/TimeEstimateListener.php",
+   "line": 199,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/TimeEstimateListener.php",
+   "line": 199,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/TimesheetProcessStampListener.php",
+   "line": 407,
+   "src": "if (method_exists($event, 'setErrors') === true) {"
+  },
+  {
+   "file": "lib/Listener/TimesheetProcessStampListener.php",
+   "line": 411,
+   "src": "if (method_exists($event, 'stopPropagation') === true) {"
+  },
+  {
+   "file": "lib/Listener/TravelAmountListener.php",
+   "line": 289,
+   "src": "if (method_exists($event, 'setErrors') === false) {"
+  },
+  {
+   "file": "lib/Listener/WorkingPatternOverlapListener.php",
+   "line": 218,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Listener/WorkingPatternOverlapListener.php",
+   "line": 218,
+   "src": "if (method_exists($event, 'setErrors') === false || method_exists($event, 'stopPropagation') === false) {"
+  },
+  {
+   "file": "lib/Service/CostRateAccess.php",
+   "line": 365,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/HrDocumentService.php",
+   "line": 646,
+   "src": "$filePath = (is_object($file) === true && method_exists($file, 'getPath') === true) ? (string)$file->getPath() : $fileName;"
+  },
+  {
+   "file": "lib/Service/HrDocumentSigningService.php",
+   "line": 269,
+   "src": "$fileId = (is_object($file) === true && method_exists($file, 'getId') === true) ? (int)$file->getId() : 0;"
+  },
+  {
+   "file": "lib/Service/LeaveCalendarService.php",
+   "line": 412,
+   "src": "$path = (method_exists($backend, 'getCalendarObjectByUID') === true)"
+  },
+  {
+   "file": "lib/Service/LeaveCalendarService.php",
+   "line": 433,
+   "src": "if (method_exists($target->backend, 'createCalendarObject') === false) {"
+  },
+  {
+   "file": "lib/Service/LeaveCalendarService.php",
+   "line": 456,
+   "src": "if (method_exists($target->backend, 'updateCalendarObject') === false) {"
+  },
+  {
+   "file": "lib/Service/LeaveCalendarService.php",
+   "line": 511,
+   "src": "if (method_exists($target->backend, 'deleteCalendarObject') === false) {"
+  },
+  {
+   "file": "lib/Service/LeaveCalendarService.php",
+   "line": 540,
+   "src": "$objects = (method_exists($backend, 'getCalendarObjects') === true) ? $backend->getCalendarObjects($run->target->calendarId) : [];"
+  },
+  {
+   "file": "lib/Service/LeaveCalendarService.php",
+   "line": 616,
+   "src": "if (method_exists($target->backend, 'getCalendarObject') === false) {"
+  },
+  {
+   "file": "lib/Service/LeaveCalendarService.php",
+   "line": 874,
+   "src": "if (method_exists($backend, $method) === false) {"
+  },
+  {
+   "file": "lib/Service/OfferLetterService.php",
+   "line": 180,
+   "src": "$fileId = (is_object($file) === true && method_exists($file, 'getId') === true) ? (int)$file->getId() : 0;"
+  },
+  {
+   "file": "lib/Service/PayrollAuditVerificationService.php",
+   "line": 202,
+   "src": "$id = (method_exists($entry, 'getId') === true) ? $entry->getId() : null;"
+  },
+  {
+   "file": "lib/Service/PayrollAuditVerificationService.php",
+   "line": 279,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/PayrollAuditVerificationService.php",
+   "line": 283,
+   "src": "if (is_object($row) === true && method_exists($row, 'getObject') === true) {"
+  },
+  {
+   "file": "lib/Service/PayrollReproduceService.php",
+   "line": 318,
+   "src": "$expected[$field] = $this->euros((int)$result->{$resultProperty});"
+  },
+  {
+   "file": "lib/Service/PayrollReproduceService.php",
+   "line": 452,
+   "src": "if (method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/PayrollReproduceService.php",
+   "line": 456,
+   "src": "if (method_exists($row, 'getObject') === true) {"
+  },
+  {
+   "file": "lib/Service/RegisterLookupGateway.php",
+   "line": 109,
+   "src": "$data = method_exists($log, 'getObject') === true ? ($log->getObject() ?? []) : [];"
+  },
+  {
+   "file": "lib/Service/ShillinqPayables.php",
+   "line": 163,
+   "src": "if (is_object($row) === true && (method_exists($row, 'jsonSerialize') === true || method_exists($row, 'getObject') === true)) {"
+  },
+  {
+   "file": "lib/Service/ShillinqPayables.php",
+   "line": 163,
+   "src": "if (is_object($row) === true && (method_exists($row, 'jsonSerialize') === true || method_exists($row, 'getObject') === true)) {"
+  },
+  {
+   "file": "lib/Service/ShillinqPayables.php",
+   "line": 164,
+   "src": "$data = (method_exists($row, 'jsonSerialize') === true ? (array)$row->jsonSerialize() : (array)$row->getObject());"
+  },
+  {
+   "file": "lib/Service/ShillinqPayables.php",
+   "line": 165,
+   "src": "if (isset($data['id']) === false && isset($data['@self']['id']) === false && method_exists($row, 'getUuid') === true) {"
+  },
+  {
+   "file": "lib/Service/WorkingCalendarReader.php",
+   "line": 123,
+   "src": "if (method_exists($service, self::CANDIDATE_METHOD) === false) {"
+  },
+  {
+   "file": "lib/Support/ConvertsRowsToArrays.php",
+   "line": 45,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Support/RegisterSlugLookup.php",
+   "line": 256,
+   "src": "if (is_object($mapper) === false || method_exists($mapper, 'findIdsBySlugs') === false) {"
+  },
+  {
+   "file": "lib/Support/RegisterSlugLookup.php",
+   "line": 283,
+   "src": "if (is_object($resolver) === false || method_exists($resolver, 'resolve') === false) {"
+  },
+  {
+   "file": "tests/Unit/Controller/ForgedCallerIdentityTest.php",
+   "line": 178,
+   "src": "$response = $controller->$action(...$args);"
+  },
+  {
+   "file": "tests/Unit/Controller/ForgedCallerIdentityTest.php",
+   "line": 198,
+   "src": "$response = $controller->$action(...$args);"
+  },
+  {
+   "file": "tests/Unit/Controller/ForgedCallerIdentityTest.php",
+   "line": 316,
+   "src": "$status = $controller->$action(...$args)->getStatus();"
+  },
+  {
+   "file": "tests/Unit/Controller/LoonbeslagControllerTest.php",
+   "line": 316,
+   "src": "$response = ($action === 'withdraw') ? $controller->withdraw('lb-1', 'Schikking.') : $controller->$action('lb-1');"
+  },
+  {
+   "file": "tests/Unit/Controller/LoonbeslagControllerTest.php",
+   "line": 341,
+   "src": "$response = ($action === 'withdraw') ? $controller->withdraw('lb-1', 'Schikking.') : $controller->$action('lb-1');"
+  },
+  {
+   "file": "tests/Unit/Controller/PayrollProformaGoldenTest.php",
+   "line": 141,
+   "src": "'valid json'                       => [$v, 'allow'],"
+  },
+  {
+   "file": "tests/Unit/Controller/PayrollProformaGoldenTest.php",
+   "line": 173,
+   "src": "'register denied'                  => [$v, 'deny'],"
+  },
+  {
+   "file": "tests/Unit/Controller/PayrollProformaGoldenTest.php",
+   "line": 174,
+   "src": "'register missing'                 => [$v, 'missing'],"
+  },
+  {
+   "file": "tests/Unit/Controller/PayrollProformaGoldenTest.php",
+   "line": 175,
+   "src": "'openregister unavailable'         => [$v, 'unavailable'],"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 123,
+   "src": "if (class_exists('\\\\OC') === false || method_exists('\\\\OCP\\\\Server', 'get') === false) {"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 134,
+   "src": "if (method_exists($service, 'saveObject') === false) {"
+  },
+  {
+   "file": "tests/Unit/Service/HrDocumentGenerateGoldenTest.php",
+   "line": 229,
+   "src": "$runs[] = $service->$method(...$step);"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 79,
+   "src": "$second = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 83,
+   "src": "$first = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 109,
+   "src": "$this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 113,
+   "src": "$first = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 148,
+   "src": "$first = new Fiber(fn (): array => $this->service($kind, $store)->$handOff($this->payrollRun()));"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 149,
+   "src": "$second = new Fiber(fn (): array => $this->service($kind, $store)->$handOff($this->payrollRun()));"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 216,
+   "src": "$first = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 218,
+   "src": "$second = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 246,
+   "src": "$adopted = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 255,
+   "src": "$blocked = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 286,
+   "src": "$adopted = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 294,
+   "src": "$blocked = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 317,
+   "src": "$outcome = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 341,
+   "src": "$outcome = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 367,
+   "src": "$outcome = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 377,
+   "src": "$adopted = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 403,
+   "src": "$blocked = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 414,
+   "src": "$withdrawn = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 439,
+   "src": "$first = $this->service($kind, $store)->$handOff($this->payrollRun(['period' => '2026-5']));"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 440,
+   "src": "$second = $this->service($kind, $store)->$handOff($this->payrollRun(['id' => 'run-2']));"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 464,
+   "src": "$first = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 467,
+   "src": "$second = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 478,
+   "src": "$adopted = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 488,
+   "src": "$blocked = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 547,
+   "src": "$second = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  },
+  {
+   "file": "tests/Unit/Service/ShillinqHandoffConcurrencyTest.php",
+   "line": 551,
+   "src": "$first = $this->service($kind, $store)->$handOff($this->payrollRun());"
+  }
+ ],
+ "instanceof_catch": [
+  {
+   "file": "lib/Flow/HumaniqFlowNodeListener.php",
+   "line": 108,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/AnnouncementConfirmationListener.php",
+   "line": 73,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ApprovalDecisionStampListener.php",
+   "line": 75,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CandidateEvaluationStampListener.php",
+   "line": 75,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CandidateEvaluationStampListener.php",
+   "line": 89,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CaoComponentOverrideListener.php",
+   "line": 78,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CaoComponentOverrideListener.php",
+   "line": 95,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CaoComponentOverrideListener.php",
+   "line": 95,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 91,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 96,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 153,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 153,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 157,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ChangeRequestListener.php",
+   "line": 157,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CostAllocationGuardListener.php",
+   "line": 190,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CostAllocationGuardListener.php",
+   "line": 195,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/EmployeeGuardedFieldListener.php",
+   "line": 87,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExitInterviewListener.php",
+   "line": 79,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExitInterviewListener.php",
+   "line": 79,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExitInterviewListener.php",
+   "line": 90,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseCategoryGuardListener.php",
+   "line": 86,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseCategoryGuardListener.php",
+   "line": 86,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseCategoryGuardListener.php",
+   "line": 90,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseCategoryGuardListener.php",
+   "line": 96,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseManagerStampListener.php",
+   "line": 106,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseManagerStampListener.php",
+   "line": 106,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseManagerStampListener.php",
+   "line": 110,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseManagerStampListener.php",
+   "line": 115,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpensePayoutFieldsListener.php",
+   "line": 142,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpensePayoutFieldsListener.php",
+   "line": 142,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpensePayoutFieldsListener.php",
+   "line": 146,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpensePayoutFieldsListener.php",
+   "line": 151,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseRouteListener.php",
+   "line": 81,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ExpenseRouteListener.php",
+   "line": 86,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/FieldAccessListener.php",
+   "line": 98,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/FieldAccessListener.php",
+   "line": 105,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/FrequentAbsenceListener.php",
+   "line": 89,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/FrequentAbsenceListener.php",
+   "line": 93,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/HandoffIntakeListener.php",
+   "line": 75,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/HrLifecycleEventListener.php",
+   "line": 74,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/HrLifecycleEventListener.php",
+   "line": 74,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/HrLifecycleEventListener.php",
+   "line": 79,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/HrLifecycleEventListener.php",
+   "line": 81,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LearniqCredentialListener.php",
+   "line": 93,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LeaveApprovalListener.php",
+   "line": 96,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LeaveApprovalListener.php",
+   "line": 97,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LeaveApprovalListener.php",
+   "line": 103,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ManagerDeputyListener.php",
+   "line": 69,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ManagerDeputyListener.php",
+   "line": 69,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ManagerDeputyListener.php",
+   "line": 74,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ManagerDeputyListener.php",
+   "line": 75,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/PayrollRunApprovedListener.php",
+   "line": 75,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/PayrollRunFindingStampListener.php",
+   "line": 72,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RecurringAllowanceStampListener.php",
+   "line": 78,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RecurringAllowanceStampListener.php",
+   "line": 85,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ReferralListener.php",
+   "line": 95,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ReferralListener.php",
+   "line": 101,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ReferralListener.php",
+   "line": 107,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RegisterAgendaLeafListener.php",
+   "line": 145,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RegisterHoursLeafListener.php",
+   "line": 151,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RelationsCaseListener.php",
+   "line": 91,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RelationsCaseListener.php",
+   "line": 91,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RelationsCaseListener.php",
+   "line": 122,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ResourceBookingOverlapListener.php",
+   "line": 130,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ResourceBookingOverlapListener.php",
+   "line": 139,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RightToWorkCheckListener.php",
+   "line": 91,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RightToWorkCheckListener.php",
+   "line": 91,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RightToWorkCheckListener.php",
+   "line": 130,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RightToWorkCheckListener.php",
+   "line": 130,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RightToWorkCheckListener.php",
+   "line": 134,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RightToWorkCheckListener.php",
+   "line": 134,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ScenarioMutationListener.php",
+   "line": 66,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/ScenarioMutationListener.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 84,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 93,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 98,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 154,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 155,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 156,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 161,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SideActivityListener.php",
+   "line": 161,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimeEntryStampListener.php",
+   "line": 166,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimeEntryStampListener.php",
+   "line": 174,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimeEntryStampListener.php",
+   "line": 183,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimeEstimateListener.php",
+   "line": 157,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimeEstimateListener.php",
+   "line": 161,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimesheetAggregateListener.php",
+   "line": 151,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimesheetAggregateListener.php",
+   "line": 152,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimesheetAggregateListener.php",
+   "line": 157,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimesheetApprovalListener.php",
+   "line": 77,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimesheetProcessStampListener.php",
+   "line": 139,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TimesheetProcessStampListener.php",
+   "line": 148,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 94,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 94,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 117,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 117,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 121,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TrainingRecordListener.php",
+   "line": 121,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TravelAmountListener.php",
+   "line": 135,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TravelAmountListener.php",
+   "line": 135,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TravelAmountListener.php",
+   "line": 148,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/TravelAmountListener.php",
+   "line": 152,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/WorkingPatternOverlapListener.php",
+   "line": 136,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/WorkingPatternOverlapListener.php",
+   "line": 145,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 190,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 228,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterDmn/DecisionTableEvaluator.php",
+   "line": 217,
+   "class": "OCA\\OpenRegister\\Service\\Dmn\\DecisionEvaluationException",
+   "status": "exists"
+  }
+ ],
+ "named_calls": 8,
+ "implements": [
+  {
+   "file": "lib/Flow/AnonymiseExitInterviewsNode.php",
+   "line": 38,
+   "class": "OCA\\Humaniq\\Flow\\AnonymiseExitInterviewsNode",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Flow/PayrollFlowNodeBase.php",
+   "line": 63,
+   "class": "OCA\\Humaniq\\Flow\\PayrollFlowNodeBase",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Flow/RevokeAccessNode.php",
+   "line": 38,
+   "class": "OCA\\Humaniq\\Flow\\RevokeAccessNode",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Flow/TeamDigestNode.php",
+   "line": 43,
+   "class": "OCA\\Humaniq\\Flow\\TeamDigestNode",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/ChangeApproverRoleGuard.php",
+   "line": 43,
+   "class": "OCA\\Humaniq\\Lifecycle\\ChangeApproverRoleGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/CompEffectiveDateGuard.php",
+   "line": 59,
+   "class": "OCA\\Humaniq\\Lifecycle\\CompEffectiveDateGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/DecisionReasonGuard.php",
+   "line": 44,
+   "class": "OCA\\Humaniq\\Lifecycle\\DecisionReasonGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/HandoffCloseGuard.php",
+   "line": 35,
+   "class": "OCA\\Humaniq\\Lifecycle\\HandoffCloseGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/HandoffReleaseGuard.php",
+   "line": 35,
+   "class": "OCA\\Humaniq\\Lifecycle\\HandoffReleaseGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/HrReopenGuard.php",
+   "line": 43,
+   "class": "OCA\\Humaniq\\Lifecycle\\HrReopenGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/LeaveBuySellApprovalGuard.php",
+   "line": 76,
+   "class": "OCA\\Humaniq\\Lifecycle\\LeaveBuySellApprovalGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/LeaveSettlementPeriodGuard.php",
+   "line": 57,
+   "class": "OCA\\Humaniq\\Lifecycle\\LeaveSettlementPeriodGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/LeaveTypeConditionGuard.php",
+   "line": 60,
+   "class": "OCA\\Humaniq\\Lifecycle\\LeaveTypeConditionGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/LoonaangifteMessageGuard.php",
+   "line": 38,
+   "class": "OCA\\Humaniq\\Lifecycle\\LoonaangifteMessageGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/NoSelfApprovalGuard.php",
+   "line": 69,
+   "class": "OCA\\Humaniq\\Lifecycle\\NoSelfApprovalGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/PayrollRunApprovedGuard.php",
+   "line": 60,
+   "class": "OCA\\Humaniq\\Lifecycle\\PayrollRunApprovedGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/RightToWorkGuard.php",
+   "line": 51,
+   "class": "OCA\\Humaniq\\Lifecycle\\RightToWorkGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/RosterCompetenceGuard.php",
+   "line": 55,
+   "class": "OCA\\Humaniq\\Lifecycle\\RosterCompetenceGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/SurveyOpenGuard.php",
+   "line": 39,
+   "class": "OCA\\Humaniq\\Lifecycle\\SurveyOpenGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/TimesheetNotEmptyGuard.php",
+   "line": 48,
+   "class": "OCA\\Humaniq\\Lifecycle\\TimesheetNotEmptyGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Lifecycle/UbdReportReadyGuard.php",
+   "line": 36,
+   "class": "OCA\\Humaniq\\Lifecycle\\UbdReportReadyGuard",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Notification/CaseManagerResolver.php",
+   "line": 47,
+   "class": "OCA\\Humaniq\\Notification\\CaseManagerResolver",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Notification/ManagerOrDeputyRecipientResolver.php",
+   "line": 44,
+   "class": "OCA\\Humaniq\\Notification\\ManagerOrDeputyRecipientResolver",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Support/FakeSlugResolver.php",
+   "line": 39,
+   "class": "OCA\\Humaniq\\Tests\\Unit\\Support\\FakeSlugResolver",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+   "status": "exists"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLeafStub.php",
+   "line": 99,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\RegisterLeafProvidersEvent",
+   "kind": "extends",
+   "or_class": "OCA\\OpenRegister\\Service\\Integration\\Event",
+   "status": "missing"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 216,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "kind": "extends",
+   "or_class": "OCA\\OpenRegister\\Event\\StubPreSaveEvent",
+   "status": "missing"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 239,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "kind": "extends",
+   "or_class": "OCA\\OpenRegister\\Event\\StubPreSaveEvent",
+   "status": "missing"
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 271,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "kind": "extends",
+   "or_class": "OCA\\OpenRegister\\Event\\StubPreSaveEvent",
+   "status": "missing"
+  }
+ ],
+ "listeners": [
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 435,
+   "event": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "dispatch": "constructed"
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 448,
+   "event": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "dispatch": "constructed"
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 462,
+   "event": "OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent",
+   "status": "exists",
+   "dispatch": "constructed"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 199,
+   "event": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "dispatch": "constructed"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 237,
+   "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "dispatch": "constructed"
+  }
+ ],
+ "routes": [
+  {
+   "file": "src/dialogs/CompCycleRunDialog.vue",
+   "line": 322,
+   "path": "/api/objects/humaniq/CompReviewCycle",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/dialogs/registerTrainingAttendance.js",
+   "line": 47,
+   "path": "/api/objects/*/transition",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/integrations/agendaApi.js",
+   "line": 56,
+   "path": "/api/objects/*/*/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/integrations/hoursApi.js",
+   "line": 110,
+   "path": "/api/objects/*/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/integrations/hoursApi.js",
+   "line": 176,
+   "path": "/api/objects/*/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/widgets/ApplicationAnswersWidget.vue",
+   "line": 43,
+   "path": "/api/objects/*/*/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/widgets/ApprovalsInboxWidget.vue",
+   "line": 199,
+   "path": "/api/objects/*/transition",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/widgets/ObjectQuestionsEditor.vue",
+   "line": 105,
+   "path": "/api/objects/*/*/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/widgets/SurveyAnswerWidget.vue",
+   "line": 134,
+   "path": "/api/objects/*/*/*",
+   "status": "ok",
+   "prefix": false
+  }
+ ],
+ "mismatches": [
+  {
+   "file": "lib/Service/WorkingCalendarReader.php",
+   "line": 77,
+   "scope": "lib",
+   "category": "string-lookup-missing",
+   "app_calls": "string('OCA\\OpenRegister\\Service\\Calendar\\WorkingCalendarService')",
+   "or_main": "class does not exist on OR main (no alias)",
+   "fix": "replace with the new FQCN (prefer ::class so static analysis sees it)",
+   "silent": true,
+   "test_stub_exists": false
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLeafStub.php",
+   "line": 99,
+   "scope": "tests",
+   "category": "parent-missing",
+   "app_calls": "RegisterLeafProvidersEvent extends OCA\\OpenRegister\\Service\\Integration\\Event",
+   "or_main": "does not exist on OR main: class fails to load (fatal on autoload)",
+   "fix": "implement/extend the new contract",
+   "silent": false,
+   "test_stub_exists": false
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 216,
+   "scope": "tests",
+   "category": "parent-missing",
+   "app_calls": "ObjectCreatingEvent extends OCA\\OpenRegister\\Event\\StubPreSaveEvent",
+   "or_main": "does not exist on OR main: class fails to load (fatal on autoload)",
+   "fix": "implement/extend the new contract",
+   "silent": false,
+   "test_stub_exists": true
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 239,
+   "scope": "tests",
+   "category": "parent-missing",
+   "app_calls": "ObjectUpdatingEvent extends OCA\\OpenRegister\\Event\\StubPreSaveEvent",
+   "or_main": "does not exist on OR main: class fails to load (fatal on autoload)",
+   "fix": "implement/extend the new contract",
+   "silent": false,
+   "test_stub_exists": true
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 271,
+   "scope": "tests",
+   "category": "parent-missing",
+   "app_calls": "ObjectDeletingEvent extends OCA\\OpenRegister\\Event\\StubPreSaveEvent",
+   "or_main": "does not exist on OR main: class fails to load (fatal on autoload)",
+   "fix": "implement/extend the new contract",
+   "silent": false,
+   "test_stub_exists": true
+  }
+ ],
+ "unresolved": [
+  {
+   "file": "lib/Service/RuleTestDataRun.php",
+   "line": 74,
+   "what": "$this->objectService->setRegister(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "lib/Service/RuleTestDataRun.php",
+   "line": 91,
+   "what": "$this->objectService->saveObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "lib/Service/RuleTestDataRun.php",
+   "line": 95,
+   "what": "$this->objectService->saveObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "lib/Service/RuleTestDataRun.php",
+   "line": 130,
+   "what": "$this->objectService->saveObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "lib/Service/RuleTestDataRun.php",
+   "line": 271,
+   "what": "$this->objectService->saveObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Listener/CaoComponentOverrideListenerTest.php",
+   "line": 115,
+   "what": "$created->isPropagationStopped() on OCA\\OpenRegister\\Event\\ObjectCreatedEvent: method not declared in OR, comes from external parent/magic"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 159,
+   "what": "$this->objectService->deleteObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 202,
+   "what": "$this->objectService->saveObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 240,
+   "what": "$this->objectService->saveObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 265,
+   "what": "$this->objectService->saveObject(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/OpenRegisterPreSaveMutationContractTest.php",
+   "line": 298,
+   "what": "$this->objectService->find(): receiver type not resolvable (untyped/mixed property)"
+  }
+ ],
+ "calls_checked": 686,
+ "or_refs": 619,
+ "type_positions": [],
+ "entity_accessors": 130,
+ "stubs": [
+  {
+   "file": "tests/Unit/AppInfo/ChangeRequestListenerWiringTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Event\\ObjectEventSubscription",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterDmn/DecisionEvaluationException.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Service\\Dmn\\DecisionEvaluationException",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterDmn/DecisionTableEvaluator.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Service\\Dmn\\DecisionTableEvaluator",
+   "status": "exists",
+   "drift": [
+    "ruleMatches($rule, $declaredInputs, $coercedInputs, $ruleIndex) vs OR main ruleMatches($cells, $inputs) [lib/Service/Dmn/DecisionTableEvaluator.php:222]",
+    "assertAllOutputsAgree($matchedRules, $declaredOutputs, $matchedIds) vs OR main assertAllOutputsAgree($match) [lib/Service/Dmn/DecisionTableEvaluator.php:258]",
+    "collectOutputs($matchedRules, $declaredOutputs) vs OR main collectOutputs($match) [lib/Service/Dmn/DecisionTableEvaluator.php:282]",
+    "applyHitPolicy($hitPolicy, $matchedRules, $declaredOutputs) vs OR main applyHitPolicy($hitPolicy, $match) [lib/Service/Dmn/DecisionTableEvaluator.php:360]"
+   ]
+  },
+  {
+   "file": "tests/stubs/OpenRegisterDmn/UnaryTestEvaluator.php",
+   "line": 72,
+   "class": "OCA\\OpenRegister\\Service\\Dmn\\UnaryTestEvaluator",
+   "status": "exists",
+   "drift": [
+    "matchesRange($match, $value, $type) vs OR main matchesRange($match, $subject) [lib/Service/Dmn/UnaryTestEvaluator.php:335]",
+    "matchesComparison($operator, $remainder, $value, $type) vs OR main matchesComparison($trimmed, $subject) [lib/Service/Dmn/UnaryTestEvaluator.php:359]",
+    "equals(): not on OR main"
+   ]
+  },
+  {
+   "file": "tests/stubs/OpenRegisterFlowStub.php",
+   "line": 50,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterFlowStub.php",
+   "line": 116,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\FlowNodeRegistry",
+   "status": "exists",
+   "drift": [
+    "__construct($dispatcher, $logger) vs OR main __construct($dispatcher, $logger, $urls, $taxonomy) [lib/Service/Flow/FlowNodeRegistry.php:117]"
+   ]
+  },
+  {
+   "file": "tests/stubs/OpenRegisterFlowStub.php",
+   "line": 169,
+   "class": "OCA\\OpenRegister\\Service\\Flow\\RegisterFlowNodesEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLeafStub.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "status": "exists",
+   "drift": [
+    "__construct($id, $label, $icon, $kinds, $requiredApp, $group, $surfaces, $referenceType, $renderMode) vs OR main __construct($id, $label, $icon, $kinds, $requiredApp, $group, $surfaces, $referenceType, $requiresPermission, $renderMode, $loadStrategy) [lib/Service/Integration/LeafDescriptor.php:205]"
+   ]
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLeafStub.php",
+   "line": 99,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\RegisterLeafProvidersEvent",
+   "status": "missing",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLifecycleStub.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Lifecycle\\LifecycleGuardInterface",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterLifecycleStub.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Lifecycle\\GuardResult",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 148,
+   "class": "OCA\\OpenRegister\\Event\\StubPreSaveEvent",
+   "status": "missing",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 216,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 239,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 271,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 294,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 317,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 342,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectEventsStub.php",
+   "line": 381,
+   "class": "OCA\\OpenRegister\\Exception\\FolderAccessDeniedException",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterObjectServiceStub.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterRecipientResolverStub.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterRegisterMapperStub.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterSchemaMapperStub.php",
+   "line": 49,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterSlugResolverStub.php",
+   "line": 56,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolution",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterSlugResolverStub.php",
+   "line": 132,
+   "class": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/stubs/OpenRegisterWorkingCalendarStub.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Service\\WorkingCalendarService",
+   "status": "missing",
+   "drift": []
+  }
+ ],
+ "app": "humaniq",
+ "dir": "hrmq",
+ "branch": "development",
+ "sha": "00d1b6e14c885331eb94e8256c8adc9221ccd929",
+ "or_sha": "cef85ccad5bfd56ee2c7b6855e8a245d69a19f88"
+}

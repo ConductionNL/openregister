@@ -1,0 +1,402 @@
+decidiq/lib/Migration/MigrateCommentsToTalkLeaf.php:422:		$objectService->deleteObject(
+decidiq/lib/Migration/MigrateEmailLinksToRegistry.php:283:		$objectService->deleteObject(
+decidiq/lib/Service/OpenCatalogiPublisher.php:164:			$service->deleteObject(
+decidiq/lib/Service/ProcessTemplateService.php:278:		$this->objectService()->deleteObject(uuid: $templateId, register: 'decidiq', schema: 'process-template');
+decidiq/lib/Service/PublicationDigestService.php:311:				$this->objectService->deleteObject(
+decidiq/tests/Integration/Meeting/QuorumDeclarativeTest.php:382:						fn () => $this->objectService->deleteObject(
+decidiq/tests/Integration/Meeting/QuorumDeclarativeTest.php:392:				fn () => $this->objectService->deleteObject(
+decidiq/tests/Integration/Meeting/QuorumDeclarativeTest.php:399:				fn () => $this->objectService->deleteObject(
+decidiq/tests/Integration/Service/ActionItemAnalyticsServiceIntegrationTest.php:98:					$this->objectService->deleteObject(
+decidiq/tests/Unit/Service/ProcessTemplateServiceTest.php:415:		$this->objectService->expects(self::never())->method('deleteObject');
+decidiq/tests/Unit/Service/PublicationDigestServiceTest.php:181:		$objects->method('deleteObject')->willReturnCallback(
+filinq/lib/Kernel/Contracts/PolicyCrudServiceInterface.php:168:	 * OpenRegister's `ObjectService::deleteObject()` refuses every user-driven
+filinq/lib/Service/BatchStateRepository.php:236:			$this->openRegister->getObjectService()->deleteObject(
+filinq/lib/Service/CustomDictionaryRepository.php:188:		// $uuid keyword respectively), ObjectService::deleteObject()'s first
+filinq/lib/Service/CustomDictionaryRepository.php:190:		// OCA\OpenRegister\Service\ObjectService::deleteObject() at HEAD.
+filinq/lib/Service/CustomDictionaryRepository.php:191:		$objectService->deleteObject(
+filinq/lib/Service/PolicyCrudService.php:209:	 * OpenRegister's `ObjectService::deleteObject()` refuses every user-driven
+filinq/lib/Service/PolicyCrudService.php:236:		$objectService->deleteObject(
+filinq/lib/Service/PolicyCrudService.php:332:		$objectService->deleteObject(
+filinq/lib/Service/Pseudonymisation/PseudonymMapRepository.php:225:			$deleted = $this->objectResolver->resolve()->deleteObject(
+filinq/lib/Service/TemplateService.php:441:			$objectService->deleteObject(
+filinq/lib/Service/Wizard/WizardRepository.php:197:			$this->objectResolver->resolve()->deleteObject(uuid: $uuid);
+filinq/tests/stubs/OpenRegisterStubs.php:2309: * `ObjectService::deleteObject()` throws it for every user-driven delete on a
+filinq/tests/unit/Service/CustomDictionaryServiceTest.php:376:		$objectService->expects($this->never())->method('deleteObject');
+filinq/tests/unit/Service/PolicyCrudServiceDeleteTest.php:5: * OpenRegister's ObjectService::deleteObject().
+filinq/tests/unit/Service/PolicyCrudServiceDeleteTest.php:38: * ObjectService::deleteObject(), whose parameter is `$uuid` — so every
+filinq/tests/unit/Service/PolicyCrudServiceDeleteTest.php:104:		$objectService->method('deleteObject')->willReturnCallback(
+filinq/tests/unit/Service/Pseudonymisation/PseudonymDoubles.php:186:		$objects->method('deleteObject')->willReturnCallback(
+filinq/tests/unit/Service/SubjectErasure/SubjectErasureDoubles.php:353:		$objects->method('deleteObject')->willReturnCallback(static fn (...$args) => $inner->deleteObject(...$args));
+filinq/tests/unit/Service/TemplateServiceTest.php:475:			->method('deleteObject');
+filinq/tests/unit/Service/TemplateServiceTest.php:496:			->method('deleteObject')
+filinq/tests/unit/Service/TemplateServiceTest.php:515:		$mockObjectService->method('deleteObject')
+hermiq/lib/Controller/AgentTemplateController.php:262:			$this->objectService->deleteObject(
+hermiq/lib/Controller/AgentsController.php:472:	 * Owner-only (gate-7). Delegates to ObjectService::deleteObject() (OR's
+hermiq/lib/Controller/AgentsController.php:514:			$this->objectService->deleteObject(
+hermiq/lib/Controller/BudgetController.php:290:			$this->objectService->deleteObject(
+hermiq/lib/Controller/SessionController.php:18: *   `ObjectService::deleteObject()` (OR's audited delete path) — irreversible
+hermiq/lib/Controller/SessionController.php:915:		$this->objectService->deleteObject(
+hermiq/lib/Controller/SessionController.php:1037:	 *                   (`ObjectService::deleteObject()` documents
+hermiq/lib/Controller/SessionController.php:1078:			$this->objectService->deleteObject(
+hermiq/lib/Service/ScheduleService.php:2892:				$this->objectService->deleteObject(
+hermiq/lib/Service/ScheduleService.php:2901:			$this->objectService->deleteObject(
+hermiq/lib/Service/ScheduleService.php:3393:		$this->objectService->deleteObject(
+hermiq/tests/Unit/Controller/AgentTemplateControllerTest.php:800:		$objectService->expects($this->never())->method('deleteObject');
+hermiq/tests/Unit/Controller/AgentTemplateControllerTest.php:832:		$objectService->expects($this->once())->method('deleteObject')->willReturn(true);
+hermiq/tests/Unit/Controller/AgentsControllerTest.php:400:	 * via ObjectService::deleteObject().
+hermiq/tests/Unit/Controller/AgentsControllerTest.php:413:		$this->objectService->method('deleteObject')->willReturnCallback(
+hermiq/tests/Unit/Controller/BudgetControllerTest.php:443:		$objectService->expects($this->never())->method('deleteObject');
+hermiq/tests/Unit/Controller/BudgetControllerTest.php:474:		$objectService->expects($this->never())->method('deleteObject');
+hermiq/tests/Unit/Controller/BudgetControllerTest.php:505:			->method('deleteObject')
+hermiq/tests/Unit/Controller/SessionControllerParticipantTest.php:220:		$objectService->expects($this->never())->method('deleteObject');
+hermiq/tests/Unit/Controller/SessionControllerTest.php:566:		$this->objectService->expects($this->never())->method('deleteObject');
+hermiq/tests/Unit/Controller/SessionControllerTest.php:588:	 * via ObjectService::deleteObject().
+hermiq/tests/Unit/Controller/SessionControllerTest.php:614:		$this->objectService->method('deleteObject')->willReturnCallback(
+hermiq/tests/Unit/Controller/SessionControllerTest.php:681:	 * ObjectService::deleteObject() (feedback is untouched, mirroring OR).
+hermiq/tests/Unit/Controller/SessionControllerTest.php:699:		$this->objectService->method('deleteObject')->willReturnCallback(
+hermiq/tests/Unit/Controller/SessionControllerTest.php:733:		$this->objectService->expects($this->never())->method('deleteObject');
+hermiq/tests/Unit/Controller/SessionDeleteGoldenTest.php:189:		$objectService->method('deleteObject')->willReturnCallback(
+hermiq/tests/Unit/Controller/SessionDeleteGoldenTest.php:191:				$passed = $this->passed(method: 'deleteObject', args: $args);
+hermiq/tests/Unit/Controller/SessionDeleteGoldenTest.php:192:				$calls[] = ['deleteObject', $passed];
+hermiq/tests/Unit/Service/ScheduleServiceTest.php:692:		$this->objectService->method('deleteObject')->willReturnCallback(
+hermiq/tests/Unit/Service/ScheduleServiceTest.php:817:		$this->objectService->method('deleteObject')->willReturnCallback(
+hermiq/tests/Unit/Service/ScheduleServiceTest.php:3359:		$this->objectService->method('deleteObject')->willReturn(true);
+hermiq/tests/Unit/Service/ScheduleServiceTest.php:3501:		$this->objectService->method('deleteObject')->willReturnCallback(
+hermiq/tests/Unit/Service/SkillMarketplaceServiceTest.php:459:		$objectService->expects($this->never())->method('deleteObject');
+humaniq/lib/Service/HoursRegisterGateway.php:210:		$this->objects()->deleteObject(
+humaniq/lib/Service/LeaveCalendarService.php:491:		$error = $this->deleteObject($run->target, $ref->objectUri());
+humaniq/lib/Service/LeaveCalendarService.php:572:		$error = $this->deleteObject($run->target, $ref->objectUri());
+humaniq/lib/Service/PayrollRunService.php:999:				$this->objectService()->deleteObject(
+humaniq/tests/Unit/OpenRegisterPreSaveMutationContractTest.php:159:				$this->objectService?->deleteObject(
+humaniq/tests/Unit/Service/LoonaangifteCorrectionServiceTest.php:171:		$this->store->deleteObject('slip-bakker-03', 'humaniq', 'Payslip');
+humaniq/tests/Unit/Support/FakeObjectStore.php:190:	 * Mirror of ObjectService::deleteObject() with the real signature
+larpinq/lib/Service/RegisterObjectFetcher.php:548:		return (bool)$openRegister->deleteObject($uuid, $register, $schema);
+larpinq/lib/Service/WorldCopyService.php:412:				$this->objectFetcher->deleteObject(objectType: $type, uuid: $uuid);
+larpinq/tests/unit/Controller/CharacterBuildsControllerTest.php:137:		$this->fetcher->expects($this->never())->method('deleteObject');
+buildiq/lib/BackgroundJob/AppHealthSampleCleanup.php:131:				$this->objectService->deleteObject(
+buildiq/lib/BackgroundJob/RuleExecutionLogCleanup.php:123:				$this->objectService->deleteObject(uuid: $uuid);
+buildiq/lib/Repair/MigrateAppOverridesToHybrid.php:263:				$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+buildiq/lib/Repair/MigrateToVersionedModel.php:406:					$this->objectService->deleteObject(uuid: $applicationUuid);
+buildiq/lib/Service/AppOverrideService.php:827:			$this->objectService->deleteObject(uuid: $uuid);
+buildiq/lib/Service/ApplicationCreationService.php:1002:				$this->store->objectService->deleteObject(uuid: $uuid);
+buildiq/lib/Service/ApplicationDeletionService.php:144:				$this->deleteObject(uuid: $versionUuid, label: 'version', orphaned: $orphaned);
+buildiq/lib/Service/ApplicationDeletionService.php:164:				$this->deleteObject(uuid: $routeUuid, label: 'route', orphaned: $orphaned);
+buildiq/lib/Service/ApplicationDeletionService.php:169:		$this->deleteObject(uuid: $appUuid, label: 'application', orphaned: $orphaned);
+buildiq/lib/Service/ApplicationDeletionService.php:450:					$this->objectService->deleteObject(uuid: $uuid);
+buildiq/lib/Service/ApplicationDeletionService.php:514:			$this->objectService->deleteObject(uuid: $uuid);
+buildiq/lib/Service/ApplicationVersionService.php:625:		$this->objectService->deleteObject(uuid: $versionUuid);
+buildiq/lib/Service/AutomationCompilerService.php:1648:			$this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER_SLUG, schema: $schema);
+buildiq/lib/Service/AutomationWriteService.php:238:		$this->objectService->deleteObject(
+buildiq/lib/Service/VersionPromotionService.php:348:			$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+buildiq/tests/Unit/BackgroundJob/AppHealthSampleCleanupTest.php:27:		$objects->method('deleteObject')->willReturnCallback(static function (string $uuid) use (&$deleted): bool {
+buildiq/tests/Unit/BackgroundJob/RuleExecutionLogCleanupTest.php:97:		$this->objectService->method('deleteObject')->willReturnCallback(
+buildiq/tests/Unit/BackgroundJob/RuleExecutionLogCleanupTest.php:117:		$this->objectService->expects($this->never())->method('deleteObject');
+buildiq/tests/Unit/Controller/AutomationsControllerTest.php:697:		$this->objectService->expects($this->never())->method('deleteObject');
+buildiq/tests/Unit/Controller/AutomationsControllerTest.php:734:			->method('deleteObject')
+buildiq/tests/Unit/Controller/AutomationsControllerTest.php:736:				$order[] = 'deleteObject';
+buildiq/tests/Unit/Controller/AutomationsControllerTest.php:744:		$this->assertSame(['remove', 'deleteObject'], $order);
+buildiq/tests/Unit/Repair/MigrateAppOverridesToHybridTest.php:111:		$this->objectService->expects(self::never())->method('deleteObject');
+buildiq/tests/Unit/Repair/MigrateAppOverridesToHybridTest.php:150:			->method('deleteObject')
+buildiq/tests/Unit/Repair/MigrateAppOverridesToHybridTest.php:185:		$this->objectService->expects(self::never())->method('deleteObject');
+buildiq/tests/Unit/Repair/MigrateAppOverridesToHybridTest.php:209:		$this->objectService->expects(self::never())->method('deleteObject');
+buildiq/tests/Unit/Repair/MigrateToVersionedModelTest.php:192:		$this->objectService->expects(self::never())->method('deleteObject');
+buildiq/tests/Unit/Repair/MigrateToVersionedModelTest.php:236:		$this->objectService->expects(self::exactly(3))->method('deleteObject');
+buildiq/tests/Unit/Repair/MigrateToVersionedModelTest.php:305:		$this->objectService->method('deleteObject')->willReturnCallback(
+buildiq/tests/Unit/Service/AppOverrideServiceTest.php:203:		$this->objectService->expects(self::never())->method('deleteObject');
+buildiq/tests/Unit/Service/AppOverrideServiceTest.php:227:			->method('deleteObject')
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:203:		$this->objectService->method('deleteObject')->willReturnCallback(
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:234:		$this->objectService->method('deleteObject')->willReturnCallback(
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:276:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:303:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:338:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:390:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:428:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:447:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:496:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:525:		$this->objectService->method('deleteObject')->willReturnCallback(
+buildiq/tests/Unit/Service/ApplicationDeletionServiceTest.php:567:		$this->objectService->method('deleteObject')->willReturn(true);
+buildiq/tests/Unit/Service/ApplicationVersionServiceTest.php:356:		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+buildiq/tests/Unit/Service/ApplicationVersionServiceTest.php:383:		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+buildiq/tests/Unit/Service/ApplicationVersionServiceTest.php:468:		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+buildiq/tests/Unit/Service/AutomationWriteServiceTest.php:357:			->method('deleteObject')
+buildiq/tests/Unit/Service/AutomationWriteServiceTest.php:359:				$order[] = 'deleteObject';
+buildiq/tests/Unit/Service/AutomationWriteServiceTest.php:377:			['remove', 'deleteObject'],
+buildiq/tests/Unit/Service/AutomationWriteServiceTest.php:383:		$this->assertFalse($captured[$this->argumentIndex(method: 'deleteObject', name: '_rbac')]);
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:537:			->method('deleteObject')
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:603:			->method('deleteObject');
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:691:		$this->objectService->method('deleteObject')->willReturnCallback(
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:786:			->method('deleteObject')
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:941:			->method('deleteObject')
+opencatalogi/lib/Command/AttachDocumentsToPublicationsCommand.php:507:			$run['services']['objects']->deleteObject(uuid: $doc['uuid'], _rbac: false, _multitenancy: false);
+opencatalogi/lib/Controller/ListingsController.php:503:			$result = $this->getObjectService()->deleteObject(
+opencatalogi/lib/Repair/OrphanListingSweep.php:87:			$this->objectService->deleteObject(
+opencatalogi/lib/Service/Portal/PortalObjectStore.php:189:		return (bool)$this->objectService()->deleteObject(
+opencatalogi/lib/Service/SchemaObjects.php:109:		$this->objects->deleteObject(uuid: $id, register: $this->register, schema: $this->schema, _rbac: false, _multitenancy: false);
+opencatalogi/src/dialogs/generic/DeleteObjectDialog.vue:191:			return navigationStore.dialog === 'deleteObject'
+opencatalogi/src/modals/catalog/ViewCatalogi.vue:304:			navigationStore.setDialog('deleteObject', {
+opencatalogi/src/views/catalogi/CatalogiIndex.vue:316:			navigationStore.setDialog('deleteObject', {
+opencatalogi/src/views/publications/PublicationDetail.vue:140:						navigationStore.setDialog('deleteObject', {
+opencatalogi/src/views/publications/PublicationList.vue:250:									navigationStore.setDialog('deleteObject', {
+opencatalogi/tests/Unit/Command/AttachDocumentsApplyTest.php:84:				if (($this->fail['deleteObject'] ?? false) === true) {
+opencatalogi/tests/Unit/Command/AttachDocumentsApplyTest.php:241:		$tester = $this->commandOver(documents: [$this->document()], fileIds: [7], fail: ['deleteObject' => true]);
+opencatalogi/tests/Unit/Command/AttachDocumentsApplyTest.php:296:			'apply, removal fails' => [['--apply' => true], ['deleteObject' => true]],
+opencatalogi/tests/Unit/Controller/ListingsControllerTest.php:708:		$mockObjService->method('deleteObject')
+opencatalogi/tests/Unit/Controller/ListingsControllerTest.php:727:		$mockObjService->method('deleteObject')
+opencatalogi/tests/Unit/Controller/ListingsControllerTest.php:753:		$mockObjService->method('deleteObject')
+opencatalogi/tests/vitest/objectStoreMassActions.spec.js:31:	['massDeleteObjects', 'deleteObject', 'delete'],
+opencatalogi/tests/vitest/objectStoreObjectActions.spec.js:164:		traces['deleteObject byType'] = await trace('deleteObject', {
+opencatalogi/tests/vitest/objectStoreObjectActions.spec.js:169:		traces['deleteObject byType missing'] = await trace('deleteObject', {
+opencatalogi/tests/vitest/objectStoreObjectActions.spec.js:174:		traces['deleteObject null'] = await trace('deleteObject', {
+integriq/lib/BackgroundJob/DeferredViewCascadeJob.php:223:				$openRegister->deleteObject(uuid: $uuid, register: $register, schema: $schema);
+integriq/lib/BackgroundJob/LogCleanUpTask.php:116:				$this->orObjectService->deleteObject(uuid: $object->getUuid(), _rbac: false, _multitenancy: false);
+integriq/lib/Controller/EventsController.php:311:		$this->orObjectService->deleteObject(uuid: $subscription->getUuid());
+integriq/lib/Controller/LogsController.php:340:			$this->orObjectService->deleteObject(uuid: $log->getUuid());
+integriq/lib/Controller/OwnershipController.php:163:			$this->objectService->deleteObject(uuid: $id, register: $register, schema: $schema);
+integriq/lib/Controller/SynchronizationsController.php:679:			$this->orObjectService->deleteObject(uuid: $log->getUuid());
+integriq/lib/Repair/MaterializeCatalogItems.php:234:				$orObjectService->deleteObject(uuid: $uuid);
+integriq/lib/Rule/CompositeFanoutRule.php:208:				$this->orObjectService->deleteObject($entry['uuid'], $entry['register'], $entry['schema']);
+integriq/lib/Service/ConnectionStore.php:195:			operation: 			fn () => $this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER, schema: self::SCHEMA)
+integriq/lib/Service/NotificatiesSubscriberService.php:467:			$this->objectService->deleteObject(uuid: $consumerId);
+integriq/lib/Service/Objecten/ObjectenOpenRegisterAccess.php:230:			callback: fn (): mixed => $service->deleteObject(uuid: $uuid, register: $register, schema: $schema)
+integriq/lib/Service/Objecten/OpenRegisterObjectenGateway.php:164:				$this->access->deleteObject(register: $register, schema: $schema, uuid: $uuid, principal: $principal);
+integriq/lib/Service/SynchronizationService.php:5944:				delete: static fn () => $objectService->deleteObject(uuid: $targetId, permanent: $permanent)
+integriq/tests/Helpers/ObjectServiceMockBuilder.php:75:		$mock->method('deleteObject')->willReturn(true);
+integriq/tests/Helpers/ObjectServiceMockBuilder.php:100:		$mock->method('deleteObject')->willReturn(true);
+integriq/tests/Helpers/ObjectServiceMockBuilder.php:128:		$mock->method('deleteObject')->willReturn(true);
+integriq/tests/Unit/BackgroundJob/DeferredViewCascadeJobTest.php:202:		$openRegister->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/BackgroundJob/DeferredViewCascadeJobTest.php:404:		$openRegister->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/BackgroundJob/DeferredViewCascadeJobTest.php:457:		$openRegister->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/BackgroundJob/DeferredViewCascadeJobTest.php:596:		$openRegister->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/BackgroundJob/LogCleanUpTaskTest.php:162:		$objectService->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/BackgroundJob/LogCleanUpTaskTest.php:164:				$this->rbacFlags[] = ['deleteObject', (string)$uuid, $_rbac];
+integriq/tests/Unit/BackgroundJob/LogCleanUpTaskTest.php:284:		$this->assertContains(['deleteObject', 'call-old', false], $this->rbacFlags);
+integriq/tests/Unit/Controller/LogsControllerActionAuthTest.php:158:		$this->orObjectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Controller/LogsControllerActionAuthTest.php:173:		$this->orObjectService->expects($this->once())->method('deleteObject')->with('uuid-1');
+integriq/tests/Unit/Controller/LogsControllerNotFoundTest.php:182:			->method('deleteObject')
+integriq/tests/Unit/Controller/LogsControllerNotFoundTest.php:200:		$this->orObjectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Controller/LogsControllerNotFoundTest.php:218:		$this->orObjectService->method('deleteObject')
+integriq/tests/Unit/Controller/ObjectenApiControllerTest.php:195:			'deleteObject' => $controller->deleteObject(uuid: 'm-1'),
+integriq/tests/Unit/Controller/ObjectenApiControllerTest.php:296:		$this->assertSame(204, $controller->deleteObject(uuid: 'm-1')->getStatus());
+integriq/tests/Unit/Controller/ObjectenApiControllerTest.php:313:		$this->assertSame(404, $controller->deleteObject(uuid: 'k-1')->getStatus());
+integriq/tests/Unit/Controller/OwnershipControllerTest.php:177:		$objectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Controller/OwnershipControllerTest.php:193:		$objectService->expects($this->once())->method('deleteObject');
+integriq/tests/Unit/Controller/OwnershipControllerTest.php:212:		$objectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Controller/OwnershipControllerTest.php:229:		$objectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Controller/SynchronizationsControllerDeleteLogTest.php:113:			->method('deleteObject')
+integriq/tests/Unit/Controller/SynchronizationsControllerDeleteLogTest.php:138:		$this->orObjectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Controller/SynchronizationsControllerDeleteLogTest.php:161:		$this->orObjectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Repair/MaterializeCatalogItemsTest.php:179:		$orObjectService->expects($this->once())->method('deleteObject')
+integriq/tests/Unit/Rule/CompositeFanoutRuleTest.php:118:			->method('deleteObject')
+integriq/tests/Unit/Rule/CompositeFanoutRuleTest.php:207:		$orObjectService->expects($this->once())->method('deleteObject')->with('parent-uuid', 'pipelinq', 'ticket')->willReturn(true);
+integriq/tests/Unit/Rule/CompositeFanoutRuleTest.php:288:			$service->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/Service/Datasource/DashboardDatasourceServiceTest.php:355:		$this->orObjectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Service/NotificatiesSubscriberServiceTest.php:305:		$this->objectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Service/NotificatiesSubscriberServiceTest.php:344:		$this->objectService->expects($this->once())->method('deleteObject')->with($this->equalTo('consumer-1'));
+integriq/tests/Unit/Service/NotificatiesSubscriberServiceTest.php:382:		$this->objectService->method('deleteObject')->willThrowException(new \RuntimeException('consumer delete failed'));
+integriq/tests/Unit/Service/SourceDestructionServiceTest.php:155:		$orObjectService->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/Service/SourceMappingServiceShimTest.php:220:		$result = $this->service()->deleteObject(['_id' => 'x'], $config);
+integriq/tests/Unit/Service/SynchronizationServiceCleanupTest.php:44: * register/schema before invoking the scoped `objectService->deleteObject($uuid, $register, $schema)`
+integriq/tests/Unit/Service/SynchronizationServiceOriginIdMatchingTest.php:466:		$this->orObjectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Service/SynchronizationServicePurgeTest.php:115:		$orObjectService->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/Service/SynchronizationServiceTest.php:1727:		$this->orObjectService->method('deleteObject')->willReturnCallback(
+integriq/tests/Unit/Service/SynchronizationServiceTest.php:1746:		$this->orObjectService->deleteObject('person-uuid-1');
+integriq/tests/Unit/Service/SynchronizationServiceTestRunNoWriteTest.php:204:		$this->orObjectService->expects($this->never())->method('deleteObject');
+integriq/tests/Unit/Service/SynchronizationUpdateTargetTest.php:84:		$methods = ['saveObject', 'deleteObject'];
+integriq/tests/Unit/Service/SynchronizationUpdateTargetTest.php:109:		$openRegisters->method('deleteObject')->willReturnCallback(
+pipelinq/lib/BackgroundJob/BrpRetentionJob.php:189:				->deleteObject(uuid: $uuid);
+pipelinq/lib/Service/AvailabilityService.php:397:			$this->getObjectService()->deleteObject(
+pipelinq/lib/Service/AvailabilityService.php:439:				$this->getObjectService()->deleteObject(uuid: $uuid, register: $register, schema: $schema);
+pipelinq/lib/Service/ConsentService.php:383:				if (method_exists($objectService, 'deleteObject') === true) {
+pipelinq/lib/Service/ConsentService.php:384:					$objectService->deleteObject($id, $register, $schema);
+pipelinq/lib/Service/ContactmomentService.php:357:			->deleteObject(uuid: $id);
+pipelinq/lib/Service/CtiService.php:741:					$objectService->deleteObject(register: $register, schema: $schema, uuid: $id);
+pipelinq/lib/Service/Demo/DemoRecordSweeper.php:191:			$this->objectService->deleteObject((string) $data['id'], $scope['register'], $scope['schema']);
+pipelinq/lib/Service/DemoSeedService.php:486:						$objectService->deleteObject($uuid, $registerId, $schemaIds[$schemaKey]);
+pipelinq/lib/Service/Export/AbstractExportService.php:183:		$this->getObjectService()->deleteObject(register: $register, schema: $schema, uuid: $id);
+pipelinq/lib/Service/ForecastOverrideService.php:202:			return (bool)$this->getObjectService()->deleteObject(uuid: $id, register: $register, schema: $schema);
+pipelinq/lib/Service/Marketing/ListObjectStore.php:246:			return (bool)$context['service']->deleteObject(
+pipelinq/lib/Service/Mdm/MdmObjectRepository.php:224:		$this->objectService()->deleteObject($id);
+pipelinq/lib/Service/MockPipelineCleanupService.php:196:		if ($this->objectService->deleteObject($entry['id'], $where['register'], $where['schema']) === false) {
+pipelinq/lib/Service/PosRoleService.php:205:			$this->getObjectService()->deleteObject(uuid: $id, register: $register, schema: $schema);
+pipelinq/lib/Service/PosStaffService.php:317:			$this->getObjectService()->deleteObject(uuid: $id, register: $register, schema: $schema);
+pipelinq/lib/Service/PosTenderService.php:321:			$this->getObjectService()->deleteObject(uuid: $id, register: $register, schema: $schema);
+pipelinq/lib/Service/PosTenderService.php:521:			$this->getObjectService()->deleteObject(uuid: $tenderId, register: $register, schema: $schema);
+pipelinq/lib/Service/RedemptionService.php:515:			$this->getObjectService()->deleteObject(uuid: $redemptionId, register: $register, schema: $schema);
+pipelinq/lib/Service/ScheduledTaskService.php:427:		if ($this->store->objects()->deleteObject($uuid, $registerId, $schemaId) === false) {
+pipelinq/lib/Service/WebForm/HeldObjectDrain.php:165:			$this->objectService->deleteObject(
+pipelinq/tests/Unit/Controller/ExportJobControllerTest.php:1028:			->method('deleteObject')
+pipelinq/tests/Unit/Controller/LoyaltyControllerTest.php:1531:	 *   Declaration of ...LoyaltyObjectStoreFake::deleteObject(...) must be
+pipelinq/tests/Unit/Controller/LoyaltyControllerTest.php:1532:	 *   compatible with ...ObjectService::deleteObject(..., bool $_rbac = true,
+pipelinq/tests/Unit/Service/AvailabilityServiceTest.php:458:			->method('deleteObject')
+pipelinq/tests/Unit/Service/AvailabilityServiceTest.php:487:		$object->method('deleteObject')->willReturnCallback(
+pipelinq/tests/Unit/Service/AvailabilityServiceTest.php:531:		$object->method('deleteObject')->willReturn(true);
+pipelinq/tests/Unit/Service/Demo/DemoRegisterImporterGoldenTest.php:323:		$objectService->method('deleteObject')->willReturnCallback(
+pipelinq/tests/Unit/Service/Demo/DemoRegisterImporterGoldenTest.php:325:				$this->recordCall(call: 'deleteObject', args: ['uuid' => $uuid, 'register' => $register, 'schema' => $schemaId]);
+pipelinq/tests/Unit/Service/Demo/DemoRegisterImporterTest.php:136:		$objectService->method('deleteObject')->willReturnCallback(
+pipelinq/tests/Unit/Service/Demo/DemoRegisterImporterTest.php:138:				$this->record(['deleteObject', $uuid, (string)$register, (string)$schemaId]);
+pipelinq/tests/Unit/Service/Demo/DemoRegisterImporterTest.php:310:		$this->assertSame([['deleteObject', 'uuid-cappuccino', '7', '42']], array_slice($this->calls, 1));
+pipelinq/tests/Unit/Service/DemoSeedGoldenTest.php:236:		$objectService->method('deleteObject')->willReturnCallback(
+pipelinq/tests/Unit/Service/DemoSeedGoldenTest.php:238:				$this->recordCall(call: 'deleteObject', args: ['uuid' => $uuid, 'register' => $register, 'schema' => $schema]);
+pipelinq/tests/Unit/Service/DemoSeedServiceTest.php:689:		$this->objectService->method('deleteObject')
+pipelinq/tests/Unit/Service/DemoSeedServiceTest.php:737:		$this->objectService->method('deleteObject')
+pipelinq/tests/Unit/Service/DemoSeedServiceTest.php:777:		$this->objectService->expects(self::never())->method('deleteObject');
+pipelinq/tests/Unit/Service/MockPipelineCleanupServiceTest.php:216:		$objectService->method('deleteObject')->willReturnCallback(
+pipelinq/tests/Unit/Service/ScheduledTaskServiceGoldenTest.php:395:		$objects->method('deleteObject')->willReturnCallback(
+pipelinq/tests/Unit/Service/ScheduledTaskServiceGoldenTest.php:397:				$this->trace[] = ['deleteObject' => array_slice($args, 0, 3)];
+pipelinq/tests/Unit/Service/WebForm/Fakes/ObjectServiceContract.php:40:		$contract->method('deleteObject')->willReturnCallback([$store, 'deleteObject']);
+planninq/lib/Service/DependencyService.php:403:		$objectService->deleteObject(register: self::REGISTER, schema: self::SCHEMA, uuid: $uuid, _rbac: false);
+planninq/lib/Service/DependencyService.php:540:				$objectService->deleteObject(register: self::REGISTER, schema: self::SCHEMA, uuid: $edgeId, _rbac: false);
+planninq/lib/Service/ForgeLinkService.php:219:			return (bool)$this->container->get('OCA\\OpenRegister\\Service\\ObjectService')->deleteObject(
+planninq/lib/Service/LabelService.php:299:			$objectService->deleteObject(register: self::REGISTER, schema: self::LABEL_SCHEMA, uuid: $labelId);
+planninq/lib/Service/ProjectActionService.php:514:		$this->objectService()->deleteObject(uuid: $id, register: ProjectMembershipService::REGISTER, schema: $schema, _rbac: false, _multitenancy: false);
+planninq/lib/Service/TimetableScenarioStore.php:220:		$this->objectService()->deleteObject(uuid: $id, register: self::REGISTER, schema: self::SESSION, _rbac: false);
+planninq/tests/unit/Controller/TimelineControllerTest.php:333:		foreach (['saveObject', 'deleteObject', 'updateObject', 'createObject'] as $write) {
+planninq/tests/unit/Service/DependencyDeleteGoldenTest.php:319:				return parent::deleteObject($hit, $register, $schema, $_rbac, $_multitenancy);
+portaliq/lib/Controller/ContributionController.php:644:			$deleted = $this->writer->deleteObject(
+portaliq/lib/Repair/MovePortalAuditEntries.php:150:			$this->objectService()->deleteObject(uuid: $uuid, register: self::REGISTER, schema: self::OLD_SCHEMA, _rbac: false, _multitenancy: false);
+portaliq/lib/Service/Actions/PortalActionService.php:235:		$deleted = $this->writer->deleteObject(
+portaliq/lib/Service/Availability/AvailabilityStore.php:228:			$objectService->deleteObject(uuid: $uuid, register: self::REGISTER, schema: $schema, _rbac: false, _multitenancy: false);
+portaliq/lib/Service/ExampleResident/ExampleResidentStore.php:222:			$deleted = $objectService->deleteObject(uuid: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+portaliq/lib/Service/ExampleSite/ExampleSiteStore.php:179:			$deleted = $objectService->deleteObject(
+portaliq/lib/Service/Intake/LandingSubmissionDrain.php:145:		$deleted = $this->writer->deleteObject(
+portaliq/lib/Service/Intake/PortalDraftDrain.php:164:		$deleted = $this->writer->deleteObject(
+portaliq/lib/Service/Intake/PortalDraftStore.php:292:		return $this->writer->deleteObject(
+portaliq/lib/Service/Mail/MailLog.php:216:			$gone = $this->writer->deleteObject(
+portaliq/lib/Service/Plans/PortalPlanService.php:392:			$this->writer->deleteObject(
+portaliq/lib/Service/Plans/PortalPlanService.php:402:		$deleted = $this->writer->deleteObject(
+portaliq/lib/Service/PortalObjectWriter.php:394:				write: static fn () => $objectService->deleteObject(uuid: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false)
+portaliq/lib/Service/Traffic/TrafficEventStore.php:208:			$objectService->deleteObject(
+portaliq/lib/Service/Traffic/TrafficEventStore.php:390:			$objectService->deleteObject(
+portaliq/lib/Service/Traffic/TrafficRecordingStore.php:172:			$objectService->deleteObject(uuid: $uuid, register: self::REGISTER, schema: self::SCHEMA, _rbac: false, _multitenancy: false);
+portaliq/tests/Doubles/ActingObjectService.php:202:		$this->record(method: 'deleteObject');
+portaliq/tests/Unit/Controller/ContributionControllerTest.php:2285:		$writer->expects($this->once())->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Controller/ContributionControllerTest.php:2308:		$writer->expects($this->once())->method('deleteObject')->willReturn(false);
+portaliq/tests/Unit/Controller/ContributionControllerTest.php:2339:		$writer->expects($this->once())->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/Actions/PortalActionServiceTest.php:134:		$writer->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/Availability/AvailabilityStoreTest.php:37:		$service->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/Availability/AvailabilityStoreTest.php:106:			->onlyMethods(['findAll', 'saveObject', 'deleteObject'])
+portaliq/tests/Unit/Service/Identity/PortalIdentityStoreTrait.php:102:			->onlyMethods(['createObject', 'updateObject', 'deleteObject'])
+portaliq/tests/Unit/Service/Identity/PortalIdentityStoreTrait.php:134:		$writer->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/Intake/LandingSubmissionDrainTest.php:100:		$writer->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/Intake/PortalDraftDrainTest.php:107:		$writer->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/Mail/MailLogTest.php:91:		$writer->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/Plans/PortalPlanServiceTest.php:128:		$writer->method('deleteObject')->willReturnCallback(
+portaliq/tests/Unit/Service/PortalObjectWriterDeleteTest.php:84:		$this->assertTrue($this->writer($store)->deleteObject('portaliq', 'portalMessage', 'subjectRef', 's1', 'org-1', 'mine'));
+portaliq/tests/Unit/Service/PortalObjectWriterDeleteTest.php:85:		$this->assertTrue($this->writer($store)->deleteObject('portaliq', 'portalMessage', 'subjectRef', 's1', 'org-1', 'mine-in-a-list'));
+portaliq/tests/Unit/Service/PortalObjectWriterDeleteTest.php:99:			$this->assertFalse($writer->deleteObject('portaliq', 'portalMessage', 'subjectRef', 's1', 'org-1', $id), $id);
+portaliq/tests/Unit/Service/PortalObjectWriterDeleteTest.php:102:		$this->assertFalse($writer->deleteObject('portaliq', 'portalMessage', '', 's1', 'org-1', 'mine'), 'no scope field, no delete');
+portaliq/tests/Unit/Service/PortalWritesActForTheOrganisationTest.php:92:		$this->assertTrue(condition: $this->writer()->deleteObject('portaliq', 'portalMessage', 'subjectRef', 's1', 'gemeente-a', 'row-1'));
+portaliq/tests/Unit/Service/PortalWritesActForTheOrganisationTest.php:95:		$this->assertSame(expected: ['uuid-a'], actual: $this->objectService->actedFor(method: 'deleteObject'));
+portaliq/tests/Unit/Service/PortalWritesActForTheOrganisationTest.php:130:		$this->assertFalse(condition: $writer->deleteObject('portaliq', 'portalMessage', 'subjectRef', 's1', 'onbekend', 'row-1'));
+portaliq/tests/Unit/Service/Traffic/TrafficStoresGoldenTest.php:292:					$this->asked[] = ['deleteObject' => [$uuid, $register, $schema, $_rbac, $_multitenancy]];
+dossiq/lib/Controller/BrcController.php:504:			$objectService->deleteObject(uuid: $uuid);
+dossiq/lib/Controller/CaseLifecycleController.php:265:			$objectService->deleteObject(uuid: $caseId, register: $register, schema: $schema);
+dossiq/lib/Controller/DrcController.php:1374:					$objectService->deleteObject(uuid: $grUuid);
+dossiq/lib/Controller/ZrcController.php:1493:			$objectService->deleteObject(uuid: $uuid);
+dossiq/lib/Controller/ZrcController.php:1937:					$this->zgwService->getObjectService()->deleteObject(uuid: $oioUuid);
+dossiq/lib/Listener/CaseTypeDeleteGuard.php:202:					$objectService->deleteObject(uuid: $id, register: $register, schema: $schema);
+dossiq/lib/Review/TriageRules.php:187:			$this->settingsService->getObjectService()->deleteObject(
+dossiq/lib/Service/AdvisoryBodyService.php:204:		$objectService->deleteObject(uuid: $id, register: $register, schema: $schema);
+dossiq/lib/Service/Bezwaar/BezwaarAuditTrail.php:280:				$objectService->deleteObject(register: $register, schema: $schema, uuid: $objectUuid);
+dossiq/lib/Service/CaseDefinition/WritesPackageRows.php:158:				$objectService->deleteObject($id, register: $register);
+dossiq/lib/Service/Cases/CaseSplitStore.php:191:				$objectService->deleteObject(uuid: $this->uuidOf(row: $record), register: $register, schema: $recordSchema);
+dossiq/lib/Service/Cases/CaseSplitStore.php:194:			return ($objectService->deleteObject(uuid: $caseId, register: $register, schema: $this->schema(key: 'case_schema')) !== false);
+dossiq/lib/Service/Checklist/ChecklistTemplateStore.php:173:			$objectService->deleteObject(
+dossiq/lib/Service/Consultation/ConsultationRepository.php:155:		$objectService->deleteObject(uuid: (string)$consultationId, register: $register, schema: $schema);
+dossiq/lib/Service/Kcc/RoutingRuleService.php:121:		$objectService->deleteObject(uuid: $id, register: $register, schema: $schema);
+dossiq/lib/Service/MilestoneService.php:285:				$objectService->deleteObject(uuid: $recordId, register: $register, schema: $schema);
+dossiq/lib/Service/People/CaseRoleProjection.php:127:		$objectService->deleteObject(uuid: $uuid, register: $register, schema: $this->schema(key: 'role_schema'));
+dossiq/lib/Service/People/CaseSeats.php:243:			$objectService->deleteObject(
+dossiq/lib/Service/Recycle/CaseDestructionService.php:432:		$objectService->deleteObject(
+dossiq/lib/Service/Remedy/RemedyLodging.php:271:			$objectService->deleteObject(uuid: $caseId, register: $register, schema: $schema);
+dossiq/lib/Service/Starter/StarterStore.php:250:			return ($context['service']->deleteObject(
+dossiq/lib/Service/Support/ConfiguredRegistryService.php:209:		$context['objectService']->deleteObject(
+dossiq/lib/Service/Support/OpensInTheInitialState.php:106:			$objectService->deleteObject(
+dossiq/lib/Service/Zaakdossier/DocumentRecordStore.php:123:		$objectService->deleteObject(uuid: $recordId, register: $register, schema: $this->schema(key: 'dossier_informatieobject_schema'));
+dossiq/lib/Service/Zaakdossier/DocumentRecordStore.php:210:			$objectService->deleteObject(uuid: $joinId, register: $register, schema: $joinSchema);
+dossiq/lib/Service/ZaakdossierService.php:365:			$objectService->deleteObject(uuid: $joinId, register: $register, schema: $joinSchema);
+dossiq/lib/Service/Zgw/BrcCrossRegisterSync.php:214:					$objectService->deleteObject(
+dossiq/lib/Service/Zgw/BrcCrossRegisterSync.php:278:					$objectService->deleteObject(
+dossiq/lib/Service/Zgw/BrcDocumentLinkHandler.php:293:			$objectService->deleteObject(uuid: $uuid);
+dossiq/lib/Service/ZgwService.php:1586:			$this->objectService->deleteObject(uuid: $route->uuid);
+dossiq/lib/Woo/WooDeliveredSetWriter.php:349:		$objectService->deleteObject(register: $register, schema: $schema, uuid: $setId);
+dossiq/tests/Support/InMemoryRegister.php:252:	 * Remove one object, as ObjectService::deleteObject() does.
+dossiq/tests/Support/LifecycleRegister.php:186:		return parent::deleteObject(register: $register, schema: $schema, uuid: $uuid);
+dossiq/tests/Unit/Controller/BrcControllerTest.php:113:		$this->record('deleteObject', [$uuid, $_rbac, $_multitenancy]);
+dossiq/tests/Unit/Controller/BrcControllerTest.php:794:		$this->assertSame([[self::BIO, true, true], ['oio-1', false, false], ['oio-2', false, false]], $this->store->callsOf('deleteObject'));
+dossiq/tests/Unit/Controller/BrcControllerTest.php:845:		$this->assertSame([], $this->store->callsOf('deleteObject'));
+dossiq/tests/Unit/Controller/BrcControllerTest.php:850:		$this->store->failOn = ['deleteObject'];
+dossiq/tests/Unit/Controller/BrcControllerTest.php:856:		$this->store->refuseOn = ['deleteObject'];
+dossiq/tests/Unit/Controller/BrcControllerTest.php:883:		$this->assertSame([['oio-1', false, false], [self::BESLUIT, true, true]], $this->store->callsOf('deleteObject'));
+dossiq/tests/Unit/Controller/BrcControllerTest.php:900:		$this->assertSame([], $this->store->callsOf('deleteObject'));
+dossiq/tests/Unit/Controller/BrcControllerTest.php:929:		$this->assertSame([[self::BESLUIT, true, true], [self::BESLUIT, true, true], [self::BESLUIT, true, true]], $this->store->callsOf('deleteObject'));
+dossiq/tests/Unit/Controller/DrcEioLifecycleTest.php:119:		$objects->method('deleteObject')->willReturnCallback(function (string $uuid): bool {
+dossiq/tests/Unit/Mcp/DossiqScannableServicesTest.php:177:			foreach (['ObjectService', 'getObjectService', 'saveObject', 'updateObject', 'patchObject', 'deleteObject'] as $needle) {
+dossiq/tests/Unit/Service/AdvisoryBodyServiceTest.php:226:		$objectService->method('deleteObject')->willReturnCallback(
+dossiq/tests/Unit/Service/CaseDefinition/PackageWriterGoldenTest.php:220:		$this->log[] = ['deleteObject' => compact('uuid', 'register')];
+dossiq/tests/Unit/Service/CaseDefinitionPortabilityTest.php:205:		$objects->method('deleteObject')->willReturnCallback(
+dossiq/tests/Unit/Service/Cases/CaseSplitStatusTest.php:147:				return parent::deleteObject(register: $register, schema: $schema, uuid: $uuid);
+dossiq/tests/Unit/Service/People/CaseRoleProjectionTest.php:483:				$this->inner->deleteObject($uuid, $register, $schema);
+dossiq/tests/Unit/Service/Support/ConfiguredRegistryServiceTest.php:393:	 * `ObjectService::deleteObject()`'s first parameter is `$uuid`. Passing
+dossiq/tests/Unit/Service/ZaakdossierServiceTest.php:434:		$os->expects($this->exactly(2))->method('deleteObject');
+dossiq/tests/Unit/Service/Zgw/BrcCrossRegisterSyncTest.php:198:			$this->store->callsOf('deleteObject')
+dossiq/tests/Unit/Service/Zgw/BrcDocumentLinkHandlerTest.php:256:		$this->assertSame([[self::BIO, true, true]], $this->store->callsOf('deleteObject'));
+dossiq/tests/Unit/Service/Zgw/BrcDocumentLinkHandlerTest.php:287:		foreach (['find', 'deleteObject'] as $method) {
+dossiq/tests/Unit/Service/Zgw/BrcDocumentLinkHandlerTest.php:298:		$this->store->refuseOn = ['deleteObject'];
+dossiq/tests/Unit/Service/Zgw/RecordsBrcStoreCalls.php:97:		$this->record('deleteObject', [$uuid, $_rbac, $_multitenancy]);
+dossiq/tests/Unit/Woo/WooDeliveredSetVerifierTest.php:130:		$this->store->deleteObject(register: 'dossiq', schema: 'document', uuid: 'doc-1');
+dossiq/tests/fixtures/golden/hearing-service.json:746:            "log error Dossiq hearing: failed to record waiver: The record could not be moved into \"afgezien\": patch failed The created record saved-1 could not be deleted again: Call to undefined method OCA\\Dossiq\\Tests\\Unit\\Service\\Bezwaar\\GoldenHearingObjectService::deleteObject()"
+learniq/lib/BackgroundJob/CourseEvaluationDraftCleanupJob.php:182:			$this->objectService->deleteObject(
+learniq/lib/Service/Course/CourseTemplateService.php:281:				$this->objects->objectService->deleteObject(uuid: $object['id'], register: self::REGISTER, schema: $object['schema'], _rbac: true);
+learniq/lib/Service/CourseEvaluationAnswerService.php:234:			$this->objectService->deleteObject(uuid: $responseId, register: self::REGISTER, schema: 'course-evaluation-response', _rbac: false);
+learniq/lib/Service/CoursePackage/CoursePackageObjectWriter.php:212:		$this->objectService->deleteObject(uuid: $uuid, register: self::LEARNIQ_REGISTER, schema: $schema);
+learniq/lib/Service/CurriculumCoverageRollup.php:309:		$this->objectService->deleteObject(
+learniq/lib/Service/DraftSubmitter.php:106:			$this->objectService->deleteObject(uuid: $id, register: self::REGISTER, schema: $schema, _rbac: false);
+learniq/lib/Service/ReportSubjectGradeRows.php:125:			$this->objectService->deleteObject(
+learniq/lib/Service/XapiDocumentStore.php:225:		$this->objectService->deleteObject(
+learniq/lib/Service/XapiDocumentStore.php:274:			$this->objectService->deleteObject(
+learniq/tests/Integration/Lifecycle/AssessmentPublishGuardRandomDrawIntegrationTest.php:110:					$this->objectService->deleteObject($uuid);
+learniq/tests/Integration/Lifecycle/XapiCompletionHandlerIntegrationTest.php:151:					$this->objectService->deleteObject($uuid);
+learniq/tests/Support/RegisterFaithfulStore.php:299:	 * ObjectService::deleteObject() does (DoesNotExistException).
+learniq/tests/Support/XapiDocumentsInMemory.php:77:		$objects->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/BackgroundJob/CourseEvaluationDraftCleanupJobTest.php:112:		$objects->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/BackgroundJob/CourseEvaluationDraftCleanupJobTest.php:236:		$objects->expects($this->once())->method('deleteObject')->willThrowException(new \RuntimeException('lock timeout'));
+learniq/tests/Unit/Controller/RequestSubmitControllerTest.php:109:		$objects->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/Service/CommonCartridgeImportGoldenTest.php:191:		$deleteParams = (new ReflectionMethod(ObjectService::class, 'deleteObject'))->getParameters();
+learniq/tests/Unit/Service/CommonCartridgeImportGoldenTest.php:192:		$service->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/Service/CommonCartridgeImportGoldenTest.php:201:				$calls[] = ['deleteObject' => $named];
+learniq/tests/Unit/Service/Course/CourseTemplateInstantiateGoldenTest.php:191:		$objects->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/Service/Course/CourseTemplateServiceTest.php:115:		$objects->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/Service/Course/CourseTemplateServiceTest.php:118:				$this->rbac[]    = ['deleteObject', $_rbac];
+learniq/tests/Unit/Service/Course/CourseTemplateServiceTest.php:426:		self::assertSame(['find', 'findAll', 'deleteObject'], array_values(array_unique(array_column($this->rbac, 0))));
+learniq/tests/Unit/Service/CourseEvaluationAnswerServiceTest.php:168:		$objects->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/Service/CurriculumCoverageRollupTest.php:126:		$service->method('deleteObject')->willReturnCallback(
+learniq/tests/Unit/Service/ReportSubjectGradeRowsTest.php:86:		$objects->method('deleteObject')->willReturnCallback(static function (string $uuid, $register = null, $schema = null) use (&$deleted): bool {
+shillinq/lib/BackgroundJob/PipelinqTimelineRetryJob.php:442:				->deleteObject($entryId);
+shillinq/lib/Controller/CBSSubmissionController.php:496:					->deleteObject($id);
+shillinq/lib/Controller/VATReturnController.php:481:			$objectService->setRegister(register: 'shillinq')->setSchema(schema: 'BtwAangifte')->deleteObject($returnId);
+shillinq/lib/Lifecycle/Action/MaterialiseGlTransactionAction.php:709:				$this->objectService->deleteObject(uuid: $lineId, register: $register, schema: 'GLLine');
+shillinq/lib/Lifecycle/Action/MaterialiseGlTransactionAction.php:716:			$this->objectService->deleteObject(uuid: $transactionId, register: $register, schema: 'GLTransaction');
+shillinq/lib/Repair/InitializeSettings.php:433:					->deleteObject($objectId);
+shillinq/lib/Repair/RetireSubsidieSchema.php:193:					->deleteObject($subsidyId, _rbac: false, _multitenancy: false);
+shillinq/lib/Service/Asset/AssetRecords.php:154:		$this->objectService->deleteObject(uuid: $id, register: $this->settings->getRegisterSlug(), schema: $schema);
+shillinq/lib/Service/Import/ImportPosting.php:145:				$this->scoped(schema: 'CustomerMaster')->deleteObject((string)$masterId);
+shillinq/lib/Service/Import/ImportPosting.php:322:				$this->scoped(schema: $schema)->deleteObject((string)$id);
+shillinq/lib/Service/VATReturnService.php:706:				$this->objectService->setRegister($register)->setSchema('VATLine')->deleteObject($id);
+shillinq/lib/Service/VATReturnService.php:717:				$this->objectService->setRegister($register)->setSchema('VATDeclaration')->deleteObject($id);
+shillinq/tests/Unit/Lifecycle/Action/InMemoryObjectStore.php:141:		$service->method('deleteObject')->willReturnCallback(
+shillinq/tests/Unit/Service/Dunning/DunningTickRunnerTest.php:515:		$this->store->deleteObject('inv-0412', schema: 'ARInvoice');
+shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php:341:		return $this->inner->deleteObject($uuid, $register, $schema, $_rbac, $_multitenancy, $_retentionSweep, $currentUser, $permanent);
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php:754:			method: 'deleteObject',
+shillinq/tests/Unit/Service/Support/FilteredObjectServiceStub.php:395:		$this->unsupported(method: 'deleteObject');
+shillinq/tests/Unit/Service/Support/KnownCostFixtureObjectServiceStub.php:513:		$this->unsupported(method: 'deleteObject');
+shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php:397:		return $this->inner->deleteObject($uuid, $register, $schema, $rbac, $multitenancy, $retentionSweep, $currentUser, $permanent);
+stackiq/lib/Service/AanbodService.php:525:			$deleteResult = $objectService->deleteObject(
+stackiq/lib/Service/AangebodenGebruikService.php:1508:			$deleteResult = $objectService->deleteObject(
+stackiq/lib/Service/CmdbExportImportService.php:2776:			$deleted = $coordinates['objectService']->deleteObject(
+stackiq/src/dialogs/Dialogs.vue:4:		<DeleteObject v-if="navigationStore.dialog === 'deleteObject'" />
+stackiq/src/modals/object/DeleteObject.vue:7:		v-if="navigationStore.dialog === 'deleteObject'"
+stackiq/src/views/KwetsbaarhedenView.vue:404:			navigationStore.setDialog('deleteObject', {
+stackiq/tests/Unit/Service/CmdbExportImportServiceTest.php:605:		$service->method('deleteObject')->willReturnCallback(
+stackiq/tests/Unit/Service/CmdbExportImportServiceTest.php:607:				$this->noteScope(method: 'deleteObject', rbac: $_rbac, multitenancy: $_multitenancy);
+stackiq/tests/vitest/massObjectActions.spec.js:53:	delete: [MassDeleteObject, 'deleteObject', 'massDeleteObjects'],

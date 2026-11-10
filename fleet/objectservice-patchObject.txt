@@ -1,0 +1,134 @@
+decidiq/lib/Service/AgendaService.php:266:		$this->objectService->patchObject(
+decidiq/lib/Service/CitizenAdviceService.php:270:		$stored = $this->objectService->patchObject(
+decidiq/lib/Service/CommitmentProgressService.php:120:		$this->objectService->patchObject(
+decidiq/lib/Service/CurrentAgendaItemService.php:74:		$this->objectService->patchObject(
+decidiq/lib/Service/RegisterObjectStore.php:120:		$stored = $this->objectService->patchObject(
+decidiq/tests/Unit/Controller/ApprovalRouteControllerSilenceAuthorizationTest.php:244:		$this->facade->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Controller/CitizenAdviceControllerTest.php:93:		$objectService->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Controller/CommitmentProgressTest.php:138:		$this->objectService->expects(self::once())->method('patchObject')
+decidiq/tests/Unit/Controller/CommitmentProgressTest.php:156:		$this->objectService->expects(self::never())->method('patchObject');
+decidiq/tests/Unit/Controller/CommitmentProgressTest.php:171:		$this->objectService->expects(self::never())->method('patchObject');
+decidiq/tests/Unit/Service/AgendaNoticesGoldenTest.php:191:		$objects->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/AgendaNoticesGoldenTest.php:193:				$arguments = $this->named(ObjectServiceInterface::class, 'patchObject', $arguments);
+decidiq/tests/Unit/Service/AgendaNoticesGoldenTest.php:194:				$this->log[] = ['patchObject' => $arguments];
+decidiq/tests/Unit/Service/AgendaServicePhaseAndOrderTest.php:100:		$this->objects->expects($this->once())->method('patchObject')->with(
+decidiq/tests/Unit/Service/AgendaServicePhaseAndOrderTest.php:122:		$this->objects->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/AgendaServiceTest.php:258:				->method('patchObject')
+decidiq/tests/Unit/Service/AgendaServiceTest.php:318:		$this->objectService->expects($this->never())->method('patchObject');
+decidiq/tests/Unit/Service/AgendaServiceTest.php:344:		$this->objectService->expects($this->never())->method('patchObject');
+decidiq/tests/Unit/Service/AgendaServiceTest.php:423:		$this->objectService->expects($this->never())->method('patchObject');
+decidiq/tests/Unit/Service/AgendaServiceTest.php:441:		$this->objectService->expects($this->never())->method('patchObject');
+decidiq/tests/Unit/Service/AgendaServiceTest.php:736:			->method('patchObject')
+decidiq/tests/Unit/Service/ApprovalHoldGoldenTest.php:251:		$facade->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/ApprovalRouteCommandServiceTest.php:225:		$facade->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/ApprovalRouteCommandServiceTest.php:232:				$row = $state->patchObject($objectId, $data, (string)$register, (string)$schema);
+decidiq/tests/Unit/Service/ApprovalRouteServiceTest.php:417:		$facade->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/ApprovalRouteServiceTest.php:424:				$row = $state->patchObject($objectId, $data, (string)$register, (string)$schema);
+decidiq/tests/Unit/Service/CitizenAdviceServiceTest.php:110:		$objectService->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/LiveMeetingSharedCurrentItemTest.php:242:		$objectService->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/LiveMeetingSharedCurrentItemTest.php:263:		$objectService->expects($this->never())->method('patchObject');
+decidiq/tests/Unit/Service/ParaferingRouteRuntimeTest.php:224:		$facade->method('patchObject')->willReturnCallback(
+decidiq/tests/Unit/Service/ParaferingRouteRuntimeTest.php:231:				$row = $state->patchObject($objectId, $data, (string)$register, (string)$schema);
+filinq/lib/Service/DocumentGenerationRequestService.php:309:		$this->objectResolver->resolve()->patchObject(
+filinq/tests/stubs/OpenRegisterStubs.php:88:	 * Signature pinned to the real OpenRegister ObjectService::patchObject()
+filinq/tests/unit/Flow/GenerateDocumentNodeTest.php:92:			->onlyMethods(['patchObject'])
+filinq/tests/unit/Flow/GenerateDocumentNodeTest.php:289:			->method('patchObject')
+filinq/tests/unit/Service/DocumentGenerationRequestServiceTest.php:125:			->onlyMethods(['patchObject'])
+filinq/tests/unit/Service/DocumentGenerationRequestServiceTest.php:314:			->method('patchObject')
+filinq/tests/unit/Service/DocumentGenerationRequestServiceTest.php:343:		$this->objects->expects($this->never())->method('patchObject');
+hermiq/lib/Repair/BackfillAgentApplicationSlug.php:29: * everything. `ObjectService::patchObject()` is the fleet's supported PATCH-semantic
+hermiq/lib/Repair/BackfillAgentApplicationSlug.php:195:	 * Writes through `ObjectService::patchObject()` — never `saveObject()` — so
+hermiq/lib/Repair/BackfillAgentApplicationSlug.php:220:			$objectService->patchObject(
+hermiq/tests/Unit/Repair/BackfillAgentApplicationSlugTest.php:11: * `ObjectService::patchObject()` rather than `saveObject()`, because `saveObject()` is
+hermiq/tests/Unit/Repair/BackfillAgentApplicationSlugTest.php:127:		$objectService->method('patchObject')->willReturnCallback(
+hermiq/tests/Unit/Repair/BackfillAgentApplicationSlugTest.php:319:		$objectService->method('patchObject')->willThrowException(
+humaniq/lib/Command/ReferencesAuditCommand.php:274:			$run->objectService->patchObject(
+humaniq/tests/Unit/Command/ReferencesAuditGoldenTest.php:346:		$this->calls[] = ['patchObject', ['objectId' => $objectId, 'data' => $data, 'register' => $register, 'schema' => $schema, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy]];
+pipelinq/lib/Command/ReferencesAuditRun.php:261:			$this->objectService->patchObject(
+pipelinq/lib/Service/LineTotals/LineRollUp.php:94:			$this->objects->patchObject(objectId: $parent->parentId, data: $patch, _rbac: false, _multitenancy: false);
+pipelinq/lib/Service/Merge/MergedAwayStamp.php:84:		$this->objects->patchObject(objectId: $uuid, data: $fields, _rbac: false, _multitenancy: false);
+pipelinq/tests/Unit/Command/ReferencesAuditCommandGoldenTest.php:275:				$this->test->calls[] = ['patchObject' => [$objectId, $data, $register, $schema, $_rbac, $_multitenancy]];
+pipelinq/tests/Unit/Service/LineTotals/LineRollUpTest.php:44:		$objects->method('patchObject')->willReturnCallback(
+pipelinq/tests/Unit/Service/Merge/MergedAwayStampTest.php:67:		$objects->method('patchObject')->willReturnCallback(
+dossiq/lib/Service/CaseFieldWriter.php:20: *  - through `ObjectService::patchObject()` when the installed OpenRegister has
+dossiq/lib/Service/Support/SearchesObjects.php:310:		if (method_exists($objectService, 'patchObject') === true) {
+dossiq/lib/Service/Support/SearchesObjects.php:312:				value: $objectService->patchObject(
+dossiq/lib/Woo/WooDossierReturn.php:219:		if (method_exists($objectService, 'patchObject') === true) {
+dossiq/lib/Woo/WooDossierReturn.php:220:			return $objectService->patchObject(
+dossiq/tests/Stubs/Contract/ObjectServiceInterface.php:503:	 * @see self::patchObject() for the merging counterpart.
+dossiq/tests/Support/LifecycleRegister.php:136:	 * Merge fields onto a stored object and save it, as ObjectService::patchObject() does.
+dossiq/tests/Unit/BackgroundJob/PaymentStateProjectionJobServiceAccountTest.php:195:				return parent::patchObject(
+dossiq/tests/Unit/Listener/ObjectionGuardListenersGoldenTest.php:230:				$this->test->log[] = ['patchObject' => $args];
+dossiq/tests/Unit/Mcp/DossiqScannableServicesTest.php:177:			foreach (['ObjectService', 'getObjectService', 'saveObject', 'updateObject', 'patchObject', 'deleteObject'] as $needle) {
+dossiq/tests/Unit/Repair/PublishSeededCaseTypesTest.php:81:	 * Mimic ObjectService::patchObject().
+dossiq/tests/Unit/Repair/SupersedeDuplicateSeededCaseTypesTest.php:63:	 * Mimic ObjectService::patchObject().
+dossiq/tests/Unit/Service/Bezwaar/AdvisoryCommitteeServiceGoldenTest.php:147:				return $this->answer('patchObject', ['objectId' => $objectId, 'data' => $data, 'register' => $register, 'schema' => $schema]);
+dossiq/tests/Unit/Service/Bezwaar/AdvisoryCommitteeServiceGoldenTest.php:231:		$at = static fn (array $request): array => ['find' => $request, 'patchObject' => static fn (array $args): array => ['id' => 'req-1', 'patched' => $args['data']]];
+dossiq/tests/Unit/Service/Bezwaar/AdvisoryCommitteeServiceGoldenTest.php:267:			'move, to deliberation, patch answers nothing' => ['store' => ['find' => $assigned, 'patchObject' => null], 'call' => $move('in-deliberation', ['x' => 1])],
+dossiq/tests/Unit/Service/Bezwaar/AdvisoryCommitteeServiceGoldenTest.php:268:			'move, to deliberation, patch fails' => ['store' => ['find' => $assigned, 'patchObject' => 'throw'], 'call' => $move('in-deliberation')],
+dossiq/tests/Unit/Service/Bezwaar/AdvisoryCommitteeServiceGoldenTest.php:287:			'move, inadmissible, patch answers nothing' => ['store' => ['find' => $deliberating, 'patchObject' => null], 'call' => $move('inadmissible')],
+dossiq/tests/Unit/Service/Bezwaar/BeroepServiceGoldenTest.php:95:		$this->log[] = ['patchObject' => compact('objectId', 'data', 'register', 'schema')];
+dossiq/tests/Unit/Service/Bezwaar/DecisionServiceGoldenTest.php:136:				'patchObject' => ($objects['patch'] ?? null) === 'throw' ? 'throw' : static fn (string $objectId, array $data, mixed ...$rest): mixed => $entity(($objects['patch'] ?? null) ?? (['id' => $objectId, 'patched' => true] + $data)),
+dossiq/tests/Unit/Service/Bezwaar/GoldenHearingObjectService.php:105:		$this->note(call: ['patchObject' => compact('objectId', 'data', 'register', 'schema')]);
+dossiq/tests/Unit/Service/Cases/ConnectedSystemCaseWriterTest.php:230:		$patch = array_values(array_filter($this->calls, static fn (array $call): bool => $call[0] === 'patchObject'));
+dossiq/tests/Unit/Service/Cases/ConnectedSystemCaseWriterTest.php:416:				$this->test->record(method: 'patchObject', scope: $scope, changes: $data);
+dossiq/tests/Unit/Service/DispositionServiceTest.php:210:			->method('patchObject')
+dossiq/tests/Unit/Service/DsoCaseServiceGoldenTest.php:154:				'patchObject' => ($objects['patch'] ?? null) === 'throw' ? 'throw' : static fn (string $objectId, array $data, mixed ...$rest): mixed => $entity(($objects['patch'] ?? null) ?? (['id' => $objectId] + $data)),
+dossiq/tests/Unit/Service/DsoCaseWritesMatchTheRealSchemaTest.php:166:		$this->objectService->method('patchObject')->willReturnCallback(
+dossiq/tests/Unit/Service/DsoCaseWritesMatchTheRealSchemaTest.php:168:				$this->writes[] = ['method' => 'patchObject', 'data' => $data];
+dossiq/tests/Unit/Service/Email/IntakeLogGoldenTest.php:96:				return $this->answer('patchObject', ['objectId' => $objectId, 'data' => $data, 'register' => $register, 'schema' => $schema]);
+dossiq/tests/Unit/Service/Email/IntakeLogGoldenTest.php:236:			'amend, patched' => ['store' => ['patchObject' => ['id' => 'e1']], 'call' => static fn (IntakeLog $log): bool => $log->amend(entryId: 'e1', changes: ['outcome' => 'released'])],
+dossiq/tests/Unit/Service/Email/IntakeLogGoldenTest.php:237:			'amend, patch answers nothing' => ['store' => ['patchObject' => null], 'call' => static fn (IntakeLog $log): bool => $log->amend(entryId: 'e1', changes: ['a' => 1])],
+dossiq/tests/Unit/Service/Email/IntakeLogGoldenTest.php:238:			'amend, patch fails' => ['store' => ['patchObject' => 'throw'], 'call' => static fn (IntakeLog $log): bool => $log->amend(entryId: 'e1', changes: ['a' => 1])],
+dossiq/tests/Unit/Service/Email/IntakeLogGoldenTest.php:239:			'amend, no entry' => ['store' => ['patchObject' => ['id' => 'e1']], 'call' => static fn (IntakeLog $log): bool => $log->amend(entryId: '', changes: ['a' => 1])],
+dossiq/tests/Unit/Service/HearingServiceTest.php:251:			->method('patchObject')
+dossiq/tests/Unit/Service/WOODocumentAssessmentServiceTest.php:455:		$objectServiceMock->method('patchObject')->willReturnCallback(
+dossiq/tests/Unit/Service/Zaakdossier/InformatieobjectApprovalGuardTest.php:73:		$objects->method('patchObject')->willReturnCallback(
+shillinq/lib/Budget/BudgetEditingService.php:437:			$this->scoped(schema: 'BudgetLine')->patchObject($lineId, $patch);
+shillinq/lib/Command/ReferencesAuditCommand.php:282:			$objectService->patchObject(
+shillinq/lib/Listener/ObjectRequestSettledListener.php:100:			$this->objectService->patchObject(
+shillinq/lib/Listener/SupplierInvoiceWarningListener.php:101:			$this->objectService->patchObject(
+shillinq/lib/PaymentPlan/PaymentPlanAllocator.php:245:		$this->scoped(schema: 'PaymentPlanInstalment')->patchObject($id, $patch);
+shillinq/lib/PaymentPlan/PaymentPlanAllocator.php:264:		$this->scoped(schema: 'ARInvoice')->patchObject($id, ['amountDue' => ($due / 100.0), 'paidAmount' => ($paid / 100.0)]);
+shillinq/lib/PaymentPlan/PaymentPlanService.php:231:			$this->scoped(schema: 'ARInvoice')->patchObject($invoiceId, ['paymentPlanId' => $planId]);
+shillinq/lib/PaymentPlan/PaymentPlanService.php:245:		$this->scoped(schema: 'PaymentPlan')->patchObject($planId, $patch);
+shillinq/lib/PaymentPlan/PaymentPlanService.php:427:		$this->scoped(schema: 'PaymentPlan')->patchObject($planId, ['endedOn' => $this->today(), 'endReason' => $reason]);
+shillinq/lib/PaymentPlan/PaymentPlanService.php:474:		$this->scoped(schema: 'PaymentPlan')->patchObject($planId, $patch);
+shillinq/lib/Repair/FoldCustomerVatId.php:95:				$this->objectService->patchObject(objectId: $id, data: ['vatId' => $legacy], register: $register, schema: 'CustomerMaster');
+shillinq/lib/Reporting/Schedule/ScheduledReportRunner.php:247:		$this->objectService->patchObject(
+shillinq/lib/Service/Asset/AssetRecords.php:139:		$this->objectService->patchObject(objectId: $id, data: $fields, register: $this->settings->getRegisterSlug(), schema: $schema);
+shillinq/lib/Service/Bank/BankfeedIntakeService.php:137:		$this->scoped(schema: 'BankAccount')->patchObject(
+shillinq/lib/Service/Bank/ManualMatchService.php:541:		$this->scoped(schema: 'ReconciliationMatch')->patchObject(
+shillinq/lib/Service/Bank/ManualMatchService.php:548:		$this->scoped(schema: 'BankStatementLine')->patchObject(
+shillinq/lib/Service/Bank/ObjectRequestBankSettlement.php:125:		$this->scoped(schema: 'PaymentRequest')->patchObject($requestId, $patch);
+shillinq/lib/Service/Commitment/CommitmentLedger.php:337:		$this->scoped(schema: $schema)->patchObject($id, $data);
+shillinq/lib/Service/KnownCostBudgetWriter.php:624:	 * (`InMemoryObjectServiceStub::patchObject()`'s own docblock records
+shillinq/lib/Service/Ledger/GlLineResultStamps.php:226:		$this->objectService->patchObject(
+shillinq/lib/Service/Project/AssignmentHours.php:387:		$this->objectService->patchObject(
+shillinq/lib/Service/ReconciliationResolutionService.php:154:			->patchObject(
+shillinq/lib/Service/Relation/RelationRecords.php:150:			->patchObject($id, $fields);
+shillinq/lib/Service/Sales/DownPaymentService.php:297:		$this->scoped(schema: 'ARInvoice')->patchObject((string)$invoice['id'], $patch);
+shillinq/lib/Service/Sales/DownPaymentService.php:361:			$this->scoped(schema: 'ARInvoice')->patchObject((string)$downPayment['id'], ['downPayment' => $group]);
+shillinq/lib/Service/Tax/VatNumberCheck.php:239:		$this->objectService->patchObject(objectId: $id, data: $fields, register: $this->settings->getRegisterSlug(), schema: $schema);
+shillinq/lib/Service/Usage/BilledReadings.php:98:				->patchObject($readingId, ['invoiceId' => $invoiceId], $register, 'MeterReading');
+shillinq/lib/Service/Vat/VatLineBackfill.php:298:		$this->objectService->patchObject(
+shillinq/tests/Unit/Budget/BudgetEditingServiceTest.php:120:		$this->store->setSchema('AnnualBudget')->patchObject($this->ids['budget-2026'], ['state' => 'closed']);
+shillinq/tests/Unit/Commitment/CommitmentYearEndTest.php:175:		$this->store->setSchema('CommitmentLine')->patchObject($this->ids['line0114'], ['amount_excl_vat' => 8000000]);
+shillinq/tests/Unit/Commitment/CommitmentYearEndTest.php:239:		$this->store->setSchema('SupplierInvoice')->patchObject($this->ids['invoice'], ['isLastInvoice' => true]);
+shillinq/tests/Unit/Listener/ObjectRequestSettledListenerTest.php:102:		$this->objectService->method('patchObject')->willReturnCallback(
+shillinq/tests/Unit/Service/Bank/ManualMatchServiceTest.php:121:					$this->store->setSchema('JournalEntry')->patchObject($record['objectId'], ['glTransactionId' => 'gl-' . $record['objectId']]);
+shillinq/tests/Unit/Service/Bank/ManualMatchServiceTest.php:354:		$this->store->setSchema('BankAccount')->patchObject('ba-1', ['ledgerAccountNumber' => '']);
+shillinq/tests/Unit/Service/Bank/ManualMatchServiceTest.php:368:		$this->store->setSchema('BankStatement')->patchObject('stmt-1', ['lifecycleState' => 'reconciled']);
+shillinq/tests/Unit/Service/Bank/ObjectRequestBankMatchTest.php:115:					$this->store->setSchema('JournalEntry')->patchObject($record['objectId'], ['glTransactionId' => 'gl-' . $record['objectId']]);
+shillinq/tests/Unit/Service/ReconciliationResolutionServiceTest.php:178:		$objectService->method('patchObject')->willReturnCallback(
+shillinq/tests/Unit/Service/Sales/DownPaymentServiceTest.php:241:		$this->store->setSchema('ARInvoice')->patchObject($invoice['id'], ['lifecycleState' => $state]);
+shillinq/tests/Unit/Service/Sales/DownPaymentServiceTest.php:376:		$this->store->setSchema('ARInvoice')->patchObject($second['id'], ['lifecycleState' => 'issued']);
+shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php:251:		return $this->inner->patchObject($objectId, $data, $register, $schema, $_rbac, $_multitenancy, $currentUser);
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php:600:		if (method_exists($this->inner, 'patchObject') === true) {
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php:603:					method: 'patchObject',
+shillinq/tests/Unit/Service/Support/FilteredObjectServiceStub.php:295:		$this->unsupported(method: 'patchObject');
+shillinq/tests/Unit/Service/Support/KnownCostFixtureObjectServiceStub.php:329:	 * `ObjectServiceInterface::patchObject()` documents: a key present with a
+shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php:307:		return $this->inner->patchObject($objectId, $data, $register, $schema, $rbac, $multitenancy, $currentUser);
+shillinq/tests/Unit/Service/Tax/VatNumberCheckTest.php:116:		$this->store->patchObject(objectId: self::MULLER, data: ['vatIdValidatedAt' => '2026-08-01T10:00:00+00:00'], register: 'shillinq', schema: 'CustomerMaster');
+stackiq/lib/Command/GemmaStandardLinksCommand.php:223:			$objectService->patchObject(
+stackiq/lib/Command/ReferencesAuditCommand.php:279:			$objectService->patchObject(

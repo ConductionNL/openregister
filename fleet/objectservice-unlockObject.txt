@@ -1,0 +1,21 @@
+buildiq/lib/Controller/ApplicationVersionsController.php:417:						$this->objectService->unlockObject(identifier: $currentUuid);
+buildiq/lib/Mcp/Handler/AbstractToolHandler.php:654:				$objectService->unlockObject(identifier: $versionUuid);
+buildiq/lib/Service/ApplicationCreationService.php:157:					$this->store->objectService->unlockObject(identifier: $lockKey, advisory: true);
+buildiq/lib/Service/VersionPromotionService.php:577:			$this->objectService->unlockObject(identifier: $targetUuid);
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:304:			->method('unlockObject')
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:377:			->method('unlockObject')
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:1044:		$this->objectService->method('unlockObject')->willReturnCallback(function ($uuid) {
+opencatalogi/tests/vitest/objectStoreMassActions.spec.js:35:	['massUnlockObjects', 'unlockObject', 'unlock'],
+integriq/lib/Service/EndpointService.php:3859:			$object = $this->objectService->getOpenRegisters()->unlockObject(identifier: $objectId);
+integriq/tests/Unit/Service/EndpointServiceRuleProcessorsGoldenTest.php:281:				'unlockObject' => fn () => true,
+integriq/tests/Unit/Service/EndpointServiceTest.php:358:		$openRegisters->method('unlockObject')->willReturn(true);
+dossiq/lib/Controller/DrcController.php:1017:			$objectService->unlockObject(identifier: $uuid);
+dossiq/tests/Unit/Controller/DrcControllerContractTest.php:303:		$objectService->expects($this->never())->method('unlockObject');
+dossiq/tests/Unit/Controller/DrcControllerContractTest.php:328:		$objectService->expects($this->never())->method('unlockObject');
+dossiq/tests/Unit/Controller/DrcControllerContractTest.php:365:			->method('unlockObject')
+shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php:462:		return $this->inner->unlockObject($identifier, $advisory);
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php:904:		$this->unsupported(method: 'unlockObject');
+shillinq/tests/Unit/Service/Support/FilteredObjectServiceStub.php:513:		$this->unsupported(method: 'unlockObject');
+shillinq/tests/Unit/Service/Support/InMemoryObjectServiceStub.php:749:		$this->unsupported(method: 'unlockObject');
+shillinq/tests/Unit/Service/Support/KnownCostFixtureObjectServiceStub.php:643:		$this->unsupported(method: 'unlockObject');
+shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php:507:		return $this->inner->unlockObject($identifier, $advisory);

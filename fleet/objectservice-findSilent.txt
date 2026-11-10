@@ -1,0 +1,2 @@
+procest/lib/Service/Publication/OpenCatalogiApiClient.php:370	findSilent
+softwarecatalog/lib/Service/ContactpersoonService.php:1040	findSilent

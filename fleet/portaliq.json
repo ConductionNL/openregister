@@ -1,0 +1,2698 @@
+{
+ "imports": [
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    166,
+    272,
+    310
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    276,
+    281,
+    286,
+    291
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    272
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    276
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    272,
+    310
+   ]
+  },
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    276,
+    281,
+    286,
+    291
+   ]
+  },
+  {
+   "file": "lib/AppInfo/FormDependentsRegistrar.php",
+   "line": 29,
+   "class": "OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    53
+   ]
+  },
+  {
+   "file": "lib/Listener/BindingDestinationGuardListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    89
+   ]
+  },
+  {
+   "file": "lib/Listener/BindingDestinationGuardListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    89
+   ]
+  },
+  {
+   "file": "lib/Listener/CmsCacheInvalidationListener.php",
+   "line": 30,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    101
+   ]
+  },
+  {
+   "file": "lib/Listener/CmsCacheInvalidationListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    103
+   ]
+  },
+  {
+   "file": "lib/Listener/CmsCacheInvalidationListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    102
+   ]
+  },
+  {
+   "file": "lib/Listener/FormDestinationDependentsListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    83
+   ]
+  },
+  {
+   "file": "lib/Listener/FormDestinationDependentsListener.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormDependent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    119,
+    133
+   ]
+  },
+  {
+   "file": "lib/Listener/GlossaryRelationGuardListener.php",
+   "line": 25,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    88
+   ]
+  },
+  {
+   "file": "lib/Listener/GlossaryRelationGuardListener.php",
+   "line": 26,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    88
+   ]
+  },
+  {
+   "file": "lib/Listener/LandingPageSubmissionDispatchListener.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    88,
+    111
+   ]
+  },
+  {
+   "file": "lib/Listener/MediaWriteGuardListener.php",
+   "line": 30,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    109,
+    131
+   ]
+  },
+  {
+   "file": "lib/Listener/MediaWriteGuardListener.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    93,
+    109,
+    131,
+    132
+   ]
+  },
+  {
+   "file": "lib/Listener/MediaWriteGuardListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    109,
+    131
+   ]
+  },
+  {
+   "file": "lib/Listener/NoticeWriteGuardListener.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    91
+   ]
+  },
+  {
+   "file": "lib/Listener/NoticeWriteGuardListener.php",
+   "line": 33,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    91
+   ]
+  },
+  {
+   "file": "lib/Listener/PortalRecordChangeListener.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    133,
+    291
+   ]
+  },
+  {
+   "file": "lib/Listener/PortalRecordChangeListener.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    133,
+    142,
+    160
+   ]
+  },
+  {
+   "file": "lib/Listener/RegisterProposalLeavesListener.php",
+   "line": 37,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    99
+   ]
+  },
+  {
+   "file": "lib/Listener/RegisterProposalLeavesListener.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    105,
+    109,
+    117,
+    121,
+    128,
+    129
+   ]
+  },
+  {
+   "file": "lib/Listener/SchemaWriteGuard.php",
+   "line": 23,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    49
+   ]
+  },
+  {
+   "file": "lib/Listener/SchemaWriteGuard.php",
+   "line": 24,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    53
+   ]
+  },
+  {
+   "file": "lib/Service/Proposals/ChangeProposalsProvider.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Exception\\NotImplementedException",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    245,
+    310,
+    330
+   ]
+  },
+  {
+   "file": "lib/Service/Proposals/ChangeProposalsProvider.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    44
+   ]
+  },
+  {
+   "file": "tests/Doubles/OpenRegisterObjectService.php",
+   "line": 30,
+   "class": "OCA\\OpenRegister\\Db\\Register",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    47,
+    66
+   ]
+  },
+  {
+   "file": "tests/Doubles/OpenRegisterObjectService.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    48,
+    67
+   ]
+  },
+  {
+   "file": "tests/Stubs/OpenRegister/Event/RegisterLeafProvidersEvent.php",
+   "line": 57,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    96
+   ]
+  },
+  {
+   "file": "tests/Stubs/OpenRegister/Event/RegisterLeafProvidersEvent.php",
+   "line": 58,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    96
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ClaimAddressedChangeNoticeTest.php",
+   "line": 8,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    289,
+    290
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/ClaimAddressedChangeNoticeTest.php",
+   "line": 9,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    73,
+    310,
+    344,
+    361,
+    377,
+    394,
+    414
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CmsCacheInvalidationListenerTest.php",
+   "line": 23,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    84,
+    85
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CmsCacheInvalidationListenerTest.php",
+   "line": 24,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    102,
+    223
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CmsCacheInvalidationListenerTest.php",
+   "line": 25,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    129
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/CmsCacheInvalidationListenerTest.php",
+   "line": 26,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    114,
+    141,
+    161,
+    179,
+    195,
+    258
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FormDestinationDependentsListenerTest.php",
+   "line": 17,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    79,
+    80
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FormDestinationDependentsListenerTest.php",
+   "line": 18,
+   "class": "OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    64,
+    180,
+    211,
+    273,
+    293
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FormDestinationDependentsListenerTest.php",
+   "line": 19,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormDependentsCheck",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    64,
+    157,
+    171
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FormDestinationDependentsListenerTest.php",
+   "line": 20,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormDestinationValidator",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    171,
+    248
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/FormDestinationDependentsListenerTest.php",
+   "line": 21,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormFieldRules",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    171
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/LandingPageSubmissionDispatchListenerTest.php",
+   "line": 25,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    66,
+    67
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/LandingPageSubmissionDispatchListenerTest.php",
+   "line": 26,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    87,
+    117,
+    131,
+    138
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/MediaWriteGuardListenerTest.php",
+   "line": 10,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    37,
+    47,
+    76
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/MediaWriteGuardListenerTest.php",
+   "line": 11,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    57,
+    66
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/MediaWriteGuardListenerTest.php",
+   "line": 12,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    46
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/MediaWriteGuardListenerTest.php",
+   "line": 13,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    90,
+    91
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/MediaWriteGuardListenerTest.php",
+   "line": 14,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    107
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/MediaWriteGuardListenerTest.php",
+   "line": 15,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    109
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/NoticeWriteGuardListenerTest.php",
+   "line": 10,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    101,
+    102
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/NoticeWriteGuardListenerTest.php",
+   "line": 11,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    117
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/NoticeWriteGuardListenerTest.php",
+   "line": 12,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    119
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/NoticeWriteGuardListenerTest.php",
+   "line": 13,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    38,
+    70,
+    86
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/NoticeWriteGuardListenerTest.php",
+   "line": 14,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    53,
+    54
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/PortalRecordChangeListenerTest.php",
+   "line": 7,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    263,
+    264,
+    429,
+    492,
+    493
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/PortalRecordChangeListenerTest.php",
+   "line": 8,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    335,
+    336,
+    415,
+    435,
+    454,
+    473,
+    481,
+    515,
+    540,
+    556,
+    557,
+    558
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/PortalRecordChangeListenerTest.php",
+   "line": 9,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    87,
+    301,
+    334,
+    356,
+    370,
+    385,
+    400,
+    574,
+    591,
+    592
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RegisterProposalLeavesListenerTest.php",
+   "line": 10,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    34,
+    41,
+    47
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/RegisterProposalLeavesListenerTest.php",
+   "line": 11,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    59,
+    63,
+    65
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SchemaWriteGuardsGoldenTest.php",
+   "line": 23,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    117,
+    124
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SchemaWriteGuardsGoldenTest.php",
+   "line": 24,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    140,
+    150
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SchemaWriteGuardsGoldenTest.php",
+   "line": 25,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    139,
+    158
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SchemaWriteGuardsGoldenTest.php",
+   "line": 26,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    79,
+    123
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SchemaWriteGuardsGoldenTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    125
+   ]
+  },
+  {
+   "file": "tests/Unit/Listener/SchemaWriteGuardsGoldenTest.php",
+   "line": 28,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    124
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/Cms/PageHistoryTest.php",
+   "line": 11,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrail",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    145,
+    146
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/Cms/PageHistoryTest.php",
+   "line": 12,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    86,
+    103,
+    116,
+    125
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/Cms/PageHistoryTest.php",
+   "line": 13,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    117
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/Cms/PageHistoryTest.php",
+   "line": 14,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    119,
+    126
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/Proposals/ChangeProposalsProviderTest.php",
+   "line": 11,
+   "class": "OCA\\OpenRegister\\Exception\\NotImplementedException",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    146
+   ]
+  },
+  {
+   "file": "tests/Unit/Service/Proposals/ChangeProposalsProviderTest.php",
+   "line": 12,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider",
+   "status": "exists",
+   "alias_to": null,
+   "eager": null,
+   "used_lines": [
+    43,
+    52
+   ]
+  }
+ ],
+ "string_lookups": [
+  {
+   "file": "lib/AppInfo/StorePlaneRegistrar.php",
+   "line": 137,
+   "class": "OCA\\OpenRegister\\AppHost\\Bootstrap",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "lib/AppInfo/StorePlaneRegistrar.php",
+   "line": 142,
+   "class": "OCA\\OpenRegister\\AppHost\\Bootstrap",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "lib/BackgroundJob/PortalTaskDeliveryJob.php",
+   "line": 97,
+   "class": "OCA\\OpenRegister\\Service\\Portal\\PortalTaskDeliveryService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/EventController.php",
+   "line": 58,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/MetricsController.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/NewsController.php",
+   "line": 61,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/NewsletterController.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Controller/PushSubscriptionController.php",
+   "line": 55,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RegisterProposalLeavesListener.php",
+   "line": 58,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SchemaWriteGuard.php",
+   "line": 70,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Repair/BackfillCmsPortalReference.php",
+   "line": 67,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Repair/BackfillNewsPublishedAt.php",
+   "line": 64,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Repair/MoveActionSummarySentence.php",
+   "line": 63,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Repair/MoveBindingDestination.php",
+   "line": 67,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Repair/MovePortalAuditEntries.php",
+   "line": 63,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ActionReminderService.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Actions/ActionHistory.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ActivityStore.php",
+   "line": 67,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/AuditTrailService.php",
+   "line": 57,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/AuditTrailService.php",
+   "line": 276,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrail",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Availability/AvailabilityStore.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/CaseTypeReader.php",
+   "line": 51,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Cms/MediaLibraryReader.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Cms/PageHistory.php",
+   "line": 54,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Cms/PageHistory.php",
+   "line": 56,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/CmsRows.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/DemoDataService.php",
+   "line": 386,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/DemoDataService.php",
+   "line": 441,
+   "class": "OCA\\OpenRegister\\Service\\ConfigurationService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/EventFeedReader.php",
+   "line": 49,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/EventRsvpService.php",
+   "line": 58,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/EventSignupService.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ExampleResident/ExampleResidentStore.php",
+   "line": 57,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ExampleResident/ExampleSetResidents.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetRecord",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ExampleSite/ExampleSiteStore.php",
+   "line": 56,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/GroupStaffFixtureReader.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/GuardianAccountDirectory.php",
+   "line": 50,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/GuardianAudienceFixtureReader.php",
+   "line": 58,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Identity/PortalRegisteredDetailsService.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\Providers\\BrpPersonProvider",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Identity/PortalRegisteredDetailsService.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\Providers\\KvkProvider",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 50,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftDiscard",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 55,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftOwner",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationSubmit.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationSubmit.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormDestinationValidator",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationSubmit.php",
+   "line": 57,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/PortalAddressLookup.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/PortalFamilyMembers.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\Providers\\BrpPersonProvider",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/PortalPaymentIntents.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Intake/PortalReferenceLists.php",
+   "line": 60,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Messaging/MessageStore.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/NewsAudienceOptions.php",
+   "line": 59,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/NewsReadReceiptService.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/NewsRowSource.php",
+   "line": 48,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Notifications/PendingPushService.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Notifications/PortalChangeRuleIndex.php",
+   "line": 67,
+   "class": "OCA\\OpenRegister\\Db\\RegisterMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Notifications/PortalChangeRuleIndex.php",
+   "line": 74,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Notifications/QuietHoursPolicy.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/ObjectServiceLookup.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PageEditorService.php",
+   "line": 61,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Plans/PlanEndReminderService.php",
+   "line": 51,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalFileReader.php",
+   "line": 65,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalFileReader.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalFileWriter.php",
+   "line": 55,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalFileWriter.php",
+   "line": 61,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalNoticeReader.php",
+   "line": 56,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalObjectReader.php",
+   "line": 105,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalOrganisationConfigService.php",
+   "line": 63,
+   "class": "OCA\\OpenRegister\\Db\\OrganisationMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalPdfExport.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\ExportService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalRegisterContext.php",
+   "line": 71,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PortalSchemaReader.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Proposals/ReviewerObjectWriter.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/PublishedPortals.php",
+   "line": 46,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/SettingsService.php",
+   "line": 217,
+   "class": "OCA\\OpenRegister\\Service\\ConfigurationService",
+   "context": "container-get",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Tasks/PortalCaseAccessGuard.php",
+   "line": 66,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Tenancy/PortalOrganisationRestamp.php",
+   "line": 57,
+   "class": "OCA\\OpenRegister\\Db\\MagicMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Tenancy/PortalOrganisationRestamp.php",
+   "line": 62,
+   "class": "OCA\\OpenRegister\\Service\\OrganisationService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Traffic/TrafficEventStore.php",
+   "line": 70,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Traffic/TrafficRecordingStore.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Service/Traffic/TrafficServerToken.php",
+   "line": 54,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Doubles/TenantHarness.php",
+   "line": 57,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/FormDependentsRegistrarTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php",
+   "line": 115,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/AppInfo/StorePlaneRegistrarTest.php",
+   "line": 96,
+   "class": "OCA\\OpenRegister\\AppHost\\Bootstrap",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/BackgroundJob/PortalTaskDeliveryJobTest.php",
+   "line": 438,
+   "class": "OCA\\OpenRegister\\Db\\PortalTaskDelivery",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/EventControllerTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/NewsControllerTest.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/NewsletterControllerTest.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/PortalDraftControllerTest.php",
+   "line": 263,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftDiscard",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/PortalDraftControllerTest.php",
+   "line": 263,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftDiscard",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/PushSubscriptionControllerTest.php",
+   "line": 39,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Controller/StaffRowWriteGoldenTest.php",
+   "line": 52,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/MovePortalAuditEntriesTest.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrail",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/MovePortalAuditEntriesTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Repair/MovePortalAuditEntriesTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ActionReminderServiceTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ActivityStoreTest.php",
+   "line": 24,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AuditTrailServiceTest.php",
+   "line": 31,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrail",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AuditTrailServiceTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/AuditTrailServiceTest.php",
+   "line": 55,
+   "class": "OCA\\OpenRegister\\Db\\AuditTrail",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Availability/AvailabilityStoreTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Availability/AvailabilityStoreTest.php",
+   "line": 56,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/EventFeedReaderTest.php",
+   "line": 23,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/EventRsvpServiceTest.php",
+   "line": 19,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/EventSignupServiceTest.php",
+   "line": 19,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ExampleSite/ExampleRowStoresGoldenTest.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/ExampleSite/ExampleSiteStoreTest.php",
+   "line": 144,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/GroupStaffFixtureReaderTest.php",
+   "line": 18,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/GuardianAccountDirectoryTest.php",
+   "line": 22,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/GuardianAudienceFixtureReaderTest.php",
+   "line": 24,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Identity/PortalRegisteredDetailsServiceTest.php",
+   "line": 38,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\Providers\\BrpPersonProvider",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Identity/PortalRegisteredDetailsServiceTest.php",
+   "line": 40,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\Providers\\KvkProvider",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/ActionDraftTest.php",
+   "line": 73,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftDiscard",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/ActionDraftTest.php",
+   "line": 73,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftDiscard",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationDraftTest.php",
+   "line": 113,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftDiscard",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationDraftTest.php",
+   "line": 129,
+   "class": "OCA\\OpenRegister\\Service\\Object\\DraftOwner",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationIntakeTest.php",
+   "line": 145,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormDestinationValidator",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationIntakeTest.php",
+   "line": 145,
+   "class": "OCA\\OpenRegister\\Db\\Schema",
+   "context": "class_exists",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationIntakeTest.php",
+   "line": 165,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormDestinationValidator",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationIntakeTest.php",
+   "line": 166,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationSubmitTest.php",
+   "line": 87,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationSubmitTest.php",
+   "line": 109,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormDestinationValidator",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/DestinationSubmitTest.php",
+   "line": 110,
+   "class": "OCA\\OpenRegister\\Db\\SchemaMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Intake/Fakes/FormSubmitFake.php",
+   "line": 96,
+   "class": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/NewsAudienceOptionsTest.php",
+   "line": 23,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/NewsFeedReaderTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/NewsReadReceiptServiceTest.php",
+   "line": 22,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Notifications/PendingPushServiceTest.php",
+   "line": 20,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Notifications/QuietHoursPolicyTest.php",
+   "line": 21,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Plans/PlanEndReminderServiceTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalFileGoldenTest.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalFileGoldenTest.php",
+   "line": 47,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalFileReaderTest.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Service\\FileService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalFileReaderTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalObjectReaderAnyScopeTest.php",
+   "line": 27,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalObjectReaderScopedPageTest.php",
+   "line": 22,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalObjectReaderTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalObjectReaderViaQueryTest.php",
+   "line": 26,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalObjectWriterOrganisationTest.php",
+   "line": 34,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalObjectWriterOrganisationTest.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Db\\ObjectEntity",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PortalObjectWriterTest.php",
+   "line": 23,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/PublicNewsReaderTest.php",
+   "line": 32,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Tenancy/ClaimScopeCheckTest.php",
+   "line": 44,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Tenancy/PortalOrganisationRestampTest.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Tenancy/PortalOrganisationRestampTest.php",
+   "line": 43,
+   "class": "OCA\\OpenRegister\\Db\\MagicMapper",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Tenancy/PortalOrganisationRestampTest.php",
+   "line": 423,
+   "class": "OCA\\OpenRegister\\Service\\OrganisationService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Tenancy/PortalTenantContextTest.php",
+   "line": 42,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Traffic/TrafficStoresGoldenTest.php",
+   "line": 45,
+   "class": "OCA\\OpenRegister\\Service\\ObjectService",
+   "context": "string",
+   "status": "exists"
+  }
+ ],
+ "dynamic": [
+  {
+   "file": "lib/AppInfo/StorePlaneRegistrar.php",
+   "line": 142,
+   "src": "|| method_exists('OCA\\\\OpenRegister\\\\AppHost\\\\Bootstrap', 'aliasStoreController') === false"
+  },
+  {
+   "file": "lib/Contribution/PortalContributionRegistry.php",
+   "line": 135,
+   "src": "if ($provider === null || method_exists($provider, 'getContribution') === false) {"
+  },
+  {
+   "file": "lib/Contribution/PortalContributionRegistry.php",
+   "line": 241,
+   "src": "if ($provider === null || method_exists($provider, 'getContribution') === false) {"
+  },
+  {
+   "file": "lib/Contribution/PortalContributionRegistry.php",
+   "line": 272,
+   "src": "if ($provider === null || method_exists($provider, 'getContribution') === false) {"
+  },
+  {
+   "file": "lib/Contribution/PortalContributionRegistry.php",
+   "line": 309,
+   "src": "if (method_exists($provider, 'getAudiences') === true) {"
+  },
+  {
+   "file": "lib/Contribution/PortalContributionRegistry.php",
+   "line": 318,
+   "src": "if (method_exists($provider, 'getAudience') === true) {"
+  },
+  {
+   "file": "lib/Contribution/PortalContributionRegistry.php",
+   "line": 344,
+   "src": "if (method_exists($provider, 'getAudiences') === true) {"
+  },
+  {
+   "file": "lib/Contribution/PortalContributionRegistry.php",
+   "line": 353,
+   "src": "if (method_exists($provider, 'getAudience') === true) {"
+  },
+  {
+   "file": "lib/Controller/ObjectArrayRow.php",
+   "line": 46,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Repair/BackfillCmsPortalReference.php",
+   "line": 247,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Repair/MovePortalAuditEntries.php",
+   "line": 183,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Repair/PagedSchemaRead.php",
+   "line": 62,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/Actions/ActionHistory.php",
+   "line": 158,
+   "src": "if (method_exists($mapper, 'findChangesForObject') === false) {"
+  },
+  {
+   "file": "lib/Service/Availability/AvailabilityStore.php",
+   "line": 278,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/CaseTypeReader.php",
+   "line": 168,
+   "src": "if (is_object($entity) === true && method_exists($entity, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/CollectionDocuments.php",
+   "line": 166,
+   "src": "if ($provider === null || (new TimelineProviderMethod())->accepts(name: $method) === false || method_exists($provider, $method) === false) {"
+  },
+  {
+   "file": "lib/Service/CollectionDocuments.php",
+   "line": 177,
+   "src": "$allowed = $provider->{$method}("
+  },
+  {
+   "file": "lib/Service/ExampleResident/ExampleSetResidents.php",
+   "line": 257,
+   "src": "if (is_object($service) === true && method_exists($service, 'read') === true) {"
+  },
+  {
+   "file": "lib/Service/GuardianAccountDirectory.php",
+   "line": 193,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/Identity/PortalAccountsByClaim.php",
+   "line": 224,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/Identity/PortalRegisteredDetailsService.php",
+   "line": 237,
+   "src": "if (is_object($provider) === true && method_exists($provider, $method) === true) {"
+  },
+  {
+   "file": "lib/Service/Identity/PortalRegisteredDetailsService.php",
+   "line": 238,
+   "src": "$answer = (array)$provider->{$method}($identifier);"
+  },
+  {
+   "file": "lib/Service/InstanceLoopback.php",
+   "line": 357,
+   "src": "if (method_exists($failure, 'getResponse') === true && $failure->getResponse() !== null) {"
+  },
+  {
+   "file": "lib/Service/InstanceLoopback.php",
+   "line": 362,
+   "src": "if (method_exists($failure, 'getHandlerContext') === true) {"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 231,
+   "src": "if ($subjectRef === '' || is_callable($factory) === false) {"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationSubmit.php",
+   "line": 172,
+   "src": "if (method_exists($exception, 'getStatus') === true && method_exists($exception, 'getFindings') === true) {"
+  },
+  {
+   "file": "lib/Service/Intake/DestinationSubmit.php",
+   "line": 172,
+   "src": "if (method_exists($exception, 'getStatus') === true && method_exists($exception, 'getFindings') === true) {"
+  },
+  {
+   "file": "lib/Service/Intake/PortalAddressLookup.php",
+   "line": 104,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/Intake/PortalPaymentIntents.php",
+   "line": 91,
+   "src": "if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/Intake/PortalReferenceLists.php",
+   "line": 140,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/NewsAudienceOptions.php",
+   "line": 237,
+   "src": "if (is_object($entity) === false || method_exists($entity, 'getProperties') === false) {"
+  },
+  {
+   "file": "lib/Service/ObjectFileLookup.php",
+   "line": 109,
+   "src": "if (method_exists($file, 'getName') === true) {"
+  },
+  {
+   "file": "lib/Service/ObjectFileLookup.php",
+   "line": 113,
+   "src": "if (method_exists($file, 'getSize') === true) {"
+  },
+  {
+   "file": "lib/Service/ObjectFileLookup.php",
+   "line": 117,
+   "src": "if (method_exists($file, 'getId') === true) {"
+  },
+  {
+   "file": "lib/Service/ObjectRowNormaliser.php",
+   "line": 46,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/PortalAuditHook.php",
+   "line": 117,
+   "src": "if (is_object($service) === true && method_exists($service, 'record') === true) {"
+  },
+  {
+   "file": "lib/Service/PortalFilteredRows.php",
+   "line": 201,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/PortalObjectReader.php",
+   "line": 1447,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/PortalOrganisationConfigService.php",
+   "line": 563,
+   "src": "if ($mapper === null || method_exists($mapper, 'findBySlug') === false) {"
+  },
+  {
+   "file": "lib/Service/PortalPdfExport.php",
+   "line": 99,
+   "src": "if (method_exists($service, self::AVAILABILITY_METHOD) === false) {"
+  },
+  {
+   "file": "lib/Service/PortalPdfExport.php",
+   "line": 309,
+   "src": "if (is_object($service) === true && method_exists($service, self::RENDER_METHOD) === true) {"
+  },
+  {
+   "file": "lib/Service/PortalSchemaReader.php",
+   "line": 92,
+   "src": "if (is_object($schema) === true && method_exists($schema, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/RowAsArray.php",
+   "line": 48,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/Tenancy/OrganisationScopedObjectService.php",
+   "line": 64,
+   "src": "operation: static fn () => $objectService->$name(...$arguments)"
+  },
+  {
+   "file": "lib/Service/Tenancy/PortalOrganisationRestamp.php",
+   "line": 212,
+   "src": "if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {"
+  },
+  {
+   "file": "lib/Service/Tenancy/PortalTenantContext.php",
+   "line": 90,
+   "src": "if ($objectService === null || $organisation === '' || method_exists($objectService, self::ACT_FOR) === false) {"
+  },
+  {
+   "file": "lib/Service/Tenancy/PortalTenantContext.php",
+   "line": 121,
+   "src": "if ($objectService === null || $organisationUuid === '' || method_exists($objectService, self::ACT_FOR) === false) {"
+  },
+  {
+   "file": "lib/Service/Theme/PortalCustomThemeSets.php",
+   "line": 208,
+   "src": "if (method_exists($validator, 'hasDisallowedSelector') === true"
+  },
+  {
+   "file": "lib/Service/Theme/PortalCustomThemeSets.php",
+   "line": 224,
+   "src": "if (method_exists($validator, 'getLastError') === true) {"
+  },
+  {
+   "file": "lib/Service/Theme/PortalCustomThemeSets.php",
+   "line": 340,
+   "src": "if (is_object($service) === true && method_exists($service, $method) === true) {"
+  },
+  {
+   "file": "lib/Service/Traffic/ExpiredRowPurge.php",
+   "line": 67,
+   "src": "if (method_exists($objectService, 'purgeExpiredObjectsRaw') === true) {"
+  },
+  {
+   "file": "lib/Service/Traffic/TrafficEventStore.php",
+   "line": 141,
+   "src": "if (method_exists($objectService, 'appendObjectsRaw') === true) {"
+  },
+  {
+   "file": "tests/Unit/Controller/StaffAuthoringGoldenTest.php",
+   "line": 138,
+   "src": "$response = $controller->{$method}(...$args);"
+  },
+  {
+   "file": "tests/Unit/Controller/StaffRowWriteGoldenTest.php",
+   "line": 96,
+   "src": "'found and saved' => [$row, 'echo'],"
+  },
+  {
+   "file": "tests/Unit/Listener/SchemaWriteGuardsGoldenTest.php",
+   "line": 93,
+   "src": "'errors' => method_exists($event, 'getErrors') ? $event->getErrors() : null,"
+  },
+  {
+   "file": "tests/Unit/Repair/MoveActionSummarySentenceTest.php",
+   "line": 226,
+   "src": "$service = new class([$row, 'not-a-row']) {"
+  },
+  {
+   "file": "tests/Unit/Service/FakeAuditTrailMapper.php",
+   "line": 45,
+   "src": "if ($row->$getter() !== $value) {"
+  },
+  {
+   "file": "tests/Unit/Service/FeedRowReadsGoldenTest.php",
+   "line": 136,
+   "src": "if (is_callable($answer) === true) {"
+  },
+  {
+   "file": "tests/Unit/Service/PortalThemeResolverTest.php",
+   "line": 607,
+   "src": "method_exists($this->resolver(), 'darkStylesheetFor'),"
+  }
+ ],
+ "instanceof_catch": [
+  {
+   "file": "lib/Listener/CmsCacheInvalidationListener.php",
+   "line": 101,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CmsCacheInvalidationListener.php",
+   "line": 102,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/CmsCacheInvalidationListener.php",
+   "line": 103,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/FormDestinationDependentsListener.php",
+   "line": 83,
+   "class": "OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/LandingPageSubmissionDispatchListener.php",
+   "line": 88,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/MediaWriteGuardListener.php",
+   "line": 93,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/MediaWriteGuardListener.php",
+   "line": 132,
+   "class": "OCA\\OpenRegister\\Event\\ObjectDeletingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/PortalRecordChangeListener.php",
+   "line": 133,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/PortalRecordChangeListener.php",
+   "line": 133,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/PortalRecordChangeListener.php",
+   "line": 142,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/RegisterProposalLeavesListener.php",
+   "line": 99,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SchemaWriteGuard.php",
+   "line": 49,
+   "class": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "lib/Listener/SchemaWriteGuard.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+   "status": "exists"
+  },
+  {
+   "file": "tests/Unit/Service/Proposals/ChangeProposalsProviderTest.php",
+   "line": 146,
+   "class": "OCA\\OpenRegister\\Exception\\NotImplementedException",
+   "status": "exists"
+  }
+ ],
+ "named_calls": 29,
+ "implements": [
+  {
+   "file": "lib/Service/Proposals/ChangeProposalsProvider.php",
+   "line": 44,
+   "class": "OCA\\Portaliq\\Service\\Proposals\\ChangeProposalsProvider",
+   "kind": "implements",
+   "or_class": "OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider",
+   "status": "exists"
+  }
+ ],
+ "listeners": [
+  {
+   "file": "lib/AppInfo/Application.php",
+   "line": 166,
+   "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+   "status": "exists",
+   "dispatch": "constructed"
+  },
+  {
+   "file": "lib/AppInfo/FormDependentsRegistrar.php",
+   "line": 53,
+   "event": "OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent",
+   "status": "exists",
+   "dispatch": "constructed"
+  }
+ ],
+ "routes": [
+  {
+   "file": "lib/Settings/example-sets/zuiddrecht.json",
+   "line": 1838,
+   "path": "/api/objects/public-space/road-section/{{lookup*}}",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "lib/Settings/example-sets/zuiddrecht.json",
+   "line": 1859,
+   "path": "/api/objects/public-space/street-light/{{lookup*}}",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "lib/Settings/example-sets/zuiddrecht.json",
+   "line": 1880,
+   "path": "/api/objects/public-space/street-light/{{lookup*}}",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "lib/Settings/example-sets/zuiddrecht.json",
+   "line": 1901,
+   "path": "/api/objects/public-space/street-light/{{lookup*}}",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "lib/Settings/example-sets/zuiddrecht.json",
+   "line": 1922,
+   "path": "/api/objects/public-space/street-light/{{lookup*}}",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/editor/SiteEditMode.vue",
+   "line": 244,
+   "path": "/api/objects/portaliq/page/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/editor/SiteMenuPanel.vue",
+   "line": 175,
+   "path": "/api/objects/portaliq/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/editor/SitePagesPanel.vue",
+   "line": 232,
+   "path": "/api/objects/portaliq/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/lib/mailTemplateEditing.js",
+   "line": 23,
+   "path": "/api/objects/portaliq/portalMailTemplate",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/lib/mailTemplateEditing.js",
+   "line": 24,
+   "path": "/api/objects/portaliq/portal",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/lib/mediaLibrary.js",
+   "line": 49,
+   "path": "/api/objects/portaliq/media",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/lib/registrationSettings.js",
+   "line": 161,
+   "path": "/api/objects/portaliq/portal/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/lib/registrationSettings.js",
+   "line": 204,
+   "path": "/api/objects/portaliq/portalAccount",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/views/PageLayoutDesigner.vue",
+   "line": 358,
+   "path": "/api/objects/portaliq/*/*",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/views/PageLayoutDesigner.vue",
+   "line": 372,
+   "path": "/api/objects/portaliq/sharedBlock",
+   "status": "ok",
+   "prefix": false
+  },
+  {
+   "file": "src/widgets/PortalSummaryCard.vue",
+   "line": 250,
+   "path": "/api/objects/portaliq/page",
+   "status": "ok",
+   "prefix": false
+  }
+ ],
+ "mismatches": [
+  {
+   "file": "tests/Unit/Listener/FormDestinationDependentsListenerTest.php",
+   "line": 171,
+   "scope": "tests",
+   "category": "constructor-shape",
+   "app_calls": "new FormDependentsCheck($dispatcher, new FormDestinationValidator($l10n, new FormFieldRules()), $config, $this->createMock(IManager::class), $this->createMock(LoggerInterface::class))",
+   "or_main": "OCA\\OpenRegister\\Service\\Form\\FormDependentsCheck::__construct(FormDependentsSignals $signals, private readonly FormDestinationValidator $validator, private readonly IAppConfig $appConfig, private readonly LoggerInterface $logger) (lib/Service/Form/FormDependentsCheck.php:94)",
+   "fix": "SILENT-EXTRA-ARGS: 5 positional args, method takes 4 (extra args are silently dropped)",
+   "silent": true,
+   "test_stub_exists": false
+  },
+  {
+   "file": "lib/Listener/FormDestinationDependentsListener.php",
+   "line": 133,
+   "scope": "lib",
+   "category": "constructor-shape",
+   "app_calls": "new FormDependent(id: $bindingId, app: Application::APP_ID, title: $this->titleOf(binding: $binding, render: $render), author: $this->authorOf(binding: $binding), mapping: $this-)",
+   "or_main": "OCA\\OpenRegister\\Service\\Form\\FormDependent::__construct(PublishedForm $form, public readonly ?string $author, public readonly array $mapping, public readonly ?Closure $unpublish = null) (lib/Service/Form/FormDependent.php:73)",
+   "fix": "UNKNOWN-NAMED-ARG: `id:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `app:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `title:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `audience:` (Error: Unknown named parameter); MISSING-REQUIRED-ARG: `$form` (ArgumentCountError)",
+   "silent": false,
+   "test_stub_exists": false
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 98,
+   "scope": "lib",
+   "category": "call-shape",
+   "app_calls": "$service->saveDraft(destination: $destination, mapping: null, payload: $payload, subject: null, draftId: self::orNull(value: $draftId), scope: $scope, owner: $owner)",
+   "or_main": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService::saveDraft(FormSubmission $submission): array (lib/Service/Form/FormSubmitService.php:186)",
+   "fix": "UNKNOWN-NAMED-ARG: `destination:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `mapping:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `payload:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `subject:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `draftId:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `scope:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `owner:` (Error: Unknown named parameter); MISSING-REQUIRED-ARG: `$submission` (ArgumentCountError)",
+   "silent": false,
+   "test_stub_exists": false
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 137,
+   "scope": "lib",
+   "category": "call-shape",
+   "app_calls": "$service->findDraft(destination: $destination, subject: null, owner: $owner, match: $match)",
+   "or_main": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService::findDraft(array $destination, FormSubmitter $submitter, array $match = []): array|null (lib/Service/Form/FormSubmitService.php:467)",
+   "fix": "UNKNOWN-NAMED-ARG: `subject:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `owner:` (Error: Unknown named parameter); MISSING-REQUIRED-ARG: `$submitter` (ArgumentCountError)",
+   "silent": false,
+   "test_stub_exists": false
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 171,
+   "scope": "lib",
+   "category": "call-shape",
+   "app_calls": "$service->submit(destination: $destination, mapping: null, payload: $payload, subject: null, idempotencyKey: self::orNull(value: $idempotencyKey), draftId: $draftId, owner: $own)",
+   "or_main": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService::submit(FormSubmission $submission, ?string $idempotencyKey = null): array (lib/Service/Form/FormSubmitService.php:169)",
+   "fix": "UNKNOWN-NAMED-ARG: `destination:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `mapping:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `payload:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `subject:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `draftId:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `owner:` (Error: Unknown named parameter); MISSING-REQUIRED-ARG: `$submission` (ArgumentCountError)",
+   "silent": false,
+   "test_stub_exists": false
+  },
+  {
+   "file": "lib/Service/Intake/DestinationDraft.php",
+   "line": 210,
+   "scope": "lib",
+   "category": "call-shape",
+   "app_calls": "$discard->discard(destination: $destination, draftId: $draftId, owner: $owner)",
+   "or_main": "OCA\\OpenRegister\\Service\\Object\\DraftDiscard::discard(DiscardDraftRequest $request): bool (lib/Service/Object/DraftDiscard.php:68)",
+   "fix": "UNKNOWN-NAMED-ARG: `destination:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `draftId:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `owner:` (Error: Unknown named parameter); MISSING-REQUIRED-ARG: `$request` (ArgumentCountError)",
+   "silent": false,
+   "test_stub_exists": false
+  },
+  {
+   "file": "lib/Service/Intake/DestinationSubmit.php",
+   "line": 104,
+   "scope": "lib",
+   "category": "call-shape",
+   "app_calls": "$service->submit(destination: $destination, mapping: $mapping, payload: $payload, subject: null, idempotencyKey: $key, scope: $scope)",
+   "or_main": "OCA\\OpenRegister\\Service\\Form\\FormSubmitService::submit(FormSubmission $submission, ?string $idempotencyKey = null): array (lib/Service/Form/FormSubmitService.php:169)",
+   "fix": "UNKNOWN-NAMED-ARG: `destination:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `mapping:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `payload:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `subject:` (Error: Unknown named parameter); UNKNOWN-NAMED-ARG: `scope:` (Error: Unknown named parameter); MISSING-REQUIRED-ARG: `$submission` (ArgumentCountError)",
+   "silent": false,
+   "test_stub_exists": false
+  }
+ ],
+ "unresolved": [
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 92,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 93,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 113,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 125,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 137,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 153,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 164,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalReadsActForTheOrganisationTest.php",
+   "line": 175,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalWritesActForTheOrganisationTest.php",
+   "line": 70,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalWritesActForTheOrganisationTest.php",
+   "line": 82,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalWritesActForTheOrganisationTest.php",
+   "line": 83,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalWritesActForTheOrganisationTest.php",
+   "line": 94,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalWritesActForTheOrganisationTest.php",
+   "line": 95,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalWritesActForTheOrganisationTest.php",
+   "line": 106,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/PortalWritesActForTheOrganisationTest.php",
+   "line": 117,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  },
+  {
+   "file": "tests/Unit/Service/Tenancy/PortalOrganisationRestampTest.php",
+   "line": 132,
+   "what": "$this->objectService->actedFor(): receiver type not resolvable (untyped/mixed property)"
+  }
+ ],
+ "calls_checked": 197,
+ "or_refs": 245,
+ "type_positions": [],
+ "entity_accessors": 42,
+ "stubs": [
+  {
+   "file": "tests/Stubs/Mcp/AbstractToolHandler.php",
+   "line": 35,
+   "class": "OCA\\OpenRegister\\Mcp\\AbstractToolHandler",
+   "status": "missing",
+   "drift": []
+  },
+  {
+   "file": "tests/Stubs/Mcp/IMcpToolProvider.php",
+   "line": 36,
+   "class": "OCA\\OpenRegister\\Mcp\\IMcpToolProvider",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/Stubs/OpenRegister/Event/RegisterLeafProvidersEvent.php",
+   "line": 64,
+   "class": "OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/Stubs/OpenRegister/Exception/NotImplementedException.php",
+   "line": 41,
+   "class": "OCA\\OpenRegister\\Exception\\NotImplementedException",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/Stubs/OpenRegister/Service/Integration/IntegrationProvider.php",
+   "line": 62,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider",
+   "status": "exists",
+   "drift": []
+  },
+  {
+   "file": "tests/Stubs/OpenRegister/Service/Integration/LeafDescriptor.php",
+   "line": 53,
+   "class": "OCA\\OpenRegister\\Service\\Integration\\LeafDescriptor",
+   "status": "exists",
+   "drift": []
+  }
+ ],
+ "app": "portaliq",
+ "dir": "portaliq",
+ "branch": "development",
+ "sha": "795da17ba3f56c7ce6f37607a37ac0db0071c822",
+ "or_sha": "cef85ccad5bfd56ee2c7b6855e8a245d69a19f88"
+}

@@ -1,0 +1,21 @@
+# Fleet call sites of OpenRegister ObjectService::searchObjectsPaginated that break with the value-object signature (ko3, 2026-11-10).
+# Receiver not resolved: a call on another class with the same method name can appear here.
+dossiq	procest/tests/Unit/Repair/SeedWriteIdentityTest.php:104	positional,positional
+hermiq	hermiq/lib/Service/Engine/ContextRetrievalHandler.php:421	views
+opencatalogi	opencatalogi/lib/Controller/CatalogiController.php:171	deleted
+opencatalogi	opencatalogi/lib/Controller/SitemapDirectives.php:75	deleted
+opencatalogi	opencatalogi/lib/Service/DcatService.php:287	deleted
+opencatalogi	opencatalogi/lib/Service/DcatService.php:823	deleted
+opencatalogi	opencatalogi/lib/Service/OoapiService.php:311	deleted
+opencatalogi	opencatalogi/lib/Service/SchemaOrgService.php:603	deleted
+opencatalogi	opencatalogi/lib/Service/SitemapIndexBuilder.php:74	deleted
+opencatalogi	opencatalogi/lib/Service/SitemapService.php:525	deleted
+opencatalogi	opencatalogi/lib/Service/SitemapService.php:685	deleted
+opencatalogi	opencatalogi/lib/Service/Woo/WooCategoryRegistry.php:414	deleted
+opencatalogi	opencatalogi/lib/Service/WooReadinessService.php:315	deleted
+shillinq	shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php:365	positional,positional,positional,positional
+shillinq	shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php:421	positional,positional,positional,positional
+stackiq	softwarecatalog/lib/Service/AangebodenGebruikService.php:486	deleted
+stackiq	softwarecatalog/lib/Service/AangebodenGebruikService.php:501	deleted,uses
+stackiq	softwarecatalog/lib/Service/AangebodenGebruikService.php:622	deleted
+stackiq	softwarecatalog/lib/Service/AangebodenGebruikService.php:738	deleted,uses

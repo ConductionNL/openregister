@@ -1,0 +1,39 @@
+8696 opencatalogi lib/Command/AttachDocumentsToPublicationsCommand.php:481 FileService::moveFile
+8810 dq-proposals lib/Service/Woo/WooDeliveredSetWriter.php:316 ArchiveHandler::freeze
+8912 larpingapp lib/Service/RegisterObjectFetcher.php:163 RegisterConfigResolver::resolveRegisterId/resolveSchemaId
+8912 oc-l10n2 lib/Service/OpenRegisterLookup.php:123 RegisterConfigResolver::resolveRegisterId/resolveSchemaId
+8908 filinq lib/Service/LegalHold/LegalHoldRecordFreeze.php:151 LegalHoldService::placeHold
+8908 filinq lib/Service/LegalHold/LegalHoldRecordFreeze.php:187 LegalHoldService::placeHold
+8908 filinq lib/Service/LegalHold/LegalHoldRecordFreeze.php:193 LegalHoldService::releaseHold
+8908 dossiq lib/Command/Backfill/LegalHoldApplier.php:120 LegalHoldService::placeHold
+8908 dossiq lib/Listener/BezwaarLegalHoldListener.php:190 LegalHoldService::placeHold
+8908 dossiq lib/Listener/BezwaarLegalHoldListener.php:192 LegalHoldService::releaseHold
+8908 dossiq lib/Repair/MigrateArchivalToOpenRegister.php:297 LegalHoldService::placeHold
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:543 FlowRunService::queue
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:544 FlowRunService::execute
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:597 FlowRunService::queue
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:598 FlowRunService::execute
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:675 FlowRunService::execute
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:700 FlowRunService::execute
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:728 FlowRunService::execute
+8734 dossiq tests/Unit/Flow/AskPersonHeartbeatRecoveryTest.php:759 FlowRunService::execute
+8916 humaniq lib/Service/FieldReadAccess.php:72 PropertyRbacHandler::canReadProperty
+8939 humaniq lib/Service/AvgDsrService.php:177 DataSubjectRequestService::findSubjectData
+8939 humaniq lib/Service/AvgDsrService.php:239 DataSubjectRequestService::erase
+8939 humaniq lib/Service/AvgDsrService.php:288 DataSubjectRequestService::erase
+8939 pipelinq lib/Service/DataDeletionService.php:164 DataSubjectRequestService::erase
+8917 dossiq lib/Service/CaseAccessGuard.php:379 ObjectGrantResolver::isGranted
+openregister#9058 createAuditTrailEntry removed -> recordObjectEvent: ~37 sites (hermiq 20, dossiq 8, buildiq 4, filinq 3, decidiq 1, shillinq 1). WARNING: 2 dossiq recycle/destruction services guard with method_exists -> they SILENTLY stop writing audit entries; migrate those first.
+openregister#9067 FileService::copyFile removed -> copyAttachedFile(FileTransfer): integriq OpenFormulierenIntakeService.php:527
+openregister#9072 TaskService offer/reassign/cancel take TaskActorRef: integriq ApprovalTaskMirror.php:176, dossiq EngineTaskGateway.php:393,:820
+openregister#9077 renderEntity(entity, ?RenderSelection, _rbac, _multitenancy): opencatalogi PublicationsController.php:1152, dossiq PublicCaseSurvivorController.php:191, integriq SynchronizationService.php:5869
+openregister#9074 BulkActionInterface::apply(BulkStep): dossiq LifecycleCases, MoveCaseTypeVersion, ReassignCases, SetCaseAttribute, TransitionCases
+openregister#9078 Bootstrap::register/aliasStoreController(LeafAdoption): register dossiq/buildiq/learniq; aliasStoreController decidiq/filinq/larpinq/planninq/portaliq/shillinq (5 inside catch(Throwable) -> SILENT 500 on /api/store/items); also hydra-gates phpstan stub for portaliq
+openregister lib/Contract/ObjectServiceInterface (all 19 methods, lanes KO1-3): full lists in fleet/objectservice-<method>.txt; ~2,400 sites -> scripted migration per app
+openregister#9049 preferences PreferenceAddress/PreferenceWrite: planninq x3, dossiq x1
+openregister#9054 timers TimerChange/TimerSubjectRef/TimerAnchorMove: dossiq x7
+openregister#9056 ObjectMergerInterface::merge(MergeInstruction): dossiq CaseMergeService method_exists('executeMerge') -> SILENTLY reports merge unavailable; migrate with #9056
+openregister#9066 ChatService::processMessage(ChatMessageRequest): hermiq ScheduleService.php:2411
+openregister#9090 IFlowNode::execute/preview(FlowNodeCall): 31 nodes + 6 integriq *NodeInterface across decidiq, filinq, hermiq, humaniq, integriq, pipelinq, dossiq; dossiq direct calls RetiredActionRunner.php:176, SideEffectDispatcher.php:192
+openregister#9103 searchObjects/searchObjectsPaginated(SearchOptions), countSearchObjects(ObjectSelection), searchObjectsBySlug(RegisterSchemaRef): ~124 sites in buildiq, dossiq, filinq, opencatalogi, planninq, shillinq + 9 test doubles (dossiq, pipelinq, shillinq); ALSO update hydra-gates' copy of ObjectServiceInterface
+openregister#9116 ObjectService find/findSilent(..., ObjectFindOptions): 922 find + 2 findSilent across 14 apps; script fleet/tools/migrate-find.*

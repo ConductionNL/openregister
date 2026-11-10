@@ -1,0 +1,20 @@
+buildiq/lib/Controller/ApplicationVersionsController.php:392:					$this->objectService->lockObject(
+buildiq/lib/Mcp/Handler/AbstractToolHandler.php:619:			$objectService->lockObject(
+buildiq/lib/Service/ApplicationCreationService.php:185:			$this->store->objectService->lockObject(
+buildiq/lib/Service/VersionPromotionService.php:533:			$this->objectService->lockObject(
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:225:			->method('lockObject')
+buildiq/tests/Unit/Service/VersionPromotionServiceTest.php:265:			->method('lockObject')
+opencatalogi/src/modals/object/LockObject.vue:7:		v-if="navigationStore.modal === 'lockObject'"
+integriq/lib/Service/EndpointService.php:3853:			$object = $this->objectService->getOpenRegisters()->lockObject(
+integriq/tests/Unit/Service/EndpointServiceRuleProcessorsGoldenTest.php:280:				'lockObject' => fn (string $identifier, ?string $process = null, ?int $duration = null) => ['locked' => $identifier, 'processIsUuid' => (strlen((string)$process) === 36), 'duration' => $duration],
+integriq/tests/Unit/Service/EndpointServiceTest.php:334:		$openRegisters->method('lockObject')->willReturn(['locked' => true, 'process' => 'test-process']);
+dossiq/lib/Controller/DrcController.php:876:			$objectService->lockObject(identifier: $uuid);
+dossiq/tests/Unit/Controller/DrcDownloadLockContractTest.php:334:		$objectService->expects($this->never())->method('lockObject');
+dossiq/tests/Unit/Controller/DrcDownloadLockContractTest.php:364:			->method('lockObject')
+shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php:480:		return $this->inner->lockObject($identifier, $process, $duration, $advisory);
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php:924:		$this->unsupported(method: 'lockObject');
+shillinq/tests/Unit/Service/Support/FilteredObjectServiceStub.php:533:		$this->unsupported(method: 'lockObject');
+shillinq/tests/Unit/Service/Support/InMemoryObjectServiceStub.php:769:		$this->unsupported(method: 'lockObject');
+shillinq/tests/Unit/Service/Support/KnownCostFixtureObjectServiceStub.php:663:		$this->unsupported(method: 'lockObject');
+shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php:525:		return $this->inner->lockObject($identifier, $process, $duration, $advisory);
+stackiq/src/modals/object/LockObject.vue:7:		v-if="navigationStore.modal === 'lockObject'"

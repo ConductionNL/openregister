@@ -1,0 +1,40 @@
+integriq/lib/Service/CallService.php:1943:			$this->objectService->saveObjects(
+integriq/lib/Service/SynchronizationContractService.php:385:			operation: fn (): array => $this->orObjectService->saveObjects(
+integriq/lib/Service/SynchronizationService.php:6448:		$writeBatch = fn (): array => $this->orObjectService->saveObjects(
+integriq/tests/Unit/Service/CallServiceBodyCaptureTest.php:59:	 * Batches handed to ObjectService::saveObjects().
+integriq/tests/Unit/Service/CallServiceBodyCaptureTest.php:84:		$objectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/CallServiceDispatchGoldenTest.php:142:		$objectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/CallServiceResponseHeaderRedactionTest.php:80:	 * Batches handed to ObjectService::saveObjects().
+integriq/tests/Unit/Service/CallServiceResponseHeaderRedactionTest.php:102:		$objectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/CallServiceWithheldBodiesTest.php:82:	 * Bulk saves handed to ObjectService::saveObjects().
+integriq/tests/Unit/Service/CallServiceWithheldBodiesTest.php:107:		$objectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/EndoflifeDateSyncTest.php:248:		$this->orObjectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/SynchronizationContractIdentityTest.php:217:		$this->orObjectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/SynchronizationContractIdentityTest.php:245:		$this->orObjectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/SynchronizationContractIdentityTest.php:268:		$this->orObjectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/SynchronizationServiceOriginIdMatchingTest.php:143:		$this->orObjectService->method('saveObjects')->willReturnCallback(
+integriq/tests/Unit/Service/Zgw/ZgwSetPullFixtureTest.php:163:		$or->method('saveObjects')->willReturnCallback(
+integriq/tests/stubs/OCA/OpenRegister/Service/ObjectService.php:216:	 * `Call to undefined method MockObject_ObjectService::saveObjects()`.
+portaliq/lib/Service/Traffic/TrafficEventStore.php:147:			$this->logPath(path: 'saveObjects');
+portaliq/lib/Service/Traffic/TrafficEventStore.php:152:			$saved = $objectService->saveObjects(
+shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php:413:		return $this->inner->saveObjects(
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php:843:		if (method_exists($this->inner, 'saveObjects') === true) {
+shillinq/tests/Unit/Service/Support/DuckObjectServiceAdapter.php:844:			return $this->inner->saveObjects($objects);
+shillinq/tests/Unit/Service/Support/FilteredObjectServiceStub.php:473:		$this->unsupported(method: 'saveObjects');
+shillinq/tests/Unit/Service/Support/InMemoryObjectServiceStub.php:638:		$this->unsupported(method: 'saveObjects');
+shillinq/tests/Unit/Service/Support/KnownCostFixtureObjectServiceStub.php:591:		$this->unsupported(method: 'saveObjects');
+shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php:469:		return $this->inner->saveObjects($objects, $register, $schema, $rbac, $multitenancy, $validation, $events, $deduplicateIds, $enrich, $audit);
+stackiq/lib/Service/ArchiMateImportService.php:1393:				$saveResult = $objectService->saveObjects(
+stackiq/lib/Service/SbomImportService.php:416:			$objectService->saveObjects(
+stackiq/lib/Service/SettingsService.php:6048:					$bulkResult = $objectService->saveObjects(
+stackiq/tests/Unit/SbomImportServiceTest.php:173:		$this->objectService->method('saveObjects')->willReturnCallback(
+stackiq/tests/Unit/SbomImportServiceTest.php:175:				$this->savedTargets[] = ['saveObjects', $register, $schema];
+stackiq/tests/Unit/SbomImportServiceTest.php:339:		$this->assertContains(needle: ['saveObjects', 1, 20], haystack: $this->savedTargets);
+stackiq/tests/Unit/SbomImportServiceTest.php:416:		$this->objectService->expects($this->never())->method('saveObjects');
+stackiq/tests/Unit/Service/ArchiMateGemmaStandardLinksTest.php:241:		$objectService->method('saveObjects')->willReturnCallback(
+stackiq/tests/Unit/Service/ArchiMateImportGoldenTest.php:222:		$objectService->method('saveObjects')->willReturnCallback(
+stackiq/tests/Unit/Service/ArchiMateImportProgressTest.php:132:		$objectService->method('saveObjects')->willReturnCallback(
+stackiq/tests/Unit/Service/ArchiMateImportProgressTest.php:160:		$objectService->expects($this->once())->method('saveObjects')->willReturnCallback(
+stackiq/tests/Unit/Service/ArchiMateImportProgressTest.php:207:		$objectService->expects($this->exactly(2))->method('saveObjects')->willReturn(
+stackiq/tests/Unit/Service/SbomImportGoldenTest.php:213:		$objects->method('saveObjects')->willReturnCallback(
+stackiq/tests/Unit/Support/OpenRegister/MappingEngine.php:13: * the single write path (`ObjectService::saveObjects()`/`saveObject()`) is

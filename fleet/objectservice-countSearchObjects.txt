@@ -1,0 +1,4 @@
+# Fleet call sites of OpenRegister ObjectService::countSearchObjects that break with the value-object signature (ko3, 2026-11-10).
+# Receiver not resolved: a call on another class with the same method name can appear here.
+shillinq	shillinq/tests/Unit/Service/Support/CallCountingObjectServiceDecorator.php:572	positional,positional
+shillinq	shillinq/tests/Unit/Service/Support/RacingDefaultObjectServiceDecorator.php:617	positional,positional
