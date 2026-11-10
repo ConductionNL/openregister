@@ -385,7 +385,9 @@ class UserController extends Controller {
 			return null;
 		}
 
-		$this->securityService->recordFailedLoginAttempt(attempt: new FailedAttempt(subject: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason));
+		$this->securityService->recordFailedLoginAttempt(
+			attempt: new FailedAttempt(subject: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason)
+		);
 		return $this->responses->error(message: $message, statusCode: 401);
 	}//end refusedLogin()
 
