@@ -210,6 +210,17 @@ class DsarService implements DsarServiceInterface {
 			return [];
 		}
 
+		return $this->subjectEnvelopes(hits: $hits);
+	}//end findObjectsFor()
+
+	/**
+	 * Each matched object that still loads, with the personal data found in it.
+	 *
+	 * @param array<int, array<string, mixed>> $hits The entity matches.
+	 *
+	 * @return array<int, array{object: array, gdprEntities: array}>
+	 */
+	private function subjectEnvelopes(array $hits): array {
 		$envelopes = [];
 		foreach ($this->groupHitsByObject(hits: $hits) as $entry) {
 			$object = $this->loadObjectByEntry(entry: $entry);
@@ -224,7 +235,7 @@ class DsarService implements DsarServiceInterface {
 		}//end foreach
 
 		return $envelopes;
-	}//end findObjectsFor()
+	}//end subjectEnvelopes()
 
 	/**
 	 * Soft-delete every object matching a subject (Art 17 vergetelheid).
@@ -296,11 +307,7 @@ class DsarService implements DsarServiceInterface {
 	public function eraseObjectsFor(DsarSubjectQuery $query, bool $dryRun): array {
 		$this->assertPrivileged();
 
-		// Dedupe by canonical key: uuid (preferred) or int id (legacy).
-		$entries = array_map(
-			static fn (array $group): array => ['object_id' => $group['object_id'], 'object_uuid' => $group['object_uuid']],
-			$this->groupHitsByObject(hits: $this->matchEntities(query: $query))
-		);
+		$entries = $this->erasureEntries(query: $query);
 
 		$summary = [
 			'subject' => $query->subject,
@@ -311,10 +318,7 @@ class DsarService implements DsarServiceInterface {
 
 		$run = new DsarErasureRun();
 		if ($dryRun === false && $entries !== []) {
-			$run = $this->startErasure(subject: $query->subject);
-			foreach ($entries as $entry) {
-				$this->eraseOneEntry(entry: $entry, run: $run);
-			}
+			$run = $this->eraseEntries(entries: $entries, subject: $query->subject);
 		}
 
 		// BUG-SVC-2: objects whose erasure failed are reported, so a run with failures
@@ -325,6 +329,37 @@ class DsarService implements DsarServiceInterface {
 		// withheld record is explained.
 		return $summary + $run->outcome();
 	}//end eraseObjectsFor()
+
+	/**
+	 * The objects a subject query matches, deduped by canonical key: uuid (preferred) or int id (legacy).
+	 *
+	 * @param DsarSubjectQuery $query The subject, type and mode.
+	 *
+	 * @return array<int, array{object_id: int, object_uuid: string}>
+	 */
+	private function erasureEntries(DsarSubjectQuery $query): array {
+		return array_map(
+			static fn (array $group): array => ['object_id' => $group['object_id'], 'object_uuid' => $group['object_uuid']],
+			$this->groupHitsByObject(hits: $this->matchEntities(query: $query))
+		);
+	}//end erasureEntries()
+
+	/**
+	 * Erase every matched object under one erasure run.
+	 *
+	 * @param array<int, array{object_id: int, object_uuid: string}> $entries The matched objects.
+	 * @param string                                                 $subject The data subject.
+	 *
+	 * @return DsarErasureRun What was erased, failed and withheld.
+	 */
+	private function eraseEntries(array $entries, string $subject): DsarErasureRun {
+		$run = $this->startErasure(subject: $subject);
+		foreach ($entries as $entry) {
+			$this->eraseOneEntry(entry: $entry, run: $run);
+		}
+
+		return $run;
+	}//end eraseEntries()
 
 	/**
 	 * Erase one matched object, or record why it was not erased.
@@ -420,22 +455,43 @@ class DsarService implements DsarServiceInterface {
 				continue;
 			}
 
-			$groups[$key] ??= [
-				'object_id' => (int)($hit['object_id'] ?? 0),
-				'object_uuid' => (string)($hit['object_uuid'] ?? ''),
-				'gdprEntities' => [],
-			];
-
-			$groups[$key]['gdprEntities'][] = [
-				'type' => (string)($hit['type'] ?? ''),
-				'value' => (string)($hit['value'] ?? ''),
-				'category' => (string)($hit['category'] ?? ''),
-				'detectedAt' => (string)($hit['detected_at'] ?? ''),
-			];
+			$groups[$key] ??= self::emptyGroup(hit: $hit);
+			$groups[$key]['gdprEntities'][] = self::gdprEntity(hit: $hit);
 		}
 
 		return $groups;
 	}//end groupHitsByObject()
+
+	/**
+	 * The group of a matched object before its personal data is added.
+	 *
+	 * @param array<string, mixed> $hit The first match for the object.
+	 *
+	 * @return array{object_id: int, object_uuid: string, gdprEntities: array}
+	 */
+	private static function emptyGroup(array $hit): array {
+		return [
+			'object_id' => (int)($hit['object_id'] ?? 0),
+			'object_uuid' => (string)($hit['object_uuid'] ?? ''),
+			'gdprEntities' => [],
+		];
+	}//end emptyGroup()
+
+	/**
+	 * One piece of personal data a match found.
+	 *
+	 * @param array<string, mixed> $hit The match.
+	 *
+	 * @return array{type: string, value: string, category: string, detectedAt: string}
+	 */
+	private static function gdprEntity(array $hit): array {
+		return [
+			'type' => (string)($hit['type'] ?? ''),
+			'value' => (string)($hit['value'] ?? ''),
+			'category' => (string)($hit['category'] ?? ''),
+			'detectedAt' => (string)($hit['detected_at'] ?? ''),
+		];
+	}//end gdprEntity()
 
 	/**
 	 * Build a dedup key for a relation hit row.
@@ -474,15 +530,38 @@ class DsarService implements DsarServiceInterface {
 	 * @return ObjectEntity|null
 	 */
 	private function loadObjectByEntry(array $entry): ?ObjectEntity {
+		$identifier = self::entryIdentifier(entry: $entry);
+		if ($identifier === 0 || $identifier === '') {
+			return null;
+		}
+
+		return $this->findUnscoped(identifier: $identifier);
+	}//end loadObjectByEntry()
+
+	/**
+	 * The identifier a matched object is loaded by: its uuid, else its id.
+	 *
+	 * @param array{object_id: int, object_uuid: string} $entry The matched object.
+	 *
+	 * @return int|string
+	 */
+	private static function entryIdentifier(array $entry): int|string {
 		$identifier = $entry['object_id'];
 		if ($entry['object_uuid'] !== '') {
 			$identifier = $entry['object_uuid'];
 		}
 
-		if ($identifier === 0 || $identifier === '') {
-			return null;
-		}
+		return $identifier;
+	}//end entryIdentifier()
 
+	/**
+	 * Load an object outside RBAC and tenancy; null when it is gone or fails to load.
+	 *
+	 * @param int|string $identifier The uuid or id.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function findUnscoped(int|string $identifier): ?ObjectEntity {
 		try {
 			return $this->objectMapper->find(
 				$identifier,
@@ -498,8 +577,7 @@ class DsarService implements DsarServiceInterface {
 			);
 			return null;
 		}
-
-	}//end loadObjectByEntry()
+	}//end findUnscoped()
 
 	/**
 	 * Update a single object with DSAR attribution (Art 16 rectificatie).
