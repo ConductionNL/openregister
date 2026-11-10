@@ -48,6 +48,7 @@ use OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -234,16 +235,39 @@ class ApiSurfaceController extends Controller {
 		}
 
 		if ($declared->isServed() === false) {
-			return new JSONResponse(
-				data: [
-					'error' => 'API version ' . $declared->id . ' has been withdrawn. Use version ' . (string)$declared->successor . '.',
-					'successorVersion' => $declared->successor,
-					'servedVersions' => $this->catalogue->servedIdentifiers(),
-				],
-				statusCode: Http::STATUS_GONE,
-			);
+			return $this->withdrawn(declared: $declared);
 		}
 
+		return $this->description(declared: $declared);
+
+	}//end contract()
+
+	/**
+	 * The answer for a declared version that is no longer served: gone, naming its successor.
+	 *
+	 * @param ApiVersion $declared The withdrawn version
+	 *
+	 * @return JSONResponse 410 with the successor and the versions still served
+	 */
+	private function withdrawn(ApiVersion $declared): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'API version ' . $declared->id . ' has been withdrawn. Use version ' . (string)$declared->successor . '.',
+				'successorVersion' => $declared->successor,
+				'servedVersions' => $this->catalogue->servedIdentifiers(),
+			],
+			statusCode: Http::STATUS_GONE,
+		);
+	}//end withdrawn()
+
+	/**
+	 * Generate the description of a served version, narrowed to the requested register.
+	 *
+	 * @param ApiVersion $declared The served version
+	 *
+	 * @return JSONResponse The description, or a 500 when it could not be generated
+	 */
+	private function description(ApiVersion $declared): JSONResponse {
 		try {
 			$document = $this->contracts->documentFor(
 				version: $declared,
@@ -262,7 +286,6 @@ class ApiSurfaceController extends Controller {
 		}
 
 		return new JSONResponse(data: $document);
-
 	}//end contract()
 
 	/**
