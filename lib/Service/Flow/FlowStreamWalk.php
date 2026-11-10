@@ -389,7 +389,7 @@ class FlowStreamWalk {
 		$placed = $firing->withConsumedStreamIds(consumedStreamIds: $this->streamsOn(places: $firing->froms, except: $id))
 			->withStreamPath(path: $stream->path, parent: $stream->parent);
 
-		$result = $this->parts->commit->commitFiring(run: $this->run, firing: $placed, owner: $this->limits->owner);
+		$result = $this->parts->commit->commitFiring(run: $this->run, firing: new FlowPassFiring(firing: $placed, owner: $this->limits->owner));
 		$this->fired++;
 
 		// The commit is the authority on lineage, and a sibling pass may have

@@ -4,7 +4,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<SelectedObjectsDialogFrame
 		:name="
 			n(
 				'openregister',
@@ -14,99 +14,56 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				{ count: selectedObjects.length },
 			)
 		"
-		noClose
-		size="normal">
-		<!-- Object Selection Review -->
-		<div v-if="success === null" class="delete-step">
-			<h3 class="step-title">
-				{{ t('openregister', 'Confirm Object Deletion') }}
-			</h3>
-
-			<NcNoteCard type="info">
-				{{
-					t(
-						'openregister',
-						"Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.",
-					)
-				}}<br /><br />
-				{{
-					t(
-						'openregister',
-						'Objects will be soft deleted and moved to the',
-					)
-				}}
-				<a
-					href="#"
-					class="deleted-link"
-					@click.prevent="navigateToDeleted"
-					>{{ t('openregister', 'deleted objects section') }}</a
-				>.
-				{{
-					t(
-						'openregister',
-						"They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.",
-					)
-				}}
-			</NcNoteCard>
-
-			<SelectedObjectsList
-				:objects="selectedObjects"
-				:emptyDescription="
-					t(
-						'openregister',
-						'No objects are currently selected for deletion.',
-					)
-				"
-				@remove="removeObject" />
-		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>
-				{{
-					n(
-						'openregister',
-						'Object successfully deleted',
-						'Objects successfully deleted',
-						objectStore.selectedObjects.length,
-					)
-				}}
-			</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || selectedObjects.length === 0"
-				variant="error"
-				@click="deleteObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Delete') }}
-			</NcButton>
+		stepClass="delete-step"
+		:title="t('openregister', 'Confirm Object Deletion')"
+		:objects="selectedObjects"
+		:emptyDescription="
+			t('openregister', 'No objects are currently selected for deletion.')
+		"
+		:success="success"
+		:successText="
+			n(
+				'openregister',
+				'Object successfully deleted',
+				'Objects successfully deleted',
+				objectStore.selectedObjects.length,
+			)
+		"
+		:error="error"
+		:loading="loading"
+		:actionLabel="t('openregister', 'Delete')"
+		actionVariant="error"
+		@close="closeDialog"
+		@remove="removeObject"
+		@submit="deleteObject()">
+		<template #intro>
+			{{
+				t(
+					'openregister',
+					"Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.",
+				)
+			}}<br /><br />
+			{{ t('openregister', 'Objects will be soft deleted and moved to the') }}
+			<a href="#" class="deleted-link" @click.prevent="navigateToDeleted">{{
+				t('openregister', 'deleted objects section')
+			}}</a
+			>.
+			{{
+				t(
+					'openregister',
+					"They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.",
+				)
+			}}
 		</template>
-	</NcDialog>
+		<template #actionIcon>
+			<TrashCanOutline :size="20" />
+		</template>
+	</SelectedObjectsDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import SelectedObjectsDialogFrame from './SelectedObjectsDialogFrame.vue'
 import selectedObjectsDialog, {
 	refreshObjectLists,
 } from './selectedObjectsDialog.js'
@@ -114,14 +71,9 @@ import selectedObjectsDialog, {
 export default {
 	name: 'MassDeleteObject',
 	components: {
-		SelectedObjectsList,
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
+		SelectedObjectsDialogFrame,
 		// Icons
 		TrashCanOutline,
-		Cancel,
 	},
 
 	mixins: [selectedObjectsDialog],
@@ -200,14 +152,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@use '../../styles/modals.scss' as *;
-
-.delete-step {
-	padding: 0;
-}
-
-@include step-title;
-
 .deleted-link {
 	color: var(--color-primary);
 	text-decoration: underline;

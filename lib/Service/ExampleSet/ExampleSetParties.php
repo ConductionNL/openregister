@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -184,9 +185,11 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	public function lost(array $entry): bool {
 		try {
 			return $this->links()->findByObjectContactAndRole(
-				objectUuid: (string) $entry['objectUuid'],
-				contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
-				role: (string) $entry['role']
+				ref: new PersonLinkRef(
+					objectUuid: (string) $entry['objectUuid'],
+					contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
+					role: (string) $entry['role']
+				)
 			) === null;
 		} catch (Throwable) {
 			return true;

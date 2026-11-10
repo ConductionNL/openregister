@@ -160,4 +160,36 @@ class SeedCaseFixturesTest extends TestCase {
 		$this->step(enabled: true, items: $items, audits: $audits)->run($output);
 		$this->assertGreaterThan(6, count($items->rows), 'The other groups were seeded.');
 	}//end testAFailingFixtureIsReportedAndTheRestContinue()
+	/**
+	 * Characterisation: the exact fixture trees and every audit row the seed
+	 * writes, pinned so a restructuring of the fixture builder cannot drift.
+	 *
+	 * @return void
+	 */
+	public function testTheFixtureTreesAndAuditRowsArePinned(): void {
+		$items = new FakeCaseItemMapper($this);
+		$audits = new RecordingAuditMapper($this);
+		$step = $this->step(enabled: true, items: $items, audits: $audits);
+
+		$fixtures = (new \ReflectionMethod(SeedCaseFixtures::class, 'fixtures'))->invoke($step);
+		$this->assertSame('3ff9aa86a2426cdf51bbf2b9b7569c0fdaaf329c7cbc154fb1c0bfd4f39119e0', hash('sha256', json_encode($fixtures, JSON_THROW_ON_ERROR)));
+
+		$step->run($this->createMock(IOutput::class));
+		$trail = [];
+		foreach ($audits->entries as $entry) {
+			$trail[] = [
+				$entry->getCaseItemId(),
+				$entry->getFromState(),
+				$entry->getToState(),
+				$entry->getCause(),
+				$entry->getCauseRef(),
+				$entry->getActor(),
+				$entry->getReason(),
+				$entry->getAuthorized(),
+			];
+		}
+
+		$this->assertCount(21, $trail);
+		$this->assertSame('a7e08cf8e65ec0f9934bb767a36fee561e8901090644fb1792c39780f04c4759', hash('sha256', json_encode($trail, JSON_THROW_ON_ERROR)));
+	}//end testTheFixtureTreesAndAuditRowsArePinned()
 }//end class

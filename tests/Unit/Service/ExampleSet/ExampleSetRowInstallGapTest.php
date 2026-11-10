@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
+use OCA\OpenRegister\Service\ExampleSet\FilledRow;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -50,7 +51,7 @@ class ExampleSetRowInstallGapTest extends TestCase {
 		$rows->expects($this->never())->method('write');
 		$install = new ExampleSetRowInstall(
 			rows: $rows,
-			refusal: static fn (array $data, array $users, array $context): string => '',
+			refusal: static fn (FilledRow $row, array $context): string => '',
 			fill: static fn (array $context): array => $context,
 			values: new ExampleSetValues()
 		);
