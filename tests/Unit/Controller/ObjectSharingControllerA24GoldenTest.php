@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\MapperBackedSchemaCatalog;
 use OCA\OpenRegister\Controller\ObjectSharingController;
 use OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -99,15 +100,13 @@ class ObjectSharingControllerA24GoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		return new ObjectSharingController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectSharingControllerServices(
 				objectService: $this->objects,
-				registerMapper: $registers,
-				schemaMapper: $schemas,
-				sharing: $this->sharing
-			),
-			logger: $this->logger
+				catalog: new MapperBackedSchemaCatalog(registers: $registers, schemas: $schemas),
+				sharing: $this->sharing,
+				logger: $this->logger
+			)
 		);
 	}
 
@@ -142,15 +141,13 @@ class ObjectSharingControllerA24GoldenTest extends TestCase {
 	public function testResolverFailureIsNotFound(): void {
 		$this->objects->method('getObject')->willThrowException(new \RuntimeException('db'));
 		$controller = new ObjectSharingController(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			services: new ObjectSharingControllerServices(
 				objectService: $this->objects,
-				registerMapper: $this->createMock(RegisterMapperInterface::class),
-				schemaMapper: $this->createMock(SchemaMapperInterface::class),
-				sharing: $this->sharing
-			),
-			logger: $this->logger
+				catalog: new MapperBackedSchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class)),
+				sharing: $this->sharing,
+				logger: $this->logger
+			)
 		);
 
 		$this->assertOutcome(404, ['message' => 'Object not found'], $controller->scope('r', 's', 'x'));

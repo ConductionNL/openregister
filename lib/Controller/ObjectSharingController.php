@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -53,7 +54,6 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 
 /**
  * Owner-checked endpoints for an object's scope and its grants.
@@ -77,21 +77,17 @@ class ObjectSharingController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
+	 * @param IRequest                        $request  Request.
 	 * @param ObjectSharingControllerServices $services The object sharing controller services.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectSharingControllerServices $services,
-		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$failure = 'Could not complete the sharing request';
-		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $logger, file: __FILE__, failure: $failure);
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $services->logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -400,8 +396,8 @@ class ObjectSharingController extends Controller {
 	 */
 	private function storeScope(ObjectEntity $object, string $scope): array {
 		return $this->services->sharing->setScope(
-			register: $this->services->registerMapper->find($this->services->objectService->getRegister()),
-			schema: $this->services->schemaMapper->find($this->services->objectService->getSchema()),
+			register: $this->services->catalog->registers()->find($this->services->objectService->getRegister()),
+			schema: $this->services->catalog->schemas()->find($this->services->objectService->getSchema()),
 			object: $object,
 			scope: $scope
 		);

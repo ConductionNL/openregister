@@ -97,9 +97,7 @@ class ObjectReadStateControllerA24GoldenTest extends TestCase {
 
 		return new ObjectReadStateController(
 			request: $request,
-			objectService: $objects,
-			services: new ObjectReadStateControllerServices(readState: $this->readState, clearing: $this->clearing),
-			logger: $this->logger
+			services: new ObjectReadStateControllerServices(readState: $this->readState, clearing: $this->clearing, objectService: $objects, logger: $this->logger)
 		);
 	}
 
