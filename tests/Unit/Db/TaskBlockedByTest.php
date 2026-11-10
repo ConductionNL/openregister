@@ -197,7 +197,7 @@ class TaskBlockedByTest extends TestCase {
 			->with(['task-visit', 'task-closed'])
 			->willReturn(['task-visit']);
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
 		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-1'))))['results'];
 
 		$this->assertTrue($rows[0]['blocked']);
@@ -220,7 +220,7 @@ class TaskBlockedByTest extends TestCase {
 		$blockers = $this->createMock(TaskBlockerMapper::class);
 		$blockers->method('openBlockerUuids')->willReturn(['task-visit']);
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
 
 		$this->assertTrue($inbox->enrich(task: $waiting)['blocked']);
 	}//end testASingleReadDerivesTheFlagToo()
@@ -253,7 +253,7 @@ class TaskBlockedByTest extends TestCase {
 		$blockers = $this->createMock(TaskBlockerMapper::class);
 		$blockers->method('openBlockerUuids')->willThrowException(new \RuntimeException('database went away'));
 
-		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$inbox = new TaskInboxService(tasks: $tasks, logger: new NullLogger(), objects: null, blockers: $blockers);
 		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'anna'), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-1'))))['results'];
 
 		$this->assertFalse($rows[0]['blocked']);

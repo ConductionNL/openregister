@@ -7,6 +7,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 use Exception;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -41,7 +42,8 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 	 */
 	private function service(array $s): ObjectService {
 		$bulk = $this->createMock(SaveObjects::class);
-		$bulk->method('saveObjects')->willReturnCallback(function (...$args) use ($s) {
+		$bulk->method('saveObjects')->willReturnCallback(function (array $objects, BulkSaveOptions $options, bool $_rbac, bool $_multitenancy) use ($s) {
+			$args = [$objects, $options->defaults->register, $options->defaults->schema, $_rbac, $_multitenancy, $options->validation, $options->events, $options->audit];
 			$this->calls[] = ['bulk', $args];
 			return ['statistics' => $s['stats'], 'saved' => ['x']];
 		});

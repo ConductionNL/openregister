@@ -119,19 +119,17 @@ trait NotificationRequestTrait {
 	 * Answer a write with its target and the value stored now.
 	 *
 	 * The target's keys come back in their order, `scope` reading "global"
-	 * when none was given, followed by the stored value under `$key`.
+	 * when none was given, followed by the stored value under its key.
 	 *
-	 * @param array<string, string|null> $target What was written, `scope` included.
-	 * @param string                     $key    The key the stored value is answered under.
-	 * @param array<string, mixed>|null  $stored The stored value, or null.
+	 * @param array<string, string|null>               $target What was written, `scope` included.
+	 * @param array<string, array<string, mixed>|null> $stored The stored value, or null, under the one key it is answered under.
 	 *
 	 * @return JSONResponse The answer.
 	 */
-	private function settingResponse(array $target, string $key, ?array $stored): JSONResponse {
+	private function settingResponse(array $target, array $stored): JSONResponse {
 		$data = $target;
 		$data['scope'] = ($target['scope'] ?? 'global');
-		$data[$key] = $stored;
 
-		return new JSONResponse(data: $data);
+		return new JSONResponse(data: array_merge($data, $stored));
 	}//end settingResponse()
 }//end trait

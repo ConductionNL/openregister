@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\TranslationStores;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +51,8 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 	private function service(array $s): BulkTranslationService {
 		$provider = $this->createMock(TranslationProviderInterface::class);
 		$provider->method('getIdentifier')->willReturn('fake');
-		$provider->method('translate')->willReturnCallback(function (string $text, string $from, string $to) {
+		$provider->method('translate')->willReturnCallback(function (string $text, LanguagePair $pair) {
+			[$from, $to]   = [$pair->fromLong, $pair->toLong];
 			$this->calls[] = ['translate', $text, $from, $to];
 			if ($text === 'boom') {
 				throw new Exception('provider down');

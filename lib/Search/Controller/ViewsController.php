@@ -20,10 +20,12 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\Service\Rbac\ReachedView;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
+use OCA\OpenRegister\Search\Service\CalendarRange;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use OCA\OpenRegister\Search\Service\ViewAudience;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
@@ -235,8 +237,7 @@ class ViewsController extends Controller {
 		);
 
 		$refused = $this->viewers->refusedFields(
-			view: $view->jsonSerialize(),
-			reach: $this->viewers->reachOf(userId: $userId),
+			reached: new ReachedView(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
 			update: $fields
 		);
 
@@ -447,7 +448,10 @@ class ViewsController extends Controller {
 	 */
 	private function saveNew(string $userId, ViewPatch $write): JSONResponse {
 		$data = $write->data;
-		$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
+		$this->viewers->assertMayNameRecipients(
+			reached: new ReachedView(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId)),
+			data: $data
+		);
 		$view = $this->viewService->create(
 			edit: new ViewEdit(
 				definition: new ViewDefinition(
@@ -538,8 +542,7 @@ class ViewsController extends Controller {
 		if ($refusal === null) {
 			// PUT writes `isPublic` false when omitted, so the recipients are judged on that body.
 			$this->viewers->assertMayNameRecipients(
-				view: $update->view->jsonSerialize(),
-				reach: $this->viewers->reachOf(userId: $userId),
+				reached: new ReachedView(view: $update->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
 				data: ($update->data + ['isPublic' => false])
 			);
 		}
@@ -639,7 +642,10 @@ class ViewsController extends Controller {
 		// additionally carries `@NoCSRFRequired`.
 		$refusal = $this->refuseForbiddenViewFields(write: $patch, userId: $userId);
 		if ($refusal === null) {
-			$this->viewers->assertMayNameRecipients(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $patch->data);
+			$this->viewers->assertMayNameRecipients(
+				reached: new ReachedView(view: $patch->view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)),
+				data: $patch->data
+			);
 		}
 
 		return $refusal ?? $this->savePatch(patch: $patch);
@@ -863,8 +869,7 @@ class ViewsController extends Controller {
 			// they can rule it out.
 			$result = $this->viewPresentationService->getCalendarObjects(
 				view: $view,
-				rangeStart: $rangeStart,
-				rangeEnd: $rangeEnd
+				range: new CalendarRange(start: $rangeStart, end: $rangeEnd)
 			);
 
 			return new JSONResponse(data: $result);

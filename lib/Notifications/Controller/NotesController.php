@@ -41,6 +41,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * NotesController handles note operations for objects in registers.
@@ -583,7 +584,8 @@ class NotesController extends Controller {
 
 		if ($update->previous !== null) {
 			$to = (string)($note['visibility'] ?? '');
-			$this->services->visibility->auditVisibilityChange(object: $object, noteId: $noteId, from: $update->previous, to: $to);
+			$move = new NoteVisibilityMove(noteId: $noteId, from: $update->previous, to: $to);
+			$this->services->visibility->auditNoteMove(object: $object, move: $move);
 		}
 	}//end recordUpdate()
 

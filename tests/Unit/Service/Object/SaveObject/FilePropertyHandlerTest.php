@@ -449,7 +449,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'document' => ['type' => 'file'],
 		]);
 
-		$result = $this->handler->isFileProperty('some-value', $schema, 'document');
+		$result = $this->handler->isFileInSchema($schema, 'document');
 
 		$this->assertTrue($result);
 	}
@@ -460,7 +460,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'images' => ['type' => 'array', 'items' => ['type' => 'file']],
 		]);
 
-		$result = $this->handler->isFileProperty(['val'], $schema, 'images');
+		$result = $this->handler->isFileInSchema($schema, 'images');
 
 		$this->assertTrue($result);
 	}
@@ -471,7 +471,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$result = $this->handler->isFileProperty('John', $schema, 'name');
+		$result = $this->handler->isFileInSchema($schema, 'name');
 
 		$this->assertFalse($result);
 	}
@@ -482,7 +482,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$result = $this->handler->isFileProperty('value', $schema, 'nonexistent');
+		$result = $this->handler->isFileInSchema($schema, 'nonexistent');
 
 		$this->assertFalse($result);
 	}
@@ -490,7 +490,7 @@ class FilePropertyHandlerTest extends TestCase {
 	public function testIsFilePropertyWithDataUri(): void {
 		$dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA';
 
-		$result = $this->handler->isFileProperty($dataUri);
+		$result = $this->handler->isFileValue($dataUri);
 
 		$this->assertTrue($result);
 	}
@@ -498,7 +498,7 @@ class FilePropertyHandlerTest extends TestCase {
 	public function testIsFilePropertyWithUrlAndFileExtension(): void {
 		$url = 'https://example.com/files/report.pdf';
 
-		$result = $this->handler->isFileProperty($url);
+		$result = $this->handler->isFileValue($url);
 
 		$this->assertTrue($result);
 	}
@@ -506,7 +506,7 @@ class FilePropertyHandlerTest extends TestCase {
 	public function testIsFilePropertyWithRegularWebUrl(): void {
 		$url = 'https://example.com/about-us';
 
-		$result = $this->handler->isFileProperty($url);
+		$result = $this->handler->isFileValue($url);
 
 		$this->assertFalse($result);
 	}
@@ -516,13 +516,13 @@ class FilePropertyHandlerTest extends TestCase {
 		$content = str_repeat('A', 200);
 		$base64 = base64_encode($content);
 
-		$result = $this->handler->isFileProperty($base64);
+		$result = $this->handler->isFileValue($base64);
 
 		$this->assertTrue($result);
 	}
 
 	public function testIsFilePropertyWithShortString(): void {
-		$result = $this->handler->isFileProperty('hello');
+		$result = $this->handler->isFileValue('hello');
 
 		$this->assertFalse($result);
 	}
@@ -532,7 +532,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'data:image/png;base64,iVBORw0',
 		];
 
-		$result = $this->handler->isFileProperty($value);
+		$result = $this->handler->isFileValue($value);
 
 		$this->assertTrue($result);
 	}
@@ -540,7 +540,7 @@ class FilePropertyHandlerTest extends TestCase {
 	public function testIsFilePropertyWithNonFileArray(): void {
 		$value = ['tag1', 'tag2', 'tag3'];
 
-		$result = $this->handler->isFileProperty($value);
+		$result = $this->handler->isFileValue($value);
 
 		$this->assertFalse($result);
 	}
@@ -554,7 +554,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'size' => 1024,
 		];
 
-		$result = $this->handler->isFileProperty($value);
+		$result = $this->handler->isFileValue($value);
 
 		$this->assertTrue($result);
 	}
@@ -564,7 +564,7 @@ class FilePropertyHandlerTest extends TestCase {
 			['id' => '1', 'title' => 'a.pdf', 'type' => 'application/pdf', 'size' => 100],
 		];
 
-		$result = $this->handler->isFileProperty($value);
+		$result = $this->handler->isFileValue($value);
 
 		$this->assertTrue($result);
 	}
@@ -574,7 +574,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'https://example.com/files/document.pdf',
 		];
 
-		$result = $this->handler->isFileProperty($value);
+		$result = $this->handler->isFileValue($value);
 
 		$this->assertTrue($result);
 	}
@@ -583,7 +583,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$content = str_repeat('B', 200);
 		$value = [base64_encode($content)];
 
-		$result = $this->handler->isFileProperty($value);
+		$result = $this->handler->isFileValue($value);
 
 		$this->assertTrue($result);
 	}
@@ -594,31 +594,31 @@ class FilePropertyHandlerTest extends TestCase {
 			'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
 		]);
 
-		$result = $this->handler->isFileProperty(['tag1'], $schema, 'tags');
+		$result = $this->handler->isFileInSchema($schema, 'tags');
 
 		$this->assertFalse($result);
 	}
 
 	public function testIsFilePropertyWithNullValue(): void {
-		$result = $this->handler->isFileProperty(null);
+		$result = $this->handler->isFileValue(null);
 
 		$this->assertFalse($result);
 	}
 
 	public function testIsFilePropertyWithIntegerValue(): void {
-		$result = $this->handler->isFileProperty(42);
+		$result = $this->handler->isFileValue(42);
 
 		$this->assertFalse($result);
 	}
 
 	public function testIsFilePropertyWithUrlNoPath(): void {
-		$result = $this->handler->isFileProperty('https://example.com');
+		$result = $this->handler->isFileValue('https://example.com');
 
 		$this->assertFalse($result);
 	}
 
 	public function testIsFilePropertyWithUrlPathNoExtension(): void {
-		$result = $this->handler->isFileProperty('https://example.com/page');
+		$result = $this->handler->isFileValue('https://example.com/page');
 
 		$this->assertFalse($result);
 	}
@@ -629,14 +629,14 @@ class FilePropertyHandlerTest extends TestCase {
 			'https://example.com/contact',
 		];
 
-		$result = $this->handler->isFileProperty($value);
+		$result = $this->handler->isFileValue($value);
 
 		$this->assertFalse($result);
 	}
 
 	public function testIsFilePropertyWithShortBase64String(): void {
 		// Short string that is valid base64 but under 100 chars.
-		$result = $this->handler->isFileProperty(base64_encode('short'));
+		$result = $this->handler->isFileValue(base64_encode('short'));
 
 		$this->assertFalse($result);
 	}
@@ -647,7 +647,7 @@ class FilePropertyHandlerTest extends TestCase {
 			'something' => ['description' => 'no type specified'],
 		]);
 
-		$result = $this->handler->isFileProperty('value', $schema, 'something');
+		$result = $this->handler->isFileInSchema($schema, 'something');
 
 		$this->assertFalse($result);
 	}
@@ -834,6 +834,8 @@ class FilePropertyHandlerTest extends TestCase {
 	// =========================================================================
 
 	public function testValidateFileAgainstConfigPassesForValidFile(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'test',
 			'mimeType' => 'image/png',
@@ -849,7 +851,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'avatar', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigRejectsInvalidMimeType(): void {
@@ -910,6 +911,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testValidateFileAgainstConfigPassesWithNoRestrictions(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'anything',
 			'mimeType' => 'application/octet-stream',
@@ -921,7 +924,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw - no restrictions.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'upload', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigCallsBlockExecutableFiles(): void {
@@ -941,6 +943,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testValidateFileAgainstConfigAllowExecutablesFlag(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'MZ' . str_repeat("\x00", 100),
 			'mimeType' => 'application/octet-stream',
@@ -955,10 +959,11 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw because allowExecutables is true.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'upload', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigWithEmptyAllowedTypes(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'test',
 			'mimeType' => 'text/plain',
@@ -973,10 +978,11 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Empty allowedTypes means no restriction.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'doc', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigMaxSizeZero(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => str_repeat('x', 5000),
 			'mimeType' => 'text/plain',
@@ -991,7 +997,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// maxSize of 0 means no restriction.
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'doc', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -1050,6 +1055,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testValidateFileAgainstConfigEditorMaxSizeIsNotBytes(): void {
+		$this->expectNotToPerformAssertions();
+
 		// 10 MB in the editor must not become a 10 byte limit.
 		$fileData = [
 			'content' => 'pdf',
@@ -1067,7 +1074,6 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'attachment', $fileConfig, null));
-		$this->assertTrue(true);
 	}
 
 	public function testValidateFileAgainstConfigTopLevelKeysWinOverEditorShape(): void {
@@ -1312,6 +1318,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testBlockExecutableFilesAllowsSafeFiles(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'filename' => 'report.pdf',
 			'mimeType' => 'application/pdf',
@@ -1320,10 +1328,11 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw.
 		$this->handler->blockExecutableFiles($fileData, 'File at document');
-		$this->assertTrue(true);
 	}
 
 	public function testBlockExecutableFilesAllowsImages(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'filename' => 'photo.jpg',
 			'mimeType' => 'image/jpeg',
@@ -1332,7 +1341,6 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// Should not throw.
 		$this->handler->blockExecutableFiles($fileData, 'File at image');
-		$this->assertTrue(true);
 	}
 
 	public function testBlockExecutableFilesBlocksPhpExtension(): void {
@@ -1584,6 +1592,8 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testBlockExecutableFilesNoFilenameNoContent(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'mimeType' => 'text/plain',
 			'content' => '',
@@ -1591,17 +1601,17 @@ class FilePropertyHandlerTest extends TestCase {
 
 		// No filename, empty content, safe MIME => should pass.
 		$this->handler->blockExecutableFiles($fileData, 'File at upload');
-		$this->assertTrue(true);
 	}
 
 	public function testBlockExecutableFilesNullMimeType(): void {
+		$this->expectNotToPerformAssertions();
+
 		$fileData = [
 			'content' => 'safe text content',
 		];
 
 		// No mimeType key at all => should pass.
 		$this->handler->blockExecutableFiles($fileData, 'File at upload');
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -2372,7 +2382,7 @@ class FilePropertyHandlerTest extends TestCase {
 	// =========================================================================
 
 	public function testGetDangerousExecutableExtensionsContainsExpected(): void {
-		$result = (new \ReflectionClassConstant(FilePropertyHandler::class, 'DANGEROUS_EXECUTABLE_EXTENSIONS'))->getValue();
+		$result = (new \ReflectionClassConstant(\OCA\OpenRegister\Service\Object\SaveObject\FilePropertyParts::class, 'DANGEROUS_EXECUTABLE_EXTENSIONS'))->getValue();
 
 		$this->assertContains('exe', $result);
 		$this->assertContains('bat', $result);
@@ -2403,10 +2413,10 @@ class FilePropertyHandlerTest extends TestCase {
 	// =========================================================================
 
 	public function testDetectExecutableMagicBytesSafeContent(): void {
+		$this->expectNotToPerformAssertions();
+
 		// Regular text content should not trigger.
 		$this->handler->blockExecutableFiles(['content' => 'This is perfectly safe text content.'], 'File at test');
-
-		$this->assertTrue(true);
 	}
 
 	public function testDetectExecutableMagicBytesWindowsExe(): void {
@@ -2459,10 +2469,10 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	public function testDetectExecutableMagicBytesZipSignatureSkipped(): void {
+		$this->expectNotToPerformAssertions();
+
 		// PK\x03\x04 is ZIP which has description = false, so it should be skipped.
 		$this->handler->blockExecutableFiles(['content' => "PK\x03\x04" . str_repeat("\x00", 100)], 'File at test');
-
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -2574,7 +2584,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn(['document' => ['type' => 'file']]);
 
-		$this->assertTrue($this->handler->isFileProperty('anything', $schema, 'document'));
+		$this->assertTrue($this->handler->isFileInSchema($schema, 'document'));
 	}
 
 	/**
@@ -2586,7 +2596,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn(['title' => ['type' => 'string']]);
 
-		$this->assertFalse($this->handler->isFileProperty('anything', $schema, 'nosuchproperty'));
+		$this->assertFalse($this->handler->isFileInSchema($schema, 'nosuchproperty'));
 	}
 
 	/**
@@ -2602,7 +2612,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema->method('getProperties')->willReturn(['title' => ['type' => 'string']]);
 
 		$this->assertFalse(
-			$this->handler->isFileProperty('https://example.com/files/document.pdf', $schema, 'title')
+			$this->handler->isFileInSchema($schema, 'title')
 		);
 	}
 
@@ -2620,7 +2630,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn([]);
 
-		$this->assertFalse($this->handler->isFileProperty('anything', $schema, 'document'));
+		$this->assertFalse($this->handler->isFileInSchema($schema, 'document'));
 	}
 
 	/**

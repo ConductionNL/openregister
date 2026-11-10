@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\ConflictReport;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
@@ -289,12 +290,20 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		$active = new ObjectEntity();
 		$active->setStatus(ObjectEntity::STATUS_ACTIVE);
 
-		$this->assertFalse($rule->keptFromCaller(object: $active, schema: $schema, userId: 'bob', isAdmin: false));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, userId: 'anna', isAdmin: false));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, userId: 'bob', isAdmin: true));
-		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, userId: 'bob', isAdmin: false));
-		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: false));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: true));
+		$this->assertFalse($rule->keptFromCaller(object: $active, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'anna', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: true)));
+		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertTrue($rule->keptFromCaller(
+			object: $draft,
+			schema: $schema,
+			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: false)
+		));
+		$this->assertFalse($rule->keptFromCaller(
+			object: $draft,
+			schema: $schema,
+			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: true)
+		));
 	}//end testOverrideClauseAndDraftCallerRule()
 
 	/**

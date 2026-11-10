@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\LinkAct;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 
@@ -57,7 +59,7 @@ class AccessLinkActsTest extends TestCase {
 
 		$acts = new AccessLinkActs(notes: $notes, files: $files);
 
-		$this->assertSame(['id' => 9], $acts->comment(link: $link, object: $object, message: 'hello'));
+		$this->assertSame(['id' => 9], $acts->comment(act: new LinkAct(link: $link, object: $object), message: 'hello'));
 	}//end testCommentIsWrittenAsTheLink()
 
 	/**
@@ -81,7 +83,7 @@ class AccessLinkActsTest extends TestCase {
 
 		$this->assertSame(
 			['name' => 'a.pdf', 'shared' => false],
-			$acts->upload(link: new AccessLink(), object: $object, fileName: 'a.pdf', content: 'bytes')
+			$acts->upload(act: new LinkAct(link: new AccessLink(), object: $object), file: new LinkFile(fileName: 'a.pdf', content: 'bytes'))
 		);
 	}//end testUploadIsStoredWithoutSharing()
 }//end class

@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use DateTime;
 use OCP\IRequest;
-use Throwable;
 
 /**
  * Reads optional string, date and bounded integer parameters from a request.
@@ -112,7 +111,7 @@ final class GdprRequestParams {
 		$date = null;
 		try {
 			$date = new DateTime($value);
-		} catch (Throwable $e) {
+		} catch (\Exception $e) {
 			// An unparseable date filters nothing, as an absent one does.
 		}
 

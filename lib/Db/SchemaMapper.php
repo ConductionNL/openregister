@@ -56,6 +56,7 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Schemas\ScopedField;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
@@ -814,8 +815,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 					_rbac: $_rbac,
 					_multitenancy: $_multitenancy
 				);
-			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException) {
-				// Catch all exceptions but do nothing.
+			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException $e) {
+				// Ids that cannot be loaded are left out of the result.
+				$this->logger->debug(
+					message: '[SchemaMapper] findMultiple skips a schema id that could not be loaded',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
@@ -1089,7 +1097,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		foreach ($this->scopedProperties(schema: $entity) as $name => $scope) {
 			$governance->assertMayAddAtScope(scope: $scope, path: (string)$name);
-			$governance->assertBelowCeiling(schema: $entity, scope: $scope, property: (string)$name);
+			$governance->assertBelowCeiling(schema: $entity, field: new ScopedField(property: (string)$name, scope: $scope));
 		}
 	}//end assertScopedPropertiesAreGoverned()
 
@@ -1809,21 +1817,14 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	/**
 	 * Recursively check if properties contain a reference to the target schema.
 	 *
-	 * @param array  $properties       The properties array to search through.
-	 * @param string $targetSchemaId   The target schema ID to look for.
-	 * @param string $targetSchemaUuid The target schema UUID to look for.
-	 * @param string $targetSchemaSlug The target schema slug to look for.
+	 * @param array  $properties The properties array to search through.
+	 * @param Schema $target     The schema whose id, uuid or slug a reference names.
 	 *
 	 * @return bool True if a reference to the target schema is found
 	 */
-	public function hasReferenceToSchema(
-		array $properties,
-		string $targetSchemaId,
-		string $targetSchemaUuid,
-		string $targetSchemaSlug,
-	): bool {
+	public function hasReferenceToSchema(array $properties, Schema $target): bool {
 		$search = new SchemaReferenceSearch(
-			target: ['id' => $targetSchemaId, 'uuid' => $targetSchemaUuid, 'slug' => $targetSchemaSlug]
+			target: ['id' => (string)$target->getId(), 'uuid' => $target->getUuid() ?? '', 'slug' => $target->getSlug() ?? '']
 		);
 
 		return $search->foundIn(properties: $properties);
