@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -210,10 +211,8 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$this->objectIsFound($this->object(['legalHold' => ['active' => true]]));
 
 		$service->logRestrictBlock(
-			objectUuid: '11111111-1111-4111-8111-111111111111',
-			schemaId: '2',
-			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']]),
-			userId: 'alice'
+			refused: new RefusedDeletion(objectUuid: '11111111-1111-4111-8111-111111111111', schemaId: '2', userId: 'alice'),
+			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']])
 		);
 
 		$this->assertCount(1, $this->inserted);
@@ -276,10 +275,8 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$this->objectMapper->method('findAcrossAllSources')->willThrowException(new \RuntimeException('gone'));
 
 		$service->logRestrictBlock(
-			objectUuid: '11111111-1111-4111-8111-111111111111',
-			schemaId: '2',
-			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']]),
-			userId: 'alice'
+			refused: new RefusedDeletion(objectUuid: '11111111-1111-4111-8111-111111111111', schemaId: '2', userId: 'alice'),
+			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']])
 		);
 
 		$this->assertCount(1, $this->inserted);

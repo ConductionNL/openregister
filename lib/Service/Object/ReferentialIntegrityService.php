@@ -376,23 +376,21 @@ class ReferentialIntegrityService {
 	 * Called when a deletion is prevented by RESTRICT constraints. Records the
 	 * blocked object and the blockers that prevented deletion.
 	 *
-	 * @param string $objectUuid The UUID of the object that could not be deleted.
-	 * @param string|null $schemaId Schema ID of the blocked object.
+	 * @param RefusedDeletion  $refused  The object that could not be deleted, its schema and who asked.
 	 * @param DeletionAnalysis $analysis The analysis containing blocker information.
-	 * @param string $userId The user who attempted the deletion.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function logRestrictBlock(string $objectUuid, ?string $schemaId, DeletionAnalysis $analysis, string $userId): void {
+	public function logRestrictBlock(RefusedDeletion $refused, DeletionAnalysis $analysis): void {
 		$entry = new IntegrityAuditEntry(
 			action: 'referential_integrity.restrict_blocked',
-			objectUuid: $objectUuid,
+			objectUuid: $refused->objectUuid,
 			changed: self::restrictBlockChange(analysis: $analysis),
-			userId: $userId
+			userId: $refused->userId
 		);
-		$this->logIntegrityAction(entry: $entry->within(schemaId: $schemaId, registerId: null));
+		$this->logIntegrityAction(entry: $entry->within(schemaId: $refused->schemaId, registerId: null));
 	}//end logRestrictBlock()
 
 	/**
