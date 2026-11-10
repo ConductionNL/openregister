@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -137,7 +138,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			);
 
 			// Get applications via mapper (RBAC is enforced in mapper).
-			$applications = $this->applicationMapper->findAll(limit: $limit, offset: $offset);
+			$applications = $this->applicationMapper->findAllBy(query: new ListQuery(limit: $limit, offset: $offset));
 			$total = $this->applicationMapper->countAll();
 
 			// Convert to array.

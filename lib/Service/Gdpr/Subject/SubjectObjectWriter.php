@@ -99,22 +99,6 @@ class SubjectObjectWriter {
 	/**
 	 * Persist an object update and return its serialised envelope, or null.
 	 *
-	 * @param ObjectEntity $object     Object to persist.
-	 * @param string       $op         Operation label for logging.
-	 * @param string       $identifier Identifier for logging.
-	 *
-	 * @return array<string, mixed>|null Null when the save failed.
-	 *
-	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-immutable-audit-of-request-fulfilment
-	 */
-	public function persist(ObjectEntity $object, string $op, string $identifier): ?array {
-		return $this->persistAs(object: $object, label: new SubjectWriteLabel(op: $op, identifier: $identifier));
-
-	}//end persist()
-
-	/**
-	 * Persist an object update and return its serialised envelope, or null.
-	 *
 	 * @param ObjectEntity      $object Object to persist.
 	 * @param SubjectWriteLabel $label  The operation and the identifier a failure is logged under.
 	 *
