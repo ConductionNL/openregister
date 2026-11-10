@@ -87,6 +87,21 @@ class QualityScorer implements QualityScorerInterface {
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-1
 	 */
 	public function score(array $object, array $rules, DateTimeImmutable $now): float {
+		return $this->scoreAll(run: new QualityScoreRun(object: $object, now: $now), rules: $rules);
+	}//end score()
+
+	/**
+	 * Score one object against its rules: the weighted mean of the usable
+	 * rules' sub-scores, 1.0 when no rule is usable.
+	 *
+	 * @param QualityScoreRun   $run   The object and the moment freshness is measured from.
+	 * @param array<int, mixed> $rules The rules; a non-array or typeless rule is skipped.
+	 *
+	 * @return float The score in [0.0, 1.0], rounded to 4 decimals.
+	 *
+	 * @spec openspec/changes/mdm-foundation/tasks.md#task-1
+	 */
+	private function scoreAll(QualityScoreRun $run, array $rules): float {
 		$weightedSum = 0.0;
 		$totalWeight = 0.0;
 
@@ -96,7 +111,7 @@ class QualityScorer implements QualityScorerInterface {
 				continue;
 			}
 
-			$sub = $this->scoreRule(object: $object, rule: $rule, type: (string)$rule['type'], now: $now);
+			$sub = $this->scoreRule(run: $run, rule: $rule);
 
 			$weightedSum += ($sub * $weight);
 			$totalWeight += $weight;
@@ -110,7 +125,7 @@ class QualityScorer implements QualityScorerInterface {
 
 		// Clamp defensively; sub-scores are already bounded but float math drifts.
 		return max(0.0, min(1.0, round($score, 4)));
-	}//end score()
+	}//end scoreAll()
 
 	/**
 	 * The weight a rule counts with, or 0.0 when the rule cannot be scored.
@@ -162,18 +177,16 @@ class QualityScorer implements QualityScorerInterface {
 	/**
 	 * Dispatch a single rule to its scoring routine.
 	 *
-	 * @param array<string, mixed> $object Object payload.
-	 * @param array<string, mixed> $rule Rule definition.
-	 * @param string $type Rule type token.
-	 * @param DateTimeImmutable $now Reference instant.
+	 * @param QualityScoreRun      $run  The object and the reference instant.
+	 * @param array<string, mixed> $rule Rule definition; its `type` picks the routine.
 	 *
 	 * @return float Sub-score in [0, 1].
 	 */
-	private function scoreRule(array $object, array $rule, string $type, DateTimeImmutable $now): float {
-		return match ($type) {
-			'required' => $this->scoreRequired(object: $object, rule: $rule),
-			'format' => $this->scoreFormat(object: $object, rule: $rule),
-			'freshness' => $this->scoreFreshness(object: $object, rule: $rule, now: $now),
+	private function scoreRule(QualityScoreRun $run, array $rule): float {
+		return match ((string)$rule['type']) {
+			'required' => $this->scoreRequired(object: $run->object, rule: $rule),
+			'format' => $this->scoreFormat(object: $run->object, rule: $rule),
+			'freshness' => $this->scoreFreshness(run: $run, rule: $rule),
 			default => 0.0,
 		};
 	}//end scoreRule()
@@ -289,15 +302,14 @@ class QualityScorer implements QualityScorerInterface {
 	/**
 	 * Score a freshness rule via exponential decay against now.
 	 *
-	 * @param array<string, mixed> $object Object payload.
+	 * @param QualityScoreRun      $run  The object and the reference instant.
 	 * @param array<string, mixed> $rule Rule definition.
-	 * @param DateTimeImmutable $now Reference instant.
 	 *
 	 * @return float exp(-ageDays / halfLifeDays) clamped to [0, 1]; 0.0 when
 	 *               the date is absent or unparseable.
 	 */
-	private function scoreFreshness(array $object, array $rule, DateTimeImmutable $now): float {
-		$value = $this->scalarSubject(object: $object, rule: $rule);
+	private function scoreFreshness(QualityScoreRun $run, array $rule): float {
+		$value = $this->scalarSubject(object: $run->object, rule: $rule);
 		if ($value === null) {
 			return 0.0;
 		}
@@ -308,7 +320,7 @@ class QualityScorer implements QualityScorerInterface {
 			return 0.0;
 		}
 
-		$ageSeconds = ($now->getTimestamp() - $when->getTimestamp());
+		$ageSeconds = ($run->now->getTimestamp() - $when->getTimestamp());
 		if ($ageSeconds <= 0) {
 			return 1.0;
 		}
