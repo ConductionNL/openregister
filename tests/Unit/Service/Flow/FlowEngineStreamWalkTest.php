@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
@@ -290,7 +291,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 	private function walk(array $flow, FlowStepDispatcher $dispatcher, FlowStreamWalk $walk, array $context = []): array {
 		return $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: $dispatcher))->withContext(context: $context)->withStreams(streams: $walk),
-			items: [FlowItems::item(json: ['n' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 	}//end walk()
 
@@ -418,7 +421,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 		$legacyDispatcher = new StreamWalkDispatcher();
 		$legacy = $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $legacyRun), subject: new stdClass(), dispatcher: $legacyDispatcher)),
-			items: [FlowItems::item(json: ['n' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 
 		$streamDispatcher = new StreamWalkDispatcher();

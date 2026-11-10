@@ -309,6 +309,12 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 			}
 		} catch (Throwable $e) {
 			// Getter missing on this Deck version — leave null.
+			$this->logger->debug(
+				message: '[DeckObjectSourceProvider] Card due date not readable',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;

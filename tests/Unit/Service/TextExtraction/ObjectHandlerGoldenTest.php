@@ -227,7 +227,7 @@ class ObjectHandlerGoldenTest extends TestCase {
 			return $handler->getSourceType();
 		}
 
-		return $handler->extractText(11, ['ignored' => true], false);
+		return $handler->extractText(11, ['ignored' => true]);
 	}//end invoke()
 
 	/**

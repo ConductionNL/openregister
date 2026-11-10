@@ -219,7 +219,7 @@ class LinkRowsListGoldenTest extends TestCase {
 		$apps->method('isInstalled')->willReturn($installed);
 		$l10n = $this->createMock(IL10N::class);
 		if ($name === 'bookmarks') {
-			return new Providers\BookmarksProvider($this->mapper(Db\BookmarkLinkMapper::class, $links), $apps, $l10n);
+			return new Providers\BookmarksProvider(new Providers\AppProviderDescription($apps, $l10n), $this->mapper(Db\BookmarkLinkMapper::class, $links));
 		}
 		if ($name === 'flow') {
 			return new Providers\FlowProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\FlowLinkMapper::class, $links));

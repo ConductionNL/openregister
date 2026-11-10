@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
 use OCP\Files\NotFoundException;
 
@@ -54,8 +53,7 @@ class ObjectFolderUploads {
 	 * whole batch (it could leave the folder, or is no folder of the object)
 	 * is thrown, since no file of the batch can land.
 	 *
-	 * @param ObjectEntity                                              $object  The object, already known to be changeable.
-	 * @param string                                                    $path    The target folder, relative to the object folder.
+	 * @param ObjectFolderPath                                          $folder  The object, already known to be changeable, and the target folder.
 	 * @param list<array{name: string, tmp_name: string, error: int}> $uploads The uploads, as PHP received them.
 	 *
 	 * @return array{stored: list<array<string, mixed>>, rejected: list<array{name: string, error: string, conflict: bool}>} The outcome.
@@ -65,22 +63,7 @@ class ObjectFolderUploads {
 	 *
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
-	public function uploadAll(ObjectEntity $object, string $path, array $uploads): array {
-		return $this->storeAll(folder: new ObjectFolderPath(object: $object, path: $path), uploads: $uploads);
-	}//end uploadAll()
-
-	/**
-	 * Store a batch of uploaded files in a folder of the object, one by one.
-	 *
-	 * @param ObjectFolderPath                                          $folder  The target folder of the object.
-	 * @param list<array{name: string, tmp_name: string, error: int}> $uploads The uploads, as PHP received them.
-	 *
-	 * @return array{stored: list<array<string, mixed>>, rejected: list<array{name: string, error: string, conflict: bool}>} The outcome.
-	 *
-	 * @throws InvalidArgumentException When the path could leave the object folder.
-	 * @throws NotFoundException        When the path is not a folder of the object.
-	 */
-	private function storeAll(ObjectFolderPath $folder, array $uploads): array {
+	public function uploadAll(ObjectFolderPath $folder, array $uploads): array {
 		$stored = [];
 		$rejected = [];
 		foreach ($uploads as $upload) {
@@ -102,7 +85,7 @@ class ObjectFolderUploads {
 		}//end foreach
 
 		return ['stored' => $stored, 'rejected' => $rejected];
-	}//end storeAll()
+	}//end uploadAll()
 
 	/**
 	 * Store one uploaded file, streamed, so its bytes are stored as sent: the

@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\RecordTemplate;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -192,7 +193,7 @@ final class RecordTemplateServiceBehaviourTest extends TestCase {
 		$second = $this->template('anna', 'meldingen');
 		$other = $this->template('anna', 'vergunningen');
 		$this->mapper->expects($this->once())->method('findCandidates')
-			->with('anna', 'zaken', 'meldingen')
+			->with('anna', ListQuery::unbounded(filters: ['register' => 'zaken', 'schema' => 'meldingen']))
 			->willReturn([$first, $second, $other]);
 
 		$listed = $service->listFor($this->reach('anna'), 'zaken', 'meldingen');

@@ -568,38 +568,38 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testIsFilePropertyDataUri(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB')
+			$this->fileHandler->isFileValue('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithFileExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://example.com/files/document.pdf')
+			$this->fileHandler->isFileValue('https://example.com/files/document.pdf')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithoutExtension(): void {
 		$this->assertFalse(
-			$this->fileHandler->isFileProperty('https://example.com/page')
+			$this->fileHandler->isFileValue('https://example.com/page')
 		);
 	}
 
 	public function testIsFilePropertyBase64Long(): void {
 		// Generate a valid base64 string > 100 chars.
 		$longBase64 = base64_encode(str_repeat('A', 200));
-		$this->assertTrue($this->fileHandler->isFileProperty($longBase64));
+		$this->assertTrue($this->fileHandler->isFileValue($longBase64));
 	}
 
 	public function testIsFilePropertyPlainStringNotFile(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty('just a normal string'));
+		$this->assertFalse($this->fileHandler->isFileValue('just a normal string'));
 	}
 
 	public function testIsFilePropertyNullValue(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty(null));
+		$this->assertFalse($this->fileHandler->isFileValue(null));
 	}
 
 	public function testIsFilePropertyIntValue(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty(42));
+		$this->assertFalse($this->fileHandler->isFileValue(42));
 	}
 
 	public function testIsFilePropertySchemaBasedFileType(): void {
@@ -608,7 +608,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'photo' => ['type' => 'file'],
 		]);
 
-		$this->assertTrue($this->fileHandler->isFileProperty('any-value', $schema, 'photo'));
+		$this->assertTrue($this->fileHandler->isFileInSchema($schema, 'photo'));
 	}
 
 	public function testIsFilePropertySchemaBasedArrayFileType(): void {
@@ -620,7 +620,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->fileHandler->isFileProperty('any-value', $schema, 'photos'));
+		$this->assertTrue($this->fileHandler->isFileInSchema($schema, 'photos'));
 	}
 
 	public function testIsFilePropertySchemaBasedNonFileType(): void {
@@ -629,7 +629,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->assertFalse($this->fileHandler->isFileProperty('any-value', $schema, 'name'));
+		$this->assertFalse($this->fileHandler->isFileInSchema($schema, 'name'));
 	}
 
 	public function testIsFilePropertySchemaBasedMissingProperty(): void {
@@ -638,33 +638,33 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->assertFalse($this->fileHandler->isFileProperty('any-value', $schema, 'nonexistent'));
+		$this->assertFalse($this->fileHandler->isFileInSchema($schema, 'nonexistent'));
 	}
 
 	public function testIsFilePropertyFileObject(): void {
 		$fileObj = ['id' => 123, 'title' => 'test.pdf', 'path' => '/files/test.pdf'];
-		$this->assertTrue($this->fileHandler->isFileProperty($fileObj));
+		$this->assertTrue($this->fileHandler->isFileValue($fileObj));
 	}
 
 	public function testIsFilePropertyArrayOfDataUris(): void {
 		$arr = ['data:image/png;base64,abc123'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfUrls(): void {
 		$arr = ['https://example.com/files/doc.pdf'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfBase64(): void {
 		$longBase64 = base64_encode(str_repeat('B', 200));
 		$arr = [$longBase64];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfFileObjects(): void {
 		$arr = [['id' => 1, 'title' => 'file1.pdf', 'path' => '/a']];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFileObjectValid(): void {
@@ -883,24 +883,24 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testIsFilePropertyUrlWithImageExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://cdn.example.com/photo.jpg')
+			$this->fileHandler->isFileValue('https://cdn.example.com/photo.jpg')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithDocxExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://example.com/report.docx')
+			$this->fileHandler->isFileValue('https://example.com/report.docx')
 		);
 	}
 
 	public function testIsFilePropertyArrayWithUrlInside(): void {
 		$arr = ['https://example.com/image.png'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayWithNonFiles(): void {
 		$arr = ['just a string', 'another string'];
-		$this->assertFalse($this->fileHandler->isFileProperty($arr));
+		$this->assertFalse($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testBlockExecutableFilesPhpTag(): void {

@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -134,8 +136,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
 			new AuditTrailPageService(
-				$this->createMock(AuditTrailPageQuery::class),
-				$this->logService,
+				new AuditExportSource($this->createMock(AuditTrailPageQuery::class), $this->logService),
 				$this->createMock(IJobList::class)
 			),
 			new ObjectHistoryForReaders(
@@ -146,7 +147,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 					$this->registerMapper
 				),
 				$this->purposeGuard,
-				new ReadEventVisibility($appConfig, $this->groupManager, $this->userSession)
+				new ReadEventVisibility($appConfig, new CallerContext($this->userSession, $this->groupManager))
 			)
 		);
 	}

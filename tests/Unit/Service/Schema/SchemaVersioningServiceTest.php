@@ -23,8 +23,8 @@ use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
-use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,7 +46,6 @@ class SchemaVersioningServiceTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$this->service = new SchemaVersioningService(
-			new SchemaDiffService(),
 			$this->changelogMapper,
 			new SchemaPopulationRuns($this->runMapper, $this->runEntryMapper, $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			$userSession,
@@ -75,21 +74,21 @@ class SchemaVersioningServiceTest extends TestCase {
 		$cs = new SchemaChangeSet([['property' => 'email', 'kind' => 'removed']], SchemaChangeSet::CLASS_BREAKING, 'major');
 
 		$this->expectException(BreakingSchemaChangeException::class);
-		$this->service->enforceGate($cs, false, 1);
+		$this->service->gateChange(1, new SchemaChangeRecord($cs, false));
 	}
 
 	public function testGatePassesOnAcknowledgedBreaking(): void {
 		$this->expectNotToPerformAssertions();
 
 		$cs = new SchemaChangeSet([['property' => 'email', 'kind' => 'removed']], SchemaChangeSet::CLASS_BREAKING, 'major');
-		$this->service->enforceGate($cs, true, 1);
+		$this->service->gateChange(1, new SchemaChangeRecord($cs, true));
 	}
 
 	public function testGatePassesOnCompatible(): void {
 		$this->expectNotToPerformAssertions();
 
 		$cs = new SchemaChangeSet([['property' => 'x', 'kind' => 'added']], SchemaChangeSet::CLASS_COMPATIBLE, 'minor');
-		$this->service->enforceGate($cs, false, 1);
+		$this->service->gateChange(1, new SchemaChangeRecord($cs, false));
 	}
 
 	public function testGate409CarriesChangesAndInvalidCount(): void {
@@ -97,7 +96,7 @@ class SchemaVersioningServiceTest extends TestCase {
 		$cs = new SchemaChangeSet([['property' => 'email', 'kind' => 'removed']], SchemaChangeSet::CLASS_BREAKING, 'major');
 
 		try {
-			$this->service->enforceGate($cs, false, 1);
+			$this->service->gateChange(1, new SchemaChangeRecord($cs, false));
 			$this->fail('Expected BreakingSchemaChangeException');
 		} catch (BreakingSchemaChangeException $e) {
 			$body = $e->toResponse();
@@ -109,7 +108,7 @@ class SchemaVersioningServiceTest extends TestCase {
 	public function testRecordChangelogNoOpOnMetadataOnly(): void {
 		$this->changelogMapper->expects($this->never())->method('createFromArray');
 		$cs = new SchemaChangeSet([], SchemaChangeSet::CLASS_NONE, 'none');
-		$this->assertNull($this->service->recordChangelog(1, '1.0.0', $cs, false));
+		$this->assertNull($this->service->recordChange(1, new SchemaChangeRecord($cs, false, '1.0.0')));
 	}
 
 	public function testRecordChangelogPersistsBreakingWithAck(): void {
@@ -124,7 +123,7 @@ class SchemaVersioningServiceTest extends TestCase {
 			}))
 			->willReturn(new SchemaChangelog());
 
-		$this->service->recordChangelog(1, '2.0.0', $cs, true);
+		$this->service->recordChange(1, new SchemaChangeRecord($cs, true, '2.0.0'));
 	}
 
 	public function testNextVersionDelegatesToDiffService(): void {
