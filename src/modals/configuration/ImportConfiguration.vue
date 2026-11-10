@@ -724,16 +724,10 @@ export default {
 		async fetchBranches() {
 			this.loading = true
 			this.error = null
-			this.branches = []
-			this.selectedBranch = null
-			this.configFiles = []
-			this.selectedFile = null
+			this.clearRepositoryChoice()
 
 			try {
-				const branches = await configurationStore.getBranches(
-					this.repoSource.toLowerCase(),
-					this.repositoryParams(),
-				)
+				const branches = await this.requestBranches()
 				this.branches = branches.map(branchOption)
 				await this.selectDefaultBranch(branches)
 			} catch (error) {
@@ -741,6 +735,30 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Ask the chosen source for the repository's branches.
+		 *
+		 * @return {Promise<Array<object>>} The branches
+		 */
+		requestBranches() {
+			return configurationStore.getBranches(
+				this.repoSource.toLowerCase(),
+				this.repositoryParams(),
+			)
+		},
+
+		/**
+		 * Forget the branches and files of the previous repository.
+		 *
+		 * @return {void}
+		 */
+		clearRepositoryChoice() {
+			this.branches = []
+			this.selectedBranch = null
+			this.configFiles = []
+			this.selectedFile = null
 		},
 
 		/**

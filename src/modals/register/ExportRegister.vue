@@ -182,10 +182,7 @@ export default {
 		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
 		 */
 		async exportObjects() {
-			const register = registerStore.registerItem
-			const schema = schemaStore.schemaItem
-
-			if (!hasIds(register, schema)) {
+			if (!hasIds(registerStore.registerItem, schemaStore.schemaItem)) {
 				this.error = t('openregister', 'Register and schema are required')
 				return
 			}
@@ -194,15 +191,28 @@ export default {
 			this.error = null
 
 			try {
-				const slugs = exportSlugs(register, schema)
-				const response = await requestExport(slugs, this.exportFormat)
-				this.saveExport(response, slugs)
-				this.closeModal()
+				await this.downloadExport()
 			} catch (error) {
 				this.error = exportFailureMessage(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Download the export of the current register and schema, save it
+		 * and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async downloadExport() {
+			const slugs = exportSlugs(
+				registerStore.registerItem,
+				schemaStore.schemaItem,
+			)
+			const response = await requestExport(slugs, this.exportFormat)
+			this.saveExport(response, slugs)
+			this.closeModal()
 		},
 
 		/**
