@@ -86,14 +86,12 @@ interface ConfigurationMapperInterface {
 	/**
 	 * Update synchronization status for a configuration.
 	 *
-	 * @param integer  $id       Configuration ID.
-	 * @param string   $status   Sync status: 'success', 'failed', 'pending'.
-	 * @param DateTime $syncDate Synchronization timestamp.
-	 * @param string   $_message Optional message about the sync result.
+	 * @param integer                 $id     Configuration ID.
+	 * @param ConfigurationSyncResult $result The sync status, its timestamp and the (unstored) message.
 	 *
 	 * @return Configuration The updated configuration.
 	 */
-	public function updateSyncStatus(int $id, string $status, DateTime $syncDate, string $_message = ''): Configuration;
+	public function updateSyncStatus(int $id, ConfigurationSyncResult $result): Configuration;
 
 	/**
 	 * Insert a new configuration.

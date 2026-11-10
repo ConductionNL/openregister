@@ -271,10 +271,8 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 	/**
 	 * Update synchronization status for a configuration
 	 *
-	 * @param int $id Configuration ID
-	 * @param string $status Sync status: 'success', 'failed', 'pending'
-	 * @param DateTime $syncDate Synchronization timestamp
-	 * @param string $_message Optional message about the sync result
+	 * @param int                     $id     Configuration ID
+	 * @param ConfigurationSyncResult $result The sync status, its timestamp and the (unstored) message
 	 *
 	 * @return Configuration The updated configuration
 	 * @throws \Exception If configuration not found or user doesn't have permission
@@ -282,16 +280,14 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 	 * @since 0.2.10
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message = ''): Configuration {
+	public function updateSyncStatus(int $id, ConfigurationSyncResult $result): Configuration {
 		// Verify RBAC permission to update.
 		// TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
 		// Disabled: $this->verifyRbacPermission(action: 'update', entityType: 'configuration').
 		$configuration = $this->find(id: $id);
-		$configuration->setSyncStatus($status);
-		$configuration->setLastSyncDate($syncDate);
+		$configuration->setSyncStatus($result->status);
+		$configuration->setLastSyncDate($result->syncDate);
 		$configuration->setUpdated(new DateTime());
 
 		return $this->update(entity: $configuration);
