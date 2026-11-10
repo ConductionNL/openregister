@@ -51,6 +51,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Db\OutcomeFilter;
+use OCA\OpenRegister\Db\QueryPage;
 
 /**
  * BulkJobsController.
@@ -472,9 +474,7 @@ class BulkJobsController extends Controller {
 
 		$members = $this->service->members(
 			job: $job,
-			outcome: $outcome,
-			limit: $limit,
-			offset: $offset
+			filter: new OutcomeFilter(outcome: $outcome, page: new QueryPage(limit: $limit, offset: $offset))
 		);
 
 		return new JSONResponse(
@@ -508,7 +508,7 @@ class BulkJobsController extends Controller {
 		$more = true;
 
 		while ($more === true) {
-			$page = $this->service->members(job: $job, limit: self::MAX_PAGE, offset: $offset);
+			$page = $this->service->members(job: $job, filter: new OutcomeFilter(outcome: null, page: new QueryPage(limit: self::MAX_PAGE, offset: $offset)));
 
 			// A short page is the last page, so the next request is not made.
 			$more = (count($page) === self::MAX_PAGE);
