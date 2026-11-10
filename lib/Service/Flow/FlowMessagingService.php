@@ -334,7 +334,10 @@ class FlowMessagingService {
 	 */
 	private function postTalkItem(FlowSend $send, array $json): void {
 		$token = $this->conversationToken(send: $send, json: $json);
-		$message = $this->platform->templating->render(template: (string)($send->config['message'] ?? ''), values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context)));
+		$message = $this->platform->templating->render(
+			template: (string)($send->config['message'] ?? ''),
+			values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context))
+		);
 		if ($token === '') {
 			$send->failures[] = 'No Talk conversation resolved for an item; nothing was posted for it.';
 			$send->add(bucket: 'failed', recipient: $token);
@@ -562,10 +565,10 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function sendItem(FlowSend $send, FlowSendItem $item): void {
-		$scalars = $this->scalarContext(context: $send->context);
+		$values = new PlaceholderValues(data: $item->json, context: $this->scalarContext(context: $send->context));
 		$templating = $this->platform->templating;
-		$item->title = $templating->render(template: (string)($send->config[$send->titleKey] ?? ''), values: new PlaceholderValues(data: $item->json, context: $scalars));
-		$item->body = $templating->render(template: (string)($send->config[$send->bodyKey] ?? ''), values: new PlaceholderValues(data: $item->json, context: $scalars));
+		$item->title = $templating->render(template: (string)($send->config[$send->titleKey] ?? ''), values: $values);
+		$item->body = $templating->render(template: (string)($send->config[$send->bodyKey] ?? ''), values: $values);
 		$item->kind = FlowEmailSentEvent::KIND_USER;
 		foreach ($item->uids as $uid) {
 			$item->recipient = $uid;
@@ -879,6 +882,7 @@ class FlowMessagingService {
 			return $value;
 		}
 
-		return trim($this->platform->templating->render(template: $value, values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context))));
+		$values = new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context));
+		return trim($this->platform->templating->render(template: $value, values: $values));
 	}//end conversationToken()
 }//end class

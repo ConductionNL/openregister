@@ -86,13 +86,14 @@ class FlowMessagePreview {
 	 * @return array{channel: string, to: array<int, string>, subject: string, body: string} The message.
 	 */
 	private function talkMessage(MessageSend $step, array $json): array {
-		$conversation = $this->templating->render(template: (string)($step->config['conversation'] ?? ''), values: new PlaceholderValues(data: $json, context: $step->context));
+		$values       = new PlaceholderValues(data: $json, context: $step->context);
+		$conversation = $this->templating->render(template: (string)($step->config['conversation'] ?? ''), values: $values);
 
 		return [
 			'channel' => 'talk',
 			'to' => [trim($conversation)],
 			'subject' => '',
-			'body' => $this->templating->render(template: (string)($step->config['message'] ?? ''), values: new PlaceholderValues(data: $json, context: $step->context)),
+			'body' => $this->templating->render(template: (string)($step->config['message'] ?? ''), values: $values),
 		];
 	}//end talkMessage()
 
@@ -116,12 +117,13 @@ class FlowMessagePreview {
 			lookup: new RecipientLookup(json: $json, acceptAddresses: ($channel === 'email'))
 		);
 		$addresses = array_map(static fn (array $address): string => $address['address'], $resolved['addresses']);
+		$values    = new PlaceholderValues(data: $json, context: $one->context);
 
 		return [
 			'channel' => $channel,
 			'to' => array_values(array_merge($resolved['uids'], $addresses)),
-			'subject' => $this->templating->render(template: (string)($one->config[$keys[0]] ?? ''), values: new PlaceholderValues(data: $json, context: $one->context)),
-			'body' => $this->templating->render(template: (string)($one->config[$keys[1]] ?? ''), values: new PlaceholderValues(data: $json, context: $one->context)),
+			'subject' => $this->templating->render(template: (string)($one->config[$keys[0]] ?? ''), values: $values),
+			'body' => $this->templating->render(template: (string)($one->config[$keys[1]] ?? ''), values: $values),
 		];
 	}//end sentMessage()
 }//end class

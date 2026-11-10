@@ -125,7 +125,14 @@ final class RuleMessageRenderer {
 			return null;
 		}
 
-		return $this->templating->render(template: $text, values: new PlaceholderValues(data: $target->firing->data, context: $target->firing->context, languages: array_merge([$target->locale], $this->languages)));
+		return $this->templating->render(
+			template: $text,
+			values: new PlaceholderValues(
+				data: $target->firing->data,
+				context: $target->firing->context,
+				languages: array_merge([$target->locale], $this->languages)
+			)
+		);
 	}//end rendered()
 
 	/**
