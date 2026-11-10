@@ -646,18 +646,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 			return null;
 		}
 
-		try {
-			$graph = $this->pin->graphFor($version->getDefinitionHash());
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[FlowVersionService] Could not read the previously published graph; '
-					. 'the semantic version starts again: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return null;
-		}
-
+		$graph = $this->readPinnedGraph(version: $version);
 		if (is_array($graph) === false) {
 			return null;
 		}
@@ -665,6 +654,27 @@ class FlowVersionService implements FlowVersionServiceInterface {
 		return $graph;
 
 	}//end publishedGraphOf()
+
+	/**
+	 * Read a version's pinned graph; a failed read is logged and reads as nothing.
+	 *
+	 * @param FlowVersion $version The version.
+	 *
+	 * @return array<string, mixed>|null The graph, or null.
+	 */
+	private function readPinnedGraph(FlowVersion $version): ?array {
+		try {
+			return $this->pin->graphFor($version->getDefinitionHash());
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FlowVersionService] Could not read the previously published graph; '
+					. 'the semantic version starts again: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return null;
+	}//end readPinnedGraph()
 
 	/**
 	 * The version row for the flow's head, creating it when it does not exist.
