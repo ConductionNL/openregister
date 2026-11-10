@@ -403,7 +403,7 @@ class MagicSearchHandler {
 		}
 
 		// Build filtered query (applies all WHERE conditions).
-		$queryBuilder = $this->buildTableQuery(
+		$queryBuilder = $this->buildFilteredQuery(
 			query: $query,
 			table: new MagicReadTable(schema: $schema, registerId: $register->getId(), tableName: $tableName)
 		);
@@ -517,7 +517,7 @@ class MagicSearchHandler {
 	/**
 	 * Build a filtered query for one magic table with all WHERE conditions applied.
 	 *
-	 * The SINGLE SOURCE OF TRUTH for query filtering (see buildFilteredQuery()).
+	 * The SINGLE SOURCE OF TRUTH for query filtering.
 	 * Returns a QueryBuilder with FROM and WHERE clauses, but NO SELECT.
 	 *
 	 * @param array          $query Search parameters including filters.
@@ -527,7 +527,7 @@ class MagicSearchHandler {
 	 *
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
-	public function buildTableQuery(array $query, MagicReadTable $table): IQueryBuilder {
+	public function buildFilteredQuery(array $query, MagicReadTable $table): IQueryBuilder {
 		$schema = $table->schema;
 		// A filter or sort on a value that is only shown masked would read it without the reveal.
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
@@ -589,7 +589,7 @@ class MagicSearchHandler {
 		$this->applyArrayElementFilters(run: $run);
 
 		return $queryBuilder;
-	}//end buildTableQuery()
+	}//end buildFilteredQuery()
 
 	/**
 	 * Narrow the query by `_element` blocks: an object matches when one element

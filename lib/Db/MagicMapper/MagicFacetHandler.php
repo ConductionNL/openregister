@@ -1906,8 +1906,10 @@ class MagicFacetHandler {
 		// property, and the facet beside the result still describes every
 		// case in the register. Nothing looks broken, the numbers are just
 		// answers to a different question.
-		$table        = new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName);
-		$queryBuilder = $this->searchHandler->buildTableQuery(query: $facet->baseQuery, table: $table);
+		$queryBuilder = $this->searchHandler->buildFilteredQuery(
+			query: $facet->baseQuery,
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
+		);
 		$columnRef = "t.{$facet->field}";
 		$queryBuilder->selectAlias($columnRef, 'facet_value')
 			->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
@@ -2196,8 +2198,10 @@ class MagicFacetHandler {
 	private function dateHistogramQuery(TableTermsFacet $facet, string $interval): IQueryBuilder {
 		// Same reason as the terms facet: a histogram that ignores `_related`
 		// draws a shape of the unfiltered set beside a filtered list.
-		$table        = new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName);
-		$queryBuilder = $this->searchHandler->buildTableQuery(query: $facet->baseQuery, table: $table);
+		$queryBuilder = $this->searchHandler->buildFilteredQuery(
+			query: $facet->baseQuery,
+			table: new MagicReadTable(schema: $facet->schema, registerId: $facet->register->getId(), tableName: $facet->tableName)
+		);
 
 		// The date-key SQL expression is platform-specific; buildFilteredQuery aliases the table as 't'.
 		$tDateKeyExpr = $this->buildDateKeyExpr(field: "t.{$facet->field}", interval: $interval);

@@ -33,7 +33,9 @@ namespace Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -245,15 +247,15 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 			}
 		);
 		$search->method('buildFilteredQuery')->willReturnCallback(
-			function (array $query, Schema $schema, string $tableName, ?int $registerId = null) use ($world): IQueryBuilder {
-				$this->events[] = ['buildFilteredQuery', $tableName, $registerId, $query];
+			function (array $query, MagicReadTable $table) use ($world): IQueryBuilder {
+				$this->events[] = ['buildFilteredQuery', $table->tableName, $table->registerId, $query];
 				return $this->queryBuilder('scoped', ($world['qbRows'] ?? []));
 			}
 		);
-		$search->method('buildWhereConditionsSql')->willReturnCallback(
-			function (array $query, Schema $schema, ?array $existingColumns = null, ?int $registerId = null, ?string $tableName = null) use ($world): array {
-				$this->events[] = ['buildWhereConditionsSql', $tableName, $registerId, $query];
-				return ($world['conditions'][$tableName] ?? []);
+		$search->method('buildWhereClause')->willReturnCallback(
+			function (WhereClauseRequest $request) use ($world): array {
+				$this->events[] = ['buildWhereConditionsSql', $request->table->tableName, $request->table->registerId, $request->query];
+				return ($world['conditions'][$request->table->tableName] ?? []);
 			}
 		);
 
