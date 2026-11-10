@@ -484,6 +484,23 @@ function stoppedAtTitle(step) {
 	})
 }
 
+/**
+ * The failure alert for a run whose log names no failed step: shown when the
+ * run failed or carries an error.
+ *
+ * @param {object} run The run
+ * @return {{title: string, error: string}|null} The alert, or null
+ */
+function failedRunAlert(run) {
+	if (!RUN_FAILED_STATUSES.includes(run.status) && !run.error) {
+		return null
+	}
+	return {
+		title: t('openregister', 'This run failed'),
+		error: run.error || '',
+	}
+}
+
 export default {
 	name: 'FlowRunDetail',
 
@@ -607,13 +624,7 @@ export default {
 			if (step) {
 				return { title: stoppedAtTitle(step), error: step.error }
 			}
-			if (RUN_FAILED_STATUSES.includes(this.run.status) || this.run.error) {
-				return {
-					title: t('openregister', 'This run failed'),
-					error: this.run.error || '',
-				}
-			}
-			return null
+			return failedRunAlert(this.run)
 		},
 
 		/**
