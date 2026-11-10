@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -1013,8 +1014,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$this->permissionHandler->checkPermission(
 				$restrictedSchema,
 				'delete',
-				'admin',
-				null,
+				new PermissionCheckOptions(userId: 'admin'),
 				true
 			);
 			$this->assertTrue(true, 'Admin can delete');
