@@ -73,7 +73,7 @@ class TransferAuditLogTest extends TestCase {
 			);
 		}
 
-		return new TransferAuditLog($audit, new TransferSettings($config, new NullLogger()), $notifications, $logger);
+		return new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($audit, $logger), new TransferSettings($config, new NullLogger()), $notifications);
 	}//end failingAuditLog()
 
 	public function testFailuresToAuditOrNotifyAreLoggedAndNeverThrown(): void {
