@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationCandidates;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
@@ -111,7 +112,7 @@ class TaskScheduledNotificationJobBehaviourTest extends TestCase
     public function testFailedDispatchIsLoggedAndTheNextTaskStillDispatches(): void
     {
         $this->tasks->method('findInbox')->willReturnOnConsecutiveCalls([$this->task(uuid: 'bad'), $this->task(uuid: 'good')], []);
-        $this->dedupe->method('findOne')->willReturn(null);
+        $this->dedupe->method('findByKey')->willReturn(null);
         $this->dispatcher->method('dispatchWithSchema')->willReturnCallback(
             static function ($adapter): void {
                 if ($adapter->getUuid() === 'bad') {
@@ -122,9 +123,7 @@ class TaskScheduledNotificationJobBehaviourTest extends TestCase
         $this->dedupe->expects($this->once())->method('upsert')
             ->with(
                 new NotificationDedupeKey(TaskScheduledNotificationJob::DEDUPE_SCHEMA_ID, 'r', 'good'),
-                sha1('[]'),
-                new DateTime(self::NOW),
-                true
+                new DedupeSighting(sha1('[]'), new DateTime(self::NOW), true)
             );
 
         $this->sweep(rules: ['r' => ['trigger' => ['type' => 'scheduled']]]);

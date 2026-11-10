@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
@@ -230,7 +231,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 
 		$run->matched++;
 		$fingerprint = $this->fingerprint(payload: $payload, watched: $run->sweep->watched);
-		$existing = $this->delivery->dedupe->findOne(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $run->sweep->name, objectUuid: (string)$task->getUuid());
+		$existing = $this->delivery->dedupe->findByKey(key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $run->sweep->name, objectUuid: (string)$task->getUuid()));
 		if ($existing !== null && (string)$existing->getFingerprint() === $fingerprint) {
 			return;
 		}
@@ -260,9 +261,11 @@ class TaskScheduledNotificationJob extends TimedJob {
 			);
 			$this->delivery->dedupe->upsert(
 				key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $name, objectUuid: $uuid),
-				fingerprint: $this->fingerprint(payload: ($adapter->getObject() ?? []), watched: $run->sweep->watched),
-				now: $run->now,
-				dispatched: true
+				sighting: new DedupeSighting(
+					fingerprint: $this->fingerprint(payload: ($adapter->getObject() ?? []), watched: $run->sweep->watched),
+					now: $run->now,
+					dispatched: true
+				)
 			);
 			return 1;
 		} catch (Throwable $failure) {
