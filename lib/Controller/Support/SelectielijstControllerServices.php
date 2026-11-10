@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 
@@ -36,10 +37,12 @@ final class SelectielijstControllerServices {
 	 *
 	 * @param SelectielijstImportServiceInterface $selectielijst   Imports, versions and diffs a list.
 	 * @param ArchivalSettingsReaderInterface     $settingsHandler Names the version in force.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		public readonly SelectielijstImportServiceInterface $selectielijst,
 		public readonly ArchivalSettingsReaderInterface $settingsHandler,
+		public readonly ControllerSession $session,
 	) {
 	}//end __construct()
 }//end class

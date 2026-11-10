@@ -134,7 +134,6 @@ class HardeningControllerTest extends TestCase {
 		}
 
 		return HardeningControllerFactory::create(
-			'openregister',
 			$request,
 			$this->reportService,
 			$this->settings,
@@ -175,7 +174,6 @@ class HardeningControllerTest extends TestCase {
 		}
 
 		return HardeningStatementControllerFactory::create(
-			'openregister',
 			$request,
 			$this->statements,
 			$this->elevation,

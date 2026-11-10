@@ -361,11 +361,12 @@ class DraftExpiry implements DraftExpiryInterface {
 				DraftListLens::PARAMETER => 'true',
 			];
 			if ($pages <= 0) {
-				$unread += $this->countOf(pair: $pair, query: $query);
+				$unread += $this->countOf(run: new ExpiredDraftListRun(pair: $pair, query: $query));
 				continue;
 			}
 
-			$scan = $this->scan(pair: $pair, query: $query, pages: $pages);
+			$run  = new ExpiredDraftListRun(pair: $pair, query: $query);
+			$scan = $this->scan(run: $run, pages: $pages);
 			array_push($expired, ...$scan['uuids']);
 			if ($scan['failed'] === true) {
 				// A list that cannot be read is logged once; the schema's drafts wait for the next run.
@@ -374,7 +375,7 @@ class DraftExpiry implements DraftExpiryInterface {
 
 			$pages -= $scan['pages'];
 			if ($scan['full'] === true) {
-				$unread += max(1, ($this->countOf(pair: $pair, query: $query) - $scan['rows']));
+				$unread += max(1, ($this->countOf(run: $run) - $scan['rows']));
 			}
 		}
 
@@ -384,18 +385,17 @@ class DraftExpiry implements DraftExpiryInterface {
 	/**
 	 * Read the pages of one list, up to a page budget.
 	 *
-	 * @param DraftExpiryPair      $pair  The register and schema, and the cutoff: drafts last changed before it are expired.
-	 * @param array<string, mixed> $query The list query, without paging.
-	 * @param int                  $pages How many pages may be read.
+	 * @param ExpiredDraftListRun $run   The register, schema and cutoff, and the list query without paging.
+	 * @param int                 $pages How many pages may be read.
 	 *
 	 * @return array{uuids: array<int, string>, pages: int, rows: int, full: bool, failed: bool}
 	 *         The expired uuids, the pages and rows read, whether the last page was full when the pages ran out,
 	 *         and whether a read failed.
 	 */
-	private function scan(DraftExpiryPair $pair, array $query, int $pages): array {
+	private function scan(ExpiredDraftListRun $run, int $pages): array {
 		$scan = ['uuids' => [], 'pages' => 0, 'rows' => 0, 'full' => false, 'failed' => false];
 		for ($page = 0; $page < $pages; $page++) {
-			$found = $this->readPage(pair: $pair, query: $query, page: $page);
+			$found = $this->readPage(run: $run, page: $page);
 			if ($found === null) {
 				$scan['failed'] = true;
 				break;
@@ -403,7 +403,7 @@ class DraftExpiry implements DraftExpiryInterface {
 
 			$scan['pages']++;
 			$scan['rows'] += count($found);
-			array_push($scan['uuids'], ...$this->expiredUuids(found: $found, cutoff: $pair->cutoff));
+			array_push($scan['uuids'], ...$this->expiredUuids(found: $found, cutoff: $run->pair->cutoff));
 
 			if (count($found) < self::PAGE_SIZE) {
 				return $scan;
@@ -418,18 +418,18 @@ class DraftExpiry implements DraftExpiryInterface {
 	/**
 	 * Read one page of drafts, or null (logged) when the list cannot be read.
 	 *
-	 * @param DraftExpiryPair $pair  The register, the schema and the cutoff.
-	 * @param array           $query The list query.
-	 * @param int             $page  The zero-based page.
+	 * @param ExpiredDraftListRun $run  The register, the schema and the cutoff, and the list query.
+	 * @param int                 $page The zero-based page.
 	 *
 	 * @return array|null The page
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
-	private function readPage(DraftExpiryPair $pair, array $query, int $page): ?array {
+	private function readPage(ExpiredDraftListRun $run, int $page): ?array {
+		$pair = $run->pair;
 		try {
 			$found = $this->objects->searchObjects(
-				query: ($query + ['_limit' => self::PAGE_SIZE, '_offset' => ($page * self::PAGE_SIZE)]),
+				query: ($run->query + ['_limit' => self::PAGE_SIZE, '_offset' => ($page * self::PAGE_SIZE)]),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -474,14 +474,14 @@ class DraftExpiry implements DraftExpiryInterface {
 	/**
 	 * How many drafts one list matches, for what lies beyond the read cap.
 	 *
-	 * @param DraftExpiryPair      $pair  The register and schema.
-	 * @param array<string, mixed> $query The list query, without paging.
+	 * @param ExpiredDraftListRun $run The register and schema, and the list query without paging.
 	 *
 	 * @return int The count; zero when it cannot be asked.
 	 */
-	private function countOf(DraftExpiryPair $pair, array $query): int {
+	private function countOf(ExpiredDraftListRun $run): int {
+		$pair = $run->pair;
 		try {
-			return (int)$this->objects->countSearchObjects(query: $query, _rbac: false, _multitenancy: false);
+			return (int)$this->objects->countSearchObjects(query: $run->query, _rbac: false, _multitenancy: false);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[DraftExpiry] The expired drafts beyond the read cap could not be counted',

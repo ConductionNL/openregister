@@ -382,10 +382,12 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			}
 
 			$entry = ['uuid' => (string) $stored->getUuid()] + $this->runs()->write(
-				flow: $stored,
-				version: $version,
-				runs: array_map(static fn (mixed $run): array => (array) $run, (array) ($data['runs'] ?? [])),
-				newUuid: fn (): string => $this->newUuid()
+				write: new ExampleSetRunsWrite(
+					flow: $stored,
+					version: $version,
+					runs: array_map(static fn (mixed $run): array => (array) $run, (array) ($data['runs'] ?? [])),
+					newUuid: fn (): string => $this->newUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
