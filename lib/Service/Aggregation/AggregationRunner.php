@@ -1026,24 +1026,49 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return null;
 		}
 
+		return $this->dbalAggregate(run: $run, config: $config);
+	}//end tryDbalAggregation()
+
+	/**
+	 * Aggregate through the DBAL provider; a provider failure is logged and answers null.
+	 *
+	 * @param AdhocAggregationRun $run    The ad-hoc run; its resolved query is sent.
+	 * @param array<mixed>        $config The schema's `dbal-source` config.
+	 *
+	 * @return array<string, mixed>|null The result fragment, or null to fall through.
+	 */
+	private function dbalAggregate(AdhocAggregationRun $run, array $config): ?array {
 		try {
-			return $this->dbalSourceProvider->aggregate(
-				register: $run->register,
-				schema: $run->schema,
-				metric: $query->metric,
-				field: $query->field,
-				filter: $query->filter,
-				groupBy: $query->groupBy,
-				dateBucket: $query->dateBucket,
-				config: $config
-			);
+			return $this->dbalProviderAggregate(run: $run, config: $config);
 		} catch (\Throwable $e) {
 			$this->logger?->warning(
 				'[AggregationRunner] DBAL aggregation failed for schema "' . ((string)$run->schema->getSlug()) . '": ' . $e->getMessage()
 			);
 			return null;
 		}
-	}//end tryDbalAggregation()
+	}//end dbalAggregate()
+
+	/**
+	 * The DBAL provider's aggregate of the run's resolved query.
+	 *
+	 * @param AdhocAggregationRun $run    The ad-hoc run; its resolved query is sent.
+	 * @param array<mixed>        $config The schema's `dbal-source` config.
+	 *
+	 * @return array<string, mixed>|null The result fragment.
+	 */
+	private function dbalProviderAggregate(AdhocAggregationRun $run, array $config): ?array {
+		$query = $run->resolvedQuery;
+		return $this->dbalSourceProvider->aggregate(
+			register: $run->register,
+			schema: $run->schema,
+			metric: $query->metric,
+			field: $query->field,
+			filter: $query->filter,
+			groupBy: $query->groupBy,
+			dateBucket: $query->dateBucket,
+			config: $config
+		);
+	}//end dbalProviderAggregate()
 
 	/**
 	 * The `dbal-source` object-source config of a schema, or null when it has none.
@@ -1055,13 +1080,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function dbalSourceConfig(Schema $schema): ?array {
-		$configuration = $schema->getConfiguration();
-		if (is_array($configuration) === false) {
-			return null;
-		}
-
-		$objectSource = ($configuration['x-openregister-object-source'] ?? null);
-		if (is_array($objectSource) === false
+		$objectSource = self::declaredObjectSource(schema: $schema);
+		if ($objectSource === null
 			|| (string)($objectSource['provider'] ?? '') !== 'dbal-source'
 		) {
 			return null;
@@ -1074,6 +1094,27 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		return $config;
 	}//end dbalSourceConfig()
+
+	/**
+	 * The `x-openregister-object-source` block of a schema's configuration, when it is a map.
+	 *
+	 * @param Schema $schema The schema being aggregated.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private static function declaredObjectSource(Schema $schema): ?array {
+		$configuration = $schema->getConfiguration();
+		if (is_array($configuration) === false) {
+			return null;
+		}
+
+		$objectSource = ($configuration['x-openregister-object-source'] ?? null);
+		if (is_array($objectSource) === false) {
+			return null;
+		}
+
+		return $objectSource;
+	}//end declaredObjectSource()
 
 	/**
 	 * Project translatable group keys in a grouped-aggregation envelope to
@@ -3486,29 +3527,67 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// it as UTC, shifting every bucket label by the server's UTC offset
 		// (e.g. CET buckets land an hour early). Parse offset-less shapes as
 		// UTC explicitly; only fall back to strtotime for offset-bearing text.
-		$hasTimezone = (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
-		if ($hasTimezone === false) {
-			// `!` on the date-only shape: without it createFromFormat() takes
-			// the missing time of day from the wall clock, so a day bucket
-			// would be labelled with the moment of the request.
-			$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', '!Y-m-d'];
-			foreach ($formats as $format) {
-				$parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
-				if ($parsed !== false) {
-					return $parsed->format('Y-m-d\TH:i:s\Z');
-				}
+		if (self::hasTimezoneDesignator(raw: $raw) === false) {
+			$utcKey = self::offsetLessBucketKey(raw: $raw);
+			if ($utcKey !== null) {
+				return $utcKey;
 			}
 		}
 
-		// Offset-bearing (or otherwise unhandled) shapes: strtotime understands
-		// the embedded offset, so converting to UTC via gmdate is correct here.
+		return self::offsetBucketKey(raw: $raw);
+	}//end coerceBucketKey()
+
+	/**
+	 * Whether bucket text ends in a timezone designator (`Z`, `+02:00`, `-0500`).
+	 *
+	 * @param string $raw The bucket text.
+	 *
+	 * @return bool
+	 */
+	private static function hasTimezoneDesignator(string $raw): bool {
+		return (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
+	}//end hasTimezoneDesignator()
+
+	/**
+	 * The bucket key of an offset-less bucket text, read as UTC; null for an unknown shape.
+	 *
+	 * @param string $raw The bucket text, without a timezone designator.
+	 *
+	 * @return string|null ISO-8601-UTC `Y-m-d\TH:i:s\Z` bucket label, or null.
+	 */
+	private static function offsetLessBucketKey(string $raw): ?string {
+		// `!` on the date-only shape: without it createFromFormat() takes
+		// the missing time of day from the wall clock, so a day bucket
+		// would be labelled with the moment of the request.
+		$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', '!Y-m-d'];
+		foreach ($formats as $format) {
+			$parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
+			if ($parsed !== false) {
+				return $parsed->format('Y-m-d\TH:i:s\Z');
+			}
+		}
+
+		return null;
+	}//end offsetLessBucketKey()
+
+	/**
+	 * The bucket key of an offset-bearing (or otherwise unhandled) bucket text.
+	 *
+	 * Strtotime understands the embedded offset, so converting to UTC via gmdate
+	 * is correct here; text it cannot read is returned as is.
+	 *
+	 * @param string $raw The bucket text.
+	 *
+	 * @return string ISO-8601-UTC `Y-m-d\TH:i:s\Z` bucket label, or the original text.
+	 */
+	private static function offsetBucketKey(string $raw): string {
 		$stamp = strtotime($raw);
 		if ($stamp === false) {
 			return $raw;
 		}
 
 		return gmdate('Y-m-d\TH:i:s\Z', $stamp);
-	}//end coerceBucketKey()
+	}//end offsetBucketKey()
 
 	/**
 	 * Detect the active database platform short name.
@@ -3950,39 +4029,79 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function mergeNarrowingFilter(array $declared, RequestedNarrowing $narrowing): array {
-		$extra = $narrowing->constraints;
-		if ($extra === []) {
+		if ($narrowing->constraints === []) {
 			return $declared;
 		}
 
+		return $this->withNarrowing(declared: $declared, narrowing: $narrowing);
+	}//end mergeNarrowingFilter()
+
+	/**
+	 * The declared filter plus every caller constraint the three rules accept, in request order.
+	 *
+	 * @param array<string, mixed> $declared  The declared, placeholder-resolved filter.
+	 * @param RequestedNarrowing   $narrowing Caller-supplied constraints and the aggregation name, for the debug log.
+	 *
+	 * @return array<string, mixed> The merged filter.
+	 */
+	private function withNarrowing(array $declared, RequestedNarrowing $narrowing): array {
 		$merged = $declared;
-		foreach ($extra as $key => $value) {
-			if (is_string($key) === false || $key === '') {
+		foreach ($narrowing->constraints as $key => $value) {
+			if (self::isNarrowingKey(key: $key) === false) {
 				continue;
 			}
 
 			if (array_key_exists($key, $declared) === true) {
-				// `?->` because the logger is an OPTIONAL constructor argument
-				// here (`?LoggerInterface $logger = null`). A bare `->debug()`
-				// is a fatal whenever it was not injected — and a fatal on a
-				// read path, thrown from the branch that ENFORCES the scoping
-				// rule, would be the worst possible place for one.
-				$this->logger?->debug(
-					'Aggregation: refusing a request filter that would relax a declared one.',
-					['aggregation' => $narrowing->aggregation, 'key' => $key]
-				);
-				continue;
+				$this->logRefusedRelaxation(narrowing: $narrowing, key: $key);
+			} elseif (self::isNarrowingValue(value: $value) === true) {
+				$merged[$key] = $value;
 			}
-
-			if (is_scalar($value) === false || $value === '') {
-				continue;
-			}
-
-			$merged[$key] = $value;
 		}
 
 		return $merged;
-	}//end mergeNarrowingFilter()
+	}//end withNarrowing()
+
+	/**
+	 * Whether a constraint key can narrow: a non-empty string.
+	 *
+	 * @param mixed $key The constraint key.
+	 *
+	 * @return bool
+	 */
+	private static function isNarrowingKey(mixed $key): bool {
+		return is_string($key) === true && $key !== '';
+	}//end isNarrowingKey()
+
+	/**
+	 * Whether a constraint value can narrow: a scalar other than the empty string.
+	 *
+	 * @param mixed $value The constraint value.
+	 *
+	 * @return bool
+	 */
+	private static function isNarrowingValue(mixed $value): bool {
+		return is_scalar($value) === true && $value !== '';
+	}//end isNarrowingValue()
+
+	/**
+	 * Log a caller constraint refused because the declaration already constrains its key.
+	 *
+	 * @param RequestedNarrowing $narrowing The constraints and the aggregation name.
+	 * @param string             $key       The refused key.
+	 *
+	 * @return void
+	 */
+	private function logRefusedRelaxation(RequestedNarrowing $narrowing, string $key): void {
+		// `?->` because the logger is an OPTIONAL constructor argument
+		// here (`?LoggerInterface $logger = null`). A bare `->debug()`
+		// is a fatal whenever it was not injected — and a fatal on a
+		// read path, thrown from the branch that ENFORCES the scoping
+		// rule, would be the worst possible place for one.
+		$this->logger?->debug(
+			'Aggregation: refusing a request filter that would relax a declared one.',
+			['aggregation' => $narrowing->aggregation, 'key' => $key]
+		);
+	}//end logRefusedRelaxation()
 
 	/**
 	 * Load the joined schema, gate the caller on it, and locate its register.
@@ -4921,24 +5040,36 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// is consistent with loadSchema/loadRegister.
 		$registers = $this->registerMapper->findAll(_multitenancy: false);
 		foreach ($registers as $register) {
-			$schemaIds = $register->getSchemas();
-			if (is_array($schemaIds) === false) {
-				continue;
-			}
-
-			// Normalise both sides to int before strict comparison: the
-			// schema id is canonically an int and `register->getSchemas()`
-			// may return string representations (legacy rows / DB drivers).
-			// Strict in_array with mixed-type members would silently miss
-			// a match and steer aggregation at the wrong register.
-			$normalised = array_map(static fn ($id) => (int)$id, $schemaIds);
-			if (in_array((int)$schemaId, $normalised, true) === true) {
+			if (self::registerListsSchema(register: $register, schemaId: (int)$schemaId) === true) {
 				return $register;
 			}
 		}
 
 		return null;
 	}//end findRegisterForSchema()
+
+	/**
+	 * Whether a register's schema list holds the schema id.
+	 *
+	 * @param Register $register The register.
+	 * @param int      $schemaId The schema id.
+	 *
+	 * @return bool
+	 */
+	private static function registerListsSchema(Register $register, int $schemaId): bool {
+		$schemaIds = $register->getSchemas();
+		if (is_array($schemaIds) === false) {
+			return false;
+		}
+
+		// Normalise both sides to int before strict comparison: the
+		// schema id is canonically an int and `register->getSchemas()`
+		// may return string representations (legacy rows / DB drivers).
+		// Strict in_array with mixed-type members would silently miss
+		// a match and steer aggregation at the wrong register.
+		$normalised = array_map(static fn ($id) => (int)$id, $schemaIds);
+		return in_array($schemaId, $normalised, true);
+	}//end registerListsSchema()
 
 	/**
 	 * Resolve the (register, schema) pair a request named, with the register as the boundary.
