@@ -39,9 +39,6 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateInterval;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCP\BackgroundJob\IJobList;
-use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -83,41 +80,6 @@ class DestructionService implements DestructionServiceInterface {
 	];
 
 	/**
-	 * Object entity mapper.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $objectMapper;
-
-	/**
-	 * App configuration.
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Background job list.
-	 *
-	 * @var IJobList
-	 */
-	private IJobList $jobList;
-
-	/**
-	 * User session.
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
-	 * Logger instance.
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param DestructionInfrastructure $infrastructure The object store, app configuration and job list.
@@ -125,15 +87,10 @@ class DestructionService implements DestructionServiceInterface {
 	 * @param LoggerInterface           $logger         Logger instance.
 	 */
 	public function __construct(
-		DestructionInfrastructure $infrastructure,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		private readonly DestructionInfrastructure $infrastructure,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objectMapper = $infrastructure->objectMapper;
-		$this->appConfig = $infrastructure->appConfig;
-		$this->jobList = $infrastructure->jobList;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -217,7 +174,20 @@ class DestructionService implements DestructionServiceInterface {
 	public function approveList(
 		array $destructionList, ?ApprovalChoice $choice=null, bool $requiresDual=false, ?string $listUuid=null
 	): array {
-		$choice = ($choice ?? new ApprovalChoice());
+		$request = new ApprovalRequest(choice: ($choice ?? new ApprovalChoice()), requiresDual: $requiresDual, listUuid: $listUuid);
+		return $this->approve(destructionList: $destructionList, request: $request);
+	}//end approveList()
+
+	/**
+	 * Record one approval on a list and carry it as far as it goes.
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list data.
+	 * @param ApprovalRequest      $request         The choice, whether two-step approval is required, and the list's uuid.
+	 *
+	 * @return array<string, mixed> The updated destruction list.
+	 */
+	private function approve(array $destructionList, ApprovalRequest $request): array {
+		$choice = $request->choice;
 		$userId = $this->getCurrentUserId();
 		$destructionList['approvals'][] = ['userId' => $userId, 'approvedAt' => (new DateTime())->format('c'), 'action' => $choice->action];
 
@@ -231,13 +201,13 @@ class DestructionService implements DestructionServiceInterface {
 		$destructionList = $this->withholdDecidedEntries(destructionList: $destructionList);
 
 		$unfinished = null;
-		if ($requiresDual === true) {
+		if ($request->requiresDual === true) {
 			$unfinished = $this->unfinishedDualApproval(destructionList: $destructionList, userId: $userId);
 		}
 
-		$approval = new DestructionApproval(userId: $userId, action: $choice->action, listUuid: $listUuid);
+		$approval = new DestructionApproval(userId: $userId, action: $choice->action, listUuid: $request->listUuid);
 		return ($unfinished ?? $this->markApproved(destructionList: $destructionList, approval: $approval));
-	}//end approveList()
+	}//end approve()
 
 	/**
 	 * The choice an archivist makes when approving a list.
@@ -319,7 +289,7 @@ class DestructionService implements DestructionServiceInterface {
 	private function markApproved(array $destructionList, DestructionApproval $approval): array {
 		$destructionList['status'] = self::STATUS_APPROVED;
 
-		$this->jobList->add(
+		$this->infrastructure->jobList->add(
 			DestructionExecutionJobInterface::JOB_CLASS,
 			[DestructionExecutionJobInterface::ARGUMENT_LIST_UUID => ($approval->listUuid ?? $destructionList['uuid'] ?? null)]
 		);
@@ -664,7 +634,7 @@ class DestructionService implements DestructionServiceInterface {
 	 * @return string ISO 8601 duration.
 	 */
 	private function extensionPeriod(): string {
-		return $this->appConfig->getValueString(
+		return $this->infrastructure->appConfig->getValueString(
 			app: 'openregister',
 			key: 'destruction_extension_period',
 			default: self::DEFAULT_EXTENSION_PERIOD
@@ -683,9 +653,9 @@ class DestructionService implements DestructionServiceInterface {
 	 */
 	private function extendArchiveActionDate(string $uuid, RetentionExtension $extension): void {
 		try {
-			$object = $this->objectMapper->find($uuid);
+			$object = $this->infrastructure->objectMapper->find($uuid);
 			$object->setRetention($this->extendedRetention(retention: ($object->getRetention() ?? []), extension: $extension));
-			$this->objectMapper->update($object);
+			$this->infrastructure->objectMapper->update($object);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[DestructionService] Failed to extend archiefactiedatum',

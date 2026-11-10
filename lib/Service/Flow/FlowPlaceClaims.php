@@ -131,16 +131,15 @@ class FlowPlaceClaims {
 	/**
 	 * Try to claim every place a firing touches.
 	 *
-	 * Returns the claimed place list on success, or null on refusal — with
-	 * every partial claim already released. Never waits, never retries in
-	 * place.
+	 * Kept with its loose parameters because other Conduction apps name this
+	 * class (ADR-011 Rule 5); it builds the claim and delegates to {@see self::claim()}.
 	 *
-	 * @param string $runUuid The run.
-	 * @param string $streamId The stream the firing belongs to.
-	 * @param string $transition The transition name.
-	 * @param array<int, string> $places `froms ∪ tos`, in any order.
-	 * @param string $owner The pass token.
-	 * @param int|null $runCap The per-run stream cap; null for the default.
+	 * @param string             $runUuid    The run.
+	 * @param string             $streamId   The stream the firing belongs to.
+	 * @param string             $transition The transition name.
+	 * @param array<int, string> $places     `froms ∪ tos`, in any order.
+	 * @param string             $owner      The pass token.
+	 * @param int|null           $runCap     The per-run stream cap; null for the default.
 	 *
 	 * @return array<int, string>|null The claimed places, sorted, or null when refused.
 	 *
@@ -149,32 +148,69 @@ class FlowPlaceClaims {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
 	 */
 	public function acquire(string $runUuid, string $streamId, string $transition, array $places, string $owner, ?int $runCap = null): ?array {
+		$firing = new FiringClaim(runUuid: $runUuid, streamId: $streamId, transition: $transition, places: $places);
+
+		return $this->claim(firing: $firing, pass: new ClaimPass(owner: $owner, runCap: $runCap));
+	}//end acquire()
+
+	/**
+	 * Try to claim every place a firing touches.
+	 *
+	 * Returns the claimed place list on success, or null on refusal — with
+	 * every partial claim already released. Never waits, never retries in
+	 * place.
+	 *
+	 * @param FiringClaim $firing The run, stream, transition and `froms ∪ tos`.
+	 * @param ClaimPass   $pass   The pass token and its per-run stream cap.
+	 *
+	 * @return array<int, string>|null The claimed places, sorted, or null when refused.
+	 *
+	 * @throws LogicException When called inside a transaction.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
+	 */
+	public function claim(FiringClaim $firing, ClaimPass $pass): ?array {
 		if ($this->db->inTransaction() === true) {
 			throw new LogicException(
 				'FlowPlaceClaims::acquire() must not run inside a transaction: an uncommitted claim would block a rival for the whole step.'
 			);
 		}
 
-		$places = self::normalised(places: $places);
+		$places = self::normalised(places: $firing->places);
 		if ($places === []) {
 			return [];
 		}
 
 		// CAPS, before the first insert. A run may hold at most `runCap`
 		// claims; a pass at most `passCap()` across every run it advances.
-		if ($this->runFull(runUuid: $runUuid, runCap: $runCap) === true || $this->passFull(owner: $owner) === true) {
+		if ($this->runFull(runUuid: $firing->runUuid, runCap: $pass->runCap) === true || $this->passFull(owner: $pass->owner) === true) {
 			return null;
 		}
 
+		return $this->claimEach(template: self::template(firing: $firing, owner: $pass->owner), places: $places);
+	}//end claim()
+
+	/**
+	 * The row every place of one firing shares: run, owner, stream,
+	 * transition and one claim time.
+	 *
+	 * @param FiringClaim $firing The firing's claim.
+	 * @param string      $owner  The pass token.
+	 *
+	 * @return FlowClaim The template row, without a place.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
+	 */
+	private static function template(FiringClaim $firing, string $owner): FlowClaim {
 		$template = new FlowClaim();
-		$template->setRunUuid($runUuid);
+		$template->setRunUuid($firing->runUuid);
 		$template->setOwner($owner);
-		$template->setStreamId($streamId);
-		$template->setTransition($transition);
+		$template->setStreamId($firing->streamId);
+		$template->setTransition($firing->transition);
 		$template->setClaimedAt(new DateTime());
 
-		return $this->claimEach(template: $template, places: $places);
-	}//end acquire()
+		return $template;
+	}//end template()
 
 	/**
 	 * The places of a firing as claimed: strings, once each, in bytewise order.

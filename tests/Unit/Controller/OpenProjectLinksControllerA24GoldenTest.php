@@ -52,7 +52,13 @@ class OpenProjectLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service    = $this->createMock(OpenProjectLinkServiceInterface::class);
-		$this->controller = new OpenProjectLinksController('openregister', $this->request, $this->service, $this->objectService);
+		$this->controller = new OpenProjectLinksController(
+			$this->request,
+			new \OCA\OpenRegister\Controller\Support\OpenProjectLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			)
+		);
 	}
 
 	private function link(): OpenProjectLink {

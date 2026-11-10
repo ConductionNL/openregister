@@ -150,7 +150,6 @@ final class OperationsConsoleControllerTest extends TestCase {
 		}
 
 		return OperationsMaintenanceControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->maintenance,
 			$this->bundle,

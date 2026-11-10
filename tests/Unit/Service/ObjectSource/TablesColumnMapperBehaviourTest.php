@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
+use OCA\OpenRegister\Service\ObjectSource\TablesRowProjection;
 use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -165,9 +166,11 @@ class TablesColumnMapperBehaviourTest extends TestCase {
 					['columnId' => 99, 'value' => 'drift'],
 				],
 			],
-			columns: $columns,
-			columnMap: $map,
-			targetSchemaExists: static fn (int $tableId): bool => false
+			projection: new TablesRowProjection(
+				columns: $columns,
+				columnMap: $map,
+				targetSchemaExists: static fn (int $tableId): bool => false
+			)
 		);
 
 		$this->assertSame(
@@ -199,13 +202,15 @@ class TablesColumnMapperBehaviourTest extends TestCase {
 
 		$data = $this->mapper->projectRow(
 			row: ['cells' => [['columnId' => 1, 'value' => '9'], ['columnId' => 2, 'value' => 9], ['columnId' => 3, 'value' => 4]]],
-			columns: $columns,
-			columnMap: $map,
-			targetSchemaExists: static function (int $tableId) use (&$asked): bool {
-				$asked[] = $tableId;
+			projection: new TablesRowProjection(
+				columns: $columns,
+				columnMap: $map,
+				targetSchemaExists: static function (int $tableId) use (&$asked): bool {
+					$asked[] = $tableId;
 
-				return $tableId === 5;
-			}
+					return $tableId === 5;
+				}
+			)
 		);
 
 		$this->assertSame((new TablesUuidDeriver())->deriveObjectUuid(tableId: 5, rowId: 9), $data['seeded']);

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
 use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
@@ -97,16 +98,14 @@ class FederatedConfigController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                          $appName The app id.
 	 * @param IRequest                        $request The request.
 	 * @param FederatedConfigControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FederatedConfigControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->access = $services->access;
 		$this->config = $services->config;
