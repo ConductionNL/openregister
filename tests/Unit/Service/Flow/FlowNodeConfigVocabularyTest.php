@@ -57,6 +57,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 require_once __DIR__ . '/FiltersFlowLevelFindings.php';
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -560,7 +561,8 @@ class FlowNodeConfigVocabularyTest extends TestCase {
 			public function validateConfig(array $config): void {
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};

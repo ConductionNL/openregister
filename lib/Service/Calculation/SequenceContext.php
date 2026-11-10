@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 
 /**
@@ -63,9 +64,7 @@ final class SequenceContext {
 	 */
 	public function reserveNext(string $scopeKey): int {
 		return $this->service->reserveNext(
-			registerId: $this->registerId,
-			schemaId: $this->schemaId,
-			scopeKey: $scopeKey
+			new SequenceScope(registerId: $this->registerId, schemaId: $this->schemaId, scopeKey: $scopeKey)
 		);
 	}//end reserveNext()
 }//end class

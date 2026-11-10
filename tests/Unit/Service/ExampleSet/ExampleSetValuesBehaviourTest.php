@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
@@ -66,7 +67,7 @@ class ExampleSetValuesBehaviourTest extends TestCase {
 	 */
 	private function fillOne(mixed $value): array {
 		$gaps   = [];
-		$filled = (new ExampleSetValues())->fill(value: $value, context: $this->context(), gaps: $gaps);
+		$filled = (new ExampleSetValues())->fill(value: $value, scope: new ExampleSetFillScope(context: $this->context(), gaps: $gaps));
 		return [$filled, $gaps];
 	}//end fillOne()
 
@@ -174,7 +175,7 @@ class ExampleSetValuesBehaviourTest extends TestCase {
 		$gaps   = [];
 		$object = ['data' => ['raw' => '{{lookup:caseType}}', 'type' => '{{lookup:caseType}}', 'gone' => '{{lookup:nope}}'], 'verbatimFields' => ['raw', 7]];
 
-		$filled = (new ExampleSetValues())->fillObject(object: $object, context: $this->context(), gaps: $gaps);
+		$filled = (new ExampleSetValues())->fillObject(object: $object, scope: new ExampleSetFillScope(context: $this->context(), gaps: $gaps));
 
 		$this->assertSame(['raw' => '{{lookup:caseType}}', 'type' => 'type-uuid', 'gone' => '{{lookup:nope}}'], $filled);
 		$this->assertSame(['{{lookup:nope}}'], $gaps);

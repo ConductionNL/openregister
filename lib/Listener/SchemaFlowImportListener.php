@@ -44,6 +44,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Db\ListQuery;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
@@ -262,7 +264,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function findDeclared(DeclaredFlowRun $run): ?Flow {
-		foreach ($this->flows->findAllFlows(app: $run->app, limit: 500) as $candidate) {
+		foreach ($this->flows->findAllFlows(selection: new FlowSelection(app: $run->app), query: new ListQuery(limit: 500)) as $candidate) {
 			if ($candidate->getName() === $run->name && (string)$candidate->getTriggerSchema() === $run->schemaSlug) {
 				return $candidate;
 			}
@@ -462,7 +464,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 		}
 
 		try {
-			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow, publishedBy: null);
+			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow);
 		} catch (Throwable $e) {
 			$this->warnUnpublished(flow: $flow, wording: self::unpublishedWording(kind: 'versionOne', error: $e));
 		}

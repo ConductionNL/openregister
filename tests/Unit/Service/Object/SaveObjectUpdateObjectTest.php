@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -184,9 +185,9 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
 		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
-			$object[$propertyName] = 42;
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
+			$write->data[$propertyName] = 42;
 		});
 		$retention = $this->createMock(RetentionService::class);
 		$retention->method('recalculateActionDate')->willReturnCallback(function (RecordUpdate $update): ObjectEntity {

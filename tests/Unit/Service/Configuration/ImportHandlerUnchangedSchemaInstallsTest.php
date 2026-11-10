@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\SchemaImportInstaller;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
@@ -188,7 +189,10 @@ class ImportHandlerUnchangedSchemaInstallsTest extends TestCase {
 		$stored = $this->storedLead();
 		$handler = $this->handler(stored: $stored, eventCounts: [0, 0], installer: $this->installer());
 
-		$handler->importSchema(data: $this->importData(stored: $stored), slugsAndIdsMap: []);
+		$handler->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->importData(stored: $stored)),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertCount(1, $this->insertedFlows);
 		$this->assertSame('Qualify', $this->insertedFlows[0]->getName());
@@ -205,7 +209,10 @@ class ImportHandlerUnchangedSchemaInstallsTest extends TestCase {
 		$stored = $this->storedLead();
 		$handler = $this->handler(stored: $stored, eventCounts: [0, 1], installer: $this->installer());
 
-		$handler->importSchema(data: $this->importData(stored: $stored), slugsAndIdsMap: []);
+		$handler->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->importData(stored: $stored)),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame([], $this->insertedFlows);
 		$this->assertSame([], $this->createdWebhooks);
@@ -220,7 +227,10 @@ class ImportHandlerUnchangedSchemaInstallsTest extends TestCase {
 		$stored = $this->storedLead();
 		$handler = $this->handler(stored: $stored, eventCounts: [0, 0], installer: $this->installer(flowStoreFails: true));
 
-		$result = $handler->importSchema(data: $this->importData(stored: $stored), slugsAndIdsMap: []);
+		$result = $handler->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->importData(stored: $stored)),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame(30, $result->getId());
 		$this->assertCount(1, $this->createdWebhooks);

@@ -22,8 +22,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -186,7 +188,7 @@ class EmptyStringDateConversionIntegrationTest extends TestCase {
 			],
 		];
 
-		$result = $bulkHandler->bulkUpsert($objects, $this->testRegister, $this->testSchema, $tableName);
+		$result = $bulkHandler->upsert(new BulkUpsertCommand($objects, new RegisterSchema($this->testRegister, $this->testSchema), $tableName));
 		$uuid = $objects[0]['@self']['id'];
 		$this->createdObjectUuids[] = $uuid;
 

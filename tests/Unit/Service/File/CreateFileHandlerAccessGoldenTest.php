@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Service\File\CreateFileSources;
+use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -120,7 +121,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$this->validation->method('checkOwnership')->willReturnCallback(function (): void {
 			$this->calls[] = 'check';
 		});
-		$this->fileService->expects($this->once())->method('createShareLink')->with('/or/doc.txt');
+		$this->fileService->expects($this->once())->method('createShareLink')->with(new ShareLinkRequest(path: '/or/doc.txt'));
 		$this->fileService->expects($this->once())->method('attachTagsToFile')->with('11', ['object:u1', 't1']);
 
 		$result = $this->handler()->addFile(new FileTarget(new ObjectEntity()), new FileUpload('doc.txt', 'plain', true, ['t1']));

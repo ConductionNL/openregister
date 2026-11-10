@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -157,7 +158,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 		$all = [];
 
 		while (true) {
-			$batch = $mapper->findAllFlows(limit: $page, offset: $offset);
+			$batch = $mapper->findAllFlows(query: new ListQuery(limit: $page, offset: $offset));
 			$all = array_merge($all, $batch);
 
 			if (count($batch) < $page) {
@@ -241,13 +242,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 			return;
 		}
 
-		$live = null;
-		foreach ($published as $row) {
-			if ($row->getStatus() === FlowVersion::STATUS_PUBLISHED) {
-				$live = $row;
-			}
-		}
-
+		$live = $this->liveVersionOf(published: $published);
 		if ($live === null || trim((string)$live->getSemver()) === '') {
 			return;
 		}
@@ -257,4 +252,22 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 		$this->container->get(FlowMapperInterface::class)->update($flow);
 
 	}//end mirrorOntoFlow()
+
+	/**
+	 * The last version in the list that is still published, i.e. the live one.
+	 *
+	 * @param array<int, FlowVersion> $published The flow's versions, oldest first.
+	 *
+	 * @return FlowVersion|null The live version, or null when none is published.
+	 */
+	private function liveVersionOf(array $published): ?FlowVersion {
+		$live = null;
+		foreach ($published as $row) {
+			if ($row->getStatus() === FlowVersion::STATUS_PUBLISHED) {
+				$live = $row;
+			}
+		}
+
+		return $live;
+	}//end liveVersionOf()
 }//end class

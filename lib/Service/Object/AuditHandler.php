@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -92,7 +93,7 @@ class AuditHandler {
 			$auditFilters = $this->prepareFilters(uuid: $uuid, filters: $filters);
 
 			// Fetch logs from mapper.
-			$logs = $this->auditTrailMapper->findAll(filters: $auditFilters);
+			$logs = $this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $auditFilters, sort: ['created' => 'DESC']));
 
 			$this->logger->info(
 				message: '[AuditHandler] Logs retrieved successfully',

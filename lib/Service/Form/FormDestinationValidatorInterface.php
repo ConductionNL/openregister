@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Form;
 
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Judge a form's mapping against its destination schema.
@@ -35,13 +34,12 @@ interface FormDestinationValidatorInterface {
 	/**
 	 * Every problem with a mapping into a destination schema.
 	 *
-	 * @param array<string, mixed> $mapping The mapping: `fields` and `fixed`.
-	 * @param Schema               $schema  The destination schema.
-	 * @param array<string, mixed> $options `audience`: `public` or `authenticated` when the form is not internal.
+	 * @param array<string, mixed> $mapping     The mapping: `fields` and `fixed`.
+	 * @param FormDestination      $destination The destination schema, and the audience when the form is not internal.
 	 *
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}> The findings; empty when valid.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
 	 */
-	public function validate(array $mapping, Schema $schema, array $options = []): array;
+	public function validate(array $mapping, FormDestination $destination): array;
 }//end interface

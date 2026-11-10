@@ -254,7 +254,7 @@ class MdtoSourceReader {
 	 * 1. A declared restriction under `retention.useRestriction` or
 	 *    `tmlo.beperkingGebruik`.
 	 * 2. An ACTIVE legal hold in `retention.legalHold`, which
-	 *    `RetentionService::placeLegalHold()` does write, with a reason and a
+	 *    `RetentionService::placeHold()` does write, with a reason and a
 	 *    placed date. A hold restricts what may be done with the record, so it
 	 *    is reported as a restriction on use.
 	 *

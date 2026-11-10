@@ -679,13 +679,18 @@
   },
   "src/modals/webhook/EditWebhook.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 4
+      "count": 2
     },
     "no-console": {
       "count": 2
     }
   },
   "src/modals/webhook/ViewWebhookLog.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 2
+    }
+  },
+  "src/modals/webhook/webhookDefaults.js": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2
     }
@@ -1057,9 +1062,6 @@
   },
   "src/views/schema/SchemaDetails.vue": {
     "no-console": {
-      "count": 1
-    },
-    "vue/match-component-import-name": {
       "count": 1
     },
     "vue/prefer-define-options": {
