@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Merge;
 
-use OCA\OpenRegister\Service\Survivorship\ReverseFkSourceLinkCheck;
+use OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks;
 
 /**
  * Shape validator for the `x-openregister-merge` annotation.
@@ -38,6 +38,20 @@ use OCA\OpenRegister\Service\Survivorship\ReverseFkSourceLinkCheck;
  * @spec openspec/changes/mdm-merge-engine/tasks.md#1.2
  */
 class MergeAnnotationValidator implements MergeAnnotationValidatorInterface {
+
+	/**
+	 * The optional fields that must be strings when present.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STRING_FIELDS = [
+		'sourceLinkField',
+		'entityType',
+		'statusField',
+		'survivorStatus',
+		'mergedStatus',
+	];
+
 	/**
 	 * Validate the `x-openregister-merge` annotation in a schema shape.
 	 *
@@ -49,25 +63,28 @@ class MergeAnnotationValidator implements MergeAnnotationValidatorInterface {
 	 */
 	public function validate(array $schema): array {
 		$annotation = ($schema['x-openregister-merge'] ?? null);
-		if ($annotation === null) {
-			return [];
+		$shapeErrors = (new MdmAnnotationChecks(annotation: 'merge'))->shapeErrors(annotation: $annotation);
+		if ($shapeErrors !== null) {
+			return $shapeErrors;
 		}
 
-		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'merge.not-object',
-					'message' => 'x-openregister-merge must be an object.',
-				],
-			];
-		}
+		return $this->annotationErrors(annotation: $annotation);
+	}//end validate()
 
+	/**
+	 * The errors of an annotation that is an object, in check order.
+	 *
+	 * @param array<string, mixed> $annotation Merge annotation.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors; empty when valid.
+	 */
+	private function annotationErrors(array $annotation): array {
 		$errors = $this->validateReversalWindow(annotation: $annotation);
 		$errors = array_merge($errors, $this->validateStringFields(annotation: $annotation));
 		$errors = array_merge($errors, $this->validateSourceLink(annotation: $annotation));
 
 		return $errors;
-	}//end validate()
+	}//end annotationErrors()
 
 	/**
 	 * Validate an optional `sourceLink` block. A `reverseFk` mode requires
@@ -81,7 +98,7 @@ class MergeAnnotationValidator implements MergeAnnotationValidatorInterface {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
 	 */
 	private function validateSourceLink(array $annotation): array {
-		return (new ReverseFkSourceLinkCheck(annotation: 'merge'))->errors(sourceLink: ($annotation['sourceLink'] ?? null));
+		return (new MdmAnnotationChecks(annotation: 'merge'))->errors(sourceLink: ($annotation['sourceLink'] ?? null));
 	}//end validateSourceLink()
 
 	/**
@@ -120,21 +137,8 @@ class MergeAnnotationValidator implements MergeAnnotationValidatorInterface {
 	 */
 	private function validateStringFields(array $annotation): array {
 		$errors = [];
-
-		$stringFields = [
-			'sourceLinkField',
-			'entityType',
-			'statusField',
-			'survivorStatus',
-			'mergedStatus',
-		];
-
-		foreach ($stringFields as $field) {
-			if (array_key_exists($field, $annotation) === false) {
-				continue;
-			}
-
-			if (is_string($annotation[$field]) === false) {
+		foreach (self::STRING_FIELDS as $field) {
+			if (array_key_exists($field, $annotation) === true && is_string($annotation[$field]) === false) {
 				$errors[] = [
 					'code' => 'merge.field-not-string',
 					'message' => sprintf('x-openregister-merge "%s" must be a string.', $field),

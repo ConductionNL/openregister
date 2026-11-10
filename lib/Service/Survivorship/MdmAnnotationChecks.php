@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ReverseFkSourceLinkCheck
+ * MdmAnnotationChecks
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
@@ -21,12 +21,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Survivorship;
 
 /**
- * Checks the optional `sourceLink` block of an MDM schema annotation.
+ * The checks the merge and survivorship schema annotations share.
  *
- * The merge and survivorship annotations both accept the same block. A
- * `reverseFk` mode requires `sourceSchema` and `referenceField`; anything
- * else is accepted (embedded mode). Errors are non-fatal (surfaced as
- * warnings by the caller). Codes and messages carry the annotation's own name.
+ * Both must be objects when present, and both accept the same optional
+ * `sourceLink` block: a `reverseFk` mode requires `sourceSchema` and
+ * `referenceField`; anything else is accepted (embedded mode). Errors are
+ * non-fatal (surfaced as warnings by the caller). Codes and messages carry
+ * the annotation's own name.
  *
  * @category  Service
  * @package   OCA\OpenRegister
@@ -36,7 +37,7 @@ namespace OCA\OpenRegister\Service\Survivorship;
  *
  * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
  */
-final class ReverseFkSourceLinkCheck {
+final class MdmAnnotationChecks {
 
 	/**
 	 * Constructor.
@@ -45,6 +46,34 @@ final class ReverseFkSourceLinkCheck {
 	 */
 	public function __construct(private readonly string $annotation) {
 	}//end __construct()
+
+	/**
+	 * The errors that end validation before the annotation's own checks.
+	 *
+	 * @param mixed $annotation The annotation value, or null when absent.
+	 *
+	 * @return array<int, array{code: string, message: string}>|null No errors when it is absent,
+	 *                                                                 the not-an-object error, or
+	 *                                                                 null when it is an object to check further.
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
+	 */
+	public function shapeErrors(mixed $annotation): ?array {
+		if ($annotation === null) {
+			return [];
+		}
+
+		if (is_array($annotation) === false) {
+			return [
+				[
+					'code' => $this->annotation . '.not-object',
+					'message' => 'x-openregister-' . $this->annotation . ' must be an object.',
+				],
+			];
+		}
+
+		return null;
+	}//end shapeErrors()
 
 	/**
 	 * The errors for a `sourceLink` value.
@@ -69,23 +98,21 @@ final class ReverseFkSourceLinkCheck {
 			];
 		}
 
-		if ((string)($sourceLink['mode'] ?? 'embedded') !== 'reverseFk') {
-			return [];
-		}
-
 		return $this->reverseFkErrors(sourceLink: $sourceLink);
 	}//end errors()
 
 	/**
 	 * A reverseFk sourceLink must name both its source schema and its reference field.
 	 *
+	 * Any other mode (embedded is the default) has nothing to check here.
+	 *
 	 * @param array<mixed> $sourceLink The `sourceLink` block.
 	 *
 	 * @return array<int, array{code: string, message: string}> Errors (empty when valid).
 	 */
 	private function reverseFkErrors(array $sourceLink): array {
-		if ((string)($sourceLink['sourceSchema'] ?? '') !== ''
-			&& (string)($sourceLink['referenceField'] ?? '') !== ''
+		if ((string)($sourceLink['mode'] ?? 'embedded') !== 'reverseFk'
+			|| ((string)($sourceLink['sourceSchema'] ?? '') !== '' && (string)($sourceLink['referenceField'] ?? '') !== '')
 		) {
 			return [];
 		}

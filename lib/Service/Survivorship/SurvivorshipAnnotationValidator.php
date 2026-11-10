@@ -58,6 +58,16 @@ class SurvivorshipAnnotationValidator implements SurvivorshipAnnotationValidator
 	private const DEFAULT_DISCARD_TIER = 'discard';
 
 	/**
+	 * The tiers that must be members of `tierOrder`: their error code and default.
+	 *
+	 * @var array<string, array{0: string, 1: string}>
+	 */
+	private const TIER_MEMBERS = [
+		'defaultTier' => ['survivorship.default-tier-not-in-order', self::DEFAULT_TIER],
+		'discardTier' => ['survivorship.discard-tier-not-in-order', self::DEFAULT_DISCARD_TIER],
+	];
+
+	/**
 	 * Validate the `x-openregister-survivorship` annotation in a schema shape.
 	 *
 	 * @param array<string, mixed> $schema Shape with `properties` and `x-openregister-survivorship`.
@@ -68,41 +78,54 @@ class SurvivorshipAnnotationValidator implements SurvivorshipAnnotationValidator
 	 */
 	public function validate(array $schema): array {
 		$annotation = ($schema['x-openregister-survivorship'] ?? null);
-		if ($annotation === null) {
-			return [];
+		$shapeErrors = (new MdmAnnotationChecks(annotation: 'survivorship'))->shapeErrors(annotation: $annotation);
+		if ($shapeErrors !== null) {
+			return $shapeErrors;
 		}
 
-		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'survivorship.not-object',
-					'message' => 'x-openregister-survivorship must be an object.',
-				],
-			];
-		}
+		return $this->annotationErrors(annotation: $annotation);
+	}//end validate()
 
-		$errors = [];
-
+	/**
+	 * The errors of an annotation that is an object, in check order.
+	 *
+	 * @param array<string, mixed> $annotation Survivorship annotation.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors; empty when valid.
+	 */
+	private function annotationErrors(array $annotation): array {
 		// A reverse-FK `sourceLink` block supplies the source linkage instead
 		// of an embedded `sourceLinkField`; when it is present and well-formed,
 		// `sourceLinkField` is not required.
-		$sourceLinkErrors = $this->validateSourceLink(annotation: $annotation);
-		$errors = array_merge($errors, $sourceLinkErrors);
-
-		$sourceLinkField = (string)($annotation['sourceLinkField'] ?? '');
-		if ($sourceLinkField === '' && $this->hasReverseFkSourceLink(annotation: $annotation) === false) {
-			$errors[] = [
-				'code' => 'survivorship.missing-source-link-field',
-				'message' => 'x-openregister-survivorship requires a "sourceLinkField" (or a reverse-FK "sourceLink" block).',
-			];
-		}
-
+		$errors = $this->validateSourceLink(annotation: $annotation);
+		$errors = array_merge($errors, $this->validateSourceLinkField(annotation: $annotation));
 		$errors = array_merge($errors, $this->validateTierOrder(annotation: $annotation));
 		$errors = array_merge($errors, $this->validateTrustLookup(annotation: $annotation));
 		$errors = array_merge($errors, $this->validateOverridesField(annotation: $annotation));
 
 		return $errors;
-	}//end validate()
+	}//end annotationErrors()
+
+	/**
+	 * A `sourceLinkField` is required unless a reverse-FK `sourceLink` block supplies the linkage.
+	 *
+	 * @param array<string, mixed> $annotation Survivorship annotation.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty when valid).
+	 */
+	private function validateSourceLinkField(array $annotation): array {
+		$sourceLinkField = (string)($annotation['sourceLinkField'] ?? '');
+		if ($sourceLinkField !== '' || $this->hasReverseFkSourceLink(annotation: $annotation) === true) {
+			return [];
+		}
+
+		return [
+			[
+				'code' => 'survivorship.missing-source-link-field',
+				'message' => 'x-openregister-survivorship requires a "sourceLinkField" (or a reverse-FK "sourceLink" block).',
+			],
+		];
+	}//end validateSourceLinkField()
 
 	/**
 	 * Validate an optional `sourceLink` block. A `reverseFk` mode requires
@@ -116,7 +139,7 @@ class SurvivorshipAnnotationValidator implements SurvivorshipAnnotationValidator
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
 	 */
 	private function validateSourceLink(array $annotation): array {
-		return (new ReverseFkSourceLinkCheck(annotation: 'survivorship'))->errors(sourceLink: ($annotation['sourceLink'] ?? null));
+		return (new MdmAnnotationChecks(annotation: 'survivorship'))->errors(sourceLink: ($annotation['sourceLink'] ?? null));
 	}//end validateSourceLink()
 
 	/**
@@ -149,38 +172,43 @@ class SurvivorshipAnnotationValidator implements SurvivorshipAnnotationValidator
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#3.2
 	 */
 	private function validateTierOrder(array $annotation): array {
-		$errors = [];
-
 		$tierOrder = ($annotation['tierOrder'] ?? self::DEFAULT_TIER_ORDER);
 		if (is_array($tierOrder) === false) {
-			$errors[] = [
-				'code' => 'survivorship.tier-order-not-array',
-				'message' => 'x-openregister-survivorship "tierOrder" must be an array.',
-			];
-
 			// Cannot validate defaultTier/discardTier membership against a
 			// non-array tierOrder; the caller degrades the whole block anyway.
-			return $errors;
-		}
-
-		$defaultTier = (string)($annotation['defaultTier'] ?? self::DEFAULT_TIER);
-		if (in_array($defaultTier, $tierOrder, true) === false) {
-			$errors[] = [
-				'code' => 'survivorship.default-tier-not-in-order',
-				'message' => sprintf('"defaultTier" (%s) must be present in "tierOrder".', $defaultTier),
+			return [
+				[
+					'code' => 'survivorship.tier-order-not-array',
+					'message' => 'x-openregister-survivorship "tierOrder" must be an array.',
+				],
 			];
 		}
 
-		$discardTier = (string)($annotation['discardTier'] ?? self::DEFAULT_DISCARD_TIER);
-		if (in_array($discardTier, $tierOrder, true) === false) {
-			$errors[] = [
-				'code' => 'survivorship.discard-tier-not-in-order',
-				'message' => sprintf('"discardTier" (%s) must be present in "tierOrder".', $discardTier),
-			];
+		return $this->tierMembershipErrors(annotation: $annotation, tierOrder: $tierOrder);
+	}//end validateTierOrder()
+
+	/**
+	 * `defaultTier` and `discardTier` must each be present in `tierOrder`.
+	 *
+	 * @param array<string, mixed> $annotation Survivorship annotation.
+	 * @param array<mixed>         $tierOrder  The tier order in force.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors, default tier first.
+	 */
+	private function tierMembershipErrors(array $annotation, array $tierOrder): array {
+		$errors = [];
+		foreach (self::TIER_MEMBERS as $field => [$code, $default]) {
+			$tier = (string)($annotation[$field] ?? $default);
+			if (in_array($tier, $tierOrder, true) === false) {
+				$errors[] = [
+					'code' => $code,
+					'message' => sprintf('"%s" (%s) must be present in "tierOrder".', $field, $tier),
+				];
+			}
 		}
 
 		return $errors;
-	}//end validateTierOrder()
+	}//end tierMembershipErrors()
 
 	/**
 	 * Validate the optional `trustLookup.keys` block.
