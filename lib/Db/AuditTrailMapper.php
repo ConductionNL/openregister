@@ -594,18 +594,71 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		array|null $sort = ['created' => 'DESC'],
 		string|null $search = null,
 	): array {
+		$query = new ListQuery(limit: ($limit ?? 0), offset: $offset, filters: ($filters ?? []), sort: ($sort ?? []), search: $search);
+		if ($limit === null) {
+			return $this->findEvery(query: $query);
+		}
+
+		return $this->findListed(query: $query);
+	}//end findAll()
+
+	/**
+	 * One page of audit trails matching a listing's filters, search and sort.
+	 *
+	 * The typed form of {@see findAll()} with a limit, which keeps its signature for other apps.
+	 *
+	 * @param ListQuery $query The limit, offset, filters, sort and search.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findListed(ListQuery $query): array {
+		return $this->findWithin(query: $query, limit: $query->limit);
+	}//end findListed()
+
+	/**
+	 * Every audit trail matching a listing's filters, search and sort, from its offset, without a limit.
+	 *
+	 * The typed form of {@see findAll()} without a limit: the query's limit is not applied.
+	 *
+	 * @param ListQuery $query The offset, filters, sort and search.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findEvery(ListQuery $query): array {
+		return $this->findWithin(query: $query, limit: null);
+	}//end findEvery()
+
+	/**
+	 * Audit trails matching a listing's filters, search and sort, from its offset, up to a limit.
+	 *
+	 * @param ListQuery $query The offset, filters, sort and search.
+	 * @param int|null  $limit The limit, or null for none.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 */
+	private function findWithin(ListQuery $query, ?int $limit): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_audit_trails');
 
-		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
-		$this->applyChangedSearch(qb: $qb, search: $search);
-		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		$this->applyFindFilters(qb: $qb, filters: $query->filters);
+		$this->applyChangedSearch(qb: $qb, search: $query->search);
+		$this->applyFindSort(qb: $qb, sort: $query->sort);
+		(new QueryPage(limit: $limit, offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findWithin()
 
 	/**
 	 * Add the search on the changed field, when a search term is provided.
