@@ -197,7 +197,8 @@ class MappingServiceSandboxGoldenTest extends TestCase {
 
 	public function testCoordinateStringToArrayEdgeCases(): void {
 		$service = $this->service();
-		$this->assertSame([''], $service->coordinateStringToArray(''));
+		$this->assertSame([], $service->coordinateStringToArray(''));
+		$this->assertSame([], $service->coordinateStringToArray('  '));
 		$this->assertSame(['1'], $service->coordinateStringToArray('1'));
 		$this->assertSame(['1', '2'], $service->coordinateStringToArray('1 2'));
 		$this->assertSame([['1', '2'], ['3']], $service->coordinateStringToArray('1 2 3'));

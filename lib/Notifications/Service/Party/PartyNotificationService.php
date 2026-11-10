@@ -117,26 +117,17 @@ class PartyNotificationService {
 	 * remaining address is put to integriq in one question; a party it
 	 * refuses is reported, never dropped (opt-out-before-send).
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $subject The subject.
-	 * @param string $body The body.
-	 * @param string|null $role Only the parties in this role, or null for all of them.
-	 * @param string $category The message category; absent or unknown reads as `service`.
+	 * @param PartyMessage $message The object, subject, body and category.
+	 * @param string|null  $role    Only the parties in this role, or null for all of them.
 	 *
 	 * @return array<int, array{party: string, address: string|null, outcome: string}> What happened per party.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
-	public function notifyParties(
-		string $objectUuid,
-		string $subject,
-		string $body,
-		?string $role = null,
-		string $category = OptOutAuthority::DEFAULT_CATEGORY,
-	): array {
+	public function notifyParties(PartyMessage $message, ?string $role=null): array {
 		return $this->notify(
-			message: ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'category' => $category],
+			message: ['objectUuid' => $message->objectUuid, 'subject' => $message->subject, 'body' => $message->body, 'category' => $message->category],
 			role: $role
 		);
 	}//end notifyParties()
