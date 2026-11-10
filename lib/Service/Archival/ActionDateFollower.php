@@ -70,19 +70,47 @@ class ActionDateFollower {
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function follow(ObjectEntity $object, Schema $schema): bool {
-		$retention = ($object->getRetention() ?? []);
-		if (in_array(($retention['archiefstatus'] ?? ''), RecordState::IMMUTABLE_ALIASES, true) === true) {
+		$retentionPeriod = self::followablePeriod(retention: ($object->getRetention() ?? []));
+		if ($retentionPeriod === null) {
 			return false;
+		}
+
+		$newDate = $this->calculator->calculate(object: $object, schema: $schema, retentionPeriod: $retentionPeriod);
+		return $this->applyRecalculatedDate(object: $object, newDate: $newDate);
+	}//end follow()
+
+	/**
+	 * The retention period to follow, or null for a record already transferred
+	 * or destroyed, or one without a retention period.
+	 *
+	 * @param array<string, mixed> $retention The record's retention block
+	 *
+	 * @return string|null The period
+	 */
+	private static function followablePeriod(array $retention): ?string {
+		if (in_array(($retention['archiefstatus'] ?? ''), RecordState::IMMUTABLE_ALIASES, true) === true) {
+			return null;
 		}
 
 		$retentionPeriod = ($retention['bewaartermijn'] ?? null);
 		if (is_string($retentionPeriod) === false || $retentionPeriod === '') {
-			return false;
+			return null;
 		}
 
-		$oldDate = ($retention['archiefactiedatum'] ?? null);
-		$newDate = $this->calculator->calculate(object: $object, schema: $schema, retentionPeriod: $retentionPeriod);
-		if ($newDate === $oldDate) {
+		return $retentionPeriod;
+	}//end followablePeriod()
+
+	/**
+	 * Bring the stored archiefactiedatum in line with the recalculated one.
+	 *
+	 * @param ObjectEntity $object  The record
+	 * @param string|null  $newDate The recalculated date, null when it can no longer be calculated
+	 *
+	 * @return bool True when the archiefactiedatum changed
+	 */
+	private function applyRecalculatedDate(ObjectEntity $object, ?string $newDate): bool {
+		$retention = ($object->getRetention() ?? []);
+		if ($newDate === ($retention['archiefactiedatum'] ?? null)) {
 			return false;
 		}
 
@@ -91,14 +119,27 @@ class ActionDateFollower {
 			return true;
 		}
 
+		$this->storeRecalculatedDate(object: $object, newDate: $newDate);
+		return true;
+	}//end applyRecalculatedDate()
+
+	/**
+	 * Store a recalculated archiefactiedatum and log the change.
+	 *
+	 * @param ObjectEntity $object  The record
+	 * @param string       $newDate The recalculated date
+	 *
+	 * @return void
+	 */
+	private function storeRecalculatedDate(ObjectEntity $object, string $newDate): void {
+		$retention = ($object->getRetention() ?? []);
+		$oldDate = ($retention['archiefactiedatum'] ?? null);
 		$retention['archiefactiedatum'] = $newDate;
 		$object->setRetention($retention);
 		$this->logger->info(
 			sprintf('[ActionDateFollower] Recalculated archiefactiedatum for object %s: %s -> %s', $object->getUuid(), $oldDate, $newDate)
 		);
-
-		return true;
-	}//end follow()
+	}//end storeRecalculatedDate()
 
 	/**
 	 * Remove the archiefactiedatum and say so in the audit trail.
