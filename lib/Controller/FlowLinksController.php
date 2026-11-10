@@ -262,12 +262,7 @@ class FlowLinksController extends Controller {
 			return new JSONResponse(['error' => 'operationId is required'], 400);
 		}
 
-		$link = $this->flowLinkService->linkOperation(
-			$object->getUuid(),
-			(int)$object->getRegister(),
-			(int)$object->getSchema(),
-			$operationId
-		);
+		$link = $this->flowLinkService->linkOperation(target: $this->linkTargetOf(object: $object), operationId: $operationId);
 
 		return new JSONResponse($link->jsonSerialize(), 201);
 	}//end linkOperationTo()

@@ -86,10 +86,8 @@ interface FlowLinkServiceInterface {
 	 *
 	 * Admin-only. Idempotent: a duplicate link raises a 409 Exception.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $operationId workflowengine operation id.
+	 * @param LinkTarget $target      The parent OR object: its uuid, register id and schema id.
+	 * @param int        $operationId workflowengine operation id.
 	 *
 	 * @return FlowLink The persisted link row.
 	 *
@@ -98,7 +96,7 @@ interface FlowLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkOperation(string $objectUuid, int $registerId, int $schemaId, int $operationId): FlowLink;
+	public function linkOperation(LinkTarget $target, int $operationId): FlowLink;
 
 	/**
 	 * Unlink an operation from an object.

@@ -80,10 +80,7 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 	 * administrator; an app may let an organisation's owner); this method only
 	 * refuses what it could not record properly.
 	 *
-	 * @param string      $organisation   The organisation uuid.
-	 * @param string      $app            The app whose work stops.
-	 * @param string      $reason         Why, in words a person reads later.
-	 * @param string|null $nodeTypePrefix The node types it stops; null or '' means "<app>.".
+	 * @param HaltRequest $request The organisation, app, reason and node-type prefix ('' means "<app>."); trimmed before use.
 	 *
 	 * @return array<string, string> The halt.
 	 *
@@ -91,24 +88,8 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 	 *
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
-	public function engage(string $organisation, string $app, string $reason, ?string $nodeTypePrefix=null): array {
-		return $this->engageHalt(
-			request: new HaltRequest(organisation: trim($organisation), app: trim($app), reason: trim($reason), nodeTypePrefix: trim((string) $nodeTypePrefix))
-		);
-	}//end engage()
-
-	/**
-	 * Engage a halt as the signed-in user; see {@see self::engage()}.
-	 *
-	 * @param HaltRequest $request The organisation, app, reason and node-type prefix, trimmed.
-	 *
-	 * @return array<string, string> The halt.
-	 *
-	 * @throws InvalidArgumentException Without an actor, organisation, app or reason, or when one is already engaged.
-	 *
-	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
-	 */
-	public function engageHalt(HaltRequest $request): array {
+	public function engage(HaltRequest $request): array {
+		$request = $request->trimmed();
 		$user = $this->session->getUser();
 		if ($user === null) {
 			throw new InvalidArgumentException('A halt needs an actor, and there is no session.');
@@ -130,7 +111,7 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 		$this->record(action: self::ACTION_ENGAGED, changed: $halt);
 
 		return $halt;
-	}//end engageHalt()
+	}//end engage()
 
 	/**
 	 * Release a halt as the signed-in user.

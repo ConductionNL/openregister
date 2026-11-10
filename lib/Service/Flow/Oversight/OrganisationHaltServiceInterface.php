@@ -38,10 +38,7 @@ interface OrganisationHaltServiceInterface {
 	 * administrator; an app may let an organisation's owner); this method only
 	 * refuses what it could not record properly.
 	 *
-	 * @param string      $organisation   The organisation uuid.
-	 * @param string      $app            The app whose work stops.
-	 * @param string      $reason         Why, in words a person reads later.
-	 * @param string|null $nodeTypePrefix The node types it stops; null or '' means "<app>.".
+	 * @param HaltRequest $request The organisation, app, reason and node-type prefix ('' means "<app>."); trimmed before use.
 	 *
 	 * @return array<string, string> The halt.
 	 *
@@ -49,7 +46,7 @@ interface OrganisationHaltServiceInterface {
 	 *
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
-	public function engage(string $organisation, string $app, string $reason, ?string $nodeTypePrefix=null): array;
+	public function engage(HaltRequest $request): array;
 
 	/**
 	 * Release a halt as the signed-in user.
