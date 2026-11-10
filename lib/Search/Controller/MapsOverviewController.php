@@ -47,6 +47,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Search\Service\MapOverview;
 
 /**
  * Page-level multi-object map overview controller.
@@ -109,16 +110,18 @@ class MapsOverviewController extends Controller {
 				$baseLayer = (array)$params['baseLayer'];
 			}
 
-			$stored = $this->overviewService->registerOverview(
-				overviewKey: (string)($params['overviewKey'] ?? ''),
-				source: new MapMarkerSource(
-					register: (string)($params['register'] ?? ''),
-					schema: (string)($params['schema'] ?? ''),
-					geoProperty: $geoProperty,
-					filters: (array)($params['filters'] ?? [])
-				),
-				title: $title,
-				baseLayer: $baseLayer
+			$stored = $this->overviewService->declareOverview(
+				overview: new MapOverview(
+					key: (string)($params['overviewKey'] ?? ''),
+					source: new MapMarkerSource(
+						register: (string)($params['register'] ?? ''),
+						schema: (string)($params['schema'] ?? ''),
+						geoProperty: $geoProperty,
+						filters: (array)($params['filters'] ?? [])
+					),
+					title: $title,
+					baseLayer: $baseLayer
+				)
 			);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);

@@ -5,7 +5,7 @@
  * surface (procest "cases on map", issue #112).
  *
  * Covers the contract required by the integration-maps-overview change:
- *   - registerOverview(): declares a `map` page widget on the registry with
+ *   - declareOverview(): declares a `map` page widget on the registry with
  *     the register/schema scope + declarative base layer (PDOK default,
  *     overridable); rejects empty key / register / schema; the write path
  *     requires an authenticated user.
@@ -48,6 +48,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\MapOverview;
 
 /**
  * Unit tests for MapsOverviewService.
@@ -80,7 +81,7 @@ class MapsOverviewServiceTest extends TestCase {
 	}//end buildRegistry()
 
 	/**
-	 * registerOverview() declares a `map` page widget with the PDOK default
+	 * declareOverview() declares a `map` page widget with the PDOK default
 	 * base layer when none is supplied.
 	 *
 	 * @return void
@@ -98,10 +99,12 @@ class MapsOverviewServiceTest extends TestCase {
 			groupManager: $this->buildGroupManager(false),
 		);
 
-		$result = $service->registerOverview(
-			overviewKey: 'cases-on-map',
-			source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'),
-			title: 'Cases on map'
+		$result = $service->declareOverview(
+			overview: new MapOverview(
+				key: 'cases-on-map',
+				source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'),
+				title: 'Cases on map'
+			)
 		);
 
 		$this->assertSame('maps-overview:cases-on-map', $result['id']);
@@ -120,7 +123,7 @@ class MapsOverviewServiceTest extends TestCase {
 	}//end testRegisterDeclaresMapWidgetWithDefaultBaseLayer()
 
 	/**
-	 * registerOverview() honours a declarative base-layer override.
+	 * declareOverview() honours a declarative base-layer override.
 	 *
 	 * @return void
 	 */
@@ -136,10 +139,12 @@ class MapsOverviewServiceTest extends TestCase {
 		);
 
 		$custom = ['type' => 'xyz', 'provider' => 'osm', 'url' => 'https://tile.osm.org/{z}/{x}/{y}.png'];
-		$result = $service->registerOverview(
-			overviewKey: 'osm-map',
-			source: new MapMarkerSource(register: '1', schema: '2'),
-			baseLayer: $custom
+		$result = $service->declareOverview(
+			overview: new MapOverview(
+				key: 'osm-map',
+				source: new MapMarkerSource(register: '1', schema: '2'),
+				baseLayer: $custom
+			)
 		);
 
 		$this->assertSame('osm', $result['config']['baseLayer']['provider']);
@@ -147,7 +152,7 @@ class MapsOverviewServiceTest extends TestCase {
 	}//end testRegisterHonoursBaseLayerOverride()
 
 	/**
-	 * registerOverview() rejects an empty key.
+	 * declareOverview() rejects an empty key.
 	 *
 	 * @return void
 	 */
@@ -163,11 +168,11 @@ class MapsOverviewServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->registerOverview(overviewKey: '', source: new MapMarkerSource(register: '1', schema: '2'));
+		$service->declareOverview(overview: new MapOverview(key: '', source: new MapMarkerSource(register: '1', schema: '2')));
 	}//end testRegisterRejectsEmptyKey()
 
 	/**
-	 * registerOverview() rejects a missing register / schema.
+	 * declareOverview() rejects a missing register / schema.
 	 *
 	 * @return void
 	 */
@@ -183,7 +188,7 @@ class MapsOverviewServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->registerOverview(overviewKey: 'k', source: new MapMarkerSource(register: '', schema: '2'));
+		$service->declareOverview(overview: new MapOverview(key: 'k', source: new MapMarkerSource(register: '', schema: '2')));
 	}//end testRegisterRejectsMissingScope()
 
 	/**
