@@ -111,9 +111,9 @@ class ReferencedAddressNotifierTest extends TestCase {
 			fn (int|string $id): Schema => $this->schema(['next' => ['type' => 'string', '$ref' => '#/components/schemas/supplier']])
 		);
 		$this->email = $this->createMock(EmailSender::class);
-		$this->email->method('sendToAddress')->willReturnCallback(
-			function (string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
-				$this->sent[] = ['address' => $address, 'subject' => $subject, 'body' => $body, 'unsubscribe' => $unsubscribe];
+		$this->email->method('sendMailTo')->willReturnCallback(
+			function (\OCA\OpenRegister\Notifications\Service\Notification\MailAddressee $to, \OCA\OpenRegister\Notifications\Service\Notification\MailContent $mail): string {
+				$this->sent[] = ['address' => $to->address, 'subject' => $mail->subject, 'body' => $mail->body, 'unsubscribe' => $mail->unsubscribe];
 				return EmailSender::OUTCOME_DISPATCHED;
 			}
 		);
