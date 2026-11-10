@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -166,13 +167,14 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	 * new position, so provenance survives the drop: item 3 of the output can
 	 * still be traced to item 7 of the input.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items that matched.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$documents = $this->documentsFor(items: $items, context: $context);
 		$verdicts = $this->verdicts(condition: ($config['condition'] ?? null), documents: $documents);
 

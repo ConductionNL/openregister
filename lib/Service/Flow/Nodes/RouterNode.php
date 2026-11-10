@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -123,13 +124,14 @@ class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface
 	 * takes the fallback (`default`) when one is set, and is otherwise dropped —
 	 * the same as a Switch case with no match and no default.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each tagged (or dropped when unmatched).
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$documents = $this->documentsFor(items: $items, context: $context);
 
 		return $this->tagged(items: $items, outputs: $this->outputsFor(config: $config, documents: $documents));

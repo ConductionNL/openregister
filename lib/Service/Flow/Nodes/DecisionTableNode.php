@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -234,9 +235,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 * the node never suspends: a rule step completes in the firing that
 	 * reached it.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata (unused: the decision reads only the item).
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The output items, one per input item.
 	 *
@@ -245,7 +244,10 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-step-is-deterministic-and-never-suspends
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->decideItems(step: new NodeInvocation(items: $items, config: $config, context: $context));
 	}//end execute()
 

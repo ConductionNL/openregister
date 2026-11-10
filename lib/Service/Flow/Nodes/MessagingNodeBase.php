@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
@@ -123,15 +124,16 @@ abstract class MessagingNodeBase {
 	/**
 	 * What a dry run would send, without sending it.
 	 *
-	 * @param array $items   The items a real run would send for.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array{summary: string, messages: array} The preview.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	public function preview(array $items, array $config, array $context): array {
+	public function preview(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->previewOf(
 			messages: $this->messaging->previewMessages(channel: $this->channel(), config: $config, items: $items, context: $context)
 		);
@@ -154,15 +156,16 @@ abstract class MessagingNodeBase {
 	/**
 	 * Send, then pass the items through unchanged.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The same items.
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$this->send(step: new MessageSend(config: $config, items: $items, context: $context, stepName: $this->getId()));
 
 		return $items;
