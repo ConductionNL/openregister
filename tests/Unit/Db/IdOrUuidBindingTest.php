@@ -142,10 +142,12 @@ class IdOrUuidBindingTest extends TestCase {
 		return new ViewMapper(
 			$this->connection($row),
 			new \OCA\OpenRegister\Search\Db\ViewMapperAccess(
-				$this->createMock(OrganisationMapper::class),
-				$this->createMock(IAppConfig::class),
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class)
+				new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+					$this->createMock(OrganisationMapper::class),
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class)
+				),
+				$this->createMock(IAppConfig::class)
 			),
 			$this->createMock(IEventDispatcher::class)
 		);

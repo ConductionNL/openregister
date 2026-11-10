@@ -21,16 +21,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -103,15 +102,15 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @param IDBConnection $db Database connection.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
 	 * @param IUserSession $userSession Session user lookup for audit-trail actor.
-	 * @param IEventDispatcher $eventDispatcher Symfony event dispatcher (used by updateDecisionMetadata
-	 *                                          to notify listeners after a decision-metadata write).
+	 * @param EntityEventsInterface $entityEvents Announces the decision-metadata write to listeners
+	 *                                           (used by updateDecisionMetadata).
 	 * @param LoggerInterface $logger Structured log sink.
 	 */
 	public function __construct(
 		IDBConnection $db,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
-		private readonly IEventDispatcher $eventDispatcher,
+		private readonly EntityEventsInterface $entityEvents,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_entity_relations', entityClass: EntityRelation::class);
@@ -750,12 +749,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		try {
 			$relation = $this->update(entity: $relation);
 			$relationId = (int)$relation->getId();
-			$decision = new EntityRelationDecisionUpdatedEvent(
-				relation: $relation,
-				changedFields: $changedFields,
-				actingUser: ($actingUser ?? $this->userSession->getUser())
-			);
-			$this->emitDecisionMetadataAuditEntry(decision: $decision);
+			$actingUser = ($actingUser ?? $this->userSession->getUser());
+			$this->emitDecisionMetadataAuditEntry(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
 			$this->db->commit();
 		} catch (\Throwable $writeError) {
 			$this->db->rollBack();
@@ -780,7 +775,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		// dispatch / listener failure MUST NOT roll back the persisted
 		// state change — log and continue, same contract as audit.
 		try {
-			$this->eventDispatcher->dispatchTyped($decision);
+			$this->entityEvents->entityRelationDecisionUpdated(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
 		} catch (\Throwable $dispatchError) {
 			$this->logger->error(
 				message: '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent',
@@ -931,13 +926,14 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * encode the subject (table + row id) inside the `changed` JSON
 	 * payload alongside the per-field diff.
 	 *
-	 * @param EntityRelationDecisionUpdatedEvent $decision The relation, its changed fields and the acting
-	 *                                                     user (already resolved to the session user).
+	 * @param EntityRelation $relation The relation as stored now.
+	 * @param array<string, array{previous: mixed, new: mixed}> $changedFields Only the fields that changed.
+	 * @param IUser|null $actingUser The acting user (already resolved to the session user).
 	 *
 	 * @return void
 	 */
-	private function emitDecisionMetadataAuditEntry(EntityRelationDecisionUpdatedEvent $decision): void {
-		$user = $decision->getActingUser();
+	private function emitDecisionMetadataAuditEntry(EntityRelation $relation, array $changedFields, ?IUser $actingUser): void {
+		$user = $actingUser;
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
@@ -954,8 +950,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		$auditTrail->setChanged(
 			[
 				'subjectType' => 'openregister_entity_relations',
-				'subjectId' => (int)$decision->getRelation()->getId(),
-				'fields' => $decision->getChangedFields(),
+				'subjectId' => (int)$relation->getId(),
+				'fields' => $changedFields,
 			]
 		);
 

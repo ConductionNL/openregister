@@ -28,9 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -65,7 +67,7 @@ final class ShippedBaselineStoreRecordTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$this->assertTrue($store->record('schema:zaak', ['title' => 'Zaak'], 'zaakafhandelapp', '1.2.3'));
+		$this->assertTrue($store->record('schema:zaak', new ShippedDefinition(['title' => 'Zaak'], 'zaakafhandelapp', '1.2.3')));
 
 		$this->assertSame(ConfigurationLayer::SUBJECT, $created['layer']);
 		$this->assertSame('schema:zaak', $created['layerRef']);
@@ -101,7 +103,7 @@ final class ShippedBaselineStoreRecordTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$this->assertTrue($store->record('schema:zaak', [], 'app', '1', 'shipped.other'));
+		$this->assertTrue($store->recordAt(new ConfigurationAddress(ConfigurationLayer::SUBJECT, 'schema:zaak', 'shipped.other'), new ShippedDefinition([], 'app', '1')));
 		$this->assertSame('shipped.other', $created['configKey']);
 	}//end testTheConfigKeyNamesTheBaseline()
 
@@ -121,6 +123,6 @@ final class ShippedBaselineStoreRecordTest extends TestCase {
 			$logger
 		);
 
-		$this->assertFalse($store->record('schema:zaak', [], 'app', '1'));
+		$this->assertFalse($store->record('schema:zaak', new ShippedDefinition([], 'app', '1')));
 	}//end testAFailingWriteIsNotRecordedAndDoesNotThrow()
 }//end class
