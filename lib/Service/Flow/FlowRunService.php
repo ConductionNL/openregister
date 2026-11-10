@@ -740,19 +740,11 @@ class FlowRunService implements FlowRunServiceInterface {
 		// it ever fires — and the whole point of a revocation is that the next
 		// firing stops. Treating a stored trigger as standing authorization would
 		// make revocation cosmetic for exactly the runs nobody is watching.
-		$park = (new FlowDelegationCheck($this->container, $this->logger))->refuseIfRevoked(
-			flowId: $flowId,
-			trigger: $trigger,
-			declaredBy: $attribution['declaredBy'],
-			runAs: $attribution['user']
+		$park = (new FlowDelegationCheck($this->container, $this->logger))->verify(
+			run: new DelegatedRun(flowId: $flowId, trigger: $trigger, declaredBy: $attribution['declaredBy'], runAs: $attribution['user'])
 		);
 
-		$run = (new FlowRunRow(attribution: $attribution, version: $version?->getVersion()))->build(
-			flowId: $flowId,
-			subject: $options->subject,
-			trigger: $trigger,
-			context: $options->context
-		);
+		$run = (new FlowRunRow(attribution: $attribution, version: $version?->getVersion()))->build(flowId: $flowId, options: $options);
 
 		return $this->parkIfAwaiting(run: $this->stores->mapper->insert($run), park: $park);
 	}//end queueRun()
@@ -814,11 +806,9 @@ class FlowRunService implements FlowRunServiceInterface {
 			logger: $this->logger
 		);
 
-		return $parking->park(
+		return $parking->parkFor(
 			run: $run,
-			declaredBy: $park['principal'],
-			runAs: $park['actingAs'],
-			reason: $park['reason']
+			ask: new ConsentAsk(declaredBy: $park['principal'], runAs: $park['actingAs'], reason: $park['reason'])
 		);
 	}//end parkIfAwaiting()
 

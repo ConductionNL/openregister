@@ -165,7 +165,7 @@ class ExampleSetChangeFollower {
 	private function update(ExampleSetHeldChange $held, array $again): string {
 		$merged = $held->resolved['row'];
 		foreach ($again as $path => $value) {
-			$merged = $this->paths->withPath(row: $merged, path: $path, value: $value);
+			$merged = $this->paths->withPath(row: $merged, set: new ExampleSetPathValue(path: $path, value: $value));
 		}
 
 		$fields = $this->fields->textFields(change: $held->change, row: $held->resolved['row']);

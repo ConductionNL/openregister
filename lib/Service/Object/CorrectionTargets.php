@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Builds the CorrectionTarget the corrections endpoint names a record with.
  *
@@ -32,15 +34,13 @@ final class CorrectionTargets implements CorrectionTargetsInterface {
 	/**
 	 * The record a correction is made on.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object's id or uuid.
+	 * @param ObjectRef $ref The register and schema (slug or id) and the object's id or uuid.
 	 *
 	 * @return CorrectionTarget
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function forRecord(string $register, string $schema, string $id): CorrectionTarget {
-		return new CorrectionTarget(register: $register, schema: $schema, id: $id);
+	public function forRecord(ObjectRef $ref): CorrectionTarget {
+		return new CorrectionTarget(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 	}//end forRecord()
 }//end class

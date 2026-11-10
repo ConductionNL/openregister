@@ -96,42 +96,8 @@ class ShippedConfigurationGuard {
 	/**
 	 * What an upgrade should write for one schema, and what it could not decide.
 	 *
-	 * Kept with its signature for the import seam that calls it; builds the
-	 * operation objects and delegates to {@see self::guardUpgrade()}.
-	 *
-	 * @param string               $slug       The schema slug.
-	 * @param array<string, mixed> $live       What the instance runs.
-	 * @param array<string, mixed> $incoming   What the app now ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 * @param array<int, string>   $decisions  Paths an administrator decided to take from upstream.
-	 * @param bool                 $record     False leaves the baseline unrecorded, {@see SchemaUpgradeOptions}.
-	 *
-	 * @return array<string, mixed> What {@see self::guardUpgrade()} returns.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller unchanged.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	public function guardSchemaUpdate(
-		string $slug,
-		array $live,
-		array $incoming,
-		string $app,
-		string $appVersion,
-		array $decisions = [],
-		bool $record = true
-	): array {
-		$shipped = new ShippedDefinition(definition: $incoming, app: $app, appVersion: $appVersion);
-		$upgrade = new SchemaUpgrade(slug: $slug, live: $live, incoming: $shipped);
-		return $this->guardUpgrade(upgrade: $upgrade, options: new SchemaUpgradeOptions(decisions: $decisions, record: $record));
-	}//end guardSchemaUpdate()
-
-	/**
-	 * What an upgrade should write for one schema, and what it could not decide.
-	 *
 	 * With `record: false` in the options the baseline is left unrecorded: the
-	 * caller records `baseline` with recordShipped() once the definition is
+	 * caller records `baseline` with recordShippedSchema() once the definition is
 	 * actually written. A baseline recorded for a write that then fails makes
 	 * the next import read the old live definition as a local edit and keep it.
 	 *
@@ -383,22 +349,6 @@ class ShippedConfigurationGuard {
 	}//end authorizationRoots()
 
 	/**
-	 * Record what an app shipped for a schema it has just created.
-	 *
-	 * @param string               $slug       The schema slug.
-	 * @param array<string, mixed> $definition What the app ships.
-	 * @param string               $app        The app.
-	 * @param string               $appVersion The app version.
-	 *
-	 * @return bool True when it was recorded.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	public function recordShipped(string $slug, array $definition, string $app, string $appVersion): bool {
-		return $this->recordShippedSchema(slug: $slug, shipped: new ShippedDefinition(definition: $definition, app: $app, appVersion: $appVersion));
-	}//end recordShipped()
-
-	/**
 	 * Record what an app shipped for a schema, with the release that shipped it.
 	 *
 	 * @param string            $slug    The schema slug.
@@ -462,23 +412,6 @@ class ShippedConfigurationGuard {
 	 * Reads nothing back into the schema: a reset shows its effect before it is
 	 * confirmed, which is the spec's second scenario, and a preview that wrote
 	 * would make the confirmation decorative.
-	 *
-	 * @param string               $slug The schema slug.
-	 * @param array<string, mixed> $live What the instance runs.
-	 * @param string               $path The part to reset.
-	 *
-	 * @return array{applicable: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>} The preview.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	public function previewReset(string $slug, array $live, string $path): array {
-		return $this->previewPartReset(request: new ResetRequest(slug: $slug, live: $live, path: $path));
-	}//end previewReset()
-
-	/**
-	 * What resetting one part to the shipped baseline would change.
-	 *
-	 * Reads nothing back into the schema, for the reason {@see self::previewReset()} gives.
 	 *
 	 * @param ResetRequest $request The schema, what it runs and the part to reset.
 	 *
@@ -604,7 +537,7 @@ class ShippedConfigurationGuard {
 	 * session means no actor means no reset, and the refusal says which.
 	 *
 	 * `$record: false` leaves the audit row to the caller, which writes it with
-	 * recordReset() once the reset definition is stored. Recorded here, a write
+	 * recordPartReset() once the reset definition is stored. Recorded here, a write
 	 * that then fails leaves a trail naming a reset the instance never ran.
 	 *
 	 * @param string               $slug   The schema slug.
@@ -631,7 +564,7 @@ class ShippedConfigurationGuard {
 			];
 		}
 
-		$preview = $this->previewReset(slug: $slug, live: $live, path: $path);
+		$preview = $this->previewPartReset(request: new ResetRequest(slug: $slug, live: $live, path: $path));
 		if ($preview['applicable'] === false) {
 			return [
 				'applied' => false,
@@ -643,7 +576,7 @@ class ShippedConfigurationGuard {
 		}
 
 		if ($record === true) {
-			$this->recordReset(slug: $slug, path: $path, from: $preview['from'], to: $preview['to']);
+			$this->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $preview['from'], to: $preview['to']));
 		}
 
 		return [
@@ -654,22 +587,6 @@ class ShippedConfigurationGuard {
 			'definition' => $preview['definition'],
 		];
 	}//end resetToBaseline()
-
-	/**
-	 * Put a reset on the trail: who, which schema, which part, from what, to what.
-	 *
-	 * @param string $slug The schema slug.
-	 * @param string $path The part that was reset.
-	 * @param mixed  $from What the instance ran before.
-	 * @param mixed  $to   What was shipped, and now runs.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
-	 */
-	public function recordReset(string $slug, string $path, mixed $from, mixed $to): void {
-		$this->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $from, to: $to));
-	}//end recordReset()
 
 	/**
 	 * Put a reset on the trail: who, which schema, which part, from what, to what.

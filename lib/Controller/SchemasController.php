@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -58,6 +59,7 @@ use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -1406,10 +1408,9 @@ class SchemasController extends Controller {
 		);
 
 		try {
-			$this->schemaVersioningService->enforceGate(
-				changeSet: $changeSet,
-				acknowledged: $update['acknowledged'],
-				schemaId: $update['id']
+			$this->schemaVersioningService->gateChange(
+				schemaId: $update['id'],
+				record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $update['acknowledged'])
 			);
 		} catch (BreakingSchemaChangeException $e) {
 			return new JSONResponse(data: $e->toResponse(), statusCode: 409);
@@ -1501,11 +1502,9 @@ class SchemasController extends Controller {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
 
 		if ($update['changeSet'] !== null) {
-			$this->schemaVersioningService->recordChangelog(
+			$this->schemaVersioningService->recordChange(
 				schemaId: $updatedSchema->getId(),
-				version: $updatedSchema->getVersion(),
-				changeSet: $update['changeSet'],
-				acknowledged: $update['acknowledged']
+				record: new SchemaChangeRecord(changeSet: $update['changeSet'], acknowledged: $update['acknowledged'], version: $updatedSchema->getVersion())
 			);
 		}
 
@@ -1549,6 +1548,13 @@ class SchemasController extends Controller {
 			);
 		} catch (\Throwable $e) {
 			// Audit logging should not break the update operation.
+			$this->logger->warning(
+				message: '[SchemasController] Schema authorization change not written to the audit trail',
+				context: [
+					'schemaId' => $schema->getId(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end auditSchemaAuthorizationChange()
 
@@ -1790,9 +1796,7 @@ class SchemasController extends Controller {
 			}
 
 			return $this->deleteSchemaKeepingObjects(
-				schema: $schemaToDelete,
-				objectCount: $objectCount,
-				force: $force
+				removal: new SchemaRemoval(schema: $schemaToDelete, objectCount: $objectCount, force: $force)
 			);
 		} catch (ArchivalImmutableException $e) {
 			// The cascade refused: this schema holds legally retained records. An HTTP
@@ -1817,20 +1821,19 @@ class SchemasController extends Controller {
 	 * it deletes the schema and orphans the objects, which is unchanged legacy behaviour
 	 * retained for API back-compat and never surfaced in the UI.
 	 *
-	 * @param Schema $schema The schema to delete (already authorized).
-	 * @param int $objectCount The number of live objects referencing the schema.
-	 * @param bool $force Whether ?force=true was passed.
+	 * @param SchemaRemoval $removal The schema to delete (already authorized), the number of live
+	 *                               objects referencing it, and whether ?force=true was passed.
 	 *
 	 * @throws Exception If the delete fails.
 	 *
 	 * @return JSONResponse Empty body on success, or the structured 409 refusal.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag is the API-level disposition, mirrored from the endpoint.
-	 *
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
-	private function deleteSchemaKeepingObjects(Schema $schema, int $objectCount, bool $force): JSONResponse {
-		if ($objectCount > 0 && $force === false) {
+	private function deleteSchemaKeepingObjects(SchemaRemoval $removal): JSONResponse {
+		$schema      = $removal->schema;
+		$objectCount = $removal->objectCount;
+		if ($objectCount > 0 && $removal->force === false) {
 			// Refuse: structured 409 with the orphan count for the caller.
 			return new JSONResponse(
 				data: [
@@ -1859,7 +1862,7 @@ class SchemasController extends Controller {
 		// Only a deliberate ?force=true may bypass the mapper-level guard and orphan
 		// the objects. The magic table is deliberately LEFT IN PLACE on that path —
 		// its rows are the orphans, and dropping it would destroy them unaudited.
-		$this->schemaMapper->delete(entity: $schema, force: $force);
+		$this->schemaMapper->delete(entity: $schema, force: $removal->force);
 
 		if ($objectCount === 0) {
 			// Nothing referenced this schema, so reclaim its (empty) magic table
@@ -2297,12 +2300,7 @@ class SchemasController extends Controller {
 				}
 
 				// Use the same reference logic as getRelated, but reversed.
-				if ($this->schemaMapper->hasReferenceToSchema(
-					properties: $properties,
-					targetSchemaId: (string)$schema->getId(),
-					targetSchemaUuid: $schema->getUuid() ?? '',
-					targetSchemaSlug: $schema->getSlug() ?? ''
-				) === true
+				if ($this->schemaMapper->hasReferenceToSchema(properties: $properties, target: $schema) === true
 				) {
 					$outgoingSchemas[$schema->getId()] = $schema;
 				}

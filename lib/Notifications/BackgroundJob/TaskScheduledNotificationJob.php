@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
@@ -301,7 +302,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 		);
 
 		try {
-			return $this->candidates->tasks->findInbox(criteria: $criteria, limit: self::PAGE, offset: $offset);
+			return $this->candidates->tasks->findInbox(criteria: $criteria, page: new ListQuery(limit: self::PAGE, offset: $offset));
 		} catch (Throwable $failure) {
 			$this->delivery->logger->warning('[TaskScheduledNotificationJob] Candidate query failed: ' . $failure->getMessage());
 

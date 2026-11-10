@@ -71,16 +71,15 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	/**
 	 * Write the objects the profile declares, in the order it declares them.
 	 *
-	 * @param ExportProfile  $profile The profile.
-	 * @param ObjectEntity[] $objects The objects to write.
-	 * @param Schema|null    $schema  The schema, when it resolves, for enum labels and relation hints.
+	 * @param ProfileProjection $projection The profile and the schema, when it resolves, for enum labels and relation hints.
+	 * @param ObjectEntity[]    $objects    The objects to write.
 	 *
 	 * @return array{bytes: string, rowCount: int, metadata: array<string, mixed>} The file and what it is.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function write(ExportProfile $profile, array $objects, ?Schema $schema = null): array {
-		return $this->writeProjection(run: new ProjectionRun(profile: $profile, schema: $schema), objects: $objects);
+	public function write(ProfileProjection $projection, array $objects): array {
+		return $this->writeProjection(run: new ProjectionRun(profile: $projection->profile, schema: $projection->schema), objects: $objects);
 	}//end write()
 
 	/**
@@ -127,16 +126,15 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	 * already open, so it needs the row without the envelope the request path
 	 * builds around it.
 	 *
-	 * @param ExportProfile $profile The profile.
-	 * @param ObjectEntity  $object  The object.
-	 * @param Schema|null   $schema  The schema, when it resolves.
+	 * @param ProfileProjection $projection The profile and the schema, when it resolves.
+	 * @param ObjectEntity      $object     The object.
 	 *
 	 * @return string The CSV line, newline terminated.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function csvLineFor(ExportProfile $profile, ObjectEntity $object, ?Schema $schema = null): string {
-		$run = new ProjectionRun(profile: $profile, schema: $schema);
+	public function csvLineFor(ProfileProjection $projection, ObjectEntity $object): string {
+		$run = new ProjectionRun(profile: $projection->profile, schema: $projection->schema);
 		$rows = $this->rows(run: $run, objects: [$object]);
 		if ($rows === []) {
 			return '';

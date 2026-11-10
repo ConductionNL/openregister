@@ -24,6 +24,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
+use OCA\OpenRegister\Service\Object\ContentSearchWidening;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
@@ -232,8 +233,10 @@ class QueryHandlerPaginatedDatabaseTest extends TestCase {
 		$performance->method('getActiveOrganisationForContext')->willReturn('org-1');
 
 		$content = $this->createMock(ContentSearchHandler::class);
-		$content->method('augmentWithChunkMatches')->willReturnCallback(
-			static function (...$args) use ($calls): array {
+		$content->method('widen')->willReturnCallback(
+			static function (ContentSearchWidening $widening, bool $_rbac = true, bool $_multitenancy = true) use ($calls): array {
+				$page    = $widening->page;
+				$args    = [$widening->query, $page->results, $page->total, $page->limit, $_rbac, $_multitenancy, $page->offset, $widening->activeOrgUuid];
 				$calls[] = ['augmentWithChunkMatches', $args];
 				return ['results' => [['id' => 'chunk-hit']], 'total' => 99];
 			}

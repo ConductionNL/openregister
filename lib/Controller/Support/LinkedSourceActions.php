@@ -36,6 +36,17 @@ use OCP\IRequest;
  * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
  */
 final class LinkedSourceActions {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request The HTTP request the steps read their params from.
+	 */
+	public function __construct(
+		private readonly IRequest $request,
+	) {
+	}//end __construct()
+
 	/**
 	 * The optional `search` param of a picker, as a string.
 	 *
@@ -71,15 +82,16 @@ final class LinkedSourceActions {
 	/**
 	 * A step that links the item a required numeric id param names: 400 without it, 201 with the link.
 	 *
-	 * @param IRequest $request The HTTP request.
-	 * @param string   $param   The id param's name.
-	 * @param Closure  $link    Given the object and the id, links the item; returns the link.
+	 * @param string  $param The id param's name.
+	 * @param Closure $link  Given the object and the id, links the item; returns the link.
 	 *
 	 * @return Closure The step.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public static function linkById(IRequest $request, string $param, Closure $link): Closure {
+	public function linkById(string $param, Closure $link): Closure {
+		$request = $this->request;
+
 		return static function (ObjectEntity $object) use ($request, $param, $link): JSONResponse {
 			$itemId = (int)$request->getParam($param, 0);
 			if ($itemId === 0) {
@@ -93,15 +105,16 @@ final class LinkedSourceActions {
 	/**
 	 * A step that links with required text params, read and checked in order: 400 for the first blank one, else 201.
 	 *
-	 * @param IRequest $request The HTTP request.
-	 * @param string[] $params  The text params' names.
-	 * @param Closure  $link    Given the object and the texts (untrimmed), links the item; returns the link.
+	 * @param string[] $params The text params' names.
+	 * @param Closure  $link   Given the object and the texts (untrimmed), links the item; returns the link.
 	 *
 	 * @return Closure The step.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public static function linkByTexts(IRequest $request, array $params, Closure $link): Closure {
+	public function linkByTexts(array $params, Closure $link): Closure {
+		$request = $this->request;
+
 		return static function (ObjectEntity $object) use ($request, $params, $link): JSONResponse {
 			$texts = [];
 			foreach ($params as $param) {

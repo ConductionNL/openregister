@@ -38,6 +38,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\ObjectFolderOptions;
 
 /**
  * Unit tests for `@self.folder` access-control on `createObjectFolderById()`.
@@ -286,10 +287,7 @@ class FolderManagementHandlerAccessControlTest extends TestCase {
 		$folder->method('isReadable')->willReturn(true);
 		$this->mockUserFolderLookup(uid: 'bob', folderId: 42, nodes: [$folder]);
 
-		$result = $this->handler->createObjectFolderById(
-			objectEntity: $this->makeObjectEntity(folder: '42'),
-			currentUser: $bob
-		);
+		$result = $this->handler->createObjectFolderById(objectEntity: $this->makeObjectEntity(folder: '42'), options: new ObjectFolderOptions(currentUser: $bob));
 
 		$this->assertSame($folder, $result);
 

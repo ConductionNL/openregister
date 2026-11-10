@@ -43,6 +43,32 @@ class GetObjectFindLogsTest extends TestCase {
 	}//end testHistoryWithoutFiltersIsStillThisObjectsOnly()
 
 	/**
+	 * The whole history is read, newest first, with no search term.
+	 *
+	 * @return void
+	 */
+	public function testHistoryIsTheWholePageNewestFirst(): void {
+		$seen = null;
+		$audit = $this->createMock(AuditTrailMapper::class);
+		$audit->method('findAll')->willReturnCallback(
+			static function (?int $limit, ?int $offset, ?array $filters, ?array $sort, ?string $search) use (&$seen): array {
+				$seen = [$limit, $offset, $sort, $search];
+				return [];
+			}
+		);
+
+		$handler = (new ReflectionClass(GetObject::class))->newInstanceWithoutConstructor();
+		$property = (new ReflectionClass(GetObject::class))->getProperty('auditTrailMapper');
+		$property->setValue($handler, $audit);
+
+		$object = new ObjectEntity();
+		$object->setUuid('u-1');
+		$handler->findLogs(object: $object, filters: ['action' => 'update']);
+
+		$this->assertSame([null, null, ['created' => 'DESC'], null], $seen);
+	}//end testHistoryIsTheWholePageNewestFirst()
+
+	/**
 	 * The filters the mapper is asked with.
 	 *
 	 * @param array<string, mixed> $filters The filters of the request.
