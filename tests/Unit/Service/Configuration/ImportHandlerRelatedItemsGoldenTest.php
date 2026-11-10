@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use GuzzleHttp\Client;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -188,7 +190,8 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 		if ($withServices === true) {
 			$fileService = $this->createMock(FileService::class);
 			$fileService->method('addFile')->willReturnCallback(
-				function ($object, string $name, string $content, bool $share, array $tags) {
+				function (FileTarget $target, FileUpload $upload) {
+					[$object, $name, $content, $share, $tags] = [$target->object, $upload->fileName, $upload->content, $upload->share, $upload->tags];
 					$this->calls[] = ['addFile', $object->getUuid(), $name, $content, $share, $tags];
 					if ($name === 'fails.txt') {
 						throw new \RuntimeException('disk full');

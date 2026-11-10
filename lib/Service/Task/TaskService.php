@@ -223,7 +223,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			$mayReadBlocker = fn (Task $blocker): bool => $this->authorization->mayRead(task: $blocker, uid: $actor);
 		}
 
-		return $this->import(data: $data, actor: $actor, mayReadBlocker: $mayReadBlocker);
+		return $this->importTask(import: new TaskImport(data: $data, actor: $actor, mayReadBlocker: $mayReadBlocker));
 	}//end create()
 
 	/**
@@ -263,12 +263,26 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * that is already closed (a completed approval carried over from a
 	 * legacy shape). Not reachable over HTTP; the controller calls create().
 	 *
-	 * @param array<string, mixed> $data The task fields, canonical or legacy.
-	 * @param string|null $actor The creating identity.
-	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
-	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
-	 * @param DateTime|null $createdAt The moment the task was created, for a task carried over from elsewhere; it stamps
-	 *                                 the task and its create audit entry. Null stamps both with now.
+	 * @param array<string, mixed> $data  The task fields, canonical or legacy.
+	 * @param string|null          $actor The creating identity.
+	 *
+	 * @return Task The created task, with candidates indexed and creation audited.
+	 *
+	 * @throws TaskValidationException On any refused value.
+	 * @throws TaskAccessDeniedException Without an acting identity.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 */
+	public function import(array $data, ?string $actor): Task {
+		return $this->importTask(import: new TaskImport(data: $data, actor: $actor));
+	}//end import()
+
+	/**
+	 * Create a task on the trusted path (see import()), with the blocker rule
+	 * create() passes for an ordinary user and the creation moment of a task
+	 * carried over from elsewhere, which stamps the task and its create audit entry.
+	 *
+	 * @param TaskImport $import The task fields, the creating identity, the blocker rule and the creation moment.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -279,16 +293,16 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
 	 */
-	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null, ?DateTime $createdAt = null): Task {
-		$data = $this->locate(data: $data);
-		$task = $this->services->intake->builder->fromData(data: $data, actor: $actor);
-		$task->setCreated($createdAt);
+	public function importTask(TaskImport $import): Task {
+		$data = $this->locate(data: $import->data);
+		$task = $this->services->intake->builder->fromData(data: $data, actor: $import->actor);
+		$task->setCreated($import->createdAt);
 		$this->refuseUnrenderableForm(task: $task);
-		(new TaskBlockerGuard(tasks: $this->services->tables->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
-		$act = $this->authorizedCreation(task: $task, actor: $actor);
+		(new TaskBlockerGuard(tasks: $this->services->tables->tasks))->assertDeclarable(task: $task, mayRead: $import->mayReadBlocker);
+		$act = $this->authorizedCreation(task: $task, actor: $import->actor);
 
 		return $this->transactional(mutation: fn (): Task => $this->audited(task: $this->inserted(task: $task, data: $data), act: $act));
-	}//end import()
+	}//end importTask()
 
 	/**
 	 * Authorize the creation of a built task, and remember that it had no
@@ -734,32 +748,6 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 
 		return $this->finish(completion: new TaskCompletion(verb: 'resolve', uuid: $uuid, answer: $answer, actor: $actor));
 	}//end resolve()
-
-	/**
-	 * Complete, with the answer as separate values.
-	 *
-	 * Kept for the portal completion, which an open change rewrites; it builds
-	 * the answer and delegates to {@see self::completeWithAnswer()}.
-	 *
-	 * @param string                                $uuid       The task uuid.
-	 * @param string                                $outcome    The outcome (`approved`, `done`, `rejected`, ...).
-	 * @param string|null                           $resultText Free-text result.
-	 * @param string|null                           $comment    Completion comment.
-	 * @param string|null                           $actor      The completing identity — must be the assignee.
-	 * @param array<string, mixed>|null             $responses  The submitted answer fields, if any.
-	 * @param array<int, array<string, mixed>>|null $evidence   References to the files ALREADY stored; never bytes.
-	 *
-	 * @return Task The completed task.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	public function complete(
-		string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses = null, ?array $evidence = null
-	): Task {
-		$payload = new TaskAnswerPayload(responses: $responses, evidence: $evidence);
-		$answer  = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment, payload: $payload);
-		return $this->completeWithAnswer(uuid: $uuid, answer: $answer, actor: $actor);
-	}//end complete()
 
 	/**
 	 * Complete: the assignee finishes the work with an explicit outcome.

@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 
 /**
  * The contract callers of PropertyRbacHandler type against.
@@ -125,15 +126,14 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * Carry stored write-only values forward onto a payload that omitted them.
 	 *
-	 * @param array              $prepared     The prepared update payload.
-	 * @param array              $stored       The RAW stored object.
-	 * @param array<int, string> $omittedPaths Declared paths absent from the incoming payload.
+	 * @param array            $prepared The prepared update payload.
+	 * @param OmittedWriteOnly $omitted  The RAW stored object and the declared paths absent from the incoming payload.
 	 *
 	 * @return array The payload with omitted write-only values carried forward
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
-	public function restoreWriteOnlyValues(array $prepared, array $stored, array $omittedPaths): array;
+	public function restoreWriteOnlyValues(array $prepared, OmittedWriteOnly $omitted): array;
 
 	/**
 	 * The submitted properties the current user is not allowed to write.

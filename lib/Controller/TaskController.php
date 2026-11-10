@@ -64,6 +64,7 @@ use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Service\Task\FormCompletionRequest;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
@@ -727,9 +728,7 @@ class TaskController extends Controller {
 
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->completion->complete(
-				uuid: $command->uuid,
-				answer: $command->answer,
-				data: ($data ?? []),
+				request: new FormCompletionRequest(uuid: $command->uuid, answer: $command->answer, data: ($data ?? [])),
 				actor: $this->uid()
 			),
 			uuid: $command->uuid
