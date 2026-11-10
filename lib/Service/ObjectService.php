@@ -6077,21 +6077,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Failure isolation differs too: a row that throws is recorded on the
      * returned status and the batch continues, rather than failing the call.
      *
-     * @param array                    $objects  Rows in the shape saveObject() accepts.
-     * @param Register|string|int|null $register Optional register context.
-     * @param Schema|string|int|null   $schema   Optional schema context.
+     * @param StreamingSave $save The rows, in the shape saveObject() accepts, and the optional
+     *                            register and schema context (entity, id, uuid or slug).
      *
      * @return BatchOperationStatus Per-row outcomes plus reference-cache counters.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    public function saveObjectsStreaming(
-        array $objects,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null
-    ): BatchOperationStatus {
-        $target = new ObjectFindTarget(register: $register, schema: $schema);
-        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $objects, target: $target));
+    public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus
+    {
+        $target = new ObjectFindTarget(register: $save->register, schema: $save->schema);
+        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $save->rows, target: $target));
     }//end saveObjectsStreaming()
 
     /**
@@ -6100,14 +6096,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. saveObjectsStreaming()
      * runs this inside preservingScope(), the same contract as saveObject(); see restoreScopeContext().
      *
-     * @param array            $objects The rows to stream.
+     * @param iterable         $objects The rows to stream.
      * @param ObjectFindTarget $target  The register and schema the caller named.
      *
      * @return BatchOperationStatus The status of the streamed batch.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function streamIntoTarget(array $objects, ObjectFindTarget $target): BatchOperationStatus
+    private function streamIntoTarget(iterable $objects, ObjectFindTarget $target): BatchOperationStatus
     {
         $this->applyScope(register: $target->register, schema: $target->schema);
         return $this->streamIntoContext(objects: $objects);
@@ -6116,13 +6112,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Stream rows into the current register and schema.
      *
-     * @param array $objects The rows to save.
+     * @param iterable $objects The rows to save.
      *
      * @return BatchOperationStatus The status of the run.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function streamIntoContext(array $objects): BatchOperationStatus
+    private function streamIntoContext(iterable $objects): BatchOperationStatus
     {
         // The reference cache is request-scoped and this call is a logical
         // boundary: verdicts from an earlier batch must not decide this one.

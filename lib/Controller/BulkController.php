@@ -50,6 +50,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
 use OCP\AppFramework\Controller;
@@ -580,9 +581,7 @@ class BulkController extends Controller {
 		}
 
 		$status = $this->store->objectService->saveObjectsStreaming(
-			objects: $batch->objects,
-			register: $batch->register,
-			schema: $batch->schema
+			save: new StreamingSave(register: $batch->register, schema: $batch->schema, rows: $batch->objects)
 		);
 
 		$savedCount = ($status->getCreatedCount() + $status->getUpdatedCount());
