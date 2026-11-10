@@ -149,7 +149,7 @@ class TransitionEngine {
 	/**
 	 * Constructor.
 	 *
-	 * @param TransitionSubjects         $subjects          The object service and the schema and register mappers.
+	 * @param TransitionSubjects         $subjects          The object service and the schema catalog.
 	 * @param TransitionDispatch         $dispatch          The event dispatcher, the write boundary and the action providers.
 	 * @param TransitionPlatform         $platform          The caller's session, the app config and the logger.
 	 * @param PermissionHandlerInterface $permissionHandler The access guard every transition passes.
@@ -163,10 +163,10 @@ class TransitionEngine {
 		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
 		$this->objectService = $subjects->objectService;
-		$this->schemaMapper = $subjects->schemaMapper;
+		$this->schemaMapper = $subjects->catalog->schemas();
 		$this->eventDispatcher = $dispatch->eventDispatcher;
 		$this->userSession = $platform->userSession;
-		$this->registerMapper = $subjects->registerMapper;
+		$this->registerMapper = $subjects->catalog->registers();
 		$this->appConfig = $platform->appConfig;
 		$this->logger = $platform->logger;
 		$this->writeBoundary = $dispatch->writeBoundary;
@@ -294,6 +294,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Register slug not resolved, keeping the id',
+				context: [
+					'register' => $registerRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		try {
@@ -304,6 +311,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Schema slug not resolved, keeping the id',
+				context: [
+					'schema' => $schemaRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return [

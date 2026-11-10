@@ -103,34 +103,7 @@ class ReadStateService implements ReadStateServiceInterface {
 	 * Idempotent, and writes nothing on the object itself: no audit entry, no
 	 * version.
 	 *
-	 * @param ObjectEntity $object The object, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
-	 * @param string|null $subResource A sub-resource that was opened, when one was.
-	 *
-	 * @throws NotAuthorizedException When the caller is anonymous.
-	 *
-	 * @return ObjectReadState The stored read state.
-	 *
-	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
-	 */
-	public function markRead(
-		ObjectEntity $object,
-		?string $register = null,
-		?string $schema = null,
-		?string $subResource = null
-	): ObjectReadState {
-		return $this->recordSighting(
-			target: new AddressedObject(object: $object, register: $register, schema: $schema),
-			subResource: $subResource
-		);
-
-	}//end markRead()
-
-	/**
-	 * Store the calling user's sighting of the addressed object.
-	 *
-	 * @param AddressedObject $target      The object and how the caller addressed it.
+	 * @param AddressedObject $target      The object, already resolved through RBAC, and how the caller addressed it.
 	 * @param string|null     $subResource A sub-resource that was opened, when one was.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
@@ -139,7 +112,7 @@ class ReadStateService implements ReadStateServiceInterface {
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
-	private function recordSighting(AddressedObject $target, ?string $subResource): ObjectReadState {
+	public function markRead(AddressedObject $target, ?string $subResource = null): ObjectReadState {
 		$now = new DateTime();
 
 		$sighting = new ObjectReadState();
@@ -155,7 +128,7 @@ class ReadStateService implements ReadStateServiceInterface {
 		$this->forgetMemo();
 
 		return $this->mapper->markSeen(sighting: $sighting);
-	}//end recordSighting()
+	}//end markRead()
 
 	/**
 	 * Put an object back to unread for the calling user.

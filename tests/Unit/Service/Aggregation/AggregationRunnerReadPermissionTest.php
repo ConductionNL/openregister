@@ -36,18 +36,23 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -208,7 +213,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 		$runner = $this->runner(userId: 'learner-a', groups: ['students'], grants: [], schema: $schema);
 
-		$result = $runner->run(registerRef: 'learniq', schemaRef: 'engagement-score', name: 'byLevel', bypassRbac: true);
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'learniq', schema: 'engagement-score', name: 'byLevel'), options: new NamedAggregationOptions(bypassRbac: true));
 
 		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
 	}//end testBypassRbacSkipsTheRowPredicate()
@@ -413,7 +418,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($organisationlessAdmitted);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
-			static fn (Schema $s, string $action = 'read'): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: $action)
+			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql((new RbacAccessCall(schema: $s))->forAction('read'))
 		);
 		$magicMapper->method('callerQualifiesForAction')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): bool => $rbac->callerQualifiesForAction(schema: $s, action: $action)
@@ -421,7 +426,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		// The PHP fallback must not be what answers: an empty fallback would
 		// turn a broken native query into a plausible "no rows".
 		$magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
 				$this->fail('the native SQL path must answer; the fallback was reached');
 			}
 		);

@@ -2379,9 +2379,7 @@
     "coordinateStringToArray": {
         "null": {
             "document": {
-                "f": [
-                    ""
-                ],
+                "f": [],
                 "other": [
                     1,
                     2,
@@ -2393,9 +2391,7 @@
         },
         "empty": {
             "document": {
-                "f": [
-                    ""
-                ],
+                "f": [],
                 "other": [
                     1,
                     2,

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\EntityLink;
 
 /**
  * What each branch of the linked-entity service decides.
@@ -175,7 +177,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage("Invalid linked entity type 'bogus'. Valid types: calendar, contacts, deck, files, mail, notes, talk, todos, zaak");
-		$this->service()->addLink('o-1', 'bogus', 'x');
+		$this->service()->addLink('o-1', new EntityLink('bogus', 'x'));
 	}//end testAnUnknownTypeIsRefusedWithEveryValidType()
 
 	/**
@@ -192,7 +194,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('update');
 		$this->permissionHandler->expects($this->never())->method('checkPermission');
 
-		$this->assertSame(['n-1'], $this->service()->addLink('o-1', 'notes', 'n-1'));
+		$this->assertSame(['n-1'], $this->service()->addLink('o-1', new EntityLink('notes', 'n-1')));
 	}//end testALegacyTypePassesAndAPresentIdIsNotWritten()
 
 	/**
@@ -225,7 +227,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->magicMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->with('7')->willReturn($schema);
 		$this->permissionHandler->expects($this->once())->method('checkPermission')
-			->with($this->identicalTo($schema), 'update', null, 'alice', true, $this->identicalTo($object));
+			->with($this->identicalTo($schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		$this->magicMapper->expects($this->once())->method('update')->with($this->identicalTo($object));
 
 		$this->assertSame(['n-1', 'n-3'], $this->service()->removeLink('o-1', 'notes', 'n-2'));
@@ -247,12 +249,12 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->registerMapper->expects($this->once())->method('update')->with($this->identicalTo($register));
 		$service = $this->service();
 
-		$this->assertSame(['n-1', 'n-2'], $service->addLinkToRegister('r-1', 'notes', 'n-2'));
+		$this->assertSame(['n-1', 'n-2'], $service->addLinkToRegister('r-1', new EntityLink('notes', 'n-2')));
 		$this->assertSame(['n-1', 'n-2'], $register->getNotes());
-		$this->assertSame(['n-1', 'n-2'], $service->addLinkToRegister('r-1', 'notes', 'n-1'));
+		$this->assertSame(['n-1', 'n-2'], $service->addLinkToRegister('r-1', new EntityLink('notes', 'n-1')));
 
 		$this->expectExceptionMessage('Register not found: r-404');
-		$service->addLinkToRegister('r-404', 'notes', 'n-1');
+		$service->addLinkToRegister('r-404', new EntityLink('notes', 'n-1'));
 	}//end testRegisterLinks()
 
 	/**
@@ -269,11 +271,11 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->schemaMapper->expects($this->once())->method('update')->with($this->identicalTo($schema));
 		$service = $this->service();
 
-		$this->assertSame(['n-1', 'n-2'], $service->addLinkToSchema('s-1', 'notes', 'n-2'));
-		$this->assertSame(['n-1', 'n-2'], $service->addLinkToSchema('s-1', 'notes', 'n-2'));
+		$this->assertSame(['n-1', 'n-2'], $service->addLinkToSchema('s-1', new EntityLink('notes', 'n-2')));
+		$this->assertSame(['n-1', 'n-2'], $service->addLinkToSchema('s-1', new EntityLink('notes', 'n-2')));
 
 		$this->expectExceptionMessage('Schema not found: s-404');
-		$service->addLinkToSchema('s-404', 'notes', 'n-1');
+		$service->addLinkToSchema('s-404', new EntityLink('notes', 'n-1'));
 	}//end testSchemaLinks()
 
 	/**

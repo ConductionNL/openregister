@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
@@ -39,7 +40,7 @@ class ExampleSetProofGoldenTest extends TestCase {
 		$proof  = new ExampleSetProof();
 		$actual = [];
 		foreach ($this->cases() as $name => $case) {
-			$actual[$name] = $proof->lostPaths(declared: $case[0], stored: $case[1], path: ($case[2] ?? ''));
+			$actual[$name] = $proof->lostPathsAt(declared: $case[0], place: new ExampleSetProofPlace(stored: $case[1], path: ($case[2] ?? '')));
 		}
 
 		if (getenv('UPDATE_GOLDEN') === '1') {

@@ -523,19 +523,18 @@ class TaskMapper extends QBMapper {
 	 * One page of the inbox, filtered, sorted and paginated IN the datastore.
 	 *
 	 * @param TaskInboxCriteria $criteria What to list, for whom.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param ListQuery         $page     The page size and offset (25 from the start when omitted).
 	 *
 	 * @return array<int, Task> The page.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	public function findInbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
+	public function findInbox(TaskInboxCriteria $criteria, ListQuery $page = new ListQuery(limit: 25, offset: 0)): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 		$this->applyInboxPredicates(qb: $qb, criteria: $criteria);
 		$this->applyInboxOrder(qb: $qb, criteria: $criteria);
-		$qb->setMaxResults($limit)->setFirstResult($offset);
+		$qb->setMaxResults($page->limit)->setFirstResult($page->offset ?? 0);
 
 		return $this->findEntities(query: $qb);
 	}//end findInbox()
@@ -677,20 +676,19 @@ class TaskMapper extends QBMapper {
 	 * so a page and its count (see {@see countOpenExternalForParty()}) agree
 	 * by construction and no other subject's row is ever fetched.
 	 *
-	 * @param string $partyReference The stored party reference (`party:<ref>`).
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param string    $partyReference The stored party reference (`party:<ref>`).
+	 * @param ListQuery $page           The page size and offset (25 from the start when omitted).
 	 *
 	 * @return array<int, Task> The page.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	public function findOpenExternalForParty(string $partyReference, int $limit = 25, int $offset = 0): array {
+	public function findOpenExternalForParty(string $partyReference, ListQuery $page = new ListQuery(limit: 25, offset: 0)): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 		$this->applyPartyPredicates(qb: $qb, partyReference: $partyReference);
 		$qb->orderBy('created', 'ASC')->addOrderBy('id', 'ASC');
-		$qb->setMaxResults($limit)->setFirstResult($offset);
+		$qb->setMaxResults($page->limit)->setFirstResult($page->offset ?? 0);
 
 		return $this->findEntities(query: $qb);
 	}//end findOpenExternalForParty()

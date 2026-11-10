@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\AppFramework\Db\QBMapper;
@@ -427,32 +428,21 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	 * keyword path existed before this change on any platform, so this is
 	 * purely additive).
 	 *
-	 * @param string $query Search query text
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Optional filters (source_type)
-	 * @param bool $allowUnrankedFallback When true, non-PostgreSQL platforms run an
-	 *                                    unranked `LIKE` scan over `text_content`
-	 *                                    instead of returning `[]` (see {@see
-	 *                                    searchByKeywordUnranked()}). Defaults to
-	 *                                    false so the pre-existing hybrid-search
-	 *                                    RRF caller ({@see
-	 *                                    \OCA\OpenRegister\Files\Controller\FileSearchController::hybridSearch()})
-	 *                                    keeps its documented empty-on-non-Postgres
-	 *                                    behaviour unchanged.
+	 * @param KeywordChunkSearch $search The query text, the result cap, optional filters (source_type), and
+	 *                                   whether non-PostgreSQL platforms run an unranked `LIKE` scan over
+	 *                                   `text_content` instead of returning `[]`. That flag defaults to
+	 *                                   false so the hybrid-search RRF caller ({@see
+	 *                                   \OCA\OpenRegister\Files\Controller\FileSearchController::hybridSearch()})
+	 *                                   keeps its documented empty-on-non-Postgres behaviour.
 	 *
 	 * @return array<int, array{entity_type: string, entity_id: string, score: float,
 	 *                          chunk_text: string|null, chunk_index: int, metadata: array}>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Established pattern across this codebase
-	 *   for opt-in behaviour flags (see SearchBackendInterface).
-	 * @SuppressWarnings(PHPMD.LongVariable)        Descriptive variable name improves readability.
-	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.3
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function searchByKeyword(string $query, int $limit, array $filters = [], bool $allowUnrankedFallback = false): array {
-		$search = new KeywordChunkSearch(query: $query, limit: $limit, filters: $filters);
-		if ($allowUnrankedFallback === true) {
+	public function searchByKeyword(KeywordChunkSearch $search): array {
+		if ($search->allowUnrankedFallback === true) {
 			return $this->searchByKeywordWithFallback(search: $search);
 		}
 

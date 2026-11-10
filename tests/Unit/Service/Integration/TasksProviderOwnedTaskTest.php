@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
@@ -92,7 +93,7 @@ class TasksProviderOwnedTaskTest extends TestCase {
 	}
 
 	public function testTheObjectsOwnTaskIsUpdatedAfterTheCheck(): void {
-		$result = $this->provider(updated: ['id' => 'task.ics'])->update('r', 's', 'uuid-mine', '7/task.ics', ['summary' => 'x']);
+		$result = $this->provider(updated: ['id' => 'task.ics'])->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '7/task.ics', ['summary' => 'x']);
 
 		$this->assertSame(['id' => 'task.ics'], $result);
 		$this->assertSame(['require:uuid-mine:7:task.ics', 'update:7:task.ics:{"summary":"x"}'], $this->calls);
@@ -100,7 +101,7 @@ class TasksProviderOwnedTaskTest extends TestCase {
 
 	public function testAnotherObjectsTaskIsNotUpdated(): void {
 		try {
-			$this->provider(updated: ['id' => 'task.ics'])->update('r', 's', 'uuid-other', '7/task.ics', ['summary' => 'x']);
+			$this->provider(updated: ['id' => 'task.ics'])->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-other'), '7/task.ics', ['summary' => 'x']);
 			$this->fail('expected a refusal');
 		} catch (Exception $e) {
 			$this->assertSame(404, $e->getCode());
@@ -111,12 +112,12 @@ class TasksProviderOwnedTaskTest extends TestCase {
 
 	public function testAnUpdateThatAnswersNothingIsAnError(): void {
 		$this->expectException(RuntimeException::class);
-		$this->provider(updated: null)->update('r', 's', 'uuid-mine', '7/task.ics', ['summary' => 'x']);
+		$this->provider(updated: null)->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '7/task.ics', ['summary' => 'x']);
 	}
 
 	public function testAMalformedEntityIdIsRefusedBeforeTheCheck(): void {
 		try {
-			$this->provider(updated: [])->update('r', 's', 'uuid-mine', 'task.ics', []);
+			$this->provider(updated: [])->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), 'task.ics', []);
 			$this->fail('expected a refusal');
 		} catch (NotImplementedException $e) {
 			$this->assertSame([], $this->calls);
@@ -124,14 +125,14 @@ class TasksProviderOwnedTaskTest extends TestCase {
 	}
 
 	public function testTheObjectsOwnTaskIsDeletedAfterTheCheck(): void {
-		$this->provider(updated: null)->delete('r', 's', 'uuid-mine', '7/task.ics');
+		$this->provider(updated: null)->delete(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '7/task.ics');
 
 		$this->assertSame(['require:uuid-mine:7:task.ics', 'delete:7:task.ics'], $this->calls);
 	}
 
 	public function testAnotherObjectsTaskIsNotDeleted(): void {
 		try {
-			$this->provider(updated: null)->delete('r', 's', 'uuid-other', '7/task.ics');
+			$this->provider(updated: null)->delete(new ObjectRef(register: 'r', schema: 's', id: 'uuid-other'), '7/task.ics');
 			$this->fail('expected a refusal');
 		} catch (Exception $e) {
 			$this->assertSame(404, $e->getCode());

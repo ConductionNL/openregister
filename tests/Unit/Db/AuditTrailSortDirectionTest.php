@@ -35,6 +35,7 @@ namespace Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -84,14 +85,12 @@ class AuditTrailSortDirectionTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$db,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class))
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 	}//end mapper()
 
 	public function testDescendingIsAskedForAndDescendingIsBuilt(): void {
-		$this->mapper()->findAll(sort: ['created' => 'DESC']);
+		$this->mapper()->findTrail(ListQuery::unbounded([], ['created' => 'DESC']));
 
 		$this->assertSame([['created', 'DESC']], $this->ordered);
 	}//end testDescendingIsAskedForAndDescendingIsBuilt()
@@ -99,7 +98,7 @@ class AuditTrailSortDirectionTest extends TestCase {
 	public function testTheDefaultSortIsDescending(): void {
 		// No sort argument at all: the signature's own default is
 		// `['created' => 'DESC']`, and it has to survive the same loop.
-		$this->mapper()->findAll();
+		$this->mapper()->findTrail(ListQuery::unbounded([], ['created' => 'DESC']));
 
 		$this->assertSame([['created', 'DESC']], $this->ordered);
 	}//end testTheDefaultSortIsDescending()
@@ -107,19 +106,19 @@ class AuditTrailSortDirectionTest extends TestCase {
 	public function testAscendingStaysAscending(): void {
 		// The control. A direction that reaches the query unchanged proves the
 		// fix reads the caller's value rather than always answering DESC.
-		$this->mapper()->findAll(sort: ['created' => 'asc']);
+		$this->mapper()->findTrail(ListQuery::unbounded([], ['created' => 'asc']));
 
 		$this->assertSame([['created', 'ASC']], $this->ordered);
 	}//end testAscendingStaysAscending()
 
 	public function testAnUnknownDirectionFallsBackToAscending(): void {
-		$this->mapper()->findAll(sort: ['created' => 'sideways']);
+		$this->mapper()->findTrail(ListQuery::unbounded([], ['created' => 'sideways']));
 
 		$this->assertSame([['created', 'ASC']], $this->ordered);
 	}//end testAnUnknownDirectionFallsBackToAscending()
 
 	public function testAColumnTheTableDoesNotHaveIsNotOrderedOn(): void {
-		$this->mapper()->findAll(sort: ['no_such_column' => 'DESC']);
+		$this->mapper()->findTrail(ListQuery::unbounded([], ['no_such_column' => 'DESC']));
 
 		$this->assertSame([], $this->ordered);
 	}//end testAColumnTheTableDoesNotHaveIsNotOrderedOn()

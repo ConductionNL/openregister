@@ -42,21 +42,20 @@ class SimilarityCalculator {
 	/**
 	 * Compute the similarity of two values under a named method.
 	 *
-	 * @param string $method One of `exact`, `normalized`, `levenshtein`.
-	 * @param mixed $a First value.
-	 * @param mixed $b Second value.
+	 * @param string         $method One of `exact`, `normalized`, `levenshtein`.
+	 * @param ComparedValues $values The two values.
 	 *
 	 * @return float Similarity in [0, 1]; 0.0 for unknown method or non-scalar operands.
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-4
 	 */
-	public function similarity(string $method, $a, $b): float {
-		if (is_scalar($a) === false || is_scalar($b) === false) {
+	public function similarity(string $method, ComparedValues $values): float {
+		if (is_scalar($values->left) === false || is_scalar($values->right) === false) {
 			return 0.0;
 		}
 
-		$left = (string)$a;
-		$right = (string)$b;
+		$left = (string)$values->left;
+		$right = (string)$values->right;
 
 		return match ($method) {
 			'exact' => $this->boolScore(matched: $left === $right),

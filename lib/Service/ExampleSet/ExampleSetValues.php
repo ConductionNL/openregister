@@ -114,22 +114,22 @@ class ExampleSetValues {
 	/**
 	 * Fill a declared value at any depth.
 	 *
-	 * @param mixed                $value   The declared value.
-	 * @param array<string, mixed> $context `cast` (entries by key), `objects` (rows by key, this fragment only),
-	 *                                      `lookups` (id by name), `today` (DateTimeImmutable), `accounts` (service
-	 *                                      accounts by key), `organisations` (uuid by slug and by name),
-	 *                                      `instance` (`baseUrl`), `registers` (id by slug) and `schemas`
-	 *                                      (id by `register/schema`).
-	 * @param array<int, string>   $gaps    Collects every placeholder that could not be filled.
+	 * @param mixed               $value The declared value.
+	 * @param ExampleSetFillScope $scope The context: `cast` (entries by key), `objects` (rows by key, this fragment
+	 *                                   only), `lookups` (id by name), `today` (DateTimeImmutable), `accounts`
+	 *                                   (service accounts by key), `organisations` (uuid by slug and by name),
+	 *                                   `instance` (`baseUrl`), `registers` (id by slug) and `schemas` (id by
+	 *                                   `register/schema`); and the gap list, which collects every placeholder
+	 *                                   that could not be filled.
 	 *
 	 * @return mixed The filled value; an unfilled placeholder stays as written and is named in `$gaps`.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
-	public function fill(mixed $value, array $context, array &$gaps): mixed {
-		$run    = new ExampleSetFillRun(context: $context);
+	public function fill(mixed $value, ExampleSetFillScope $scope): mixed {
+		$run    = new ExampleSetFillRun(context: $scope->context);
 		$filled = $this->filled(value: $value, run: $run);
-		array_push($gaps, ...$run->gaps);
+		array_push($scope->gaps, ...$run->gaps);
 
 		return $filled;
 	}//end fill()
@@ -205,7 +205,7 @@ class ExampleSetValues {
 		}
 
 		$gaps  = [];
-		$owner = $this->fill(value: $object['owner'], context: $context, gaps: $gaps);
+		$owner = $this->fill(value: $object['owner'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 		$uids  = array_column(array_filter((array) ($context['cast'] ?? []), 'is_array'), 'uid');
 		if ($gaps !== [] || is_string($owner) === false || in_array($owner, $uids, true) === false) {
 			return ['owner' => null, 'refusal' => 'owner "'.json_encode($object['owner']).'" is no account the cast declares'];
@@ -219,18 +219,18 @@ class ExampleSetValues {
 	 * placeholders of their own (a mail template's `{{zaakNummer}}`), not the set's. Every other field is filled,
 	 * and a placeholder there that cannot be filled is still named in `$gaps`.
 	 *
-	 * @param array<string, mixed> $object  The declared object: `data`, optionally `verbatimFields`.
-	 * @param array<string, mixed> $context See fill().
-	 * @param array<int, string>   $gaps    Collects every placeholder that could not be filled.
+	 * @param array<string, mixed> $object The declared object: `data`, optionally `verbatimFields`.
+	 * @param ExampleSetFillScope  $scope  The context, see fill(), and the gap list that collects every placeholder
+	 *                                     that could not be filled.
 	 *
 	 * @return array<string, mixed> The data, in the declared order.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-keep-fields-verbatim
 	 */
-	public function fillObject(array $object, array $context, array &$gaps): array {
+	public function fillObject(array $object, ExampleSetFillScope $scope): array {
 		$data     = (array) ($object['data'] ?? []);
 		$verbatim = array_flip(array_filter((array) ($object['verbatimFields'] ?? []), 'is_string'));
-		$filled   = (array) $this->fill(value: array_diff_key($data, $verbatim), context: $context, gaps: $gaps);
+		$filled   = (array) $this->fill(value: array_diff_key($data, $verbatim), scope: $scope);
 
 		return array_replace($data, $filled);
 	}//end fillObject()

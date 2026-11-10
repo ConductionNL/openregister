@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -202,7 +203,7 @@ class DraftActivationTest extends TestCase {
 	 * @param int                    $_depth      Unused.
 	 * @param array<string, string>  $notSupplied Excused properties.
 	 */
-	private function opisValidate(array $object, Schema|int|string|null $schema = null, object $schemaObject = new \stdClass(), int $_depth = 0, array $notSupplied = []): ValidationResult {
+	private function opisValidate(array $object, Schema|int|string|null $schema = null, object $schemaObject = new \stdClass(), array $notSupplied = []): ValidationResult {
 		$this->assertInstanceOf(Schema::class, $schema);
 		$properties = [];
 		foreach ($schema->getProperties() as $name => $property) {
@@ -348,13 +349,13 @@ class DraftActivationTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
 		$this->store(uuid: 'd2', owner: 'agent', status: 'draft', data: ['subject' => 'B', 'channel' => 'phone']);
 
-		$saved = $this->activation->activateAsUser(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), user: $this->user(uid: 'agent'), changes: ['channel' => 'email']);
+		$saved = $this->activation->activateAsUser(new UserDraftActivation(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), user: $this->user(uid: 'agent'), changes: ['channel' => 'email']));
 		$this->assertSame('active', $saved->getStatus());
 		$this->assertSame('email', $this->saves[0]['object']['channel']);
 
 		// Control: another user is refused through the same door.
 		try {
-			$this->activation->activateAsUser(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd2'), user: $this->user(uid: 'colleague'));
+			$this->activation->activateAsUser(new UserDraftActivation(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd2'), user: $this->user(uid: 'colleague')));
 			$this->fail('A colleague made somebody else\'s draft definitive.');
 		} catch (DraftActivationRefusedException $refused) {
 			$this->assertSame(403, $refused->getStatus());

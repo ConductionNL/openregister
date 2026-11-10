@@ -47,10 +47,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCA\OpenRegister\Service\Object\DraftListLens;
+use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
@@ -354,35 +355,6 @@ class MagicSearchHandler {
 	}//end getIgnoredFilters()
 
 	/**
-	 * Search objects in a specific register-schema table using clean query structure
-	 *
-	 * This method provides comprehensive search capabilities optimized for
-	 * schema-specific dynamic tables.
-	 *
-	 * @param array $query Search query array with filters and options
-	 * @param Register $register Register context for the search
-	 * @param Schema $schema Schema context for the search
-	 * @param string $tableName Target dynamic table name
-	 * @param array|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
-	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity[]|int Array of ObjectEntity objects or count if _count=true
-	 *
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @phpstan-param array<string, mixed> $query
-	 * @phpstan-param array<int, string>|null $dateTimeColumns
-	 *
-	 * @psalm-param array<string, mixed> $query
-	 * @psalm-param array<int, string>|null $dateTimeColumns
-	 *
-	 * @psalm-return int|list<ObjectEntity>
-	 */
-	public function searchObjects(array $query, Register $register, Schema $schema, string $tableName, ?array $dateTimeColumns = null): array|int {
-		$table = new RegisterSchema(register: $register, schema: $schema);
-		return $this->searchTable(query: $query, tableSearch: new TableSearch(table: $table, tableName: $tableName, dateTimeColumns: $dateTimeColumns));
-	}//end searchObjects()
-
-	/**
 	 * Search one register+schema table (see searchObjects()).
 	 *
 	 * @param array       $query       Search query array with filters and options.
@@ -431,7 +403,7 @@ class MagicSearchHandler {
 		}
 
 		// Build filtered query (applies all WHERE conditions).
-		$queryBuilder = $this->buildTableQuery(
+		$queryBuilder = $this->buildFilteredQuery(
 			query: $query,
 			table: new MagicReadTable(schema: $schema, registerId: $register->getId(), tableName: $tableName)
 		);
@@ -543,34 +515,9 @@ class MagicSearchHandler {
 	}//end applyAccessControlToQuery()
 
 	/**
-	 * Build a filtered query with all WHERE conditions applied.
-	 *
-	 * This is the SINGLE SOURCE OF TRUTH for query filtering. Used by:
-	 * - searchObjects() for search results
-	 * - searchObjects() with _count=true for counting
-	 * - getFacetQuery() for facet aggregations
-	 *
-	 * Returns a QueryBuilder with FROM and WHERE clauses, but NO SELECT.
-	 * Caller must add SELECT clause based on their needs.
-	 *
-	 * @param array $query Search parameters including filters.
-	 * @param Schema $schema The schema for property filtering.
-	 * @param string $tableName The table to query.
-	 * @param int|null $registerId The register this table belongs to. When omitted it is
-	 *                             read from the query's reserved `register` key, which is
-	 *                             how the facet paths carry it. A register that cannot be
-	 *                             resolved simply yields no shared master data widening.
-	 *
-	 * @return IQueryBuilder QueryBuilder with all filters applied.
-	 */
-	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
-		return $this->buildTableQuery(query: $query, table: new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName));
-	}//end buildFilteredQuery()
-
-	/**
 	 * Build a filtered query for one magic table with all WHERE conditions applied.
 	 *
-	 * The SINGLE SOURCE OF TRUTH for query filtering (see buildFilteredQuery()).
+	 * The SINGLE SOURCE OF TRUTH for query filtering.
 	 * Returns a QueryBuilder with FROM and WHERE clauses, but NO SELECT.
 	 *
 	 * @param array          $query Search parameters including filters.
@@ -580,7 +527,7 @@ class MagicSearchHandler {
 	 *
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
-	public function buildTableQuery(array $query, MagicReadTable $table): IQueryBuilder {
+	public function buildFilteredQuery(array $query, MagicReadTable $table): IQueryBuilder {
 		$schema = $table->schema;
 		// A filter or sort on a value that is only shown masked would read it without the reveal.
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
@@ -642,7 +589,7 @@ class MagicSearchHandler {
 		$this->applyArrayElementFilters(run: $run);
 
 		return $queryBuilder;
-	}//end buildTableQuery()
+	}//end buildFilteredQuery()
 
 	/**
 	 * Narrow the query by `_element` blocks: an object matches when one element
@@ -677,12 +624,12 @@ class MagicSearchHandler {
 			if (($properties[$root]['type'] ?? null) === 'array'
 				&& $this->relatedRows->mayReadProperty(schema: $schema, property: $root) === true
 			) {
-				$condition = $elements->condition(
-					column: 't.'.$this->sanitizeColumnName(name: $root),
-					fields: $block['fields'],
+				$column    = new NestedPathTarget(
+					expression: 't.'.$this->sanitizeColumnName(name: $root),
 					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
 					isPostgres: $isPostgres
 				);
+				$condition = $elements->condition(column: $column, fields: $block['fields']);
 			}
 
 			if ($condition === null) {
@@ -733,13 +680,15 @@ class MagicSearchHandler {
 		$register->setId($registerId);
 
 		$this->relatedRows->apply(
-			qb: $run->qb,
-			query: $query,
-			register: $register,
-			organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
-				query: $query,
-				related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
-			)
+			target: new RelatedRowFilterTarget(
+				qb: $run->qb,
+				register: $register,
+				organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+					query: $query,
+					related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
+				)
+			),
+			query: $query
 		);
 	}//end applyRelatedRowFilters()
 
@@ -956,45 +905,6 @@ class MagicSearchHandler {
 			$this->applyRelationFieldFilter(qb: $qb, match: new RelationFieldMatch(field: $relField, value: $relValue));
 		}
 	}//end applyRelationFieldFilters()
-
-	/**
-	 * Build WHERE conditions as raw SQL for use in UNION queries.
-	 *
-	 * This is the SINGLE SOURCE OF TRUTH for filter conditions used by:
-	 * - UNION search queries (MagicMapper::buildUnionSelectPart)
-	 * - UNION facet queries (MagicFacetHandler::getTermsFacetUnion)
-	 *
-	 * Includes RBAC filtering when enabled (default). Values are quoted inline
-	 * (not parameterized) for UNION query compatibility.
-	 *
-	 * @param array $query Search parameters including filters.
-	 * @param Schema $schema The schema for property filtering.
-	 * @param array|null $existingColumns Optional list of existing column names.
-	 * @param int|null $registerId The register whose table this condition set is built for. It is
-	 *                             what lets a shared master data declaration (REQ-SLE-001) widen
-	 *                             the organisation boundary here exactly as it widens it on the
-	 *                             QueryBuilder path. A caller that names no register gets no
-	 *                             widening, which is narrower and therefore safe.
-	 * @param string|null $tableName The bare magic table the conditions are for, so a metadata column
-	 *                               the table could not be given is left out of the lifecycle
-	 *                               predicates. Null keeps every predicate.
-	 *
-	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
-	 *
-	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
-	 * @throws RelatedRowFilterNotSupportedException When the query carries `_related` or `_referenced`, which this raw-SQL builder cannot honour.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
-	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
-	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
-	 */
-	public function buildWhereConditionsSql(
-		array $query, Schema $schema, ?array $existingColumns = null, ?int $registerId = null, ?string $tableName = null
-	): array {
-		$table = new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName);
-		return $this->buildWhereClause(request: new WhereClauseRequest(query: $query, table: $table, existingColumns: $existingColumns));
-	}//end buildWhereConditionsSql()
 
 	/**
 	 * Build WHERE conditions as raw SQL for one magic table (see buildWhereConditionsSql()).
@@ -1235,7 +1145,7 @@ class MagicSearchHandler {
 			return null;
 		}
 
-		return $lens->sql(mode: $mode, columnPrefix: $columns->prefix, owner: $request->owner);
+		return $lens->clauseFor(listing: new DraftListing(mode: $mode, owner: $request->owner), columnPrefix: $columns->prefix);
 	}//end draftConditionSql()
 
 	/**
@@ -1383,38 +1293,48 @@ class MagicSearchHandler {
 			return false;
 		}
 
-		// Check if user qualifies for any RBAC rule (simple or conditional).
-		// When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
-		$userHasRbacAccess = false;
-		$hasObjectGrants = false;
-		if ($_rbac === true) {
-			$userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
-				schema: $schema,
-				action: 'read'
-			);
-
-			// A per-object grant must never widen the tenant edge (ADR-002; design
-			// D3c). The grant branch is OR-ed into the RBAC filter, so on a schema
-			// whose conditional rules would otherwise SKIP the organisation filter a
-			// grant would become a cross-tenant hole.
-			$hasObjectGrants = $this->rbacHandler->currentCallerHoldsObjectGrants();
-		}
-
-		if ($hasObjectGrants === true) {
-			// Reached rows through a grant — the tenant edge stands.
+		// Without RBAC no rule can waive the boundary: apply multitenancy as normal.
+		if ($_rbac === false) {
 			return true;
 		}
 
-		if ($userHasRbacAccess === false) {
-			// No RBAC access - apply multitenancy as normal.
-			return true;
-		}
-
-		// User has RBAC access but explicitly requested _multi=true: apply
-		// multitenancy to further restrict results to their org. Otherwise skip
-		// it and let RBAC handle access control.
-		return $multitenancyExplicit;
+		return $this->rbacKeepsOrganisationBoundary(schema: $schema, multitenancyExplicit: $multitenancyExplicit);
 	}//end multitenancyApplies()
+
+	/**
+	 * Whether the organisation boundary still applies once RBAC is on.
+	 *
+	 * A caller who qualifies for an RBAC rule (simple or conditional) that
+	 * bypasses multitenancy reads without the boundary (RBAC controls access),
+	 * unless they explicitly asked for it with `_multi=true`, or hold a
+	 * per-object grant.
+	 *
+	 * @param Schema $schema               The schema being read.
+	 * @param bool   $multitenancyExplicit Whether the caller explicitly asked for multitenancy.
+	 *
+	 * @return bool True when the organisation filter must be emitted.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
+	 */
+	private function rbacKeepsOrganisationBoundary(Schema $schema, bool $multitenancyExplicit): bool {
+		$userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
+			schema: $schema,
+			action: 'read'
+		);
+
+		// A per-object grant must never widen the tenant edge (ADR-002; design
+		// D3c). The grant branch is OR-ed into the RBAC filter, so on a schema
+		// whose conditional rules would otherwise SKIP the organisation filter a
+		// grant would become a cross-tenant hole. Reached rows through a grant:
+		// the tenant edge stands.
+		if ($this->rbacHandler->currentCallerHoldsObjectGrants() === true) {
+			return true;
+		}
+
+		// No RBAC access: apply multitenancy as normal. With RBAC access, only an
+		// explicit `_multi=true` keeps the boundary to restrict results to the org.
+		return $userHasRbacAccess === false || $multitenancyExplicit === true;
+	}//end rbacKeepsOrganisationBoundary()
 
 	/**
 	 * Whether the organisation boundary of a default read carries a branch for
@@ -1595,7 +1515,7 @@ class MagicSearchHandler {
 	 * @return string|null SQL condition or null if no RBAC filtering needed
 	 */
 	private function buildRbacConditionSql(Schema $schema, ?string $tableName = null): ?string {
-		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read', tableName: $tableName);
+		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(call: (new RbacAccessCall(schema: $schema))->onTable(tableName: $tableName));
 
 		if ($rbacResult['bypass'] === false) {
 			// User doesn't have unconditional access.
@@ -1864,28 +1784,25 @@ class MagicSearchHandler {
 				continue;
 			}
 
-			$expression = $this->nestedPaths->expression(
-				column: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
-				path: $filter['path'],
+			$quote  = static fn (string $value): string => (string)$connection->quote($value);
+			$column = new NestedPathTarget(
+				expression: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
+				bind: $quote,
 				isPostgres: $isPostgres
 			);
+			$expression = $this->nestedPaths->expression(column: $column, path: $filter['path']);
 			if ($expression === null) {
 				$conditions[] = '1=0';
 				continue;
 			}
 
-			$quote = static fn (string $value): string => (string)$connection->quote($value);
+			$target = new NestedPathTarget(expression: $expression, bind: $quote, isPostgres: $isPostgres);
 			array_push(
 				$conditions,
 				...NullFilter::conditionsFor(
 					criterion: $filter['value'],
 					column: $expression,
-					build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
-						expression: $expression,
-						value: $criterion,
-						bind: $quote,
-						isPostgres: $isPostgres
-					)
+					build: fn (mixed $criterion): array => $this->nestedPaths->conditions(target: $target, value: $criterion)
 				)
 			);
 		}
@@ -2596,23 +2513,28 @@ class MagicSearchHandler {
 			return true;
 		}
 
-		if ($_multitenancy === true) {
-			$schemaAuth = $schema->getAuthorization();
-			$readGroups = $schemaAuth['read'] ?? [];
-			$hasPublic = $this->hasPublicReadAccess(readRules: $readGroups);
-
-			// Public schemas bypass multitenancy for anonymous callers and admins
-			// UNLESS the caller explicitly set _multi=true.
-			if ($hasPublic === true
-				&& $multitenancyExplicit === false
-				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
-			) {
-				return false;
-			}
+		// Public schemas bypass multitenancy for anonymous callers and admins
+		// UNLESS the caller explicitly set _multi=true.
+		if ($_multitenancy === true && $multitenancyExplicit === false && $this->publicReadLiftsBoundary(schema: $schema) === true) {
+			return false;
 		}
 
 		return $_multitenancy;
 	}//end resolveMultitenancyFlag()
+
+	/**
+	 * Whether a schema's `public` read rule lifts the organisation boundary for this caller.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the schema has a public read rule and the caller is one it lifts the boundary for.
+	 */
+	private function publicReadLiftsBoundary(Schema $schema): bool {
+		$readGroups = ($schema->getAuthorization()['read'] ?? []);
+
+		return $this->hasPublicReadAccess(readRules: $readGroups) === true
+			&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true;
+	}//end publicReadLiftsBoundary()
 
 	/**
 	 * Read the register id out of a search query's reserved `register` key.
@@ -2653,12 +2575,7 @@ class MagicSearchHandler {
 	 */
 	private function applyOrganisationBoundary(IQueryBuilder $qb, OrganisationBoundary $boundary): void {
 		if ($boundary->crossBranch === null) {
-			$this->organizationHandler->applyOrganizationFilter(
-				qb: $qb,
-				table: $boundary->scopeTable(),
-				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				withOrgless: $boundary->withOrgless
-			);
+			$this->organizationHandler->applyOrganizationFilter(qb: $qb, boundary: $boundary);
 			return;
 		}
 
@@ -2766,12 +2683,7 @@ class MagicSearchHandler {
 
 		// Apply RBAC filtering if enabled.
 		if ($posture->rbac === true) {
-			$this->rbacHandler->applyRbacFilters(
-				qb: $qb,
-				schema: $schema,
-				action: 'read',
-				tableName: $table->tableName
-			);
+			$this->rbacHandler->applyRbacFilters(call: (new RbacFilterCall(qb: $qb, schema: $schema))->onTable(tableName: $table->tableName));
 		}
 	}//end applyAccessControlFilters()
 
@@ -3343,26 +3255,20 @@ class MagicSearchHandler {
 				continue;
 			}
 
-			$expression = $this->nestedPaths->expression(
-				column: 't.' . $this->sanitizeColumnName(name: $filter['root']),
-				path: $filter['path'],
-				isPostgres: $isPostgres
-			);
+			$bind       = static fn (string $value): string => (string)$qb->createNamedParameter($value);
+			$column     = new NestedPathTarget(expression: 't.' . $this->sanitizeColumnName(name: $filter['root']), bind: $bind, isPostgres: $isPostgres);
+			$expression = $this->nestedPaths->expression(column: $column, path: $filter['path']);
 			if ($expression === null) {
 				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
 				$qb->andWhere('1 = 0');
 				continue;
 			}
 
+			$target     = new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres);
 			$conditions = NullFilter::conditionsFor(
 				criterion: $filter['value'],
 				column: $expression,
-				build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
-					expression: $expression,
-					value: $criterion,
-					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
-					isPostgres: $isPostgres
-				)
+				build: fn (mixed $criterion): array => $this->nestedPaths->conditions(target: $target, value: $criterion)
 			);
 			foreach ($conditions as $condition) {
 				$qb->andWhere($condition);

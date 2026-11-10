@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -141,9 +143,8 @@ class ObjectGrantsReportTest extends TestCase {
 		// colleague made and swallows a failed read, so it is never what the
 		// grants list is built from.
 		$shareReader = $this->createMock(ObjectShareReader::class);
-		$shareReader->method('sharesOn')->willReturnCallback(
-			static fn (ObjectEntity $object, array $sharers, bool $complete = false): array => $complete === true ? $shares : []
-		);
+		$shareReader->method('completeSharesOn')->willReturn($shares);
+		$shareReader->method('sharesOn')->willReturn([]);
 		$lister = $this->createMock(InheritedGrantLister::class);
 		$lister->method('inheritedSharesFor')->willReturnCallback(
 			static fn (ObjectEntity $object, bool $complete = false): array => $complete === true ? $inherited : []
@@ -183,11 +184,10 @@ class ObjectGrantsReportTest extends TestCase {
 
 		$report = new ObjectGrantsReport(
 			sources: new GrantReportSources(accessReport: $accessReport, shares: $shareReader, inherited: $lister, rules: new GrantRuleFit($matcher)),
-			scopeResolver: new ObjectScopeResolver(),
 			directory: new PrincipalDirectory(userManager: $users, groupManager: $groups)
 		);
 
-		return $report->rowsFor(object: $object, registerRef: 1, schemaRef: 7, principalTypes: $types);
+		return $report->rowsFor(object: $object, query: new GrantRowsQuery(table: new RegisterSchemaRef(register: 1, schema: 7), principalTypes: $types));
 	}//end rowsFor()
 
 	/**

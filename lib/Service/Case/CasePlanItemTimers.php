@@ -40,6 +40,8 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
@@ -97,17 +99,14 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 	/**
 	 * Arm the timers of an item that just became active.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string|null $actor The identity that moved it.
-	 * @param DateTimeInterface|null $now The clock; null is the real clock.
+	 * @param CaseItem     $item The item.
+	 * @param FlowTimerAct $act  The identity that moved it and the clock.
 	 *
 	 * @return int How many timers were armed.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
-	public function onEntered(CaseItem $item, ?string $actor, ?DateTimeInterface $now = null): int {
-		$act = new FlowTimerAct(actor: $actor, now: DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable()));
-
+	public function onEntered(CaseItem $item, FlowTimerAct $act): int {
 		return $this->armDeadlines(item: $item, act: $act);
 	}//end onEntered()
 
@@ -202,7 +201,10 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 		try {
 			$uuid = (string)$item->getUuid();
 
-			return $this->timers->cancelForSubject(subjectType: self::SUBJECT_TYPE, subjectUuid: $uuid, reason: $reason, actor: self::ACTOR);
+			return $this->timers->cancelForSubject(
+				subject: new TimerSubjectRef(type: self::SUBJECT_TYPE, uuid: $uuid),
+				change: new TimerChange(reason: $reason, actor: self::ACTOR)
+			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[CasePlanItemTimers] Could not cancel a plan item\'s timers; the sweep will find them moot: ' . $failure->getMessage(),

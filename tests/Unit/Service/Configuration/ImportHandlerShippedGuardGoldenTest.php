@@ -15,9 +15,14 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgrade;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgradeOptions;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -121,15 +126,16 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 	 */
 	private function guard(array $answer): ShippedConfigurationGuard {
 		$guard = $this->createMock(ShippedConfigurationGuard::class);
-		$guard->method('guardSchemaUpdate')->willReturnCallback(
-			function (mixed ...$args) use ($answer): array {
-				$this->asked[] = $args;
+		$guard->method('guardUpgrade')->willReturnCallback(
+			function (SchemaUpgrade $upgrade, SchemaUpgradeOptions $options) use ($answer): array {
+				$incoming      = $upgrade->incoming;
+				$this->asked[] = [$upgrade->slug, $upgrade->live, $incoming->definition, $incoming->app, $incoming->appVersion, $options->decisions, $options->record];
 				return $answer;
 			}
 		);
-		$guard->method('recordShipped')->willReturnCallback(
-			function (mixed ...$args): bool {
-				$this->recorded[] = [$args, count($this->written)];
+		$guard->method('recordShippedSchema')->willReturnCallback(
+			function (string $slug, ShippedDefinition $shipped): bool {
+				$this->recorded[] = [[$slug, $shipped->definition, $shipped->app, $shipped->appVersion], count($this->written)];
 				return true;
 			}
 		);
@@ -177,7 +183,10 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 		$this->schemaExists();
 		$answer = ['guarded' => false, 'baseline' => null, 'definition' => [], 'conflicts' => []];
 
-		$this->handler(guard: $this->guard(answer: $answer))->importSchema(data: $this->incoming(), slugsAndIdsMap: [], appId: 'app');
+		$this->handler(guard: $this->guard(answer: $answer))->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->incoming(), options: new SchemaImportOptions(appId: 'app')),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertCount(1, $this->asked);
 		$this->assertSame('page', $this->asked[0][0]);
@@ -201,7 +210,13 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 		$this->schemaExists();
 		$answer = ['guarded' => false, 'baseline' => ['properties' => ['b' => 1]], 'definition' => ['properties' => ['ignored' => 1]], 'conflicts' => []];
 
-		$this->handler(guard: $this->guard(answer: $answer))->importSchema(data: $this->incoming(), slugsAndIdsMap: [], appId: 'app', version: '3.0.0');
+		$this->handler(guard: $this->guard(answer: $answer))->importSchema(
+			definition: new ImportedSchemaLookup(
+				data: $this->incoming(),
+				options: new SchemaImportOptions(appId: 'app', version: '3.0.0')
+			),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertArrayHasKey('new', $this->written[0]['properties']);
 		$this->assertSame('3.0.0', $this->asked[0][4]);
@@ -223,7 +238,10 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 		];
 
 		$handler = $this->handler(guard: $this->guard(answer: $answer));
-		$handler->importSchema(data: $this->incoming(), slugsAndIdsMap: [], appId: 'app');
+		$handler->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->incoming(), options: new SchemaImportOptions(appId: 'app')),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame(['kept'], $this->written[0]['required']);
 		$this->assertSame(['read' => ['group']], $this->written[0]['authorization']);
@@ -256,7 +274,10 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 		);
 
 		$handler = $this->handler(guard: $this->guard(answer: $answer));
-		$handler->importSchema(data: $this->incoming(), slugsAndIdsMap: [], appId: 'app');
+		$handler->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->incoming(), options: new SchemaImportOptions(appId: 'app')),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame([['slug' => 'page', 'paths' => ['properties.a', 'required']]], $handler->takeKeptLocalReport());
 		$this->assertSame([], $handler->takeKeptLocalReport());
@@ -273,7 +294,10 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 		$this->schemaIsNew();
 		$answer = ['guarded' => false, 'baseline' => ['a' => 1], 'definition' => [], 'conflicts' => []];
 
-		$this->handler(guard: $this->guard(answer: $answer))->importSchema(data: $this->incoming(), slugsAndIdsMap: []);
+		$this->handler(guard: $this->guard(answer: $answer))->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->incoming()),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame([], $this->asked);
 		$this->assertSame([], $this->recorded);
@@ -289,7 +313,10 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 		$this->schemaExists();
 		$answer = ['guarded' => true, 'baseline' => ['a' => 1], 'definition' => ['properties' => []], 'conflicts' => []];
 
-		$this->handler(guard: $this->guard(answer: $answer))->importSchema(data: $this->incoming(), slugsAndIdsMap: []);
+		$this->handler(guard: $this->guard(answer: $answer))->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->incoming()),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame([], $this->asked);
 		$this->assertSame([], $this->recorded);
@@ -306,7 +333,10 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 		$answer = ['guarded' => false, 'baseline' => null, 'definition' => [], 'conflicts' => []];
 		$data = ['authorization' => ['read' => ['group']]] + $this->incoming();
 
-		$this->handler(guard: $this->guard(answer: $answer))->importSchema(data: $data, slugsAndIdsMap: [], appId: 'app', version: '3.0.0');
+		$this->handler(guard: $this->guard(answer: $answer))->importSchema(
+			definition: new ImportedSchemaLookup(data: $data, options: new SchemaImportOptions(appId: 'app', version: '3.0.0')),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertSame([], $this->asked, 'a new schema has nothing to guard');
 		$this->assertCount(1, $this->recorded);
@@ -326,7 +356,10 @@ class ImportHandlerShippedGuardGoldenTest extends TestCase {
 	public function testWithoutAGuardTheIncomingDefinitionIsWritten(): void {
 		$this->schemaExists();
 
-		$this->handler(guard: null)->importSchema(data: $this->incoming(), slugsAndIdsMap: [], appId: 'app');
+		$this->handler(guard: null)->importSchema(
+			definition: new ImportedSchemaLookup(data: $this->incoming(), options: new SchemaImportOptions(appId: 'app')),
+			slugsAndIdsMap: []
+		);
 
 		$this->assertArrayHasKey('new', $this->written[0]['properties']);
 	}//end testWithoutAGuardTheIncomingDefinitionIsWritten()

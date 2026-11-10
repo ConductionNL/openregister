@@ -118,7 +118,10 @@ class FlowTokenRouter {
 	 */
 	public function takenExits(FlowNodeExits $exits, FlowStepOutput $output): array {
 		$items = $output->items;
-		$data  = FlowExpression::dataFor(item: ($items[0] ?? []), itemCount: count($items), context: $output->context);
+		$data  = FlowExpression::documentFor(
+			item: ($items[0] ?? []),
+			options: new FlowExpressionDataOptions(itemCount: count($items), context: $output->context)
+		);
 		return $this->exitsTaken(choice: new FlowExitChoice(exits: $exits, data: $data, tags: $this->routedTags(items: $items)));
 	}//end takenExits()
 

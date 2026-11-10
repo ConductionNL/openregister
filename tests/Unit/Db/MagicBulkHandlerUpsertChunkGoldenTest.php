@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
@@ -184,11 +185,9 @@ class MagicBulkHandlerUpsertChunkGoldenTest extends TestCase {
 		$config->method('getSystemValue')->willReturn('oc_');
 
 		return new MagicBulkHandler(
-			db: $db,
-			logger: $logger,
+			sql: new MagicTableSql(db: $db, config: $config, logger: $logger),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
-			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
-			config: $config
+			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class)
 		);
 	}//end makeHandler()
 

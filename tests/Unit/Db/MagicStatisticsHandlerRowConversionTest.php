@@ -22,12 +22,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -108,10 +113,8 @@ class MagicStatisticsHandlerRowConversionTest extends TestCase {
 		);
 
 		return new MagicStatisticsHandler(
-			db: $this->createMock(IDBConnection::class),
-			logger: $logger,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $logger),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: $normalizer,
 			schemaTypeConverter: $converter
 		);
@@ -202,7 +205,7 @@ class MagicStatisticsHandlerRowConversionTest extends TestCase {
 			'loose_column' => 'x',
 		];
 
-		$entity = $this->handler()->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler()->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity);
 		$this->assertSame(
@@ -270,7 +273,7 @@ class MagicStatisticsHandlerRowConversionTest extends TestCase {
 	 */
 	public function testANullIdentityIsLogged(): void {
 		[$register, $schema] = $this->context([]);
-		$entity = $this->handler()->convertRowToObjectEntity(['_id' => null, '_uuid' => null, '_owner' => null], $register, $schema);
+		$entity = $this->handler()->toObjectEntity(['_id' => null, '_uuid' => null, '_owner' => null], new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity);
 		$this->assertNull($entity->getId());
@@ -292,7 +295,7 @@ class MagicStatisticsHandlerRowConversionTest extends TestCase {
 	 */
 	public function testANonNumericIdIsCastBySetter(): void {
 		[$register, $schema] = $this->context([]);
-		$entity = $this->handler()->convertRowToObjectEntity(['_id' => 'abc', '_uuid' => 'u-1'], $register, $schema);
+		$entity = $this->handler()->toObjectEntity(['_id' => 'abc', '_uuid' => 'u-1'], new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity);
 		$this->assertSame(0, $entity->getId());
@@ -306,7 +309,7 @@ class MagicStatisticsHandlerRowConversionTest extends TestCase {
 	 */
 	public function testAnUnparsableDateFailsTheRow(): void {
 		[$register, $schema] = $this->context([]);
-		$entity = $this->handler()->convertRowToObjectEntity(['_uuid' => 'u-bad', '_updated' => 'not a date'], $register, $schema);
+		$entity = $this->handler()->toObjectEntity(['_uuid' => 'u-bad', '_updated' => 'not a date'], new RegisterSchema($register, $schema));
 
 		$this->assertNull($entity);
 		$this->assertCount(1, $this->logs);

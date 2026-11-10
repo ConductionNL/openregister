@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
@@ -88,10 +89,8 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 	 * match" are the same statement here, and re-testing the score against
 	 * the threshold a second time would only invite the two to drift.
 	 *
-	 * @param int|string $register Register reference — the boundary the schema resolves inside.
-	 * @param int|string $schema Schema reference.
-	 * @param array<string, mixed> $data The candidate body, override flag already removed.
-	 * @param bool $overrideRequested Whether the caller asked to save anyway.
+	 * @param CreateCandidate $candidate The register and schema, the body (override flag already removed),
+	 *                                   and whether the caller asked to save anyway.
 	 *
 	 * @return array<int, array<string, mixed>> Matches overridden, for the audit entry; empty otherwise.
 	 *
@@ -99,14 +98,17 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
-	public function guardCreate($register, $schema, array $data, bool $overrideRequested): array {
-		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
+	public function guardCreate(CreateCandidate $candidate): array {
+		$annotation = $this->duplicates->dedupAnnotation(register: $candidate->register, schema: $candidate->schema);
 		if ((string)($annotation['onCreate'] ?? self::DEFAULT_ON_CREATE) !== self::BLOCK) {
 			return [];
 		}
 
-		$matches = $this->duplicates->checkCandidate(register: $register, schema: $schema, candidate: $data);
-		$overridden = count($matches) > 0 && $overrideRequested === true && $this->mayOverride(annotation: $annotation);
+		$matches = $this->duplicates->checkCandidate(
+			request: new DedupRun(register: $candidate->register, schema: $candidate->schema),
+			candidate: $candidate->data
+		);
+		$overridden = count($matches) > 0 && $candidate->overrideRequested === true && $this->mayOverride(annotation: $annotation);
 		return $this->admitted(matches: $matches, overridden: $overridden);
 	}//end guardCreate()
 
@@ -168,13 +170,15 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 		}
 
 		try {
-			$this->audit->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: self::OVERRIDE_ACTION,
-				context: [
-					'matchedObjects' => $uuids,
-					'matches' => $matches,
-				]
+			$this->audit->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::OVERRIDE_ACTION,
+					context: [
+						'matchedObjects' => $uuids,
+						'matches' => $matches,
+					]
+				)
 			);
 		} catch (Throwable $e) {
 			$this->audit->logger->warning(

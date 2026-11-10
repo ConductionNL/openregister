@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
+use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
 
 class VectorizationServiceTest extends TestCase {
 	private VectorizationService $service;
@@ -188,7 +191,7 @@ class VectorizationServiceTest extends TestCase {
 		$expected = [['id' => 1, 'score' => 0.9]];
 		$this->vectorService->method('semanticSearch')->willReturn($expected);
 
-		$result = $this->service->semanticSearch('query');
+		$result = $this->service->semanticSearch(new SemanticSearchRequest('query'));
 		$this->assertSame($expected, $result);
 	}
 
@@ -196,7 +199,7 @@ class VectorizationServiceTest extends TestCase {
 		$expected = ['results' => []];
 		$this->vectorService->method('hybridSearch')->willReturn($expected);
 
-		$result = $this->service->hybridSearch('query');
+		$result = $this->service->hybridSearch(new HybridSearchRequest(query: 'query'));
 		$this->assertSame($expected, $result);
 	}
 
@@ -212,7 +215,7 @@ class VectorizationServiceTest extends TestCase {
 		$expected = ['success' => true, 'message' => 'OK'];
 		$this->vectorService->method('testEmbedding')->willReturn($expected);
 
-		$result = $this->service->testEmbedding('openai', []);
+		$result = $this->service->testEmbedding(new EmbeddingProbe(provider: 'openai', config: []));
 		$this->assertSame($expected, $result);
 	}
 

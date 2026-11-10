@@ -10,7 +10,7 @@
  * markers on a single map (procest's "cases on map" overview, issue #112).
  *
  * Two responsibilities, both additive:
- *   1. registerOverview() — declares a `map` page widget on the
+ *   1. declareOverview() — declares a `map` page widget on the
  *      IntegrationRegistry (declarative render contract + optional
  *      base-layer config such as PDOK WMTS), so the nc-vue render layer
  *      can discover and place the map surface. Mirrors
@@ -52,8 +52,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
@@ -96,15 +95,13 @@ class MapsOverviewService {
 	 * Constructor.
 	 *
 	 * @param MapsOverviewSources $sources The object read facade, geometry builder and page-widget registry.
-	 * @param IUserSession $userSession Current user (RBAC / write guard).
-	 * @param IGroupManager $groupManager Admin check (RBAC bypass for admins).
+	 * @param CallerContext $caller The current user (write guard) and the group manager (admin RBAC bypass).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly MapsOverviewSources $sources,
-		private IUserSession $userSession,
-		private IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 	) {
 	}//end __construct()
 
@@ -122,49 +119,13 @@ class MapsOverviewService {
 	 * @spec openspec/specs/integration-maps-overview/spec.md
 	 */
 	public function ensureCanRegister(): void {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			throw new InvalidArgumentException('A logged-in user is required to register a map overview');
 		}
 	}//end ensureCanRegister()
 
 	/**
-	 * Register (declare) a page-level map overview widget.
-	 *
-	 * Declares a `map` page widget on the IntegrationRegistry so the
-	 * nc-vue render layer can discover and place a multi-object map. The
-	 * descriptor carries the register/schema scope, an optional default
-	 * filter set, an optional geo-property hint and the declarative base
-	 * layer. It carries NO per-request marker data — the points are fetched
-	 * separately, RBAC-scoped, via queryPoints().
-	 *
-	 * Mirrors AnalyticsSeriesServiceInterface::register()'s widget declaration:
-	 * first-write-wins inside the registry (a re-declare with the same id
-	 * is a harmless no-op logged as a duplicate).
-	 *
-	 * @param string                   $overviewKey Stable overview/widget key.
-	 * @param MapMarkerSource          $source      The register, schema, geo property and filters the markers come from.
-	 * @param string|null              $title       Display title for the map widget.
-	 * @param array<string,mixed>|null $baseLayer   Declarative base-layer override; null = PDOK default.
-	 *
-	 * @return array<string,mixed> The stored widget render contract.
-	 *
-	 * @throws InvalidArgumentException On empty key / register / schema.
-	 *
-	 * @spec openspec/specs/integration-maps-overview/spec.md
-	 */
-	public function registerOverview(
-		string $overviewKey,
-		MapMarkerSource $source,
-		?string $title = null,
-		?array $baseLayer = null,
-	): array {
-		return $this->declareOverview(
-			overview: new MapOverview(key: $overviewKey, source: $source, title: $title, baseLayer: $baseLayer)
-		);
-	}//end registerOverview()
-
-	/**
-	 * Declare a page-level map overview widget; see registerOverview().
+	 * Declare a page-level map overview widget.
 	 *
 	 * @param MapOverview $overview The key, marker source, title and base layer.
 	 *
@@ -545,11 +506,11 @@ class MapsOverviewService {
 	 * @return bool True when the logged-in user is in the `admin` group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->caller->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
 }//end class

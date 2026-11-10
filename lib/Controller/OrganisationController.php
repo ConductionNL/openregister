@@ -34,8 +34,11 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
+use OCA\OpenRegister\Controller\Support\OrganisationEdit;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -756,8 +759,7 @@ class OrganisationController extends Controller {
 			// Handle parent update with validation (may return early on error).
 			$parentUpdateResponse = $this->handleParentUpdate(
 				organisation: $organisation,
-				data: $data,
-				uuid: $uuid
+				edit: new OrganisationEdit(uuid: $uuid, data: $data)
 			);
 			if ($parentUpdateResponse !== null) {
 				return $parentUpdateResponse;
@@ -883,7 +885,7 @@ class OrganisationController extends Controller {
 			// Otherwise search by name.
 			$organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
 			if (empty(trim($query)) === false) {
-				$organisations = $this->organisationMapper->findByName(name: trim($query), limit: $limit, offset: $offset);
+				$organisations = $this->organisationMapper->findListByName(name: trim($query), query: new ListQuery(limit: $limit, offset: $offset));
 			}
 
 			// Remove user information for privacy.
@@ -1182,9 +1184,8 @@ class OrganisationController extends Controller {
 	 * Updates parent organisation with circular reference validation.
 	 * Returns JSONResponse on validation error, null on success.
 	 *
-	 * @param object $organisation Organisation entity.
-	 * @param array<string, mixed> $data Request data.
-	 * @param string $uuid Current organisation UUID.
+	 * @param object           $organisation Organisation entity.
+	 * @param OrganisationEdit $edit         The organisation uuid the route named, and the request data.
 	 *
 	 * @return JSONResponse|null Error response if validation fails, null if successful.
 	 *
@@ -1192,7 +1193,10 @@ class OrganisationController extends Controller {
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
-	private function handleParentUpdate(object $organisation, array $data, string $uuid): ?JSONResponse {
+	private function handleParentUpdate(object $organisation, OrganisationEdit $edit): ?JSONResponse {
+		$data = $edit->data;
+		$uuid = $edit->uuid;
+
 		// Only process if parent key exists in request data.
 		if (array_key_exists('parent', $data) === false) {
 			return null;
@@ -1475,7 +1479,7 @@ class OrganisationController extends Controller {
 			// Get historical data (last 30 days).
 			$from = new DateTime('-30 days');
 			$to = new DateTime();
-			$history = $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, $from, $to);
+			$history = $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, new UsageRange(from: $from, to: $to));
 
 			$requestQuota = $organisation->getRequestQuota();
 			$bandwidthQuota = $organisation->getBandwidthQuota();

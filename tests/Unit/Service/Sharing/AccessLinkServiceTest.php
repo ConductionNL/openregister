@@ -43,8 +43,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -122,10 +124,12 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/must carry an expiry/');
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			terms: new AccessLinkTerms()
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms()
+			)
 		);
 	}
 
@@ -134,11 +138,13 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/expire in the future/');
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			terms: new AccessLinkTerms(
-				expiresAt: '2001-01-01T00:00:00+00:00'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					expiresAt: '2001-01-01T00:00:00+00:00'
+				)
 			)
 		);
 	}
@@ -147,11 +153,13 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			terms: new AccessLinkTerms(
-				expiresAt: 'whenever'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					expiresAt: 'whenever'
+				)
 			)
 		);
 	}
@@ -198,11 +206,13 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/is not a link subject/');
 
 		$this->service->mint(
-			userId: 'owner',
-			subjectType: 'register',
-			subjectId: 'x',
-			terms: new AccessLinkTerms(
-				expiresAt: '+1 day'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: 'register',
+				subjectId: 'x',
+				terms: new AccessLinkTerms(
+					expiresAt: '+1 day'
+				)
 			)
 		);
 	}
@@ -211,11 +221,13 @@ class AccessLinkServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 
 		$this->service->mint(
-			userId: '  ',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			terms: new AccessLinkTerms(
-				expiresAt: '+1 day'
+			new LinkMintRequest(
+				minter: '  ',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					expiresAt: '+1 day'
+				)
 			)
 		);
 	}
@@ -320,12 +332,30 @@ class AccessLinkServiceTest extends TestCase {
 	public function testSwitchingOffALinkSomebodyElseMintedAnswersNothing(): void {
 		$this->mapper->method('findById')->willReturn($this->liveLink());
 
-		$this->assertNull($this->service->setDisabled(id: 1, userId: 'somebody-else', disabled: true));
+		$this->assertNull($this->service->disable(id: 1, userId: 'somebody-else'));
 	}
 
 	public function testSwitchingOffAndBackOnIsReversible(): void {
 		$link = $this->liveLink();
 		$this->mapper->method('findById')->willReturn($link);
+
+		$off = $this->service->disable(id: 1, userId: 'owner');
+		$this->assertIsArray($off);
+		$this->assertTrue($off['disabled']);
+		$this->assertFalse($link->isLive());
+
+		$on = $this->service->enable(id: 1, userId: 'owner');
+		$this->assertIsArray($on);
+		$this->assertFalse($on['disabled']);
+		$this->assertTrue($link->isLive());
+	}
+
+	public function testSetDisabledSwitchesALinkOffAndBackOn(): void {
+		$link = $this->liveLink();
+		$this->mapper->method('findById')->willReturn($link);
+
+		$this->assertNull($this->service->setDisabled(id: 1, userId: 'somebody-else', disabled: true));
+		$this->assertTrue($link->isLive());
 
 		$off = $this->service->setDisabled(id: 1, userId: 'owner', disabled: true);
 		$this->assertIsArray($off);
@@ -349,8 +379,8 @@ class AccessLinkServiceTest extends TestCase {
 		$addresses = [];
 		$actions = [];
 		$this->auditTrail->expects($this->exactly(4))
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (
 					ObjectEntity $audited,
 					string $action,
@@ -366,7 +396,7 @@ class AccessLinkServiceTest extends TestCase {
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		foreach ([
 			AccessLinkService::ACT_READ,
@@ -401,7 +431,7 @@ class AccessLinkServiceTest extends TestCase {
 
 	public function testAUseWithNoResolvedObjectStillCountsOnTheRow(): void {
 		$link = $this->liveLink();
-		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
 
 		$this->service->recordUse(link: $link, use: new AccessLinkUse(act: AccessLinkService::ACT_READ, object: null));
 
@@ -448,14 +478,16 @@ class AccessLinkServiceTest extends TestCase {
 	 */
 	private function mintOne(array $capabilities = [], ?string $password = null): array {
 		return $this->service->mint(
-			userId: 'owner',
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: 'object-uuid',
-			terms: new AccessLinkTerms(
-				capabilities: $capabilities,
-				expiresAt: '+7 days',
-				password: $password,
-				label: 'Advice request'
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: 'object-uuid',
+				terms: new AccessLinkTerms(
+					capabilities: $capabilities,
+					expiresAt: '+7 days',
+					password: $password,
+					label: 'Advice request'
+				)
 			)
 		);
 	}

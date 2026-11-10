@@ -35,6 +35,7 @@ use DateTime;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
@@ -44,6 +45,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -124,7 +126,10 @@ class CalendarLinkServiceTest extends TestCase {
 		$this->calendarEventService->expects($this->never())->method('createEvent');
 		$this->calendarEventService->expects($this->never())->method('linkEvent');
 
-		$result = $this->service->linkEvent('obj-1', 1, 2, 'personal', 'ev-uid-1');
+		$result = $this->service->linkLocatedEvent(
+			target: (new LinkTarget(objectUuid: 'obj-1', registerId: 1))->inSchema(schemaId: 2),
+			key: new CalendarEventKey(calendarUri: 'personal', eventUid: 'ev-uid-1')
+		);
 		$this->assertInstanceOf(CalendarLink::class, $result);
 	}
 
@@ -157,7 +162,7 @@ class CalendarLinkServiceTest extends TestCase {
 			}))
 			->willReturnArgument(0);
 
-		$result = $this->service->createAndLinkEvent('obj-1', 1, 2, [
+		$result = $this->service->createLinkedEvent((new LinkTarget('obj-1', 1))->inSchema(2), [
 			'summary' => 'New meeting',
 			'objectTitle' => 'My object',
 		]);

@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -28,6 +29,7 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -151,7 +153,8 @@ class RegistersControllerShowGoldenTest extends TestCase {
 		});
 
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('getStatistics')->willReturnCallback(function (...$args) use ($case): array {
+		$objects->method('getStatistics')->willReturnCallback(function (StatisticsScope $scope) use ($case): array {
+			$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 			$this->calls[] = ['objectStatistics', array_slice($args, 0, 2)];
 			if (($case['statsFail'] ?? false) === true) {
 				throw new RuntimeException('count failed');
@@ -161,10 +164,10 @@ class RegistersControllerShowGoldenTest extends TestCase {
 		});
 
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('getStatistics')->willReturnCallback(function (...$args): array {
+		$audit->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args): array {
 			$this->calls[] = ['auditStatistics', array_slice($args, 0, 2)];
 			return ['total' => 8, 'size' => 80];
-		});
+		}));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('error')->willReturnCallback(function (string $message, array $context): void {

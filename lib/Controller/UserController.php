@@ -30,7 +30,13 @@ use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\LoginSecurityInterface;
+use OCA\OpenRegister\Service\User\ActivityPeriod;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
 use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -379,7 +385,9 @@ class UserController extends Controller {
 			return null;
 		}
 
-		$this->securityService->recordFailedLoginAttempt(username: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason);
+		$this->securityService->recordFailedLoginAttempt(
+			attempt: new FailedAttempt(subject: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason)
+		);
 		return $this->responses->error(message: $message, statusCode: 401);
 	}//end refusedLogin()
 
@@ -484,7 +492,8 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'Both currentPassword and newPassword are required', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->changePassword($user, $currentPassword, $newPassword));
+		$change = new PasswordChange(currentPassword: $currentPassword, newPassword: $newPassword);
+		return $this->responses->secured(data: $this->userService->applyPasswordChange(user: $user, change: $change));
 	}//end changePasswordFor()
 
 	/**
@@ -503,9 +512,7 @@ class UserController extends Controller {
 		if ($this->responses->runtimeStatus(exception: $exception) === 403) {
 			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
 			$this->securityService->recordFailedLoginAttempt(
-				username: $user->getUID(),
-				ipAddress: $clientIp,
-				reason: 'password_change_incorrect'
+				attempt: new FailedAttempt(subject: $user->getUID(), ipAddress: $clientIp, reason: 'password_change_incorrect')
 			);
 		}
 
@@ -546,7 +553,8 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'No image data provided', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->uploadAvatar($user, $data, $mimeType, $size));
+		$upload = new AvatarUpload(data: $data, mimeType: $mimeType, size: $size);
+		return $this->responses->secured(data: $this->userService->setAvatar(user: $user, upload: $upload));
 	}//end uploadAvatarFor()
 
 	/**
@@ -695,7 +703,10 @@ class UserController extends Controller {
 		$to     = $this->request->getParam('_to');
 
 		return $this->responses->secured(
-			data: $this->userService->getUserActivity($user, $limit, $offset, $type, $from, $to)
+			data: $this->userService->activity(
+				user: $user,
+				query: new ActivityQuery(limit: $limit, offset: $offset, type: $type, period: new ActivityPeriod(from: $from, to: $to))
+			)
 		);
 	}//end activityFor()
 
@@ -750,7 +761,7 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'Token name is required', statusCode: 400);
 		}
 
-		$token = $this->userService->createApiToken($user, $name, $expiresIn);
+		$token = $this->userService->issueApiToken(user: $user, request: new ApiTokenRequest(name: $name, expiresIn: $expiresIn));
 		return $this->responses->secured(data: $token, statusCode: 201);
 	}//end createTokenFor()
 

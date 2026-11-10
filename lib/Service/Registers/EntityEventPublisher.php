@@ -52,10 +52,10 @@ use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IUser;
 
 /**
  * Turns each announcement of a mapper into the lib/Event class it dispatched itself before.
@@ -360,20 +360,19 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	/**
 	 * The decision metadata of an entity relation was updated.
 	 *
-	 * @param Entity $relation The relation as stored now.
-	 * @param array<string, array{previous: mixed, new: mixed}> $changedFields Only the fields that changed.
-	 * @param IUser|null $actingUser The user who decided; null for a system write.
+	 * @param RelationDecisionUpdate $update The relation as stored now, only the fields that changed,
+	 *                                       and the user who decided (null for a system write).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
-	public function entityRelationDecisionUpdated(Entity $relation, array $changedFields, ?IUser $actingUser): void {
+	public function entityRelationDecisionUpdated(RelationDecisionUpdate $update): void {
 		$this->dispatcher->dispatchTyped(
 			new EntityRelationDecisionUpdatedEvent(
-				relation: self::narrow(entity: $relation, class: EntityRelation::class),
-				changedFields: $changedFields,
-				actingUser: $actingUser
+				relation: self::narrow(entity: $update->relation, class: EntityRelation::class),
+				changedFields: $update->changedFields,
+				actingUser: $update->actingUser
 			)
 		);
 	}//end entityRelationDecisionUpdated()

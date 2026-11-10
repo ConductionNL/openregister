@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -89,11 +89,9 @@ class RelatedRowQueryApplier {
 	 * Does nothing at all when there is no `_related` key, so every existing
 	 * call site is unaffected.
 	 *
-	 * @param IQueryBuilder $qb         The query being built.
-	 * @param array<mixed>  $query      The request query.
-	 * @param Register      $register   The register the related rows live in.
-	 * @param callable      $organisationScopeFor Given the related schema and the register id, the organisation scope
-	 *                                            the list path applies to that table: `array{mode: string, uuids: array<int, string>}`.
+	 * @param RelatedRowFilterTarget $target The query being built, the register the related rows live in and the
+	 *                                       organisation scope of a related table.
+	 * @param array<mixed>           $query  The request query.
 	 *
 	 * The outer object row is joined as `OUTER_ALIAS`, the alias the list path gives it.
 	 *
@@ -104,14 +102,14 @@ class RelatedRowQueryApplier {
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function apply(IQueryBuilder $qb, array $query, Register $register, callable $organisationScopeFor): int {
+	public function apply(RelatedRowFilterTarget $target, array $query): int {
 		$filters = $this->filtersIn(query: $query);
 		if ($filters === []) {
 			return 0;
 		}
 
 		$engine = (new RelatedRowExistsClause())->engineFor(db: $this->db, logger: $this->logger);
-		$run    = new RelatedRowApplyRun(qb: $qb, register: $register, organisationScopeFor: $organisationScopeFor(...), engine: $engine);
+		$run    = new RelatedRowApplyRun(qb: $target->qb, register: $target->register, organisationScopeFor: $target->organisationScopeFor, engine: $engine);
 		foreach ($filters as $filter) {
 			$this->applyOne(run: $run, filter: $filter);
 		}
@@ -254,7 +252,7 @@ class RelatedRowQueryApplier {
 	 * @throws InvalidArgumentException When it cannot be resolved.
 	 */
 	private function resolveSchema(string $name): Schema {
-		$bySlug = $this->lookups->schemaMapper->findBySlug(slug: $name, limit: 2);
+		$bySlug = $this->lookups->schemaMapper->findBySlug(slug: $name, query: new ListQuery(limit: 2));
 		if (count($bySlug) === 1) {
 			return $bySlug[0];
 		}

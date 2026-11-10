@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailOutcome;
 use OCP\AppFramework\Db\Entity;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -45,7 +46,7 @@ final class SearchTrailCreateOutcomeTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreatedTrailCarriesTheOutcomeAndTheQuery(): void {
-		$trail = $this->create(query: ['_search' => 'tax', '_limit' => 5, '_page' => 2], counts: [4, 40], responseTime: 12.5, type: 'async');
+		$trail = $this->create(query: ['_search' => 'tax', '_limit' => 5, '_page' => 2], counts: [4, 40], responseTime: 13, type: 'async');
 
 		$this->assertSame(4, $trail->getResultCount());
 		$this->assertSame(40, $trail->getTotalResults());
@@ -60,28 +61,19 @@ final class SearchTrailCreateOutcomeTest extends TestCase {
 	}//end testACreatedTrailCarriesTheOutcomeAndTheQuery()
 
 	/**
-	 * A response time is rounded to the nearest integer.
-	 *
-	 * @return void
-	 */
-	public function testTheResponseTimeIsRounded(): void {
-		$this->assertSame(12, $this->create(query: [], counts: [0, 0], responseTime: 12.4, type: 'sync')->getResponseTime());
-	}//end testTheResponseTimeIsRounded()
-
-	/**
 	 * Create a trail through the mapper.
 	 *
-	 * @param array             $query        The search query.
-	 * @param array{0:int,1:int} $counts      Result count and total results.
-	 * @param float             $responseTime The response time.
-	 * @param string            $type         The execution type.
+	 * @param array              $query        The search query.
+	 * @param array{0:int,1:int} $counts       Result count and total results.
+	 * @param int                $responseTime The response time in whole milliseconds.
+	 * @param string             $type         The execution type.
 	 *
 	 * @return SearchTrail The created trail.
 	 */
-	private function create(array $query, array $counts, float $responseTime, string $type): SearchTrail {
-		$outcome = new SearchTrail();
-		$outcome->setResultCount($counts[0]);
-		$outcome->setTotalResults($counts[1]);
-		return $this->mapper()->createSearchTrail($query, $outcome, $responseTime, $type);
+	private function create(array $query, array $counts, int $responseTime, string $type): SearchTrail {
+		return $this->mapper()->createSearchTrail(
+			$query,
+			new SearchTrailOutcome(resultCount: $counts[0], totalResults: $counts[1], responseTime: $responseTime, executionType: $type)
+		);
 	}//end create()
 }//end class

@@ -101,8 +101,7 @@ abstract class ExampleSetEngineRows {
 	 * Why a filled row cannot be written in this run, or ''; a kind that checks a row against the set's objects or
 	 * cast overrides this, every other kind answers refusal().
 	 *
-	 * @param array<string, mixed> $data    The filled fields.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled fields and the account ids the set creates or adopts.
 	 * @param array<string, mixed> $context The context placeholders draw on: `objects`, `cast`, `today`.
 	 *
 	 * @return string
@@ -111,8 +110,8 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
-	protected function refusalIn(array $data, array $users, array $context): string {
-		return $this->refusal(data: $data, users: $users);
+	protected function refusalIn(FilledRow $row, array $context): string {
+		return $this->refusal(data: $row->data, users: $row->users);
 	}//end refusalIn()
 
 	/**
@@ -315,17 +314,15 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * Check the rows of one fragment: each fills and passes refusal().
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param array<string, mixed>    $fragment The fragment.
+	 * @param ExampleSetFragmentCheck $check    The context placeholders draw on, the account ids the set creates or
+	 *                                          adopts, and the filler.
 	 *
 	 * @return array<int, string> Refusals.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
-		$check    = new ExampleSetFragmentCheck(context: $context, users: $users, values: $values);
+	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		$refusals = [];
 		foreach (($fragment[$this->part()] ?? []) as $entry) {
 			$why = $this->entryRefusal(entry: $entry, check: $check);
@@ -348,8 +345,11 @@ abstract class ExampleSetEngineRows {
 	 */
 	private function entryRefusal(array $entry, ExampleSetFragmentCheck $check): string {
 		$gaps = [];
-		$data = (array) $check->values->fill(value: $entry['data'], context: $this->fillContext(context: $check->context), gaps: $gaps);
-		$why  = $this->refusalIn(data: $data, users: $check->users, context: $check->context);
+		$data = (array) $check->values->fill(
+			value: $entry['data'],
+			scope: new ExampleSetFillScope(context: $this->fillContext(context: $check->context), gaps: $gaps)
+		);
+		$why  = $this->refusalIn(row: new FilledRow(data: $data, users: $check->users), context: $check->context);
 		if ($gaps !== []) {
 			return 'cannot resolve '.implode(', ', array_unique($gaps));
 		}
@@ -361,8 +361,8 @@ abstract class ExampleSetEngineRows {
 	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
 	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param array<string, mixed>    $report The report; gains the outcomes under part() and `dropped`.
-	 * @param array<string, mixed>    $record The record; gains the rows written under part().
+	 * @param RecordLedger            $ledger The report (gains the outcomes under part() and `dropped`) and the record
+	 *                                        (gains the rows written under part()), held by reference.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
@@ -371,12 +371,12 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	public function installFragment(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
+	public function installFragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$fragment = $write->fragment;
 		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
-		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $report, record: $record);
+		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $ledger->report, record: $ledger->record);
 		$part     = new ExampleSetRecordPart(part: $this->part(), noun: $this->noun());
-		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $report, record: $record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $ledger->report, record: $ledger->record) === true) {
 			$changed = true;
 		}
 

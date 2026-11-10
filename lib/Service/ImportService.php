@@ -38,17 +38,13 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
-use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
-use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Import\DryRunBatch;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
-use OCA\OpenRegister\Service\Import\ImportMapping;
-use OCA\OpenRegister\Service\Import\ImportOptions;
-use OCA\OpenRegister\Service\Import\ImportRequest;
-use OCA\OpenRegister\Service\Import\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCA\OpenRegister\Service\Import\ImportServiceCodecs;
 use OCA\OpenRegister\Service\Import\ImportServiceRuntime;
 use OCA\OpenRegister\Service\Import\ImportServiceStores;
@@ -57,6 +53,7 @@ use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\Import\JsonImportRows;
 use OCA\OpenRegister\Service\Import\MappedSheet;
 use OCA\OpenRegister\Service\Import\MappingErrorRow;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
@@ -282,16 +279,10 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Import data from Excel file.
 	 *
-	 * @param string $filePath The path to the Excel file.
-	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
-	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
-	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
-	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true, unused).
-	 * @param bool $_multitenancy Whether to apply multitenancy checks (default: true, unused).
-	 * @param bool $publish DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
-	 * @param IUser|null $currentUser The current user performing the import (optional).
-	 * @param bool $enrich Whether to enrich objects with metadata (default: true).
+	 * @param ImportRequest $request       The file, the register and schema (a register alone imports one schema per sheet), the user and the save
+	 *                               options.
+	 * @param bool          $_rbac         Whether to enforce RBAC checks.
+	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
 	 *
 	 * @return (array|int|null|string)[][]
 	 *
@@ -331,42 +322,11 @@ class ImportService implements ObjectImporterInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function importFromExcel(
-		string $filePath,
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-	): array {
-		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser);
-		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
-		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options);
-		return $this->importSpreadsheet(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
-	}//end importFromExcel()
-
-	/**
-	 * Import a spreadsheet as requested; see {@see importFromExcel()}.
-	 *
-	 * @param ImportRequest $request       The file, scope and save options.
-	 * @param bool          $_rbac         Whether to enforce RBAC checks.
-	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
-	 *
-	 * @return array The summaries by sheet title, plus `importJobId`.
-	 *
-	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	public function importSpreadsheet(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+	public function importFromExcel(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
 		$import = $this->importSettings(request: $request) + ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
 
 		return $this->asImportJob(run: fn (): array => $this->importExcelFile(filePath: $request->filePath, import: $import));
-	}//end importSpreadsheet()
+	}//end importFromExcel()
 
 	/**
 	 * The stored register and schema, and the save and mapping settings of one import.
@@ -472,66 +432,21 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Import data from CSV file.
 	 *
-	 * @param string $filePath The path to the CSV file.
-	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
-	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
-	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
-	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
-	 * @param bool $_rbac Whether to enforce RBAC checks (default: true, unused).
-	 * @param bool $_multitenancy Whether to enable multi-tenancy (default: true, unused).
-	 * @param bool $publish DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
-	 * @param IUser|null $currentUser Current user for RBAC checks (default: null).
-	 * @param bool $enrich Whether to enrich objects with metadata (default: true).
-	 * @param array|null $pack Optional migration pack definition (decoded JSON). When given, each row is
-	 *                         mapped through `MappingEngine::mapRow()` before the normal validate/save
-	 *                         pipeline.
-	 * @param bool $dryRun When true, rows are mapped and validated but nothing is saved.
-	 *
-	 * @return array Import results by schema
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the existing importFrom* signatures; pack/dryRun extend it.
-	 *
-	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
-	 */
-	public function importFromCsv(
-		string $filePath,
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-		?array $pack = null,
-		bool $dryRun = false,
-	): array {
-		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser);
-		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
-		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options, mapping: new ImportMapping(pack: $pack, dryRun: $dryRun));
-		return $this->importCsv(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
-	}//end importFromCsv()
-
-	/**
-	 * Import a CSV file as requested; see {@see importFromCsv()}.
-	 *
-	 * @param ImportRequest $request       The file, scope, save options and mapping.
+	 * @param ImportRequest $request       The file, the register and schema (required), the user, the save options and the optional migration pack or
+	 *                               dry run.
 	 * @param bool          $_rbac         Whether to enforce RBAC checks.
 	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
 	 *
-	 * @return array The summary by sheet title, plus `importJobId`.
+	 * @return array Import results by schema
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
 	 *
 	 * @throws \InvalidArgumentException When no schema is given, or the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
-	public function importCsv(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+	public function importFromCsv(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
 		$import = $this->importSettings(request: $request) + ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
 
 		// CSV can only handle a single schema.
@@ -540,7 +455,7 @@ class ImportService implements ObjectImporterInterface {
 		}
 
 		return $this->asImportJob(run: fn (): array => $this->importCsvFile(filePath: $request->filePath, import: $import));
-	}//end importCsv()
+	}//end importFromCsv()
 
 	/**
 	 * Import a CSV file into one schema.
@@ -587,26 +502,11 @@ class ImportService implements ObjectImporterInterface {
 	 * actionable error naming the missing slug rather than a silent no-op or
 	 * an opaque exception.
 	 *
-	 * @param string $filePath Path to the uploaded JSON file
-	 * @param RegisterInterface|null $register Register to import into. When null, the payload is checked for
-	 *                                a register-bundle envelope to auto-create it; see
-	 *                                `$registerSlug` and `@throws` below.
-	 * @param SchemaInterface|null $schema Target schema (required — JSON import is single-schema, like
-	 *                            CSV — unless resolved from a register-bundle's own schemas)
-	 * @param bool $validation Whether to validate objects against the schema
-	 * @param bool $events Whether to dispatch object lifecycle events
-	 * @param bool $_rbac Whether to apply RBAC permissions
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering
-	 * @param bool $publish DEPRECATED no-op; publication is RBAC-driven
-	 * @param IUser|null $currentUser The current user performing the import
-	 * @param bool $enrich Whether to enrich objects with metadata
-	 * @param array|null $pack Optional migration pack definition (decoded JSON). When given, each JSON
-	 *                         object is mapped through `MappingEngine::mapRow()` (source resolved via
-	 *                         JSON-Pointer-style paths against the raw decoded object) before save.
-	 * @param bool $dryRun When true, rows are mapped and validated but nothing is saved.
-	 * @param string|null $registerSlug The register slug/id the caller originally requested, used ONLY to
-	 *                                  name the missing register in the clear-failure error when `$register`
-	 *                                  is null and the payload is not a creatable bundle (REQ-IMP-AC-02).
+	 * @param ImportRequest $request       The file; the register (null: the payload is checked for a register bundle, and the scope's registerSlug
+	 *                               names the missing register) and schema (required unless a bundle carries it); the user, save options and optional
+	 *                               migration pack or dry run.
+	 * @param bool          $_rbac         Whether to apply RBAC permissions.
+	 * @param bool          $_multitenancy Whether to apply multi-tenancy filtering.
 	 *
 	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
 	 *
@@ -615,9 +515,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @throws RegisterNotFoundException When `$register` is null and the payload is not a creatable
 	 *                                   register-bundle (REQ-IMP-AC-02)
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the Excel/CSV importer signatures
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)  validation/events/enrich are kept for signature parity with importFromExcel/importFromCsv
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
 	 *
 	 * @spec exclude Retrofit — JSON object import/export added alongside the existing Excel/CSV importers; no dedicated openspec change.
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
@@ -625,44 +523,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-clear-failure-when-auto-create-is-impossible-req-imp-ac-02
 	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-idempotent-register-bundle-re-import-req-imp-ac-03
 	 */
-	public function importFromJson(
-		string $filePath,
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-		?array $pack = null,
-		bool $dryRun = false,
-		?string $registerSlug = null,
-	): array {
-		$scope   = new ImportScope(register: $register, schema: $schema, currentUser: $currentUser, registerSlug: $registerSlug);
-		$options = new ImportOptions(validation: $validation, events: $events, enrich: $enrich, publish: $publish);
-		$request = new ImportRequest(filePath: $filePath, scope: $scope, options: $options, mapping: new ImportMapping(pack: $pack, dryRun: $dryRun));
-		return $this->importJson(request: $request, _rbac: $_rbac, _multitenancy: $_multitenancy);
-	}//end importFromJson()
-
-	/**
-	 * Import a JSON document as requested; see {@see importFromJson()}.
-	 *
-	 * @param ImportRequest $request       The file, scope, save options and mapping.
-	 * @param bool          $_rbac         Whether to apply RBAC permissions.
-	 * @param bool          $_multitenancy Whether to apply multi-tenancy filtering.
-	 *
-	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
-	 *
-	 * @throws InvalidArgumentException  When no schema is given (and none is resolvable from a bundle) or the
-	 *                                   payload is not an array of objects
-	 * @throws RegisterNotFoundException When no register is given and the payload is not a creatable register-bundle
-	 *
-	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-auto-create-a-missing-register-from-a-bundle-req-imp-ac-01
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
-	 */
-	public function importJson(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+	public function importFromJson(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
 		$job = $this->importSettings(request: $request) + ['startTime' => microtime(true), '_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
 		$this->warnIfPublishing(publish: $job['publish']);
 
@@ -670,7 +531,7 @@ class ImportService implements ObjectImporterInterface {
 		$job     = $this->withJsonImportTarget(decoded: $decoded, job: $job);
 
 		return $this->runJsonImportJob(objects: $this->jsonImportObjects(decoded: $decoded), job: $job);
-	}//end importJson()
+	}//end importFromJson()
 
 	/**
 	 * The JSON import job with its register and schema settled.
@@ -980,7 +841,10 @@ class ImportService implements ObjectImporterInterface {
 				$schemaData['title'] = $schemaKey;
 			}
 
-			$createdSchema = $importHandler->importSchema(data: $schemaData, slugsAndIdsMap: $schemas['slugsAndIds']);
+			$createdSchema = $importHandler->importSchema(
+				definition: new ImportedSchemaLookup(data: $schemaData),
+				slugsAndIdsMap: $schemas['slugsAndIds']
+			);
 			$createdSchemas[$createdSchema->getSlug()] = $createdSchema;
 		}
 
@@ -1424,7 +1288,8 @@ class ImportService implements ObjectImporterInterface {
 			$rowData = $mapped['data'];
 		}
 
-		$parsed['objects'][] = $this->transformCsvRow(rowData: $rowData, table: $line['table'], currentUser: $parse['currentUser']);
+		$target = new RowImportTarget(table: $line['table'], importer: $parse['currentUser']);
+		$parsed['objects'][] = $this->transformCsvRow(rowData: $rowData, target: $target);
 	}//end parseCsvRow()
 
 	/**
@@ -1689,48 +1554,23 @@ class ImportService implements ObjectImporterInterface {
 	}//end buildDryRunSummary()
 
 	/**
-	 * Transform CSV row data to object format for batch saving
-	 *
-	 * @param array $rowData Row data from CSV
-	 * @param Register $register The register
-	 * @param Schema $schema The schema
-	 * @param IUser|null $currentUser The current user performing the import
-	 *
-	 * @return ((int|mixed|string)[]|mixed)[]
-	 *
-	 * @psalm-return array{'@self': array<string, int|mixed|string>,...}
+	 * Transform a CSV row to object format for batch saving, for one register and schema.
 	 *
 	 * Public because the previewed import maps its rows through this exact
 	 * method. A preview produced by a second transform would be a preview of
 	 * something other than what the write does, which is the failure D-1
 	 * exists to prevent.
 	 *
-	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
-	 */
-	public function transformCsvRowToObject(
-		array $rowData,
-		Register $register,
-		Schema $schema,
-		?IUser $currentUser = null,
-	): array {
-		return $this->transformCsvRow(rowData: $rowData, table: new RegisterSchema(register: $register, schema: $schema), currentUser: $currentUser);
-	}//end transformCsvRowToObject()
-
-	/**
-	 * Transform a CSV row to object format for batch saving, for one register and schema.
-	 *
-	 * See {@see transformCsvRowToObject()}: the previewed import maps its rows through the same transform.
-	 *
-	 * @param array          $rowData     Row data from CSV
-	 * @param RegisterSchema $table       The register and schema
-	 * @param IUser|null     $currentUser The current user performing the import
+	 * @param array           $rowData Row data from CSV
+	 * @param RowImportTarget $target  The register and schema, and the importing user
 	 *
 	 * @return array<string, mixed> The object, with its `@self` section
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function transformCsvRow(array $rowData, RegisterSchema $table, ?IUser $currentUser = null): array {
-		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
+	public function transformCsvRow(array $rowData, RowImportTarget $target): array {
+		$isAdmin = $this->isRowImporterAdmin(user: $target->importer);
+		$table = $target->table;
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`

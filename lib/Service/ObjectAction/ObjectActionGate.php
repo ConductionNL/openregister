@@ -76,21 +76,6 @@ class ObjectActionGate {
 	}//end userId()
 
 	/**
-	 * Whether the acting user holds a right on this object.
-	 *
-	 * @param Schema            $schema The object's schema.
-	 * @param string            $right  The action key, or a CRUD verb.
-	 * @param ObjectEntity|null $object The object; null asks at schema level (owner-independent rules only).
-	 *
-	 * @return bool True when they do.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
-	 */
-	public function may(Schema $schema, string $right, ?ObjectEntity $object): bool {
-		return $this->holds(check: new RightCheck(schema: $schema, right: $right, object: $object));
-	}//end may()
-
-	/**
 	 * Whether the acting user holds the checked right.
 	 *
 	 * @param RightCheck $check The schema, the right and the object (null asks at schema level).

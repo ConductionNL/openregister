@@ -4,7 +4,7 @@
  * Golden test for ObjectOwnershipService's bulk, owning-group, notice and cascade branches.
  *
  * Pins, on the code as it stood before its units were split, the exact outcome
- * of reassignMany() for every per-record branch, the refusals in front of it,
+ * of reassign() for every per-record branch, the refusals in front of it,
  * the owning-group write (set, clear with null, clear with '', unknown group,
  * stranger) with its audit row, the previous-owner notice payload and the
  * branches that skip it, and the cascade's early exit. Allowed AND refused
@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
+use OCA\OpenRegister\Service\Rbac\OwnedRecord;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -41,6 +43,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\AuthorizationAssignment;
 use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\Rbac\OwnershipLog;
@@ -219,22 +222,22 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		$this->signIn('bob', ['staff']);
 		$this->assertSame(
 			[NotAuthorizedException::class, 'Only an administrator may assign a record to somebody else'],
-			$this->refusal(fn () => $service->reassignMany(['u1'], 'carol'))
+			$this->refusal(fn () => $service->reassign(['u1'], new OwnershipReassignment('carol', false)))
 		);
 
 		$service = $this->service();
 		$this->signIn('root', ['admin']);
 		$this->assertSame(
 			[InvalidArgumentException::class, 'No such user: nobody'],
-			$this->refusal(fn () => $service->reassignMany(['u1'], 'nobody'))
+			$this->refusal(fn () => $service->reassign(['u1'], new OwnershipReassignment('nobody', false)))
 		);
 		$this->assertSame(
 			[InvalidArgumentException::class, 'No such user: '],
-			$this->refusal(fn () => $service->reassignMany(['u1'], ''))
+			$this->refusal(fn () => $service->reassign(['u1'], new OwnershipReassignment('', false)))
 		);
 		$this->assertSame(
 			[InvalidArgumentException::class, 'Name at least one record to reassign'],
-			$this->refusal(fn () => $service->reassignMany([], 'carol'))
+			$this->refusal(fn () => $service->reassign([], new OwnershipReassignment('carol', false)))
 		);
 	}//end testBulkReassignmentRefusals()
 
@@ -261,9 +264,9 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		);
 		$this->magicMapper->expects($this->never())->method('findByRelationUsingRelationsColumn');
 
-		$outcome = $service->reassignMany(
+		$outcome = $service->reassign(
 			[42, '', 'no-register', 'mine', 'gone', 'ok-1', 'no-schema', 'no-uuid', 'ok-2'],
-			'carol'
+			new OwnershipReassignment('carol', false)
 		);
 
 		$this->assertSame(
@@ -326,7 +329,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		// No session: a system operation, the actor falls back to the new owner.
 		$this->userSession->method('getUser')->willReturn(null);
 		$outcome = SystemOperationContext::run(
-			fn () => $service->reassignMany(['unowned', 'empty-owner', 'departed', 'untitled'], 'carol', true)
+			fn () => $service->reassign(['unowned', 'empty-owner', 'departed', 'untitled'], new OwnershipReassignment('carol', true))
 		);
 
 		$this->assertSame(
@@ -361,7 +364,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		$this->magicMapper->expects($this->once())->method('findByRelationUsingRelationsColumn')
 			->with('parent')->willThrowException(new RuntimeException('db down'));
 
-		$outcome = $service->reassignMany(['parent'], 'carol', true);
+		$outcome = $service->reassign(['parent'], new OwnershipReassignment('carol', true));
 		$this->assertSame(
 			[['uuid' => 'parent', 'previousOwner' => 'alice', 'newOwner' => 'carol', 'changed' => true, 'children' => []]],
 			$outcome['transferred']
@@ -392,13 +395,13 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 
 			$written = null;
 			$this->authorizationWriter->expects($this->once())->method('writeAuthorizationBlock')->willReturnCallback(
-				function ($register, $schema, string $objectUuid, array $block) use (&$written) {
-					$written = [$objectUuid, $block];
+				function ($table, AuthorizationAssignment $assignment) use (&$written) {
+					$written = [$assignment->objectUuid, $assignment->block];
 				}
 			);
 			$this->grantAuditor->expects($this->once())->method('recordOwnerGroup')->with($object, $audit[0], $audit[1]);
 
-			$result = $service->setOwnerGroup(new Register(), new Schema(), $object, $group);
+			$result = $service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), group: $group);
 			$this->assertSame($expected, $result, $label);
 			$this->assertSame(['rec', $expected], $written, $label);
 			$this->assertSame($expected, $object->getAuthorization(), $label);
@@ -419,7 +422,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		$this->grantAuditor->expects($this->never())->method('recordOwnerGroup');
 		$this->assertSame(
 			[InvalidArgumentException::class, 'No such group: ghosts'],
-			$this->refusal(fn () => $service->setOwnerGroup(new Register(), new Schema(), $this->record('rec', 'alice'), 'ghosts'))
+			$this->refusal(fn () => $service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('rec', 'alice')), group: 'ghosts'))
 		);
 
 		// A stranger, even for a clear.
@@ -430,7 +433,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		foreach (['team', null, ''] as $group) {
 			$this->assertSame(
 				[NotAuthorizedException::class, 'Only the owner or an administrator may change who owns this record'],
-				$this->refusal(fn () => $service->setOwnerGroup(new Register(), new Schema(), $this->record('rec', 'alice'), $group))
+				$this->refusal(fn () => $service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('rec', 'alice')), group: $group))
 			);
 		}
 	}//end testOwnerGroupRefusals()
