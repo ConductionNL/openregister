@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\CospendProjectDraft;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
@@ -231,9 +232,8 @@ class CospendLinksController extends Controller {
 				$currency = (string)$this->request->getParam('currency', '');
 
 				$link = $this->cospendLinkService->createAndLinkProject(
-					$this->linkTargetOf(object: $object),
-					$name,
-					$currency
+					target: $this->linkTargetOf(object: $object),
+					draft: new CospendProjectDraft(name: $name, currency: $currency)
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);
