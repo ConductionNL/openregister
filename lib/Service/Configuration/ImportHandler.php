@@ -36,6 +36,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -1267,7 +1268,7 @@ class ImportHandler {
 		}
 
 		try {
-			$candidates = $this->schemaMapper->findBySlug(slug: $slug, limit: 50, _rbac: false);
+			$candidates = $this->schemaMapper->findBySlug(slug: $slug, query: new ListQuery(limit: 50), _rbac: false);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -5105,7 +5106,7 @@ class ImportHandler {
 		}
 
 		try {
-			$externalSchemas = $this->schemaMapper->findBySlug(slug: $slug, limit: 1, offset: 0, _multitenancy: false, _rbac: false);
+			$externalSchemas = $this->schemaMapper->findBySlug(slug: $slug, query: new ListQuery(limit: 1, offset: 0), _multitenancy: false, _rbac: false);
 			if (empty($externalSchemas) === true) {
 				$this->logger->warning(
 					message: '[ImportHandler] External schema not found - using current schema',
