@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillRequest;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -140,7 +141,7 @@ class BackfillObjectSlugsCommand extends Command {
 		}
 
 		try {
-			$result = $this->backfill->run(register: $register, schema: $schema, dryRun: $dryRun);
+			$result = $this->backfill->run(request: new ObjectSlugBackfillRequest(register: $register, schema: $schema, dryRun: $dryRun));
 		} catch (Throwable $e) {
 			self::reportFailure(error: $e, output: $output);
 			return Command::FAILURE;

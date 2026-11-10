@@ -205,7 +205,7 @@ class ObjectActionStepsFlow {
 	 * @return string The flow's uuid.
 	 */
 	private function publish(Flow $flow): string {
-		$this->versions->publish(flow: $flow, publishedBy: null);
+		$this->versions->publish(flow: $flow);
 
 		return (string)$flow->getUuid();
 	}//end publish()

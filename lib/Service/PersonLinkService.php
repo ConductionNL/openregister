@@ -368,7 +368,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		$role       = $ref->role;
 		$link       = null;
 		if ($role !== null) {
-			$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
+			$link = $this->links->findByObjectContactAndRole(ref: $ref);
 		}
 
 		if ($role === null) {

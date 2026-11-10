@@ -145,17 +145,15 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	/**
 	 * Find all search trails with optional filters
 	 *
+	 * @param ListQuery                $query    The page and its sort; unbounded for every row.
 	 * @param SearchTrailCriteria|null $criteria Filters, search term and created window; null for all.
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array $sort Sort criteria
 	 *
 	 * @return SearchTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
 	 */
-	public function findAll(SearchTrailCriteria|null $criteria = null, int|null $limit = null, int|null $offset = null, array $sort = []): array {
-		$page = new SearchTrailPage(limit: $limit, offset: $offset, sort: $sort);
+	public function findAll(ListQuery $query, SearchTrailCriteria|null $criteria = null): array {
+		$page = new SearchTrailPage(limit: $query->limitOrNull(), offset: $query->offset, sort: $query->sort);
 		return $this->findMatching(criteria: ($criteria ?? new SearchTrailCriteria()), page: $page);
 	}//end findAll()
 
@@ -265,18 +263,18 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	/**
 	 * Create a new search trail entry
 	 *
-	 * @param array       $searchQuery   The search query parameters
-	 * @param SearchTrail $outcome       The unsaved trail carrying what the search
-	 *                                   returned: result count and total results.
-	 * @param float       $responseTime  The response time in milliseconds
-	 * @param string      $executionType The execution type ('sync' or 'async')
+	 * @param array              $searchQuery The search query parameters.
+	 * @param SearchTrailOutcome $outcome     The finished outcome values of the search.
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail {
-		$outcome->setExecutionType($executionType);
-		$outcome->setResponseTime((int)round($responseTime));
-		return $this->recordSearch(searchTrail: $this->stamped(searchTrail: $outcome), searchQuery: $searchQuery);
+	public function createSearchTrail(array $searchQuery, SearchTrailOutcome $outcome): SearchTrail {
+		$searchTrail = new SearchTrail();
+		$searchTrail->setResultCount($outcome->resultCount);
+		$searchTrail->setTotalResults($outcome->totalResults);
+		$searchTrail->setExecutionType($outcome->executionType);
+		$searchTrail->setResponseTime($outcome->responseTime);
+		return $this->recordSearch(searchTrail: $this->stamped(searchTrail: $searchTrail), searchQuery: $searchQuery);
 	}//end createSearchTrail()
 
 	/**

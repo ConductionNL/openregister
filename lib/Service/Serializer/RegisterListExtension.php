@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Serializer;
 
 /**
- * What {@see RegisterSerializer::serializeMany()} applies to every register of a page:
+ * What {@see RegisterSerializer::serializePage()} applies to every register of a page:
  * the `_extend` keys (`schemas`, `@self.stats`) and the per-register schema counts.
  *
  * @spec openspec/specs/register-service-extensions/spec.md

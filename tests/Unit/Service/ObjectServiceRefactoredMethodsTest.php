@@ -491,7 +491,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 		);
 		$this->validateHandler->expects($this->once())
 			->method('validateObject')
-			->with($this->anything(), $schema, $this->anything(), $this->anything(), ['title' => 'draft', 'description' => 'draft'])
+			->with($this->anything(), $schema, $this->anything(), ['title' => 'draft', 'description' => 'draft'])
 			->willReturn($invalid);
 		$this->validateHandler->method('generateErrorMessage')->willReturn('preferredDate must match format date-time');
 

@@ -196,25 +196,7 @@ class FlowMessagingService {
 	 * Per item: the recipients the step resolves, and the subject and body its
 	 * templates give. For `talk` the recipient is the conversation and there is
 	 * no subject. Reads only: no rate budget is spent, nothing is delivered and
-	 * no report is written.
-	 *
-	 * @param string $channel `email`, `notification` or `talk`.
-	 * @param array $config The step configuration.
-	 * @param array $items The flow items.
-	 * @param array $context The run context.
-	 *
-	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
-	 */
-	public function previewMessages(string $channel, array $config, array $items, array $context): array {
-		return $this->preview(channel: $channel, step: new MessageSend(config: $config, items: $items, context: $context));
-	}//end previewMessages()
-
-	/**
-	 * The messages a step would send, composed and not sent; see {@see self::previewMessages()}.
-	 *
-	 * Only the scalar entries of the run context reach the templates.
+	 * no report is written. Only the scalar entries of the run context reach the templates.
 	 *
 	 * @param string      $channel `email`, `notification` or `talk`.
 	 * @param MessageSend $step    The step configuration, items and run context (no step name).

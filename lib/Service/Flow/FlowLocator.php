@@ -435,8 +435,27 @@ class FlowLocator implements FlowLocatorInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function scheduledFlows(): array {
+		$candidates = [];
+		foreach ($this->findScheduled() as $flow) {
+			if ($flow->canDispatch() === false) {
+				$this->warnNotDispatched(flow: $flow);
+				continue;
+			}
+
+			$candidates[] = $this->scheduleCandidate(flow: $flow);
+		}
+
+		return $candidates;
+	}//end scheduledFlows()
+
+	/**
+	 * The flows stored with a schedule trigger, or none when they cannot be listed.
+	 *
+	 * @return array<int, Flow> The flows.
+	 */
+	private function findScheduled(): array {
 		try {
-			$flows = $this->stores->mapper->findScheduled();
+			return $this->stores->mapper->findScheduled();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list scheduled flows: ' . $e->getMessage(),
@@ -444,32 +463,42 @@ class FlowLocator implements FlowLocatorInterface {
 			);
 			return [];
 		}
+	}//end findScheduled()
 
-		$candidates = [];
-		foreach ($flows as $flow) {
-			if ($flow->canDispatch() === false) {
-				$this->logger->warning(
-					message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
-						. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
-						. 'an orphan that cannot be listed, found or edited either. This is not the identity '
-						. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-				);
-				continue;
-			}
+	/**
+	 * Say why a scheduled flow is not dispatched.
+	 *
+	 * @param Flow $flow The flow that cannot dispatch.
+	 *
+	 * @return void
+	 */
+	private function warnNotDispatched(Flow $flow): void {
+		$this->logger->warning(
+			message: '[FlowLocator] Scheduled flow "' . $flow->getUuid()
+				. '" was not dispatched: it is disabled, or its definition has no owner and is therefore '
+				. 'an orphan that cannot be listed, found or edited either. This is not the identity '
+				. 'check — whose rights a run uses comes from the schedule trigger node\'s runAs.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+		);
+	}//end warnNotDispatched()
 
-			$candidates[] = [
-				'id' => (string)$flow->getUuid(),
-				'enabled' => (bool)$flow->getEnabled(),
-				'trigger' => (string)($flow->getTrigger() ?? ''),
-				'cron' => (string)($flow->getCron() ?? ''),
-				'owner' => $flow->getOwner(),
-				'since' => $this->savedAt(flow: $flow),
-			];
-		}//end foreach
-
-		return $candidates;
-	}//end scheduledFlows()
+	/**
+	 * The scheduler's view of one dispatchable flow.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null, since: string} The candidate.
+	 */
+	private function scheduleCandidate(Flow $flow): array {
+		return [
+			'id' => (string)$flow->getUuid(),
+			'enabled' => (bool)$flow->getEnabled(),
+			'trigger' => (string)($flow->getTrigger() ?? ''),
+			'cron' => (string)($flow->getCron() ?? ''),
+			'owner' => $flow->getOwner(),
+			'since' => $this->savedAt(flow: $flow),
+		];
+	}//end scheduleCandidate()
 
 	/**
 	 * When a flow was last saved, as an ATOM timestamp, or the empty string.

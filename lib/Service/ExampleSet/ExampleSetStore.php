@@ -39,6 +39,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -462,7 +463,10 @@ class ExampleSetStore {
 
 		try {
 			$outcome = $service->runAsSystem(
-				fn () => $this->container->get(ObjectOwnershipService::class)->reassignMany(identifiers: [$id], newOwner: $owner)
+				fn () => $this->container->get(ObjectOwnershipService::class)->reassign(
+					identifiers: [$id],
+					reassignment: new OwnershipReassignment(newOwner: $owner, cascade: false)
+				)
 			);
 		} catch (Throwable $e) {
 			return $e->getMessage();

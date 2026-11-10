@@ -22,9 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-
 /**
  * Notifies the address an object references, and names the recipient kind it answers to.
  *
@@ -44,31 +41,18 @@ interface ReferencedAddressNotifierInterface {
 	public const MAX_HOPS = 3;
 
 	/**
-	 * Mail every `email` entry of a rule that resolves to an address.
+	 * Mail every `email` entry of a request that resolves to an address.
 	 *
 	 * Every resolved address is put to integriq in one question. An entry that
 	 * does not resolve, or that integriq refuses, is reported with its reason,
 	 * never dropped in silence.
 	 *
-	 * @param ObjectEntity         $object         The triggering object.
-	 * @param array<string, mixed> $data           Its data.
-	 * @param array<int, mixed>    $recipientsSpec The rule's `recipients` declaration.
-	 * @param string               $subject        The rule's subject.
-	 * @param string               $body           The rule's message.
-	 * @param string               $category       The rule's message category.
-	 * @param Schema|null          $schema         The triggering object's schema, which declares what each reference may point at.
+	 * @param ReferenceOrigin $origin  The triggering object, its data and its schema.
+	 * @param MailingRequest  $request The rule's recipients, subject, body and category.
 	 *
 	 * @return array<int, array{field: string, outcome: string}> One outcome per `email` entry.
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	public function notify(
-		ObjectEntity $object,
-		array $data,
-		array $recipientsSpec,
-		string $subject,
-		string $body,
-		string $category,
-		?Schema $schema = null,
-	): array;
+	public function mail(ReferenceOrigin $origin, MailingRequest $request): array;
 }//end interface

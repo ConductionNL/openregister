@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -169,14 +170,13 @@ class ObjectServiceRawAppendTest extends TestCase {
 		$this->magicMapper->expects($this->once())
 			->method('bulkUpsert')
 			->with(
-				$this->callback(function (array $rows) use (&$captured): bool {
-					$captured = $rows;
-					return true;
-				}),
-				$this->register,
-				$this->schema,
-				'openregister_table_1_2',
-				false
+				$this->callback(function (BulkUpsertCommand $command) use (&$captured): bool {
+					$captured = $command->objects;
+					return $command->table->register === $this->register
+						&& $command->table->schema === $this->schema
+						&& $command->tableName === 'openregister_table_1_2'
+						&& $command->needsPreUpdateState === false;
+				})
 			)
 			->willReturn([['_uuid' => 'a'], ['_uuid' => 'b']]);
 
@@ -242,7 +242,14 @@ class ObjectServiceRawAppendTest extends TestCase {
 		$this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
 		$this->magicMapper->expects($this->once())
 			->method('bulkUpsert')
-			->with($this->anything(), $this->register, $this->schema, 'openregister_table_1_2', false)
+			->with(
+				$this->callback(
+					fn (BulkUpsertCommand $command): bool => $command->table->register === $this->register
+						&& $command->table->schema === $this->schema
+						&& $command->tableName === 'openregister_table_1_2'
+						&& $command->needsPreUpdateState === false
+				)
+			)
 			->willReturn([['_uuid' => 'a']]);
 
 		$written = $this->service->appendObjectsRaw(
