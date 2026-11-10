@@ -330,7 +330,7 @@ final class TransitionEngineDelegatedAccessGoldenTest extends TestCase {
 		);
 
 		return new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($objects, $schemas, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($objects, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $schemas, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($dispatcher, new LifecycleWriteBoundary(new LifecycleActionContext()), $registry),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($session, $appConfig, new NullLogger()),
 			$permissions
