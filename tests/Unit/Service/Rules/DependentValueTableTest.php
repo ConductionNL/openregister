@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use OCA\OpenRegister\Service\Rules\DependentValueTable;
 use OCA\OpenRegister\Service\Rules\DependentValueValidator;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Rules\DependentValueWrite;
 
 /**
  * Task 4.3 and REQ-REO-005.
@@ -101,7 +102,7 @@ class DependentValueTableTest extends TestCase {
 	public function testAValueOutsideTheTableIsRefusedNamingBothProperties(): void {
 		$violations = (new DependentValueTable())->violations(
 			properties: $this->properties(),
-			data: ['zaaktype' => 'bezwaar', 'resultaat' => 'verleend']
+			write: new DependentValueWrite(data: ['zaaktype' => 'bezwaar', 'resultaat' => 'verleend'], stored: [])
 		);
 
 		$this->assertCount(1, $violations);
@@ -124,7 +125,7 @@ class DependentValueTableTest extends TestCase {
 			[],
 			(new DependentValueTable())->violations(
 				properties: $this->properties(),
-				data: ['zaaktype' => 'bezwaar', 'resultaat' => 'ongegrond']
+				write: new DependentValueWrite(data: ['zaaktype' => 'bezwaar', 'resultaat' => 'ongegrond'], stored: [])
 			)
 		);
 	}//end testAValueInsideTheTableIsAllowed()
@@ -143,8 +144,7 @@ class DependentValueTableTest extends TestCase {
 	public function testAPartialWriteIsJudgedAgainstTheStoredControllingValue(): void {
 		$violations = (new DependentValueTable())->violations(
 			properties: $this->properties(),
-			data: ['resultaat' => 'verleend'],
-			stored: ['zaaktype' => 'bezwaar', 'resultaat' => 'gegrond']
+			write: new DependentValueWrite(data: ['resultaat' => 'verleend'], stored: ['zaaktype' => 'bezwaar', 'resultaat' => 'gegrond'])
 		);
 
 		$this->assertCount(1, $violations);
@@ -166,7 +166,7 @@ class DependentValueTableTest extends TestCase {
 			[],
 			(new DependentValueTable())->violations(
 				properties: $this->properties(),
-				data: ['zaaktype' => 'melding', 'resultaat' => 'verleend']
+				write: new DependentValueWrite(data: ['zaaktype' => 'melding', 'resultaat' => 'verleend'], stored: [])
 			)
 		);
 	}//end testAnUnlistedControllingValueConstrainsNothing()
@@ -271,7 +271,7 @@ class DependentValueTableTest extends TestCase {
 
 		$this->assertFalse($table->declaresAny(properties: $properties));
 		$this->assertSame([], $table->tablesOf(properties: $properties));
-		$this->assertSame([], $table->violations(properties: $properties, data: ['resultaat' => 'anything']));
+		$this->assertSame([], $table->violations(properties: $properties, write: new DependentValueWrite(data: ['resultaat' => 'anything'], stored: [])));
 		$this->assertSame([], $this->codesFor($properties));
 	}//end testASchemaWithNoTableIsUntouched()
 
@@ -287,7 +287,7 @@ class DependentValueTableTest extends TestCase {
 			[],
 			(new DependentValueTable())->violations(
 				properties: $this->properties(),
-				data: ['zaaktype' => 'bezwaar']
+				write: new DependentValueWrite(data: ['zaaktype' => 'bezwaar'], stored: [])
 			)
 		);
 	}//end testAnAbsentDependentValueIsNotRefused()
