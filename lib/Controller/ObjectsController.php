@@ -144,6 +144,7 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Objects controller for OpenRegister
@@ -5340,8 +5341,12 @@ class ObjectsController extends Controller {
 	private function mayMove(ObjectEntity $object, array $schemas): bool {
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 
-		return $permissions->hasPermission(schema: $schemas[0], action: 'update', objectOwner: $object->getOwner(), object: $object)
-			&& $permissions->hasPermission(schema: $schemas[1], action: 'create');
+		return $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemas[0], action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
+		)
+			&& $permissions->hasPermission(ask: new PermissionAsk(schema: $schemas[1], action: 'create'));
 	}//end mayMove()
 
 	/**
@@ -6234,12 +6239,15 @@ class ObjectsController extends Controller {
 
 		$schemaEntity = $this->services->store->schemaMapper->find($source->schema);
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
+		$mayUpdateTarget = $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $target->getOwner())
+				->about(object: $target, register: null)
+		);
 		$mayDeleteSource = $permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'delete',
-			objectOwner: $sourceObject->getOwner(),
-			object: $sourceObject
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'delete'))
+				->askedBy(userId: null, objectOwner: $sourceObject->getOwner())
+				->about(object: $sourceObject, register: null)
 		);
 		if ($mayUpdateTarget === false || $mayDeleteSource === false) {
 			return new JSONResponse(data: ['error' => 'You may not merge these objects.'], statusCode: 403);

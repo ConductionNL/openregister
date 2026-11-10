@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -239,11 +240,9 @@ class RegistrySubscriptionController extends Controller {
 		$user = $this->userSession->getUser();
 
 		return $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $user?->getUID(),
-			objectOwner: $object->getOwner(),
-			object: $object,
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: $user?->getUID(), objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end mayUpdate()
 }//end class

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -285,14 +286,14 @@ class AggregationRunnerAdhocGoldenTest extends TestCase {
 		);
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($case): bool {
 				$action = ($args['action'] ?? $args[1] ?? null);
 				$userId = ($args['userId'] ?? $args[2] ?? null);
 				$this->calls[] = ['permission' => [$action, $userId]];
 				return $case['allow'];
 			}
-		);
+		));
 
 		$session = $this->createMock(IUserSession::class);
 		$user = null;

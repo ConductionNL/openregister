@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\RecordTemplate;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
@@ -295,9 +296,8 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 			$verdict = false;
 			try {
 				$verdict = $this->permissions->hasPermission(
-					schema: $this->store->schemas->find(id: $schema, _rbac: false),
-					action: 'create',
-					userId: $reach->userId
+					ask: (new PermissionAsk(schema: $this->store->schemas->find(id: $schema, _rbac: false), action: 'create'))
+						->askedBy(userId: $reach->userId, objectOwner: null)
 				);
 			} catch (DoesNotExistException $e) {
 				$verdict = false;

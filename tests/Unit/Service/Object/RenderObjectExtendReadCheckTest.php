@@ -84,10 +84,10 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 			static fn (int $registerId, int $schemaId, array $uuids): array => array_values(array_intersect($uuids, [self::OPEN]))
 		);
 		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn (Schema $schema, string $action, ?string $userId, ?string $owner, bool $rbac, ?ObjectEntity $object): bool
 				=> $object?->getUuid() !== self::CLOSED
-		);
+		));
 		$this->cache = $this->createMock(CacheHandler::class);
 		$this->cache->method('preloadObjects')->willReturnCallback(
 			fn (array $identifiers): array => array_map(fn (string $uuid): ObjectEntity => $this->target($uuid), array_values($identifiers))

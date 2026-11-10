@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -215,7 +216,7 @@ class EntityRelationsAccessGoldenTest extends TestCase {
 		$this->magicMapper->expects($this->once())->method('find')
 			->with(99, $register, $schema)->willReturn($object);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', 'alice', 'bob', true, $object)->willReturn(true);
+			->with(...PermissionAskArgs::with($schema, 'update', 'alice', 'bob', true, $object))->willReturn(true);
 
 		$this->assertSame(200, $this->patch($this->objectRelation('reg-1', 'sch-1')));
 	}
@@ -236,7 +237,7 @@ class EntityRelationsAccessGoldenTest extends TestCase {
 		$this->magicMapper->expects($this->once())->method('find')->with(99, null, null)->willReturn($this->object());
 		$this->schemaMapper->expects($this->once())->method('find')->with('schema-from-object')->willReturn($schema);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', 'alice', 'bob')->willReturn(true);
+			->with(...PermissionAskArgs::with($schema, 'update', 'alice', 'bob'))->willReturn(true);
 
 		$this->assertSame(200, $this->patch($this->objectRelation(null, null)));
 	}
@@ -275,7 +276,7 @@ class EntityRelationsAccessGoldenTest extends TestCase {
 		$this->magicMapper->expects($this->once())->method('find')->with('parent-uuid', $register)->willReturn($object);
 		$this->schemaMapper->expects($this->once())->method('find')->with('schema-from-object')->willReturn($schema);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', 'alice', 'bob', true, $object)->willReturn(true);
+			->with(...PermissionAskArgs::with($schema, 'update', 'alice', 'bob', true, $object))->willReturn(true);
 
 		$this->assertSame(200, $this->patch($this->emailRelation()));
 	}

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -104,7 +105,7 @@ final class DeletedObjectAuthorizerMutationTest extends TestCase {
 		$object->setOwner('eigenaar');
 		$this->permissions->expects($this->once())
 			->method('hasPermission')
-			->with($schema, 'restore', 'jan', 'eigenaar', true, $object)
+			->with(...PermissionAskArgs::with($schema, 'restore', 'jan', 'eigenaar', true, $object))
 			->willReturn(true);
 
 		$this->assertTrue($this->authorizer('jan')->userMayActOnDeletedObject($object, 'restore'));

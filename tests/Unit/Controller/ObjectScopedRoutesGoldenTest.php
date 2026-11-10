@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CalendarEventsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ContactsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -129,9 +130,9 @@ final class ObjectScopedRoutesGoldenTest extends TestCase {
 
 	private function permissions(string $situation): PermissionHandler {
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn (Schema $schema, string $action): bool => $action !== 'update' || $situation !== 'refused'
-		);
+		));
 
 		return $permissions;
 	}

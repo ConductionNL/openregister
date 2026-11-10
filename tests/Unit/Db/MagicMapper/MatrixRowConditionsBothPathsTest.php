@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -293,7 +294,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			$object->setUuid($uuid);
 			$object->setOwner('importer');
 			$object->setObject(['assignedGroup' => $team, 'status' => $status]);
-			if ($permissions->hasPermission(schema: $schema, action: $action, userId: $uid, objectOwner: 'importer', object: $object) === true) {
+			if ($permissions->hasPermission(ask: (new PermissionAsk(schema: $schema, action: $action))->askedBy(userId: $uid, objectOwner: 'importer')->about(object: $object, register: null)) === true) {
 				$admitted[] = $uuid;
 			}
 		}
@@ -345,17 +346,15 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 		foreach (self::CASES as $uuid => [$team, $status]) {
 			$this->assertSame(
 				$permissions->hasPermission(
-					schema: $schema,
-					action: 'update',
-					userId: 'anna',
-					objectOwner: 'importer',
-					object: (static function () use ($uuid, $team, $status): ObjectEntity {
+					ask: (new PermissionAsk(schema: $schema, action: 'update'))
+						->askedBy(userId: 'anna', objectOwner: 'importer')
+						->about(object: (static function () use ($uuid, $team, $status): ObjectEntity {
 						$object = new ObjectEntity();
 						$object->setUuid($uuid);
 						$object->setOwner('importer');
 						$object->setObject(['assignedGroup' => $team, 'status' => $status]);
 						return $object;
-					})()
+					})(), register: null)
 				),
 				$rbac->hasPermission(schema: $schema, action: 'update', objectOwner: 'importer', objectData: ['assignedGroup' => $team, 'status' => $status]),
 				'the row-level verdict agrees for ' . $uuid

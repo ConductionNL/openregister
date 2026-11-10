@@ -58,6 +58,7 @@ use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -445,11 +446,9 @@ class EntityRelationsController extends Controller {
 		}
 
 		return $this->permissionHandler->hasPermission(
-			schema: $resolvedSchema,
-			action: 'update',
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $resolvedSchema, action: 'update'))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end canUpdateObject()
 
@@ -572,11 +571,9 @@ class EntityRelationsController extends Controller {
 		}
 
 		return $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end canUpdateEmailParentObject()
 

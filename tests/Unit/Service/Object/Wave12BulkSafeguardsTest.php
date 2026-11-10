@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -262,7 +263,7 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('hasPermission')
-			->with($schema, 'create', 'alice')
+			->with(...PermissionAskArgs::with($schema, 'create', 'alice'))
 			->willReturn(false);
 
 		$result = $this->initResult(1);

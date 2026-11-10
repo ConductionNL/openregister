@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter;
 use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use RuntimeException;
@@ -131,7 +132,7 @@ final class SubscriptionServiceEventFilterTest extends TestCase {
 		$schemas     = $this->createMock(SchemaMapperInterface::class);
 		$permissions = $this->createMock(PermissionCheckInterface::class);
 		$schemas->method('find')->with(1)->willReturn($schema);
-		$permissions->method('hasPermission')->with($schema, 'read')->willReturn(true);
+		$permissions->method('hasPermission')->with(...PermissionAskArgs::with($schema, 'read'))->willReturn(true);
 
 		$this->assertTrue($this->visible($this->service($permissions, $schemas), ['object' => ['schema' => 1]]));
 	}

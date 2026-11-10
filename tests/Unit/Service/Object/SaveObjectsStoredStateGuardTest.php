@@ -149,7 +149,7 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 		$mapper->method('findObjectsByUuidsInRegisterSchema')->willReturnCallback(fn (): array => $this->prefetched);
 		$mapper->method('callerOrganisationsHold')->willReturn(true);
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(fn (): bool => $this->granted);
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(fn (): bool => $this->granted));
 
 		return new SaveObjects(
 			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),

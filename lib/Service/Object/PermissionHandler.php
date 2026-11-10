@@ -422,14 +422,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * read path by {@see \OCA\OpenRegister\Service\Object\RenderObject::renderEntity()}.
 	 * This handler owns object/schema-level RBAC only.
 	 *
-	 * @param Schema $schema The schema to check permissions for.
-	 * @param string $action The CRUD action (create, read, update, delete).
-	 * @param string|null $userId Optional user ID (defaults to current user).
-	 * @param string|null $objectOwner Optional object owner for ownership check.
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object (a create, a delete by id).
-	 *                              Only a declared action's elevation reads it.
+	 * @param PermissionAsk $ask   The question: the schema and the CRUD action (create, read, update, delete);
+	 *                            the user (null for the current user) and the object owner for the ownership
+	 *                            check; the object for conditional authorization matching, or, for a check that
+	 *                            names no object (a create, a delete by id), the register written to, which only
+	 *                            a declared action's elevation reads.
+	 * @param bool          $_rbac Whether to apply RBAC checks (default: true).
 	 *
 	 * @return bool True if user has permission, false otherwise
 	 *
@@ -439,19 +437,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
-		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
-	): bool {
-		$ask = (new PermissionAsk(schema: $schema, action: $action))
-			->askedBy(userId: $userId, objectOwner: $objectOwner)
-			->about(object: $object, register: $register);
-
+	public function hasPermission(PermissionAsk $ask, bool $_rbac = true): bool {
 		return $this->permits(ask: $ask, _rbac: $_rbac);
 	}//end hasPermission()
 
@@ -2074,7 +2060,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$schema = $this->data->schemaMapper->find($schemaId);
 
 			return $caller->keptFromDraft(object: $object, schema: $schema) === false
-				&& $this->hasPermission(schema: $schema, action: 'delete', userId: $caller->userId, objectOwner: $object->getOwner());
+				&& $this->hasPermission(
+					ask: (new PermissionAsk(schema: $schema, action: 'delete'))
+						->askedBy(userId: $caller->userId, objectOwner: $object->getOwner())
+				);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return false;
 		}

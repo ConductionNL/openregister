@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowNodeRunControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -291,7 +292,7 @@ class FlowNodeRunCharacterisationTest extends TestCase {
 			->willReturn($object);
 		$this->schemas->expects($this->once())->method('find')->with('7', [], false, false)->willReturn($schema);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', 'alice', 'bob', true, $object)
+			->with(...PermissionAskArgs::with($schema, 'update', 'alice', 'bob', true, $object))
 			->willReturn(false);
 		$this->params(['subject' => ['uuid' => ' obj-1 ', 'register' => ' cases', 'schema' => 'case ']]);
 

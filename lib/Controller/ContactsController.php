@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\PersonLinkRef;
 use OCA\OpenRegister\Service\PersonLinkTarget;
 use OCA\OpenRegister\Service\ContactPlacement;
 use OCA\OpenRegister\Service\ContactServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\PersonLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -261,10 +262,9 @@ class ContactsController extends Controller {
 				$schemaEntity = $this->objectService->getCurrentSchemaEntity();
 				if ($schemaEntity === null
 					|| $this->services->platform->permissions->hasPermission(
-						schema: $schemaEntity,
-						action: 'update',
-						objectOwner: $object->getOwner(),
-						object: $object
+						ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+							->askedBy(userId: null, objectOwner: $object->getOwner())
+							->about(object: $object, register: null)
 					) === false
 				) {
 					return new JSONResponse(['error' => 'You may not change this object, so you cannot change its contacts.'], 403);

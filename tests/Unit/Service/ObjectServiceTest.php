@@ -70,6 +70,7 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -2013,10 +2014,10 @@ class ObjectServiceTest extends TestCase {
 				);
 			}
 		);
-		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			fn (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool =>
 				$action === 'update' && $schema === $sourceSchema && in_array($object?->getUuid(), $updatable, true)
-		);
+		));
 	}
 
 	public function testMigrateObjectsRefusesATargetSchemaTheCallerMayNotCreateIn(): void {

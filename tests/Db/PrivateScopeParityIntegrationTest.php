@@ -64,6 +64,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
@@ -317,11 +318,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 			$verdicts = [
 				'PermissionHandler' => $this->permissionHandler->hasPermission(
-					schema: $schema,
-					action: 'read',
-					userId: $this->testUid,
-					objectOwner: $entity->getOwner(),
-					object: $entity
+					ask: (new PermissionAsk(schema: $schema, action: 'read'))
+						->askedBy(userId: $this->testUid, objectOwner: $entity->getOwner())
+						->about(object: $entity, register: null)
 				),
 				'hasPermission' => $this->rbacHandler->hasRowPermission(
 					schema: $schema,
@@ -446,11 +445,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		$this->assertSame(['read' => ['admin']], $entity->getAuthorization(), 'fixture did not persist');
 
 		$singleObject = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: $this->testUid,
-			objectOwner: $entity->getOwner(),
-			object: $entity
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: $this->testUid, objectOwner: $entity->getOwner())
+				->about(object: $entity, register: null)
 		);
 
 		$this->assertFalse($singleObject, 'the single-object verdict honours the per-object override');
@@ -627,11 +624,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->assertTrue(
 			$this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: $this->testUid,
-				objectOwner: $entities['granted']->getOwner(),
-				object: $entities['granted']
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: $this->testUid, objectOwner: $entities['granted']->getOwner())
+					->about(object: $entities['granted'], register: null)
 			),
 			'the single-object verdict must honour the grant'
 		);
@@ -703,11 +698,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->assertFalse(
 			$this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: $this->testUid,
-				objectOwner: $entity->getOwner(),
-				object: $entity
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: $this->testUid, objectOwner: $entity->getOwner())
+					->about(object: $entity, register: null)
 			),
 			'the single-object verdict must not let a grant widen past the schema'
 		);
@@ -1114,11 +1107,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->assertTrue(
 			$this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: $this->testUid,
-				objectOwner: $entity->getOwner(),
-				object: $entity
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: $this->testUid, objectOwner: $entity->getOwner())
+					->about(object: $entity, register: null)
 			),
 			'a read grant must admit read'
 		);
@@ -1126,11 +1117,9 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 		foreach (['update', 'delete'] as $write) {
 			$this->assertFalse(
 				$this->permissionHandler->hasPermission(
-					schema: $schema,
-					action: $write,
-					userId: $this->testUid,
-					objectOwner: $entity->getOwner(),
-					object: $entity
+					ask: (new PermissionAsk(schema: $schema, action: $write))
+						->askedBy(userId: $this->testUid, objectOwner: $entity->getOwner())
+						->about(object: $entity, register: null)
 				),
 				"a read-only grant must NOT admit $write"
 			);

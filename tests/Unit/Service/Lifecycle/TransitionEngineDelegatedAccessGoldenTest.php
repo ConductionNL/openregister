@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -307,13 +308,13 @@ final class TransitionEngineDelegatedAccessGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action) use ($allowed): bool {
 				$this->asked[] = $action;
 
 				return $allowed;
 			}
-		);
+		));
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(

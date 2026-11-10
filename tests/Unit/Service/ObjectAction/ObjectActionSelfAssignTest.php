@@ -60,6 +60,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
@@ -492,7 +493,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$l10n
 		);
 
-		$this->assertTrue($permissions->hasPermission(schema: $schema, action: self::ACTION, userId: 'root'), 'the control: an administrator passes the rules');
+		$this->assertTrue($permissions->hasPermission(ask: (new PermissionAsk(schema: $schema, action: self::ACTION))->askedBy(userId: 'root', objectOwner: null)), 'the control: an administrator passes the rules');
 		$this->assertSame(403, $answer['status']);
 		$this->assertSame([self::ACTION => false], $list->canRun(object: self::object(assignee: null), schema: $schema));
 	}//end testAnAdministratorIsNotGrantedAnUngrantedAction()

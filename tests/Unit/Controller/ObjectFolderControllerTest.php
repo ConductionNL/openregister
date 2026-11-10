@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -283,12 +284,10 @@ class ObjectFolderControllerTest extends TestCase {
 		$this->objectService->method('find')->willReturnCallback(
 			static function () use ($permissionHandler, $schema, $object): ObjectEntity {
 				$mayRead = $permissionHandler->hasPermission(
-					schema: $schema,
-					action: 'read',
-					userId: null,
-					objectOwner: $object->getOwner(),
-					_rbac: true,
-					object: $object
+					ask: (new PermissionAsk(schema: $schema, action: 'read'))
+						->askedBy(userId: null, objectOwner: $object->getOwner())
+						->about(object: $object, register: null),
+					_rbac: true
 				);
 				if ($mayRead === false) {
 					throw new NotAuthorizedException('Not readable');

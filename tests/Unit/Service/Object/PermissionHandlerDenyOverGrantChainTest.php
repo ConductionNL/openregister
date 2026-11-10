@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -256,9 +257,8 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['roles' => ['behandelaar' => ['behandelaars']]]),
-				action: 'update',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['roles' => ['behandelaar' => ['behandelaars']]]), action: 'update'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 	}//end testARoleGrantIsAGrant()
@@ -287,11 +287,11 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 			]
 		);
 
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'update', userId: 'ana'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: null)));
 
 		// And the verb the deny does not name is untouched, so the refusal is
 		// about `update` and not about the caller.
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testADenyBeatsARoleGrant()
 
 	/**
@@ -311,23 +311,21 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 		$granting = $this->handlerFor(userId: 'ana', groups: ['senioren'], registerRoles: $roles);
 		$this->assertTrue(
 			$granting->hasPermission(
-				schema: $this->schemaWith(['roles' => ['senior behandelaar' => ['senioren']]]),
-				action: 'update',
-				userId: 'ana'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['roles' => ['senior behandelaar' => ['senioren']]]), action: 'update'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 
 		$denying = $this->handlerFor(userId: 'ana', groups: ['senioren'], registerRoles: $roles);
 		$this->assertFalse(
 			$denying->hasPermission(
-				schema: $this->schemaWith(
+				ask: (new PermissionAsk(schema: $this->schemaWith(
 					[
 						'roles' => ['senior behandelaar' => ['senioren']],
 						'deny' => ['update' => ['senioren']],
 					]
-				),
-				action: 'update',
-				userId: 'ana'
+				), action: 'update'))
+					->askedBy(userId: 'ana', objectOwner: null)
 			)
 		);
 	}//end testADenyBeatsAGrantInheritedThroughExtends()
@@ -349,15 +347,14 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 		$schema = $this->schemaWith(['read' => ['gasten']]);
 
 		// The schema admits this caller on an ordinary row.
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 
 		// And refuses them the private one, because they hold no grant on it.
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: 'ana',
-				object: $this->objectWith(['scope' => ObjectScopeResolver::SCOPE_PRIVATE])
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
+					->about(object: $this->objectWith(['scope' => ObjectScopeResolver::SCOPE_PRIVATE]), register: null)
 			)
 		);
 	}//end testAPrivateObjectRefusesACallerTheSchemaAdmits()
@@ -375,10 +372,9 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['read' => ['gasten']]),
-				action: 'read',
-				userId: 'ana',
-				object: $this->objectWith(['scope' => ObjectScopeResolver::SCOPE_PRIVATE])
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['gasten']]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
+					->about(object: $this->objectWith(['scope' => ObjectScopeResolver::SCOPE_PRIVATE]), register: null)
 			)
 		);
 	}//end testAPerObjectGrantOpensAPrivateObject()
@@ -402,10 +398,9 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['read' => ['gasten'], 'deny' => ['read' => ['gasten']]]),
-				action: 'read',
-				userId: 'ana',
-				object: $this->objectWith(['scope' => ObjectScopeResolver::SCOPE_PRIVATE])
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['gasten'], 'deny' => ['read' => ['gasten']]]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
+					->about(object: $this->objectWith(['scope' => ObjectScopeResolver::SCOPE_PRIVATE]), register: null)
 			)
 		);
 	}//end testADenyBeatsAGrantHeldOutsideTheBlock()
@@ -427,15 +422,14 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['read' => ['gasten']]),
-				action: 'read',
-				userId: 'ana',
-				object: $this->objectWith(
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['gasten']]), action: 'read'))
+					->askedBy(userId: 'ana', objectOwner: null)
+					->about(object: $this->objectWith(
 					[
 						'scope' => ObjectScopeResolver::SCOPE_PRIVATE,
 						'deny' => ['read' => ['gasten']],
 					]
-				)
+				), register: null)
 			)
 		);
 	}//end testADenyOnTheObjectBeatsTheGrantOnTheObject()

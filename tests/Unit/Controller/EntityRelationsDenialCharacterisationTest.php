@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\Files\IRootFolder;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -252,7 +253,7 @@ class EntityRelationsDenialCharacterisationTest extends TestCase {
 		$this->schemaMapper->method('find')->with('sch-1')->willReturn($schema);
 		$this->magicMapper->expects($this->once())->method('find')->with(99, $register, $schema)->willReturn($object);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', 'alice', 'bob', true, $object)
+			->with(...PermissionAskArgs::with($schema, 'update', 'alice', 'bob', true, $object))
 			->willReturn(false);
 
 		$this->assertSame(403, $this->patch($this->objectRelation('reg-1', 'sch-1'))[0]);
@@ -315,7 +316,7 @@ class EntityRelationsDenialCharacterisationTest extends TestCase {
 		$this->magicMapper->expects($this->once())->method('find')->with('parent-uuid', $register)->willReturn($object);
 		$this->schemaMapper->method('find')->with('schema-from-object')->willReturn($schema);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', 'alice', 'bob', true, $object)
+			->with(...PermissionAskArgs::with($schema, 'update', 'alice', 'bob', true, $object))
 			->willReturn(true);
 		$this->decisions->method('decide')->willReturnCallback(
 			static fn (EntityRelation $relation): array => ['relation' => $relation, 'decision' => null]

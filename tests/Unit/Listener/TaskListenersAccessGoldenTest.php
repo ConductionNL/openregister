@@ -46,6 +46,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 
 /**
  * Allowed AND refused, for each access decision these listeners make.
@@ -61,7 +62,7 @@ final class TaskListenersAccessGoldenTest extends TestCase {
 		$object = $this->caseObject(assignee: 'jan');
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->expects(self::once())->method('hasPermission')
-			->with(self::isInstanceOf(Schema::class), 'read', 'jan', 'owner-1', true, $object)
+			->with(...PermissionAskArgs::with(self::isInstanceOf(Schema::class), 'read', 'jan', 'owner-1', true, $object))
 			->willReturn(true);
 		$watchers = $this->createMock(WatcherServiceInterface::class);
 		$watchers->expects(self::once())->method('followAssigned')->with($object, 'jan', '3', '12');

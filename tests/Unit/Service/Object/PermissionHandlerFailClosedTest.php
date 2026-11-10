@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -169,7 +170,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 
 		foreach (['read', 'create', 'update', 'delete', 'list'] as $action) {
 			$this->assertFalse(
-				$this->handler->hasPermission($schema, $action),
+				$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: $action)),
 				sprintf('Action "%s" must be DENIED when authorization cannot be resolved', $action)
 			);
 		}
@@ -197,7 +198,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 				}
 			);
 
-		$this->handler->hasPermission($this->schemaWithoutOwnAuth(), 'read');
+		$this->handler->hasPermission(ask: new PermissionAsk(schema: $this->schemaWithoutOwnAuth(), action: 'read'));
 
 		$this->assertNotEmpty($logged, 'Authorization resolution failure MUST be logged, not swallowed');
 		$this->assertStringContainsString(
@@ -250,7 +251,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 
 		// First call: unresolvable -> denied.
 		$this->assertFalse(
-			$this->handler->hasPermission($this->schemaWithoutOwnAuth(), 'read'),
+			$this->handler->hasPermission(ask: new PermissionAsk(schema: $this->schemaWithoutOwnAuth(), action: 'read')),
 			'First call must fail closed'
 		);
 
@@ -259,7 +260,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 		$schema = $this->schemaWithoutOwnAuth();
 		$schema->setId(43);
 
-		$this->handler->hasPermission($schema, 'read');
+		$this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 
 		$this->assertGreaterThan(
 			1,

@@ -291,12 +291,12 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 				}
 			}
 		);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool {
 				$this->asked[] = [$schema->getSlug(), $action, $userId, $objectOwner, $_rbac, $object?->getUuid()];
 				return $this->mayDelete;
 			}
-		);
+		));
 
 		$translations = $this->createMock(TranslationHandler::class);
 		$translations->method('normalizeTranslationsForSave')->willReturnArgument(0);

@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\Integration\PaginatedResults;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -251,10 +252,9 @@ class ObjectIntegrationsController extends Controller {
 		}
 
 		return $this->permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'update',
-			objectOwner: $this->guardedObject?->getOwner(),
-			object: $this->guardedObject
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $this->guardedObject?->getOwner())
+				->about(object: $this->guardedObject, register: null)
 		) === true;
 	}//end mayUpdateGuardedObject()
 

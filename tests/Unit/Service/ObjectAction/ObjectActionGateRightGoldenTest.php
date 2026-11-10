@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInvocation;
 use OCA\OpenRegister\Service\ObjectAction\RightCheck;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -55,12 +56,12 @@ class ObjectActionGateRightGoldenTest extends TestCase {
 	 */
 	private function gate(bool $answer): ObjectActionGate {
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($answer): bool {
 				$this->asked[] = $args;
 				return $answer;
 			}
-		);
+		));
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('anna');
 		$session = $this->createMock(IUserSession::class);

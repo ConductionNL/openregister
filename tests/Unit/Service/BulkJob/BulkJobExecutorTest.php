@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -299,7 +300,7 @@ final class BulkJobExecutorTest extends TestCase {
 	}
 
 	public function testAnObjectTheActorMayNotWriteIsRefusedAndNotSkipped(): void {
-		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static function (
 				Schema $schema,
 				string $action,
@@ -310,7 +311,7 @@ final class BulkJobExecutorTest extends TestCase {
 			): bool {
 				return $object?->getUuid() !== 'b';
 			}
-		);
+		));
 
 		$this->executor()->writePreviewMembers(
 			new BulkJobPass($this->job(), $this->action([], BulkActionResult::skipped('the object is closed')), null, ['a' => $this->object('a'), 'b' => $this->object('b')]),

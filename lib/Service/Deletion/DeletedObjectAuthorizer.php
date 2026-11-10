@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
 
@@ -123,12 +124,10 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 
 		try {
 			return $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: $action,
-				userId: $user->getUID(),
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: $action))
+					->askedBy(userId: $user->getUID(), objectOwner: $object->getOwner())
+					->about(object: $object, register: null),
+				_rbac: true
 			);
 		} catch (\Throwable $e) {
 			return false;

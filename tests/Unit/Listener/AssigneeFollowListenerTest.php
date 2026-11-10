@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Listener\Support\AssigneeFollowServices;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 
 /**
  * Who follows on assignment, and who does not.
@@ -104,7 +105,7 @@ class AssigneeFollowListenerTest extends TestCase {
 		$users->method('userExists')->willReturnCallback(fn (string $uid): bool => in_array($uid, $this->users, true));
 
 		$permissions = $this->createMock(originalClassName: PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(fn (): bool => $this->mayRead);
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(fn (): bool => $this->mayRead));
 
 		return new AssigneeFollowListener(
 			$schemaMapper,

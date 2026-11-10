@@ -1354,12 +1354,10 @@ class SaveObjects {
 	 */
 	private function grantsRowAction(BulkSafeguardRun $run): bool {
 		return $this->checks->permissionHandler->hasPermission(
-			schema: $run->rowSchema,
-			action: $run->rowAction,
-			userId: $run->userId(),
-			objectOwner: $run->rowExisting?->getOwner(),
-			_rbac: true,
-			object: $run->rowExisting
+			ask: (new PermissionAsk(schema: $run->rowSchema, action: $run->rowAction))
+				->askedBy(userId: $run->userId(), objectOwner: $run->rowExisting?->getOwner())
+				->about(object: $run->rowExisting, register: null),
+			_rbac: true
 		) === true;
 	}//end grantsRowAction()
 
@@ -3051,12 +3049,10 @@ class SaveObjects {
 	 */
 	private function chunkCreateRefusal(PermissionHandlerInterface $handler, BulkCreateCheck $create): ?array {
 		$hasPermission = $handler->hasPermission(
-			schema: $create->schema,
-			action: 'create',
-			userId: $create->userId,
-			objectOwner: $create->owner,
-			_rbac: true,
-			register: $create->registerId
+			ask: (new PermissionAsk(schema: $create->schema, action: 'create'))
+				->askedBy(userId: $create->userId, objectOwner: $create->owner)
+				->about(object: null, register: $create->registerId),
+			_rbac: true
 		);
 		if ($hasPermission === true) {
 			return null;

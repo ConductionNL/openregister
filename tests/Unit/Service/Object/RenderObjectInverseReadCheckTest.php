@@ -82,11 +82,11 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		parent::setUp();
 		$this->mapper = $this->createMock(MagicMapper::class);
 		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static function (Schema $schema, string $action, ?string $userId, ?string $owner, bool $rbac, ?ObjectEntity $object): bool {
 				return $rbac === false || ($action === 'read' && $object?->getUuid() !== self::CLOSED);
 			}
-		);
+		));
 	}
 
 	/**

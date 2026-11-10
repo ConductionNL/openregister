@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -286,10 +287,9 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 			$node = $this->nodeAtLevel(level: $level);
 
 			$objectVerdict = $objectHandler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: self::CALLER,
-				object: $node
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: self::CALLER, objectOwner: null)
+					->about(object: $node, register: null)
 			);
 
 			// What the list term excludes, read through the same resolver the

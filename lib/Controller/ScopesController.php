@@ -44,6 +44,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\ScopesControllerServices;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Discovery endpoint for the current user's effective RBAC scopes.
@@ -393,7 +394,11 @@ class ScopesController extends Controller {
 		foreach (self::ACTIONS as $action) {
 			try {
 				// The owner and object stay at their null defaults: this is a schema-level probe.
-				$allowed = $this->permissionHandler->hasPermission(schema: $schema, action: $action, userId: $userId, _rbac: true);
+				$allowed = $this->permissionHandler->hasPermission(
+					ask: (new PermissionAsk(schema: $schema, action: $action))
+						->askedBy(userId: $userId, objectOwner: null),
+					_rbac: true
+				);
 			} catch (\Throwable $e) {
 				$allowed = false;
 			}
