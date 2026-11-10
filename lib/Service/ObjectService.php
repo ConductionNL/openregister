@@ -522,6 +522,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function runAsSystem(callable $operation)
     {
+        // NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
         return SystemOperationContext::run($operation);
     }//end runAsSystem()
 
