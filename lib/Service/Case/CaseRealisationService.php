@@ -363,7 +363,8 @@ class CaseRealisationService {
 	private function terminateTask(CaseItem $item, string $reason): void {
 		$uuid = trim((string)$item->getRealisationUuid());
 		try {
-			$this->tasks->tasks->terminateAsMoot(uuid: $uuid, trigger: new TaskTrigger(source: sprintf('case-item:%s', (string)$item->getUuid()), reason: $reason));
+			$trigger = new TaskTrigger(source: sprintf('case-item:%s', (string)$item->getUuid()), reason: $reason);
+			$this->tasks->tasks->terminateAsMoot(uuid: $uuid, trigger: $trigger);
 		} catch (DoesNotExistException) {
 			// Nothing left to terminate.
 			return;
