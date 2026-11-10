@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
@@ -47,8 +48,7 @@ class SearchIndexRebuildJobTest extends TestCase {
 
 	private function runJob(mixed $argument): void {
 		$job = new SearchIndexRebuildJob(
-			$this->createMock(ITimeFactory::class),
-			$this->createMock(JobRunRecorderInterface::class),
+			new RecordedJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(JobRunRecorderInterface::class)),
 			$this->index
 		);
 		(new ReflectionMethod(SearchIndexRebuildJob::class, 'runRecorded'))->invoke($job, $argument);
