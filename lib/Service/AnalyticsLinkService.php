@@ -224,29 +224,10 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	}//end assertReportLinkable()
 
 	/**
-	 * Create a new NC Analytics report and link it to an OR object.
+	 * Create the drafted NC Analytics report and link it to an OR object.
 	 *
 	 * The new report is a blank group/folder report by default; callers
-	 * may pass a different NC Analytics datasource type integer via
-	 * `$type`.
-	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string     $name   New report name.
-	 * @param int|null   $type   NC Analytics datasource type (default group).
-	 *
-	 * @return AnalyticsLink The persisted link row.
-	 *
-	 * @throws Exception On missing user (401), empty name (400),
-	 *                   Analytics unavailable (503), create failure (500).
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function createAndLinkReport(LinkTarget $target, string $name, ?int $type = null): AnalyticsLink {
-		return $this->createAndLinkDraft(target: $target, draft: new AnalyticsReportDraft(name: $name, type: $type));
-	}//end createAndLinkReport()
-
-	/**
-	 * Create the drafted NC Analytics report and link it to an OR object.
+	 * may draft a different NC Analytics datasource type integer.
 	 *
 	 * @param LinkTarget           $target The object to link to.
 	 * @param AnalyticsReportDraft $draft  The report name and optional datasource type (default group).
@@ -258,7 +239,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function createAndLinkDraft(LinkTarget $target, AnalyticsReportDraft $draft): AnalyticsLink {
+	public function createAndLinkReport(LinkTarget $target, AnalyticsReportDraft $draft): AnalyticsLink {
 		$uid = $this->requireUid();
 
 		$name = trim($draft->name);
@@ -274,7 +255,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->analyticsLinkMapper->insert($link);
-	}//end createAndLinkDraft()
+	}//end createAndLinkReport()
 
 	/**
 	 * Create a report in NC Analytics.

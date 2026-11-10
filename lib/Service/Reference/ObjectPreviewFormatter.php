@@ -400,6 +400,13 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			}
 		} catch (\Exception $e) {
 			// Fall through to default.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Schema name not resolved',
+				context: [
+					'schemaId' => $schemaId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->l10n->t('Unknown Schema');
@@ -423,6 +430,13 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			}
 		} catch (\Exception $e) {
 			// Fall through to default.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Register name not resolved',
+				context: [
+					'registerId' => $registerId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->l10n->t('Unknown Register');
@@ -449,6 +463,13 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			}
 		} catch (\Exception $e) {
 			// Fall through to null.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Schema icon not resolved',
+				context: [
+					'schemaId' => $schemaId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;

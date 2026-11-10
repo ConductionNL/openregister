@@ -99,25 +99,6 @@ class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterfac
 	}//end collect()
 
 	/**
-	 * Build a single GeoJSON Feature from an object row.
-	 *
-	 * @param array $row The object row.
-	 * @param ?string $geoProperty Geo property name; null = auto-detect.
-	 * @param string[]|null $fields Property allow-list, or null for all.
-	 * @param bool $includeArea Add `_area_m2` for polygonal geometries.
-	 *
-	 * @return ?array The Feature, or null when no geometry is present.
-	 *
-	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
-	 */
-	public function buildFeature(array $row, ?string $geoProperty = null, ?array $fields = null, bool $includeArea = false): ?array {
-		return $this->feature(
-			row: $row,
-			shape: new FeatureShape(geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea)
-		);
-	}//end buildFeature()
-
-	/**
 	 * Build a single GeoJSON Feature from an object row in one shape.
 	 *
 	 * @param array        $row   The object row.

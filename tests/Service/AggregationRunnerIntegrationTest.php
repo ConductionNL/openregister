@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -178,9 +179,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'totalCount'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'totalCount'
+			)
 		);
 
 		$this->assertSame(5, $result['value']);
@@ -191,9 +194,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'completedCount'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'completedCount'
+			)
 		);
 
 		$this->assertSame(2, $result['value']);
@@ -206,9 +211,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'inProgressOrOpen'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'inProgressOrOpen'
+			)
 		);
 
 		$this->assertSame(3, $result['value']);
@@ -220,9 +227,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'highPriority'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'highPriority'
+			)
 		);
 
 		$this->assertSame(2, $result['value']);
@@ -234,9 +243,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'priorityAtLeastFive'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'priorityAtLeastFive'
+			)
 		);
 
 		$this->assertSame(3, $result['value']);
@@ -248,9 +259,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'lowPriority'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'lowPriority'
+			)
 		);
 
 		$this->assertSame(2, $result['value']);
@@ -261,9 +274,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'priorityAtMostFive'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'priorityAtMostFive'
+			)
 		);
 
 		// 2 low (priority=1) + 1 medium (priority=5) = 3.
@@ -276,9 +291,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'nonCompletedCount'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'nonCompletedCount'
+			)
 		);
 
 		$this->assertSame(3, $result['value']);
@@ -289,9 +306,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'byStatus'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'byStatus'
+			)
 		);
 
 		$this->assertArrayHasKey('groups', $result);
@@ -312,9 +331,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'totalPriority'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'totalPriority'
+			)
 		);
 
 		$this->assertSame(27.0, (float)$result['value']);
@@ -327,9 +348,11 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$result = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'notCompletedNorOpen'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'notCompletedNorOpen'
+			)
 		);
 
 		$this->assertSame(1, $result['value']);
@@ -429,16 +452,20 @@ class AggregationRunnerIntegrationTest extends TestCase {
 		$fixture = $this->seedTaskFixture();
 
 		$first = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'totalCount'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'totalCount'
+			)
 		);
 		$this->assertArrayNotHasKey('cached', $first);
 
 		$second = $this->runner->run(
-			$fixture['register']->getSlug(),
-			$fixture['schema']->getSlug(),
-			'totalCount'
+			ref: new NamedAggregationRef(
+				register: $fixture['register']->getSlug(),
+				schema: $fixture['schema']->getSlug(),
+				name: 'totalCount'
+			)
 		);
 		$this->assertTrue($second['cached'] ?? false);
 		$this->assertSame($first['value'], $second['value']);

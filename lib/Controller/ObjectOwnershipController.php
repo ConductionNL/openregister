@@ -39,19 +39,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectOwnershipControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rbac\OwnedRecord;
+use OCA\OpenRegister\Service\Rbac\OwnershipHandover;
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 
 /**
  * Checked endpoints for a record's owner and its owning group.
@@ -81,22 +82,18 @@ class ObjectOwnershipController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
+	 * @param IRequest                          $request  Request.
 	 * @param ObjectOwnershipControllerServices $services The object ownership controller services.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectOwnershipControllerServices $services,
-		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		// The message is never echoed to the client: it can carry storage details.
 		$failure = 'Could not complete the ownership request';
-		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $logger, file: __FILE__, failure: $failure);
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $services->logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -199,7 +196,7 @@ class ObjectOwnershipController extends Controller {
 		}
 
 		$reassign = fn (): array => $this->reassigned(objects: $objects, owner: $owner);
-		return $this->endpoint->answer(operation: $reassign, context: 'reassign', validates: true);
+		return $this->endpoint->answerValidated(operation: $reassign, context: 'reassign');
 	}//end reassign()
 
 	/**
@@ -242,12 +239,7 @@ class ObjectOwnershipController extends Controller {
 			return $object;
 		}
 
-		$claim = fn (): array => $this->services->ownership->claim(
-			register: $this->register(),
-			schema: $this->schema(),
-			object: $object,
-			cascade: $this->cascadeRequested()
-		);
+		$claim = fn (): array => $this->services->ownership->claim(record: $this->record(object: $object), cascade: $this->cascadeRequested());
 		return $this->endpoint->answer(operation: $claim, context: 'claim');
 	}//end claimOn()
 
@@ -272,7 +264,7 @@ class ObjectOwnershipController extends Controller {
 		}
 
 		$assign = fn (): array => $this->assigned(object: $object, owner: $owner);
-		return $this->endpoint->answer(operation: $assign, context: 'assign', validates: true);
+		return $this->endpoint->answerValidated(operation: $assign, context: 'assign');
 	}//end assignOn()
 
 	/**
@@ -297,7 +289,7 @@ class ObjectOwnershipController extends Controller {
 
 		$key   = ObjectScopeResolverInterface::OWNER_GROUP_KEY;
 		$store = fn (): array => ['ownerGroup' => ($this->storeOwnerGroup(object: $object, group: $group)[$key] ?? null)];
-		return $this->endpoint->answer(operation: $store, context: 'setOwnerGroup', validates: true);
+		return $this->endpoint->answerValidated(operation: $store, context: 'setOwnerGroup');
 	}//end setOwnerGroupOn()
 
 	/**
@@ -310,7 +302,7 @@ class ObjectOwnershipController extends Controller {
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
-		return $this->endpoint->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		return $this->endpoint->resolve(ref: $ref);
 	}//end resolved()
 
 	/**
@@ -347,12 +339,7 @@ class ObjectOwnershipController extends Controller {
 	 * @return array The stored authorization block.
 	 */
 	private function storeOwnerGroup(ObjectEntity $object, ?string $group): array {
-		return $this->services->ownership->setOwnerGroup(
-			register: $this->register(),
-			schema: $this->schema(),
-			object: $object,
-			group: $group
-		);
+		return $this->services->ownership->setOwnerGroupFor(record: $this->record(object: $object), group: $group);
 	}//end storeOwnerGroup()
 
 	/**
@@ -365,11 +352,8 @@ class ObjectOwnershipController extends Controller {
 	 */
 	private function assigned(ObjectEntity $object, string $owner): array {
 		return $this->services->ownership->assign(
-			register: $this->register(),
-			schema: $this->schema(),
-			object: $object,
-			newOwner: $owner,
-			cascade: $this->cascadeRequested()
+			record: $this->record(object: $object),
+			handover: new OwnershipHandover(newOwner: $owner, cascade: $this->cascadeRequested())
 		);
 	}//end assigned()
 
@@ -382,30 +366,26 @@ class ObjectOwnershipController extends Controller {
 	 * @return array What moved, what did not, and why.
 	 */
 	private function reassigned(array $objects, string $owner): array {
-		return $this->services->ownership->reassignMany(
+		return $this->services->ownership->reassign(
 			identifiers: array_values($objects),
-			newOwner: $owner,
-			cascade: $this->cascadeRequested()
+			reassignment: new OwnershipReassignment(newOwner: $owner, cascade: $this->cascadeRequested())
 		);
 	}//end reassigned()
 
 	/**
-	 * The register the request resolved.
+	 * The record with the register and schema the request resolved.
 	 *
-	 * @return Register The register.
-	 */
-	private function register(): Register {
-		return $this->services->registerMapper->find($this->services->objectService->getRegister());
-	}//end register()
-
-	/**
-	 * The schema the request resolved.
+	 * @param ObjectEntity $object The record.
 	 *
-	 * @return Schema The schema.
+	 * @return OwnedRecord The record, its register and schema.
 	 */
-	private function schema(): Schema {
-		return $this->services->schemaMapper->find($this->services->objectService->getSchema());
-	}//end schema()
+	private function record(ObjectEntity $object): OwnedRecord {
+		return new OwnedRecord(
+			register: $this->services->catalog->registers()->find($this->services->objectService->getRegister()),
+			schema: $this->services->catalog->schemas()->find($this->services->objectService->getSchema()),
+			object: $object
+		);
+	}//end record()
 
 	/**
 	 * Whether the caller asked for the change to carry to child records.

@@ -43,6 +43,19 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -57,6 +70,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Locks where an `object-detail` action target leads.
@@ -121,17 +135,50 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 		$urlGenerator->method('getAbsoluteURL')->willReturnCallback(static fn (string $url): string => self::BASE . $url);
 
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			urlGenerator: $urlGenerator,
-			deepLinkRegistry: $registry
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->createMock(INotificationManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					userManager: $this->createMock(IUserManager::class)
+				),
+				emailSender: new EmailSender(
+					userManager: $this->createMock(IUserManager::class),
+					mailer: $this->createMock(IMailer::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				activityManager: $this->createMock(IActivityManager::class)
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->createMock(IUserManager::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					serverContainer: $this->createMock(IServerContainer::class)
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				urlGenerator: $urlGenerator,
+				deepLinkRegistry: $registry
+			)
 		);
 	}//end makeDispatcher()
 
@@ -165,12 +212,7 @@ class DispatcherObjectDetailFallbackTest extends TestCase {
 
 	public function testAClaimedSchemaOpensTheAppsDetailPage(): void {
 		$registry = $this->makeRegistry();
-		$registry->register(
-			appId: 'pipelinq',
-			registerSlug: 'pipelinq',
-			schemaSlug: 'client',
-			urlTemplate: '/apps/pipelinq/clients/{uuid}'
-		);
+		$registry->add(registration: new DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'pipelinq', schemaSlug: 'client', urlTemplate: '/apps/pipelinq/clients/{uuid}'));
 
 		$link = $this->resolveOpen($this->makeDispatcher($registry), 42);
 

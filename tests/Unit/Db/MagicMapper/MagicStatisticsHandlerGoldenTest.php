@@ -17,10 +17,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -141,10 +146,8 @@ class MagicStatisticsHandlerGoldenTest extends TestCase {
 		);
 
 		$handler = new MagicStatisticsHandler(
-			db: $db,
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			sql: new MagicTableSql(db: $db, config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizerInterface::class),
 			schemaTypeConverter: $this->createMock(SchemaTypeConverterInterface::class)
 		);
@@ -294,7 +297,7 @@ class MagicStatisticsHandlerGoldenTest extends TestCase {
 	 * @dataProvider filterCases
 	 */
 	public function testStatisticsFiltersIncludeAndExcludePairs(mixed $registerId, mixed $schemaId, array $exclude, array $expected): void {
-		$stats = $this->handler()->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
+		$stats = $this->handler()->getStatistics(new StatisticsScope(registerId: $registerId, schemaId: $schemaId, exclude: $exclude));
 		$this->assertSame($expected, $this->countedPairs());
 		$total = 0;
 		foreach ($expected as $pair) {

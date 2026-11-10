@@ -218,7 +218,7 @@ class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 
 				// Create a share with the current user to maintain access.
 				if ($fileSharingHandler !== null) {
-					$fileSharingHandler->shareFileWithUser(file: $file, userId: $currentUserId);
+					$fileSharingHandler->shareFileWithUser(grant: new UserShareGrant(node: $file, userId: $currentUserId));
 				}
 
 				$this->logger->info(
@@ -304,7 +304,7 @@ class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 
 				// Create a share with the current user to maintain access.
 				if ($fileSharingHandler !== null) {
-					$fileSharingHandler->shareFolderWithUser(folder: $folder, userId: $currentUserId);
+					$fileSharingHandler->shareFolderWithUser(grant: new UserShareGrant(node: $folder, userId: $currentUserId));
 				}
 
 				$this->logger->info(
