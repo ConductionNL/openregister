@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
@@ -73,10 +74,10 @@ final class MessagingNodesGoldenTest extends TestCase {
 				return [['to' => 'bob'], ['to' => 'eve']];
 			}
 		);
-		foreach (['sendEmail', 'sendNotification', 'sendTalkMessage'] as $send) {
-			$messaging->method($send)->willReturnCallback(
-				static function (array $config, array $items, array $context, string $stepName) use (&$calls, $send): array {
-					$calls[] = [$send, $config, $items, $context, $stepName];
+		foreach (['email' => 'sendEmail', 'notify' => 'sendNotification', 'talk' => 'sendTalkMessage'] as $method => $send) {
+			$messaging->method($method)->willReturnCallback(
+				static function (MessageSend $step) use (&$calls, $send): array {
+					$calls[] = [$send, $step->config, $step->items, $step->context, $step->stepName];
 					return ['sent' => 1];
 				}
 			);

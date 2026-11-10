@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
@@ -278,15 +279,13 @@ class SendEmailNode extends MessagingNodeBase implements
 	 * routed through the step's `onError` policy; every non-delivery lands in
 	 * the run log with its reason.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param MessageSend $step The step configuration, the items, run-level metadata and this node's type.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	protected function send(array $items, array $config, array $context): void {
-		$this->messaging->sendEmail(config: $config, items: $items, context: $context, stepName: self::TYPE);
+	protected function send(MessageSend $step): void {
+		$this->messaging->email(request: $step);
 	}//end send()
 }//end class
