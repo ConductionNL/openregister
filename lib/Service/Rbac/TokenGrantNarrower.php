@@ -80,20 +80,19 @@ class TokenGrantNarrower {
 	 * Narrow a resolved block by the grant in force, if any.
 	 *
 	 * @param array<string, mixed>|null $authorization The resolved block.
-	 * @param TokenGrant|null           $grant         The grant in force, or null for a session user.
-	 * @param TokenGrantTarget          $target        The schema being resolved and its register.
-	 * @param DateTimeInterface|null    $now           The moment, for the expiry.
+	 * @param TokenGrantUse             $use           The grant in force (null for a session user), the schema being
+	 *                                                 resolved and its register, and the moment for the expiry.
 	 *
 	 * @return array<string, mixed>|null The block to evaluate.
 	 *
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
-	public function narrow(array|null $authorization, TokenGrant|null $grant, TokenGrantTarget $target, DateTimeInterface|null $now = null): array|null {
-		if ($grant === null) {
+	public function narrow(array|null $authorization, TokenGrantUse $use): array|null {
+		if ($use->grant === null) {
 			return $this->withoutMarker(authorization: $authorization);
 		}
 
-		$run = new TokenNarrowing(grant: $grant, target: $target, now: ($now ?? new DateTimeImmutable()));
+		$run = new TokenNarrowing(grant: $use->grant, target: $use->target, now: ($use->now ?? new DateTimeImmutable()));
 
 		return $this->narrowed(authorization: $authorization, run: $run);
 	}//end narrow()

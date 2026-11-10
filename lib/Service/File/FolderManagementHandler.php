@@ -159,7 +159,7 @@ class FolderManagementHandler {
 				return $this->createRegisterFolderById(register: $entity, currentUser: $currentUser);
 			}
 
-			return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+			return $this->createObjectFolderById(objectEntity: $entity, options: new ObjectFolderOptions(currentUser: $currentUser));
 		} catch (FolderAccessDeniedException $e) {
 			// Access denials must propagate to the controller so it can return HTTP 403
 			// with the structured body. Do NOT downgrade to a logged null-return.
@@ -248,9 +248,8 @@ class FolderManagementHandler {
 	/**
 	 * Creates a folder for an ObjectEntity nested under the register folder.
 	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to create the folder for.
-	 * @param IUser|null $currentUser The current user to share the folder with.
-	 * @param int|string|null $registerId The register of the object to add the file to.
+	 * @param ObjectEntity|string      $objectEntity The object entity to create the folder for.
+	 * @param ObjectFolderOptions|null $options      The current user, and the register when the object does not name it.
 	 *
 	 * @throws Exception If folder creation fails.
 	 * @throws NotPermittedException If folder creation is not permitted.
@@ -260,17 +259,14 @@ class FolderManagementHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
 	 */
-	public function createObjectFolderById(
-		ObjectEntity|string $objectEntity,
-		?IUser $currentUser = null,
-		int|string|null $registerId = null,
-	): Folder {
+	public function createObjectFolderById(ObjectEntity|string $objectEntity, ?ObjectFolderOptions $options=null): Folder {
+		$currentUser    = $options?->currentUser;
 		$existingFolder = $this->findExistingObjectFolder(objectEntity: $objectEntity, currentUser: $currentUser);
 		if ($existingFolder !== null) {
 			return $existingFolder;
 		}
 
-		$register = $this->getRegisterFromObjectOrId(objectEntity: $objectEntity, registerId: $registerId);
+		$register = $this->getRegisterFromObjectOrId(objectEntity: $objectEntity, registerId: $options?->registerId);
 		$registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 		return $this->createObjectFolderUnder(registerFolder: $registerFolder, objectEntity: $objectEntity);
 	}//end createObjectFolderById()
@@ -325,7 +321,9 @@ class FolderManagementHandler {
 	 */
 	private function verifySuppliedObjectFolder(ObjectEntity|string $objectEntity, ?IUser $currentUser): Folder {
 		$folderId = (string)$this->folderValueOf(objectEntity: $objectEntity);
-		$existingFolder = $this->assertFolderIsAccessible(folderId: $folderId, currentUser: $currentUser, objectEntity: $objectEntity);
+		$existingFolder = $this->assertFolderIsAccessible(
+			check: new FolderAccessCheck(folderId: $folderId, currentUser: $currentUser, objectEntity: $objectEntity)
+		);
 		$this->logger->debug(
 			message: '[FolderManagementHandler] Object folder bind verified (ID: ' . $folderId . ')',
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -523,7 +521,7 @@ class FolderManagementHandler {
 				message: "[FolderManagementHandler] Object $objectEntityId has legacy folder property, creating new folder",
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return $this->createObjectFolderById(objectEntity: $objectEntity, registerId: $registerId);
+			return $this->createObjectFolderById(objectEntity: $objectEntity, options: new ObjectFolderOptions(registerId: $registerId));
 		}//end if
 
 		// Convert string numeric ID to integer.
@@ -1010,9 +1008,8 @@ class FolderManagementHandler {
 	 * invariant: any condition that prevents a positive read-access
 	 * confirmation results in denial.
 	 *
-	 * @param string $folderId The numeric folder ID supplied by the caller.
-	 * @param IUser|null $currentUser Explicit acting user; falls back to session user.
-	 * @param ObjectEntity|string|null $objectEntity Object the bind would attach to (used for audit context).
+	 * @param FolderAccessCheck $check The numeric folder ID supplied by the caller, the explicit acting user (null
+	 *                                 falls back to the session user) and the object the bind would attach to (audit).
 	 *
 	 * @return Folder The accessible folder, ready to be used as the existing object folder.
 	 *
@@ -1026,12 +1023,12 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/self-folder-access-control/spec.md
 	 */
-	final public function assertFolderIsAccessible(
-		string $folderId,
-		?IUser $currentUser = null,
-		ObjectEntity|string|null $objectEntity = null,
-	): Folder {
-		$bind = new FolderBindRun(folderId: $folderId, actingUser: $this->resolveActingUser(currentUser: $currentUser), objectEntity: $objectEntity);
+	final public function assertFolderIsAccessible(FolderAccessCheck $check): Folder {
+		$bind = new FolderBindRun(
+			folderId: $check->folderId,
+			actingUser: $this->resolveActingUser(currentUser: $check->currentUser),
+			objectEntity: $check->objectEntity
+		);
 		return $this->readableBoundFolder(bind: $bind);
 	}//end assertFolderIsAccessible()
 
@@ -1206,9 +1203,8 @@ class FolderManagementHandler {
 	 * nothing. Passing the caller-supplied gate to create such a binding
 	 * already required the caller to be able to read that folder.
 	 *
-	 * @param string $folderId The stored numeric folder ID.
-	 * @param IUser|null $currentUser Explicit acting user; falls back to session resolution.
-	 * @param ObjectEntity|string|null $objectEntity Object the binding belongs to (audit context).
+	 * @param FolderAccessCheck $check The stored numeric folder ID, the explicit acting user (null falls back to
+	 *                                 session resolution) and the object the binding belongs to (audit context).
 	 *
 	 * @return void Nothing: this is an assertion, not a lookup. Handing back a
 	 *              `Folder` the acting user may not read would be the escape
@@ -1222,11 +1218,7 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/self-folder-access-control/spec.md
 	 */
-	final public function assertManagedFolderIsAccessible(
-		string $folderId,
-		?IUser $currentUser = null,
-		ObjectEntity|string|null $objectEntity = null,
-	): void {
+	final public function assertManagedFolderIsAccessible(FolderAccessCheck $check): void {
 		// The managed-tree question is asked FIRST, and not only because it is
 		// the cheaper one. `assertFolderIsAccessible()` writes a
 		// `folder_access_denied` audit row before every throw, so asking it
@@ -1237,15 +1229,11 @@ class FolderManagementHandler {
 		// Nothing is lost by the order: a managed folder is accepted either
 		// way, and anything else still falls through to the full check below,
 		// which denies and audits exactly as it always did.
-		if ($this->isManagedFolder(folderId: $folderId) === true) {
+		if ($this->isManagedFolder(folderId: $check->folderId) === true) {
 			return;
 		}
 
-		$this->assertFolderIsAccessible(
-			folderId: $folderId,
-			currentUser: $currentUser,
-			objectEntity: $objectEntity
-		);
+		$this->assertFolderIsAccessible(check: $check);
 	}//end assertManagedFolderIsAccessible()
 
 	/**

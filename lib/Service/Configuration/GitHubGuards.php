@@ -188,11 +188,9 @@ class GitHubGuards implements GitHubGuardsInterface {
 			return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
 		}
 
-		$retryAfter = $this->rateLimiter->consumeDistinctKeyBudget(
-			bucketKey: 'getmiss:' . $user->getUID(),
-			distinctKey: $cacheKey,
-			maxKeys: self::GET_RATE_LIMIT_MAX,
-			windowSeconds: self::GET_RATE_LIMIT_WINDOW
+		$retryAfter = $this->rateLimiter->consumeFromBudget(
+			budget: new DistinctKeyBudget(bucketKey: 'getmiss:' . $user->getUID(), maxKeys: self::GET_RATE_LIMIT_MAX, windowSeconds: self::GET_RATE_LIMIT_WINDOW),
+			distinctKey: $cacheKey
 		);
 		if ($retryAfter === null) {
 			return null;

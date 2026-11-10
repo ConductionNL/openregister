@@ -28,10 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
-use OCP\App\IAppManager;
 use OCP\Files\Folder;
 use OCP\Files\Node;
-use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -112,8 +110,6 @@ class SharesProviderWalkPrincipalTest extends TestCase {
 		);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->createMock(IAppManager::class),
 			l10n: $this->createMock(IL10N::class),
 			container: $container,
 		);

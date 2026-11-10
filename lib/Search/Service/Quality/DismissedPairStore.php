@@ -182,23 +182,15 @@ class DismissedPairStore {
 	 * answer, and two rows disagreeing about it is a bug waiting to be found
 	 * by whichever one the scorer happened to read first.
 	 *
-	 * @param ReviewedPair $pair The two uuids and the register and schema they were reviewed under.
-	 * @param string $fingerprint Opaque hash of the compared values, computed by the scorer.
-	 * @param string $reason Why the reviewer decided the two are not the same.
-	 * @param string $dismissedBy Acting uid.
+	 * @param ReviewedPair  $pair      The two uuids and the register and schema they were reviewed under.
+	 * @param PairDismissal $dismissal The compared-values fingerprint, the reason and the acting uid.
 	 *
 	 * @return array<string, mixed> The stored row.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
-	public function dismiss(
-		ReviewedPair $pair,
-		string $fingerprint,
-		string $reason,
-		string $dismissedBy,
-	): array {
-		$verdict = ['fingerprint' => $fingerprint, 'reason' => $reason, 'dismissedBy' => $dismissedBy];
-		return $this->store(row: $this->dismissalRow(pair: $pair, verdict: $verdict), existing: $this->findRow(pair: $pair));
+	public function dismiss(ReviewedPair $pair, PairDismissal $dismissal): array {
+		return $this->store(row: $this->dismissalRow(pair: $pair, verdict: $dismissal->verdict()), existing: $this->findRow(pair: $pair));
 	}//end dismiss()
 
 	/**

@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\RegisterSchemaMappers;
+use OCA\OpenRegister\Service\SearchMeasurement;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -82,7 +84,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 			});
 		$this->trailMapper->expects($this->never())->method('clearLogs');
 
-		$this->assertSame($trail, $this->service(30, false)->createSearchTrail(['q' => 'x', '_limit' => 3], 4, 40, 12.5, 'async'));
+		$this->assertSame($trail, $this->service(30, false)->createSearchTrail(['q' => 'x', '_limit' => 3], new SearchMeasurement(4, 40, 12.5, 'async')));
 	}
 
 	public function testCreateDefaultsAndSelfClearingRunsAfterCreate(): void {
@@ -97,7 +99,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 			return true;
 		});
 
-		$this->assertSame($trail, $this->service(null, true)->createSearchTrail([], 1, 2));
+		$this->assertSame($trail, $this->service(null, true)->createSearchTrail([], new SearchMeasurement(1, 2)));
 		$this->assertSame(['create', 'clear'], $this->calls);
 	}
 
@@ -106,7 +108,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 		$this->trailMapper->method('createSearchTrail')->willReturn($trail);
 		$this->trailMapper->method('clearLogs')->willThrowException(new Exception('locked'));
 
-		$this->assertSame($trail, $this->service(null, true)->createSearchTrail([], 0, 0));
+		$this->assertSame($trail, $this->service(null, true)->createSearchTrail([], new SearchMeasurement(0, 0)));
 	}
 
 	public function testCreateWrapsMapperException(): void {
@@ -115,7 +117,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 		$this->trailMapper->expects($this->never())->method('clearLogs');
 
 		try {
-			$this->service(null, true)->createSearchTrail([], 0, 0);
+			$this->service(null, true)->createSearchTrail([], new SearchMeasurement(0, 0));
 			$this->fail('expected exception');
 		} catch (Exception $e) {
 			$this->assertSame(Exception::class, get_class($e));
@@ -512,7 +514,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 				'total_searches' => 4,
 				'period' => ['from' => null, 'to' => '2024-02-02 00:00:00'],
 			],
-			$this->service()->getPopularSearchTerms(5, null, new DateTime('2024-02-02'))
+			$this->service()->getPopularSearchTerms(new SearchPeriod(null, new DateTime('2024-02-02')), 5)
 		);
 	}
 
@@ -574,7 +576,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['activity' => $activity, 'insights' => $insights, 'interval' => 'week', 'period' => ['from' => null, 'to' => null]],
-			$this->service()->getSearchActivity('week')
+			$this->service()->getSearchActivity(new SearchPeriod(), 'week')
 		);
 	}
 
@@ -635,7 +637,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 				];
 			});
 
-		$result = $this->service()->getUserAgentStatistics(3);
+		$result = $this->service()->getUserAgentStatistics(new SearchPeriod(), 3);
 
 		$this->assertSame(
 			[

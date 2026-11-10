@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\AppInfo\Application;
@@ -194,10 +195,7 @@ class ApiCallersController extends Controller {
 
 		try {
 			$rows = $this->records->findInPeriod(
-				from: $from,
-				to: $to,
-				apiVersion: $narrowTo,
-				limit: self::MAX_ROWS,
+				period: new ApiCallPeriod(from: $from, to: $to, apiVersion: $narrowTo, limit: self::MAX_ROWS)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('OpenRegister: could not read the API caller record.', ['exception' => $e]);
