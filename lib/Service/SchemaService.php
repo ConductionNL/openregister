@@ -157,6 +157,39 @@ class SchemaService implements SchemaExplorationInterface {
 	];
 
 	/**
+	 * Formats that are string-based in JSON Schema (most are).
+	 *
+	 * @var list<string>
+	 */
+	private const STRING_FORMATS = [
+		'date',
+		'date-time',
+		'time',
+		'email',
+		'url',
+		'hostname',
+		'ipv4',
+		'ipv6',
+		'uuid',
+		'color',
+		'duration',
+	];
+
+	/**
+	 * The JSON Schema type of an array's items, by the gettype() name of its first item type; anything else is a string.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ITEM_SCHEMA_TYPES = [
+		'string' => 'string',
+		'integer' => 'integer',
+		'double' => 'number',
+		'float' => 'number',
+		'boolean' => 'boolean',
+		'array' => 'array',
+	];
+
+	/**
 	 * SchemaService constructor
 	 *
 	 * @param SchemaCatalogInterface $catalog The schema mapper (schema operations) and the magic mapper (object queries).
@@ -1532,6 +1565,17 @@ class SchemaService implements SchemaExplorationInterface {
 			return null;
 		}
 
+		return self::missingPattern(mainPattern: $mainPattern);
+	}//end patternFinding()
+
+	/**
+	 * The finding of a schema without a pattern for strings that follow one.
+	 *
+	 * @param mixed $mainPattern The pattern the strings follow.
+	 *
+	 * @return array
+	 */
+	private static function missingPattern(mixed $mainPattern): array {
 		return [
 			'missing_pattern',
 			[
@@ -1542,7 +1586,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Strings follow '{$mainPattern}' pattern",
 			],
 		];
-	}//end patternFinding()
+	}//end missingPattern()
 
 	/**
 	 * Compare numeric constraints (minimum, maximum) with the observed numeric range.
@@ -1576,22 +1620,45 @@ class SchemaService implements SchemaExplorationInterface {
 	 */
 	private function minimumFinding(mixed $currentMin, array $range): ?array {
 		if (($currentMin === null || $currentMin === false) && $range['min'] !== $range['max']) {
-			return [
-				'missing_minimum',
-				[
-					'type' => 'constraint',
-					'field' => 'minimum',
-					'current' => 'unlimited',
-					'recommended' => $range['min'],
-					'description' => "Observed range starts at {$range['min']}",
-				],
-			];
+			return self::missingMinimum(range: $range);
 		}
 
 		if ($currentMin === null || $currentMin === false || ($currentMin > $range['min']) === false) {
 			return null;
 		}
 
+		return self::minimumTooHigh(currentMin: $currentMin, range: $range);
+	}//end minimumFinding()
+
+	/**
+	 * The finding of a schema without a minimum for a range that varies.
+	 *
+	 * @param array $range The observed numeric range.
+	 *
+	 * @return array
+	 */
+	private static function missingMinimum(array $range): array {
+		return [
+			'missing_minimum',
+			[
+				'type' => 'constraint',
+				'field' => 'minimum',
+				'current' => 'unlimited',
+				'recommended' => $range['min'],
+				'description' => "Observed range starts at {$range['min']}",
+			],
+		];
+	}//end missingMinimum()
+
+	/**
+	 * The finding of a schema minimum above the lowest value observed.
+	 *
+	 * @param mixed $currentMin The schema's minimum.
+	 * @param array $range      The observed numeric range.
+	 *
+	 * @return array
+	 */
+	private static function minimumTooHigh(mixed $currentMin, array $range): array {
 		return [
 			'minimum_too_high',
 			[
@@ -1602,7 +1669,7 @@ class SchemaService implements SchemaExplorationInterface {
 				'description' => "Schema minimum ({$currentMin}) is higher than observed min ({$range['min']})",
 			],
 		];
-	}//end minimumFinding()
+	}//end minimumTooHigh()
 
 	/**
 	 * A missing or too low maximum, compared with the observed range.
@@ -1827,22 +1894,7 @@ class SchemaService implements SchemaExplorationInterface {
 			return null;
 		}
 
-		// Most formats are string-based in JSON Schema.
-		$stringFormats = [
-			'date',
-			'date-time',
-			'time',
-			'email',
-			'url',
-			'hostname',
-			'ipv4',
-			'ipv6',
-			'uuid',
-			'color',
-			'duration',
-		];
-
-		if (in_array($format, $stringFormats, true) === true) {
+		if (in_array($format, self::STRING_FORMATS, true) === true) {
 			return 'string';
 		}
 
@@ -2060,21 +2112,7 @@ class SchemaService implements SchemaExplorationInterface {
 
 			$typeString = (string)$primaryType;
 
-			switch ($typeString) {
-				case 'string':
-					return ['type' => 'string'];
-				case 'integer':
-					return ['type' => 'integer'];
-				case 'double':
-				case 'float':
-					return ['type' => 'number'];
-				case 'boolean':
-					return ['type' => 'boolean'];
-				case 'array':
-					return ['type' => 'array'];
-				default:
-					return ['type' => 'string'];
-			}//end switch
+			return ['type' => (self::ITEM_SCHEMA_TYPES[$typeString] ?? 'string')];
 		}//end if
 
 		return ['type' => 'string'];
@@ -2102,30 +2140,7 @@ class SchemaService implements SchemaExplorationInterface {
 		);
 
 		try {
-			// Get existing schema.
-			$schema = $this->catalog->schemas()->find($schemaId);
-			$existingProperties = $schema->getProperties();
-
-			// Merge new properties with existing ones.
-			foreach ($propertyUpdates as $propertyName => $propertyDefinition) {
-				$existingProperties[$propertyName] = $propertyDefinition;
-			}
-
-			// Update schema properties.
-			$schema->setProperties($existingProperties);
-
-			// Regenerate facets if schema has facet generation enabled.
-			$schema->regenerateFacetsFromProperties();
-
-			// Save updated schema.
-			$updatedSchema = $this->catalog->schemas()->update($schema);
-
-			$this->logger->info(
-				message: '[SchemaService] Schema ' . $schemaId . ' successfully updated with exploration results',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $updatedSchema;
+			return $this->savedExploration(schemaId: $schemaId, propertyUpdates: $propertyUpdates);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[SchemaService] Failed to update schema ' . $schemaId . ': ' . $e->getMessage(),
@@ -2134,4 +2149,35 @@ class SchemaService implements SchemaExplorationInterface {
 			throw new Exception('Failed to update schema properties: ' . $e->getMessage());
 		}//end try
 	}//end updateSchemaFromExploration()
+
+	/**
+	 * Merge the explored properties into a schema, regenerate its facets and save it.
+	 *
+	 * @param int                  $schemaId        The schema id.
+	 * @param array<string, mixed> $propertyUpdates The property definitions by name.
+	 *
+	 * @return Schema The saved schema.
+	 */
+	private function savedExploration(int $schemaId, array $propertyUpdates): Schema {
+		$schema = $this->catalog->schemas()->find($schemaId);
+		$existingProperties = $schema->getProperties();
+
+		// Merge new properties with existing ones.
+		foreach ($propertyUpdates as $propertyName => $propertyDefinition) {
+			$existingProperties[$propertyName] = $propertyDefinition;
+		}
+
+		$schema->setProperties($existingProperties);
+
+		// Regenerate facets if schema has facet generation enabled.
+		$schema->regenerateFacetsFromProperties();
+		$updatedSchema = $this->catalog->schemas()->update($schema);
+
+		$this->logger->info(
+			message: '[SchemaService] Schema ' . $schemaId . ' successfully updated with exploration results',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $updatedSchema;
+	}//end savedExploration()
 }//end class
