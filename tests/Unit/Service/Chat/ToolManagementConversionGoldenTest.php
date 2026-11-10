@@ -22,7 +22,6 @@ namespace Unit\Service\Chat;
 
 use LLPhant\Chat\FunctionInfo\FunctionInfo;
 use LLPhant\Chat\FunctionInfo\Parameter;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Tool\ToolInterface;
@@ -97,7 +96,6 @@ class ToolManagementConversionGoldenTest extends TestCase {
 		}
 
 		$handler = new ToolManagementHandler(
-			$this->createMock(AgentMapper::class),
 			$this->createMock(ToolRegistry::class),
 			$this->createMock(LoggerInterface::class)
 		);
