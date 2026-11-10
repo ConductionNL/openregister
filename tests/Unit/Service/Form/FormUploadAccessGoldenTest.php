@@ -140,16 +140,16 @@ class FormUploadAccessGoldenTest extends TestCase {
 
 	public function testWhoMayRedeemAToken(): void {
 		$token = $this->store->issue(formId: 'f', property: 'p', rule: ['type' => 'file'], file: $this->upload('%PDF'))['token'];
-		$file = $this->store->redeem(formId: 'f', property: 'p', token: $token);
+		$file = $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: $token);
 
 		$this->assertSame(['name' => 'bewijs.pdf', 'type' => 'application/pdf', 'error' => UPLOAD_ERR_OK, 'size' => 4], array_diff_key($file, ['tmp_name' => true]));
 		$this->assertSame('%PDF', file_get_contents($file['tmp_name']));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'other', property: 'p', token: $token)));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'q', token: $token)));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'p', token: 'not-a-token')));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'p', token: str_repeat('a', 32))));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'other', property: 'p', draftId: null), token: $token)));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'q', draftId: null), token: $token)));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: 'not-a-token')));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: str_repeat('a', 32))));
 		$this->now += FormUploadStore::TTL;
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'p', token: $token)));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: $token)));
 	}//end testWhoMayRedeemAToken()
 
 	public function testWhoAClaimRecordSatisfies(): void {
