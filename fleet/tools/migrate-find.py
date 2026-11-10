@@ -9,6 +9,7 @@ Without --write it is a dry run. Every candidate call prints one line:
   CHANGE <file>:<line> | SKIP <file>:<line> <reason>
 Calls already in the new shape (or that need no change) print nothing.
 """
+import bisect
 import os
 import re
 import sys
@@ -19,7 +20,11 @@ DEFAULT = {'extend': '[]', 'files': 'false', 'render': 'true', 'audit': 'true'}
 FQCN = 'OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ObjectFindOptions'
 USE = 'use ' + FQCN + ';'
 # Receiver must name the object service explicitly; anything else is not touched.
-RECEIVER = re.compile(r'(objectservice|objectoperations)\s*(\(\s*\))?\s*$', re.I)
+OR_TYPES = ('ObjectService', 'ObjectServiceInterface')
+SCALARS = ('null', 'array', 'string', 'int', 'float', 'bool', 'false', 'true', 'mixed', 'object', 'iterable', 'callable',
+           'self', 'static', 'void', 'never')
+RECEIVER = re.compile(r'((objectservice|objectoperations)\s*(\(\s*\))?|getOpenRegisters\s*\(\s*\)|(\$|->\s*)openRegisters?)\s*$', re.I)
+PROP = re.compile(r'\$this\s*\??->\s*(\w+)\s*$')
 CALL = re.compile(r'(\??->)\s*(find|findSilent)\s*\(')
 
 
@@ -81,6 +86,141 @@ def receiver_of(s, start):
     return s[k:start].strip()
 
 
+def code_mask(s):
+    """Sorted (start, end) spans of `s` that are not PHP code: strings, heredocs, comments, inline HTML."""
+    spans = []
+    n = len(s)
+    k = s.find('<?')
+    k = n if k < 0 else k
+    if k > 0:
+        spans.append((0, k))
+    i = k
+    heredoc = re.compile(r'<<<[ \t]*(["\']?)([A-Za-z_]\w*)\1\r?\n')
+    while i < n:
+        c = s[i]
+        if s.startswith('?>', i):
+            k = s.find('<?', i + 2)
+            k = n if k < 0 else k
+            spans.append((i + 2, k))
+            i = k + 2
+            continue
+        if c in '\'"`':
+            j = min(skip_string(s, i) + 1, n)
+        elif s.startswith('<<<', i) and heredoc.match(s, i):
+            h = heredoc.match(s, i)
+            e = re.compile(r'\n[ \t]*' + h.group(2) + r'\b').search(s, h.end() - 1)
+            j = e.end() if e else n
+        elif s.startswith('/*', i):
+            j = s.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+        elif s.startswith('//', i) or (c == '#' and not s.startswith('#[', i)):
+            j = s.find('\n', i)
+            j = n if j < 0 else j
+        else:
+            i += 1
+            continue
+        spans.append((i, j))
+        i = j
+    return spans
+
+
+def in_mask(spans, pos):
+    k = bisect.bisect_right(spans, (pos, float('inf'))) - 1
+    return k >= 0 and spans[k][0] <= pos < spans[k][1]
+
+
+def imports(s):
+    """Map of short name to imported class for every top-level `use`."""
+    out = {}
+    for m in re.finditer(r'^use\s+([^;]+);', s, re.M):
+        t = m.group(1).strip()
+        if t.startswith(('function ', 'const ')) or '{' in t:
+            continue
+        alias = re.split(r'\s+as\s+', t)
+        out[alias[1] if len(alias) > 1 else alias[0].split('\\')[-1]] = alias[0].lstrip('\\')
+    return out
+
+
+def resolve(s, imp, t):
+    """Fully qualified names of the classes in the type expression `t`."""
+    ns = re.search(r'^namespace\s+([^;{\s]+)', s, re.M)
+    ns = ns.group(1) + '\\' if ns else ''
+    out = []
+    for part in re.split(r'[|&]', t.replace('?', '').replace('(', '').replace(')', '')):
+        part = part.strip()
+        if not part or part.lower() in SCALARS:
+            continue
+        if part.startswith('\\'):
+            out.append(part[1:])
+        else:
+            head, _, rest = part.partition('\\')
+            out.append(imp[head] + ('\\' + rest if rest else '') if head in imp else ns + part)
+    return out
+
+
+def is_foreign(s, imp, t):
+    """True when `t` names only classes outside openregister (PHPUnit mock types do not count)."""
+    fq = [f for f in resolve(s, imp, t) if not f.startswith('PHPUnit\\')]
+    return bool(fq) and not any(f.startswith('OCA\\OpenRegister\\') for f in fq)
+
+
+def is_or_service(s, imp, t):
+    """True when the type expression `t` names openregister's ObjectService or ObjectServiceInterface."""
+    return any(f.startswith('OCA\\OpenRegister\\') and f.split('\\')[-1] in OR_TYPES for f in resolve(s, imp, t))
+
+
+TYPE = r'(\??[\\\w]+(?:\s*[|&]\s*\??[\\\w]+)*)'
+
+
+def typed_receivers(s, mask):
+    """Receiver patterns this file types as openregister's object service.
+
+    A property typed ObjectService(Interface) by declaration or constructor promotion, a property assigned
+    from a constructor parameter of that type, a method returning that type, and `$this->objects` unless
+    it is declared with another type. Also returns the properties declared with a class from outside
+    openregister, which are never the object service whatever their name.
+    """
+    imp = imports(s)
+    props, other, foreign = set(), set(), {}
+    for m in re.finditer(r'(?:\b(?:public|protected|private|readonly|var|static)\s+)+' + TYPE + r'\s+(?:&\s*)?\$(\w+)', s):
+        if not in_mask(mask, m.start()):
+            (props if is_or_service(s, imp, m.group(1)) else other).add(m.group(2))
+            if is_foreign(s, imp, m.group(1)):
+                foreign[m.group(2)] = m.group(1)
+    for m in re.finditer(r'\bfunction\s+__construct\s*\(', s):
+        if in_mask(mask, m.start()):
+            continue
+        spans, _, _ = split_args(s, m.end())
+        for a, b in spans or []:
+            p = re.match(r'^\s*(?:#\[[^\]]*\]\s*)*' + TYPE + r'\s+(?:&\s*)?\$(\w+)', s[a:b])
+            if p and is_or_service(s, imp, p.group(1)):
+                for q in re.finditer(r'\$this->(\w+)\s*=\s*\$' + p.group(2) + r'\s*;', s):
+                    props.add(q.group(1))
+    methods = {m.group(1) for m in re.finditer(r'\bfunction\s+(\w+)\s*\([^)]*\)\s*:\s*' + TYPE, s)
+               if is_or_service(s, imp, m.group(2))}
+    if 'objects' not in other:
+        props.add('objects')
+    pats = [r'\$this\s*\??->\s*' + p + r'\s*$' for p in sorted(props)]
+    pats += [r'\$this\s*\??->\s*' + f + r'\s*\(\s*\)\s*$' for f in sorted(methods)]
+    return (re.compile('|'.join(pats)) if pats else None), {k: v for k, v in foreign.items() if k not in props}
+
+
+SLUG = re.compile(r'^(\$this\s*->\s*|\$|[\\\w]+::)\w*?(register|schema)\w*$', re.I)
+
+
+def misplaced(args):
+    """WARN reason when a positional argument may follow another parameter order than the one mapped."""
+    for name, val, named in args:
+        if named:
+            continue
+        if name.lstrip('_') == 'extend' and val.strip() != '[]':
+            return 'WARN positional %s lands in extend' % val
+        kind = SLUG.match(val.strip())
+        if kind and kind.group(2).lower() != name:
+            return 'WARN positional %s looks like a %s but lands in %s' % (val, kind.group(2).lower(), name)
+    return None
+
+
 def plan(s, m):
     """Return (new_text, end) for the call, None when nothing to do, or a skip reason string."""
     spans, end, comment = split_args(s, m.end())
@@ -124,6 +264,9 @@ def plan(s, m):
         return None
     if len(args) >= 2 and not args[1][2] and re.match(r'^(new\s+\\?\w*ObjectFindOptions\b|null$)', args[1][1]):
         return None
+    warn = misplaced(args)
+    if warn:
+        return warn
     opts = []
     for key in ['register', 'schema', '_extend', 'files', '_render', '_audit']:
         for a in args:
@@ -180,14 +323,25 @@ def process(path, write, report):
     s = open(path, encoding='utf-8', errors='surrogateescape').read()
     if '->find' not in s and '->findSilent' not in s:
         return 0
+    mask = code_mask(s)
+    typed, foreign = typed_receivers(s, mask)
     edits = []
     for m in CALL.finditer(s):
+        if in_mask(mask, m.start()):
+            continue
         recv = receiver_of(s, m.start())
-        if not RECEIVER.search(recv):
+        if not (RECEIVER.search(recv) or (typed and typed.search(recv))):
             continue
         line = s.count('\n', 0, m.start()) + 1
         r = plan(s, m)
         if r is None:
+            continue
+        prop = PROP.search(recv)
+        if prop and prop.group(1) in foreign:
+            report.append('SKIP %s:%d receiver is typed %s, not openregister' % (path, line, foreign[prop.group(1)]))
+            continue
+        if isinstance(r, str) and r.startswith('WARN '):
+            report.append('WARN %s:%d %s' % (path, line, r[5:]))
             continue
         if isinstance(r, str):
             report.append('SKIP %s:%d %s' % (path, line, r))
@@ -230,7 +384,8 @@ def main(argv):
         print(r)
     ch = sum(1 for r in report if r.startswith('CHANGE'))
     sk = sum(1 for r in report if r.startswith('SKIP'))
-    print('# %s: %d changed, %d skipped' % ('written' if write else 'dry run', ch, sk))
+    wn = sum(1 for r in report if r.startswith('WARN'))
+    print('# %s: %d changed, %d skipped, %d warned' % ('written' if write else 'dry run', ch, sk, wn))
     return 0
 
 
