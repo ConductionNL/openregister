@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -1297,7 +1298,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $trail->getObjectUuid() === 'obj-uuid';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockHandlesEmptyBlockers(): void {
@@ -1315,7 +1316,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $changed['blockerProperty'] === 'unknown';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockDeduplicatesSchemas(): void {
@@ -1335,7 +1336,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $changed['blockerSchema'] === '1';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockWithNullSchemaId(): void {
@@ -1350,7 +1351,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			->method('insert');
 
 		// Should not throw when schemaId is null.
-		$this->service->logRestrictBlock('obj-uuid', null, $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: null, userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockHandlesBlockersWithMissingKeys(): void {
@@ -1369,7 +1370,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $changed['blockerProperty'] === 'unknown';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
@@ -1392,7 +1393,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		);
 
 		// Should not throw.
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
