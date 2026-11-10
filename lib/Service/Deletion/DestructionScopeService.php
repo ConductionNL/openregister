@@ -264,36 +264,57 @@ class DestructionScopeService {
 	 * @return int The count, zero when the source cannot answer.
 	 */
 	private function countMember(string $member, ObjectEntity $object): int {
-		$uuid = (string)$object->getUuid();
-
 		try {
-			return match ($member) {
-				DestructionScope::VERSIONS => $this->auditTrailMapper->countObjectTrail(
-					objectUuid: $uuid,
-					scope: new ActionScope(onlyActions: DestructionScope::VERSION_ACTIONS, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
-				),
-				DestructionScope::AUDIT_CONTENT => $this->auditTrailMapper->countObjectTrail(
-					objectUuid: $uuid,
-					scope: new ActionScope(onlyActions: null, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
-				),
-				DestructionScope::NOTES => $this->companions->noteService?->countNotesForObject($uuid) ?? 0,
-				DestructionScope::FILES => count($this->companions->fileService?->getFiles($object) ?? []),
-				DestructionScope::TASKS => count($this->companions->taskService?->getTasksForObject($uuid) ?? []),
-				DestructionScope::TIMELINE => $this->companions->relationCleanup?->countTimelineLinks($uuid) ?? 0,
-				default => 0,
-			};
+			return $this->memberCount(member: $member, object: $object);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[DestructionScope] Could not count scope member',
 				context: [
 					'member' => $member,
-					'uuid' => $uuid,
+					'uuid' => (string)$object->getUuid(),
 					'error' => $e->getMessage(),
 				]
 			);
 			return 0;
 		}//end try
 	}//end countMember()
+
+	/**
+	 * How many of one scope member an object holds; throws when the member's store cannot be read.
+	 *
+	 * @param string       $member One of DestructionScope's members.
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return integer The count; 0 for a member that is not counted.
+	 */
+	private function memberCount(string $member, ObjectEntity $object): int {
+		$uuid = (string)$object->getUuid();
+
+		return match ($member) {
+			DestructionScope::VERSIONS => $this->trailCount(uuid: $uuid, onlyActions: DestructionScope::VERSION_ACTIONS),
+			DestructionScope::AUDIT_CONTENT => $this->trailCount(uuid: $uuid, onlyActions: null),
+			DestructionScope::NOTES => $this->companions->noteService?->countNotesForObject($uuid) ?? 0,
+			DestructionScope::FILES => count($this->companions->fileService?->getFiles($object) ?? []),
+			DestructionScope::TASKS => count($this->companions->taskService?->getTasksForObject($uuid) ?? []),
+			DestructionScope::TIMELINE => $this->companions->relationCleanup?->countTimelineLinks($uuid) ?? 0,
+			default => 0,
+		};
+	}//end memberCount()
+
+	/**
+	 * How many audit trail entries an object holds, evidence excluded.
+	 *
+	 * @param string                  $uuid        The object uuid.
+	 * @param array<int, string>|null $onlyActions The actions to count, or null for every action.
+	 *
+	 * @return integer The count.
+	 */
+	private function trailCount(string $uuid, ?array $onlyActions): int {
+		return $this->auditTrailMapper->countObjectTrail(
+			objectUuid: $uuid,
+			scope: new ActionScope(onlyActions: $onlyActions, excludeActions: DestructionScope::EVIDENCE_ACTIONS)
+		);
+	}//end trailCount()
 
 	/**
 	 * Destroy one scope member and report how many rows went.

@@ -187,10 +187,22 @@ class RetentionClockService {
 
 		return [
 			'date' => $due->format(DATE_ATOM),
-			'rule' => 'verwerkingsactiviteit ' . (string)$activity->getUuid()
-				. ' keeps this data for ' . $period . ' after the last processing',
+			'rule' => $this->avgRule(activity: $activity, period: $period),
 		];
 	}//end avgClock()
+
+	/**
+	 * The rule an AVG clock names: which processing activity keeps the data, and for how long.
+	 *
+	 * @param object $activity The retaining processing activity.
+	 * @param string $period   Its retention period.
+	 *
+	 * @return string The rule.
+	 */
+	private function avgRule(object $activity, string $period): string {
+		return 'verwerkingsactiviteit ' . (string)$activity->getUuid()
+			. ' keeps this data for ' . $period . ' after the last processing';
+	}//end avgRule()
 
 	/**
 	 * The processing activity that keeps the object's data for a stated period.
