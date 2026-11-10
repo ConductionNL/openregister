@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -64,9 +65,11 @@ class TaskSubjectLocatorTest extends TestCase {
 	 */
 	private function locator(MagicMapper $objects): TaskSubjectLocator {
 		return new TaskSubjectLocator(
-			$objects,
-			$this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
-			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+			new SchemaCatalog(
+				registers: $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
+				schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+				tables: $objects
+			),
 			new NullLogger()
 		);
 	}//end locator()
@@ -228,7 +231,7 @@ class TaskSubjectLocatorTest extends TestCase {
 			$task('e', 3, 4),
 		];
 
-		$locator = new TaskSubjectLocator(objects: $objects, registers: $registers, schemas: $schemas, logger: new NullLogger());
+		$locator = new TaskSubjectLocator(catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $objects), logger: new NullLogger());
 
 		$this->assertSame(['a' => 'subject a', 'c' => 'subject c', 'e' => 'subject e'], $locator->readLocated(tasks: $tasks));
 		$this->assertSame([[1, 2, ['a', 'c']], [3, 4, ['e']]], $reads);

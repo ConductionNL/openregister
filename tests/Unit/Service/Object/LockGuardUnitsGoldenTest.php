@@ -41,6 +41,8 @@ use OCA\OpenRegister\Service\Object\GroupRuleEntries;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\OrphanDeletionGuard;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -103,7 +105,7 @@ class LockGuardUnitsGoldenTest extends TestCase {
 			$store = new AdvisoryLockStore(appConfig: $config, userSession: $this->session('anna'), logger: $this->createMock(LoggerInterface::class));
 
 			try {
-				$answer = $store->acquire(identifier: 'id-1', process: 'proc', duration: 60);
+				$answer = $store->acquire(request: new LockRequest(identifier: 'id-1', process: 'proc', duration: 60, runStep: new LockRunStep(null, null)));
 				$this->assertSame('ok', $expected, $label);
 				$this->assertSame('id-1', $answer['uuid']);
 				$this->assertSame(['anna', 'proc', 60, true], [$answer['locked']['user'], $answer['locked']['process'], $answer['locked']['duration'], $answer['locked']['advisory']]);
@@ -144,11 +146,11 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		$object->setSchema('4');
 		$object->setLocked(['expiration' => '2030-01-02T03:04:05+00:00']);
 
-		$registry->record(object: $object, runUuid: null, nodeId: 'n');
-		$registry->record(object: $object, runUuid: '  ', nodeId: 'n');
+		$registry->record(object: $object, step: new LockRunStep(null, 'n'));
+		$registry->record(object: $object, step: new LockRunStep('  ', 'n'));
 		$this->assertSame([], $rows);
 
-		$registry->record(object: $object, runUuid: ' run-1 ', nodeId: 'n-1');
+		$registry->record(object: $object, step: new LockRunStep(' run-1 ', 'n-1'));
 		$this->assertCount(1, $rows);
 		$this->assertSame(
 			['run-1', 'o-1', '3', '4', 'n-1', '2030-01-02T03:04:05+00:00'],
@@ -156,14 +158,14 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		);
 
 		$object->setLocked([]);
-		$registry->record(object: $object, runUuid: 'run-2', nodeId: null);
+		$registry->record(object: $object, step: new LockRunStep('run-2', null));
 		$this->assertNull($rows[1]->getExpiresAt());
 
 		$object->setLocked(['expiration' => 'not a date at all']);
 		$logger->expects($this->once())->method('warning')->with(
 			'[RunLockRegistry] Could not record a run lock; the lock itself stands'
 		);
-		$registry->record(object: $object, runUuid: 'run-3', nodeId: null);
+		$registry->record(object: $object, step: new LockRunStep('run-3', null));
 		$this->assertCount(2, $rows);
 	}//end testRunLockRecord()
 

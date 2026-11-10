@@ -138,15 +138,15 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 	}//end testUpdatedStatistics()
 
 	public function testUpdateClauseBranches(): void {
-		$this->assertSame('"_updated" = NOW()', MagicBulkUpsertSql::updateClause('_updated', true, 'oc_t', true));
-		$this->assertSame('`_updated` = NOW()', MagicBulkUpsertSql::updateClause('_updated', false, 'oc_t', false));
+		$this->assertSame('"_updated" = NOW()', MagicBulkUpsertSql::updateClause('_updated', true));
+		$this->assertSame('`_updated` = NOW()', MagicBulkUpsertSql::updateClause('_updated', false));
 		$this->assertSame(
 			'"_slug" = COALESCE(NULLIF("oc_t"."_slug", \'\'), EXCLUDED."_slug")',
-			MagicBulkUpsertSql::updateClause('_slug', true, 'oc_t', true)
+			MagicBulkUpsertSql::frozenSlugClause(true, 'oc_t')
 		);
-		$this->assertSame('`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))', MagicBulkUpsertSql::updateClause('_slug', false, 'oc_t', true));
-		$this->assertSame('"_slug" = EXCLUDED."_slug"', MagicBulkUpsertSql::updateClause('_slug', true, 'oc_t', false));
-		$this->assertSame('`_title` = VALUES(`_title`)', MagicBulkUpsertSql::updateClause('_title', false, 'oc_t', true));
+		$this->assertSame('`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))', MagicBulkUpsertSql::frozenSlugClause(false, 'oc_t'));
+		$this->assertSame('"_slug" = EXCLUDED."_slug"', MagicBulkUpsertSql::updateClause('_slug', true));
+		$this->assertSame('`_title` = VALUES(`_title`)', MagicBulkUpsertSql::updateClause('_title', false));
 	}//end testUpdateClauseBranches()
 
 	public function testValuesAndParameters(): void {

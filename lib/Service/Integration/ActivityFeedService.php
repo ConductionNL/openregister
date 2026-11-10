@@ -85,12 +85,22 @@ class ActivityFeedService {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
 	public function page(ActivityFeedObject $object, array $options = [], array $handedIn = []): array {
-		$bound = $this->merge->boundPerSource(options: $options);
-
 		$sources = $this->handedInSources(handedIn: $handedIn);
-		$sources['audit'] = $this->auditSource(object: $object, bound: $bound);
+		$sources['audit'] = $this->auditSource(object: $object, bound: $this->merge->boundPerSource(options: $options));
 		$sources['activity'] = $this->activitySource(object: $object);
 
+		return $this->mergedPage(sources: $sources, options: $options);
+	}//end page()
+
+	/**
+	 * Merge the sources into one page and name the ones that could not be read.
+	 *
+	 * @param array<string,array<int,array<string,mixed>>|null> $sources The rows per source, null when unreadable.
+	 * @param array<string,mixed>                               $options The caller's options.
+	 *
+	 * @return array{rows:array<int,array<string,mixed>>,nextCursor:?int,counts:array<string,int>,degraded:array<int,string>}
+	 */
+	private function mergedPage(array $sources, array $options): array {
 		$degraded = array_keys(array_filter($sources, static fn (?array $rows): bool => $rows === null));
 		$sources = array_map(static fn (?array $rows): array => ($rows ?? []), $sources);
 
@@ -98,7 +108,7 @@ class ActivityFeedService {
 		$page['degraded'] = $degraded;
 
 		return $page;
-	}//end page()
+	}//end mergedPage()
 
 	/**
 	 * The rows of the sources this service does not own, as handed in.
