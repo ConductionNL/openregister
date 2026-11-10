@@ -157,6 +157,61 @@ import { navigationStore } from '../../store/store.js'
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version 1.0.0
  */
+/**
+ * Ask the server to deliver a logged webhook call again.
+ *
+ * @param {number|string} logId The log entry id
+ * @return {Promise<object>} The axios response
+ */
+function requestRetry(logId) {
+	return axios.post(
+		generateUrl(`/apps/openregister/api/webhooks/logs/${logId}/retry`),
+	)
+}
+
+/**
+ * Say the retry was delivered, close the modal and tell the logs list to
+ * refresh.
+ *
+ * @param {object} vm The modal
+ * @return {void}
+ */
+function announceDelivered(vm) {
+	showSuccess(t('openregister', 'Webhook retry delivered successfully'))
+	// Close modal and refresh parent view.
+	vm.closeModal()
+	// Trigger a custom event to refresh logs list.
+	window.dispatchEvent(new CustomEvent('webhook-log-retried'))
+}
+
+/**
+ * Why a retry was not delivered: the answer's message or error, or a generic one.
+ *
+ * @param {object|undefined} data The retry answer
+ * @return {string} The message
+ */
+function undeliveredMessage(data) {
+	return (
+		data?.message
+		|| data?.error
+		|| t('openregister', 'Webhook retry delivery failed')
+	)
+}
+
+/**
+ * Why a retry request failed: the server's error or message, or a generic one.
+ *
+ * @param {object} error What went wrong
+ * @return {string} The message
+ */
+function retryErrorMessage(error) {
+	return (
+		error.response?.data?.error
+		|| error.response?.data?.message
+		|| t('openregister', 'Failed to retry webhook')
+	)
+}
+
 export default {
 	name: 'ViewWebhookLog',
 	components: {
@@ -313,33 +368,14 @@ export default {
 
 			this.retrying = true
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/webhooks/logs/${this.logItem.id}/retry`,
-					),
-				)
-
+				const response = await requestRetry(this.logItem.id)
 				if (response.data && response.data.success === true) {
-					showSuccess(
-						t('openregister', 'Webhook retry delivered successfully'),
-					)
-					// Close modal and refresh parent view.
-					this.closeModal()
-					// Trigger a custom event to refresh logs list.
-					window.dispatchEvent(new CustomEvent('webhook-log-retried'))
+					announceDelivered(this)
 				} else {
-					const message =
-						response.data?.message
-						|| response.data?.error
-						|| t('openregister', 'Webhook retry delivery failed')
-					showError(message)
+					showError(undeliveredMessage(response.data))
 				}
 			} catch (error) {
-				const errorMessage =
-					error.response?.data?.error
-					|| error.response?.data?.message
-					|| t('openregister', 'Failed to retry webhook')
-				showError(errorMessage)
+				showError(retryErrorMessage(error))
 			} finally {
 				this.retrying = false
 			}
