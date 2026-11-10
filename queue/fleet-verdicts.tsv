@@ -122,3 +122,4 @@ dossiq	5449	6e220e4e5f18787fd07a018aa12e62e33d336c8a	GREEN	FV02:1	unit suites gr
 dossiq	5451	5af9b7bba408807cb9d813f9971be6f1be8154c6	GREEN	FV02:1	unit suites green on tree without 5417 (PHP failures = development baseline only)
 dossiq	5453	61d0c965912decc5dd9c51fd78c6a7eb251c1953	GREEN	FV02:1	unit suites green on tree without 5417 (PHP failures = development baseline only)
 dossiq	5524	3b361b16b4f72e62de1fe9d47b3c29729653417a	GREEN	FV01:4	tree of 25 green on php+js unit suites (20 inherited php failures)
+dossiq	5526	81aca1fca1c60203b045df3699558d134ae5b678	GREEN	FV01:4	tree of 25 green on php+js unit suites (20 inherited php failures)
